@@ -1,0 +1,22 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - version-*
+
+jobs:
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - run: cd frontend && npx webpack --mode=production
+      - uses: actions/setup-python@master
+        with:
+          python-version: '3.x'
+      - run: python setup.py sdist
+      - uses: actions/upload-artifact@master
+        with:
+          name: qtoggleserver-artifact
+          path: dist
