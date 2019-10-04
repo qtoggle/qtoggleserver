@@ -17,7 +17,10 @@ jobs:
         with:
           python-version: '3.x'
       - run: python setup.py sdist
-      - uses: actions/upload-artifact@master
+      - uses: svenstaro/upload-release-action@1.0.1
         with:
-          name: qtoggleserver-artifact
-          path: dist
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: dist/qtoggleserver-*.gz
+          asset_name: qtoggleserver-${{ github.ref }}
+          tag: ${{ github.ref }}
+          overwrite: true
