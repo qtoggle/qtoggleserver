@@ -1,0 +1,112 @@
+import {gettext}                       from '$qui/base/i18n.js'
+import {ChoiceButtonsField, TextField} from '$qui/forms/common-fields.js'
+import {PageForm}                      from '$qui/forms/common-forms.js'
+import FormButton                      from '$qui/forms/form-button.js'
+import {ValidationError}               from '$qui/forms/forms.js'
+import * as Window                     from '$qui/window.js'
+
+import Panel          from './panel.js'
+import Group          from './group.js'
+import * as Dashboard from './dashboard.js'
+
+
+const logger = Dashboard.logger
+
+
+/**
+ * @class QToggle.DashboardSection.AddPanelGroupForm
+ * @extends qui.forms.PageForm
+ * @param {QToggle.DashboardSection.Group} group
+ */
+export default class AddPanelGroupForm extends PageForm {
+
+    constructor(group) {
+        super({
+            title: '',
+            icon: Dashboard.PANEL_ICON,
+            pathId: 'add',
+            keepPrevVisible: true,
+            continuousValidation: true,
+
+            fields: [
+                new TextField({
+                    name: 'name',
+                    label: gettext('Name'),
+                    continuousChange: true,
+                    required: true,
+                    placeholder: gettext('e.g. Living Room'),
+                    maxLength: 64
+                }),
+                new ChoiceButtonsField({
+                    name: 'type',
+                    label: gettext('Add New'),
+                    required: true,
+                    choices: [{value: 'panel', label: gettext('Panel')}, {value: 'group', label: gettext('Group')}],
+                    onChange: (value, form) => form._updateType(value)
+                })
+            ],
+
+            buttons: [
+                new FormButton({id: 'cancel', caption: gettext('Cancel'), cancel: true}),
+                new FormButton({id: 'add', caption: gettext('Add'), def: true})
+            ],
+
+            data: {
+                type: 'panel'
+            }
+        })
+
+        this._group = group
+    }
+
+    init() {
+        this._updateType(this.getUnvalidatedFieldValue('type'))
+    }
+
+    _updateType(type) {
+        if (type === 'panel') {
+            this.setTitle(gettext('Add New Panel...'))
+            this.setIcon(Dashboard.PANEL_ICON)
+        }
+        else { /* Assuming group */
+            this.setTitle(gettext('Add New Panel Group...'))
+            this.setIcon(Dashboard.GROUP_ICON)
+        }
+    }
+
+    applyData(data) {
+        let child
+        if (data.type === 'group') {
+            logger.debug(`adding group "${this._group.getPathStr()}/${data.name}"`)
+            child = new Group({name: data.name, parent: this._group})
+        }
+        else { /* Assuming panel */
+            logger.debug(`adding panel "${this._group.getPathStr()}/${data.name}"`)
+            child = new Panel({name: data.name, parent: this._group})
+        }
+
+        this._group.addChild(child)
+        this._group.setSelectedChild(child)
+        Dashboard.savePanels()
+
+        /* Show the newly created child */
+        this._group.pushPage(child)
+
+        /* In case of panels, present the widget picker, unless on small screens */
+        if ((data.type === 'panel') && !Window.isSmallScreen()) {
+            this.pushPage(child.makeWidgetPicker())
+        }
+    }
+
+    validateField(name, value, data) {
+        switch (name) {
+            case 'name': {
+                let child = this._group.findChildByName(value)
+                if (child) {
+                    throw new ValidationError(gettext('This name already exists!'))
+                }
+            }
+        }
+    }
+
+}

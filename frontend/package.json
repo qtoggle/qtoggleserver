@@ -1,0 +1,34 @@
+{
+    "name": "qtoggleserver-frontend",
+    "version": "0.8.0b1",
+    "scripts": {},
+    "keywords": [],
+    "author": "Calin Crisan <ccrisan@gmail.com>",
+    "license": "Apache-2.0",
+    "devDependencies": {
+        "css-loader": "*",
+        "eslint": "*",
+        "expose-loader": "*",
+        "file-loader": "*",
+        "glob": "*",
+        "less": "*",
+        "less-loader": "*",
+        "mini-css-extract-plugin": "*",
+        "optimize-css-assets-webpack-plugin": "*",
+        "string-replace-loader": "*",
+        "terser-webpack-plugin": "*",
+        "webpack": "*",
+        "webpack-cli": "*",
+        "webpack-fix-style-only-entries": "*",
+        "webpack-inject-plugin": "*",
+        "webpack-shell-plugin": "*"
+    },
+    "dependencies": {
+        "@qtoggle/qui": "^1.0.0-b5",
+        "jquery": "*",
+        "jquery-mousewheel": "*",
+        "jquery-ui-dist": "*",
+        "js-logger": "*",
+        "pepjs": "*"
+    }
+}

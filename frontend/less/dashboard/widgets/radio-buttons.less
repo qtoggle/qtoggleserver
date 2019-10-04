@@ -1,0 +1,63 @@
+
+@import (reference) "@{qui_less_path}/theme";
+
+div.dashboard-widget-content {
+
+    div.dashboard-radio-buttons-container {
+
+        display: flex;
+
+        &.dashboard-radio-buttons-container.vertical {
+            flex-direction: column;
+            height: 100%;
+        }
+
+        &.dashboard-radio-buttons-container.horizontal {
+            flex-direction: row;
+        }
+
+        div.dashboard-push-button-bezel {
+
+            margin: auto;
+            position: relative;
+            overflow: visible;
+
+            div.dashboard-push-button-handle {
+                border-style: solid;
+                border-color: transparent;
+                transition: background @transition-duration ease,
+                            box-shadow 0.2s ease;
+            }
+
+            span.dashboard-radio-buttons-label {
+                position: absolute;
+                left: 0;
+                z-index: 10;
+                display: inline-block;
+                line-height: 1.3em;
+                width: 100%;
+                text-align: center;
+            }
+
+        }
+
+        div.dashboard-push-button-bezel.active > div.dashboard-push-button-handle {
+            box-shadow: 0 0 0.1em 0 @thick-shadow-color inset;
+            border-width: 0;
+        }
+
+    }
+
+    div.dashboard-radio-buttons-container.separate-colors {
+
+        div.dashboard-push-button-bezel {
+
+            div.dashboard-push-button-handle {
+                border-width: 0.025em;
+            }
+
+        }
+
+    }
+
+}

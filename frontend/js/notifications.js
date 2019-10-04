@@ -1,0 +1,471 @@
+
+import Logger from '$qui/lib/logger.module.js'
+
+import {gettext}             from '$qui/base/i18n.js'
+import * as Status           from '$qui/main-ui/status.js'
+import * as Messages         from '$qui/messages/messages.js'
+import * as Toast            from '$qui/messages/toast.js'
+import * as ArrayUtils       from '$qui/utils/array.js'
+import {asap}                from '$qui/utils/misc.js'
+import * as ObjectUtils      from '$qui/utils/object.js'
+import * as StringUtils      from '$qui/utils/string.js'
+
+import * as API                     from '$app/api.js'
+import * as Cache                   from '$app/cache.js'
+import {StickyModalProgressMessage} from '$app/common/common.js'
+import * as Sections                from '$app/sections.js'
+
+
+/* Attributes that are ignored when showing notification messages */
+const IGNORE_CHANGE_PORT_ATTRS = ['last_sync', 'value']
+const IGNORE_CHANGE_DEVICE_ATTRS = ['uptime', 'date', 'battery_level']
+const IGNORE_CHANGE_SLAVE_ATTRS = ['last_sync', 'attrs']
+
+const logger = Logger.get('qtoggle.events')
+
+/* Used to gather and process all events received with a single request */
+let eventsBulk = []
+let eventsBulkTimeoutHandle = null
+
+/* Active sync requests status */
+let syncCount = 0
+let syncError = null
+let syncListenError = null
+
+/* Progress message for recent listen error */
+let listenErrorProgressMessage = null
+
+
+/* This function is given all events received with a single request, so that it has a general overview on all generated
+ * events */
+function processEventsBulk() {
+    /* Do a first round to display some notification messages */
+    showMessageFromEvents(eventsBulk)
+
+    /* Do a second round to:
+     *  * update ports/devices cache and other cached info
+     *  * notify section listeners */
+    /* Do a third round to notify section listeners */
+    let allSections = Sections.all()
+    eventsBulk.forEach(function (event) {
+        asap(function () {
+            Cache.updateFromEvent(event)
+
+            allSections.forEach(function (section) {
+                section.onServerEvent(event)
+            })
+        })
+    })
+
+    /* Reset bulk events processing mechanism */
+    eventsBulkTimeoutHandle = 0
+    eventsBulk = []
+}
+
+function showMessageFromEvents(events) {
+    let message = null
+    let messageType = null
+
+    let messagesEvents = events.filter(function (e) {
+        return !((e.type === 'port-update' ||
+                  e.type === 'device-update' ||
+                  e.type === 'slave-device-update') && e.expected)
+    })
+
+    messagesEvents.forEach(function (event) {
+        let device, port
+        let deviceLabel, portLabel
+        let groupedEvents
+
+        switch (event.type) {
+            case 'slave-device-update': {
+                device = Cache.getSlaveDevice(event.params.name)
+                if (!device) {
+                    break
+                }
+
+                /* Do not show notifications unless an attribute that is not ignored has been changed */
+                let slaveChanged = Object.keys(ObjectUtils.filter(device, function (name, value) {
+                    return !ObjectUtils.deepEquals(event.params[name], value) &&
+                           (IGNORE_CHANGE_SLAVE_ATTRS.indexOf(name) < 0)
+                })).length > 0
+
+                let slaveAttrsChanged = Object.keys(ObjectUtils.filter(device.attrs, function (name, value) {
+                    return !ObjectUtils.deepEquals(event.params.attrs[name], value) &&
+                           IGNORE_CHANGE_DEVICE_ATTRS.indexOf(name) < 0
+                })).length > 0
+
+                if (!slaveChanged && !slaveAttrsChanged) {
+                    break
+                }
+
+                deviceLabel = Messages.wrapLabel(event.params.attrs.description || event.params.name)
+
+                if (!device.enabled && event.params.enabled) { /* Enabled */
+                    message = StringUtils.formatPercent(
+                        gettext('Device %(device)s has been enabled.'),
+                        {device: deviceLabel}
+                    )
+                    messageType = 'info'
+                }
+                else if (device.enabled && !event.params.enabled) { /* Disabled */
+                    message = StringUtils.formatPercent(
+                        gettext('Device %(device)s has been disabled.'),
+                        {device: deviceLabel}
+                    )
+                    messageType = 'info'
+                }
+                else if (!device.online && event.params.online) { /* Came online */
+                    message = StringUtils.formatPercent(
+                        gettext('Device %(device)s is now online.'),
+                        {device: deviceLabel}
+                    )
+                    messageType = 'info'
+                }
+                else if (device.online && !event.params.online) { /* Went offline */
+                    message = StringUtils.formatPercent(
+                        gettext('Device %(device)s is offline.'),
+                        {device: deviceLabel}
+                    )
+                    messageType = 'warning'
+                }
+
+                break
+            }
+
+            case 'slave-device-add': {
+                deviceLabel = Messages.wrapLabel(event.params.attrs.description || event.params.name)
+                message = StringUtils.formatPercent(
+                    gettext('Device %(device)s has been added.'),
+                    {device: deviceLabel}
+                )
+                messageType = 'info'
+
+                break
+            }
+
+            case 'slave-device-remove': {
+                device = Cache.getSlaveDevice(event.params.name)
+                if (!device) {
+                    break
+                }
+
+                deviceLabel = Messages.wrapLabel(device.attrs.description || device.name)
+                message = StringUtils.formatPercent(
+                    gettext('Device %(device)s has been removed.'),
+                    {device: deviceLabel}
+                )
+                messageType = 'info'
+
+                break
+            }
+
+            case 'value-change': {
+                break
+            }
+
+            case 'port-update': {
+                port = Cache.getPort(event.params.id)
+                if (!port) {
+                    break
+                }
+
+                /* Do not show notifications unless an attribute that is not ignored has been changed */
+                let portAttrsChanged = Object.keys(ObjectUtils.filter(port, function (name, value) {
+                    return !ObjectUtils.deepEquals(event.params[name], value) &&
+                           IGNORE_CHANGE_PORT_ATTRS.indexOf(name) < 0
+                })).length > 0
+
+                if (!portAttrsChanged) {
+                    break
+                }
+
+                portLabel = Messages.wrapLabel(event.params.description || event.params.id)
+                device = Cache.findPortSlaveDevice(port.id)
+
+                /* Do not show notifications for ports belonging to permanently offline devices,
+                 * since they tend to generate many events via webhooks */
+                if (device && (!device.listen_enabled && !device.poll_enabled)) {
+                    break
+                }
+
+                if (!port.enabled && event.params.enabled) { /* Enabled */
+                    message = StringUtils.formatPercent(
+                        gettext('Port %(port)s has been enabled.'),
+                        {port: portLabel}
+                    )
+                    messageType = 'info'
+                }
+                else if (port.enabled && !event.params.enabled) { /* Disabled */
+                    message = StringUtils.formatPercent(
+                        gettext('Port %(port)s has been disabled.'),
+                        {port: portLabel}
+                    )
+                    messageType = 'info'
+                }
+                else if (!port.online && event.params.online) { /* Came online */
+                    /* If more than one port of a device came online,
+                     * avoid showing a message for each of its ports */
+                    groupedEvents = messagesEvents.filter(function (e) {
+                        if (e.type !== 'port-update') {
+                            return false
+                        }
+
+                        let p = Cache.getPort(e.params.id)
+                        if (!p) {
+                            return false
+                        }
+
+                        let d = Cache.findPortSlaveDevice(p.id)
+                        if (d !== device) {
+                            return
+                        }
+
+                        return !p.online && e.params.online
+                    })
+
+                    /* Eliminate port duplicates */
+                    groupedEvents = ArrayUtils.distinct(groupedEvents, function (e1, e2) {
+                        return e1.params.id === e2.params.id
+                    })
+
+                    messageType = 'info'
+                    if (groupedEvents.length === 1) {
+                        message = StringUtils.formatPercent(
+                            gettext('Port %(port)s is now online.'),
+                            {port: portLabel}
+                        )
+                    }
+                    else {
+                        message = StringUtils.formatPercent(
+                            gettext('%(count)d ports are now online.'),
+                            {count: groupedEvents.length}
+                        )
+                    }
+                }
+                else if (port.online && !event.params.online) { /* Went offline */
+                    /* If more than one port of a device went offline,
+                     * avoid showing a message for each of its ports */
+                    groupedEvents = messagesEvents.filter(function (e) {
+                        if (e.type !== 'port-update') {
+                            return false
+                        }
+
+                        let p = Cache.getPort(e.params.id)
+                        if (!p) {
+                            return false
+                        }
+
+                        let d = Cache.findPortSlaveDevice(p.id)
+                        if (d !== device) {
+                            return
+                        }
+
+                        return p.online && !e.params.online
+                    })
+
+                    /* Eliminate port duplicates */
+                    groupedEvents = ArrayUtils.distinct(groupedEvents, function (e1, e2) {
+                        return e1.params.id === e2.params.id
+                    })
+
+                    messageType = 'warning'
+                    if (groupedEvents.length === 1) {
+                        message = StringUtils.formatPercent(
+                            gettext('Port %(port)s is offline.'),
+                            {port: portLabel}
+                        )
+                    }
+                    else {
+                        message = StringUtils.formatPercent(
+                            gettext('%(count)d ports are offline.'),
+                            {count: groupedEvents.length}
+                        )
+                    }
+                }
+
+                break
+            }
+
+            case 'port-add': {
+                portLabel = Messages.wrapLabel(event.params.description || event.params.id)
+                device = Cache.findPortSlaveDevice(event.params.id)
+
+                /* If more than one port of a device have been added,
+                 * avoid showing a message for each of the ports */
+                groupedEvents = messagesEvents.filter(function (e) {
+                    if (e.type !== 'port-add') {
+                        return false
+                    }
+
+                    let d = Cache.findPortSlaveDevice(e.params.id)
+                    if (d !== device) {
+                        return
+                    }
+
+                    return true
+                })
+
+                /* Eliminate port duplicates */
+                groupedEvents = ArrayUtils.distinct(groupedEvents, function (e1, e2) {
+                    return e1.params.id === e2.params.id
+                })
+
+                messageType = 'info'
+                if (groupedEvents.length === 1) {
+                    message = StringUtils.formatPercent(
+                        gettext('Port %(port)s has been added.'),
+                        {port: portLabel}
+                    )
+                }
+                else {
+                    message = StringUtils.formatPercent(
+                        gettext('%(count)d ports have been added.'),
+                        {count: groupedEvents.length}
+                    )
+                }
+
+                break
+            }
+
+            case 'port-remove': {
+                port = Cache.getPort(event.params.id)
+                if (!port) {
+                    break
+                }
+
+                portLabel = Messages.wrapLabel(port.description || port.id)
+                device = Cache.findPortSlaveDevice(port.id)
+
+                /* If more than one port of a device have been removed,
+                 * avoid showing a message for each of the ports */
+                groupedEvents = messagesEvents.filter(function (e) {
+                    if (e.type !== 'port-remove') {
+                        return false
+                    }
+
+                    let d = Cache.findPortSlaveDevice(e.params.id)
+                    if (d !== device) {
+                        return
+                    }
+
+                    return true
+                })
+
+                /* Eliminate port duplicates */
+                groupedEvents = ArrayUtils.distinct(groupedEvents, function (e1, e2) {
+                    return e1.params.id === e2.params.id
+                })
+
+                messageType = 'info'
+                if (groupedEvents.length === 1) {
+                    message = StringUtils.formatPercent(
+                        gettext('Port %(port)s has been removed.'),
+                        {port: portLabel}
+                    )
+                }
+                else {
+                    message = StringUtils.formatPercent(
+                        gettext('%(count)d ports have been removed.'),
+                        {count: groupedEvents.length}
+                    )
+                }
+
+                break
+            }
+        }
+    })
+
+    /* Actually show the message */
+    if (message) {
+        Toast.show({message: message, type: messageType})
+    }
+}
+
+function updateStatusIcon() {
+    let status
+    let message
+
+    if (syncListenError) {
+        status = 'reconnect'
+        message = syncListenError.toString()
+    }
+    else if (syncError) {
+        status = 'reconnect'
+        message = syncError.toString()
+    }
+    else if (syncCount > 0) {
+        status = 'sync'
+    }
+    else {
+        status = 'ok'
+    }
+
+    Status.set(status, message)
+}
+
+
+export function init() {
+    API.addEventListener(function (event) {
+        eventsBulk.push(event)
+        if (eventsBulkTimeoutHandle) {
+            clearTimeout(eventsBulkTimeoutHandle)
+        }
+
+        eventsBulkTimeoutHandle = asap(processEventsBulk)
+    })
+
+    API.addSyncCallbacks(
+        /* beginCallback = */ function () {
+
+            /* Reset sync error upon a first API request */
+            if (syncCount === 0) {
+                syncError = null
+            }
+
+            syncCount++
+            updateStatusIcon()
+
+        },
+        /* endCallback = */ function (error) {
+
+            syncCount--
+            if (error) {
+                syncError = error
+            }
+
+            updateStatusIcon()
+
+        },
+        /* listenCallback = */ function (error, reconnectSeconds) {
+
+            if (error) {
+                syncListenError = error
+
+                if (reconnectSeconds > 1) {
+                    if (!listenErrorProgressMessage) {
+                        listenErrorProgressMessage = StickyModalProgressMessage.show()
+                        listenErrorProgressMessage.setMessage(gettext('Reconnecting...'))
+                    }
+                }
+            }
+            else { /* Successful listen response */
+                if (syncListenError) {
+                    syncListenError = null
+
+                    if (listenErrorProgressMessage) {
+                        listenErrorProgressMessage.close()
+                        listenErrorProgressMessage = null
+                    }
+
+                    logger.info('reconnected to server')
+
+                    Cache.setReloadNeeded()
+                }
+            }
+
+            updateStatusIcon()
+
+        }
+    )
+}

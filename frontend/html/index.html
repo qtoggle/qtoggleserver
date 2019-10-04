@@ -1,0 +1,27 @@
+{% extends "qui.html" %}
+
+{% block style %}
+    {% if debug %}
+        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/dashboard.css" />
+        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/gate-button.css" />
+        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/on-off-button.css" />
+        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/on-off-indicator.css" />
+        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/progress-bar.css" />
+        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/push-button.css" />
+        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/radio-buttons.css" />
+        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/slider.css" />
+
+        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/devices/devices.css" />
+    {% else %}
+        <link rel="stylesheet" type="text/css" href="{{ static_url }}/{{ name }}-bundle-{{ theme }}.css" />
+    {% endif %}
+{% endblock %}
+
+{% block script %}
+    <script type="module"
+            src="{{ static_url }}{% if debug %}/js/index.js{% else %}/{{ name }}-bundle.js{% endif %}"
+            data-debug="{{ debug }}"
+            data-theme-name="{{ theme }}"
+            data-navigation-base-prefix="{{ navigation_base_prefix }}"
+            data-slaves-enabled="{{ slaves_enabled }}"></script>
+{% endblock %}

@@ -1,0 +1,175 @@
+import {gettext}        from '$qui/base/i18n.js'
+import {TextField}      from '$qui/forms/common-fields.js'
+import {PageForm}       from '$qui/forms/common-forms.js'
+import FormButton       from '$qui/forms/form-button.js'
+import * as ObjectUtils from '$qui/utils/object.js'
+import * as Window      from '$qui/window.js'
+
+import * as Cache from '$app/cache.js'
+
+import * as Dashboard  from '../dashboard.js'
+import PortPickerField from './port-picker-field.js'
+import * as Widgets    from './widgets.js'
+
+
+/**
+ * @class QToggle.DashboardSection.Widgets.WidgetConfigForm
+ * @extends qui.forms.PageForm
+ * @param {QToggle.DashboardSection.Widgets.Widget} widget
+ * @param {Object} attributes
+ */
+export default class WidgetConfigForm extends PageForm {
+
+    constructor(widget, {...params} = {}) {
+        let defaultFields = [
+            new TextField({
+                name: 'label',
+                label: gettext('Label'),
+                maxLength: 128
+            })
+        ]
+
+        params.fields = defaultFields.concat(params.fields || [])
+
+        ObjectUtils.assignDefault(params, {
+            title: widget.constructor.getName(),
+            largeTop: true,
+            closable: true,
+            transparent: false,
+            fieldsAlignment: 'sides',
+            column: true,
+            pathId: widget.getId(),
+            keepPrevVisible: true,
+            compact: true,
+            width: 'auto',
+            continuousValidation: true,
+            buttons: [
+                new FormButton({id: 'done', caption: gettext('Done'), def: true})
+            ]
+        })
+
+        super(params)
+
+        this._widget = widget
+        this._touchedFields = {} /* Fields that have been changed at least once */
+    }
+
+    updateFromWidget() {
+        this.setData(this.fromWidget(this._widget))
+
+        this.onUpdateFromWidget()
+
+        /* We need to call setData + validate again, since onUpdateFromWidget() could add new fields */
+        this.setData(this.fromWidget(this._widget))
+    }
+
+    onChange(data, fieldName) {
+        let field = this.getField(fieldName)
+        if (field instanceof PortPickerField) {
+            let portId = data[fieldName]
+            let port = Cache.getPort(portId)
+            if (port) {
+                let dataFromPort = ObjectUtils.filter(this.fromPort(port), function (name, value) {
+
+                    if (name in this._touchedFields) {
+                        return false
+                    }
+
+                    if (data[name] != null && data[name] !== '') {
+                        return false
+                    }
+
+                    return true
+
+                }, this)
+
+                if (Object.keys(dataFromPort).length) {
+                    this.setData(dataFromPort)
+                }
+
+                ObjectUtils.forEach(dataFromPort, function (name, value) {
+                    let field = this.getField(name)
+                    if (field) {
+                        field.onChange(value, this)
+                    }
+                }, this)
+            }
+        }
+
+        this._touchedFields[fieldName] = true
+    }
+
+    onChangeValid(data, fieldName) {
+        let oldState = this._widget.getState()
+
+        this.toWidget(data, this._widget)
+        this._widget.refreshContent()
+        this._widget.updateState()
+
+        /* UpdateState() calls showCurrentValue() itself upon transition, but here we need it called even if there
+         * hasn't been any transition */
+        if (this._widget.getState() === oldState === Widgets.STATE_NORMAL) {
+            this._widget.showCurrentValue()
+        }
+
+        Dashboard.savePanels()
+    }
+
+    onClose() {
+        if (this._widget._configForm !== this) {
+            return
+        }
+
+        if (this._widget.getPanel().getSelectedWidget() === this._widget && !Window.isSmallScreen()) {
+            /* On large screens, we need to completely deselect the current widget upon config form close */
+            this._widget.getPanel().setSelectedWidget(null)
+            this._widget.getPanel().handleWidgetSelect(null)
+
+            /* Also open the panel options bar */
+            this._widget.getPanel().openOptionsBar()
+        }
+    }
+
+    /**
+     * @param {QToggle.DashboardSection.Widgets.Widget} widget
+     * @returns {Object}
+     */
+    fromWidget(widget) {
+        let data = widget.configToJSON()
+        data.label = widget.getLabel()
+
+        return data
+    }
+
+    /**
+     * @param {Object} data
+     * @param {QToggle.DashboardSection.Widgets.Widget} widget
+     */
+    toWidget(data, widget) {
+        widget.setLabel(data.label)
+        widget.configFromJSON(data)
+    }
+
+    /**
+     * @param {Object} port
+     */
+    fromPort(port) {
+        return {
+            label: port.description || port.id
+        }
+    }
+
+    /**
+     * Called after form data is updated from widget.
+     */
+    onUpdateFromWidget() {
+    }
+
+    navigate(pathId) {
+        switch (pathId) {
+            case 'remove':
+                return this._widget.makeRemoveForm()
+        }
+    }
+
+}

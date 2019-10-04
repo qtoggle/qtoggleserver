@@ -1,0 +1,173 @@
+import {gettext}                                                        from '$qui/base/i18n.js'
+import {CheckField, ComboField, NumericField, PasswordField, TextField} from '$qui/forms/common-fields.js'
+import {PageForm}                                                       from '$qui/forms/common-forms.js'
+import FormButton                                                       from '$qui/forms/form-button.js'
+import {ValidationError}                                                from '$qui/forms/forms.js'
+import * as ObjectUtils                                                 from '$qui/utils/object.js'
+import URL                                                              from '$qui/utils/url.js'
+
+import * as API from '$app/api.js'
+
+import * as Devices from './devices.js'
+
+
+const VALID_HOST_REGEX = new RegExp('[-a-z0-9_.]{2,256}', 'i')
+
+const logger = Devices.logger
+
+
+/**
+ * @class AddDeviceForm
+ * @extends qui.forms.PageForm
+ * @private
+ */
+export default class AddDeviceForm extends PageForm {
+
+    constructor() {
+        super({
+            icon: Devices.DEVICE_ICON,
+            title: gettext('Add Device...'),
+            pathId: 'add',
+            continuousValidation: true,
+
+            fields: [
+                new TextField({
+                    name: 'url',
+                    label: gettext('URL'),
+                    required: true,
+                    placeholder: 'http://192.168.1.123/device',
+                    continuousChange: true,
+
+                    validate(url) {
+                        if (!url.match(URL.VALID_REGEX)) {
+                            throw new ValidationError(gettext('Enter a valid URL.'))
+                        }
+                    },
+
+                    onChange(url, form) {
+                        let details = URL.parse(url)
+                        let data = {}
+
+                        data.scheme = details.scheme || 'http'
+                        data.host = details.host
+                        data.port = details.port || (data.scheme === 'http' ? 80 : 443)
+                        data.path = details.path || '/'
+                        if (details.queryStr) {
+                            data.path += `?${details.queryStr}`
+                        }
+                        if (details.password) {
+                            data.password = details.password
+                        }
+
+                        form.setData(data)
+                    }
+                }),
+                new PasswordField({
+                    name: 'password',
+                    label: gettext('Password'),
+                    autocomplete: false,
+                    continuousChange: true
+                }),
+                new TextField({
+                    name: 'scheme',
+                    label: gettext('Scheme'),
+                    required: true,
+                    separator: true,
+                    placeholder: 'http',
+                    continuousChange: true,
+
+                    validate(scheme) {
+                        if (scheme !== 'http' && scheme !== 'https') {
+                            throw new ValidationError(gettext('Enter a valid scheme.'))
+                        }
+                    }
+                }),
+                new TextField({
+                    name: 'host',
+                    label: gettext('Host'),
+                    required: true,
+                    placeholder: '192.168.1.123',
+                    continuousChange: true,
+
+                    validate(host) {
+                        if (!host.match(VALID_HOST_REGEX)) {
+                            throw new ValidationError(gettext('Enter a valid host name.'))
+                        }
+                    }
+                }),
+                new NumericField({
+                    name: 'port',
+                    label: gettext('Port'),
+                    min: 1,
+                    max: 65535,
+                    continuousChange: true
+                }),
+                new TextField({
+                    name: 'path',
+                    label: gettext('Path'),
+                    placeholder: '/',
+                    continuousChange: true
+                }),
+                new ComboField({
+                    name: 'poll_interval',
+                    label: gettext('Polling Interval'),
+                    choices: Devices.POLL_CHOICES,
+                    unit: gettext('seconds')
+                }),
+                new CheckField({
+                    name: 'listen_enabled',
+                    label: gettext('Enable Listening')
+                })
+            ],
+            data: {
+                port: 80,
+                poll_interval: 0,
+                listen_enabled: true
+            },
+            buttons: [
+                new FormButton({id: 'cancel', caption: gettext('Cancel'), cancel: true}),
+                new FormButton({id: 'add', caption: gettext('Add'), def: true})
+            ]
+        })
+    }
+
+    applyData(data) {
+        logger.debug(`adding device at url ${data.url}`)
+
+        return API.postSlaveDevices(
+            data.scheme,
+            data.host,
+            data.port,
+            data.path,
+            data.password,
+            data.poll_interval,
+            data.listen_enabled
+        ).then(function (response) {
+
+            logger.debug(`device "${response.name}" at url ${data.url} successfully added`)
+
+        }).catch(function (error) {
+
+            logger.errorStack(`failed to add device at url ${data.url}`, error)
+            throw error
+
+        })
+    }
+
+    onChange(data, fieldName) {
+        let fieldNames = ['host', 'port', 'scheme', 'path']
+        if (fieldNames.indexOf(fieldName) >= 0) {
+            let form = this
+
+            Promise.all(fieldNames.map(name => form.getFieldValue(name)).then(function (fieldValues) {
+
+                let d = ObjectUtils.fromEntries(fieldNames.map((name, i) => [name, fieldValues[i]]))
+                let url = new URL(d).toString()
+
+                form.setData({url: url})
+
+            }).catch(() => {}))
+        }
+    }
+
+}

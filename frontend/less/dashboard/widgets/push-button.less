@@ -1,0 +1,44 @@
+
+@import (reference) "@{qui_less_path}/theme";
+
+div.dashboard-widget-content {
+
+    div.dashboard-push-button-container {
+        text-align: center;
+        line-height: 0;
+        border-style: solid;
+        border-color: transparent;
+    }
+
+    div.dashboard-push-button-bezel {
+
+        display: inline-block;
+        position: relative;
+        vertical-align: top;
+        border-radius: 100%;
+        background: @background-color;
+        box-shadow: 0 0 0.35rem 0 @floating-shadow-color;
+        overflow: hidden;
+        cursor: pointer;
+
+        div.dashboard-push-button-handle {
+
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            border-radius: 100%;
+            transition: box-shadow 0.2s ease,
+                        filter @transition-duration ease;
+
+            &.active {
+                box-shadow: 0 0 0.05em 0 @thick-shadow-color inset;
+                filter: brightness(80%);
+            }
+
+        }
+
+    }
+
+}

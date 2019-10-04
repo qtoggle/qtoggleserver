@@ -1,0 +1,66 @@
+
+@import (reference) "@{qui_less_path}/theme";
+
+div.dashboard-widget-content {
+
+    div.dashboard-on-off-button-container {
+
+        position: absolute;
+        box-sizing: border-box;
+        border-style: solid;
+        border-color: transparent;
+
+        div.dashboard-on-off-button-background {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: @background-color;
+            box-shadow: 0 0 0.35rem 0 @floating-shadow-color;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        div.dashboard-on-off-button-handle {
+            left: 0;
+            top: 0;
+            position: absolute;
+            background: @disabled-color;
+            border-radius: 100%;
+            transition: left @transition-duration ease,
+                        top @transition-duration ease,
+                        right @transition-duration ease,
+                        bottom @transition-duration ease,
+                        background @transition-duration ease;
+        }
+
+        div.dashboard-on-off-button-text-on,
+        div.dashboard-on-off-button-text-off {
+            vertical-align: top;
+            position: relative;
+            text-align: center;
+            line-height: 0;
+            top: 50%;
+        }
+
+        div.dashboard-on-off-button-text-on {
+            color: @foreground-color;
+            left: -3em;
+        }
+
+        div.dashboard-on-off-button-text-off {
+            left: 3em;
+        }
+
+        &.vert div.dashboard-on-off-button-text-on {
+            left: 0;
+            top: -1.5em;
+        }
+
+        &.vert div.dashboard-on-off-button-text-off {
+            left: 0;
+            top: 4.25em;
+        }
+
+    }
+
+}

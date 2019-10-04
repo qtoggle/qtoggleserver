@@ -1,0 +1,400 @@
+
+@import (reference) "@{qui_less_path}/base";
+@import (reference) "@{qui_less_path}/theme";
+
+
+/* panel */
+
+div.dashboard-panel {
+    overflow: visible;
+    margin: 0;
+    transition: margin @transition-duration linear;
+    background: @background-root-color;
+    .noselect;
+}
+
+div.dashboard-panel.edit {
+    margin: 1.25rem;
+}
+
+div.dashboard-panel > div.panel-container {
+    transition: margin-top @transition-duration ease,
+                font-size @transition-duration ease;
+    position: relative;
+    overflow: visible;
+}
+
+div.dashboard-panel.edit > div.panel-container {
+    border-width: 0.0625rem 0 0 0.0625rem;
+    border-style: dashed;
+    border-color: @background-color;
+}
+
+div.dashboard-panel > div.panel-container.disable-transitions * {
+    transition: none !important;
+}
+
+
+/* placeholder cells */
+
+div.panel-placeholder-row {
+}
+
+div.panel-placeholder-cell {
+    display: none;
+    position: relative;
+    vertical-align: middle;
+    width: 1em;
+    height: 1em;
+    opacity: 0;
+    box-sizing: border-box;
+    border-style: dashed;
+    border-color: @background-color;
+    border-width: 0 0.0625rem 0.0625rem 0;
+    transition: opacity @transition-duration ease;
+}
+
+div.dashboard-panel.edit div.panel-placeholder-cell {
+    display: inline-block;
+}
+
+div.dashboard-panel.edit.placeholders-visible div.panel-placeholder-cell {
+    opacity: 1;
+}
+
+div.panel-placeholder-cell > div.panel-add-icon {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-left: -1rem;
+    margin-top: -1rem;
+    opacity: 0.5;
+}
+
+body.small-screen div.panel-placeholder-cell > div.panel-add-icon {
+    transform: scale(0.5);
+}
+
+
+/* widget picker */
+
+div.dashboard-widget-picker {
+}
+
+div.dashboard-widget-picker-body {
+    height: 100%;
+}
+
+
+/* widget container */
+
+div.dashboard-widget-container {
+    position: absolute;
+    z-index: 10000;
+    line-height: 1em;
+    border-color: transparent;
+    transition: border-color @transition-duration ease,
+                opacity @transition-duration ease;
+    opacity: 1;
+}
+
+div.dashboard-panel.edit div.dashboard-widget-container.selected {
+    z-index: 10001;
+}
+
+div.dashboard-panel.edit div.dashboard-widget-container.controls-visible {
+    border-color: @interactive-color;
+    background: fade(@interactive-color, 10%);
+}
+
+div.dashboard-panel.edit div.dashboard-widget-container.selected.controls-visible {
+    transition: left @transition-duration ease,
+                top @transition-duration ease,
+                width @transition-duration ease,
+                height @transition-duration ease;
+}
+
+
+/* widget body */
+
+div.dashboard-widget-container.invalid > div.dashboard-widget-body {
+    opacity: 0.5;
+    filter: grayscale(100%);
+    -webkit-filter: grayscale(100%);
+    -moz-filter: grayscale(100%);
+    -ms-filter: grayscale(100%);
+    -o-filter: grayscale(100%);
+}
+
+div.dashboard-widget-body {
+    position: absolute;
+    overflow: hidden;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+div.dashboard-widget-container.has-frame > div.dashboard-widget-body {
+    background: @floating-background-color;
+    box-shadow: 0 0 0.35rem 0 @floating-shadow-color;
+}
+
+
+/* widget label */
+
+div.dashboard-widget-label {
+    box-sizing: border-box;
+    padding-left: 0.025em;
+    padding-right: 0.025em;
+    white-space: nowrap;
+    text-align: center;
+}
+
+div.dashboard-widget-label > span {
+    display: block;
+    vertical-align: top;
+    line-height: 1.5em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+div.dashboard-widget-container.has-frame > div.dashboard-widget-body > div.dashboard-widget-label {
+    border-bottom: 0.0625rem solid @border-color;
+    text-align: left;
+}
+
+
+/* widget content */
+
+div.dashboard-widget-content {
+    position: relative;
+}
+
+
+/* widget controls */
+
+div.dashboard-widget-move {
+    display: none;
+    position: absolute;
+    top: -0.0625rem;
+    left: -0.0625rem;
+    right: 0;
+    bottom: 0;
+    cursor: move;
+    .noselect;
+}
+
+div.dashboard-panel.edit div.dashboard-widget-move {
+    display: block;
+    border: 0.125rem solid transparent;
+}
+
+div.dashboard-panel.edit div.dashboard-widget-container.selected > div.dashboard-widget-move {
+    border-color: @interactive-color;
+}
+
+div.dashboard-widget-remove,
+div.dashboard-widget-configure,
+div.dashboard-widget-duplicate {
+    position: absolute;
+    display: none;
+    opacity: 0;
+    font-size: 1rem;
+    width: 2em;
+    height: 2em;
+}
+
+div.dashboard-widget-remove {
+    top: 0;
+    right: 0;
+    margin-right: -1em;
+    margin-top: -1em;
+}
+
+div.dashboard-widget-configure {
+    top: 0;
+    left: 0;
+    margin-left: -1em;
+    margin-top: -1em;
+}
+
+div.dashboard-widget-duplicate {
+    bottom: 0;
+    right: 0;
+    margin-bottom: -1em;
+    margin-right: -1em;
+}
+
+div.dashboard-widget-remove > div.qui-icon,
+div.dashboard-widget-configure > div.qui-icon,
+div.dashboard-widget-duplicate > div.qui-icon {
+    background: @background-color;
+    border-radius: 100%;
+    display: inline-block;
+    width: 2em;
+    height: 2em;
+    cursor: pointer;
+    vertical-align: top;
+}
+
+div.dashboard-panel.edit div.dashboard-widget-resize-control {
+    display: none;
+    position: absolute;
+    width: 1.75rem;
+    height: 1.75rem;
+    background: @interactive-color;
+    border: 0.15rem solid @background-color;
+    border-radius: 100%;
+    transition: all @transition-duration ease;
+    opacity: 0;
+}
+
+div.dashboard-panel.edit div.dashboard-widget-resize-control:ACTIVE {
+    background: @interactive-active-color;
+}
+
+div.dashboard-widget-resize-top {
+    top: 0;
+    left: 50%;
+    cursor: n-resize;
+    margin-left: -1rem;
+    margin-top: -1rem;
+}
+
+div.dashboard-widget-resize-right {
+    top: 50%;
+    right: 0;
+    cursor: e-resize;
+    margin-right: -1rem;
+    margin-top: -1rem;
+}
+
+div.dashboard-widget-resize-bottom {
+    bottom: 0;
+    left: 50%;
+    cursor: s-resize;
+    margin-left: -1rem;
+    margin-bottom: -1rem;
+}
+
+div.dashboard-widget-resize-left {
+    top: 50%;
+    left: 0;
+    cursor: w-resize;
+    margin-left: -1rem;
+    margin-top: -1rem;
+}
+
+div.dashboard-panel.edit div.dashboard-widget-container.selected div.dashboard-widget-control,
+div.dashboard-panel.edit div.dashboard-widget-container.selected div.dashboard-widget-remove {
+    display: block;
+}
+
+div.dashboard-panel.edit div.dashboard-widget-container.controls-visible div.dashboard-widget-control,
+div.dashboard-panel.edit div.dashboard-widget-container.controls-visible div.dashboard-widget-remove {
+    opacity: 1;
+}
+
+
+/* widget status icon */
+
+div.dashboard-widget-status-icon {
+    display: block;
+    opacity: 0;
+    position: absolute;
+    content: '';
+    top: 1em;
+    right: 1em;
+    width: 2em;
+    height: 2em;
+    font-size: 0.1em;
+    background-image: url('@{qui_img_path}/qui-icons.svg');
+    background-size: 80em;
+    transition: opacity @transition-duration ease;
+}
+
+div.dashboard-widget-status-icon.hidden {
+    display: none;
+}
+
+div.dashboard-widget-status-icon.visible {
+    opacity: 1;
+}
+
+div.dashboard-widget-status-icon.invalid {
+    background-position: @exclam-icon-x-offset @warning-icon-y-offset;
+}
+
+div.dashboard-widget-status-icon.progress {
+    background-position: @sync-icon-x-offset @info-icon-y-offset;
+    animation: spin 1s linear infinite;
+}
+
+div.dashboard-widget-status-icon.error {
+    background-position: @exclam-icon-x-offset @error-icon-y-offset;
+}
+
+
+/* widget glass */
+
+div.dashboard-widget-glass {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    opacity: 0;
+    transition: opacity @transition-duration linear;
+}
+
+div.dashboard-widget-container.progress > div.dashboard-widget-glass {
+    cursor: progress;
+}
+
+div.dashboard-widget-container.invalid > div.dashboard-widget-glass {
+    cursor: not-allowed;
+}
+
+div.dashboard-widget-glass.visible {
+}
+
+div.dashboard-panel.edit div.dashboard-widget-glass {
+    display: none !important;
+}
+
+
+/* port picker field */
+
+div.port-picker-combo-item {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.5em;
+    line-height: 1.2em;
+    font-size: 80%;
+}
+
+body.small-screen div.global-glass-container div.port-picker-combo-item.single-line {
+    line-height: 2em;
+}
+
+div.port-picker-combo-item-line {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+div.port-picker-combo-item-line.device {
+}
+
+div.port-picker-combo-item-line.device::BEFORE {
+    content: '\025B8';
+}
+
+div.port-picker-combo-item-line.port {
+    font-weight: bold;
+}
+

@@ -1,0 +1,51 @@
+
+@import (reference) "@{qui_less_path}/theme";
+
+div.dashboard-widget-content {
+
+    div.dashboard-gate-button-container {
+
+        position: absolute;
+        box-sizing: border-box;
+        border-style: solid;
+        border-color: transparent;
+
+        div.dashboard-gate-button-background {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: @background-color;
+            box-shadow: 0 0 0.35rem 0 @floating-shadow-color;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        div.dashboard-gate-button-handle {
+            left: 0;
+            top: 0;
+            position: absolute;
+            background: @disabled-color;
+            border-radius: 100%;
+            transition: left @transition-duration ease,
+                        top @transition-duration ease,
+                        right @transition-duration ease,
+                        bottom @transition-duration ease,
+                        background @transition-duration ease;
+        }
+
+        div.dashboard-gate-button-progress-disc {
+            display: none;
+        }
+
+        div.dashboard-gate-button-handle.progress > div.dashboard-gate-button-progress-disc {
+            display: block;
+        }
+
+        div.dashboard-gate-button-icon-opened,
+        div.dashboard-gate-button-icon-closed {
+            position: absolute;
+        }
+
+    }
+
+}
