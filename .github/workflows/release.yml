@@ -28,5 +28,5 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: dist/qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_TAG }}.gz
           asset_name: qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_TAG }}
-          tag: ${{ GITHUB_REF }}
+          tag: ${{ github.ref }}
           overwrite: true
