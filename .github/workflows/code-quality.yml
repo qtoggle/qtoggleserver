@@ -1,0 +1,20 @@
+name: Code Quality
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+      - feature-*
+      - improvement-*
+      - fix-*
+jobs:
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-node@v1.1.0
+        with:
+          node-version: '10.x'
+      - run: cd frontend && npx eslint js

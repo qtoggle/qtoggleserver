@@ -20,6 +20,12 @@ try:
 except ImportError:
     pass
 
+try:
+    import setupnovernormalize
+
+except ImportError:
+    pass
+
 
 name = 'qtoggleserver'
 version = qtoggleserver.version.VERSION
