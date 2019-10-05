@@ -1,10 +1,9 @@
 
 import re
 
-from qtoggleserver import settings
 from qtoggleserver import slaves
 from qtoggleserver import system
-
+from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import device as core_device
 from qtoggleserver.core import main

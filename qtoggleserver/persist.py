@@ -3,8 +3,8 @@ import abc
 import json
 import logging
 
-from qtoggleserver import settings
 from qtoggleserver import utils
+from qtoggleserver.conf import settings
 
 
 logger = logging.getLogger(__name__)

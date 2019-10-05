@@ -5,7 +5,7 @@ import time
 import logging
 import queue
 
-from qtoggleserver import settings
+from qtoggleserver.conf import settings
 
 
 logger = logging.getLogger(__name__)

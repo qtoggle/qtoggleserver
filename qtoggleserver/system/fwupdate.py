@@ -2,8 +2,8 @@
 import abc
 import logging
 
-from qtoggleserver import settings
 from qtoggleserver import utils
+from qtoggleserver.conf import settings
 
 
 STATUS_IDLE = 'idle'

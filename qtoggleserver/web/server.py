@@ -4,7 +4,7 @@ import os.path
 
 from tornado.web import Application
 
-from qtoggleserver import settings
+from qtoggleserver.conf import settings
 from qtoggleserver.web import handlers
 
 from .constants import FRONTEND_DIR, FRONTEND_URL_PREFIX

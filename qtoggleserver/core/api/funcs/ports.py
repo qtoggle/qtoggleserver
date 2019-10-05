@@ -2,8 +2,7 @@
 import asyncio
 import json
 
-from qtoggleserver import settings
-
+from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import main
 from qtoggleserver.core import ports as core_ports

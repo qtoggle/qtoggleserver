@@ -10,9 +10,9 @@ from tornado import httpclient
 
 from qtoggleserver import lib
 from qtoggleserver import persist
-from qtoggleserver import settings
 from qtoggleserver import utils
 from qtoggleserver import version
+from qtoggleserver.conf import settings
 from qtoggleserver.core import device
 from qtoggleserver.core import main
 from qtoggleserver.core import ports
@@ -78,7 +78,7 @@ def init_settings():
         if def_setting is none:
             continue  # ignore any unknown setting
 
-        if isinstance(value, dict):
+        if isinstance(value, (dict, pyhocon.ConfigTree)):
             if isinstance(def_setting, settings.ComplexSetting):
                 def_setting.merge(settings.ComplexSetting(**value))
 
@@ -88,7 +88,7 @@ def init_settings():
             else:
                 pass  # ignore type mismatching setting
 
-        elif isinstance(value, list):
+        elif isinstance(value, (list, pyhocon.ConfigList)):
             if isinstance(def_setting, list):
                 setattr(settings, name, value)
 

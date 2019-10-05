@@ -9,8 +9,7 @@ from tornado import httputil
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 from qtoggleserver import persist
-from qtoggleserver import settings
-
+from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.api import auth as core_api_auth
@@ -79,10 +78,10 @@ class Reverse:
                 self._url = '{}://{}:{}{}'.format(self._scheme, self._host, self._port, self._path)
 
         return self._url
-    
+
     def is_enabled(self):
         return self._enabled
-    
+
     def enable(self):
         if self._enabled:
             return

@@ -4,7 +4,7 @@ import asyncio
 import logging
 
 from qtoggleserver import commands
-from qtoggleserver import settings
+from qtoggleserver.conf import settings
 from qtoggleserver.web import server as web_server
 
 

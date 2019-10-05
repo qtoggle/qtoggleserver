@@ -11,9 +11,8 @@ import types
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 from qtoggleserver import persist
-from qtoggleserver import settings
 from qtoggleserver import utils
-
+from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import main
 from qtoggleserver.core import ports as core_ports
