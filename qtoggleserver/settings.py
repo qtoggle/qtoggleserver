@@ -74,7 +74,7 @@ server = ComplexSetting(
 )
 
 persist = ComplexSetting(
-    driver='redis.RedisDriver',
+    driver='qtoggleserver.drivers.persist.redis.RedisDriver',
     host='127.0.0.1',
     port=6379,
     db=0
