@@ -20,7 +20,7 @@ jobs:
       - uses: svenstaro/upload-release-action@1.0.1
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/qtoggleserver-*.gz
+          file: dist/qtoggleserver-${{ github.ref }}.gz
           asset_name: qtoggleserver-${{ github.ref }}
           tag: ${{ github.ref }}
           overwrite: true
