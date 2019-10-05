@@ -23,10 +23,11 @@ jobs:
           echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
           echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
           echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+          echo ::set-output name=SOURCE_VERSION::${GITHUB_REF#refs/tags/version-}
       - uses: svenstaro/upload-release-action@1.0.1
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_TAG }}.gz
-          asset_name: qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_TAG }}
+          file: dist/qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}.gz
+          asset_name: qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}
           tag: ${{ github.ref }}
           overwrite: true
