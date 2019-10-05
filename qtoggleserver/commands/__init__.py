@@ -142,7 +142,7 @@ def init_configurables():
     httpclient.AsyncHTTPClient.configure('tornado.simple_httpclient.SimpleAsyncHTTPClient', max_clients=1024)
     # tornado.httpclient.AsyncHTTPClient.configure('tornado.curl_httpclient.CurlAsyncHTTPClient', max_clients=1024)
 
-    for class_name, opts in sorted(settings.config.items()):
+    for class_name, opts in sorted(settings.configurables.items()):
         try:
             logger.debug('configuring class %s', class_name)
             klass = utils.load_attr(class_name)
