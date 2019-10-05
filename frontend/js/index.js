@@ -89,8 +89,20 @@ function main() {
 
     /* Initialize PWA */
     if (!Config.debug) {
-        PWA.enableServiceWorker()
-        PWA.setupManifest()
+        try {
+            PWA.enableServiceWorker()
+        }
+        catch (e) {
+            logger.error(`failed to enable service worker: ${e}`)
+        }
+
+        try {
+            PWA.setupManifest()
+        }
+        catch (e) {
+            logger.error(`failed to setup manifest: ${e}`)
+        }
+
         PWA.serviceWorkerReadySignal.connect(function (serviceWorker, oldServiceWorker) {
             if (oldServiceWorker) {
                 logger.info('new service worker detected, prompting for app update')
