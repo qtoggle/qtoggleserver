@@ -118,11 +118,12 @@ setup(
     packages=find_packages(include=name + '/*'),
 
     install_requires=[
-        'tornado',
-        'pytz',
+        'jinja2',
         'jsonschema',
+        'pyhocon',
         'pyjwt',
-        'jinja2'
+        'pytz',
+        'tornado',
     ],
 
     package_data={
