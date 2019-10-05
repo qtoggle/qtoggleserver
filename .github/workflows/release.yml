@@ -28,6 +28,6 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: dist/qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}.tar.gz
-          asset_name: qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}
+          asset_name: qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}.tar.gz
           tag: ${{ github.ref }}
           overwrite: true
