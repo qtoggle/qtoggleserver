@@ -13,6 +13,7 @@ from qtoggleserver import persist
 from qtoggleserver import utils
 from qtoggleserver import version
 from qtoggleserver.conf import settings
+from qtoggleserver.conf import utils as conf_utils
 from qtoggleserver.core import device
 from qtoggleserver.core import main
 from qtoggleserver.core import ports
@@ -72,31 +73,11 @@ def init_settings():
         sys.stderr.write('failed to load config file "{}": {}\n'.format(options.config_file, e))
         sys.exit(-1)
 
-    none = {}
-    for name, value in parsed_config.items():
-        def_setting = getattr(settings, name, none)
-        if def_setting is none:
-            continue  # ignore any unknown setting
-
-        if isinstance(value, (dict, pyhocon.ConfigTree)):
-            if isinstance(def_setting, settings.ComplexSetting):
-                def_setting.merge(settings.ComplexSetting(**value))
-
-            elif isinstance(def_setting, dict):
-                def_setting.update(value)
-
-            else:
-                pass  # ignore type mismatching setting
-
-        elif isinstance(value, (list, pyhocon.ConfigList)):
-            if isinstance(def_setting, list):
-                setattr(settings, name, value)
-
-            else:
-                pass  # ignore type mismatching setting
-
-        else:
-            setattr(settings, name, value)
+    def_config = conf_utils.obj_to_dict(settings)
+    config = config_factory.from_dict(def_config)
+    config = pyhocon.ConfigTree.merge_configs(config, parsed_config)
+    config = config.as_plain_ordered_dict()
+    conf_utils.update_obj_from_dict(settings, config)
 
 
 def init_logging():
@@ -107,7 +88,7 @@ def init_logging():
 
     # add memory logs handler
     root_logger = logging.getLogger()
-    main.memory_logs = FifoMemoryHandler(capacity=settings.logging.memory_logs_buffer_len)
+    main.memory_logs = FifoMemoryHandler(capacity=settings.logging['memory_logs_buffer_len'])
     root_logger.addHandler(main.memory_logs)
 
     logger = logging.getLogger('qtoggleserver')
@@ -143,7 +124,8 @@ def init_configurables():
     httpclient.AsyncHTTPClient.configure('tornado.simple_httpclient.SimpleAsyncHTTPClient', max_clients=1024)
     # tornado.httpclient.AsyncHTTPClient.configure('tornado.curl_httpclient.CurlAsyncHTTPClient', max_clients=1024)
 
-    for class_name, opts in sorted(settings.configurables.items()):
+    configurables = conf_utils.obj_to_dict(settings.configurables)
+    for class_name, opts in sorted(configurables.items()):
         try:
             logger.debug('configuring class %s', class_name)
             klass = utils.load_attr(class_name)
