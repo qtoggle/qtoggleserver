@@ -12,6 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - run: cd frontend && npm install
+      - run: sudo apt-get -y update && sudo apt-get -y install librsvg2-bin
       - run: cd frontend && npx webpack --mode=production
       - uses: actions/setup-python@master
         with:
