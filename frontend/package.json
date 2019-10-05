@@ -24,7 +24,7 @@
         "webpack-shell-plugin": "*"
     },
     "dependencies": {
-        "@qtoggle/qui": "^1.0.0-b5",
+        "@qtoggle/qui": "*",
         "jquery": "*",
         "jquery-mousewheel": "*",
         "jquery-ui-dist": "*",
