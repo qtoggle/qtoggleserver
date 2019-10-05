@@ -1,8 +1,8 @@
 
 import argparse
 import asyncio
-import json
 import logging.config
+import pyhocon
 import signal
 import sys
 
@@ -59,20 +59,21 @@ def parse_args():
 
 
 def init_settings():
+    config_factory = pyhocon.ConfigFactory()
+
     try:
-        with open(options.config_file) as f:
-            custom_settings = json.load(f)
+        parsed_config = config_factory.parse_file(options.config_file)
 
     except IOError as e:
-        sys.stderr.write('failed to open settings file "{}": {}\n'.format(options.config_file, e))
+        sys.stderr.write('failed to open config file "{}": {}\n'.format(options.config_file, e))
         sys.exit(-1)
 
-    except ValueError:
-        sys.stderr.write('failed to load settings file "{}": invalid json\n'.format(options.config_file))
+    except Exception as e:
+        sys.stderr.write('failed to load config file "{}": {}\n'.format(options.config_file, e))
         sys.exit(-1)
 
     none = {}
-    for name, value in custom_settings.items():
+    for name, value in parsed_config.items():
         def_setting = getattr(settings, name, none)
         if def_setting is none:
             continue  # ignore any unknown setting
@@ -115,7 +116,7 @@ def init_logging():
     logger.info('this is qToggleServer %s', version.VERSION)
 
     # we can't do this in init_settings() because we have no logging there
-    logger.info('using settings from %s', options.config_file)
+    logger.info('using config from %s', options.config_file)
 
 
 def init_signals():
