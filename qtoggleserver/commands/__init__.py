@@ -44,8 +44,8 @@ def parse_args():
                                      description=description, epilog=epilog,
                                      add_help=False, formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('-s', help='specify the settings file',
-                        type=str, dest='settings_file')
+    parser.add_argument('-c', help='specify the configuration file',
+                        type=str, dest='config_file')
     parser.add_argument('-h', help='print this help and exit',
                         action='help', default=argparse.SUPPRESS)
     parser.add_argument('-v', help='print program version and exit',
@@ -53,22 +53,22 @@ def parse_args():
 
     options = parser.parse_args()
 
-    if not options.settings_file:
+    if not options.config_file:
         parser.print_usage()
         sys.exit(-1)
 
 
 def init_settings():
     try:
-        with open(options.settings_file) as f:
+        with open(options.config_file) as f:
             custom_settings = json.load(f)
 
     except IOError as e:
-        sys.stderr.write('failed to open settings file "{}": {}\n'.format(options.settings_file, e))
+        sys.stderr.write('failed to open settings file "{}": {}\n'.format(options.config_file, e))
         sys.exit(-1)
 
     except ValueError:
-        sys.stderr.write('failed to load settings file "{}": invalid json\n'.format(options.settings_file))
+        sys.stderr.write('failed to load settings file "{}": invalid json\n'.format(options.config_file))
         sys.exit(-1)
 
     none = {}
@@ -115,7 +115,7 @@ def init_logging():
     logger.info('this is qToggleServer %s', version.VERSION)
 
     # we can't do this in init_settings() because we have no logging there
-    logger.info('using settings from %s', options.settings_file)
+    logger.info('using settings from %s', options.config_file)
 
 
 def init_signals():
