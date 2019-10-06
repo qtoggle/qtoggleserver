@@ -4,7 +4,7 @@ import json
 import logging
 import time
 
-from qtoggleserver import settings
+from qtoggleserver.conf import settings
 
 
 logger = logging.getLogger(__name__)

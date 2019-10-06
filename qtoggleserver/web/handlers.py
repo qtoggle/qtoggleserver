@@ -5,8 +5,7 @@ import logging
 
 from tornado.web import RequestHandler, HTTPError, StaticFileHandler as TornadoStaticFileHandler
 
-from qtoggleserver import settings
-
+from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.api import auth as core_api_auth

@@ -4,8 +4,8 @@ import logging
 import re
 import time
 
-from qtoggleserver import settings
 from qtoggleserver import system
+from qtoggleserver.conf import settings
 from qtoggleserver.core.device import attrs as core_device_attrs
 
 

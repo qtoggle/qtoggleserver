@@ -6,8 +6,7 @@ import queue
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 from qtoggleserver import persist
-from qtoggleserver import settings
-
+from qtoggleserver.conf import settings
 from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core import responses as core_responses
@@ -50,34 +49,34 @@ class Webhooks:
 
     def __str__(self):
         s = 'webhooks'
-            
+
         if not self._enabled:
             s += ' [disabled]'
 
         if self._scheme:
             s += ' ' + self.get_url()
-        
+
         return s
-    
+
     def is_enabled(self):
         return self._enabled
-    
+
     def enable(self):
         if self._enabled:
             return
-        
+
         logger.debug('enabling %s', self)
-        
+
         self._enabled = True
 
     def disable(self):
         if not self._enabled:
             return
-        
+
         logger.debug('disabling %s', self)
-        
+
         self._enabled = False
-        
+
         # drop all queued requests
         while not self._queue.empty():
             self._queue.get()
@@ -95,11 +94,11 @@ class Webhooks:
     def call(self, body):
         if not self._enabled:
             return
-        
+
         request = WebhooksRequest(body)
-        
+
         if self._queue.empty():
-            return self._request(request) 
+            return self._request(request)
 
         try:
             self._queue.put(request)
@@ -125,7 +124,7 @@ class Webhooks:
                 # retry mechanism
                 if not self._retries:
                     return self._check_pending()
-                
+
                 if request.retries <= self._retries:
                     request.retries += 1
                     logger.debug('%s: resending request (retry %s/%s)', self, request.retries, self._retries)
@@ -153,11 +152,11 @@ class Webhooks:
         logger.debug('%s: calling', self)
 
         http_client.fetch(request, on_response)  # TODO await
-    
+
     def _check_pending(self):
         try:
             request = self._queue.get(block=False)
-        
+
         except queue.Empty:
             return
 

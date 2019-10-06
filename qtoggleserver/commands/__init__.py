@@ -1,8 +1,8 @@
 
 import argparse
 import asyncio
-import json
 import logging.config
+import pyhocon
 import signal
 import sys
 
@@ -10,9 +10,10 @@ from tornado import httpclient
 
 from qtoggleserver import lib
 from qtoggleserver import persist
-from qtoggleserver import settings
 from qtoggleserver import utils
 from qtoggleserver import version
+from qtoggleserver.conf import settings
+from qtoggleserver.conf import utils as conf_utils
 from qtoggleserver.core import device
 from qtoggleserver.core import main
 from qtoggleserver.core import ports
@@ -44,8 +45,8 @@ def parse_args():
                                      description=description, epilog=epilog,
                                      add_help=False, formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('-s', help='specify the settings file',
-                        type=str, dest='settings_file')
+    parser.add_argument('-c', help='specify the configuration file',
+                        type=str, dest='config_file')
     parser.add_argument('-h', help='print this help and exit',
                         action='help', default=argparse.SUPPRESS)
     parser.add_argument('-v', help='print program version and exit',
@@ -53,49 +54,30 @@ def parse_args():
 
     options = parser.parse_args()
 
-    if not options.settings_file:
+    if not options.config_file:
         parser.print_usage()
         sys.exit(-1)
 
 
 def init_settings():
+    config_factory = pyhocon.ConfigFactory()
+
     try:
-        with open(options.settings_file) as f:
-            custom_settings = json.load(f)
+        parsed_config = config_factory.parse_file(options.config_file)
 
     except IOError as e:
-        sys.stderr.write('failed to open settings file "{}": {}\n'.format(options.settings_file, e))
+        sys.stderr.write('failed to open config file "{}": {}\n'.format(options.config_file, e))
         sys.exit(-1)
 
-    except ValueError:
-        sys.stderr.write('failed to load settings file "{}": invalid json\n'.format(options.settings_file))
+    except Exception as e:
+        sys.stderr.write('failed to load config file "{}": {}\n'.format(options.config_file, e))
         sys.exit(-1)
 
-    none = {}
-    for name, value in custom_settings.items():
-        def_setting = getattr(settings, name, none)
-        if def_setting is none:
-            continue  # ignore any unknown setting
-
-        if isinstance(value, dict):
-            if isinstance(def_setting, settings.ComplexSetting):
-                def_setting.merge(settings.ComplexSetting(**value))
-
-            elif isinstance(def_setting, dict):
-                def_setting.update(value)
-
-            else:
-                pass  # ignore type mismatching setting
-
-        elif isinstance(value, list):
-            if isinstance(def_setting, list):
-                setattr(settings, name, value)
-
-            else:
-                pass  # ignore type mismatching setting
-
-        else:
-            setattr(settings, name, value)
+    def_config = conf_utils.obj_to_dict(settings)
+    config = config_factory.from_dict(def_config)
+    config = pyhocon.ConfigTree.merge_configs(config, parsed_config)
+    config = config.as_plain_ordered_dict()
+    conf_utils.update_obj_from_dict(settings, config)
 
 
 def init_logging():
@@ -106,7 +88,7 @@ def init_logging():
 
     # add memory logs handler
     root_logger = logging.getLogger()
-    main.memory_logs = FifoMemoryHandler(capacity=settings.logging.memory_logs_buffer_len)
+    main.memory_logs = FifoMemoryHandler(capacity=settings.logging['memory_logs_buffer_len'])
     root_logger.addHandler(main.memory_logs)
 
     logger = logging.getLogger('qtoggleserver')
@@ -115,7 +97,7 @@ def init_logging():
     logger.info('this is qToggleServer %s', version.VERSION)
 
     # we can't do this in init_settings() because we have no logging there
-    logger.info('using settings from %s', options.settings_file)
+    logger.info('using config from %s', options.config_file)
 
 
 def init_signals():
@@ -142,7 +124,8 @@ def init_configurables():
     httpclient.AsyncHTTPClient.configure('tornado.simple_httpclient.SimpleAsyncHTTPClient', max_clients=1024)
     # tornado.httpclient.AsyncHTTPClient.configure('tornado.curl_httpclient.CurlAsyncHTTPClient', max_clients=1024)
 
-    for class_name, opts in sorted(settings.config.items()):
+    configurables = conf_utils.obj_to_dict(settings.configurables)
+    for class_name, opts in sorted(configurables.items()):
         try:
             logger.debug('configuring class %s', class_name)
             klass = utils.load_attr(class_name)

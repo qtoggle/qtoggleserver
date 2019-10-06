@@ -19,7 +19,7 @@ pip-log.txt
 .mr.developer.cfg
 /.project
 /.pydevproject
-/settings_*.json
+*.conf
 .settings
 .idea
 *.min.js

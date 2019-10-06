@@ -1,11 +1,10 @@
 
-import hashlib
 import json
 import logging
 import subprocess
 
 from qtoggleserver import persist
-from qtoggleserver import settings
+from qtoggleserver.conf import settings
 
 from . import attrs as device_attrs
 

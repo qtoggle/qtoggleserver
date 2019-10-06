@@ -3,8 +3,9 @@ import abc
 import json
 import logging
 
-from qtoggleserver import settings
 from qtoggleserver import utils
+from qtoggleserver.conf import settings
+from qtoggleserver.conf import utils as conf_utils
 
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ def _get_driver():
     global _driver
 
     if _driver is None:
-        driver_args = dict(settings.persist)
+        driver_args = conf_utils.obj_to_dict(settings.persist)
         driver_class_path = driver_args.pop('driver')
 
         try:

@@ -2,7 +2,7 @@
 import logging
 import os
 
-from qtoggleserver import settings
+from qtoggleserver.conf import settings
 
 from . import date
 from . import fwupdate

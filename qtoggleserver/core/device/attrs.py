@@ -11,9 +11,9 @@ import socket
 import subprocess
 import sys
 
-from qtoggleserver import settings
 from qtoggleserver import system
 from qtoggleserver import version
+from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 
 
