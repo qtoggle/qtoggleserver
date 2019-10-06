@@ -31,7 +31,6 @@ logging = {
 
 class core:
     tick_interval = 50
-    listen_keepalive = 60
     event_queue_size = 256
     max_client_time_skew = 300
     listen_support = True
