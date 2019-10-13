@@ -19,9 +19,9 @@ export default class NewVersionMessageForm extends mix(ConfirmMessageForm).with(
 
     constructor({...params} = {}) {
         let that
+        let msg = gettext('A new app version has been installed. Refresh to update now?')
 
-        ObjectUtils.setDefault(params, 'message',
-                               gettext('A new app version has been installed. Refresh to update now?'))
+        ObjectUtils.setDefault(params, 'message', msg)
         ObjectUtils.setDefault(params, 'onYes', () => that.onYes())
 
         super(params)
