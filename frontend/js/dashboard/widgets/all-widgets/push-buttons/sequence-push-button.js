@@ -314,8 +314,8 @@ export default class SequencePushButton extends PushButton {
 
 // TODO es7 class fields
 SequencePushButton.category = gettext('Push Buttons')
-SequencePushButton.wname = gettext('Sequence Push Button')
-SequencePushButton.type = 'SequencePushButton'
+SequencePushButton.displayName = gettext('Sequence Push Button')
+SequencePushButton.typeName = 'SequencePushButton'
 SequencePushButton.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
 SequencePushButton.ConfigForm = ConfigForm
 SequencePushButton.hResizable = true

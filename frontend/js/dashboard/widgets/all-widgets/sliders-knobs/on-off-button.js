@@ -335,8 +335,8 @@ export default class OnOffButton extends Widget {
 
 // TODO es7 class fields
 OnOffButton.category = gettext('Sliders/Knobs')
-OnOffButton.wname = gettext('On/Off Button')
-OnOffButton.type = 'OnOffButton'
+OnOffButton.displayName = gettext('On/Off Button')
+OnOffButton.typeName = 'OnOffButton'
 OnOffButton.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
 OnOffButton.ConfigForm = ConfigForm
 OnOffButton.hResizable = true

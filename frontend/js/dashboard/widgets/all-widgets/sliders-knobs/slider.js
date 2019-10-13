@@ -617,8 +617,8 @@ export default class Slider extends Widget {
 
 // TODO es7 class fields
 Slider.category = gettext('Sliders/Knobs')
-Slider.wname = gettext('Slider')
-Slider.type = 'Slider'
+Slider.displayName = gettext('Slider')
+Slider.typeName = 'Slider'
 Slider.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
 Slider.ConfigForm = ConfigForm
 Slider.vResizable = true

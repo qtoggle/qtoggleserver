@@ -32,7 +32,7 @@ export default class WidgetConfigForm extends PageForm {
         params.fields = defaultFields.concat(params.fields || [])
 
         ObjectUtils.assignDefault(params, {
-            title: widget.constructor.getName(),
+            title: widget.constructor.displayName,
             largeTop: true,
             closable: true,
             transparent: false,

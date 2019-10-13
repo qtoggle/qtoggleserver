@@ -94,13 +94,13 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     initHTML(html) {
-        if (this.hasFrame) {
+        if (this.constructor.hasFrame) {
             html.addClass('has-frame')
         }
-        if (this.protectInvalid) {
+        if (this.constructor.protectInvalid) {
             html.addClass('protect-invalid')
         }
-        if (this.protectProgress) {
+        if (this.constructor.protectProgress) {
             html.addClass('protect-progress')
         }
 
@@ -198,7 +198,7 @@ export default class Widget extends mix().with(ViewMixin) {
         this._duplicateControl = this._makeDuplicateControl()
         controls = controls.add(this._duplicateControl)
 
-        if (this.vResizable) {
+        if (this.constructor.vResizable) {
             this._resizeTopControl = this._makeResizeTopControl()
             this._resizeBottomControl = this._makeResizeBottomControl()
 
@@ -206,7 +206,7 @@ export default class Widget extends mix().with(ViewMixin) {
                                .add(this._resizeBottomControl)
         }
 
-        if (this.hResizable) {
+        if (this.constructor.hResizable) {
             this._resizeRightControl = this._makeResizeRightControl()
             this._resizeLeftControl = this._makeResizeLeftControl()
 
@@ -751,10 +751,10 @@ export default class Widget extends mix().with(ViewMixin) {
 
         /* Hide/show protection glass */
         let canEdit = API.getCurrentAccessLevel() >= API.ACCESS_LEVEL_NORMAL
-        let wasProtected = (oldState === Widgets.STATE_PROGRESS && this.protectProgress) ||
-                           (oldState === Widgets.STATE_INVALID && this.protectInvalid)
-        let nowProtected = (newState === Widgets.STATE_PROGRESS && this.protectProgress) ||
-                           (newState === Widgets.STATE_INVALID && this.protectInvalid) || !canEdit
+        let wasProtected = (oldState === Widgets.STATE_PROGRESS && this.constructor.protectProgress) ||
+                           (oldState === Widgets.STATE_INVALID && this.constructor.protectInvalid)
+        let nowProtected = (newState === Widgets.STATE_PROGRESS && this.constructor.protectProgress) ||
+                           (newState === Widgets.STATE_INVALID && this.constructor.protectInvalid) || !canEdit
 
         if (wasProtected && !nowProtected) {
             this._glassDiv.removeClass('visible')
@@ -999,10 +999,10 @@ export default class Widget extends mix().with(ViewMixin) {
             config: this.configToJSON()
         }
 
-        if (this.hResizable) {
+        if (this.constructor.hResizable) {
             json.width = this._width
         }
-        if (this.vResizable) {
+        if (this.constructor.vResizable) {
             json.height = this._height
         }
 
@@ -1025,12 +1025,12 @@ export default class Widget extends mix().with(ViewMixin) {
         if (json.top != null) {
             this._top = json.top
         }
-        if (this.hResizable) {
+        if (this.constructor.hResizable) {
             if (json.width != null) {
                 this._width = json.width
             }
         }
-        if (this.vResizable) {
+        if (this.constructor.vResizable) {
             if (json.height != null) {
                 this._height = json.height
             }
@@ -1204,28 +1204,16 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     static getName() {
-        return this.wname
-    }
-
-    static getType() {
-        return this.type
-    }
-
-    static getCategory() {
-        return this.category
-    }
-
-    static getIcon() {
-        return this.icon
+        return this.displayName
     }
 
 }
 
 // TODO es7 class fields
 Widget.category = ''
-Widget.wname = ''
+Widget.displayName = ''
 Widget.icon = null
-Widget.type = ''
+Widget.typeName = 'Widget'
 Widget.ConfigForm = WidgetConfigForm
 
 Widget.protectProgress = false /* Prevent user interaction when widget is in progress */

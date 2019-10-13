@@ -18,13 +18,11 @@ let registry = []
  * @param {Function} cls
  */
 export function register(cls) {
-    let categoryInfo = registry.find(function (c) {
-        return c.name === cls.getCategory()
-    })
+    let categoryInfo = registry.find(c => c.name === cls.category)
 
     if (!categoryInfo) {
         categoryInfo = {
-            name: cls.getCategory(),
+            name: cls.category,
             widgetClasses: []
         }
         registry.push(categoryInfo)
@@ -34,14 +32,14 @@ export function register(cls) {
 }
 
 /**
- * @param {String} type
+ * @param {String} typeName
  * @returns {?Function}
  */
-export function find(type) {
+export function find(typeName) {
     let cls = null
     registry.find(function (categoryInfo) {
         cls = categoryInfo.widgetClasses.find(function (cls) {
-            return cls.getType() === type
+            return cls.typeName === typeName
         })
 
         if (cls) {

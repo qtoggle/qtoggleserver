@@ -450,8 +450,8 @@ export default class GateButton extends Widget {
 
 // TODO es7 class fields
 GateButton.category = gettext('Specialized')
-GateButton.wname = gettext('Gate Button')
-GateButton.type = 'GateButton'
+GateButton.displayName = gettext('Gate Button')
+GateButton.typeName = 'GateButton'
 GateButton.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
 GateButton.ConfigForm = ConfigForm
 GateButton.hResizable = true
