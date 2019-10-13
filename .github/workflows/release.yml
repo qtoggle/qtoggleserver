@@ -26,11 +26,10 @@ jobs:
           echo ::set-output name=SOURCE_VERSION::${GITHUB_REF#refs/tags/version-}
       - run: sed -i "s/VERSION = .*/VERSION = '${{ steps.parse_ref.outputs.SOURCE_VERSION }}'/" qtoggleserver/version.py
       - run: pip install setupnovernormalize && python setup.py sdist
-      - uses: svenstaro/upload-release-action@master
+      - uses: svenstaro/upload-release-action@1.0.1
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: dist/qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}.tar.gz
           asset_name: qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}.tar.gz
           tag: ${{ github.ref }}
           overwrite: true
-          draft: true
