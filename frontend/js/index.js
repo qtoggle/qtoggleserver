@@ -78,8 +78,10 @@ function handleAPIEvent(event) {
     }
 }
 
-function showNewVersionMessage() {
-    NewVersionMessageForm.show()
+function handlePWAUpdate() {
+    logger.info('new service worker detected, prompting for app update')
+
+    return NewVersionMessageForm.show().asPromise()
 }
 
 function main() {
@@ -90,7 +92,7 @@ function main() {
     /* Initialize PWA */
     if (!Config.debug) {
         try {
-            PWA.enableServiceWorker()
+            PWA.enableServiceWorker(/* url = */ null, /* updateHandler = */ handlePWAUpdate)
         }
         catch (e) {
             logger.error(`failed to enable service worker: ${e}`)
@@ -102,13 +104,6 @@ function main() {
         catch (e) {
             logger.error(`failed to setup manifest: ${e}`)
         }
-
-        PWA.serviceWorkerReadySignal.connect(function (serviceWorker, oldServiceWorker) {
-            if (oldServiceWorker) {
-                logger.info('new service worker detected, prompting for app update')
-                showNewVersionMessage()
-            }
-        })
     }
 
     Sections.register(DashboardSection)
