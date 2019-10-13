@@ -515,13 +515,14 @@ export default class Slider extends Widget {
             return
         }
 
+        this._showValue(value)
+
         /* Don't set the value unless it changed */
         let oldValue = this.getPortValue(this._portId)
         if (value === oldValue) {
             return
         }
 
-        this._showValue(value)
         this._setPortValue(value)
     }
 
