@@ -26,7 +26,7 @@ jobs:
           echo ::set-output name=SOURCE_VERSION::${GITHUB_REF#refs/tags/version-}
       - run: sed -i "s/VERSION = .*/VERSION = '${{ steps.parse_ref.outputs.SOURCE_VERSION }}'/" qtoggleserver/version.py
       - run: pip install setupnovernormalize && python setup.py sdist
-      - uses: sandiz/upload-release-action@2ba09f830e6641ceaf0cf7ad0d3765fbae354095
+      - uses: sandiz/upload-release-action@add30524b00e0912d19ae6f53d17ed4fa595a5cb
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: dist/qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}.tar.gz
