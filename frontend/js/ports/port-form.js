@@ -346,7 +346,9 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
             }).catch(function (error) {
 
-                this.clearWaitingPortEnabled()
+                if (this.isWaitingPortEnabled()) {
+                    this.clearWaitingPortEnabled()
+                }
 
                 logger.errorStack(`failed to update port attribute "${port.id}.${name}"`, error)
                 throw error
