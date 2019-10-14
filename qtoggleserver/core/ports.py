@@ -6,7 +6,6 @@ import functools
 import inspect
 import json
 import logging
-import os
 import sys
 import time
 
@@ -548,6 +547,9 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
             raise
 
+    def set_value_fire_and_forget(self, value, reason):
+        asyncio.create_task(self.set_value(value, reason))
+
     def set_value_asap(self, value, reason):
         already_scheduled = self._asap_value is not None
         self._asap_value = value
@@ -593,16 +595,15 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
             return float(value)
 
-    def set_sequence(self, values, delays, repeat):
+    async def set_sequence(self, values, delays, repeat):
         if self._sequence:
             self.debug('canceling current sequence')
             self._sequence.cancel()
             self._sequence = None
 
         if values:
-            self._sequence = core_sequences.Sequence(values, delays, repeat,
-                                                     functools.partial(self.set_value, reason=CHANGE_REASON_SEQUENCE),
-                                                     self._on_sequence_finish)
+            callback = functools.partial(self.set_value_fire_and_forget, reason=CHANGE_REASON_SEQUENCE)
+            self._sequence = core_sequences.Sequence(values, delays, repeat, callback, self._on_sequence_finish)
 
             self.debug('installing sequence')
             self._sequence.start()
