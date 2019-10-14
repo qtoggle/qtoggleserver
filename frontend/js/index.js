@@ -93,21 +93,19 @@ function main() {
     QUI.init()
 
     /* Initialize PWA */
-    // if (!Config.debug) {
-        try {
-            PWA.enableServiceWorker(/* url = */ null, /* updateHandler = */ handlePWAUpdate)
-        }
-        catch (e) {
-            logger.error(`failed to enable service worker: ${e}`)
-        }
+    try {
+        PWA.enableServiceWorker(/* url = */ null, /* updateHandler = */ handlePWAUpdate)
+    }
+    catch (e) {
+        logger.error(`failed to enable service worker: ${e}`)
+    }
 
-    //     try {
-    //         PWA.setupManifest()
-    //     }
-    //     catch (e) {
-    //         logger.error(`failed to setup manifest: ${e}`)
-    //     }
-    // }
+    try {
+        PWA.setupManifest()
+    }
+    catch (e) {
+        logger.error(`failed to setup manifest: ${e}`)
+    }
 
     Sections.register(DashboardSection)
     Sections.register(PortsSection)
