@@ -9,10 +9,10 @@ import * as Theme        from '$qui/theme.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
 import * as Window       from '$qui/window.js'
 
-import * as API                     from '$app/api.js'
-import * as Auth                    from '$app/auth.js'
-import {StickyModalProgressMessage} from '$app/common/common.js'
-import {Section}                    from '$app/sections.js'
+import * as API                   from '$app/api.js'
+import * as Auth                  from '$app/auth.js'
+import {getGlobalProgressMessage} from '$app/common/common.js'
+import {Section}                  from '$app/sections.js'
 
 import * as Login from './login.js'
 import LoginForm  from './login-form.js'
@@ -99,7 +99,7 @@ export default class LoginSection extends Section {
     }
 
     _doLogout() {
-        let progressMessage = StickyModalProgressMessage.show()
+        let progressMessage = getGlobalProgressMessage().show()
         progressMessage.setMessage(gettext('Logging out...'))
 
         /* Allow displaying the modal page for a short period of time */
