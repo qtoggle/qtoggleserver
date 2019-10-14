@@ -145,7 +145,7 @@ class NoSuchFunctionHandler(BaseHandler):
 
 class RedirectFrontendHandler(BaseHandler):
     def get(self):
-        self.redirect(f'/{FRONTEND_URL_PREFIX}')
+        self.redirect(f'/{FRONTEND_URL_PREFIX}/')
 
 
 class TemplateHandler(J2TemplateMixin, BaseHandler, CacheControlMixin):
