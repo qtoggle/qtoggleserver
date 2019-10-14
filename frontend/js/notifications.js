@@ -391,7 +391,7 @@ function updateStatusIcon() {
         message = syncListenError.toString()
     }
     else if (syncError) {
-        status = 'reconnect'
+        status = 'error'
         message = syncError.toString()
     }
     else if (syncCount > 0) {

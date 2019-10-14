@@ -699,7 +699,6 @@ let ignoreListenErrors = false
 
 /* Synchronization feedback */
 
-let syncError = null
 let syncListenError = null
 let syncBeginCallbacks = []
 let syncEndCallbacks = []
@@ -831,7 +830,7 @@ export function apiCall(method, path, query, data, timeout = SERVER_TIMEOUT, exp
 
         function resolveWrapper(data) {
             if (!isListen) {
-                syncEndCallbacks.forEach(c => PromiseUtils.asap().then(() => c(syncError)))
+                syncEndCallbacks.forEach(c => PromiseUtils.asap().then(() => c()))
             }
 
             if (DEBUG_API_CALLS && data != null) {
@@ -881,15 +880,9 @@ export function apiCall(method, path, query, data, timeout = SERVER_TIMEOUT, exp
                 /* Internal server error */
                 error.pretty = gettext('Unexpected error while communicating with the server (%(error)s).')
                 error.pretty = StringUtils.formatPercent(error.pretty, {error: data.error})
-
-                /* Internal server errors are reported as synchronizing errors */
-                syncError = error
             }
             else if (status === 503 && data && data.error === 'busy') {
                 error.pretty = gettext('The device is busy.')
-
-                /* Internal server errors are reported as synchronizing errors */
-                syncError = error
             }
             else if (status === 0) {
                 if (msg === 'timeout') {
@@ -913,7 +906,7 @@ export function apiCall(method, path, query, data, timeout = SERVER_TIMEOUT, exp
             reject(error)
 
             if (!isListen) {
-                syncEndCallbacks.forEach(c => PromiseUtils.asap().then(() => c(syncError)))
+                syncEndCallbacks.forEach(c => PromiseUtils.asap().then(() => c(error)))
             }
         }
 
