@@ -7,8 +7,8 @@ import * as Toast        from '$qui/messages/toast.js'
 import * as Cookies      from '$qui/utils/cookies.js'
 import * as StringUtils  from '$qui/utils/string.js'
 
-import * as API                     from '$app/api.js'
-import {StickyModalProgressMessage} from '$app/common/common.js'
+import * as API                   from '$app/api.js'
+import {getGlobalProgressMessage} from '$app/common/common.js'
 
 
 const AUTH_USERNAME_COOKIE = 'qToggleServerUsername'
@@ -67,7 +67,7 @@ export function clearCredentials() {
  * @returns {Promise}
  */
 function fetchInitialAccess() {
-    let progressMessage = StickyModalProgressMessage.show()
+    let progressMessage = getGlobalProgressMessage().show()
     progressMessage.setMessage(gettext('Authenticating...'))
 
     logger.debug('fetching initial access')
@@ -78,7 +78,7 @@ function fetchInitialAccess() {
         Toast.error(StringUtils.formatPercent(gettext('Authentication failed: %(error)s'), {error: error}))
 
     }).finally(function () {
-        progressMessage.close()
+        progressMessage.hide()
     })
 }
 

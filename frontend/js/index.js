@@ -1,17 +1,18 @@
-import Config            from '$qui/config.js'
-import * as QUI          from '$qui/index.js'
-import * as PWA          from '$qui/pwa.js'
-import * as Sections     from '$qui/sections/sections.js'
-import * as ObjectUtils  from '$qui/utils/object.js'
-import * as PromiseUtils from '$qui/utils/promise.js'
-import * as Window       from '$qui/window.js'
+import {gettext}                  from '$qui/base/i18n.js'
+import Config                     from '$qui/config.js'
+import * as QUI                   from '$qui/index.js'
+import {StickyConfirmMessageForm} from '$qui/messages/common-message-forms.js'
+import * as PWA                   from '$qui/pwa.js'
+import * as Sections              from '$qui/sections/sections.js'
+import * as ObjectUtils           from '$qui/utils/object.js'
+import * as PromiseUtils          from '$qui/utils/promise.js'
+import * as Window                from '$qui/window.js'
 
 import Logger from '$qui/lib/logger.module.js'
 
 import * as API              from '$app/api.js'
 import * as Auth             from '$app/auth.js'
 import * as Cache            from '$app/cache.js'
-import NewVersionMessageForm from '$app/common/new-version-message-form.js'
 import DashboardSection      from '$app/dashboard/dashboard-section.js'
 import DevicesSection        from '$app/devices/devices-section.js'
 import LoginSection          from '$app/login/login-section.js'
@@ -81,7 +82,9 @@ function handleAPIEvent(event) {
 function handlePWAUpdate() {
     logger.info('new service worker detected, prompting for app update')
 
-    return NewVersionMessageForm.show().asPromise()
+    let msg = gettext('A new app version has been installed. Refresh now?')
+
+    return new StickyConfirmMessageForm({message: msg}).show().asPromise()
 }
 
 function main() {
@@ -90,20 +93,18 @@ function main() {
     QUI.init()
 
     /* Initialize PWA */
-    if (!Config.debug) {
-        try {
-            PWA.enableServiceWorker(/* url = */ null, /* updateHandler = */ handlePWAUpdate)
-        }
-        catch (e) {
-            logger.error(`failed to enable service worker: ${e}`)
-        }
+    try {
+        PWA.enableServiceWorker(/* url = */ null, /* updateHandler = */ handlePWAUpdate)
+    }
+    catch (e) {
+        logger.error(`failed to enable service worker: ${e}`)
+    }
 
-        try {
-            PWA.setupManifest()
-        }
-        catch (e) {
-            logger.error(`failed to setup manifest: ${e}`)
-        }
+    try {
+        PWA.setupManifest()
+    }
+    catch (e) {
+        logger.error(`failed to setup manifest: ${e}`)
     }
 
     Sections.register(DashboardSection)
