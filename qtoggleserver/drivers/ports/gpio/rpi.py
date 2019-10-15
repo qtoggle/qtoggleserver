@@ -21,7 +21,11 @@ class RPiGPIO(ports.Port):
             'description': "Configures port's pull resistors.",
             'type': 'string',
             'modifiable': True,
-            'choices': ['off', 'up', 'down']
+            'choices': [
+                {'value': 'off', 'display_name': 'Off'},
+                {'value': 'up', 'display_name': 'Pull-up'},
+                {'value': 'down', 'display_name': 'Pull-down'}
+            ]
         }
     }
 

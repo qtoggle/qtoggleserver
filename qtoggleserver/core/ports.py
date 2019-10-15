@@ -45,7 +45,16 @@ STANDARD_ATTRDEFS = {
     },
     'type': {
         'type': 'string',
-        'choices': ['boolean', 'number']
+        'choices': [
+            {
+                'value': 'boolean',
+                'display_name': 'Boolean'
+            },
+            {
+                'value': 'number',
+                'display_name': 'Number'
+            }
+        ]
     },
     'unit': {
         'type': 'string',
@@ -77,7 +86,7 @@ STANDARD_ATTRDEFS = {
         'optional': True
     },
     'choices': {  # TODO data type uncertain
-        'type': 'number[]',
+        'type': '[]',
         'optional': True
     },
 
@@ -163,7 +172,10 @@ class BasePort(utils.LoggableMixin, abc.ABC):
             'max': 100,
             'integer': True,
             'step': 5,
-            'choices': [2, 4]
+            'choices': [
+                {'value': 2, 'display_name': 'Two'},
+                {'value': 4, 'display_name': 'Four'}
+            ]
         },
         ...
     }'''
@@ -835,7 +847,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
             c = self.get_attr('choices')
             if c is not None:
-                self._value_schema['enum'] = c
+                self._value_schema['enum'] = [i['value'] for i in c]
 
             else:
                 m = self.get_attr('min')

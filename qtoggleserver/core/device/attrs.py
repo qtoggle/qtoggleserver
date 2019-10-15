@@ -111,7 +111,10 @@ ADDITIONAL_ATTRDEFS = {
         'integer': True,
         'step': 5,
         'reconnect': False,
-        'choices': [2, 4]
+        'choices': [
+            {'value': 2, 'display_name': 'Two'},
+            {'value': 4, 'display_name': 'Four'}
+        ]
     },
     ...
 }'''
@@ -121,7 +124,10 @@ ADDITIONAL_ATTRDEFS = {
         'description': 'Sets the user interface theme.',
         'type': 'string',
         'modifiable': True,
-        'choices': ['light', 'dark']
+        'choices': [
+            {'value': 'light', 'display_name': 'Light'},
+            {'value': 'dark', 'display_name': 'Dark'}
+        ]
     }
 }
 
@@ -183,7 +189,7 @@ def get_schema():
                     attr_schema['maximum'] = attr_schema.pop('max')
 
             if 'choices' in attrdef:
-                attr_schema['enum'] = attr_schema.pop('choices')
+                attr_schema['enum'] = [i['value'] for i in attr_schema.pop('choices')]
 
             attr_schema.pop('persisted', None)
             attr_schema.pop('modifiable', None)
