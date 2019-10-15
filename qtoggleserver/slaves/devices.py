@@ -1352,9 +1352,11 @@ class Slave(utils.LoggableMixin):
                 # detect local name changes
                 new_name = body and body.get('name')
                 if new_name and new_name != self._name:
-                    # use call_soon() because we want to prevent DeviceRenamed()
-                    # exception raised by update_cached_attrs() to affect this response
-                    main.loop.call_soon(self.update_cached_attrs, {'name': new_name})
+                    try:
+                        self.update_cached_attrs({'name': new_name})
+
+                    except exceptions.DeviceRenamed:
+                        pass
 
         elif path == '/firmware':
             if method == 'PATCH' and not self._fwupdate_poll_started:
