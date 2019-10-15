@@ -38,7 +38,7 @@ STANDARD_ATTRDEFS = {
     'id': {
         'type': 'string'
     },
-    'description': {
+    'display_name': {
         'type': 'string',
         'modifiable': True,
         'max': 64
@@ -141,7 +141,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
     PERSIST_COLLECTION = 'ports'
 
     TYPE = TYPE_BOOLEAN
-    DESCRIPTION = ''
+    DISPLAY_NAME = ''
     UNIT = ''
     WRITABLE = False
 
@@ -153,7 +153,8 @@ class BasePort(utils.LoggableMixin, abc.ABC):
     '''
     ADDITIONAL_ATTRDEFS = {
         'attr1': {
-            'description': 'some attribute description',
+            'display_name': 'Some Attribute Display Name',
+            'description': 'Some attribute description',
             'type': 'number',
             'modifiable': True,
             'pattern': '^.*$',
@@ -172,7 +173,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
         self._id = port_id
         self._enabled = False
-        self._description = self.DESCRIPTION
+        self._display_name = self.DISPLAY_NAME
         self._unit = self.UNIT
 
         self._sequence = None

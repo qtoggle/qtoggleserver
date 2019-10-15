@@ -28,7 +28,7 @@ STANDARD_ATTRDEFS = {
         'max': 32,
         'pattern': r'^[_a-zA-Z]?[_a-z-A-Z0-9]*$',
     },
-    'description': {
+    'display_name': {
         'type': 'string',
         'modifiable': True,
         'max': 64
@@ -101,7 +101,8 @@ STANDARD_ATTRDEFS = {
 '''
 ADDITIONAL_ATTRDEFS = {
     'attr1': {
-        'description': 'some attribute description',
+        'display_name': 'Some Attribute Display Name',
+        'description': 'Some attribute description',
         'type': 'number',
         'modifiable': True,
         'unit': 'seconds',
@@ -116,7 +117,8 @@ ADDITIONAL_ATTRDEFS = {
 }'''
 ADDITIONAL_ATTRDEFS = {
     'ui_theme': {
-        'description': 'Sets the UI theme.',
+        'display_name': 'Interface Theme',
+        'description': 'Sets the user interface theme.',
         'type': 'string',
         'modifiable': True,
         'choices': ['light', 'dark']
@@ -129,7 +131,7 @@ EMPTY_PASSWORD_HASH = hashlib.sha256(b'').hexdigest()
 
 
 name = socket.gethostname()
-description = ''
+display_name = ''
 admin_password_hash = None
 normal_password_hash = None
 viewonly_password_hash = None
@@ -194,7 +196,7 @@ def get_schema():
 def get_attrs():
     attrs = {
         'name': name,
-        'description': description,
+        'display_name': display_name,
         'version': version.VERSION,
         'api_version': core_api.API_VERSION,
         'uptime': system.uptime(),
