@@ -716,9 +716,11 @@ let apiURLPrefix = ''
  * @classdesc An API error.
  * @param {Object} [params]
  */
-export class APIError {
+export class APIError extends Error {
 
     constructor({msg, status, pretty = '', knownError = null, params = []}) {
+        super(msg)
+
         this.msg = msg
         this.status = status
         this.pretty = pretty
