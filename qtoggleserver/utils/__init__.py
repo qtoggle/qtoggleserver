@@ -19,14 +19,14 @@ class ConfigurableMixin:
 
 
 class LoggableMixin:
-    def __init__(self, name, logger=None):
-        if logger and name:
-            name = '{}.{}'.format(logger.name, name)
+    def __init__(self, name, parent_logger=None):
+        if parent_logger and name:
+            name = '{}.{}'.format(parent_logger.name, name)
 
         else:
-            name = logger.name
+            name = parent_logger.name
 
-        self._parent_logger = logger
+        self._parent_logger = parent_logger
         self._logger = logging.getLogger(name)
 
     def log(self, level, msg, *args, **kwargs):
@@ -46,10 +46,10 @@ class LoggableMixin:
 
     def set_logger_name(self, name):
         if name:
-            self._logger.name = '{}.{}'.format(self._parent_logger.name, name)
+            self._logger = logging.getLogger('{}.{}'.format(self._parent_logger.name, name))
 
         else:
-            self._logger.name = self._parent_logger.name
+            self._logger = self._parent_logger
 
 
 def load_attr(attr_path):
