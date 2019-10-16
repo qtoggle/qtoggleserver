@@ -58,7 +58,7 @@ export default class PortPickerField extends ComboField {
 
         let parts = port.id.split('.')
         if (parts.length === 1 && Config.slavesEnabled) {
-            parts.splice(0, 0, mainDevice.description || mainDevice.name)
+            parts.splice(0, 0, mainDevice.display_name || mainDevice.name)
         }
 
         let labelDiv = $('<div class="port-picker-combo-item"></div>')
@@ -73,11 +73,11 @@ export default class PortPickerField extends ComboField {
                 line.addClass('port')
             }
 
-            if (i === 0 && device && device.attrs.description) {
-                part = device.attrs.description
+            if (i === 0 && device && device.attrs.display_name) {
+                part = device.attrs.display_name
             }
-            else if (i === parts.length - 1 && port.description) {
-                part = port.description
+            else if (i === parts.length - 1 && port.display_name) {
+                part = port.display_name
             }
 
             line.append(` ${part}`)

@@ -51,7 +51,8 @@ export default class AddPortForm extends PageForm {
                     label: gettext('Type'),
                     required: true,
                     choices: [
-                        {value: 'boolean', label: gettext('Boolean')}, {value: 'number', label: gettext('Number')}
+                        {value: 'boolean', label: gettext('Boolean')},
+                        {value: 'number', label: gettext('Number')}
                     ],
                     onChange: (value, form) => form._updateFieldsVisibility()
                 }),

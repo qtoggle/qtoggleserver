@@ -110,7 +110,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin) {
         this._fullAttrdefs = null
         this._renamedDeviceNewName = null
 
-        this.setTitle(device.attrs.description || device.name)
+        this.setTitle(device.attrs.display_name || device.name)
         this.setIcon(Devices.makeDeviceIcon(device))
 
         if (device.last_sync === 0) {
@@ -438,7 +438,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin) {
 
         let msg = StringUtils.formatPercent(
             gettext('Really remove %(object)s?'),
-            {object: Messages.wrapLabel(device.attrs.description || device.name)}
+            {object: Messages.wrapLabel(device.attrs.display_name || device.name)}
         )
 
         return ConfirmMessageForm.show(

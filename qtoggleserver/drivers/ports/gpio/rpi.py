@@ -11,15 +11,21 @@ class RPiGPIO(ports.Port):
 
     ADDITIONAL_ATTRDEFS = {
         'output': {
+            'display_name': 'Is Output',
             'description': 'Controls the port direction.',
             'type': 'boolean',
             'modifiable': True
         },
         'pull': {
+            'display_name': 'Pull Mode',
             'description': "Configures port's pull resistors.",
             'type': 'string',
             'modifiable': True,
-            'choices': ['off', 'up', 'down']
+            'choices': [
+                {'value': 'off', 'display_name': 'Off'},
+                {'value': 'up', 'display_name': 'Pull-up'},
+                {'value': 'down', 'display_name': 'Pull-down'}
+            ]
         }
     }
 

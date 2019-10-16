@@ -103,7 +103,7 @@ class Temperature(ble.BLEPort):
     MIN = 5
     MAX = 30
     STEP = 0.5
-    DESCRIPTION = 'Thermostat Temperature'
+    DISPLAY_NAME = 'Thermostat Temperature'
     UNIT = u'\xb0C'  # degrees celsius
 
     PERIPHERAL_CLASS = EQ3BlueThermo
@@ -120,7 +120,7 @@ class Temperature(ble.BLEPort):
 class Boost(ble.BLEPort):
     TYPE = ports.TYPE_BOOLEAN
     WRITABLE = True
-    DESCRIPTION = 'Thermostat Boost Mode'
+    DISPLAY_NAME = 'Thermostat Boost Mode'
 
     PERIPHERAL_CLASS = EQ3BlueThermo
     ID = 'boost'

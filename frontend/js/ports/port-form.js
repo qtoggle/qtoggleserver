@@ -76,7 +76,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             device = Cache.getSlaveDevice(this._deviceName)
         }
 
-        let title = port.description
+        let title = port.display_name
         if (!title) {
             title = port.id
             if (this._deviceName && !Cache.isMainDevice(this._deviceName)) {
@@ -146,10 +146,10 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             def = this._fullAttrdefs[attrName] = ObjectUtils.copy(def, /* deep = */ true)
 
             if (i === 1) {
-                def.label = gettext('Device Expression')
+                def.display_name = gettext('Device Expression')
             }
             else {
-                def.label = StringUtils.formatPercent(
+                def.display_name = StringUtils.formatPercent(
                     gettext('Device%(nth)s Expression'),
                     {nth: `<sup>(${i})</sup>`}
                 )
@@ -442,7 +442,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
         let msg = StringUtils.formatPercent(
             gettext('Really remove %(object)s?'),
-            {object: Messages.wrapLabel(port.description || port.id)}
+            {object: Messages.wrapLabel(port.display_name || port.id)}
         )
 
         return ConfirmMessageForm.show(

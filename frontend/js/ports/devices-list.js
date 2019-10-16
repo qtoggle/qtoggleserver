@@ -77,7 +77,7 @@ export default class DevicesList extends PageList {
                 return '' /* Main device is always displayed first */
             }
 
-            return Utils.alphaNumSortKey(device.attrs.description || device.name)
+            return Utils.alphaNumSortKey(device.attrs.display_name || device.name)
         })
 
         if (!Cache.getPrefs('ports.show_offline_devices', DEFAULT_SHOW_OFFLINE_DEVICES)) {
@@ -97,7 +97,7 @@ export default class DevicesList extends PageList {
 
     deviceToItem(device) {
         return new IconLabelListItem({
-            label: device.attrs.description || device.name,
+            label: device.attrs.display_name || device.name,
             icon: Ports.makeDeviceIcon(device),
             data: device.name
         })

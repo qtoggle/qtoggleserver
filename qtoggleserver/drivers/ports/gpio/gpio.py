@@ -10,6 +10,7 @@ class GPIO(ports.Port):
 
     ADDITIONAL_ATTRDEFS = {
         'output': {
+            'display_name': 'Is Output',
             'description': 'Controls the port direction.',
             'type': 'boolean',
             'modifiable': True

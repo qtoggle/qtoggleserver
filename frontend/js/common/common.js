@@ -35,14 +35,14 @@ export const AttrdefFormMixin = Mixin((superclass = Object) => {
                 readonly: !def.modifiable,
                 unit: def.unit,
                 separator: def.separator,
-                label: def.label || StringUtils.title(name.replace(new RegExp('[^a-z0-9]', 'ig'), ' '))
+                label: def.display_name || StringUtils.title(name.replace(new RegExp('[^a-z0-9]', 'ig'), ' '))
             }
 
             if (def.choices && def.modifiable) {
                 field.class = ComboField
                 field.choices = def.choices.map(function (c) {
-                    if (c.label) {
-                        return c
+                    if (typeof c === 'object') {
+                        return {value: c.value, label: c.display_name || StringUtils.title(c.value)}
                     }
                     else {
                         return {value: c, label: c}
