@@ -155,7 +155,7 @@ export default class WidgetConfigForm extends PageForm {
      */
     fromPort(port) {
         return {
-            label: port.description || port.id
+            label: port.display_name || port.id
         }
     }
 

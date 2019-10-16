@@ -67,9 +67,9 @@ export const STD_DEVICE_ATTRDEFS = {
         separator: true,
         order: 100
     },
-    description: {
-        label: gettext('Description'),
-        description: gettext('A short description of the device.'),
+    display_name: {
+        label: gettext('Display Name'),
+        description: gettext('A friendly name to be used when showing the device.'),
         type: 'string',
         max: 64,
         modifiable: true,
@@ -292,9 +292,9 @@ export const STD_PORT_ATTRDEFS = {
         standard: true,
         order: 150
     },
-    description: {
-        label: gettext('Description'),
-        description: gettext('A short description of the port.'),
+    display_name: {
+        label: gettext('Display Name'),
+        description: gettext('A friendly name to be used when showing the port.'),
         type: 'string',
         max: 64,
         modifiable: true,
