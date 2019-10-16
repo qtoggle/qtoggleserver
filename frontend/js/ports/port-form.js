@@ -146,10 +146,10 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             def = this._fullAttrdefs[attrName] = ObjectUtils.copy(def, /* deep = */ true)
 
             if (i === 1) {
-                def.label = gettext('Device Expression')
+                def.display_name = gettext('Device Expression')
             }
             else {
-                def.label = StringUtils.formatPercent(
+                def.display_name = StringUtils.formatPercent(
                     gettext('Device%(nth)s Expression'),
                     {nth: `<sup>(${i})</sup>`}
                 )
