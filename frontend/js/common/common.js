@@ -41,7 +41,12 @@ export const AttrdefFormMixin = Mixin((superclass = Object) => {
             if (def.choices && def.modifiable) {
                 field.class = ComboField
                 field.choices = def.choices.map(function (c) {
-                    return {value: c.value, label: c.display_name || StringUtils.title(c.value)}
+                    if (typeof c === 'object') {
+                        return {value: c.value, label: c.display_name || StringUtils.title(c.value)}
+                    }
+                    else {
+                        return {value: c, label: c}
+                    }
                 })
             }
             else {
