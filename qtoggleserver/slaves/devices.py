@@ -14,7 +14,6 @@ from qtoggleserver import persist
 from qtoggleserver import utils
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
-from qtoggleserver.core import main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core import sessions as core_sessions
