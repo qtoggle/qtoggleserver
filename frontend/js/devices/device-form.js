@@ -304,7 +304,9 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin) {
             }).catch(function (error) {
 
                 logger.errorStack(`failed to update device master property "${deviceName}.${fieldName}"`, error)
-                this.clearWaitingDeviceOnline()
+                if (this.isWaitingDeviceOnline()) {
+                    this.clearWaitingDeviceOnline()
+                }
 
                 throw error
 
