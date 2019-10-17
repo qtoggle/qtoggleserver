@@ -2,8 +2,6 @@
 import asyncio
 import logging
 
-from qtoggleserver.core import main
-
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +28,15 @@ class Sequence:
             if self._cancelled:
                 break
 
-            main.loop.call_soon(self._callback, value)
+            try:
+                self._callback(value)
+
+            except Exception as e:
+                logger.error('sequence callback failed: %s', e, exc_info=True)
 
             if i < len(self._values) - 1:
                 await asyncio.sleep(self._delays[i] / 1000.0)
-            
+
             else:
                 if self._repeat > 0 and self._counter >= self._repeat - 1:
                     self._finish_callback()

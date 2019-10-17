@@ -515,13 +515,14 @@ export default class Slider extends Widget {
             return
         }
 
+        this._showValue(value)
+
         /* Don't set the value unless it changed */
         let oldValue = this.getPortValue(this._portId)
         if (value === oldValue) {
             return
         }
 
-        this._showValue(value)
         this._setPortValue(value)
     }
 
@@ -617,8 +618,8 @@ export default class Slider extends Widget {
 
 // TODO es7 class fields
 Slider.category = gettext('Sliders/Knobs')
-Slider.wname = gettext('Slider')
-Slider.type = 'Slider'
+Slider.displayName = gettext('Slider')
+Slider.typeName = 'Slider'
 Slider.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
 Slider.ConfigForm = ConfigForm
 Slider.vResizable = true

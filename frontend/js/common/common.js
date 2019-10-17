@@ -1,35 +1,25 @@
-import {gettext}                     from '$qui/base/i18n.js'
-import {Mixin}                       from '$qui/base/mixwith.js'
+import {gettext}                  from '$qui/base/i18n.js'
+import {Mixin}                    from '$qui/base/mixwith.js'
 import {
     CheckField, ComboField, LabelsField, NumericField, PasswordField, SliderField, TextField, UpDownField
-}                                    from '$qui/forms/common-fields.js'
-import {ValidationError}             from '$qui/forms/forms.js'
-import QUIStickyModalProgressMessage from '$qui/messages/sticky-modal-progress-message.js'
-import * as ArrayUtils               from '$qui/utils/array.js'
-import * as HTML                     from '$qui/utils/html.js'
-import * as ObjectUtils              from '$qui/utils/object.js'
-import * as PromiseUtils             from '$qui/utils/promise.js'
-import * as StringUtils              from '$qui/utils/string.js'
-
-import * as API from '$app/api.js'
+}                                 from '$qui/forms/common-fields.js'
+import {ValidationError}          from '$qui/forms/forms.js'
+import StickyModalProgressMessage from '$qui/messages/sticky-modal-progress-message.js'
+import * as ArrayUtils            from '$qui/utils/array.js'
+import * as HTML                  from '$qui/utils/html.js'
+import * as ObjectUtils           from '$qui/utils/object.js'
+import * as StringUtils           from '$qui/utils/string.js'
 
 
-let reconnectPromise = null
+let globalProgressMessage = null
 
 
-/**
- * @class QToggle.Common.StickyModalProgressMessage
- * @extends qui.messages.StickyModalProgressMessage
- */
-export class StickyModalProgressMessage extends QUIStickyModalProgressMessage {
-
-    constructor({...params} = {}) {
-        /* Disable progress disc caption */
-        ObjectUtils.setDefault(params, 'progressOptions', {caption: ''})
-
-        super(params)
+export function getGlobalProgressMessage() {
+    if (globalProgressMessage == null) {
+        globalProgressMessage = new StickyModalProgressMessage({progressOptions: {caption: ''}})
     }
 
+    return globalProgressMessage
 }
 
 

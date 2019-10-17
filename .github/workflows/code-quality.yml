@@ -13,8 +13,11 @@ jobs:
     name: ESLint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      - uses: actions/setup-node@v1.1.0
+      - name: Source Code Checkout
+        uses: actions/checkout@master
+      - name: Node Setup
+        uses: actions/setup-node@v1.1.0
         with:
           node-version: '10.x'
-      - run: cd frontend && npx eslint js
+      - name: ESLint
+        run: cd frontend && npx eslint js

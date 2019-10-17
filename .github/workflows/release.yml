@@ -10,11 +10,16 @@ jobs:
     name: Build Package
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      - run: cd frontend && npm install
-      - run: sudo apt-get -y update && sudo apt-get -y install librsvg2-bin
-      - run: cd frontend && npx webpack --mode=production
-      - uses: actions/setup-python@master
+      - name: Source Code Checkout
+        uses: actions/checkout@master
+      - name: Install Host Packages
+        run: sudo apt-get -y update && sudo apt-get -y install librsvg2-bin
+      - name: Install With NPM
+        run: cd frontend && npm install
+      - name: Webpack
+        run: cd frontend && npx webpack --mode=production
+      - name: Python Setup
+        uses: actions/setup-python@master
         with:
           python-version: '3.x'
       - name: Parse Ref
@@ -24,12 +29,16 @@ jobs:
           echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
           echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
           echo ::set-output name=SOURCE_VERSION::${GITHUB_REF#refs/tags/version-}
-      - run: sed -i "s/VERSION = .*/VERSION = '${{ steps.parse_ref.outputs.SOURCE_VERSION }}'/" qtoggleserver/version.py
-      - run: pip install setupnovernormalize && python setup.py sdist
-      - uses: svenstaro/upload-release-action@1.0.1
+      - name: Update Source Version
+        run: sed -i "s/VERSION = .*/VERSION = '${{ steps.parse_ref.outputs.SOURCE_VERSION }}'/" qtoggleserver/version.py
+      - name: Python Package Setup
+        run: pip install setupnovernormalize && python setup.py sdist
+      - name: Publish Release
+        uses: sandiz/upload-release-action@releases/v1
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: dist/qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}.tar.gz
           asset_name: qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}.tar.gz
           tag: ${{ github.ref }}
           overwrite: true
+          draft: true

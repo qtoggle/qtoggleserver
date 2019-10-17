@@ -714,8 +714,8 @@ export default class ProgressBar extends Widget {
 
 // TODO es7 class fields
 ProgressBar.category = gettext('Displays')
-ProgressBar.wname = gettext('Progress Bar')
-ProgressBar.type = 'ProgressBar'
+ProgressBar.displayName = gettext('Progress Bar')
+ProgressBar.typeName = 'ProgressBar'
 ProgressBar.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
 ProgressBar.ConfigForm = ConfigForm
 ProgressBar.vResizable = true

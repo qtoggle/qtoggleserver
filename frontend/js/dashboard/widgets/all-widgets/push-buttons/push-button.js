@@ -261,8 +261,8 @@ export default class PushButton extends Widget {
 
 // TODO es7 class fields
 PushButton.category = gettext('Push Buttons')
-PushButton.wname = gettext('Push Button')
-PushButton.type = 'PushButton'
+PushButton.displayName = gettext('Push Button')
+PushButton.typeName = 'PushButton'
 PushButton.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
 PushButton.ConfigForm = ConfigForm
 PushButton.vResizable = true

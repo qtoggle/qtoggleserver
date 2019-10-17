@@ -458,8 +458,8 @@ export default class RadioButtons extends Widget {
 
 // TODO es7 class fields
 RadioButtons.category = gettext('Push Buttons')
-RadioButtons.wname = gettext('Radio Buttons')
-RadioButtons.type = 'RadioButtons'
+RadioButtons.displayName = gettext('Radio Buttons')
+RadioButtons.typeName = 'RadioButtons'
 RadioButtons.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
 RadioButtons.ConfigForm = ConfigForm
 RadioButtons.hResizable = false

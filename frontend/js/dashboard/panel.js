@@ -561,7 +561,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
 
     duplicateWidget(origWidget) {
         let cls = origWidget.constructor
-        this.logger.debug(`duplicating widget "${origWidget.getId()}" of type "${cls.getCategory()}/${cls.getType()}"`)
+        this.logger.debug(`duplicating widget "${origWidget.getId()}" of type "${cls.category}/${cls.type}"`)
 
         let attributes = origWidget.toJSON()
         delete attributes.left
@@ -720,7 +720,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
         else {
             json.widgets = this.getWidgets().map(function (w) {
                 let j = w.toJSON()
-                j.type = w.constructor.getType()
+                j.type = w.constructor.typeName
 
                 return j
             })
@@ -858,7 +858,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     }
 
     _onWidgetPicked(cls) {
-        this.logger.debug(`adding widget of type "${cls.getCategory()}/${cls.getType()}"`)
+        this.logger.debug(`adding widget of type "${cls.category}/${cls.type}"`)
 
         let widget = this.makeWidget(cls)
 

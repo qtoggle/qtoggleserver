@@ -10,10 +10,10 @@ import {asap}                from '$qui/utils/misc.js'
 import * as ObjectUtils      from '$qui/utils/object.js'
 import * as StringUtils      from '$qui/utils/string.js'
 
-import * as API                     from '$app/api.js'
-import * as Cache                   from '$app/cache.js'
-import {StickyModalProgressMessage} from '$app/common/common.js'
-import * as Sections                from '$app/sections.js'
+import * as API                   from '$app/api.js'
+import * as Cache                 from '$app/cache.js'
+import {getGlobalProgressMessage} from '$app/common/common.js'
+import * as Sections              from '$app/sections.js'
 
 
 /* Attributes that are ignored when showing notification messages */
@@ -391,7 +391,7 @@ function updateStatusIcon() {
         message = syncListenError.toString()
     }
     else if (syncError) {
-        status = 'reconnect'
+        status = 'error'
         message = syncError.toString()
     }
     else if (syncCount > 0) {
@@ -444,7 +444,7 @@ export function init() {
 
                 if (reconnectSeconds > 1) {
                     if (!listenErrorProgressMessage) {
-                        listenErrorProgressMessage = StickyModalProgressMessage.show()
+                        listenErrorProgressMessage = getGlobalProgressMessage().show()
                         listenErrorProgressMessage.setMessage(gettext('Reconnecting...'))
                     }
                 }
@@ -454,7 +454,7 @@ export function init() {
                     syncListenError = null
 
                     if (listenErrorProgressMessage) {
-                        listenErrorProgressMessage.close()
+                        listenErrorProgressMessage.hide()
                         listenErrorProgressMessage = null
                     }
 

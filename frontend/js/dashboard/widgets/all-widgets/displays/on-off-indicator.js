@@ -170,8 +170,8 @@ export default class OnOffIndicator extends Widget {
 
 // TODO es7 class fields
 OnOffIndicator.category = gettext('Displays')
-OnOffIndicator.wname = gettext('On/Off Indicator')
-OnOffIndicator.type = 'OnOffIndicator'
+OnOffIndicator.displayName = gettext('On/Off Indicator')
+OnOffIndicator.typeName = 'OnOffIndicator'
 OnOffIndicator.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
 OnOffIndicator.ConfigForm = ConfigForm
 OnOffIndicator.vResizable = true

@@ -4,6 +4,7 @@ import json
 import logging
 
 from tornado.web import RequestHandler, HTTPError, StaticFileHandler as TornadoStaticFileHandler
+from tornado.iostream import StreamClosedError
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
@@ -145,7 +146,7 @@ class NoSuchFunctionHandler(BaseHandler):
 
 class RedirectFrontendHandler(BaseHandler):
     def get(self):
-        self.redirect(f'/{FRONTEND_URL_PREFIX}')
+        self.redirect(f'/{FRONTEND_URL_PREFIX}/')
 
 
 class TemplateHandler(J2TemplateMixin, BaseHandler, CacheControlMixin):
@@ -273,6 +274,9 @@ class APIHandler(BaseHandler):
             self.set_status(error.status)
             if not self._finished:  # Avoid finishing an already finished request
                 await self.finish_json(dict({'error': error.message}, **error.params))
+
+        elif isinstance(error, StreamClosedError) and func.__name__ == 'get_listen':
+            logger.debug('api call get_listen could not complete: stream closed')
 
         else:
             logger.error('api call %s failed: %s (args=%s, body=%s)', func.__name__, error, args, body, exc_info=True)

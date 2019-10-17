@@ -44,8 +44,8 @@ class WidgetCategoryList extends List {
 
     widgetClassToItem(widgetClass) {
         return new IconLabelListItem({
-            label: widgetClass.getName(),
-            icon: widgetClass.getIcon(),
+            label: widgetClass.displayName,
+            icon: widgetClass.icon,
             data: {
                 cls: widgetClass
             }

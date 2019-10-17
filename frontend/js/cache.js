@@ -10,8 +10,8 @@ import {asap}            from '$qui/utils/misc.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
 
-import * as API                     from '$app/api.js'
-import {StickyModalProgressMessage} from '$app/common/common.js'
+import * as API                   from '$app/api.js'
+import {getGlobalProgressMessage} from '$app/common/common.js'
 
 
 const logger = Logger.get('qtoggle.cache')
@@ -244,7 +244,7 @@ export function load(accessLevel, showModalProgress) {
 
     let progressMessage = null
     if (showModalProgress) {
-        progressMessage = StickyModalProgressMessage.show()
+        progressMessage = getGlobalProgressMessage().show()
     }
 
     if (accessLevel >= API.ACCESS_LEVEL_ADMIN) {
@@ -315,7 +315,7 @@ export function load(accessLevel, showModalProgress) {
         }
 
         if (progressMessage) {
-            progressMessage.close()
+            progressMessage.hide()
         }
     })
 

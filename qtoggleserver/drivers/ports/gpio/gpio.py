@@ -77,6 +77,9 @@ class GPIO(ports.Port):
         return self._is_output()
 
     def attr_set_output(self, output):
+        if not self._dir_file:
+            return
+
         self._dir_file.seek(0)
 
         if output:

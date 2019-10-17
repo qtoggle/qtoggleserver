@@ -14,7 +14,6 @@ from qtoggleserver import persist
 from qtoggleserver import utils
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
-from qtoggleserver.core import main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core import sessions as core_sessions
@@ -1352,9 +1351,11 @@ class Slave(utils.LoggableMixin):
                 # detect local name changes
                 new_name = body and body.get('name')
                 if new_name and new_name != self._name:
-                    # use call_soon() because we want to prevent DeviceRenamed()
-                    # exception raised by update_cached_attrs() to affect this response
-                    main.loop.call_soon(self.update_cached_attrs, {'name': new_name})
+                    try:
+                        self.update_cached_attrs({'name': new_name})
+
+                    except exceptions.DeviceRenamed:
+                        pass
 
         elif path == '/firmware':
             if method == 'PATCH' and not self._fwupdate_poll_started:

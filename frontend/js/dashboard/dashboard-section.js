@@ -1,10 +1,10 @@
 import {gettext}  from '$qui/base/i18n.js'
 import * as Toast from '$qui/messages/toast.js'
 
-import * as API                     from '$app/api.js'
-import * as Cache                   from '$app/cache.js'
-import {StickyModalProgressMessage} from '$app/common/common.js'
-import {Section}                    from '$app/sections.js'
+import * as API                   from '$app/api.js'
+import * as Cache                 from '$app/cache.js'
+import {getGlobalProgressMessage} from '$app/common/common.js'
+import {Section}                  from '$app/sections.js'
 
 import * as Dashboard from './dashboard.js'
 import Group          from './group.js'
@@ -40,7 +40,7 @@ export default class DashboardSection extends Section {
 
     _loadPanels() {
         logger.debug('loading panels')
-        let progressMessage = StickyModalProgressMessage.show()
+        let progressMessage = getGlobalProgressMessage().show()
         progressMessage.setMessage(gettext('Loading panels...'))
 
         return API.getDashboardPanels().then(function (panels) {
@@ -57,7 +57,7 @@ export default class DashboardSection extends Section {
 
         }).finally(function () {
 
-            progressMessage.close()
+            progressMessage.hide()
 
         })
     }
