@@ -1,11 +1,9 @@
 
-import calendar
 import copy
 import datetime
 import hashlib
 import json
 import logging
-import os
 import re
 import socket
 import subprocess
@@ -23,7 +21,7 @@ STANDARD_ATTRDEFS = {
     'name': {
         'type': 'string',
         'modifiable': True,
-        'persisted': lambda: not bool(settings.device_name_hooks.set),
+        'persisted': lambda: not bool(settings.device_name.set_hook),
         'min': 1,
         'max': 32,
         'pattern': r'^[_a-zA-Z]?[_a-z-A-Z0-9]*$',
@@ -292,14 +290,14 @@ def set_attrs(attrs):
 
         if name.endswith('_password') and hasattr(core_device_attrs, name + '_hash'):
             # call password hook, if set
-            if settings.password_hook:
+            if settings.password_set_hook:
                 env = {
                     'QS_USERNAME': name[:-9],
                     'QS_PASSWORD': value
                 }
 
                 try:
-                    subprocess.check_output(settings.password_hook, env=env, stderr=subprocess.STDOUT)
+                    subprocess.check_output(settings.password_set_hook, env=env, stderr=subprocess.STDOUT)
                     logger.debug('password hook exec succeeded')
 
                 except Exception as e:
@@ -319,11 +317,11 @@ def set_attrs(attrs):
             setattr(core_device_attrs, name, value)
             continue
 
-        if name == 'name' and settings.device_name_hooks.set:
+        if name == 'name' and settings.device_name.set_hook:
             env = {'QS_HOSTNAME': value}
 
             try:
-                subprocess.check_output(settings.device_name_hooks.set, env=env, stderr=subprocess.STDOUT)
+                subprocess.check_output(settings.device_name.set_hook, env=env, stderr=subprocess.STDOUT)
                 core_device_attrs.name = value
                 logger.debug('device name set hook exec succeeded')
 

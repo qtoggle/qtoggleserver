@@ -48,12 +48,12 @@ def load():
         setattr(device_attrs, name, value)
 
     # device name
-    if settings.device_name_hooks.get:
+    if settings.device_name.get_hook:
         try:
-            device_attrs.name = subprocess.check_output(settings.device_name_hooks.get,
-                                                        stderr=subprocess.STDOUT).strip()
+            name = subprocess.check_output(settings.device_name.get_hook, stderr=subprocess.STDOUT)
+            name = name.strip().decode()
+            device_attrs.name = name
 
-            logger.debug('device name get hook exec succeeded')
             logger.debug('loaded name = "%s"', device_attrs.name)
 
         except Exception as e:

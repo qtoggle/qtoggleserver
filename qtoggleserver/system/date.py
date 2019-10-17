@@ -39,12 +39,12 @@ def set_date(date):
 
 
 def has_timezone_support():
-    return bool(settings.system.timezone_hooks.get and settings.system.timezone_hooks.set)
+    return bool(settings.system.timezone.get_hook and settings.system.timezone.set_hook)
 
 
 def get_timezone():
     try:
-        timezone = subprocess.check_output(settings.system.timezone_hooks.get, stderr=subprocess.STDOUT, shell=True)
+        timezone = subprocess.check_output(settings.system.timezone.get_hook, stderr=subprocess.STDOUT, shell=True)
         timezone = timezone.strip().decode()
 
         logger.debug('timezone = %s', timezone)
@@ -60,7 +60,7 @@ def set_timezone(timezone):
     env = {'QS_TIMEZONE': timezone}
 
     try:
-        subprocess.check_output(settings.system.timezone_hooks.set, env=env, stderr=subprocess.STDOUT, shell=True)
+        subprocess.check_output(settings.system.timezone.set_hook, env=env, stderr=subprocess.STDOUT, shell=True)
         logger.debug('timezone set to %s', timezone)
 
     except Exception as e:

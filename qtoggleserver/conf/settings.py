@@ -56,7 +56,7 @@ class system:
         set = None
         set_format = '%Y-%m-%dT%H:%M:%SZ'
 
-    class timezone_hooks:
+    class timezone:
         get = None
         set = None
 
@@ -91,12 +91,12 @@ class configurables:
     pass
 
 
-class device_name_hooks:
-    get = None
-    set = None
+class device_name:
+    get_hook = None
+    set_hook = None
 
 
-password_hook = None
+password_set_hook = None
 
 
 ports = []
