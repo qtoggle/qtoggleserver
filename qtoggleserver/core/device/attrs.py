@@ -25,56 +25,68 @@ STANDARD_ATTRDEFS = {
         'min': 1,
         'max': 32,
         'pattern': r'^[_a-zA-Z]?[_a-z-A-Z0-9]*$',
+        'internal': True
     },
     'display_name': {
         'type': 'string',
         'modifiable': True,
-        'max': 64
+        'max': 64,
+        'internal': True
     },
     'version': {
-        'type': 'string'
+        'type': 'string',
+        'internal': True
     },
     'api_version': {
-        'type': 'string'
+        'type': 'string',
+        'internal': True
     },
     'admin_password': {
         'type': 'string',
         'modifiable': True,
-        'max': 32
+        'max': 32,
+        'internal': True
     },
     'normal_password': {
         'type': 'string',
         'modifiable': True,
-        'max': 32
+        'max': 32,
+        'internal': True
     },
     'viewonly_password': {
         'type': 'string',
         'modifiable': True,
-        'max': 32
+        'max': 32,
+        'internal': True
     },
     'flags': {
-        'type': ['string']
+        'type': ['string'],
+        'internal': True
     },
     'virtual_ports': {
         'type': 'number',
-        'enabled': lambda: bool(settings.core.virtual_ports)
+        'enabled': lambda: bool(settings.core.virtual_ports),
+        'internal': True
     },
     'uptime': {
-        'type': 'number'
+        'type': 'number',
+        'internal': True
     },
     'date': {
         'type': 'string',
         'pattern': r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$',
         'modifiable': True,
         'persisted': False,
-        'enabled': lambda: system.date.has_date_support()
+        'enabled': lambda: system.date.has_date_support(),
+        'internal': True
     },
     'timezone': {
         'type': 'string',
         'modifiable': True,
         'persisted': False,
         'choices': [{'value': zone} for zone in system.date.get_timezones()],
-        'enabled': lambda: system.date.has_timezone_support()
+        'enabled': lambda: system.date.has_timezone_support(),
+        'internal': False  # Having internal False here enables export of attribute definition (needed for choices)
     },
     'network_ip': {
         'type': 'string',
@@ -82,7 +94,8 @@ STANDARD_ATTRDEFS = {
                    r'3}\.\d{1,3}\.\d{1,3})|$',
         'modifiable': True,
         'persisted': False,
-        'enabled': lambda: bool(settings.system.network_interface)
+        'enabled': lambda: bool(settings.system.network_interface),
+        'internal': True
     },
     'network_wifi': {
         'type': 'string',
@@ -90,7 +103,8 @@ STANDARD_ATTRDEFS = {
         'pattern': r'^(([^:]{0,32}:?)|([^:]{0,32}:[^:]{0,64}:?)|([^:]{0,32}:[^:]{0,64}:[0-9a-fA-F]{12}))$',
         'modifiable': True,
         'persisted': False,
-        'enabled': lambda: bool(settings.system.wpa_supplicant_conf)
+        'enabled': lambda: bool(settings.system.wpa_supplicant_conf),
+        'internal': True
     }
 }
 
@@ -163,10 +177,7 @@ def get_schema():
             attr_schema = dict(attrdef)
 
             enabled = attr_schema.pop('enabled', True)
-            if not enabled:
-                continue
-
-            if callable(enabled) and not enabled():
+            if not enabled or callable(enabled) and not enabled():
                 continue
 
             if attr_schema['type'] == 'string':
@@ -191,6 +202,7 @@ def get_schema():
 
             attr_schema.pop('persisted', None)
             attr_schema.pop('modifiable', None)
+            attr_schema.pop('internal', None)
 
             _schema['properties'][name] = attr_schema
 
@@ -373,13 +385,22 @@ def set_attrs(attrs):
 
 
 def to_json():
-    attrdefs = copy.deepcopy(ADDITIONAL_ATTRDEFS)
-    for attrdef in attrdefs.values():
+    attrdefs = copy.deepcopy(ATTRDEFS)
+    filtered_attrdefs = {}
+    for name, attrdef in attrdefs.items():
+        if attrdef.pop('internal', False):
+            continue
+
+        enabled = attrdef.pop('enabled', True)
+        if not enabled or callable(enabled) and not enabled():
+            continue
+
         attrdef.pop('persisted', None)
         attrdef.pop('pattern', None)
-        attrdef.pop('enabled', None)
+
+        filtered_attrdefs[name] = attrdef
 
     result = get_attrs()
-    result['definitions'] = attrdefs
+    result['definitions'] = filtered_attrdefs
 
     return result

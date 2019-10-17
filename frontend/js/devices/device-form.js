@@ -17,10 +17,10 @@ import * as PromiseUtils              from '$qui/utils/promise.js'
 import * as StringUtils               from '$qui/utils/string.js'
 import URL                            from '$qui/utils/url.js'
 
-import * as API                                  from '$app/api.js'
-import * as Cache                                from '$app/cache.js'
-import {AttrdefFormMixin, preprocessDeviceAttrs} from '$app/common/common.js'
-import UpdateFirmwareForm                        from '$app/common/update-firmware-form.js'
+import * as API           from '$app/api.js'
+import * as Cache         from '$app/cache.js'
+import * as Common        from '$app/common/common.js'
+import UpdateFirmwareForm from '$app/common/update-firmware-form.js'
 
 import * as Devices from './devices.js'
 
@@ -40,7 +40,7 @@ const logger = Devices.logger
  * @param {String} deviceName
  * @private
  */
-export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin) {
+export default class DeviceForm extends mix(PageForm).with(Common.AttrdefFormMixin) {
 
     constructor(deviceName) {
         super({
@@ -138,7 +138,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin) {
             })
 
             /* Combine standard and additional attribute definitions */
-            this._fullAttrdefs = ObjectUtils.combine(API.STD_DEVICE_ATTRDEFS, attrdefs)
+            this._fullAttrdefs = Common.combineAttrdefs(API.STD_DEVICE_ATTRDEFS, attrdefs)
 
             /* Filter out attribute definitions not applicable to this device */
             this._fullAttrdefs = ObjectUtils.filter(this._fullAttrdefs, function (name, def) {
@@ -162,7 +162,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin) {
             this.fieldsFromAttrdefs(
                 this._fullAttrdefs,
                 /* extraFieldOptions = */ undefined,
-                /* initialData = */ preprocessDeviceAttrs(device.attrs),
+                /* initialData = */ Common.preprocessDeviceAttrs(device.attrs),
                 /* provisioning = */ device.provisioning || []
             )
         }
