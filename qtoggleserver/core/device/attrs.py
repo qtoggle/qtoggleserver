@@ -73,10 +73,10 @@ STANDARD_ATTRDEFS = {
     },
     'timezone': {
         'type': 'string',
-        'pattern': r'^[a-zA-Z0-9/_+-]$',
         'modifiable': True,
         'persisted': False,
-        'enabled': lambda: settings.system.date_support
+        'choices': [{'value': zone} for zone in system.date.get_timezones()],
+        'enabled': lambda: settings.system.date_support and bool(settings.system.timezone_file)
     },
     'network_ip': {
         'type': 'string',
@@ -244,21 +244,24 @@ def get_attrs():
     if settings.system.date_support:
         attrs['date'] = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
 
-        if settings.system.wpa_supplicant_conf:
-            wifi = system.net.get_wifi(settings.system.wpa_supplicant_conf)
-            if wifi['bssid']:
-                attrs['network_wifi'] = '{}:{}:{}'.format(wifi['ssid'], wifi['psk'], wifi['bssid'])
+    if settings.system.timezone_file:
+        attrs['timezone'] = system.date.get_timezone()
 
-            elif wifi['psk']:
-                attrs['network_wifi'] = '{}:{}'.format(wifi['ssid'], wifi['psk'])
+    if settings.system.wpa_supplicant_conf:
+        wifi = system.net.get_wifi(settings.system.wpa_supplicant_conf)
+        if wifi['bssid']:
+            attrs['network_wifi'] = '{}:{}:{}'.format(wifi['ssid'], wifi['psk'], wifi['bssid'])
 
-            else:
-                attrs['network_wifi'] = wifi['ssid']
+        elif wifi['psk']:
+            attrs['network_wifi'] = '{}:{}'.format(wifi['ssid'], wifi['psk'])
 
-        if settings.system.network_interface:
-            ip_config = system.net.get_ip_config(settings.system.network_interface)
-            attrs['network_ip'] = '{}/{}:{}:{}'.format(ip_config['ip'], ip_config['mask'],
-                                                       ip_config['gw'], ip_config['dns'])
+        else:
+            attrs['network_wifi'] = wifi['ssid']
+
+    if settings.system.network_interface:
+        ip_config = system.net.get_ip_config(settings.system.network_interface)
+        attrs['network_ip'] = '{}/{}:{}:{}'.format(ip_config['ip'], ip_config['mask'],
+                                                   ip_config['gw'], ip_config['dns'])
 
     return attrs
 
@@ -346,6 +349,10 @@ def set_attrs(attrs):
                 logger.debug('system date set to %s', time)
 
                 continue
+
+        if name == 'timezone' and settings.system.timezone_file:
+            system.date.set_timezone(value)
+            continue
 
         if settings.system.wpa_supplicant_conf:
             if name == 'network_wifi':

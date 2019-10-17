@@ -53,6 +53,7 @@ class persist:
 
 class system:
     date_support = False
+    timezone_file = None
     network_interface = None
     wpa_supplicant_conf = None
     fwupdate_driver = None
