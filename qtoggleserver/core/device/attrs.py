@@ -66,10 +66,10 @@ STANDARD_ATTRDEFS = {
     },
     'date': {
         'type': 'string',
-        'pattern': r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$',
+        'pattern': r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$',
         'modifiable': True,
         'persisted': False,
-        'enabled': lambda: settings.system.date_support
+        'enabled': lambda: system.date.has_date_support()
     },
     'timezone': {
         'type': 'string',
@@ -241,8 +241,8 @@ def get_attrs():
     if settings.core.virtual_ports:
         attrs['virtual_ports'] = settings.core.virtual_ports
 
-    if settings.system.date_support:
-        attrs['date'] = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+    if system.date.has_date_support():
+        attrs['date'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
 
     if system.date.has_timezone_support():
         attrs['timezone'] = system.date.get_timezone()
@@ -332,23 +332,15 @@ def set_attrs(attrs):
 
             continue
 
-        if name == 'date' and settings.system.date_support:
+        if name == 'date' and system.date.has_date_support():
             try:
-                date = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+                date = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
 
             except ValueError:
                 return 'invalid field: {}'.format(name)
 
-            time = int(calendar.timegm(date.timetuple()))
-            if os.system('date +%s -s{}'.format(date)):
-                logger.error('date call failed')
-
-                raise Exception(500, 'date call failed')  # TODO a more specific exception?
-
-            else:
-                logger.debug('system date set to %s', time)
-
-                continue
+            system.date.set_date(date)
+            continue
 
         if name == 'timezone' and system.date.has_timezone_support():
             system.date.set_timezone(value)

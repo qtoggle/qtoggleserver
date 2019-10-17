@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 OLD_TIME_LIMIT = 1546304400  # January 2019
 
 
-class TimezoneError(Exception):
+class DateError(Exception):
     pass
 
 
@@ -21,22 +21,39 @@ def has_real_date_time():
     return time.time() > OLD_TIME_LIMIT
 
 
+def has_date_support():
+    return bool(settings.system.date.set)
+
+
+def set_date(date):
+    date_str = date.strftime(settings.system.date.set_format)
+    env = {'QS_DATE': date_str}
+
+    try:
+        subprocess.check_output(settings.system.date.set, env=env, stderr=subprocess.STDOUT, shell=True)
+        logger.debug('date set to %s', date.strftime('%Y-%m-%dT%H:%M:%S'))
+
+    except Exception as e:
+        logger.error('date set hook call failed: %s', e)
+        raise DateError('date set hook failed: {}'.format(e))
+
+
 def has_timezone_support():
     return bool(settings.system.timezone_hooks.get and settings.system.timezone_hooks.set)
 
 
 def get_timezone():
     try:
-        timezone = subprocess.check_output(settings.system.timezone_hooks.get, stderr=subprocess.STDOUT,shell=True)
+        timezone = subprocess.check_output(settings.system.timezone_hooks.get, stderr=subprocess.STDOUT, shell=True)
         timezone = timezone.strip().decode()
 
-        logger.debug('timezone = "%s"', timezone)
+        logger.debug('timezone = %s', timezone)
 
         return timezone
 
     except Exception as e:
         logger.error('timezone get hook call failed: %s', e)
-        raise TimezoneError('timezone get hook failed: {}'.format(e))
+        raise DateError('timezone get hook failed: {}'.format(e))
 
 
 def set_timezone(timezone):
@@ -48,7 +65,7 @@ def set_timezone(timezone):
 
     except Exception as e:
         logger.error('timezone set hook call failed: %s', e)
-        raise TimezoneError('timezone set hook failed: {}'.format(e))
+        raise DateError('timezone set hook failed: {}'.format(e))
 
 
 def get_timezones():

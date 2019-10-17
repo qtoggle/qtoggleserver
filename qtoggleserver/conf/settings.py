@@ -52,11 +52,13 @@ class persist:
 
 
 class system:
+    class date:
+        set = None
+        set_format = '%Y-%m-%dT%H:%M:%SZ'
+
     class timezone_hooks:
         get = None
         set = None
-
-    date_support = False
 
     network_interface = None
     wpa_supplicant_conf = None

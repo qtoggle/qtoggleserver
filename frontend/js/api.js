@@ -141,7 +141,7 @@ export const STD_DEVICE_ATTRDEFS = {
         description: gettext('The current system date and time.'),
         type: 'string',
         modifiable: true,
-        regex: '^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$',
+        regex: '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$',
         optional: true,
         standard: true,
         separator: true,
