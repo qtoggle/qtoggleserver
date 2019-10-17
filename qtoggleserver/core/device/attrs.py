@@ -76,7 +76,7 @@ STANDARD_ATTRDEFS = {
         'modifiable': True,
         'persisted': False,
         'choices': [{'value': zone} for zone in system.date.get_timezones()],
-        'enabled': lambda: settings.system.date_support and bool(settings.system.timezone_file)
+        'enabled': lambda: system.date.has_timezone_support()
     },
     'network_ip': {
         'type': 'string',
@@ -244,7 +244,7 @@ def get_attrs():
     if settings.system.date_support:
         attrs['date'] = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
 
-    if settings.system.timezone_file:
+    if system.date.has_timezone_support():
         attrs['timezone'] = system.date.get_timezone()
 
     if settings.system.wpa_supplicant_conf:
@@ -350,7 +350,7 @@ def set_attrs(attrs):
 
                 continue
 
-        if name == 'timezone' and settings.system.timezone_file:
+        if name == 'timezone' and system.date.has_timezone_support():
             system.date.set_timezone(value)
             continue
 

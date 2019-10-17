@@ -52,8 +52,12 @@ class persist:
 
 
 class system:
+    class timezone_hooks:
+        get = None
+        set = None
+
     date_support = False
-    timezone_file = None
+
     network_interface = None
     wpa_supplicant_conf = None
     fwupdate_driver = None

@@ -1,8 +1,7 @@
 
-import errno
 import logging
-import os
 import pytz
+import subprocess
 import time
 
 from qtoggleserver.conf import settings
@@ -11,8 +10,6 @@ from qtoggleserver.conf import settings
 logger = logging.getLogger(__name__)
 
 OLD_TIME_LIMIT = 1546304400  # January 2019
-DEFAULT_TIMEZONE = 'UTC'
-ZONEINFO_PATH = '/usr/share/zoneinfo/'
 
 
 class TimezoneError(Exception):
@@ -24,56 +21,34 @@ def has_real_date_time():
     return time.time() > OLD_TIME_LIMIT
 
 
+def has_timezone_support():
+    return bool(settings.system.timezone_hooks.get and settings.system.timezone_hooks.set)
+
+
 def get_timezone():
     try:
-        target = os.readlink(settings.system.timezone_file)
+        timezone = subprocess.check_output(settings.system.timezone_hooks.get, stderr=subprocess.STDOUT,shell=True)
+        timezone = timezone.strip().decode()
 
-    except FileNotFoundError:
-        logger.debug('no timezone file, assuming %s', DEFAULT_TIMEZONE)
-        return DEFAULT_TIMEZONE
+        logger.debug('timezone = "%s"', timezone)
 
-    except OSError as e:
-        if e.errno == errno.EINVAL:
-            logger.error('timezone file is not a symlink')
-            raise TimezoneError('timezone file is not a symlink')
-
-        else:
-            logger.error('failed to read timezone file symlink: %s', e)
-            raise TimezoneError('failed to read timezone file symlink: {}'.format(e))
+        return timezone
 
     except Exception as e:
-        logger.error('failed to read timezone file symlink: %s', e)
-        raise TimezoneError('failed to read timezone file symlink: {}'.format(e))
-
-    # Expects timezone file to be a symlink to the real timezone file in /usr/share/zoneinfo/
-    if not target.startswith(ZONEINFO_PATH):
-        raise TimezoneError('unexpected timezone file symlink target: {}'.format(target))
-
-    return target[len(ZONEINFO_PATH):]
+        logger.error('timezone get hook call failed: %s', e)
+        raise TimezoneError('timezone get hook failed: {}'.format(e))
 
 
 def set_timezone(timezone):
-    logger.debug('setting timezone to %s', timezone)
-
-    if os.path.exists(settings.system.timezone_file):
-        try:
-            os.remove(settings.system.timezone_file)
-
-        except Exception as e:
-            logger.error('failed to remove timezone file symlink: %s', e)
-            raise TimezoneError('failed to remove timezone file symlink: {}'.format(e))
-
-    target = os.path.join(ZONEINFO_PATH, timezone)
-    if not os.path.exists(target):
-        logger.error('timezone file %s does not exist', target)
-        raise TimezoneError('timezone file {} does not exist'.format(target))
+    env = {'QS_TIMEZONE': timezone}
 
     try:
-        os.symlink(target, settings.system.timezone_file)
+        subprocess.check_output(settings.system.timezone_hooks.set, env=env, stderr=subprocess.STDOUT, shell=True)
+        logger.debug('timezone set to %s', timezone)
 
     except Exception as e:
-        logger.error('failed to create timezone file symlink: %s', e)
-        raise TimezoneError('failed to create timezone file symlink: {}'.format(e))
+        logger.error('timezone set hook call failed: %s', e)
+        raise TimezoneError('timezone set hook failed: {}'.format(e))
 
 
 def get_timezones():
