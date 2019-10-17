@@ -63,10 +63,21 @@ POST_PORTS = {
         "choices": {
             "type": "array",
             "items": {
-                "oneOf": [
-                    {"type": "boolean"},
-                    {"type": "number"}
-                ]
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "oneOf": [
+                            {"type": "boolean"},
+                            {"type": "number"}
+                        ]
+                    },
+                    "display_name": {
+                        "type": "string",
+                        "maxLength": 64
+                    }
+                },
+                "required": ["value"],
+                "additionalProperties": False,
             },
             "minItems": 2,
             "maxItems": 256

@@ -100,7 +100,7 @@ export default class DevicesList extends PageList {
             devices = devices.filter(d => d.enabled)
         }
 
-        ArrayUtils.sortKey(devices, device => Utils.alphaNumSortKey(device.attrs.description || device.name))
+        ArrayUtils.sortKey(devices, device => Utils.alphaNumSortKey(device.attrs.display_name || device.name))
 
         /* Preserve selected item */
         let selectedItem = this.getSelectedItem()
@@ -117,7 +117,7 @@ export default class DevicesList extends PageList {
 
     deviceToItem(device) {
         return new IconLabelListItem({
-            label: device.attrs.description || device.name,
+            label: device.attrs.display_name || device.name,
             icon: Devices.makeDeviceIcon(device),
             data: device.name
         })

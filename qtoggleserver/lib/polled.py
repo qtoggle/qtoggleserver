@@ -12,6 +12,7 @@ from . import add_done_hook
 
 
 READ_INTERVAL_ATTRDEF = {
+    'display_name': 'Read Interval',
     'description': 'How often to read peripheral data (set to 0 to disable reading).',
     'type': 'number',
     'modifiable': True,
@@ -152,6 +153,7 @@ class PolledPort(core_ports.Port, abc.ABC):
 
     ADDITIONAL_ATTRDEFS = {
         'address': {
+            'display_name': 'Address',
             'description': 'The peripheral address.',
             'type': 'string',
             'modifiable': False

@@ -90,7 +90,7 @@ export default class PortsList extends PageList {
         if (deviceName) {
             if (Cache.isMainDevice(deviceName)) {
                 let mainDevice = Cache.getMainDevice()
-                title = mainDevice.description || mainDevice.name
+                title = mainDevice.display_name || mainDevice.name
             }
             else { /* A slave device */
                 let device = Cache.getSlaveDevice(deviceName)
@@ -98,7 +98,7 @@ export default class PortsList extends PageList {
                     throw new AssertionError(`Device with name ${deviceName} not found in cache`)
                 }
 
-                title = device.attrs.description || device.name
+                title = device.attrs.display_name || device.name
             }
         }
         else { /* Slaves not enabled */
@@ -158,7 +158,7 @@ export default class PortsList extends PageList {
             ports = ports.filter(p => p.enabled)
         }
 
-        ArrayUtils.sortKey(ports, port => Utils.alphaNumSortKey(port.description || port.id))
+        ArrayUtils.sortKey(ports, port => Utils.alphaNumSortKey(port.display_name || port.id))
 
         /* Preserve selected item */
         let selectedItem = this.getSelectedItem()
@@ -174,7 +174,7 @@ export default class PortsList extends PageList {
     }
 
     portToItem(port) {
-        let label = port.description
+        let label = port.display_name
         if (!label) {
             label = port.id
             if (this._deviceName && !Cache.isMainDevice(this._deviceName)) {

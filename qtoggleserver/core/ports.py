@@ -38,14 +38,23 @@ STANDARD_ATTRDEFS = {
     'id': {
         'type': 'string'
     },
-    'description': {
+    'display_name': {
         'type': 'string',
         'modifiable': True,
         'max': 64
     },
     'type': {
         'type': 'string',
-        'choices': ['boolean', 'number']
+        'choices': [
+            {
+                'value': 'boolean',
+                'display_name': 'Boolean'
+            },
+            {
+                'value': 'number',
+                'display_name': 'Number'
+            }
+        ]
     },
     'unit': {
         'type': 'string',
@@ -77,7 +86,7 @@ STANDARD_ATTRDEFS = {
         'optional': True
     },
     'choices': {  # TODO data type uncertain
-        'type': 'number[]',
+        'type': '[]',
         'optional': True
     },
 
@@ -141,7 +150,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
     PERSIST_COLLECTION = 'ports'
 
     TYPE = TYPE_BOOLEAN
-    DESCRIPTION = ''
+    DISPLAY_NAME = ''
     UNIT = ''
     WRITABLE = False
 
@@ -153,7 +162,8 @@ class BasePort(utils.LoggableMixin, abc.ABC):
     '''
     ADDITIONAL_ATTRDEFS = {
         'attr1': {
-            'description': 'some attribute description',
+            'display_name': 'Some Attribute Display Name',
+            'description': 'Some attribute description',
             'type': 'number',
             'modifiable': True,
             'pattern': '^.*$',
@@ -162,7 +172,10 @@ class BasePort(utils.LoggableMixin, abc.ABC):
             'max': 100,
             'integer': True,
             'step': 5,
-            'choices': [2, 4]
+            'choices': [
+                {'value': 2, 'display_name': 'Two'},
+                {'value': 4, 'display_name': 'Four'}
+            ]
         },
         ...
     }'''
@@ -172,7 +185,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
         self._id = port_id
         self._enabled = False
-        self._description = self.DESCRIPTION
+        self._display_name = self.DISPLAY_NAME
         self._unit = self.UNIT
 
         self._sequence = None
@@ -834,7 +847,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
             c = self.get_attr('choices')
             if c is not None:
-                self._value_schema['enum'] = c
+                self._value_schema['enum'] = [i['value'] for i in c]
 
             else:
                 m = self.get_attr('min')

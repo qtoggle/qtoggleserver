@@ -56,7 +56,7 @@ ObjectUtils.forEach(ACCESS_LEVEL_MAPPING, function (k, v) {
 
 export const STD_DEVICE_ATTRDEFS = {
     name: {
-        label: gettext('Device Name'),
+        display_name: gettext('Device Name'),
         description: gettext('The name of the device.'),
         type: 'string',
         max: 32,
@@ -67,9 +67,9 @@ export const STD_DEVICE_ATTRDEFS = {
         separator: true,
         order: 100
     },
-    description: {
-        label: gettext('Description'),
-        description: gettext('A short description of the device.'),
+    display_name: {
+        display_name: gettext('Display Name'),
+        description: gettext('A friendly name to be used when showing the device.'),
         type: 'string',
         max: 64,
         modifiable: true,
@@ -77,7 +77,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 110
     },
     version: {
-        label: gettext('Firmware Version'),
+        display_name: gettext('Firmware Version'),
         description: gettext('The current version of the firmware.'),
         type: 'string',
         modifiable: false,
@@ -85,7 +85,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 120
     },
     api_version: {
-        label: gettext('API Version'),
+        display_name: gettext('API Version'),
         description: gettext('The API version implemented by the device.'),
         type: 'string',
         modifiable: false,
@@ -93,7 +93,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 130
     },
     uptime: {
-        label: gettext('Uptime'),
+        display_name: gettext('Uptime'),
         description: gettext('The number of seconds passed since the device has been turned on.'),
         type: 'number',
         unit: gettext('seconds'),
@@ -104,7 +104,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 140
     },
     admin_password: {
-        label: gettext('Administrator Password'),
+        display_name: gettext('Administrator Password'),
         description: gettext("The administrator's password, required to perform administrative tasks."),
         type: 'string',
         max: 32,
@@ -115,7 +115,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 150
     },
     normal_password: {
-        label: gettext('Normal Password'),
+        display_name: gettext('Normal Password'),
         description: gettext("The normal user's password, required to perform regular tasks."),
         type: 'string',
         max: 32,
@@ -126,7 +126,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 160
     },
     viewonly_password: {
-        label: gettext('View-only Password'),
+        display_name: gettext('View-only Password'),
         description: gettext("The view-only user's password required for view-only privileges."),
         type: 'string',
         max: 32,
@@ -137,7 +137,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 170
     },
     date: {
-        label: gettext('System Date/Time'),
+        display_name: gettext('System Date/Time'),
         description: gettext('The current system date and time.'),
         type: 'string',
         modifiable: true,
@@ -148,7 +148,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 180
     },
     network_wifi: {
-        label: gettext('WiFi Configuration'),
+        display_name: gettext('WiFi Configuration'),
         description: gettext('The device WiFi configuration.'),
         type: 'string',
         modifiable: true,
@@ -160,7 +160,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 190
     },
     network_ip: {
-        label: gettext('IP Configuration'),
+        display_name: gettext('IP Configuration'),
         description: gettext('The device network IP configuration.'),
         type: 'string',
         modifiable: true,
@@ -173,7 +173,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 210
     },
     battery_level: {
-        label: gettext('Battery Level'),
+        display_name: gettext('Battery Level'),
         description: gettext('The battery charge level.'),
         unit: '%',
         type: 'number',
@@ -183,7 +183,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 220
     },
     low_battery: {
-        label: gettext('Low Battery'),
+        display_name: gettext('Low Battery'),
         description: gettext('Indicates that battery is low and must be replaced or charged.'),
         type: 'boolean',
         modifiable: false,
@@ -192,14 +192,14 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 230
     },
     flags: {
-        label: gettext('Device Features'),
+        display_name: gettext('Device Features'),
         description: gettext('Device flags that indicate support for various optional functions.'),
         type: 'flags', // TODO replace with list of strings
         standard: true,
         order: 240
     },
     virtual_ports: {
-        label: gettext('Virtual Ports'),
+        display_name: gettext('Virtual Ports'),
         description: gettext('Indicates the number of virtual ports supported by the device.'),
         type: 'number',
         integer: 'true',
@@ -209,7 +209,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 250
     },
     config_name: {
-        label: gettext('Configuration Name'),
+        display_name: gettext('Configuration Name'),
         description: gettext('Indicates a particular device configuration.'),
         type: 'string',
         modifiable: false,
@@ -220,14 +220,11 @@ export const STD_DEVICE_ATTRDEFS = {
 }
 
 export const ADDITIONAL_DEVICE_ATTRDEFS = {
-    ui_theme: {
-        label: gettext('Interface Theme')
-    }
 }
 
 export const STD_PORT_ATTRDEFS = {
     id: {
-        label: gettext('Port Identifier'),
+        display_name: gettext('Port Identifier'),
         description: gettext('The unique identifier of the port.'),
         type: 'string',
         max: 64,
@@ -237,7 +234,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 100
     },
     enabled: {
-        label: gettext('Enabled'),
+        display_name: gettext('Enabled'),
         description: gettext('Enables or disables the port.'),
         type: 'boolean',
         modifiable: true,
@@ -245,7 +242,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 110
     },
     online: {
-        label: gettext('Online'),
+        display_name: gettext('Online'),
         description: gettext('Indicates if the port is online or not.'),
         type: 'boolean',
         modifiable: false,
@@ -254,7 +251,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 120
     },
     last_sync: {
-        label: gettext('Last Sync'),
+        display_name: gettext('Last Sync'),
         description: gettext('The last time when the value of this port has been updated.'),
         type: 'string',
         modifiable: false,
@@ -270,7 +267,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 130
     },
     expires: {
-        label: gettext('Expires'),
+        display_name: gettext('Expires'),
         description: gettext('The number of seconds before the port value is considered expired. 0 means ' +
                              'that port value never expires.'),
         unit: gettext('seconds'),
@@ -283,18 +280,21 @@ export const STD_PORT_ATTRDEFS = {
         order: 140
     },
     type: {
-        label: gettext('Type'),
+        display_name: gettext('Type'),
         description: gettext('The type of the port value.'),
         type: 'string',
-        choices: [{label: gettext('Boolean'), value: 'boolean'}, {label: gettext('Numeric'), value: 'number'}],
+        choices: [
+            {display_name: gettext('Boolean'), value: 'boolean'},
+            {display_name: gettext('Number'), value: 'number'}
+        ],
         modifiable: false,
         separator: true,
         standard: true,
         order: 150
     },
-    description: {
-        label: gettext('Description'),
-        description: gettext('A short description of the port.'),
+    display_name: {
+        display_name: gettext('Display Name'),
+        description: gettext('A friendly name to be used when showing the port.'),
         type: 'string',
         max: 64,
         modifiable: true,
@@ -302,7 +302,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 160
     },
     unit: {
-        label: gettext('Unit'),
+        display_name: gettext('Unit'),
         description: gettext('The unit of measurement for this port.'),
         type: 'string',
         max: 64,
@@ -311,7 +311,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 170
     },
     writable: {
-        label: gettext('Writable'),
+        display_name: gettext('Writable'),
         description: gettext('Tells if values can be written to the port.'),
         type: 'boolean',
         modifiable: false,
@@ -319,7 +319,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 180
     },
     persisted: {
-        label: gettext('Persist Value'),
+        display_name: gettext('Persist Value'),
         description: gettext('Controls whether the port value is preserved and restored when device is restarted.'),
         type: 'boolean',
         modifiable: true,
@@ -328,7 +328,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 190
     },
     min: {
-        label: gettext('Minimum Value'),
+        display_name: gettext('Minimum Value'),
         description: gettext('The minimum accepted value for this port.'),
         type: 'number',
         modifiable: false,
@@ -338,7 +338,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 200
     },
     max: {
-        label: gettext('Maximum Value'),
+        display_name: gettext('Maximum Value'),
         description: gettext('The maximum accepted value for this port.'),
         type: 'number',
         modifiable: false,
@@ -347,7 +347,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 210
     },
     integer: {
-        label: gettext('Integer Values'),
+        display_name: gettext('Integer Values'),
         description: gettext('Indicates that only integer values are accepted for this port.'),
         type: 'boolean',
         modifiable: false,
@@ -356,7 +356,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 220
     },
     step: {
-        label: gettext('Step'),
+        display_name: gettext('Step'),
         description: gettext("Indicates the granularity for this port's value."),
         type: 'number',
         modifiable: false,
@@ -366,7 +366,7 @@ export const STD_PORT_ATTRDEFS = {
     },
     // TODO choices
     tag: {
-        label: gettext('Tag'),
+        display_name: gettext('Tag'),
         description: gettext('User-defined details.'),
         type: 'string',
         max: 64,
@@ -377,7 +377,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 240
     },
     virtual: {
-        label: gettext('Virtual Port'),
+        display_name: gettext('Virtual Port'),
         description: gettext('Indicates that this is a virtual port.'),
         type: 'boolean',
         modifiable: false,
@@ -386,7 +386,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 250
     },
     expression: {
-        label: gettext('Expression'),
+        display_name: gettext('Expression'),
         description: gettext('An expression that controls the port value.'),
         type: 'string',
         max: 1024,
@@ -397,17 +397,17 @@ export const STD_PORT_ATTRDEFS = {
         order: 260
     },
     device_expression: {
-        /* Label is added dynamically */
+        /* display_name is added dynamically */
         description: gettext('An expression that controls the port value directly on the device.'),
         type: 'string',
         modifiable: true,
         standard: true,
         optional: true,
         max: 1024
-        /* Order is added dynamically */
+        /* order is added dynamically */
     },
     transform_write: {
-        label: gettext('Write Transform Expression'),
+        display_name: gettext('Write Transform Expression'),
         description: gettext('An expression to be applied on the value when written to the port.'),
         type: 'string',
         max: 1024,
@@ -417,7 +417,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 270
     },
     transform_read: {
-        label: gettext('Read Transform Expression'),
+        display_name: gettext('Read Transform Expression'),
         description: gettext('An expression to be applied on the value read from the port.'),
         type: 'string',
         max: 1024,

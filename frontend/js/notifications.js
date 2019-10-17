@@ -99,7 +99,7 @@ function showMessageFromEvents(events) {
                     break
                 }
 
-                deviceLabel = Messages.wrapLabel(event.params.attrs.description || event.params.name)
+                deviceLabel = Messages.wrapLabel(event.params.attrs.display_name || event.params.name)
 
                 if (!device.enabled && event.params.enabled) { /* Enabled */
                     message = StringUtils.formatPercent(
@@ -134,7 +134,7 @@ function showMessageFromEvents(events) {
             }
 
             case 'slave-device-add': {
-                deviceLabel = Messages.wrapLabel(event.params.attrs.description || event.params.name)
+                deviceLabel = Messages.wrapLabel(event.params.attrs.display_name || event.params.name)
                 message = StringUtils.formatPercent(
                     gettext('Device %(device)s has been added.'),
                     {device: deviceLabel}
@@ -150,7 +150,7 @@ function showMessageFromEvents(events) {
                     break
                 }
 
-                deviceLabel = Messages.wrapLabel(device.attrs.description || device.name)
+                deviceLabel = Messages.wrapLabel(device.attrs.display_name || device.name)
                 message = StringUtils.formatPercent(
                     gettext('Device %(device)s has been removed.'),
                     {device: deviceLabel}
@@ -180,7 +180,7 @@ function showMessageFromEvents(events) {
                     break
                 }
 
-                portLabel = Messages.wrapLabel(event.params.description || event.params.id)
+                portLabel = Messages.wrapLabel(event.params.display_name || event.params.id)
                 device = Cache.findPortSlaveDevice(port.id)
 
                 /* Do not show notifications for ports belonging to permanently offline devices,
@@ -288,7 +288,7 @@ function showMessageFromEvents(events) {
             }
 
             case 'port-add': {
-                portLabel = Messages.wrapLabel(event.params.description || event.params.id)
+                portLabel = Messages.wrapLabel(event.params.display_name || event.params.id)
                 device = Cache.findPortSlaveDevice(event.params.id)
 
                 /* If more than one port of a device have been added,
@@ -334,7 +334,7 @@ function showMessageFromEvents(events) {
                     break
                 }
 
-                portLabel = Messages.wrapLabel(port.description || port.id)
+                portLabel = Messages.wrapLabel(port.display_name || port.id)
                 device = Cache.findPortSlaveDevice(port.id)
 
                 /* If more than one port of a device have been removed,
