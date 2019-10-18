@@ -22,6 +22,16 @@ export function getGlobalProgressMessage() {
     return globalProgressMessage
 }
 
+export function combineAttrdefs(defs1, defs2) {
+    let combined = ObjectUtils.copy(defs1, /* deep = */ true)
+
+    ObjectUtils.forEach(defs2, function (name, def) {
+        combined[name] = ObjectUtils.combine(combined[name] || {}, def)
+    })
+
+    return combined
+}
+
 
 export const AttrdefFormMixin = Mixin((superclass = Object) => {
 

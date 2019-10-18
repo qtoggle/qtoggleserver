@@ -33,7 +33,7 @@ def make_auth_header(origin, username, password_hash):
     if username:
         claims['usr'] = username
 
-    if settings.system.date_support and system.date.has_real_date_time():
+    if system.date.has_date_support() and system.date.has_real_date_time():
         claims['iat'] = int(time.time())
 
     token = jwt.encode(claims, key=password_hash or '', algorithm=JWT_ALG)
@@ -63,7 +63,7 @@ def parse_auth_header(auth, origin, password_hash_func, require_usr=True):
         raise AuthError('missing or invalid ori claim in JWT')
 
     iat = payload.get('iat')
-    if iat is not None and settings.system.date_support and system.date.has_real_date_time():
+    if (iat is not None) and system.date.has_date_support() and system.date.has_real_date_time():
         delta = time.time() - iat
         if abs(delta) > settings.core.max_client_time_skew:
             raise AuthError('JWT too old or too much in the future')

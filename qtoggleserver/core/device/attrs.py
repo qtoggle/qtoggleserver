@@ -1,20 +1,18 @@
 
-import calendar
 import copy
 import datetime
 import hashlib
 import json
 import logging
-import os
 import re
 import socket
-import subprocess
 import sys
 
 from qtoggleserver import system
 from qtoggleserver import version
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
+from qtoggleserver.utils.cmd import run_set_cmd
 
 
 logger = logging.getLogger(__name__)
@@ -23,60 +21,72 @@ STANDARD_ATTRDEFS = {
     'name': {
         'type': 'string',
         'modifiable': True,
-        'persisted': lambda: not bool(settings.device_name_hooks.set),
+        'persisted': lambda: not bool(settings.device_name.set_cmd),
         'min': 1,
         'max': 32,
         'pattern': r'^[_a-zA-Z]?[_a-z-A-Z0-9]*$',
+        'internal': True
     },
     'display_name': {
         'type': 'string',
         'modifiable': True,
-        'max': 64
+        'max': 64,
+        'internal': True
     },
     'version': {
-        'type': 'string'
+        'type': 'string',
+        'internal': True
     },
     'api_version': {
-        'type': 'string'
+        'type': 'string',
+        'internal': True
     },
     'admin_password': {
         'type': 'string',
         'modifiable': True,
-        'max': 32
+        'max': 32,
+        'internal': True
     },
     'normal_password': {
         'type': 'string',
         'modifiable': True,
-        'max': 32
+        'max': 32,
+        'internal': True
     },
     'viewonly_password': {
         'type': 'string',
         'modifiable': True,
-        'max': 32
+        'max': 32,
+        'internal': True
     },
     'flags': {
-        'type': ['string']
+        'type': ['string'],
+        'internal': True
     },
     'virtual_ports': {
         'type': 'number',
-        'enabled': lambda: bool(settings.core.virtual_ports)
+        'enabled': lambda: bool(settings.core.virtual_ports),
+        'internal': True
     },
     'uptime': {
-        'type': 'number'
+        'type': 'number',
+        'internal': True
     },
     'date': {
         'type': 'string',
-        'pattern': r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$',
+        'pattern': r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$',
         'modifiable': True,
         'persisted': False,
-        'enabled': lambda: settings.system.date_support
+        'enabled': lambda: system.date.has_date_support(),
+        'internal': True
     },
     'timezone': {
         'type': 'string',
-        'pattern': r'^[a-zA-Z0-9/_+-]$',
         'modifiable': True,
         'persisted': False,
-        'enabled': lambda: settings.system.date_support
+        'choices': [{'value': zone} for zone in system.date.get_timezones()],
+        'enabled': lambda: system.date.has_timezone_support(),
+        'internal': False  # Having internal False here enables export of attribute definition (needed for choices)
     },
     'network_ip': {
         'type': 'string',
@@ -84,7 +94,8 @@ STANDARD_ATTRDEFS = {
                    r'3}\.\d{1,3}\.\d{1,3})|$',
         'modifiable': True,
         'persisted': False,
-        'enabled': lambda: bool(settings.system.network_interface)
+        'enabled': lambda: system.net.has_network_ip_support(),
+        'internal': True
     },
     'network_wifi': {
         'type': 'string',
@@ -92,7 +103,8 @@ STANDARD_ATTRDEFS = {
         'pattern': r'^(([^:]{0,32}:?)|([^:]{0,32}:[^:]{0,64}:?)|([^:]{0,32}:[^:]{0,64}:[0-9a-fA-F]{12}))$',
         'modifiable': True,
         'persisted': False,
-        'enabled': lambda: bool(settings.system.wpa_supplicant_conf)
+        'enabled': lambda: system.net.has_network_wifi_support(),
+        'internal': True
     }
 }
 
@@ -165,10 +177,7 @@ def get_schema():
             attr_schema = dict(attrdef)
 
             enabled = attr_schema.pop('enabled', True)
-            if not enabled:
-                continue
-
-            if callable(enabled) and not enabled():
+            if not enabled or callable(enabled) and not enabled():
                 continue
 
             if attr_schema['type'] == 'string':
@@ -193,6 +202,7 @@ def get_schema():
 
             attr_schema.pop('persisted', None)
             attr_schema.pop('modifiable', None)
+            attr_schema.pop('internal', None)
 
             _schema['properties'][name] = attr_schema
 
@@ -241,24 +251,31 @@ def get_attrs():
     if settings.core.virtual_ports:
         attrs['virtual_ports'] = settings.core.virtual_ports
 
-    if settings.system.date_support:
-        attrs['date'] = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+    if system.date.has_date_support():
+        attrs['date'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        if settings.system.wpa_supplicant_conf:
-            wifi = system.net.get_wifi(settings.system.wpa_supplicant_conf)
-            if wifi['bssid']:
-                attrs['network_wifi'] = '{}:{}:{}'.format(wifi['ssid'], wifi['psk'], wifi['bssid'])
+    if system.date.has_timezone_support():
+        attrs['timezone'] = system.date.get_timezone()
 
-            elif wifi['psk']:
-                attrs['network_wifi'] = '{}:{}'.format(wifi['ssid'], wifi['psk'])
+    if system.net.has_network_wifi_support():
+        wifi_config = system.net.get_wifi_config()
+        if wifi_config['bssid']:
+            attrs['network_wifi'] = '{}:{}:{}'.format(wifi_config['ssid'], wifi_config['psk'], wifi_config['bssid'])
 
-            else:
-                attrs['network_wifi'] = wifi['ssid']
+        elif wifi_config['psk']:
+            wifi_config['psk'] = wifi_config['psk'].replace('\\', '\\\\')
+            wifi_config['psk'] = wifi_config['psk'].replace(':', '\\:')
+            attrs['network_wifi'] = '{}:{}'.format(wifi_config['ssid'], wifi_config['psk'])
 
-        if settings.system.network_interface:
-            ip_config = system.net.get_ip_config(settings.system.network_interface)
-            attrs['network_ip'] = '{}/{}:{}:{}'.format(ip_config['ip'], ip_config['mask'],
-                                                       ip_config['gw'], ip_config['dns'])
+        else:
+            wifi_config['ssid'] = wifi_config['ssid'].replace('\\', '\\\\')
+            wifi_config['ssid'] = wifi_config['ssid'].replace(':', '\\:')
+            attrs['network_wifi'] = wifi_config['ssid']
+
+    if system.net.has_network_ip_support():
+        ip_config = system.net.get_ip_config()
+        attrs['network_ip'] = '{}/{}:{}:{}'.format(ip_config['ip'], ip_config['mask'],
+                                                   ip_config['gw'], ip_config['dns'])
 
     return attrs
 
@@ -266,7 +283,6 @@ def get_attrs():
 def set_attrs(attrs):
     core_device_attrs = sys.modules[__name__]
 
-    ip_config = None
     reboot_required = False
 
     # noinspection PyShadowingNames
@@ -288,22 +304,12 @@ def set_attrs(attrs):
             return 'attribute not modifiable: {}'.format(name)
 
         if name.endswith('_password') and hasattr(core_device_attrs, name + '_hash'):
-            # call password hook, if set
-            if settings.password_hook:
-                env = {
-                    'QS_USERNAME': name[:-9],
-                    'QS_PASSWORD': value
-                }
-
-                try:
-                    subprocess.check_output(settings.password_hook, env=env, stderr=subprocess.STDOUT)
-                    logger.debug('password hook exec succeeded')
-
-                except Exception as e:
-                    logger.error('password hook call failed: %s', e)
+            # Call password set command, if available
+            if settings.password_set_cmd:
+                run_set_cmd(settings.password_set_cmd, cmd_name='password', log_values=False,
+                            username=name[:-9], password=value)
 
             value = hashlib.sha256(value.encode()).hexdigest()
-
             name += '_hash'
 
             setattr(core_device_attrs, name, value)
@@ -316,73 +322,64 @@ def set_attrs(attrs):
             setattr(core_device_attrs, name, value)
             continue
 
-        if name == 'name' and settings.device_name_hooks.set:
-            env = {'QS_HOSTNAME': value}
-
-            try:
-                subprocess.check_output(settings.device_name_hooks.set, env=env, stderr=subprocess.STDOUT)
-                core_device_attrs.name = value
-                logger.debug('device name set hook exec succeeded')
-
-            except Exception as e:
-                logger.error('device name set hook call failed: %s', e)
-
+        if name == 'name' and settings.device_name.set_cmd:
+            run_set_cmd(settings.device_name.set_cmd, cmd_name='device name', name=value)
             continue
 
-        if name == 'date' and settings.system.date_support:
+        if name == 'date' and system.date.has_date_support():
             try:
-                date = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+                date = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
 
             except ValueError:
                 return 'invalid field: {}'.format(name)
 
-            time = int(calendar.timegm(date.timetuple()))
-            if os.system('date +%s -s{}'.format(date)):
-                logger.error('date call failed')
+            system.date.set_date(date)
+            continue
 
-                raise Exception(500, 'date call failed')  # TODO a more specific exception?
+        if name == 'timezone' and system.date.has_timezone_support():
+            system.date.set_timezone(value)
+            continue
 
-            else:
-                logger.debug('system date set to %s', time)
+        if name == 'network_wifi' and system.net.has_network_wifi_support():
+            parts = re.split(r'[^\\]:', value)
+            parts = [p.replace('\\:', ':') for p in parts]
+            while len(parts) < 3:
+                parts.append('')
 
-                continue
+            ssid, psk, bssid = parts[:3]
+            system.net.set_wifi_config(ssid, psk, bssid)
+            reboot_required = True
+            continue
 
-        if settings.system.wpa_supplicant_conf:
-            if name == 'network_wifi':
-                parts = re.split(r'[^\\]:', value)
-                parts = [p.replace('\\:', ':') for p in parts]
-
-                while len(parts) < 3:
-                    parts.append('')
-
-                ssid, psk, bssid = parts[:3]
-
-                system.net.set_wifi(settings.system.wpa_supplicant_conf, ssid, psk, bssid)
-                reboot_required = True
-                continue
-
-        if settings.system.network_interface:
-            if name == 'network_ip':
-                ip_config = value
-                continue
+        if name == 'network_ip' and system.net.has_network_ip_support():
+            parts = value.split(':')
+            ip, mask, gw, dns = parts[:3]
+            system.net.set_ip_config(ip, mask, gw, dns)
+            reboot_required = True
+            continue
 
         return 'no such attribute: {}'.format(name)
-
-    if ip_config is not None:
-        system.net.set_ip_config(settings.system.network_interface, **ip_config)
-        reboot_required = True
 
     return reboot_required
 
 
 def to_json():
-    attrdefs = copy.deepcopy(ADDITIONAL_ATTRDEFS)
-    for attrdef in attrdefs.values():
+    attrdefs = copy.deepcopy(ATTRDEFS)
+    filtered_attrdefs = {}
+    for name, attrdef in attrdefs.items():
+        if attrdef.pop('internal', False):
+            continue
+
+        enabled = attrdef.pop('enabled', True)
+        if not enabled or callable(enabled) and not enabled():
+            continue
+
         attrdef.pop('persisted', None)
         attrdef.pop('pattern', None)
-        attrdef.pop('enabled', None)
+
+        filtered_attrdefs[name] = attrdef
 
     result = get_attrs()
-    result['definitions'] = attrdefs
+    result['definitions'] = filtered_attrdefs
 
     return result

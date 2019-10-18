@@ -141,11 +141,21 @@ export const STD_DEVICE_ATTRDEFS = {
         description: gettext('The current system date and time.'),
         type: 'string',
         modifiable: true,
-        regex: '^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$',
+        regex: '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$',
         optional: true,
         standard: true,
         separator: true,
         order: 180
+    },
+    timezone: {
+        display_name: gettext('Timezone'),
+        description: gettext('The device timezone.'),
+        type: 'string',
+        modifiable: true,
+        optional: true,
+        standard: true,
+        separator: false,
+        order: 190
     },
     network_wifi: {
         display_name: gettext('WiFi Configuration'),
@@ -157,7 +167,7 @@ export const STD_DEVICE_ATTRDEFS = {
         regex: '^(([^:]{0,32}:?)|([^:]{0,32}:[^:]{0,64}:?)|([^:]{0,32}:[^:]{0,64}:[0-9a-fA-F]{12}))$',
         optional: true,
         standard: true,
-        order: 190
+        order: 200
     },
     network_ip: {
         display_name: gettext('IP Configuration'),

@@ -4,10 +4,10 @@ import {PushButtonField} from '$qui/forms/common-fields.js'
 import {PageForm}        from '$qui/forms/common-forms.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
 
-import * as API                                  from '$app/api.js'
-import * as Cache                                from '$app/cache.js'
-import {AttrdefFormMixin, preprocessDeviceAttrs} from '$app/common/common.js'
-import UpdateFirmwareForm                        from '$app/common/update-firmware-form.js'
+import * as API           from '$app/api.js'
+import * as Cache         from '$app/cache.js'
+import * as Common        from '$app/common/common.js'
+import UpdateFirmwareForm from '$app/common/update-firmware-form.js'
 
 import * as Settings from './settings.js'
 
@@ -19,7 +19,7 @@ const logger = Settings.logger
  * @class QToggle.SettingsSection.SettingsForm
  * @extends qui.forms.PageForm
  */
-export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin) {
+export default class SettingsForm extends mix(PageForm).with(Common.AttrdefFormMixin) {
 
     constructor() {
         super({
@@ -58,7 +58,7 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin) {
         })
 
         /* Combine standard and additional attribute definitions */
-        this._fullAttrdefs = ObjectUtils.combine(API.STD_DEVICE_ATTRDEFS, attrdefs)
+        this._fullAttrdefs = Common.combineAttrdefs(API.STD_DEVICE_ATTRDEFS, attrdefs)
 
         /* Filter out attribute definitions not applicable to this device */
         this._fullAttrdefs = ObjectUtils.filter(this._fullAttrdefs, function (name, def) {
@@ -85,7 +85,7 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin) {
         this.fieldsFromAttrdefs(
             this._fullAttrdefs,
             /* extraFieldOptions = */ undefined,
-            /* initialData = */ preprocessDeviceAttrs(attrs),
+            /* initialData = */ Common.preprocessDeviceAttrs(attrs),
             /* provisioning = */ []
         )
 

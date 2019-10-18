@@ -1,10 +1,10 @@
 
 import json
 import logging
-import subprocess
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
+from qtoggleserver.utils.cmd import run_get_cmd
 
 from . import attrs as device_attrs
 
@@ -48,16 +48,9 @@ def load():
         setattr(device_attrs, name, value)
 
     # device name
-    if settings.device_name_hooks.get:
-        try:
-            device_attrs.name = subprocess.check_output(settings.device_name_hooks.get,
-                                                        stderr=subprocess.STDOUT).strip()
-
-            logger.debug('device name get hook exec succeeded')
-            logger.debug('loaded name = "%s"', device_attrs.name)
-
-        except Exception as e:
-            logger.error('device name get hook call failed: %s', e)
+    if settings.device_name.get_cmd:
+        result = run_get_cmd(settings.device_name.get_cmd, cmd_name='device name', required_fields=['name'])
+        device_attrs.name = result['name']
 
     # hash empty passwords
     if not device_attrs.admin_password_hash:

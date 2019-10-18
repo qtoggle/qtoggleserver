@@ -52,9 +52,23 @@ class persist:
 
 
 class system:
-    date_support = False
-    network_interface = None
-    wpa_supplicant_conf = None
+    class date:
+        set_cmd = None
+        set_format = '%Y-%m-%dT%H:%M:%SZ'
+
+    class timezone:
+        get_cmd = None
+        set_cmd = None
+
+    class net:
+        class wifi:
+            get_cmd = None
+            set_cmd = None
+
+        class ip:
+            get_cmd = None
+            set_cmd = None
+
     fwupdate_driver = None
 
 
@@ -84,12 +98,12 @@ class configurables:
     pass
 
 
-class device_name_hooks:
-    get = None
-    set = None
+class device_name:
+    get_cmd = None
+    set_cmd = None
 
 
-password_hook = None
+password_set_cmd = None
 
 
 ports = []

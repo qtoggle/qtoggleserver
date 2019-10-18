@@ -13,9 +13,9 @@ import * as ObjectUtils               from '$qui/utils/object.js'
 import * as PromiseUtils              from '$qui/utils/promise.js'
 import * as StringUtils               from '$qui/utils/string.js'
 
-import * as API           from '$app/api.js'
-import * as Cache         from '$app/cache.js'
-import {AttrdefFormMixin} from '$app/common/common.js'
+import * as API    from '$app/api.js'
+import * as Cache  from '$app/cache.js'
+import * as Common from '$app/common/common.js'
 
 import * as Ports from './ports.js'
 
@@ -31,7 +31,7 @@ const logger = Ports.logger
  * @param {String} portId
  * @param {String} [deviceName]
  */
-export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
+export default class PortForm extends mix(PageForm).with(Common.AttrdefFormMixin) {
 
     constructor(portId, deviceName) {
         let pathId = portId
@@ -124,7 +124,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         })
 
         /* Combine standard and additional attribute definitions */
-        this._fullAttrdefs = ObjectUtils.combine(API.STD_PORT_ATTRDEFS, attrdefs)
+        this._fullAttrdefs = Common.combineAttrdefs(API.STD_PORT_ATTRDEFS, attrdefs)
 
         /* Group device_*_expressions together (with expression) */
         let sepAbove = 'expression' in port
