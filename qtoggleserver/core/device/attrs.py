@@ -21,7 +21,7 @@ STANDARD_ATTRDEFS = {
     'name': {
         'type': 'string',
         'modifiable': True,
-        'persisted': lambda: not bool(settings.device_name.set_hook),
+        'persisted': lambda: not bool(settings.device_name.set_cmd),
         'min': 1,
         'max': 32,
         'pattern': r'^[_a-zA-Z]?[_a-z-A-Z0-9]*$',
@@ -94,7 +94,7 @@ STANDARD_ATTRDEFS = {
                    r'3}\.\d{1,3}\.\d{1,3})|$',
         'modifiable': True,
         'persisted': False,
-        'enabled': lambda: bool(settings.system.network_interface),
+        'enabled': lambda: system.net.has_network_ip_support(),
         'internal': True
     },
     'network_wifi': {
@@ -103,7 +103,7 @@ STANDARD_ATTRDEFS = {
         'pattern': r'^(([^:]{0,32}:?)|([^:]{0,32}:[^:]{0,64}:?)|([^:]{0,32}:[^:]{0,64}:[0-9a-fA-F]{12}))$',
         'modifiable': True,
         'persisted': False,
-        'enabled': lambda: bool(settings.system.wpa_supplicant_conf),
+        'enabled': lambda: system.net.has_network_wifi_support(),
         'internal': True
     }
 }
@@ -257,19 +257,23 @@ def get_attrs():
     if system.date.has_timezone_support():
         attrs['timezone'] = system.date.get_timezone()
 
-    if settings.system.wpa_supplicant_conf:
-        wifi = system.net.get_wifi(settings.system.wpa_supplicant_conf)
-        if wifi['bssid']:
-            attrs['network_wifi'] = '{}:{}:{}'.format(wifi['ssid'], wifi['psk'], wifi['bssid'])
+    if system.net.has_network_wifi_support():
+        wifi_config = system.net.get_wifi_config()
+        if wifi_config['bssid']:
+            attrs['network_wifi'] = '{}:{}:{}'.format(wifi_config['ssid'], wifi_config['psk'], wifi_config['bssid'])
 
-        elif wifi['psk']:
-            attrs['network_wifi'] = '{}:{}'.format(wifi['ssid'], wifi['psk'])
+        elif wifi_config['psk']:
+            wifi_config['psk'] = wifi_config['psk'].replace('\\', '\\\\')
+            wifi_config['psk'] = wifi_config['psk'].replace(':', '\\:')
+            attrs['network_wifi'] = '{}:{}'.format(wifi_config['ssid'], wifi_config['psk'])
 
         else:
-            attrs['network_wifi'] = wifi['ssid']
+            wifi_config['ssid'] = wifi_config['ssid'].replace('\\', '\\\\')
+            wifi_config['ssid'] = wifi_config['ssid'].replace(':', '\\:')
+            attrs['network_wifi'] = wifi_config['ssid']
 
-    if settings.system.network_interface:
-        ip_config = system.net.get_ip_config(settings.system.network_interface)
+    if system.net.has_network_ip_support():
+        ip_config = system.net.get_ip_config()
         attrs['network_ip'] = '{}/{}:{}:{}'.format(ip_config['ip'], ip_config['mask'],
                                                    ip_config['gw'], ip_config['dns'])
 
@@ -279,7 +283,6 @@ def get_attrs():
 def set_attrs(attrs):
     core_device_attrs = sys.modules[__name__]
 
-    ip_config = None
     reboot_required = False
 
     # noinspection PyShadowingNames
@@ -301,19 +304,19 @@ def set_attrs(attrs):
             return 'attribute not modifiable: {}'.format(name)
 
         if name.endswith('_password') and hasattr(core_device_attrs, name + '_hash'):
-            # call password hook, if set
-            if settings.password_set_hook:
+            # Call password set command, if available
+            if settings.password_set_cmd:
                 env = {
                     'QS_USERNAME': name[:-9],
                     'QS_PASSWORD': value
                 }
 
                 try:
-                    subprocess.check_output(settings.password_set_hook, env=env, stderr=subprocess.STDOUT)
-                    logger.debug('password hook exec succeeded')
+                    subprocess.check_output(settings.password_set_cmd, env=env, stderr=subprocess.STDOUT)
+                    logger.debug('password set command succeeded')
 
                 except Exception as e:
-                    logger.error('password hook call failed: %s', e)
+                    logger.error('password set command failed: %s', e)
 
             value = hashlib.sha256(value.encode()).hexdigest()
 
@@ -329,16 +332,16 @@ def set_attrs(attrs):
             setattr(core_device_attrs, name, value)
             continue
 
-        if name == 'name' and settings.device_name.set_hook:
+        if name == 'name' and settings.device_name.set_cmd:
             env = {'QS_HOSTNAME': value}
 
             try:
-                subprocess.check_output(settings.device_name.set_hook, env=env, stderr=subprocess.STDOUT)
+                subprocess.check_output(settings.device_name.set_cmd, env=env, stderr=subprocess.STDOUT)
                 core_device_attrs.name = value
-                logger.debug('device name set hook exec succeeded')
+                logger.debug('device name set command succeeded')
 
             except Exception as e:
-                logger.error('device name set hook call failed: %s', e)
+                logger.error('device name set command failed: %s', e)
 
             continue
 
@@ -356,30 +359,25 @@ def set_attrs(attrs):
             system.date.set_timezone(value)
             continue
 
-        if settings.system.wpa_supplicant_conf:
-            if name == 'network_wifi':
-                parts = re.split(r'[^\\]:', value)
-                parts = [p.replace('\\:', ':') for p in parts]
+        if name == 'network_wifi' and system.net.has_network_wifi_support():
+            parts = re.split(r'[^\\]:', value)
+            parts = [p.replace('\\:', ':') for p in parts]
+            while len(parts) < 3:
+                parts.append('')
 
-                while len(parts) < 3:
-                    parts.append('')
+            ssid, psk, bssid = parts[:3]
+            system.net.set_wifi_config(ssid, psk, bssid)
+            reboot_required = True
+            continue
 
-                ssid, psk, bssid = parts[:3]
-
-                system.net.set_wifi(settings.system.wpa_supplicant_conf, ssid, psk, bssid)
-                reboot_required = True
-                continue
-
-        if settings.system.network_interface:
-            if name == 'network_ip':
-                ip_config = value
-                continue
+        if name == 'network_ip' and system.net.has_network_ip_support():
+            parts = value.split(':')
+            ip, mask, gw, dns = parts[:3]
+            system.net.set_ip_config(ip, mask, gw, dns)
+            reboot_required = True
+            continue
 
         return 'no such attribute: {}'.format(name)
-
-    if ip_config is not None:
-        system.net.set_ip_config(settings.system.network_interface, **ip_config)
-        reboot_required = True
 
     return reboot_required
 

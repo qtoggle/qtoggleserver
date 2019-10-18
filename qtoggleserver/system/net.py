@@ -1,198 +1,104 @@
 
 import logging
-import re
 import subprocess
+
+from qtoggleserver.conf import settings
 
 
 logger = logging.getLogger(__name__)
 
 
-def get_ip_config(iface):
-    config = {}
-    output = subprocess.check_output('ip addr show dev {}'.format(iface), shell=True).split('\n')
-    for line in output:
-        match = re.match(r'^\s*inet (\d+\.\d+\.\d+\.\d+)/(\d+)', line)
-        if not match:
-            continue
-
-        config['ip'] = match.group(1)
-        config['mask'] = match.group(2)
-
-    output = subprocess.check_output('ip route', shell=True).split('\n')
-    for line in output:
-        match = re.match(r'^\s*default via (\d+\.\d+\.\d+\.\d+)', line)
-        if not match:
-            continue
-
-        config['gw'] = match.group(1)
-
-    with open('/etc/resolv.conf', 'r') as f:
-        lines = f.readlines()
-        for line in lines:
-            match = re.match(r'^\s*nameserver (\d+\.\d+\.\d+\.\d+)', line)
-            if not match:
-                continue
-
-            config['dns'] = match.group(1)
-
-    return config
-
-
-def set_ip_config(iface, ip, mask, gw, dns):
-    # TODO detect /etc/network/interfaces and /data/etc/static_ip.conf format
+class NetError(Exception):
     pass
 
 
-def get_wifi(wpa_supplicant_conf):
-    # TODO add support for BSSID
-    logger.debug('reading wifi settings from %s', wpa_supplicant_conf)
+def has_network_ip_support():
+    return bool(settings.system.net.ip.get_cmd and settings.system.net.ip.set_cmd)
 
+
+def get_ip_config():
     try:
-        conf_file = open(wpa_supplicant_conf, 'r')
+        ip_config = subprocess.check_output(settings.system.net.ip.get_cmd, stderr=subprocess.STDOUT, shell=True)
+        ip_config = ip_config.strip().decode()
+        logger.debug('IP config = %s', ip_config)
 
     except Exception as e:
-        logger.error('could open wifi settings file %s: %s', wpa_supplicant_conf, e)
+        logger.error('IP config get command failed: %s', e)
+        raise NetError('IP config get command failed: {}'.format(e))
 
-        return {
-            'ssid': '',
-            'psk': ''
-        }
+    ip_config_parts = ip_config.split()  # Expected format: ip mask gw dns
+    if len(ip_config_parts) != 4:
+        logger.error('invalid IP config: %s', ip_config)
+        raise NetError('invalid IP config: {}'.format(ip_config))
 
-    lines = conf_file.readlines()
-    conf_file.close()
-
-    ssid = psk = ''
-    in_section = False
-    for line in lines:
-        line = line.strip()
-        if line.startswith('#'):
-            continue
-
-        if '{' in line:
-            in_section = True
-
-        elif '}' in line:
-            in_section = False
-            break
-
-        elif in_section:
-            m = re.search(r'ssid\s*=\s*"(.*?)"', line)
-            if m:
-                ssid = m.group(1)
-
-            m = re.search(r'psk\s*=\s*"(.*?)"', line)
-            if m:
-                psk = m.group(1)
-
-    if ssid:
-        logger.debug('wifi is enabled (ssid = "%s")', ssid)
-
-        return {
-            'ssid': ssid,
-            'psk': psk,
-            'bssid': ''
-        }
-
-    else:
-        logger.debug('wifi is disabled')
-
-        return {
-            'ssid': '',
-            'psk': '',
-            'bssid': ''
-        }
+    return {
+        'ip': ip_config_parts[0],
+        'mask': ip_config_parts[1],
+        'gw': ip_config_parts[2],
+        'dns': ip_config_parts[3]
+    }
 
 
-def set_wifi(wpa_supplicant_conf, ssid, psk, bssid):
-    # TODO add support for BSSID
-    logger.debug('writing wifi settings to %s: ssid="%s", bssid="%s"', wpa_supplicant_conf, ssid, bssid)
-
-    key_mgmt = 'WPA-PSK WPA-EAP' if psk else 'NONE'
-
-    # will update the first configured network
-    try:
-        conf_file = open(wpa_supplicant_conf, 'r')
-
-    except Exception as e:
-        logger.error('could open wifi settings file %s: %s', wpa_supplicant_conf, e)
-
-        return False
-
-    lines = conf_file.readlines()
-    conf_file.close()
-
-    in_section = False
-    found_ssid = False
-    found_psk = False
-    found_key_mgmt = False
-    i = 0
-    while i < len(lines):
-        line = lines[i].strip()
-        if line.startswith('#'):
-            i += 1
-            continue
-
-        if '{' in line:
-            in_section = True
-
-        elif '}' in line:
-            in_section = False
-            if ssid and not found_ssid:
-                lines.insert(i, '    ssid="' + ssid + '"\n')
-            if psk and not found_psk:
-                lines.insert(i, '    psk="' + psk + '"\n')
-            if not found_key_mgmt:
-                lines.insert(i, '    key_mgmt=' + key_mgmt + '\n')
-
-            found_psk = found_ssid = found_key_mgmt = True
-
-            break
-
-        elif in_section:
-            if ssid:
-                if re.match(r'ssid\s*=\s*".*?"', line):
-                    lines[i] = '    ssid="' + ssid + '"\n'
-                    found_ssid = True
-
-                elif re.match(r'psk\s*=\s*".*?"', line):
-                    if psk:
-                        lines[i] = '    psk="' + psk + '"\n'
-                        found_psk = True
-
-                    else:
-                        lines.pop(i)
-                        i -= 1
-
-                elif re.match(r'key_mgmt\s*=\s*.*?', line):
-                    lines[i] = '    key_mgmt=' + key_mgmt + '\n'
-                    found_key_mgmt = True
-
-            else:  # wifi disabled
-                if re.match(r'ssid\s*=\s*".*?"', line) or re.match(r'psk\s*=\s*".*?"', line):
-                    lines.pop(i)
-                    i -= 1
-
-        i += 1
-
-    if ssid and not found_ssid:
-        lines.append('network={\n')
-        lines.append('    scan_ssid=1\n')
-        lines.append('    ssid="' + ssid + '"\n')
-        lines.append('    psk="' + psk + '"\n')
-        lines.append('    key_mgmt=' + key_mgmt + '\n')
-        lines.append('}\n\n')
+def set_ip_config(ip, mask, gw, dns):
+    env = {
+        'QS_IP': ip,
+        'QS_MASK': mask,
+        'QS_GW': gw,
+        'QS_DNS': dns
+    }
 
     try:
-        conf_file = open(wpa_supplicant_conf, 'w')
+        subprocess.check_output(settings.system.net.ip.set_cmd, env=env, stderr=subprocess.STDOUT, shell=True)
+        logger.debug('IP config set to %s/%s:%s:%s', ip, mask, gw, dns)
 
     except Exception as e:
-        logger.error('could open wifi settings file %s: %s', wpa_supplicant_conf, e)
-
-        return False
-
-    for line in lines:
-        conf_file.write(line)
-
-    conf_file.close()
+        logger.error('IP config set command failed: %s', e)
+        raise NetError('IP config set command failed: {}'.format(e))
 
     return True
+
+
+def has_network_wifi_support():
+    return bool(settings.system.net.wifi.get_cmd and settings.system.net.wifi.set_cmd)
+
+
+def get_wifi_config():
+    try:
+        wifi_config = subprocess.check_output(settings.system.net.wifi.get_cmd, stderr=subprocess.STDOUT, shell=True)
+        wifi_config = wifi_config.strip().decode()
+        logger.debug('got WiFi config')  # Don't log WiFi details
+
+    except Exception as e:
+        logger.error('WiFi config get command failed: %s', e)
+        raise NetError('WiFi config get command failed: {}'.format(e))
+
+    wifi_config_parts = wifi_config.split()  # Expected format: ssid [psk [bssid]]
+    if len(wifi_config_parts) < 1 or len(wifi_config_parts) > 3:
+        logger.error('invalid WiFi config')
+        raise NetError('invalid WiFi config')
+
+    ssid = wifi_config_parts[0]
+    psk = wifi_config_parts[1] if len(wifi_config_parts) >= 2 else None
+    bssid = wifi_config_parts[2] if len(wifi_config_parts) >= 3 else None
+
+    return {
+        'ssid': ssid,
+        'psk': psk,
+        'bssid': bssid
+    }
+
+
+def set_wifi_config(ssid, psk, bssid):
+    env = {
+        'QS_SSID': ssid,
+        'QS_PSK': psk,
+        'QS_BSSID': bssid
+    }
+
+    try:
+        subprocess.check_output(settings.system.net.wifi.set_cmd, env=env, stderr=subprocess.STDOUT, shell=True)
+        logger.debug('WiFi config set')  # Don't log WiFi details
+
+    except Exception as e:
+        logger.error('WiFi config set command failed: %s', e)
+        raise NetError('WiFi config set command failed: {}'.format(e))

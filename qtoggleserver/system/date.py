@@ -22,7 +22,7 @@ def has_real_date_time():
 
 
 def has_date_support():
-    return bool(settings.system.date.set)
+    return bool(settings.system.date.set_cmd)
 
 
 def set_date(date):
@@ -30,21 +30,21 @@ def set_date(date):
     env = {'QS_DATE': date_str}
 
     try:
-        subprocess.check_output(settings.system.date.set, env=env, stderr=subprocess.STDOUT, shell=True)
+        subprocess.check_output(settings.system.date.set_cmd, env=env, stderr=subprocess.STDOUT, shell=True)
         logger.debug('date set to %s', date.strftime('%Y-%m-%dT%H:%M:%S'))
 
     except Exception as e:
-        logger.error('date set hook call failed: %s', e)
-        raise DateError('date set hook failed: {}'.format(e))
+        logger.error('date set command failed: %s', e)
+        raise DateError('date set command failed: {}'.format(e))
 
 
 def has_timezone_support():
-    return bool(settings.system.timezone.get_hook and settings.system.timezone.set_hook)
+    return bool(settings.system.timezone.get_cmd and settings.system.timezone.set_cmd)
 
 
 def get_timezone():
     try:
-        timezone = subprocess.check_output(settings.system.timezone.get_hook, stderr=subprocess.STDOUT, shell=True)
+        timezone = subprocess.check_output(settings.system.timezone.get_cmd, stderr=subprocess.STDOUT, shell=True)
         timezone = timezone.strip().decode()
 
         logger.debug('timezone = %s', timezone)
@@ -52,20 +52,20 @@ def get_timezone():
         return timezone
 
     except Exception as e:
-        logger.error('timezone get hook call failed: %s', e)
-        raise DateError('timezone get hook failed: {}'.format(e))
+        logger.error('timezone get command failed: %s', e)
+        raise DateError('timezone get command failed: {}'.format(e))
 
 
 def set_timezone(timezone):
     env = {'QS_TIMEZONE': timezone}
 
     try:
-        subprocess.check_output(settings.system.timezone.set_hook, env=env, stderr=subprocess.STDOUT, shell=True)
+        subprocess.check_output(settings.system.timezone.set_cmd, env=env, stderr=subprocess.STDOUT, shell=True)
         logger.debug('timezone set to %s', timezone)
 
     except Exception as e:
-        logger.error('timezone set hook call failed: %s', e)
-        raise DateError('timezone set hook failed: {}'.format(e))
+        logger.error('timezone set command failed: %s', e)
+        raise DateError('timezone set command failed: {}'.format(e))
 
 
 def get_timezones():
