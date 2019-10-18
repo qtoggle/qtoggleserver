@@ -6,13 +6,13 @@ import json
 import logging
 import re
 import socket
-import subprocess
 import sys
 
 from qtoggleserver import system
 from qtoggleserver import version
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
+from qtoggleserver.utils.cmd import run_set_cmd
 
 
 logger = logging.getLogger(__name__)
@@ -306,20 +306,10 @@ def set_attrs(attrs):
         if name.endswith('_password') and hasattr(core_device_attrs, name + '_hash'):
             # Call password set command, if available
             if settings.password_set_cmd:
-                env = {
-                    'QS_USERNAME': name[:-9],
-                    'QS_PASSWORD': value
-                }
-
-                try:
-                    subprocess.check_output(settings.password_set_cmd, env=env, stderr=subprocess.STDOUT)
-                    logger.debug('password set command succeeded')
-
-                except Exception as e:
-                    logger.error('password set command failed: %s', e)
+                run_set_cmd(settings.password_set_cmd, cmd_name='password', log_values=False,
+                            username=name[:-9], password=value)
 
             value = hashlib.sha256(value.encode()).hexdigest()
-
             name += '_hash'
 
             setattr(core_device_attrs, name, value)
@@ -333,16 +323,7 @@ def set_attrs(attrs):
             continue
 
         if name == 'name' and settings.device_name.set_cmd:
-            env = {'QS_HOSTNAME': value}
-
-            try:
-                subprocess.check_output(settings.device_name.set_cmd, env=env, stderr=subprocess.STDOUT)
-                core_device_attrs.name = value
-                logger.debug('device name set command succeeded')
-
-            except Exception as e:
-                logger.error('device name set command failed: %s', e)
-
+            run_set_cmd(settings.device_name.set_cmd, cmd_name='device name', name=value)
             continue
 
         if name == 'date' and system.date.has_date_support():
