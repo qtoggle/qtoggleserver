@@ -366,9 +366,15 @@ def set_attrs(attrs):
             continue
 
         if name == 'network_ip' and system.net.has_network_ip_support():
-            parts = value.split(':')
-            ip, mask, gw, dns = parts[:3]
-            system.net.set_ip_config(ip, mask, gw, dns)
+            if value:
+                parts = value.split(':')
+                ip_mask, gw, dns = parts
+                ip, mask = ip_mask.split('/')
+                system.net.set_ip_config(ip, mask, gw, dns)
+
+            else:
+                system.net.set_ip_config(ip='', mask='', gw='', dns='')
+
             reboot_required = True
             continue
 
