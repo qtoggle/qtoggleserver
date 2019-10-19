@@ -29,12 +29,16 @@ def run_get_cmd(get_cmd, cmd_name=None, log_values=True, exc_class=None, require
 
         key, value = parts
         key = key.lower()[3:]  # strip leading "QS_"
+        if value.startswith('"'):
+            value = value[1:]
+        if value.endswith('"') and not value.endswith('\\"'):
+            value = value[:-1]
 
         config_dict[key] = value
 
     if cmd_name:
         if log_values:
-            values_str = ['{} = {}'.format(k, v) for k, v in sorted(config_dict.items())]
+            values_str = ', '.join(['{} = "{}"'.format(k, v) for k, v in sorted(config_dict.items())])
             logger.debug('got %s: %s', cmd_name, values_str)
 
         else:
@@ -64,7 +68,7 @@ def run_set_cmd(set_cmd, cmd_name=None, log_values=True, exc_class=None, **confi
 
     if cmd_name:
         if log_values:
-            values_str = ['{} = {}'.format(k, v) for k, v in sorted(config.items())]
+            values_str = ', '.join(['{} = "{}"'.format(k, v) for k, v in sorted(config.items())])
             logger.debug('%s set to: %s', cmd_name, values_str)
 
         else:
