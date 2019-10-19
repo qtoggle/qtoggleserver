@@ -91,7 +91,7 @@ STANDARD_ATTRDEFS = {
     'network_ip': {
         'type': 'string',
         'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,3}\.\d{1,'
-                   r'3}\.\d{1,3}\.\d{1,3})|$',
+                   r'3}\.\d{1,3}\.\d{1,3})?$',
         'modifiable': True,
         'persisted': False,
         'enabled': lambda: system.net.has_network_ip_support(),
@@ -260,6 +260,7 @@ def get_attrs():
     if system.net.has_network_wifi_support():
         wifi_config = system.net.get_wifi_config()
         if wifi_config['bssid']:
+            wifi_config['bssid'] = wifi_config['bssid'].replace(':', '')
             attrs['network_wifi'] = '{}:{}:{}'.format(wifi_config['ssid'], wifi_config['psk'], wifi_config['bssid'])
 
         elif wifi_config['psk']:
@@ -344,12 +345,22 @@ def set_attrs(attrs):
             continue
 
         if name == 'network_wifi' and system.net.has_network_wifi_support():
-            parts = re.split(r'[^\\]:', value)
-            parts = [p.replace('\\:', ':') for p in parts]
+            parts = value.split(':')
+            i = 0
+            while i < len(parts):
+                if len(parts[i]) and parts[i][-1] == '\\':
+                    parts[i] = parts[i][:-1] + ':' + parts[i + 1]
+                    del parts[i + 1]
+                i += 1
+
+            parts = [p.replace('\\\\', '\\') for p in parts]
             while len(parts) < 3:
                 parts.append('')
 
             ssid, psk, bssid = parts[:3]
+            bssid = bssid.lower()
+            bssid = re.sub('([a-f0-9]{2})', '\\1:', bssid).strip(':')  # Add colons
+
             system.net.set_wifi_config(ssid, psk, bssid)
             reboot_required = True
             continue
