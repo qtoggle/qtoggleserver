@@ -267,10 +267,13 @@ def get_attrs():
             wifi_config['psk'] = wifi_config['psk'].replace(':', '\\:')
             attrs['network_wifi'] = '{}:{}'.format(wifi_config['ssid'], wifi_config['psk'])
 
-        else:
+        elif wifi_config['ssid']:
             wifi_config['ssid'] = wifi_config['ssid'].replace('\\', '\\\\')
             wifi_config['ssid'] = wifi_config['ssid'].replace(':', '\\:')
             attrs['network_wifi'] = wifi_config['ssid']
+
+        else:
+            attrs['network_wifi'] = ''
 
     if system.net.has_network_ip_support():
         ip_config = system.net.get_ip_config()

@@ -27,10 +27,7 @@ def has_network_wifi_support():
 
 def get_wifi_config():
     wifi_config = run_get_cmd(settings.system.net.wifi.get_cmd, cmd_name='WiFi config',
-                              exc_class=NetError, required_fields=['ssid'])
-
-    wifi_config.setdefault('psk', '')
-    wifi_config.setdefault('bssid', '')
+                              exc_class=NetError, required_fields=['ssid', 'psk', 'bssid'])
 
     return wifi_config
 
