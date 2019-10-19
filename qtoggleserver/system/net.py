@@ -26,12 +26,12 @@ def has_network_wifi_support():
 
 
 def get_wifi_config():
-    wifi_config = run_get_cmd(settings.system.net.wifi.get_cmd, cmd_name='WiFi config',
+    wifi_config = run_get_cmd(settings.system.net.wifi.get_cmd, cmd_name='WiFi config', log_values=False,
                               exc_class=NetError, required_fields=['ssid', 'psk', 'bssid'])
 
     return wifi_config
 
 
 def set_wifi_config(ssid, psk, bssid):
-    run_set_cmd(settings.system.net.wifi.set_cmd, cmd_name='WiFi config', exc_class=NetError,
+    run_set_cmd(settings.system.net.wifi.set_cmd, cmd_name='WiFi config', exc_class=NetError, log_values=False,
                 ssid=ssid, psk=psk, bssid=bssid)
