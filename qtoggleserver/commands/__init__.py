@@ -2,7 +2,6 @@
 import argparse
 import asyncio
 import logging.config
-import pyhocon
 import signal
 import sys
 
@@ -60,10 +59,8 @@ def parse_args():
 
 
 def init_settings():
-    config_factory = pyhocon.ConfigFactory()
-
     try:
-        parsed_config = config_factory.parse_file(options.config_file)
+        parsed_config = conf_utils.config_from_file(options.config_file)
 
     except IOError as e:
         sys.stderr.write('failed to open config file "{}": {}\n'.format(options.config_file, e))
@@ -74,9 +71,11 @@ def init_settings():
         sys.exit(-1)
 
     def_config = conf_utils.obj_to_dict(settings)
-    config = config_factory.from_dict(def_config)
-    config = pyhocon.ConfigTree.merge_configs(config, parsed_config)
-    config = config.as_plain_ordered_dict()
+    def_config = conf_utils.config_from_dict(def_config)
+
+    config = conf_utils.config_merge(def_config, parsed_config)
+    config = conf_utils.config_to_dict(config)
+
     conf_utils.update_obj_from_dict(settings, config)
 
 

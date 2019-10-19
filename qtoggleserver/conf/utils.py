@@ -1,5 +1,9 @@
 
+import pyhocon
 import types
+
+
+config_factory = pyhocon.ConfigFactory()
 
 
 def obj_to_dict(obj):
@@ -27,3 +31,19 @@ def update_obj_from_dict(obj, d):
 
         else:
             setattr(obj, k, v)
+
+
+def config_from_file(file):
+    return config_factory.parse_file(file)
+
+
+def config_from_dict(d):
+    return config_factory.from_dict(d)
+
+
+def config_to_dict(config):
+    return config.as_plain_ordered_dict()
+
+
+def config_merge(config1, config2):
+    return pyhocon.ConfigTree.merge_configs(config1, config2)

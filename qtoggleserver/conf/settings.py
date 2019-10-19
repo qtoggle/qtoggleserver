@@ -20,8 +20,9 @@ logging = {
             'formatter': 'default'
         }
     },
-    'loggers': {},
-
+    'loggers': {
+        '"qtoggleserver.persist"': {'level': 'INFO'}  # Double quotes are necessary to avoid HOCON key split
+    },
     'root': {
         'level': 'DEBUG',
         'handlers': ['console']
