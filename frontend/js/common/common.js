@@ -52,9 +52,9 @@ export const AttrdefFormMixin = Mixin((superclass = Object) => {
                 field.class = ComboField
                 field.choices = def.choices.map(function (c) {
                     if (typeof c === 'object') {
-                        return {value: c.value, label: c.display_name || StringUtils.title(c.value)}
+                        return {value: c.value, label: c.display_name || StringUtils.title(c.value.toString())}
                     }
-                    else {
+                    else {  /* older choices format compatibility shim */
                         return {value: c, label: c}
                     }
                 })
