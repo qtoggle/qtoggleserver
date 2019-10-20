@@ -278,8 +278,12 @@ def get_attrs():
 
     if system.net.has_network_ip_support():
         ip_config = system.net.get_ip_config()
-        attrs['network_ip'] = '{}/{}:{}:{}'.format(ip_config['ip'], ip_config['mask'],
-                                                   ip_config['gw'], ip_config['dns'])
+        if ip_config['ip'] and ip_config['mask'] and ip_config['gw'] and ip_config['dns']:
+            attrs['network_ip'] = '{}/{}:{}:{}'.format(ip_config['ip'], ip_config['mask'],
+                                                       ip_config['gw'], ip_config['dns'])
+
+        else:
+            attrs['network_ip'] = ''
 
     return attrs
 
