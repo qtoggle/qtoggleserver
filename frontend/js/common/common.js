@@ -54,7 +54,7 @@ export const AttrdefFormMixin = Mixin((superclass = Object) => {
                     if (typeof c === 'object') {
                         return {value: c.value, label: c.display_name || StringUtils.title(c.value.toString())}
                     }
-                    else {  /* older choices format compatibility shim */
+                    else { /* older choices format compatibility shim */
                         return {value: c, label: c}
                     }
                 })
