@@ -1197,11 +1197,16 @@ export function patchDevice(attrs) {
 
 /**
  * POST /reset API function call.
+ * @param {Boolean} [factory] set to `true` to reset to factory defaults
  * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
-export function postReset() {
-    return apiCall('POST', '/reset', /* query = */ null, /* data = */ {})
+export function postReset(factory) {
+    let data = {}
+    if (factory) {
+        data.factory = true
+    }
+    return apiCall('POST', '/reset', /* query = */ null, /* data = */ data)
 }
 
 /**
