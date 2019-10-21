@@ -191,6 +191,8 @@ export default class UpdateFirmwareForm extends PageForm {
         })
 
         this._deviceName = deviceName
+        this._updateRunning = false
+        this._updateFinished = false
     }
 
     load() {
@@ -283,6 +285,8 @@ export default class UpdateFirmwareForm extends PageForm {
                 this.getButton('close').disable()
             }
 
+            this._updateRunning = true
+
         }.bind(this)).then(function () {
 
             return this.pollStatus()
@@ -320,9 +324,16 @@ export default class UpdateFirmwareForm extends PageForm {
                 }
 
                 running = false
+                if (this._updateRunning) {
+                    this._updateRunning = false
+                    this._updateFinished = true
+                }
             }
             else if (status === API.FIRMWARE_STATUS_ERROR) {
                 running = false
+                if (this._updateRunning) {
+                    this._updateRunning = false
+                }
             }
 
             let data = {
@@ -365,9 +376,6 @@ export default class UpdateFirmwareForm extends PageForm {
                 if (!this.deviceIsSlave()) {
                     let closeButton = this.getButton('close')
                     closeButton.enable()
-                    closeButton.callback = function () {
-                        Window.reload()
-                    }
                 }
 
                 return
@@ -385,6 +393,12 @@ export default class UpdateFirmwareForm extends PageForm {
 
     deviceIsSlave() {
         return !Cache.isMainDevice(this.getDeviceName())
+    }
+
+    onClose() {
+        if (this._updateFinished && !this.deviceIsSlave()) {
+            PromiseUtils.later(1000).then(() => Window.reload())
+        }
     }
 
 }
