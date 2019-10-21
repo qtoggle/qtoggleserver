@@ -9,6 +9,7 @@ import FormButton              from '$qui/forms/form-button.js'
 import FormField               from '$qui/forms/form-field.js'
 import {ValidationError}       from '$qui/forms/forms.js'
 import StockIcon               from '$qui/icons/stock-icon.js'
+import * as Toast              from '$qui/messages/toast.js'
 import * as PromiseUtils       from '$qui/utils/promise.js'
 import * as Window             from '$qui/window.js'
 
@@ -327,6 +328,7 @@ export default class UpdateFirmwareForm extends PageForm {
                 if (this._updateRunning) {
                     this._updateRunning = false
                     this._updateFinished = true
+                    Toast.show({message: gettext('Firmware has been updated.'), type: 'info', timeout: 0})
                 }
             }
             else if (status === API.FIRMWARE_STATUS_ERROR) {
