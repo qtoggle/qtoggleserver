@@ -1,8 +1,9 @@
-import {gettext}         from '$qui/base/i18n.js'
-import {mix}             from '$qui/base/mixwith.js'
-import {PushButtonField} from '$qui/forms/common-fields.js'
-import {PageForm}        from '$qui/forms/common-forms.js'
-import * as ObjectUtils  from '$qui/utils/object.js'
+import {gettext}                         from '$qui/base/i18n.js'
+import {mix}                             from '$qui/base/mixwith.js'
+import {PushButtonField, CompositeField} from '$qui/forms/common-fields.js'
+import {PageForm}                        from '$qui/forms/common-forms.js'
+import * as Theme                        from '$qui/theme.js'
+import * as ObjectUtils                  from '$qui/utils/object.js'
 
 import * as API           from '$app/api.js'
 import * as Cache         from '$app/cache.js'
@@ -29,6 +30,7 @@ export default class SettingsForm extends mix(PageForm).with(Common.AttrdefFormM
         })
 
         this._fullAttrdefs = null
+        this._staticFieldsAdded = false
     }
 
     init() {
@@ -89,7 +91,60 @@ export default class SettingsForm extends mix(PageForm).with(Common.AttrdefFormM
             /* provisioning = */ []
         )
 
-        this._addExtraFields(attrs)
+        if (!this._staticFieldsAdded) {
+            this.addStaticFields()
+            this._staticFieldsAdded = true
+        }
+
+        this.updateStaticFields(attrs)
+    }
+
+    addStaticFields() {
+        this.addField(-1, new CompositeField({
+            name: 'management_buttons',
+            label: gettext('Manage Device'),
+            separator: true,
+            fields: [
+                new PushButtonField({
+                    name: 'provision',
+                    caption: gettext('Provision'),
+                    style: 'interactive',
+                    callback(form) {
+                        //form.pushPage(form.makeUpdateFirmwareForm())
+                    }
+                }),
+                new PushButtonField({
+                    name: 'reboot',
+                    separator: true,
+                    caption: gettext('Reboot'),
+                    style: 'danger',
+                    callback(form) {
+                        //form.pushPage(form.makeUpdateFirmwareForm())
+                    }
+                }),
+                new PushButtonField({
+                    name: 'update_firmware',
+                    style: 'colored',
+                    backgroundColor: Theme.getColor('@magenta-color'),
+                    backgroundActiveColor: Theme.getColor('@magenta-active-color'),
+                    caption: gettext('Update Firmware'),
+                    disabled: true,
+                    callback(form) {
+                        form.pushPage(form.makeUpdateFirmwareForm())
+                    }
+                })
+            ]
+        }))
+    }
+
+    updateStaticFields(attrs) {
+        let updateFirmwareButtonField = this.getField('management_buttons').getField('update_firmware')
+        if (attrs.flags.indexOf('firmware') >= 0) {
+            updateFirmwareButtonField.enable()
+        }
+        else {
+            updateFirmwareButtonField.disable()
+        }
     }
 
     applyField(value, fieldName) {
@@ -125,25 +180,6 @@ export default class SettingsForm extends mix(PageForm).with(Common.AttrdefFormM
 
     defaultAction() {
         /* Prevent the form from closing on enter */
-    }
-
-    _addExtraFields(attrs) {
-        /* Update firmware button */
-        if (this.getField('update_firmware')) {
-            this.removeField('update_firmware')
-        }
-
-        if (attrs.flags.indexOf('firmware') >= 0) {
-            this.addField(-1, new PushButtonField({
-                name: 'update_firmware',
-                label: gettext('Update Firmware'),
-                separator: true,
-                caption: gettext('Check'),
-                callback(form) {
-                    form.pushPage(form.makeUpdateFirmwareForm())
-                }
-            }))
-        }
     }
 
     navigate(pathId) {
