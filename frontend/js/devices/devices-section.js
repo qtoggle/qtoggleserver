@@ -78,7 +78,7 @@ export default class DevicesSection extends Section {
                         deviceForm = this.devicesList.makeDeviceForm(device.name)
                         this.devicesList.setSelectedDevice(device.name)
                         this.devicesList.pushPage(deviceForm)
-                        deviceForm.setWaitingDeviceOnline()
+                        deviceForm.startWaitingDeviceOnline()
                     }
                 }
 

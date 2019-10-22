@@ -12,10 +12,13 @@ import * as StringUtils                  from '$qui/utils/string.js'
 
 import * as API           from '$app/api.js'
 import * as Cache         from '$app/cache.js'
+import AttrdefFormMixin   from '$app/common/attrdef-form-mixin.js'
 import * as Common        from '$app/common/common.js'
 import UpdateFirmwareForm from '$app/common/update-firmware-form.js'
+import WaitDeviceMixin    from '$app/common/wait-device-mixin.js'
 
 import * as Settings    from './settings.js'
+
 
 const logger = Settings.logger
 
@@ -24,7 +27,7 @@ const logger = Settings.logger
  * @class QToggle.SettingsSection.SettingsForm
  * @extends qui.forms.PageForm
  */
-export default class SettingsForm extends mix(PageForm).with(Common.AttrdefFormMixin) {
+export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin) {
 
     constructor() {
         super({
@@ -109,14 +112,6 @@ export default class SettingsForm extends mix(PageForm).with(Common.AttrdefFormM
             label: gettext('Manage Device'),
             separator: true,
             fields: [
-                new PushButtonField({
-                    name: 'provision',
-                    caption: gettext('Provision'),
-                    style: 'interactive',
-                    callback(form) {
-                        //form.pushPage(form.makeUpdateFirmwareForm())
-                    }
-                }),
                 new PushButtonField({
                     name: 'reboot',
                     separator: true,

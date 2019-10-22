@@ -186,8 +186,8 @@ export default class UpdateFirmwareForm extends PageForm {
                 })
             ],
             buttons: [
-                new FormButton({id: 'update', caption: gettext('Update'), style: 'danger', def: true}),
-                new FormButton({id: 'close', caption: gettext('Close'), cancel: true})
+                new FormButton({id: 'close', caption: gettext('Close'), cancel: true}),
+                new FormButton({id: 'update', caption: gettext('Update'), style: 'danger', def: true})
             ]
         })
 
