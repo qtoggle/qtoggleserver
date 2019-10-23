@@ -55,7 +55,7 @@ class APIRequest:
 
     @property
     def query_arguments(self):
-        return {k: v[0] for k, v in self.handler.request.query_arguments.items()}
+        return {k: self.handler.decode_argument(v[0]) for k, v in self.handler.request.query_arguments.items()}
 
     @property
     def headers(self):
