@@ -1,11 +1,10 @@
-import ConditionVariable              from '$qui/base/condition-variable.js'
 import {AssertionError, TimeoutError} from '$qui/base/errors.js'
 import {gettext}                      from '$qui/base/i18n.js'
 import {mix}                          from '$qui/base/mixwith.js'
 import {
     CheckField, ComboField, PushButtonField,
-    TextField
-}                                     from '$qui/forms/common-fields.js'
+    TextField, CompositeField
+} from '$qui/forms/common-fields.js'
 import {PageForm}                     from '$qui/forms/common-forms.js'
 import FormButton                     from '$qui/forms/form-button.js'
 import {ConfirmMessageForm}           from '$qui/messages/common-message-forms.js'
@@ -17,21 +16,28 @@ import * as PromiseUtils              from '$qui/utils/promise.js'
 import * as StringUtils               from '$qui/utils/string.js'
 import URL                            from '$qui/utils/url.js'
 
-import * as API           from '$app/api.js'
-import * as Cache         from '$app/cache.js'
-import * as Common        from '$app/common/common.js'
-import UpdateFirmwareForm from '$app/common/update-firmware-form.js'
+import * as API                                  from '$app/api.js'
+import * as Cache                                from '$app/cache.js'
+import AttrdefFormMixin                          from '$app/common/attrdef-form-mixin.js'
+import * as Common                               from '$app/common/common.js'
+import UpdateFirmwareForm                        from '$app/common/update-firmware-form.js'
+import RebootDeviceMixin                         from '$app/common/reboot-device-mixin.js'
+import WaitDeviceMixin                           from '$app/common/wait-device-mixin.js'
+import {GO_OFFLINE_TIMEOUT, COME_ONLINE_TIMEOUT} from '$app/common/wait-device-mixin.js'
 
 import * as Devices from './devices.js'
+import * as Theme   from '$qui/theme.js'
 
 
 const MASTER_FIELDS = ['url', 'enabled', 'poll_interval', 'listen_enabled', 'last_sync']
 
-const GO_OFFLINE_TIMEOUT = 20 /* Seconds */
-const COME_ONLINE_TIMEOUT = 60 /* Seconds */
-
-
 const logger = Devices.logger
+
+
+function getDeviceURL(device) {
+    // TODO make this function a method of Device class, once we have a Device class in place
+    return new URL(device).toString()
+}
 
 
 /**
@@ -40,7 +46,7 @@ const logger = Devices.logger
  * @param {String} deviceName
  * @private
  */
-export default class DeviceForm extends mix(PageForm).with(Common.AttrdefFormMixin) {
+export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, RebootDeviceMixin) {
 
     constructor(deviceName) {
         super({
@@ -86,8 +92,7 @@ export default class DeviceForm extends mix(PageForm).with(Common.AttrdefFormMix
         this._fullAttrdefs = null
         this._deviceName = deviceName
 
-        this._whenDeviceOnline = null
-        this._whenDeviceOffline = null
+        this._staticFieldsAdded = false
         this._renamedDeviceNewName = null
     }
 
@@ -105,7 +110,7 @@ export default class DeviceForm extends mix(PageForm).with(Common.AttrdefFormMix
         }
 
         device = ObjectUtils.copy(device, /* deep = */ true)
-        device.url = new URL(device).toString()
+        device.url = getDeviceURL(device)
 
         this._fullAttrdefs = null
         this._renamedDeviceNewName = null
@@ -163,7 +168,8 @@ export default class DeviceForm extends mix(PageForm).with(Common.AttrdefFormMix
                 this._fullAttrdefs,
                 /* extraFieldOptions = */ undefined,
                 /* initialData = */ Common.preprocessDeviceAttrs(device.attrs),
-                /* provisioning = */ device.provisioning || []
+                /* provisioning = */ device.provisioning || [],
+                /* index = */ this.getFieldIndex('last_sync') + 1
             )
         }
         else {
@@ -171,23 +177,72 @@ export default class DeviceForm extends mix(PageForm).with(Common.AttrdefFormMix
             this.fieldsFromAttrdefs({})
         }
 
-        this._addExtraFields(device)
+        if (!this._staticFieldsAdded) {
+            this.addStaticFields()
+            this._staticFieldsAdded = true
+        }
+
+        this.updateStaticFields(device.attrs)
+    }
+
+    addStaticFields() {
+        this.addField(-1, new CompositeField({
+            name: 'management_buttons',
+            label: gettext('Manage Device'),
+            separator: true,
+            fields: [
+                new PushButtonField({
+                    name: 'reboot',
+                    separator: true,
+                    caption: gettext('Reboot'),
+                    style: 'interactive',
+                    callback(form) {
+                        let device = Cache.getSlaveDevice(form.getDeviceName())
+                        if (!device) {
+                            throw new AssertionError(`Device with name ${form.getDeviceName()} not found in cache`)
+                        }
+
+                        let displayName = device.display_name || device.name
+                        form.pushPage(form.confirmAndReboot(device.name, displayName, logger))
+                    }
+                }),
+                new PushButtonField({
+                    name: 'update_firmware',
+                    style: 'colored',
+                    backgroundColor: Theme.getColor('@magenta-color'),
+                    backgroundActiveColor: Theme.getColor('@magenta-active-color'),
+                    caption: gettext('Update Firmware'),
+                    disabled: true,
+                    callback(form) {
+                        form.pushPage(form.makeUpdateFirmwareForm())
+                    }
+                })
+            ]
+        }))
+    }
+
+    updateStaticFields(attrs) {
+        let updateFirmwareButtonField = this.getField('management_buttons').getField('update_firmware')
+        if (attrs.flags.indexOf('firmware') >= 0) {
+            updateFirmwareButtonField.enable()
+        }
+        else {
+            updateFirmwareButtonField.disable()
+        }
     }
 
     getDeviceName() {
         return this._deviceName
     }
 
-    setWaitingDeviceOnline() {
-        if (this._whenDeviceOnline) {
-            throw new AssertionError('Attempt to wait for device to come online while already waiting')
-        }
+    getRenamedDeviceNewName() {
+        return this._renamedDeviceNewName
+    }
 
+    startWaitingDeviceOnline() {
         this.setProgress()
 
-        this._whenDeviceOnline = new ConditionVariable()
-
-        PromiseUtils.withTimeout(this._whenDeviceOnline, API.SERVER_TIMEOUT * 1000).catch(function (error) {
+        PromiseUtils.withTimeout(this.waitDeviceOnline(), API.SERVER_TIMEOUT * 1000).catch(function (error) {
 
             if (error instanceof TimeoutError) {
                 this.setError(gettext('Device is offline.'))
@@ -200,74 +255,6 @@ export default class DeviceForm extends mix(PageForm).with(Common.AttrdefFormMix
             this.clearProgress()
 
         }.bind(this))
-    }
-
-    clearWaitingDeviceOnline() {
-        if (!this._whenDeviceOnline) {
-            throw new AssertionError('Attempt to cancel waiting for device to come online while not waiting')
-        }
-
-        this.clearProgress()
-        this._whenDeviceOnline.cancel()
-        this._whenDeviceOnline = null
-    }
-
-    waitDeviceOnline() {
-        if (this._whenDeviceOnline || this._whenDeviceOffline) {
-            throw new AssertionError('Attempt to wait for device to come online while already waiting')
-        }
-
-        return (this._whenDeviceOnline = new ConditionVariable())
-    }
-
-    isWaitingDeviceOnline() {
-        return !!this._whenDeviceOnline
-    }
-
-    isWaitingDeviceOffline() {
-        return !!this._whenDeviceOffline
-    }
-
-    waitDeviceOffline() {
-        if (this._whenDeviceOnline || this._whenDeviceOffline) {
-            throw new AssertionError('Attempt to wait for device to go offline while already waiting')
-        }
-
-        return (this._whenDeviceOffline = new ConditionVariable())
-    }
-
-    fulfillDeviceOnline() {
-        if (!this._whenDeviceOnline) {
-            throw new AssertionError('Attempt to fulfill device online but not waiting')
-        }
-
-        this._whenDeviceOnline.fulfill()
-        this._whenDeviceOnline = null
-    }
-
-    fulfillDeviceOffline() {
-        if (!this._whenDeviceOffline) {
-            throw new AssertionError('Attempt to fulfill device offline but not waiting')
-        }
-
-        this._whenDeviceOffline.fulfill()
-        this._whenDeviceOffline = null
-    }
-
-    cancelWaitDevice() {
-        if (this._whenDeviceOnline) {
-            this._whenDeviceOnline.cancel()
-            this._whenDeviceOnline = null
-        }
-
-        if (this._whenDeviceOffline) {
-            this._whenDeviceOffline.cancel()
-            this._whenDeviceOffline = null
-        }
-    }
-
-    getRenamedDeviceNewName() {
-        return this._renamedDeviceNewName
     }
 
     applyField(value, fieldName) {
@@ -289,7 +276,7 @@ export default class DeviceForm extends mix(PageForm).with(Common.AttrdefFormMix
             device[fieldName] = value
 
             if (fieldName === 'enabled' && value && !devicePermanentlyOffline) {
-                this.setWaitingDeviceOnline()
+                this.startWaitingDeviceOnline()
             }
 
             return API.patchSlaveDevice(
@@ -305,7 +292,7 @@ export default class DeviceForm extends mix(PageForm).with(Common.AttrdefFormMix
 
                 logger.errorStack(`failed to update device master property "${deviceName}.${fieldName}"`, error)
                 if (this.isWaitingDeviceOnline()) {
-                    this.clearWaitingDeviceOnline()
+                    this.cancelWaitingDeviceOnline()
                 }
 
                 throw error
@@ -344,17 +331,17 @@ export default class DeviceForm extends mix(PageForm).with(Common.AttrdefFormMix
 
             }).then(function () {
 
+                /* Attributes with reconnect flag will probably restart/reset the device, therefore we first wait for it
+                 * to go offline and then to come back online */
+
                 if (!this._fullAttrdefs[name].reconnect) {
                     return
                 }
 
-                /* Attributes with reconnect flag will probably restart/reset the device
-                 * therefore we first wait for it to go offline and then to come back online */
-
                 this.setProgress()
 
-                /* Following promise chain is intentionally not part of the outer chain,
-                 * because by the time it resolves, the field will no longer be part of the DOM */
+                /* Following promise chain is intentionally not part of the outer chain, because by the time it
+                 * resolves, the field will no longer be part of the DOM */
                 Promise.resolve().then(function () {
 
                     return PromiseUtils.withTimeout(this.waitDeviceOffline(), GO_OFFLINE_TIMEOUT * 1000)
@@ -369,9 +356,9 @@ export default class DeviceForm extends mix(PageForm).with(Common.AttrdefFormMix
 
                     if (error instanceof TimeoutError) {
                         error = new Error(gettext('Timeout waiting for device to reconnect.'))
-                        this.cancelWaitDevice()
                     }
 
+                    this.cancelWaitingDevice()
                     this.setError(error.toString())
 
                 }.bind(this)).then(function () {
@@ -386,7 +373,7 @@ export default class DeviceForm extends mix(PageForm).with(Common.AttrdefFormMix
 
     onClose() {
         this._renamedDeviceNewName = null
-        this.cancelWaitDevice()
+        this.cancelWaitingDevice()
     }
 
     onButtonPress(button) {
@@ -395,25 +382,6 @@ export default class DeviceForm extends mix(PageForm).with(Common.AttrdefFormMix
                 this.pushPage(this.makeRemoveDeviceForm())
 
                 break
-        }
-    }
-
-    _addExtraFields(device) {
-        /* Update firmware button */
-        if (this.getField('update_firmware')) {
-            this.removeField('update_firmware')
-        }
-
-        if (device.online && device.attrs.flags.indexOf('firmware') >= 0) {
-            this.addField(-1, new PushButtonField({
-                name: 'update_firmware',
-                label: gettext('Update Firmware'),
-                separator: true,
-                caption: gettext('Check'),
-                callback(form) {
-                    form.pushPage(form.makeUpdateFirmwareForm())
-                }
-            }))
         }
     }
 
@@ -436,6 +404,8 @@ export default class DeviceForm extends mix(PageForm).with(Common.AttrdefFormMix
             throw new AssertionError(`Device with name ${this.getDeviceName()} not found in cache`)
         }
 
+        let deviceURL = getDeviceURL(device)
+
         let msg = StringUtils.formatPercent(
             gettext('Really remove %(object)s?'),
             {object: Messages.wrapLabel(device.attrs.display_name || device.name)}
@@ -445,16 +415,16 @@ export default class DeviceForm extends mix(PageForm).with(Common.AttrdefFormMix
             msg,
             /* onYes = */ function () {
 
-                logger.debug(`removing device "${device.name}" at url ${device.url}`)
+                logger.debug(`removing device "${device.name}" at url ${deviceURL}`)
 
                 API.deleteSlaveDevice(device.name).then(function () {
 
-                    logger.debug(`device "${device.name}" at url ${device.url} successfully removed`)
+                    logger.debug(`device "${device.name}" at url ${deviceURL} successfully removed`)
                     this.close()
 
                 }.bind(this)).catch(function (error) {
 
-                    logger.errorStack(`failed to remove device "${device.name}" at url ${device.url}`, error)
+                    logger.errorStack(`failed to remove device "${device.name}" at url ${deviceURL}`, error)
                     Toast.error(error.toString())
 
                 })

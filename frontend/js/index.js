@@ -10,15 +10,15 @@ import * as Window                from '$qui/window.js'
 
 import Logger from '$qui/lib/logger.module.js'
 
-import * as API              from '$app/api.js'
-import * as Auth             from '$app/auth.js'
-import * as Cache            from '$app/cache.js'
-import DashboardSection      from '$app/dashboard/dashboard-section.js'
-import DevicesSection        from '$app/devices/devices-section.js'
-import LoginSection          from '$app/login/login-section.js'
-import * as Notifications    from '$app/notifications.js'
-import PortsSection          from '$app/ports/ports-section.js'
-import SettingsSection       from '$app/settings/settings-section.js'
+import * as API           from '$app/api.js'
+import * as Auth          from '$app/auth.js'
+import * as Cache         from '$app/cache.js'
+import DashboardSection   from '$app/dashboard/dashboard-section.js'
+import DevicesSection     from '$app/devices/devices-section.js'
+import * as Events        from '$app/events.js'
+import LoginSection       from '$app/login/login-section.js'
+import PortsSection       from '$app/ports/ports-section.js'
+import SettingsSection    from '$app/settings/settings-section.js'
 
 import '$app/qtoggle-stock.js'
 
@@ -119,7 +119,7 @@ function main() {
     API.addAccessLevelChangeListener(handleAccessLevelChange)
     API.addEventListener(handleAPIEvent)
 
-    Notifications.init()
+    Events.init()
 
     Auth.init()
     Auth.whenFinalAccessLevelReady.then(level => API.startListening())

@@ -63,6 +63,19 @@ export class Section extends QUISection {
     onAccessLevelChange(oldLevel, newLevel) {
     }
 
+    /**
+     * Override this method to react when frontend gets disconnected from main device.
+     * @param {QToggle.API.APIError} error disconnect error
+     */
+    onMainDeviceDisconnect(error) {
+    }
+
+    /**
+     * Override this method to react when frontend reconnects to main device.
+     */
+    onMainDeviceReconnect() {
+    }
+
 }
 
 /**

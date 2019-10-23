@@ -45,7 +45,6 @@ function processEventsBulk() {
     /* Do a second round to:
      *  * update ports/devices cache and other cached info
      *  * notify section listeners */
-    /* Do a third round to notify section listeners */
     let allSections = Sections.all()
     eventsBulk.forEach(function (event) {
         asap(function () {
@@ -440,6 +439,14 @@ export function init() {
         /* listenCallback = */ function (error, reconnectSeconds) {
 
             if (error) {
+                if (!syncListenError) {
+                    logger.error('disconnected from server')
+
+                    Sections.all().forEach(function (section) {
+                        asap(() => section.onMainDeviceDisconnect(error))
+                    })
+                }
+
                 syncListenError = error
 
                 if (reconnectSeconds > 1) {
@@ -452,6 +459,10 @@ export function init() {
             else { /* Successful listen response */
                 if (syncListenError) {
                     syncListenError = null
+
+                    Sections.all().forEach(function (section) {
+                        asap(() => section.onMainDeviceReconnect())
+                    })
 
                     if (listenErrorProgressMessage) {
                         listenErrorProgressMessage.hide()
