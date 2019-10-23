@@ -192,13 +192,13 @@ export default Mixin((superclass = Object) => {
             return field
         }
 
-        fieldsFromAttrdefs(attrdefs, extraFieldOptions = {}, initialData = {}, provisioning = []) {
+        fieldsFromAttrdefs(attrdefs, extraFieldOptions = {}, initialData = {}, provisioning = [], index = null) {
             let defEntries = ArrayUtils.sortKey(Object.entries(attrdefs), e => e[0])
             ArrayUtils.stableSortKey(defEntries, e => e[1].order || 1000)
 
             let notKnown = false
             let focusedField = null
-            let lastIndex = this.getFields().length - 1
+            let lastIndex = index != null ? index - 1 : this.getFields().length - 1
             defEntries.forEach(function (entry) {
                 let name = entry[0]
                 let def = ObjectUtils.copy(entry[1], /* deep = */ true)
