@@ -796,20 +796,22 @@ function makeRequestJWT(username, passwordHash) {
 }
 
 /**
- * Calls an API function.
+ * Call an API function.
  * @memberof QToggle.API
- * @param {String} method the method
- * @param {String} path the path (URI)
- * @param {?Object} [query] optional query arguments
- * @param {?Object} [data] optional data (body)
- * @param {?Number} [timeout] timeout, in seconds
- * @param {?Number} [expectedHandle] the handle of the expected event
- * @param {Boolean} [handleErrors] set to `false` to prevent error handling (defaults to `true`)
+ * @param {Object} params
+ * @param {String} params.method the method
+ * @param {String} params.path the path (URI)
+ * @param {?Object} [params.query] optional query arguments
+ * @param {?Object} [params.data] optional data (body)
+ * @param {?Number} [params.timeout] timeout, in seconds
+ * @param {?Number} [params.expectedHandle] the handle of the expected event
+ * @param {Boolean} [params.handleErrors] set to `false` to prevent error handling (defaults to `true`)
  * @returns {Promise} a promise that is resolved when the API call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
-export function apiCall(method, path, query = null, data = null, timeout = SERVER_TIMEOUT, expectedHandle = null,
-                        handleErrors = true) {
+export function apiCall({
+    method, path, query = null, data = null, timeout = SERVER_TIMEOUT, expectedHandle = null, handleErrors = true
+}) {
 
     return new Promise(function (resolve, reject) {
         let apiFuncPath = path
@@ -1082,7 +1084,7 @@ function wait(firstQuick) {
         timeout: timeout
     }
 
-    apiCall('GET', '/listen', query, /* data = */ null, timeout + SERVER_TIMEOUT).then(function (result) {
+    apiCall({method: 'GET', path: '/listen', query: query, timeout: timeout + SERVER_TIMEOUT}).then(function (result) {
 
         if (listeningTime !== requestListeningTime) {
             logger.debug('ignoring listen response from older session')
@@ -1172,7 +1174,7 @@ export function setSlave(name) {
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
 export function getDevice() {
-    return apiCall('GET', '/device')
+    return apiCall({method: 'GET', path: '/device'})
 }
 
 /**
@@ -1196,7 +1198,7 @@ export function patchDevice(attrs) {
         handle = expectEvent('device-update')
     }
 
-    return apiCall('PATCH', '/device', /* query = */ null, /* data = */ attrs, /* timeout = */ null, handle)
+    return apiCall({method: 'PATCH', path: '/device', data: attrs, expectedHandle: handle})
 }
 
 /**
@@ -1210,7 +1212,7 @@ export function postReset(factory) {
     if (factory) {
         data.factory = true
     }
-    return apiCall('POST', '/reset', /* query = */ null, /* data = */ data)
+    return apiCall({method: 'POST', path: '/reset', data: data})
 }
 
 /**
@@ -1226,8 +1228,7 @@ export function getFirmware(override) {
         query.override_disabled = true
     }
 
-    return apiCall('GET', '/firmware', /* query = */ query, /* data = */ null, /* timeout = */ SERVER_TIMEOUT,
-                   /* expectedHandle = */ null, /* handleErrors = */ false).then(function (data) {
+    return apiCall({method: 'GET', path: '/firmware', query: query, handleErrors: false}).then(function (data) {
 
         if ((data.status === FIRMWARE_STATUS_IDLE || data.status === FIRMWARE_STATUS_ERROR) && ignoreListenErrors) {
             logger.debug('firmware update process ended')
@@ -1263,7 +1264,7 @@ export function patchFirmware(version, url, override) {
 
     let forSlave = slaveName != null
 
-    return apiCall('PATCH', '/firmware', /* query = */ query, /* data = */ params).then(function (data) {
+    return apiCall({method: 'PATCH', path: '/firmware', query: query, data: params}).then(function (data) {
 
         if (!forSlave) {
             ignoreListenErrors = true
@@ -1283,7 +1284,7 @@ export function patchFirmware(version, url, override) {
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
 export function getPorts() {
-    return apiCall('GET', '/ports')
+    return apiCall({method: 'GET', path: '/ports'})
 }
 
 /**
@@ -1298,7 +1299,7 @@ export function patchPort(id, attrs) {
         id: slaveName ? `${slaveName}.${id}` : id
     })
 
-    return apiCall('PATCH', `/ports/${id}`, /* query = */ null, /* data = */ attrs, /* timeout = */ null, handle)
+    return apiCall({method: 'PATCH', path: `/ports/${id}`, data: attrs, expectedHandle: handle})
 }
 
 /**
@@ -1339,7 +1340,7 @@ export function postPorts(id, type, min, max, integer, step, choices) {
         data.choices = choices
     }
 
-    return apiCall('POST', '/ports', /* query = */ null, data, /* timeout = */ null, handle)
+    return apiCall({method: 'POST', path: '/ports', data: data, expectedHandle: handle})
 }
 
 /**
@@ -1353,7 +1354,7 @@ export function deletePort(id) {
         id: slaveName ? `${slaveName}.${id}` : id
     })
 
-    return apiCall('DELETE', `/ports/${id}`, /* query = */ null, /* data = */ {}, /* timeout = */ null, handle)
+    return apiCall({method: 'DELETE', path: `/ports/${id}`, expectedHandle: handle})
 }
 
 
@@ -1366,7 +1367,7 @@ export function deletePort(id) {
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
 export function getPortValue(id) {
-    return apiCall('GET', `/ports/${id}/value`)
+    return apiCall({method: 'GET', path: `/ports/${id}/value`})
 }
 
 /**
@@ -1393,7 +1394,7 @@ export function postPortValue(id, value) {
         })
     }
 
-    return apiCall('POST', `/ports/${id}/value`, /* query = */ null, /* data = */ value, /* timeout = */ null, handle)
+    return apiCall({method: 'POST', path: `/ports/${id}/value`, data: value, expectedHandle: handle})
 }
 
 /**
@@ -1407,7 +1408,8 @@ export function postPortValue(id, value) {
  */
 export function postPortSequence(id, values, delays, repeat) {
     let data = {values: values, delays: delays, repeat: repeat}
-    return apiCall('POST', `/ports/${id}/sequence`, /* query = */ null, /* data = */ data)
+
+    return apiCall({method: 'POST', path: `/ports/${id}/sequence`, data: data})
 }
 
 
@@ -1425,7 +1427,7 @@ export function postPortSequence(id, values, delays, repeat) {
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
 export function getWebhooks() {
-    return apiCall('GET', '/webhooks')
+    return apiCall({method: 'GET', path: '/webhooks'})
 }
 
 /**
@@ -1451,7 +1453,7 @@ export function patchWebhooks(enabled, scheme, host, port, path, timeout, retrie
         retries: retries
     }
 
-    return apiCall('PATCH', '/webhooks', /* query = */ null, /* data = */ params)
+    return apiCall({method: 'PATCH', path: '/webhooks', data: params})
 }
 
 /**
@@ -1518,7 +1520,7 @@ export function isListening() {
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
 export function getReverse() {
-    return apiCall('GET', '/reverse')
+    return apiCall({method: 'GET', path: '/reverse'})
 }
 
 /**
@@ -1542,7 +1544,7 @@ export function patchReverse(enabled, scheme, host, port, path, timeout) {
         timeout: timeout
     }
 
-    return apiCall('PATCH', '/reverse', /* query = */ null, /* data = */ params)
+    return apiCall({method: 'PATCH', path: '/reverse', data: params})
 }
 
 
@@ -1554,7 +1556,7 @@ export function patchReverse(enabled, scheme, host, port, path, timeout) {
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
 export function getSlaveDevices() {
-    return apiCall('GET', '/devices')
+    return apiCall({method: 'GET', path: '/devices'})
 }
 
 /**
@@ -1587,7 +1589,7 @@ export function postSlaveDevices(scheme, host, port, path, adminPassword, pollIn
         path: path
     })
 
-    return apiCall('POST', '/devices', /* query = */ null, /* data = */ params, /* timeout = */ null, handle)
+    return apiCall({method: 'POST', path: '/devices', data: params, expectedHandle: handle})
 }
 
 /**
@@ -1610,7 +1612,7 @@ export function patchSlaveDevice(name, enabled, pollInterval, listenEnabled) {
         name: name
     })
 
-    return apiCall('PATCH', `/devices/${name}`, /* query = */ null, /* data = */ params, /* timeout = */ null, handle)
+    return apiCall({method: 'PATCH', path: `/devices/${name}`, data: params, expectedHandle: handle})
 }
 
 /**
@@ -1624,7 +1626,7 @@ export function deleteSlaveDevice(name) {
         name: name
     })
 
-    return apiCall('DELETE', `/devices/${name}`, /* query = */ null, /* data = */ {}, /* timeout = */ null, handle)
+    return apiCall({method: 'DELETE', path: `/devices/${name}`, expectedHandle: handle})
 }
 
 
@@ -1636,7 +1638,7 @@ export function deleteSlaveDevice(name) {
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
 export function getAccess() {
-    let promise = apiCall('GET', '/access')
+    let promise = apiCall({method: 'GET', path: '/access'})
 
     return promise.then(function (a) {
         let newAccessLevel = ACCESS_LEVEL_MAPPING[a.level] || ACCESS_LEVEL_NONE
@@ -1749,7 +1751,7 @@ export function hasAccess(level) {
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
 export function getDashboardPanels() {
-    return apiCall('GET', '/frontend/dashboard/panels')
+    return apiCall({method: 'GET', path: '/frontend/dashboard/panels'})
 }
 
 /**
@@ -1759,7 +1761,7 @@ export function getDashboardPanels() {
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
 export function putDashboardPanels(panels) {
-    return apiCall('PUT', '/frontend/dashboard/panels', /* query = */ null, /* data = */ panels)
+    return apiCall({method: 'PUT', path: '/frontend/dashboard/panels', data: panels})
 }
 
 
@@ -1771,7 +1773,7 @@ export function putDashboardPanels(panels) {
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
 export function getPrefs() {
-    return apiCall('GET', '/frontend/prefs')
+    return apiCall({method: 'GET', path: '/frontend/prefs'})
 }
 
 /**
@@ -1781,7 +1783,7 @@ export function getPrefs() {
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
 export function putPrefs(prefs) {
-    return apiCall('PUT', '/frontend/prefs', /* query = */ null, /* data = */ prefs)
+    return apiCall({method: 'PUT', path: '/frontend/prefs', data: prefs})
 }
 
 
