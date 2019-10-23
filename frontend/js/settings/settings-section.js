@@ -46,6 +46,26 @@ export default class SettingsSection extends Section {
         }
     }
 
+    onMainDeviceDisconnect(error) {
+        if (!this.settingsForm) {
+            return
+        }
+
+        if (this.settingsForm.isWaitingDeviceOffline()) {
+            this.settingsForm.fulfillDeviceOffline()
+        }
+    }
+
+    onMainDeviceReconnect() {
+        if (!this.settingsForm) {
+            return
+        }
+
+        if (this.settingsForm.isWaitingDeviceOnline()) {
+            this.settingsForm.fulfillDeviceOnline()
+        }
+    }
+
     makeMainPage() {
         if (API.getCurrentAccessLevel() < API.ACCESS_LEVEL_ADMIN) {
             return

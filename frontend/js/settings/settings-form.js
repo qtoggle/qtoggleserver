@@ -2,13 +2,8 @@ import {gettext}                         from '$qui/base/i18n.js'
 import {mix}                             from '$qui/base/mixwith.js'
 import {PushButtonField, CompositeField} from '$qui/forms/common-fields.js'
 import {PageForm}                        from '$qui/forms/common-forms.js'
-import {ConfirmMessageForm}              from '$qui/messages/common-message-forms.js'
-import * as Messages                     from '$qui/messages/messages.js'
-import * as Toast                        from '$qui/messages/toast.js'
 import * as Theme                        from '$qui/theme.js'
 import * as ObjectUtils                  from '$qui/utils/object.js'
-import * as PromiseUtils                 from '$qui/utils/promise.js'
-import * as StringUtils                  from '$qui/utils/string.js'
 
 import * as API           from '$app/api.js'
 import * as Cache         from '$app/cache.js'
@@ -16,6 +11,7 @@ import AttrdefFormMixin   from '$app/common/attrdef-form-mixin.js'
 import * as Common        from '$app/common/common.js'
 import UpdateFirmwareForm from '$app/common/update-firmware-form.js'
 import WaitDeviceMixin    from '$app/common/wait-device-mixin.js'
+import RebootFormMixin    from '$app/common/reboot-form-mixin.js'
 
 import * as Settings    from './settings.js'
 
@@ -27,7 +23,7 @@ const logger = Settings.logger
  * @class QToggle.SettingsSection.SettingsForm
  * @extends qui.forms.PageForm
  */
-export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin) {
+export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, RebootFormMixin) {
 
     constructor() {
         super({
@@ -118,7 +114,9 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
                     caption: gettext('Reboot'),
                     style: 'danger',
                     callback(form) {
-                        form.pushPage(form.confirmAndReboot())
+                        let mainDevice = Cache.getMainDevice()
+                        let displayName = mainDevice.display_name || mainDevice.name
+                        form.pushPage(form.confirmAndReboot(mainDevice.name, displayName, logger))
                     }
                 }),
                 new PushButtonField({
@@ -193,48 +191,6 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
      */
     makeUpdateFirmwareForm() {
         return new UpdateFirmwareForm(Cache.getMainDevice().name)
-    }
-
-    /**
-     * @returns {qui.pages.PageMixin}
-     */
-    confirmAndReboot() {
-        let device = Cache.getMainDevice()
-        let msg = StringUtils.formatPercent(
-            gettext('Really reboot device %(name)s?'),
-            {name: Messages.wrapLabel(device.display_name || device.name)}
-        )
-
-        return ConfirmMessageForm.show(
-            msg,
-            /* onYes = */ function () {
-
-                logger.debug('rebooting main device')
-
-                this.setProgress()
-
-                API.postReset().then(function () {
-
-                    logger.debug('main device rebooting')
-                    return PromiseUtils.later(2000)
-
-                }.bind(this)).then(function () {
-
-                    logger.debug('main device successfully rebooted')
-                    this.clearProgress()
-                    Toast.info(gettext('Device has been rebooted.'))
-
-                }.bind(this)).catch(function (error) {
-
-                    logger.errorStack('failed to reboot main device', error)
-                    this.clearProgress()
-                    Toast.error(error.toString())
-
-                }.bind(this))
-
-            }.bind(this),
-            /* onNo = */ null, /* pathId = */ 'reboot'
-        )
     }
 
 }
