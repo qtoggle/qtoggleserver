@@ -3,8 +3,8 @@ import {gettext}                      from '$qui/base/i18n.js'
 import {mix}                          from '$qui/base/mixwith.js'
 import {
     CheckField, ComboField, PushButtonField,
-    TextField
-}                                     from '$qui/forms/common-fields.js'
+    TextField, CompositeField
+} from '$qui/forms/common-fields.js'
 import {PageForm}                     from '$qui/forms/common-forms.js'
 import FormButton                     from '$qui/forms/form-button.js'
 import {ConfirmMessageForm}           from '$qui/messages/common-message-forms.js'
@@ -25,11 +25,18 @@ import WaitDeviceMixin                           from '$app/common/wait-device-m
 import {GO_OFFLINE_TIMEOUT, COME_ONLINE_TIMEOUT} from '$app/common/wait-device-mixin.js'
 
 import * as Devices from './devices.js'
+import * as Theme   from '$qui/theme.js'
 
 
 const MASTER_FIELDS = ['url', 'enabled', 'poll_interval', 'listen_enabled', 'last_sync']
 
 const logger = Devices.logger
+
+
+function getDeviceURL(device) {
+    // TODO make this function a method of Device class, once we have a Device class in place
+    return new URL(device).toString()
+}
 
 
 /**
@@ -84,6 +91,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         this._fullAttrdefs = null
         this._deviceName = deviceName
 
+        this._staticFieldsAdded = false
         this._renamedDeviceNewName = null
     }
 
@@ -101,7 +109,6 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         }
 
         device = ObjectUtils.copy(device, /* deep = */ true)
-        device.url = new URL(device).toString()
 
         this._fullAttrdefs = null
         this._renamedDeviceNewName = null
@@ -159,7 +166,8 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                 this._fullAttrdefs,
                 /* extraFieldOptions = */ undefined,
                 /* initialData = */ Common.preprocessDeviceAttrs(device.attrs),
-                /* provisioning = */ device.provisioning || []
+                /* provisioning = */ device.provisioning || [],
+                /* index = */ this.getFieldIndex('last_sync')
             )
         }
         else {
@@ -167,7 +175,52 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             this.fieldsFromAttrdefs({})
         }
 
-        this._updateExtraFields(device)
+        if (!this._staticFieldsAdded) {
+            this.addStaticFields()
+            this._staticFieldsAdded = true
+        }
+
+        this.updateStaticFields(device.attrs)
+    }
+
+    addStaticFields() {
+        this.addField(-1, new CompositeField({
+            name: 'management_buttons',
+            label: gettext('Manage Device'),
+            separator: true,
+            fields: [
+                new PushButtonField({
+                    name: 'reboot',
+                    separator: true,
+                    caption: gettext('Reboot'),
+                    style: 'interactive',
+                    callback(form) {
+                        form.pushPage(form.confirmAndReboot())
+                    }
+                }),
+                new PushButtonField({
+                    name: 'update_firmware',
+                    style: 'colored',
+                    backgroundColor: Theme.getColor('@magenta-color'),
+                    backgroundActiveColor: Theme.getColor('@magenta-active-color'),
+                    caption: gettext('Update Firmware'),
+                    disabled: true,
+                    callback(form) {
+                        form.pushPage(form.makeUpdateFirmwareForm())
+                    }
+                })
+            ]
+        }))
+    }
+
+    updateStaticFields(attrs) {
+        let updateFirmwareButtonField = this.getField('management_buttons').getField('update_firmware')
+        if (attrs.flags.indexOf('firmware') >= 0) {
+            updateFirmwareButtonField.enable()
+        }
+        else {
+            updateFirmwareButtonField.disable()
+        }
     }
 
     getDeviceName() {
@@ -295,9 +348,9 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
 
                     if (error instanceof TimeoutError) {
                         error = new Error(gettext('Timeout waiting for device to reconnect.'))
-                        this.cancelWaitingDevice()
                     }
 
+                    this.cancelWaitingDevice()
                     this.setError(error.toString())
 
                 }.bind(this)).then(function () {
@@ -324,25 +377,6 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         }
     }
 
-    _updateExtraFields(device) {
-        /* Update firmware button */
-        if (this.getField('update_firmware')) {
-            this.removeField('update_firmware')
-        }
-
-        if (device.online && device.attrs.flags.indexOf('firmware') >= 0) {
-            this.addField(-1, new PushButtonField({
-                name: 'update_firmware',
-                label: gettext('Update Firmware'),
-                separator: true,
-                caption: gettext('Check'),
-                callback(form) {
-                    form.pushPage(form.makeUpdateFirmwareForm())
-                }
-            }))
-        }
-    }
-
     navigate(pathId) {
         switch (pathId) {
             case 'remove':
@@ -362,6 +396,8 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             throw new AssertionError(`Device with name ${this.getDeviceName()} not found in cache`)
         }
 
+        let deviceURL = getDeviceURL(device)
+
         let msg = StringUtils.formatPercent(
             gettext('Really remove %(object)s?'),
             {object: Messages.wrapLabel(device.attrs.display_name || device.name)}
@@ -371,16 +407,16 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             msg,
             /* onYes = */ function () {
 
-                logger.debug(`removing device "${device.name}" at url ${device.url}`)
+                logger.debug(`removing device "${device.name}" at url ${deviceURL}`)
 
                 API.deleteSlaveDevice(device.name).then(function () {
 
-                    logger.debug(`device "${device.name}" at url ${device.url} successfully removed`)
+                    logger.debug(`device "${device.name}" at url ${deviceURL} successfully removed`)
                     this.close()
 
                 }.bind(this)).catch(function (error) {
 
-                    logger.errorStack(`failed to remove device "${device.name}" at url ${device.url}`, error)
+                    logger.errorStack(`failed to remove device "${device.name}" at url ${deviceURL}`, error)
                     Toast.error(error.toString())
 
                 })
