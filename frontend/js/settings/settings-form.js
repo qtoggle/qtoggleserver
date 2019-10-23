@@ -11,7 +11,7 @@ import AttrdefFormMixin   from '$app/common/attrdef-form-mixin.js'
 import * as Common        from '$app/common/common.js'
 import UpdateFirmwareForm from '$app/common/update-firmware-form.js'
 import WaitDeviceMixin    from '$app/common/wait-device-mixin.js'
-import RebootFormMixin    from '$app/common/reboot-form-mixin.js'
+import RebootDeviceMixin  from '$app/common/reboot-device-mixin.js'
 
 import * as Settings    from './settings.js'
 
@@ -23,7 +23,7 @@ const logger = Settings.logger
  * @class QToggle.SettingsSection.SettingsForm
  * @extends qui.forms.PageForm
  */
-export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, RebootFormMixin) {
+export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, RebootDeviceMixin) {
 
     constructor() {
         super({
