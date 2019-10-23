@@ -804,10 +804,12 @@ function makeRequestJWT(username, passwordHash) {
  * @param {?Object} [data] optional data (body)
  * @param {?Number} [timeout] timeout, in seconds
  * @param {?Number} [expectedHandle] the handle of the expected event
+ * @param {Boolean} [handleErrors] set to `false` to prevent error handling (defaults to `true`)
  * @returns {Promise} a promise that is resolved when the API call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
-export function apiCall(method, path, query, data, timeout = SERVER_TIMEOUT, expectedHandle = null) {
+export function apiCall(method, path, query = null, data = null, timeout = SERVER_TIMEOUT, expectedHandle = null,
+                        handleErrors = true) {
 
     return new Promise(function (resolve, reject) {
         let apiFuncPath = path
@@ -913,12 +915,14 @@ export function apiCall(method, path, query, data, timeout = SERVER_TIMEOUT, exp
                 unexpectEvent(expectedHandle)
             }
 
-            logger.error(`ajax error: ${error} (msg="${error.msg}", status=${error.status})`)
+            if (handleErrors) {
+                logger.error(`ajax error: ${error} (msg="${error.msg}", status=${error.status})`)
+            }
 
             reject(error)
 
             if (!isListen) {
-                syncEndCallbacks.forEach(c => PromiseUtils.asap().then(() => c(error)))
+                syncEndCallbacks.forEach(c => PromiseUtils.asap().then(() => c(handleErrors ? error : null)))
             }
         }
 
@@ -1222,10 +1226,10 @@ export function getFirmware(override) {
         query.override_disabled = true
     }
 
-    return apiCall('GET', '/firmware', /* query = */ query).then(function (data) {
+    return apiCall('GET', '/firmware', /* query = */ query, /* data = */ null, /* timeout = */ SERVER_TIMEOUT,
+                   /* expectedHandle = */ null, /* handleErrors = */ false).then(function (data) {
 
-        if ((data.status === FIRMWARE_STATUS_IDLE ||
-             data.status === FIRMWARE_STATUS_ERROR) && ignoreListenErrors) {
+        if ((data.status === FIRMWARE_STATUS_IDLE || data.status === FIRMWARE_STATUS_ERROR) && ignoreListenErrors) {
             logger.debug('firmware update process ended')
         }
 
