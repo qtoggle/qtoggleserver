@@ -21,6 +21,7 @@ import * as Cache                                from '$app/cache.js'
 import AttrdefFormMixin                          from '$app/common/attrdef-form-mixin.js'
 import * as Common                               from '$app/common/common.js'
 import UpdateFirmwareForm                        from '$app/common/update-firmware-form.js'
+import RebootDeviceMixin                         from '$app/common/reboot-device-mixin.js'
 import WaitDeviceMixin                           from '$app/common/wait-device-mixin.js'
 import {GO_OFFLINE_TIMEOUT, COME_ONLINE_TIMEOUT} from '$app/common/wait-device-mixin.js'
 
@@ -45,7 +46,7 @@ function getDeviceURL(device) {
  * @param {String} deviceName
  * @private
  */
-export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin) {
+export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, RebootDeviceMixin) {
 
     constructor(deviceName) {
         super({
@@ -109,6 +110,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         }
 
         device = ObjectUtils.copy(device, /* deep = */ true)
+        device.url = getDeviceURL(device)
 
         this._fullAttrdefs = null
         this._renamedDeviceNewName = null
@@ -167,7 +169,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                 /* extraFieldOptions = */ undefined,
                 /* initialData = */ Common.preprocessDeviceAttrs(device.attrs),
                 /* provisioning = */ device.provisioning || [],
-                /* index = */ this.getFieldIndex('last_sync')
+                /* index = */ this.getFieldIndex('last_sync') + 1
             )
         }
         else {
@@ -195,7 +197,13 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                     caption: gettext('Reboot'),
                     style: 'interactive',
                     callback(form) {
-                        form.pushPage(form.confirmAndReboot())
+                        let device = Cache.getSlaveDevice(form.getDeviceName())
+                        if (!device) {
+                            throw new AssertionError(`Device with name ${form.getDeviceName()} not found in cache`)
+                        }
+
+                        let displayName = device.display_name || device.name
+                        form.pushPage(form.confirmAndReboot(device.name, displayName, logger))
                     }
                 }),
                 new PushButtonField({
