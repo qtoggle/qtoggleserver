@@ -41,6 +41,10 @@ STANDARD_ATTRDEFS = {
         'type': 'string',
         'internal': True
     },
+    'vendor': {
+        'type': 'string',
+        'internal': True
+    },
     'admin_password': {
         'type': 'string',
         'modifiable': True,
@@ -215,6 +219,7 @@ def get_attrs():
         'display_name': display_name,
         'version': version.VERSION,
         'api_version': core_api.API_VERSION,
+        'vendor': version.VENDOR,
         'uptime': system.uptime(),
         'ui_theme': ui_theme
     }

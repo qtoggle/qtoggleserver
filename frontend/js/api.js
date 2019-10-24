@@ -92,6 +92,14 @@ export const STD_DEVICE_ATTRDEFS = {
         standard: true,
         order: 130
     },
+    vendor: {
+        display_name: gettext('Vendor'),
+        description: gettext('The implementation vendor.'),
+        type: 'string',
+        modifiable: false,
+        standard: true,
+        order: 140
+    },
     uptime: {
         display_name: gettext('Uptime'),
         description: gettext('The number of seconds passed since the device has been turned on.'),
@@ -101,7 +109,7 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: false,
         optional: true,
         standard: true,
-        order: 140
+        order: 150
     },
     admin_password: {
         display_name: gettext('Administrator Password'),
@@ -112,7 +120,7 @@ export const STD_DEVICE_ATTRDEFS = {
         standard: true,
         showAnyway: true,
         separator: true,
-        order: 150
+        order: 160
     },
     normal_password: {
         display_name: gettext('Normal Password'),
@@ -123,7 +131,7 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: true,
         standard: true,
         showAnyway: true,
-        order: 160
+        order: 170
     },
     viewonly_password: {
         display_name: gettext('View-only Password'),
@@ -134,7 +142,7 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: true,
         standard: true,
         showAnyway: true,
-        order: 170
+        order: 180
     },
     date: {
         display_name: gettext('System Date/Time'),
@@ -145,7 +153,7 @@ export const STD_DEVICE_ATTRDEFS = {
         optional: true,
         standard: true,
         separator: true,
-        order: 180
+        order: 190
     },
     timezone: {
         display_name: gettext('Timezone'),
@@ -155,7 +163,7 @@ export const STD_DEVICE_ATTRDEFS = {
         optional: true,
         standard: true,
         separator: false,
-        order: 190
+        order: 200
     },
     network_wifi: {
         display_name: gettext('WiFi Configuration'),
@@ -167,7 +175,7 @@ export const STD_DEVICE_ATTRDEFS = {
         regex: '^(([^:]{0,32}:?)|([^:]{0,32}:[^:]{0,64}:?)|([^:]{0,32}:[^:]{0,64}:[0-9a-fA-F]{12}))$',
         optional: true,
         standard: true,
-        order: 200
+        order: 210
     },
     network_ip: {
         display_name: gettext('IP Configuration'),
@@ -180,7 +188,7 @@ export const STD_DEVICE_ATTRDEFS = {
                 '\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$'),
         optional: true,
         standard: true,
-        order: 210
+        order: 220
     },
     battery_level: {
         display_name: gettext('Battery Level'),
@@ -190,7 +198,7 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: false,
         optional: true,
         standard: true,
-        order: 220
+        order: 230
     },
     low_battery: {
         display_name: gettext('Low Battery'),
@@ -199,14 +207,14 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: false,
         optional: true,
         standard: true,
-        order: 230
+        order: 240
     },
     flags: {
         display_name: gettext('Device Features'),
         description: gettext('Device flags that indicate support for various optional functions.'),
         type: 'flags', // TODO replace with list of strings
         standard: true,
-        order: 240
+        order: 250
     },
     virtual_ports: {
         display_name: gettext('Virtual Ports'),
@@ -216,7 +224,7 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: false,
         optional: true,
         standard: true,
-        order: 250
+        order: 260
     },
     config_name: {
         display_name: gettext('Configuration Name'),
@@ -225,7 +233,7 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: false,
         optional: true,
         standard: true,
-        order: 260
+        order: 270
     }
 }
 
