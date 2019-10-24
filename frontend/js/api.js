@@ -1225,18 +1225,18 @@ export function postReset(factory) {
 
 /**
  * GET /firmware API function call.
- * @param {Boolean} [override] set to `true` to forward request to offline and disabled slaves
+ * @param {Boolean} [override] set to `true` to forward request to offline and disabled slaves (defaults to `false`)
  * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
-export function getFirmware(override) {
+export function getFirmware(override = false) {
     let query = {}
     if (override) {
         query.override_offline = true
         query.override_disabled = true
     }
 
-    return apiCall({method: 'GET', path: '/firmware', query: query, handleErrors: false}).then(function (data) {
+    return apiCall({method: 'GET', path: '/firmware', query: query, handleErrors: !override}).then(function (data) {
 
         if ((data.status === FIRMWARE_STATUS_IDLE || data.status === FIRMWARE_STATUS_ERROR) && ignoreListenErrors) {
             logger.debug('firmware update process ended')
