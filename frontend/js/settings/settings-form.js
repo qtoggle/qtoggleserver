@@ -9,9 +9,10 @@ import * as API           from '$app/api.js'
 import * as Cache         from '$app/cache.js'
 import AttrdefFormMixin   from '$app/common/attrdef-form-mixin.js'
 import * as Common        from '$app/common/common.js'
+import ProvisioningForm   from '$app/common/provisioning-form.js'
+import RebootDeviceMixin  from '$app/common/reboot-device-mixin.js'
 import UpdateFirmwareForm from '$app/common/update-firmware-form.js'
 import WaitDeviceMixin    from '$app/common/wait-device-mixin.js'
-import RebootDeviceMixin  from '$app/common/reboot-device-mixin.js'
 
 import * as Settings    from './settings.js'
 
@@ -120,11 +121,19 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
                     }
                 }),
                 new PushButtonField({
-                    name: 'update_firmware',
+                    name: 'provision',
+                    style: 'interactive',
+                    caption: gettext('Provision'),
+                    callback(form) {
+                        form.pushPage(form.makeProvisioningForm())
+                    }
+                }),
+                new PushButtonField({
+                    name: 'firmware',
                     style: 'colored',
                     backgroundColor: Theme.getColor('@magenta-color'),
                     backgroundActiveColor: Theme.getColor('@magenta-active-color'),
-                    caption: gettext('Update Firmware'),
+                    caption: gettext('Firmware'),
                     disabled: true,
                     callback(form) {
                         form.pushPage(form.makeUpdateFirmwareForm())
@@ -135,7 +144,7 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
     }
 
     updateStaticFields(attrs) {
-        let updateFirmwareButtonField = this.getField('management_buttons').getField('update_firmware')
+        let updateFirmwareButtonField = this.getField('management_buttons').getField('firmware')
         if (attrs.flags.indexOf('firmware') >= 0) {
             updateFirmwareButtonField.enable()
         }
@@ -183,6 +192,9 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
         switch (pathId) {
             case 'firmware':
                 return this.makeUpdateFirmwareForm()
+
+            case 'provisioning':
+                return this.makeProvisioningForm()
         }
     }
 
@@ -191,6 +203,13 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
      */
     makeUpdateFirmwareForm() {
         return new UpdateFirmwareForm(Cache.getMainDevice().name)
+    }
+
+    /**
+     * @returns {qui.pages.PageMixin}
+     */
+    makeProvisioningForm() {
+        return new ProvisioningForm(Cache.getMainDevice().name)
     }
 
 }

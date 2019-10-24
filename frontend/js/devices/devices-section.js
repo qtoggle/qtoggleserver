@@ -56,8 +56,12 @@ export default class DevicesSection extends Section {
             case 'slave-device-update': {
                 this.devicesList.updateUI()
 
+                if (deviceForm.getDeviceName() === event.params.name) {
+                    deviceForm.updateUI()
+                }
+
                 let currentPage = getCurrentPage()
-                if ((Devices.getCurrentDeviceName() === event.params.name) &&
+                if ((Devices.getCurrentDeviceName() === event.params.name) && currentPage &&
                     (currentPage instanceof WaitDeviceMixin)) {
 
                     if (!event.params.online && currentPage.isWaitingDeviceOffline()) {
@@ -66,8 +70,6 @@ export default class DevicesSection extends Section {
                     else if (event.params.online && currentPage.isWaitingDeviceOnline()) {
                         currentPage.fulfillDeviceOnline()
                     }
-
-                    currentPage.updateUI()
                 }
 
                 break

@@ -1,6 +1,10 @@
+
 import StickyModalProgressMessage                from '$qui/messages/sticky-modal-progress-message.js'
 import * as ObjectUtils                          from '$qui/utils/object.js'
 
+
+export const GO_OFFLINE_TIMEOUT = 20 /* Seconds */
+export const COME_ONLINE_TIMEOUT = 60 /* Seconds */
 
 let globalProgressMessage = null
 

@@ -21,10 +21,10 @@ import * as API                                  from '$app/api.js'
 import * as Cache                                from '$app/cache.js'
 import AttrdefFormMixin                          from '$app/common/attrdef-form-mixin.js'
 import * as Common                               from '$app/common/common.js'
-import UpdateFirmwareForm                        from '$app/common/update-firmware-form.js'
+import ProvisioningForm                          from '$app/common/provisioning-form.js'
 import RebootDeviceMixin                         from '$app/common/reboot-device-mixin.js'
+import UpdateFirmwareForm                        from '$app/common/update-firmware-form.js'
 import WaitDeviceMixin                           from '$app/common/wait-device-mixin.js'
-import {GO_OFFLINE_TIMEOUT, COME_ONLINE_TIMEOUT} from '$app/common/wait-device-mixin.js'
 
 import * as Devices from './devices.js'
 
@@ -194,7 +194,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                     name: 'reboot',
                     separator: true,
                     caption: gettext('Reboot'),
-                    style: 'interactive',
+                    style: 'highlight',
                     callback(form) {
                         let device = Cache.getSlaveDevice(form.getDeviceName())
                         if (!device) {
@@ -206,11 +206,19 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                     }
                 }),
                 new PushButtonField({
-                    name: 'update_firmware',
+                    name: 'provision',
+                    style: 'interactive',
+                    caption: gettext('Provision'),
+                    callback(form) {
+                        form.pushPage(form.makeProvisioningForm())
+                    }
+                }),
+                new PushButtonField({
+                    name: 'firmware',
                     style: 'colored',
                     backgroundColor: Theme.getColor('@magenta-color'),
                     backgroundActiveColor: Theme.getColor('@magenta-active-color'),
-                    caption: gettext('Update Firmware'),
+                    caption: gettext('Firmware'),
                     disabled: true,
                     callback(form) {
                         form.pushPage(form.makeUpdateFirmwareForm())
@@ -221,7 +229,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
     }
 
     updateStaticFields(attrs) {
-        let updateFirmwareButtonField = this.getField('management_buttons').getField('update_firmware')
+        let updateFirmwareButtonField = this.getField('management_buttons').getField('firmware')
         if (attrs.flags.indexOf('firmware') >= 0) {
             updateFirmwareButtonField.enable()
         }
@@ -339,11 +347,11 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                  * resolves, the field will no longer be part of the DOM */
                 Promise.resolve().then(function () {
 
-                    return PromiseUtils.withTimeout(this.waitDeviceOffline(), GO_OFFLINE_TIMEOUT * 1000)
+                    return PromiseUtils.withTimeout(this.waitDeviceOffline(), Common.GO_OFFLINE_TIMEOUT * 1000)
 
                 }.bind(this)).then(function () {
 
-                    return PromiseUtils.withTimeout(this.waitDeviceOnline(), COME_ONLINE_TIMEOUT * 1000)
+                    return PromiseUtils.withTimeout(this.waitDeviceOnline(), Common.COME_ONLINE_TIMEOUT * 1000)
 
                 }.bind(this)).catch(function (error) {
 
@@ -391,6 +399,9 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
 
             case 'firmware':
                 return this.makeUpdateFirmwareForm()
+
+            case 'provisioning':
+                return this.makeProvisioningForm()
         }
     }
 
@@ -438,6 +449,13 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
      */
     makeUpdateFirmwareForm() {
         return new UpdateFirmwareForm(this.getDeviceName())
+    }
+
+    /**
+     * @returns {qui.pages.PageMixin}
+     */
+    makeProvisioningForm() {
+        return new ProvisioningForm(this.getDeviceName())
     }
 
 }

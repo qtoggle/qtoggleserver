@@ -1,15 +1,15 @@
 import {TimeoutError}       from '$qui/base/errors.js'
+import {gettext}            from '$qui/base/i18n.js'
 import {Mixin}              from '$qui/base/mixwith.js'
 import * as Cache           from '$app/cache.js'
-import * as StringUtils     from '$qui/utils/string.js'
-import {gettext}            from '$qui/base/i18n.js'
-import * as Messages        from '$qui/messages/messages.js'
 import {ConfirmMessageForm} from '$qui/messages/common-message-forms.js'
+import * as Messages        from '$qui/messages/messages.js'
+import * as Toast           from '$qui/messages/toast.js'
+import * as PromiseUtils    from '$qui/utils/promise.js'
+import * as StringUtils     from '$qui/utils/string.js'
 
-import * as API                                  from '$app/api.js'
-import * as PromiseUtils                         from '$qui/utils/promise.js'
-import * as Toast                                from '$qui/messages/toast.js'
-import {GO_OFFLINE_TIMEOUT, COME_ONLINE_TIMEOUT} from '$app/common/wait-device-mixin.js'
+import * as API    from '$app/api.js'
+import * as Common from '$app/common/common.js'
 
 
 export default Mixin((superclass = Object) => {
@@ -36,11 +36,11 @@ export default Mixin((superclass = Object) => {
                     API.postReset().then(function () {
 
                         logger.debug(`device "${deviceName}" is rebooting`)
-                        return PromiseUtils.withTimeout(this.waitDeviceOffline(), GO_OFFLINE_TIMEOUT * 1000)
+                        return PromiseUtils.withTimeout(this.waitDeviceOffline(), Common.GO_OFFLINE_TIMEOUT * 1000)
 
                     }.bind(this)).then(function () {
 
-                        return PromiseUtils.withTimeout(this.waitDeviceOnline(), COME_ONLINE_TIMEOUT * 1000)
+                        return PromiseUtils.withTimeout(this.waitDeviceOnline(), Common.COME_ONLINE_TIMEOUT * 1000)
 
                     }.bind(this)).then(function () {
 
