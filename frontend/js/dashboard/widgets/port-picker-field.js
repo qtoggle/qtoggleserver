@@ -10,7 +10,7 @@ import * as Cache from '$app/cache.js'
 
 /**
  * @class QToggle.DashboardSection.Widgets.PortPickerField
- * @extends qui.forms.ComboField
+ * @extends qui.forms.commonfields.ComboField
  * @param {Object} params
  * @param {Function} [params.filter]
  */
