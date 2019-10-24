@@ -10,6 +10,7 @@ import FormButton                     from '$qui/forms/form-button.js'
 import {ConfirmMessageForm}           from '$qui/messages/common-message-forms.js'
 import * as Messages                  from '$qui/messages/messages.js'
 import * as Toast                     from '$qui/messages/toast.js'
+import * as Theme                     from '$qui/theme.js'
 import * as DateUtils                 from '$qui/utils/date.js'
 import * as ObjectUtils               from '$qui/utils/object.js'
 import * as PromiseUtils              from '$qui/utils/promise.js'
@@ -26,7 +27,6 @@ import WaitDeviceMixin                           from '$app/common/wait-device-m
 import {GO_OFFLINE_TIMEOUT, COME_ONLINE_TIMEOUT} from '$app/common/wait-device-mixin.js'
 
 import * as Devices from './devices.js'
-import * as Theme   from '$qui/theme.js'
 
 
 const MASTER_FIELDS = ['url', 'enabled', 'poll_interval', 'listen_enabled', 'last_sync']
@@ -93,7 +93,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         this._deviceName = deviceName
 
         this._staticFieldsAdded = false
-        this._renamedDeviceNewName = null
+        Devices.setRenamedDeviceName(null)
     }
 
     init() {
@@ -113,7 +113,6 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         device.url = getDeviceURL(device)
 
         this._fullAttrdefs = null
-        this._renamedDeviceNewName = null
 
         this.setTitle(device.attrs.display_name || device.name)
         this.setIcon(Devices.makeDeviceIcon(device))
@@ -235,10 +234,6 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         return this._deviceName
     }
 
-    getRenamedDeviceNewName() {
-        return this._renamedDeviceNewName
-    }
-
     startWaitingDeviceOnline() {
         this.setProgress()
 
@@ -316,7 +311,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
 
             if (name === 'name') {
                 /* Device renamed, remember new name for reopening */
-                this._renamedDeviceNewName = value
+                Devices.setRenamedDeviceName(value)
             }
 
             API.setSlave(deviceName)
@@ -371,8 +366,12 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         }
     }
 
+    onPush() {
+        Devices.setCurrentDeviceName(this._deviceName)
+    }
+
     onClose() {
-        this._renamedDeviceNewName = null
+        Devices.setCurrentDeviceName(null)
         this.cancelWaitingDevice()
     }
 
