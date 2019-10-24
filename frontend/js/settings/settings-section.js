@@ -1,9 +1,11 @@
 
-import {gettext} from '$qui/base/i18n.js'
+import {gettext}        from '$qui/base/i18n.js'
+import {getCurrentPage} from '$qui/pages/pages.js'
 
-import * as API   from '$app/api.js'
-import * as Cache from '$app/cache.js'
-import {Section}  from '$app/sections.js'
+import * as API        from '$app/api.js'
+import * as Cache      from '$app/cache.js'
+import WaitDeviceMixin from '$app/common/wait-device-mixin.js'
+import {Section}       from '$app/sections.js'
 
 import * as Settings from './settings.js'
 import SettingsForm  from './settings-form.js'
@@ -47,22 +49,24 @@ export default class SettingsSection extends Section {
     }
 
     onMainDeviceDisconnect(error) {
-        if (!this.settingsForm) {
+        let currentPage = getCurrentPage()
+        if (!(currentPage instanceof WaitDeviceMixin)) {
             return
         }
 
-        if (this.settingsForm.isWaitingDeviceOffline()) {
-            this.settingsForm.fulfillDeviceOffline()
+        if (currentPage.isWaitingDeviceOffline()) {
+            currentPage.fulfillDeviceOffline()
         }
     }
 
     onMainDeviceReconnect() {
-        if (!this.settingsForm) {
+        let currentPage = getCurrentPage()
+        if (!(currentPage instanceof WaitDeviceMixin)) {
             return
         }
 
-        if (this.settingsForm.isWaitingDeviceOnline()) {
-            this.settingsForm.fulfillDeviceOnline()
+        if (currentPage.isWaitingDeviceOnline()) {
+            currentPage.fulfillDeviceOnline()
         }
     }
 
