@@ -418,7 +418,7 @@ class DashboardPanelsHandler(APIHandler):
 
 class PrefsHandler(APIHandler):
     async def get(self):
-        await self.call_api_func(ui_api_funcs.get)
+        await self.call_api_func(ui_api_funcs.get_prefs)
 
     async def put(self):
-        await self.call_api_func(ui_api_funcs.put, default_status=204)
+        await self.call_api_func(ui_api_funcs.put_prefs, default_status=204)
