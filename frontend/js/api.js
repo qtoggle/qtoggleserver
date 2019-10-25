@@ -19,6 +19,7 @@ const DEBUG_API_CALLS = true
 const DEFAULT_EXPECT_TIMEOUT = 60 /* Seconds */
 const ROUND_VALUE_TEMPLATE = 1e6
 const FAST_RECONNECT_LISTEN_ERRORS = 2
+const PROVISIONING_CONFIG_URL = 'https://provisioning.qtoggle.io/config'
 
 export const LISTEN_KEEPALIVE = 60 /* Seconds TODO server setting */
 export const SERVER_RETRY_INTERVAL = 3 /* Seconds TODO server setting */
@@ -1796,6 +1797,15 @@ export function putPrefs(prefs) {
 
 
 /* Misc */
+
+/**
+ * GET https://provisioning.qtoggle.io/config API function call.
+ * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
+ *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ */
+export function getProvisioningConfig(prefix) {
+    return AJAX.requestJSON('GET', `${PROVISIONING_CONFIG_URL}/${prefix}`)
+}
 
 /**
  * API request/response indication callback function.
