@@ -1,17 +1,15 @@
 
-import $      from '$qui/lib/jquery.module.js'
 import Logger from '$qui/lib/logger.module.js'
 
-import {gettext}                                from '$qui/base/i18n.js'
-import {mix}                                    from '$qui/base/mixwith.js'
-import {CheckField, TextField, PushButtonField} from '$qui/forms/common-fields.js'
-import {PageForm}                               from '$qui/forms/common-forms.js'
-import FormButton                               from '$qui/forms/form-button.js'
-import FormField                                from '$qui/forms/form-field.js'
-import {ValidationError}                        from '$qui/forms/forms.js'
-import StockIcon                                from '$qui/icons/stock-icon.js'
-import * as Toast                               from '$qui/messages/toast.js'
-import * as PromiseUtils                        from '$qui/utils/promise.js'
+import {gettext}                     from '$qui/base/i18n.js'
+import {mix}                         from '$qui/base/mixwith.js'
+import {PushButtonField, ComboField} from '$qui/forms/common-fields.js'
+import {PageForm}                    from '$qui/forms/common-forms.js'
+import FormButton                    from '$qui/forms/form-button.js'
+import StockIcon                     from '$qui/icons/stock-icon.js'
+import * as Toast                    from '$qui/messages/toast.js'
+import * as ArrayUtils               from '$qui/utils/array.js'
+import * as PromiseUtils             from '$qui/utils/promise.js'
 
 import * as API                       from '$app/api.js'
 import * as Cache                     from '$app/cache.js'
@@ -53,7 +51,82 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
                     callback: function (form) {
                         form.pushPage(form.confirmAndFactoryReset())
                     }
+                }),
+                new ComboField({
+                    name: 'default_config',
+                    label: gettext('Default Configuration'),
+                    separator: true,
+                    description: gettext('Apply a default configuration specific to this device model.'),
+                    choices: [
+                        {value: 'sonoff-touch/1-channel', label: 'sonoff-touch/1-channel'}
+                    ]
+                }),
+                new PushButtonField({
+                    name: 'apply_default_config',
+                    label: ' ',
+                    style: 'interactive',
+                    caption: gettext('Apply'),
+                    callback: function (form) {
+                    }
                 })
+                /* new ComboField({
+                    name: 'backup_config',
+                    label: gettext('Backup Configuration'),
+                    separator: true,
+                    description: gettext('Manage backup configurations for this device.'),
+                    choices: [
+                        {value: 'sonoff-touch/1-channel', label: 'sonoff-touch/1-channel'}
+                    ]
+                }),
+                new CompositeField({
+                    name: 'backup_buttons1',
+                    label: ' ',
+                    layout: Window.isSmallScreen() ? 'vertical' : 'horizontal',
+                    fields: [
+                        new PushButtonField({
+                            name: 'restore',
+                            style: 'highlight',
+                            caption: gettext('Restore'),
+                            callback(form) {
+                            }
+                        }),
+                        new PushButtonField({
+                            name: 'create',
+                            caption: gettext('Create'),
+                            style: 'interactive',
+                            callback(form) {
+                            }
+                        }),
+                        new PushButtonField({
+                            name: 'delete',
+                            style: 'interactive',
+                            caption: gettext('Delete'),
+                            callback(form) {
+                            }
+                        })
+                    ]
+                }),
+                new CompositeField({
+                    name: 'backup_buttons2',
+                    label: ' ',
+                    layout: Window.isSmallScreen() ? 'vertical' : 'horizontal',
+                    fields: [
+                        new PushButtonField({
+                            name: 'download',
+                            style: 'interactive',
+                            caption: gettext('Download'),
+                            callback(form) {
+                            }
+                        }),
+                        new PushButtonField({
+                            name: 'upload',
+                            caption: gettext('Upload'),
+                            style: 'interactive',
+                            callback(form) {
+                            }
+                        })
+                    ]
+                }) */
             ],
             buttons: [
                 new FormButton({id: 'close', caption: gettext('Close'), cancel: true})
@@ -63,31 +136,26 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
         this._deviceName = deviceName
     }
 
-    // load() {
-        // if (this.deviceIsSlave()) {
-        //     API.setSlave(this.getDeviceName())
-        // }
-        //
-        // return this.fetchUpdateStatus().then(function (running) {
-        //
-        //     if (running) {
-        //         /* Start polling, but do not chain it to load promise */
-        //         this.pollStatus(POLLING_INTERVAL * 1000)
-        //     }
-        //
-        // }.bind(this)).catch(function (error) {
-        //
-        //     logger.errorStack(`failed to get current firmware for device "${this.getDeviceName()}"`, error)
-        //     this.setData({status: API.FIRMWARE_STATUS_ERROR})
-        //
-        //     PromiseUtils.asap().then(function () {
-        //
-        //         this.setError(error.toString())
-        //
-        //     }.bind(this))
-        //
-        // }.bind(this))
-    // }
+    load() {
+        let deviceAttrs = this.getDeviceAttrs()
+
+        return API.getProvisioningConfigs(deviceAttrs.config_name || '').then(function (configs) {
+
+            let choices = ArrayUtils.sortKey(configs, c => c.name).map(c => ({value: c.name, label: c.name}))
+            let field = this.getField('default_config')
+            field.setChoices(choices)
+
+            if (choices.length) {
+                this.setData({'default_config': choices[0].value})
+            }
+
+        }.bind(this)).catch(function () {
+
+            logger.error('failed to get provisioning configurations')
+            this.setError(gettext('Failed to get provisioning configurations.'))
+
+        }.bind(this))
+    }
 
     getDeviceName() {
         return this._deviceName

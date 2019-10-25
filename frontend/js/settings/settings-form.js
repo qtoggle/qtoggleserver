@@ -4,6 +4,7 @@ import {PushButtonField, CompositeField} from '$qui/forms/common-fields.js'
 import {PageForm}                        from '$qui/forms/common-forms.js'
 import * as Theme                        from '$qui/theme.js'
 import * as ObjectUtils                  from '$qui/utils/object.js'
+import * as Window                       from '$qui/window.js'
 
 import * as API           from '$app/api.js'
 import * as Cache         from '$app/cache.js'
@@ -108,6 +109,7 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
             name: 'management_buttons',
             label: gettext('Manage Device'),
             separator: true,
+            layout: Window.isSmallScreen() ? 'vertical' : 'horizontal',
             fields: [
                 new PushButtonField({
                     name: 'reboot',

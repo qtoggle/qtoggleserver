@@ -16,6 +16,7 @@ import * as ObjectUtils               from '$qui/utils/object.js'
 import * as PromiseUtils              from '$qui/utils/promise.js'
 import * as StringUtils               from '$qui/utils/string.js'
 import URL                            from '$qui/utils/url.js'
+import * as Window                    from '$qui/window.js'
 
 import * as API                                  from '$app/api.js'
 import * as Cache                                from '$app/cache.js'
@@ -189,6 +190,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             name: 'management_buttons',
             label: gettext('Manage Device'),
             separator: true,
+            layout: Window.isSmallScreen() ? 'vertical' : 'horizontal',
             fields: [
                 new PushButtonField({
                     name: 'reboot',

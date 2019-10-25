@@ -1803,7 +1803,7 @@ export function putPrefs(prefs) {
  * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
-export function getProvisioningConfig(prefix) {
+export function getProvisioningConfigs(prefix) {
     return AJAX.requestJSON('GET', `${PROVISIONING_CONFIG_URL}/${prefix}`)
 }
 
