@@ -146,7 +146,7 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
             field.setChoices(choices)
 
             if (choices.length) {
-                this.setData({'default_config': choices[0].value})
+                this.setData({default_config: choices[0].value})
             }
 
         }.bind(this)).catch(function () {
