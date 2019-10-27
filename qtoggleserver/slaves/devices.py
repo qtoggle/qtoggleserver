@@ -1364,6 +1364,7 @@ class Slave(utils.LoggableMixin):
 
                 self.debug('firmware update process active')
                 self.disable()
+                self.trigger_update()
                 self._start_fwupdate_polling()
 
             elif method == 'GET' and self._fwupdate_poll_started:
@@ -1371,6 +1372,14 @@ class Slave(utils.LoggableMixin):
                     self.debug('firmware update process ended')
                     self.enable()
                     self._stop_fwupdate_polling()
+
+        elif path == '/reset':
+            if method == 'POST' and body.get('factory'):
+                # when performing factory reset, disable device
+
+                self.debug('device has been reset to factory defaults')
+                self.disable()
+                self.trigger_update()
 
 
 def get(name):

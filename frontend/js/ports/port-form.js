@@ -315,7 +315,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
             logger.debug(`updating port "${this.getPortId()}" value to ${JSON.stringify(newValue)}`)
 
-            return API.postPortValue(port.id, newValue).then(function () {
+            return API.patchPortValue(port.id, newValue).then(function () {
 
                 logger.debug(`port "${port.id}" value set`)
 

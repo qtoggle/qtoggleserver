@@ -29,6 +29,10 @@ export const POLL_CHOICES = [
 
 export const logger = Logger.get('qtoggle.devices')
 
+let currentDeviceName = null
+let renamedDeviceName = null
+
+
 export function makeDeviceIcon(device) {
     let decoration = null
     if (device.online) {
@@ -45,4 +49,24 @@ export function makeDeviceIcon(device) {
     }
 
     return DEVICE_ICON.alter({decoration: decoration})
+}
+
+export function getCurrentDeviceName() {
+    return currentDeviceName
+}
+
+export function setCurrentDeviceName(name) {
+    currentDeviceName = name
+    logger.debug(`current device name is ${currentDeviceName}`)
+}
+
+export function getRenamedDeviceName() {
+    return renamedDeviceName
+}
+
+export function setRenamedDeviceName(name) {
+    renamedDeviceName = name
+    if (renamedDeviceName) {
+        logger.debug(`current device renamed to ${renamedDeviceName}`)
+    }
 }

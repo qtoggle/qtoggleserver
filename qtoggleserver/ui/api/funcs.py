@@ -16,14 +16,14 @@ def put_panels(request, params):
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
-def get(request):
+def get_prefs(request):
     # TODO add user id
 
     return persist.get_value('ui_prefs', {})
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
-def put(request, params):
+def put_prefs(request, params):
     # TODO add user id
 
     persist.set_value('ui_prefs', params)

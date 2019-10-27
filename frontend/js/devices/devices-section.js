@@ -1,9 +1,11 @@
 
-import {gettext} from '$qui/base/i18n.js'
+import {gettext}        from '$qui/base/i18n.js'
+import {getCurrentPage} from '$qui/pages/pages.js'
 
-import * as API   from '$app/api.js'
-import * as Cache from '$app/cache.js'
-import {Section}  from '$app/sections.js'
+import * as API        from '$app/api.js'
+import * as Cache      from '$app/cache.js'
+import WaitDeviceMixin from '$app/common/wait-device-mixin.js'
+import {Section}       from '$app/sections.js'
 
 import * as Devices from './devices.js'
 import DevicesList  from './devices-list.js'
@@ -54,15 +56,20 @@ export default class DevicesSection extends Section {
             case 'slave-device-update': {
                 this.devicesList.updateUI()
 
-                if (deviceForm && deviceForm.getDeviceName() === event.params.name) {
-                    if (!event.params.online && deviceForm.isWaitingDeviceOffline()) {
-                        deviceForm.fulfillDeviceOffline()
-                    }
-                    else if (event.params.online && deviceForm.isWaitingDeviceOnline()) {
-                        deviceForm.fulfillDeviceOnline()
-                    }
-
+                if (deviceForm && (deviceForm.getDeviceName() === event.params.name)) {
                     deviceForm.updateUI()
+                }
+
+                let currentPage = getCurrentPage()
+                if ((Devices.getCurrentDeviceName() === event.params.name) && currentPage &&
+                    (currentPage instanceof WaitDeviceMixin)) {
+
+                    if (!event.params.online && currentPage.isWaitingDeviceOffline()) {
+                        currentPage.fulfillDeviceOffline()
+                    }
+                    else if (event.params.online && currentPage.isWaitingDeviceOnline()) {
+                        currentPage.fulfillDeviceOnline()
+                    }
                 }
 
                 break
@@ -72,7 +79,7 @@ export default class DevicesSection extends Section {
                 this.devicesList.updateUI()
 
                 /* Handle special case where currently selected device has been locally renamed via the device form */
-                if (deviceForm && deviceForm.getRenamedDeviceNewName() === event.params.name) {
+                if (Devices.getRenamedDeviceName() === event.params.name) {
                     let device = Cache.getSlaveDevice(event.params.name)
                     if (device) {
                         deviceForm = this.devicesList.makeDeviceForm(device.name)
@@ -88,8 +95,8 @@ export default class DevicesSection extends Section {
             case 'slave-device-remove': {
                 this.devicesList.updateUI()
 
-                if (deviceForm && deviceForm.getDeviceName() === event.params.name &&
-                    deviceForm.getRenamedDeviceNewName() == null) {
+                if (deviceForm && (deviceForm.getDeviceName() === event.params.name) &&
+                    (Devices.getRenamedDeviceName() == null)) {
 
                     /* The device that is currently selected has just been removed */
                     deviceForm.close()

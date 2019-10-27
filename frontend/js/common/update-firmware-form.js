@@ -36,7 +36,7 @@ const PRETTY_STATUSES = {
     [API.FIRMWARE_STATUS_ERROR]: gettext('an error occurred')
 }
 
-const logger = Logger.get('qtoggle.settings')
+const logger = Logger.get('qtoggle.common.updatefirmware')
 
 
 /**

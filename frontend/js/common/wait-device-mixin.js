@@ -3,10 +3,6 @@ import {AssertionError}  from '$qui/base/errors.js'
 import {Mixin}           from '$qui/base/mixwith.js'
 
 
-export const GO_OFFLINE_TIMEOUT = 20 /* Seconds */
-export const COME_ONLINE_TIMEOUT = 60 /* Seconds */
-
-
 export default Mixin((superclass = Object) => {
 
     class WaitDeviceMixin extends superclass {

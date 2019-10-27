@@ -19,6 +19,7 @@ const DEBUG_API_CALLS = true
 const DEFAULT_EXPECT_TIMEOUT = 60 /* Seconds */
 const ROUND_VALUE_TEMPLATE = 1e6
 const FAST_RECONNECT_LISTEN_ERRORS = 2
+const PROVISIONING_CONFIG_URL = 'https://provisioning.qtoggle.io/config'
 
 export const LISTEN_KEEPALIVE = 60 /* Seconds TODO server setting */
 export const SERVER_RETRY_INTERVAL = 3 /* Seconds TODO server setting */
@@ -803,6 +804,14 @@ function makeRequestJWT(username, passwordHash) {
     return `${jwtSigningString}.${jwtSignatureStr}`
 }
 
+function makeAPIError(data, status, msg) {
+    return new APIError({
+        msg: data.error || msg,
+        status: status
+    })
+}
+
+
 /**
  * Call an API function.
  * @memberof QToggle.API
@@ -869,10 +878,7 @@ export function apiCall({
         }
 
         function rejectWrapper(data, status, msg) {
-            let error = new APIError({
-                msg: data.error || msg,
-                status: status
-            })
+            let error = makeAPIError(data, status, msg)
 
             let matchedAPIError = null
             if (data.error) {
@@ -1225,18 +1231,18 @@ export function postReset(factory) {
 
 /**
  * GET /firmware API function call.
- * @param {Boolean} [override] set to `true` to forward request to offline and disabled slaves
+ * @param {Boolean} [override] set to `true` to forward request to offline and disabled slaves (defaults to `false`)
  * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
-export function getFirmware(override) {
+export function getFirmware(override = false) {
     let query = {}
     if (override) {
         query.override_offline = true
         query.override_disabled = true
     }
 
-    return apiCall({method: 'GET', path: '/firmware', query: query, handleErrors: false}).then(function (data) {
+    return apiCall({method: 'GET', path: '/firmware', query: query, handleErrors: !override}).then(function (data) {
 
         if ((data.status === FIRMWARE_STATUS_IDLE || data.status === FIRMWARE_STATUS_ERROR) && ignoreListenErrors) {
             logger.debug('firmware update process ended')
@@ -1379,13 +1385,13 @@ export function getPortValue(id) {
 }
 
 /**
- * POST /ports/{id}/value API function call.
+ * PATCH /ports/{id}/value API function call.
  * @param {String} id the port identifier
  * @param {Boolean|Number} value the new port value
  * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
-export function postPortValue(id, value) {
+export function patchPortValue(id, value) {
     let port = Cache.getPort(id)
     let handle = null
 
@@ -1402,7 +1408,7 @@ export function postPortValue(id, value) {
         })
     }
 
-    return apiCall({method: 'POST', path: `/ports/${id}/value`, data: value, expectedHandle: handle})
+    return apiCall({method: 'PATCH', path: `/ports/${id}/value`, data: value, expectedHandle: handle})
 }
 
 /**
@@ -1796,6 +1802,62 @@ export function putPrefs(prefs) {
 
 
 /* Misc */
+
+/**
+ * GET https://provisioning.qtoggle.io/config API function call.
+ * @param {String} prefix
+ * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
+ *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ */
+export function getProvisioningConfigs(prefix) {
+    return new Promise(function (resolve, reject) {
+
+        AJAX.requestJSON(
+            'GET', `${PROVISIONING_CONFIG_URL}/${prefix}`, /* query = */ null, /* data = */ null,
+            /* success = */ function (configs) {
+                return configs.map(function (config) {
+                    if (config['name'].endsWith('.json')) {
+                        config['name'] = config['name'].slice(0, -5)
+                    }
+
+                    resolve(configs)
+                })
+            },
+            /* failure = */ function (data, status, msg, headers) {
+                reject(makeAPIError(data, status, msg))
+            }
+        )
+
+    })
+}
+
+/**
+ * API request/response indication callback function.
+ * @param {QToggle.API.APIError} [error] indicates an error occurred during synchronization
+ * @callback QToggle.API.SyncCallback
+ */
+
+/**
+ * GET https://provisioning.qtoggle.io/config/config-name.json API function call.
+ * @param {String} configName
+ * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
+ *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ */
+export function getProvisioningConfig(configName) {
+    return new Promise(function (resolve, reject) {
+
+        AJAX.requestJSON(
+            'GET', `${PROVISIONING_CONFIG_URL}/${configName}.json`, /* query = */ null, /* data = */ null,
+            /* success = */ function (configs) {
+                resolve(configs)
+            },
+            /* failure = */ function (data, status, msg, headers) {
+                reject(makeAPIError(data, status, msg))
+            }
+        )
+
+    })
+}
 
 /**
  * API request/response indication callback function.

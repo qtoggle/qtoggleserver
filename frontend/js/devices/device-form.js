@@ -10,23 +10,24 @@ import FormButton                     from '$qui/forms/form-button.js'
 import {ConfirmMessageForm}           from '$qui/messages/common-message-forms.js'
 import * as Messages                  from '$qui/messages/messages.js'
 import * as Toast                     from '$qui/messages/toast.js'
+import * as Theme                     from '$qui/theme.js'
 import * as DateUtils                 from '$qui/utils/date.js'
 import * as ObjectUtils               from '$qui/utils/object.js'
 import * as PromiseUtils              from '$qui/utils/promise.js'
 import * as StringUtils               from '$qui/utils/string.js'
 import URL                            from '$qui/utils/url.js'
+import * as Window                    from '$qui/window.js'
 
 import * as API                                  from '$app/api.js'
 import * as Cache                                from '$app/cache.js'
 import AttrdefFormMixin                          from '$app/common/attrdef-form-mixin.js'
 import * as Common                               from '$app/common/common.js'
-import UpdateFirmwareForm                        from '$app/common/update-firmware-form.js'
+import ProvisioningForm                          from '$app/common/provisioning-form.js'
 import RebootDeviceMixin                         from '$app/common/reboot-device-mixin.js'
+import UpdateFirmwareForm                        from '$app/common/update-firmware-form.js'
 import WaitDeviceMixin                           from '$app/common/wait-device-mixin.js'
-import {GO_OFFLINE_TIMEOUT, COME_ONLINE_TIMEOUT} from '$app/common/wait-device-mixin.js'
 
 import * as Devices from './devices.js'
-import * as Theme   from '$qui/theme.js'
 
 
 const MASTER_FIELDS = ['url', 'enabled', 'poll_interval', 'listen_enabled', 'last_sync']
@@ -93,7 +94,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         this._deviceName = deviceName
 
         this._staticFieldsAdded = false
-        this._renamedDeviceNewName = null
+        Devices.setRenamedDeviceName(null)
     }
 
     init() {
@@ -113,7 +114,6 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         device.url = getDeviceURL(device)
 
         this._fullAttrdefs = null
-        this._renamedDeviceNewName = null
 
         this.setTitle(device.attrs.display_name || device.name)
         this.setIcon(Devices.makeDeviceIcon(device))
@@ -190,12 +190,13 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             name: 'management_buttons',
             label: gettext('Manage Device'),
             separator: true,
+            layout: Window.isSmallScreen() ? 'vertical' : 'horizontal',
             fields: [
                 new PushButtonField({
                     name: 'reboot',
                     separator: true,
                     caption: gettext('Reboot'),
-                    style: 'interactive',
+                    style: 'highlight',
                     callback(form) {
                         let device = Cache.getSlaveDevice(form.getDeviceName())
                         if (!device) {
@@ -207,11 +208,19 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                     }
                 }),
                 new PushButtonField({
-                    name: 'update_firmware',
+                    name: 'provision',
+                    style: 'interactive',
+                    caption: gettext('Provision'),
+                    callback(form) {
+                        form.pushPage(form.makeProvisioningForm())
+                    }
+                }),
+                new PushButtonField({
+                    name: 'firmware',
                     style: 'colored',
                     backgroundColor: Theme.getColor('@magenta-color'),
                     backgroundActiveColor: Theme.getColor('@magenta-active-color'),
-                    caption: gettext('Update Firmware'),
+                    caption: gettext('Firmware'),
                     disabled: true,
                     callback(form) {
                         form.pushPage(form.makeUpdateFirmwareForm())
@@ -222,7 +231,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
     }
 
     updateStaticFields(attrs) {
-        let updateFirmwareButtonField = this.getField('management_buttons').getField('update_firmware')
+        let updateFirmwareButtonField = this.getField('management_buttons').getField('firmware')
         if (attrs.flags.indexOf('firmware') >= 0) {
             updateFirmwareButtonField.enable()
         }
@@ -233,10 +242,6 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
 
     getDeviceName() {
         return this._deviceName
-    }
-
-    getRenamedDeviceNewName() {
-        return this._renamedDeviceNewName
     }
 
     startWaitingDeviceOnline() {
@@ -316,7 +321,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
 
             if (name === 'name') {
                 /* Device renamed, remember new name for reopening */
-                this._renamedDeviceNewName = value
+                Devices.setRenamedDeviceName(value)
             }
 
             API.setSlave(deviceName)
@@ -344,11 +349,11 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                  * resolves, the field will no longer be part of the DOM */
                 Promise.resolve().then(function () {
 
-                    return PromiseUtils.withTimeout(this.waitDeviceOffline(), GO_OFFLINE_TIMEOUT * 1000)
+                    return PromiseUtils.withTimeout(this.waitDeviceOffline(), Common.GO_OFFLINE_TIMEOUT * 1000)
 
                 }.bind(this)).then(function () {
 
-                    return PromiseUtils.withTimeout(this.waitDeviceOnline(), COME_ONLINE_TIMEOUT * 1000)
+                    return PromiseUtils.withTimeout(this.waitDeviceOnline(), Common.COME_ONLINE_TIMEOUT * 1000)
 
                 }.bind(this)).catch(function (error) {
 
@@ -371,8 +376,12 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         }
     }
 
+    onPush() {
+        Devices.setCurrentDeviceName(this._deviceName)
+    }
+
     onClose() {
-        this._renamedDeviceNewName = null
+        Devices.setCurrentDeviceName(null)
         this.cancelWaitingDevice()
     }
 
@@ -392,6 +401,9 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
 
             case 'firmware':
                 return this.makeUpdateFirmwareForm()
+
+            case 'provisioning':
+                return this.makeProvisioningForm()
         }
     }
 
@@ -439,6 +451,13 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
      */
     makeUpdateFirmwareForm() {
         return new UpdateFirmwareForm(this.getDeviceName())
+    }
+
+    /**
+     * @returns {qui.pages.PageMixin}
+     */
+    makeProvisioningForm() {
+        return new ProvisioningForm(this.getDeviceName())
     }
 
 }
