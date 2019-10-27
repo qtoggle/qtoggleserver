@@ -202,7 +202,7 @@ def get_schema():
                     attr_schema['maximum'] = attr_schema.pop('max')
 
             if 'choices' in attrdef:
-                attr_schema['enum'] = [i['value'] for i in attr_schema.pop('choices')]
+                attr_schema['enum'] = [c['value'] for c in attr_schema.pop('choices')]
 
             attr_schema.pop('persisted', None)
             attr_schema.pop('modifiable', None)

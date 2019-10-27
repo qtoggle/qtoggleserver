@@ -833,7 +833,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
                         attr_schema['maximum'] = attr_schema.pop('max')
 
                 if 'choices' in attrdef:
-                    attr_schema['enum'] = attr_schema.pop('choices')
+                    attr_schema['enum'] = [c['value'] for c in attr_schema.pop('choices')]
 
                 attr_schema.pop('modifiable', None)
 
