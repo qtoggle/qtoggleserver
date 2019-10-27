@@ -56,7 +56,7 @@ export default class DevicesSection extends Section {
             case 'slave-device-update': {
                 this.devicesList.updateUI()
 
-                if (deviceForm.getDeviceName() === event.params.name) {
+                if (deviceForm && (deviceForm.getDeviceName() === event.params.name)) {
                     deviceForm.updateUI()
                 }
 
