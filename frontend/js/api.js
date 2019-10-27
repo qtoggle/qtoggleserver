@@ -1812,7 +1812,7 @@ export function putPrefs(prefs) {
 export function getProvisioningConfigs(prefix) {
     return new Promise(function (resolve, reject) {
 
-         AJAX.requestJSON(
+        AJAX.requestJSON(
             'GET', `${PROVISIONING_CONFIG_URL}/${prefix}`, /* query = */ null, /* data = */ null,
             /* success = */ function (configs) {
                 return configs.map(function (config) {

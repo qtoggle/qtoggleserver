@@ -204,7 +204,7 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
 
                 modalProgress.close()
 
-            }.bind(this))
+            })
 
         }.bind(this))
     }
