@@ -1800,11 +1800,28 @@ export function putPrefs(prefs) {
 
 /**
  * GET https://provisioning.qtoggle.io/config API function call.
+ * @param {String} prefix
  * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
 export function getProvisioningConfigs(prefix) {
     return AJAX.requestJSON('GET', `${PROVISIONING_CONFIG_URL}/${prefix}`)
+}
+
+/**
+ * API request/response indication callback function.
+ * @param {QToggle.API.APIError} [error] indicates an error occurred during synchronization
+ * @callback QToggle.API.SyncCallback
+ */
+
+/**
+ * GET https://provisioning.qtoggle.io/config/config-name.json API function call.
+ * @param {String} configName
+ * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
+ *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ */
+export function getProvisioningConfig(configName) {
+    return AJAX.requestJSON('GET', `${PROVISIONING_CONFIG_URL}/${configName}.json`)
 }
 
 /**
