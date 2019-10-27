@@ -372,8 +372,6 @@ class PortValueHandler(APIHandler):
     async def patch(self, port_id):
         await self.call_api_func(core_api_funcs.patch_port_value, port_id=port_id, default_status=204)
 
-    post = patch
-
 
 class PortSequenceHandler(APIHandler):
     async def post(self, port_id):
