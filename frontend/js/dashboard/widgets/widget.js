@@ -1067,7 +1067,7 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     /**
-     * Sets the value of a port. This is basically a handy wrapper around {@link QToggle.API.postPortValue}.
+     * Sets the value of a port. This is basically a handy wrapper around {@link QToggle.API.patchPortValue}.
      * During the API call, the widget is put into *progress* state.
      * When the call returns, the state is updated according to the result.
      * @param {String} portId the id of the port whose value will be set
@@ -1077,7 +1077,7 @@ export default class Widget extends mix().with(ViewMixin) {
     setPortValue(portId, value) {
         this.setProgress()
 
-        return API.postPortValue(portId, value).then(function () {
+        return API.patchPortValue(portId, value).then(function () {
 
             this.clearProgress()
 
