@@ -21,7 +21,7 @@ STANDARD_ATTRDEFS = {
     'name': {
         'type': 'string',
         'modifiable': True,
-        'persisted': lambda: not bool(settings.device_name.set_cmd),
+        'persisted': True,
         'min': 1,
         'max': 32,
         'pattern': r'^[_a-zA-Z]?[_a-z-A-Z0-9]*$',
