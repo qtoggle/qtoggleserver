@@ -48,7 +48,7 @@ class Expression(abc.ABC):
         return set()
 
     @staticmethod
-    def parse(sexpression):
+    def parse(self_port_id, sexpression):
         return Expression(sexpression)
 
 
@@ -64,7 +64,7 @@ class Constant(Expression):
         return self.value
 
     @staticmethod
-    def parse(sexpression):
+    def parse(self_port_id, sexpression):
         sexpression = sexpression.strip()
 
         if sexpression == 'true':
@@ -121,7 +121,7 @@ class Function(Expression, abc.ABC):
         return cls.__name__[:-8].upper()
 
     @staticmethod
-    def parse(sexpression):
+    def parse(self_port_id, sexpression):
         sexpression = sexpression.strip()
 
         p_start = None
@@ -167,7 +167,7 @@ class Function(Expression, abc.ABC):
         if func_class is None:
             raise InvalidExpression('unknown function "{}"'.format(func_name))
 
-        args = [parse(sa) for sa in sargs]
+        args = [parse(self_port_id, sa) for sa in sargs]
 
         if func_class.MIN_ARGS is not None and len(args) < func_class.MIN_ARGS:
             raise InvalidExpression('too few arguments for function "{}"'.format(func_name))
@@ -741,9 +741,9 @@ class PortValue(Expression):
         return float(value)
 
     @staticmethod
-    def parse(sexpression):
+    def parse(self_port_id, sexpression):
         sexpression = sexpression.strip()
-        port_id = sexpression.strip('$')
+        port_id = sexpression.strip('$') or self_port_id
 
         return PortValue(port_id, sexpression)
 
@@ -752,16 +752,16 @@ class PortValue(Expression):
 FUNCTIONS = dict((f.get_name(), f) for f in Function.__subclasses__())
 
 
-def parse(sexpression):
+def parse(self_port_id, sexpression):
     sexpression = sexpression.strip()
     if sexpression.startswith('$'):
-        return PortValue.parse(sexpression)
+        return PortValue.parse(self_port_id, sexpression)
 
     elif sexpression.count('('):
-        return Function.parse(sexpression)
+        return Function.parse(self_port_id, sexpression)
 
     else:
-        return Constant.parse(sexpression)
+        return Constant.parse(self_port_id, sexpression)
 
 
 def check_loops(port, expression):
