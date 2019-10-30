@@ -44,6 +44,10 @@ class server:
     addr = '0.0.0.0'
     port = 8888
 
+    class https:
+        cert_file = None
+        key_file = None
+
 
 class persist:
     driver = 'qtoggleserver.drivers.persist.redis.RedisDriver'
