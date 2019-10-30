@@ -737,18 +737,14 @@ let apiURLPrefix = ''
  */
 export class APIError extends Error {
 
-    constructor({msg, status, pretty = '', knownError = null, params = []}) {
-        super(msg)
+    constructor({messageCode, status, pretty = '', knownError = null, params = []}) {
+        super(pretty)
 
-        this.msg = msg
+        this.messageCode = messageCode
         this.status = status
         this.pretty = pretty
         this.knownError = knownError
         this.params = params
-    }
-
-    toString() {
-        return this.pretty || this.msg || `APIError ${this.status}`
     }
 
 }
@@ -805,9 +801,64 @@ function makeRequestJWT(username, passwordHash) {
 }
 
 function makeAPIError(data, status, msg) {
+    let messageCode = data.error || msg
+    let prettyMessage = messageCode
+    let knownError = null
+    let params = null
+
+    let matchedAPIError = null
+    if (data.error) {
+        matchedAPIError = parseAPIErrorMessage(status, data.error)
+        if (matchedAPIError) {
+            prettyMessage = matchedAPIError.pretty
+            knownError = matchedAPIError
+            params = matchedAPIError.params
+        }
+    }
+
+    if (status === 403) {
+        let level = ACCESS_LEVEL_MAPPING[data['required_level']]
+        switch (level) {
+            case ACCESS_LEVEL_ADMIN:
+                prettyMessage = gettext('Administrator access level required.')
+                break
+
+            case ACCESS_LEVEL_NORMAL:
+                prettyMessage = gettext('Normal access level required.')
+                break
+
+            case ACCESS_LEVEL_VIEWONLY:
+                prettyMessage = gettext('View-only access level required.')
+                break
+        }
+    }
+    if (status === 500 && data && data.error) {
+        /* Internal server error */
+        prettyMessage = gettext('Unexpected error while communicating with the server (%(error)s).')
+        prettyMessage = StringUtils.formatPercent(prettyMessage, {error: data.error})
+    }
+    else if (status === 503 && data && data.error === 'busy') {
+        prettyMessage = gettext('The device is busy.')
+    }
+    else if (status === 0) {
+        if (msg === 'timeout') {
+            prettyMessage = gettext('Timeout waiting for a response from the server.')
+        }
+        else { /* Assuming disconnected */
+            messageCode = 'disconnected'
+            prettyMessage = gettext('Connection with the server was lost.')
+        }
+    }
+    else if (!prettyMessage) { /* Unexpected error */
+        prettyMessage = gettext('Unexpected error while communicating with the server.')
+    }
+
     return new APIError({
-        msg: data.error || msg,
-        status: status
+        messageCode: messageCode,
+        status: status,
+        pretty: prettyMessage,
+        knownError: knownError,
+        params: params
     })
 }
 
@@ -880,59 +931,12 @@ export function apiCall({
         function rejectWrapper(data, status, msg) {
             let error = makeAPIError(data, status, msg)
 
-            let matchedAPIError = null
-            if (data.error) {
-                matchedAPIError = parseAPIErrorMessage(status, data.error)
-                if (matchedAPIError) {
-                    error.pretty = matchedAPIError.pretty
-                    error.knownError = matchedAPIError
-                    error.params = matchedAPIError.params
-                }
-            }
-
-            if (status === 403) {
-                let level = ACCESS_LEVEL_MAPPING[data.required_level]
-                switch (level) {
-                    case ACCESS_LEVEL_ADMIN:
-                        error.pretty = gettext('Administrator access level required.')
-                        break
-
-                    case ACCESS_LEVEL_NORMAL:
-                        error.pretty = gettext('Normal access level required.')
-                        break
-
-                    case ACCESS_LEVEL_VIEWONLY:
-                        error.pretty = gettext('View-only access level required.')
-                        break
-                }
-            }
-            if (status === 500 && data && data.error) {
-                /* Internal server error */
-                error.pretty = gettext('Unexpected error while communicating with the server (%(error)s).')
-                error.pretty = StringUtils.formatPercent(error.pretty, {error: data.error})
-            }
-            else if (status === 503 && data && data.error === 'busy') {
-                error.pretty = gettext('The device is busy.')
-            }
-            else if (status === 0) {
-                if (msg === 'timeout') {
-                    error.pretty = gettext('Timeout waiting for a response from the server.')
-                }
-                else { /* Assuming disconnected */
-                    error.msg = 'disconnected'
-                    error.pretty = gettext('Connection with the server was lost.')
-                }
-            }
-            else if (!error.pretty) { /* Unexpected error */
-                error.pretty = gettext('Unexpected error while communicating with the server.')
-            }
-
             if (expectedHandle) {
                 unexpectEvent(expectedHandle)
             }
 
             if (handleErrors) {
-                logger.error(`ajax error: ${error} (msg="${error.msg}", status=${error.status})`)
+                logger.error(`ajax error: ${error} (messageCode="${error.messageCode}", status=${error.status})`)
             }
 
             reject(error)
