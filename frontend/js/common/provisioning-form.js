@@ -66,6 +66,7 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
                     name: 'apply_default_config',
                     label: ' ',
                     style: 'interactive',
+                    disabled: true,
                     caption: gettext('Apply'),
                     callback: function (form) {
                         form.clearError()
@@ -142,6 +143,13 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
     load() {
         let deviceAttrs = this.getDeviceAttrs()
 
+        if (!deviceAttrs['config_name']) {
+            this.getField('default_config').hide()
+            this.getField('apply_default_config').hide()
+
+            return Promise.resolve()
+        }
+
         return API.getProvisioningConfigs(deviceAttrs.config_name || '').then(function (configs) {
 
             let choices = ArrayUtils.sortKey(configs, c => c.name).map(c => ({value: c.name, label: c.name}))
@@ -150,6 +158,7 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
 
             if (choices.length) {
                 this.setData({default_config: choices[0].value})
+                this.getField('apply_default_config').enable()
             }
 
         }.bind(this)).catch(function (error) {
