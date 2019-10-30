@@ -88,6 +88,11 @@ function applyDefaultDeviceConfig(context, deviceAttrs) {
     /* Never update device name via default configuration */
     ObjectUtils.pop(deviceAttrs, 'name')
 
+    /* Don't overwrite display name */
+    if (context.deviceAttrs['display_name']) {
+        ObjectUtils.pop(deviceAttrs, 'display_name')
+    }
+
     /* Update device attributes */
     promise = promise.then(function () {
         context.prepareAPICall()
