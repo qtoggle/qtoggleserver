@@ -412,7 +412,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
         try:
             self.debug('parsing expression "%s"', sexpression)
-            expression = core_expressions.parse(sexpression)
+            expression = core_expressions.parse(self.get_id(), sexpression)
 
             self.debug('checking for expression circular dependencies')
             core_expressions.check_loops(self, expression)
@@ -441,7 +441,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
         try:
             self.debug('parsing expression "%s"', stransform_read)
-            transform_read = core_expressions.parse(stransform_read)
+            transform_read = core_expressions.parse(self.get_id(), stransform_read)
 
             deps = transform_read.get_deps()
             for dep in deps:
@@ -476,7 +476,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
         try:
             self.debug('parsing expression "%s"', stransform_write)
-            transform_write = core_expressions.parse(stransform_write)
+            transform_write = core_expressions.parse(self.get_id(), stransform_write)
 
             deps = transform_write.get_deps()
             for dep in deps:
