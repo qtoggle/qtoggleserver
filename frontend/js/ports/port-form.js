@@ -465,7 +465,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 }.bind(this)).catch(function (error) {
 
                     logger.errorStack(`failed to remove port "${port.id}"`, error)
-                    Toast.error(error.toString())
+                    Toast.error(error.message)
 
                 })
 

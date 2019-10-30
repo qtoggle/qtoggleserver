@@ -1083,10 +1083,10 @@ export default class Widget extends mix().with(ViewMixin) {
 
         }.bind(this)).catch(function (error) {
 
-            this.setError(error.toString())
+            this.setError(error)
             this.showCurrentValue() /* This will normally revert to previous value */
 
-            Toast.error(error.toString())
+            Toast.error(error.message)
 
         }.bind(this))
     }
@@ -1124,10 +1124,10 @@ export default class Widget extends mix().with(ViewMixin) {
 
         }.bind(this)).catch(function (error) {
 
-            this.setError(error.toString())
+            this.setError(error)
             this.showCurrentValue() /* This will normally revert to previous value */
 
-            Toast.error(error.toString())
+            Toast.error(error.message)
 
         }.bind(this))
     }

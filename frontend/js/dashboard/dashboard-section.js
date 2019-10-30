@@ -51,7 +51,7 @@ export default class DashboardSection extends Section {
         }).catch(function (error) {
 
             logger.errorStack('loading panels failed', error)
-            Toast.error(error.toString())
+            Toast.error(error.message)
 
             throw error
 

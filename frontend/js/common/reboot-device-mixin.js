@@ -53,11 +53,11 @@ export default Mixin((superclass = Object) => {
                         logger.errorStack(`failed to reboot device "${deviceName}"`, error)
 
                         if (error instanceof TimeoutError) {
-                            error = new Error(gettext('Timeout waiting for device to reconnect.'))
+                            error.message = gettext('Timeout waiting for device to reconnect.')
                         }
 
                         this.cancelWaitingDevice()
-                        this.setError(error.toString())
+                        this.setError(error)
 
                     }.bind(this)).then(function () {
 

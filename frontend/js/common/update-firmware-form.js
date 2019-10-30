@@ -215,7 +215,7 @@ export default class UpdateFirmwareForm extends PageForm {
 
             PromiseUtils.asap().then(function () {
 
-                this.setError(error.toString())
+                this.setError(error)
 
             }.bind(this))
 

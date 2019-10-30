@@ -207,7 +207,7 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
 
             }).catch(function (error) {
 
-                this.setError(error.toString())
+                this.setError(error)
 
             }.bind(this)).then(function () {
 
@@ -260,7 +260,7 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
                     }
 
                     this.cancelWaitingDevice()
-                    this.setError(error.toString())
+                    this.setError(error)
 
                 }.bind(this)).then(function () {
 

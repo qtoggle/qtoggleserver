@@ -364,7 +364,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                     }
 
                     this.cancelWaitingDevice()
-                    this.setError(error.toString())
+                    this.setError(error)
 
                 }.bind(this)).then(function () {
 
@@ -437,7 +437,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                 }.bind(this)).catch(function (error) {
 
                     logger.errorStack(`failed to remove device "${device.name}" at url ${deviceURL}`, error)
-                    Toast.error(error.toString())
+                    Toast.error(error.message)
 
                 })
 
