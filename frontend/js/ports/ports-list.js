@@ -128,8 +128,8 @@ export default class PortsList extends PageList {
             let devices = Cache.getSlaveDevices()
             let device = devices[this._deviceName]
 
-            if (device && device.online &&
-                (device.attrs.virtual_ports || 0) > ports.length) {
+            let virtualPorts = ports.filter(p => p.virtual)
+            if (device && device.online && (device.attrs.virtual_ports || 0) > virtualPorts.length) {
                 this.enableAdd()
             }
             else {
