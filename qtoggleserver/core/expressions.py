@@ -478,6 +478,16 @@ class TimeFunction(Function):
         return int(time.time())
 
 
+class TimeMSFunction(Function):
+    MIN_ARGS = MAX_ARGS = 0
+
+    def get_deps(self):
+        return {'time_ms'}
+
+    def eval(self):
+        return int(time.time() * 1000)
+
+
 class HeldFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
 
