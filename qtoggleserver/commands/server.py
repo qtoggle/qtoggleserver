@@ -17,7 +17,7 @@ def init_web_server():
 
     ssl_context = None
     if settings.server.https.cert_file and settings.server.https.key_file:
-        logger.debug('setting up HTTPS using certificate from %s', settings.server.https.cert_file)
+        logger.info('setting up HTTPS using certificate from %s', settings.server.https.cert_file)
         ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ssl_context.load_cert_chain(settings.server.https.cert_file, settings.server.https.key_file)
 
