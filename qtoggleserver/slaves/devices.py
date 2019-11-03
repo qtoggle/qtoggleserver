@@ -28,6 +28,7 @@ from .ports import SlavePort
 
 _FWUPDATE_POLL_INTERVAL = 30
 _FWUPDATE_POLL_TIMEOUT = 300
+_NO_EVENT_DEVICE_ATTRS = ['uptime', 'date']
 
 
 _slaves = {}  # indexed by name
@@ -1366,6 +1367,12 @@ class Slave(utils.LoggableMixin):
 
                     except exceptions.DeviceRenamed:
                         pass
+
+            elif method == 'GET':
+                # intercept this API call so that we can update locally cached attributes whose values change often and
+                # therefore do not trigger a device-update event
+                attrs = {n: response[n] for n in _NO_EVENT_DEVICE_ATTRS if n in response}
+                self.update_cached_attrs(attrs, partial=True)
 
         elif path == '/firmware':
             if method == 'PATCH' and not self._fwupdate_poll_started:
