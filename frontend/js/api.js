@@ -464,6 +464,13 @@ ObjectUtils.forEach(ADDITIONAL_PORT_ATTRDEFS, (name, def) => {
     def.known = true
 })
 
+
+/**
+ * Device attributes that change often and don't normally generate device-update events.
+ */
+export const NO_EVENT_DEVICE_ATTRS = ['uptime', 'date']
+
+
 const KNOWN_ERRORS = [
     /* HTTP 400 */
     {

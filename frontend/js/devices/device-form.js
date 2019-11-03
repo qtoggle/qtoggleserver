@@ -101,6 +101,15 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         this.updateUI()
     }
 
+    load() {
+        API.setSlave(this.getDeviceName())
+        return API.getDevice().then(function (attrs) {
+            attrs = ObjectUtils.filter(attrs, n => (API.NO_EVENT_DEVICE_ATTRS.indexOf(n) >= 0))
+            attrs = ObjectUtils.mapKey(attrs, n => `attr_${n}`)
+            this.setData(attrs)
+        }.bind(this))
+    }
+
     /**
      * Updates the entire form (fields & values) from the corresponding device.
      */
