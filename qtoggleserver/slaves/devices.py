@@ -190,10 +190,11 @@ class Slave(utils.LoggableMixin):
 
             raise exceptions.DeviceRenamed(self)
 
-        self._name = attrs.get('name')
-        self._cached_attrs = attrs
+        if attrs.get('name') and self._name != attrs['name']:
+            self._name = attrs.get('name')
+            self.set_logger_name(self._name)
 
-        self.set_logger_name(self._name)
+        self._cached_attrs = attrs
 
     def get_name(self):
         return self._name
