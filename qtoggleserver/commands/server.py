@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import ssl
 
 from qtoggleserver import commands
 from qtoggleserver.conf import settings
@@ -14,8 +15,15 @@ logger = logging.getLogger('qtoggleserver.server')
 def init_web_server():
     listen, port = settings.server.addr, settings.server.port
 
+    ssl_context = None
+    if settings.server.https.cert_file and settings.server.https.key_file:
+        logger.debug('setting up HTTPS using certificate from %s', settings.server.https.cert_file)
+        ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        ssl_context.load_cert_chain(settings.server.https.cert_file, settings.server.https.key_file)
+
+
     try:
-        web_server.get_application().listen(port, listen)
+        web_server.get_application().listen(port, listen, ssl_options=ssl_context)
         logger.info('server listening on %s:%s', listen, port)
 
     except Exception as e:
