@@ -149,52 +149,56 @@ class Slave(utils.LoggableMixin):
     def get_cached_attr(self, name):
         return self._cached_attrs.get(name)
 
-    def update_cached_attrs(self, attrs):
+    def update_cached_attrs(self, attrs, partial=False):
         # if the name has changed remove the device and re-add the device from scratch
 
-        name_changed = (attrs.get('name') != self._name) and (self._name is not None)
-        if name_changed:
-            name = attrs.get('name')
+        if attrs.get('name'):
+            name = attrs['name']
+            if name != self._name:
+                if self._name is not None:
+                    self.debug('detected name change to %s', name)
 
-            if name_changed:
-                self.debug('detected name change to %s', name)
+                    # disable device before removing it
+                    if self.is_enabled():
+                        self.disable()
 
-            # disable device before removing it
-            if self.is_enabled():
-                self.disable()
+                        # we have to trigger an update event here,
+                        # to inform consumers about disabling
+                        self.trigger_update()
 
-                # we have to trigger an update event here,
-                # to inform consumers about disabling
-                self.trigger_update()
+                    # check for duplicate name
+                    if name in _slaves or core_device_attrs.name == name:
+                        logger.error('a slave with name %s already exists', name)
+                        raise exceptions.DeviceAlreadyExists(name)
 
-            # check for duplicate name
-            if name in _slaves or core_device_attrs.name == name:
-                logger.error('a slave with name %s already exists', name)
-                raise exceptions.DeviceAlreadyExists(name)
+                    # rename associated ports persisted data
+                    try:
+                        self._rename_ports_persisted_data(name)
 
-            # rename associated ports persisted data
-            try:
-                self._rename_ports_persisted_data(name)
+                    except Exception as e:
+                        logger.error('renaming ports persisted data failed: %s', e, exc_info=True)
 
-            except Exception as e:
-                logger.error('renaming ports persisted data failed: %s', e, exc_info=True)
+                    # actually remove the slave
+                    remove(self)
 
-            # actually remove the slave
-            remove(self)
+                    # add the slave back
+                    future = add(self._scheme, self._host, self._port, self._path, self._poll_interval,
+                                 self._listen_enabled, admin_password_hash=self._admin_password_hash)
 
-            # add the slave back
-            future = add(self._scheme, self._host, self._port, self._path, self._poll_interval,
-                         self._listen_enabled, admin_password_hash=self._admin_password_hash)
+                    asyncio.create_task(future)
 
-            asyncio.create_task(future)
+                    raise exceptions.DeviceRenamed(self)
 
-            raise exceptions.DeviceRenamed(self)
+                else:
+                    self.debug('got real name: %s', name)
+                    self._name = name
+                    self.set_logger_name(name)
 
-        if attrs.get('name') and self._name != attrs['name']:
-            self._name = attrs.get('name')
-            self.set_logger_name(self._name)
+        if partial:
+            self._cached_attrs.update(attrs)
 
-        self._cached_attrs = attrs
+        else:
+            self._cached_attrs = attrs
 
     def get_name(self):
         return self._name
@@ -592,9 +596,6 @@ class Slave(utils.LoggableMixin):
             self.error('invalid device')
             raise exceptions.InvalidDevice()
 
-        if just_added:
-            self.debug('got real name: "%s"', name)
-
         self.update_cached_attrs(attrs)
 
         if just_added and (name in _slaves or core_device_attrs.name == name):
@@ -725,6 +726,10 @@ class Slave(utils.LoggableMixin):
                         await self.handle_event(event)
                         if event['type'] in ('port-add', 'port-remove', 'port-update'):
                             needs_save_ports = True
+
+                    except exceptions.DeviceRenamed:
+                        self.debug('ignoring device renamed exception')
+                        break
 
                     except Exception:
                         # ignoring any error from handling an event is the best thing
@@ -974,6 +979,10 @@ class Slave(utils.LoggableMixin):
         self.debug('handling event of type %s', event['type'])
         try:
             await method(**event['params'])
+
+        except exceptions.DeviceRenamed:
+            # treat DeviceRenamed as an expected exception, do not log anything but forward it
+            raise
 
         except Exception as e:
             self.error('handling event of type %s failed: %s', event['type'], e)
@@ -1342,7 +1351,7 @@ class Slave(utils.LoggableMixin):
 
         if path == '/device':
             if method == 'PATCH':
-                # intercept API call to detect admin password changes
+                # intercept this API call to detect admin password changes
                 new_admin_password = body and body.get('admin_password')
                 if new_admin_password is not None:
                     self.debug('updating admin password')
@@ -1353,7 +1362,7 @@ class Slave(utils.LoggableMixin):
                 new_name = body and body.get('name')
                 if new_name and new_name != self._name:
                     try:
-                        self.update_cached_attrs({'name': new_name})
+                        self.update_cached_attrs({'name': new_name}, partial=True)
 
                     except exceptions.DeviceRenamed:
                         pass
