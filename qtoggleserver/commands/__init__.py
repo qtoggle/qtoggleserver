@@ -172,6 +172,7 @@ async def init_ports():
     vports.load()
     port_settings = settings.ports + vports.all_settings()
     await ports.load(port_settings)
+    ports.apply_mappings()
 
 
 async def init_slaves():
@@ -190,8 +191,8 @@ async def done_lib():
     await lib.done()
 
 
-async def init_core():
-    logger.info('initializing core')
+async def init_main():
+    logger.info('initializing main')
     await main.init()
 
     # Wait until slaves are also ready before actually considering core started
@@ -201,8 +202,8 @@ async def init_core():
             await asyncio.sleep(0.1)
 
 
-async def done_core():
-    logger.info('cleaning up core')
+async def done_main():
+    logger.info('cleaning up main')
     await main.done()
 
 
@@ -218,12 +219,12 @@ async def init():
     await init_device()
     await init_ports()
     await init_slaves()
-    await init_core()
+    await init_main()
     await init_lib()
 
 
 async def done():
     await done_lib()
-    await done_core()
+    await done_main()
 
     done_persist()

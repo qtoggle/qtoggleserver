@@ -28,6 +28,9 @@ class VirtualPort(core_ports.Port):
 
         self._value = self._virtual_value = self.adapt_value_type(mi or 0)
 
+    def map_id(self, new_id):
+        raise core_ports.PortError('virtual ports cannot be mapped')
+
     def read_value(self):
         return self._virtual_value
 
@@ -45,12 +48,12 @@ def add(port_id, typ, mi, ma, integer, step, choices):
         'step': step,
         'choices': choices
     }
-    
+
     _vport_settings[port_id] = settings
 
     logger.debug('saving virtual port settings for %s', port_id)
     persist.replace('vports', port_id, settings)
-    
+
 
 def remove(port_id):
     try:
