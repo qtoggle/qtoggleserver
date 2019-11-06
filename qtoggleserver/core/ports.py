@@ -131,20 +131,19 @@ STANDARD_ATTRDEFS = {
 }
 
 
-class InvalidAttributeValue(Exception):
+class PortError(Exception):
+    pass
+
+
+class InvalidAttributeValue(PortError):
     def __init__(self, attr):
         self.attr = attr
 
         super().__init__(attr)
 
 
-class PortTimeout(Exception):
+class PortTimeout(PortError):
     pass
-
-
-class PortError(Exception):
-    def __init__(self, msg):
-        super().__init__(msg)
 
 
 class BasePort(utils.LoggableMixin, abc.ABC):

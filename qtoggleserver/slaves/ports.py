@@ -44,7 +44,7 @@ class SlavePort(core_ports.BasePort):
 
     def __init__(self, slave, attrs):
         self._slave = slave
-        
+
         self._remote_id = attrs['id']
 
         # value cache
@@ -120,7 +120,7 @@ class SlavePort(core_ports.BasePort):
         # device_expression - mapped to expression on slave
         # online - use slave value unless slave itself offline or port disabled
         # expires - always kept on master, ignored on slave
-        
+
         if name in ('id', 'tag', 'expression', 'online', 'last_sync', 'expires'):
             return super().get_attr(name)
 
@@ -229,7 +229,7 @@ class SlavePort(core_ports.BasePort):
 
         if not self._expires and not self._slave.is_online():
             return False
-        
+
         return self._cached_attrs.get('online', True)
 
     def attr_get_provisioning(self):
@@ -295,7 +295,7 @@ class SlavePort(core_ports.BasePort):
             await self._slave.api_call('POST', '/ports/{}/sequence'.format(self._remote_id),
                                        {'values': values, 'delays': delays, 'repeat': repeat})
             self.debug('sequence sent remotely')
-        
+
         except Exception as e:
             self.error('failed to send sequence remotely: %s', e)
 

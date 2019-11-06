@@ -60,11 +60,11 @@ async def patch_port(request, port_id, params):
         elif isinstance(error, core_ports.InvalidAttributeValue):
             raise core_api.APIError(400, 'invalid field: {}'.format(name))
 
-        elif isinstance(error, core_ports.PortError):
-            raise core_api.APIError(502, 'port error: {}'.format(error))
-
         elif isinstance(error, core_ports.PortTimeout):
             raise core_api.APIError(504, 'port timeout')
+
+        elif isinstance(error, core_ports.PortError):
+            raise core_api.APIError(502, 'port error: {}'.format(error))
 
         else:
             # transform any unhandled exception into APIError(500)
@@ -162,11 +162,11 @@ async def patch_port_value(request, port_id, params):
     try:
         await port.set_value(value, reason=core_ports.CHANGE_REASON_API)
 
-    except core_ports.PortError as e:
-        raise core_api.APIError(502, 'port error: {}'.format(e))
-
     except core_ports.PortTimeout:
         raise core_api.APIError(504, 'port timeout')
+
+    except core_ports.PortError as e:
+        raise core_api.APIError(502, 'port error: {}'.format(e))
 
     except core_api.APIError:
         raise
