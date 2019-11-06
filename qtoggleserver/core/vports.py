@@ -29,7 +29,7 @@ class VirtualPort(core_ports.Port):
         self._value = self._virtual_value = self.adapt_value_type(mi or 0)
 
     def map_id(self, new_id):
-        raise Exc
+        raise core_ports.PortError('virtual ports cannot be mapped')
 
     def read_value(self):
         return self._virtual_value
