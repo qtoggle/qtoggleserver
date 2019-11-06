@@ -113,5 +113,6 @@ password_set_cmd = None
 
 ports = []
 
+port_mappings = {}
 
 pkg_path = _os.path.dirname(_os.path.abspath(__file__))

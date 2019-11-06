@@ -14,6 +14,7 @@ from tornado import queues
 from qtoggleserver import persist
 from qtoggleserver import utils
 
+from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import main
@@ -339,6 +340,10 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
     def get_id(self):
         return self._id
+
+    def map_id(self, new_id):
+        self._id = new_id
+        self.debug('mapped to %s', new_id)
 
     def get_type(self):
         return self.get_attr('type')
@@ -936,6 +941,27 @@ async def load_one(cls, settings):
         return None
 
     return ports[0]
+
+
+def apply_mappings():
+    for old_id, new_id in settings.port_mappings.items():
+        if new_id in _ports:
+            logger.error('cannot map port %s: new id already exists', old_id, new_id)
+            continue
+
+        port = _ports.get(old_id)
+        if not port:
+            logger.error('cannot map port %s to %s: no such port', old_id, new_id)
+            continue
+
+        try:
+            port.map_id(new_id)
+
+        except Exception as e:
+            port.error('cannot map to %s: %s', new_id, e)
+
+        _ports.pop(old_id)
+        _ports[port.get_id()] = port
 
 
 def get(port_id):
