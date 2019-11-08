@@ -753,9 +753,18 @@ class PortValue(Expression):
     @staticmethod
     def parse(self_port_id, sexpression):
         sexpression = sexpression.strip()
-        port_id = sexpression.strip('$') or self_port_id
+        port_id = sexpression.strip('$')
 
-        return PortValue(port_id, sexpression)
+        if port_id:
+            return PortValue(port_id, sexpression)
+
+        else:
+            return SelfPortValue(self_port_id, sexpression)
+
+
+class SelfPortValue(PortValue):
+    def __str__(self):
+        return '$'
 
 
 # TODO register functions using a decorator rather than looking through subclasses
