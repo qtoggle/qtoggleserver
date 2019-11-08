@@ -59,7 +59,7 @@ def remove(port_id):
     try:
         _vport_settings.pop(port_id)
 
-    except Exception:
+    except KeyError:
         logger.error('virtual port settings for %s no longer exist', port_id)
 
         return False

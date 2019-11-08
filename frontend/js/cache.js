@@ -553,7 +553,7 @@ export function setPrefs(path, value) {
         }
 
         let next = prefsObj[pathArray[0]]
-        if (typeof next !== 'object') {
+        if (!ObjectUtils.isObject(next)) {
             next = prefsObj[pathArray[0]] = {}
         }
 

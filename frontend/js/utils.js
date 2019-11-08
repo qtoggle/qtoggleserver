@@ -1,4 +1,7 @@
 
+import * as ObjectUtils from '$qui/utils/object.js'
+
+
 /**
  * Helps sorting items alphabetically and numerically at the same time,
  * by adding zero padding to each number within the given string.
@@ -40,4 +43,65 @@ export function nameToId(name) {
     return name.toLowerCase()
                .replace(new RegExp('[^a-z0-9]', 'g'), '-')
                .replace(new RegExp('(-+)', 'g'), '-')
+}
+
+export function resolveJSONPointer(obj, pointer) {
+    let path
+    if (pointer === '') {
+        path = []
+    }
+    else if (pointer.charAt(0) !== '/') {
+        throw new Error(`Invalid JSON pointer: ${pointer}`)
+    }
+    else {
+        path = pointer.substring(1).split(/\//).map(s => s.replace(/~1/g, '/').replace(/~0/g, '~'))
+    }
+
+    path.forEach(function (p) {
+        if (Array.isArray(obj)) {
+            p = Number(p)
+            if (isNaN(p) || p < 0 || p >= obj.length) {
+                throw new Error(`JSON pointer reference not found: ${pointer}`)
+            }
+
+            obj = obj[p]
+        }
+        else if (ObjectUtils.isObject(obj)) {
+            if (!(p in obj)) {
+                throw new Error(`JSON pointer reference not found: ${pointer}`)
+            }
+
+            obj = obj[p]
+        }
+        else {
+            throw new Error(`JSON pointer reference not found: ${pointer}`)
+        }
+    })
+
+    return obj
+}
+
+function resolveJSONRefsRec(obj, rootObj) {
+    if (Array.isArray(obj)) {
+        obj.forEach(function (e, i) {
+            obj[i] = resolveJSONRefsRec(e, rootObj)
+        })
+    }
+    else if (ObjectUtils.isObject(obj)) {
+        let keys = Object.keys(obj)
+        if ((keys.length === 1) && (keys[0] === '$ref')) {
+            let ref = obj['$ref'].substring(1)
+            return resolveJSONPointer(rootObj, ref)
+        }
+
+        ObjectUtils.forEach(obj, function (key, value) {
+            obj[key] = resolveJSONRefsRec(value, rootObj)
+        })
+    }
+
+    return obj
+}
+
+export function resolveJSONRefs(obj) {
+    return resolveJSONRefsRec(obj, obj)
 }

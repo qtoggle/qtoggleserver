@@ -1,11 +1,11 @@
 
 import abc
-import json
 import logging
 
 from qtoggleserver import utils
 from qtoggleserver.conf import settings
 from qtoggleserver.conf import utils as conf_utils
+from qtoggleserver.utils import json as json_utils
 
 
 logger = logging.getLogger(__name__)
@@ -61,8 +61,8 @@ def _get_driver():
 
 def query(collection, fields=None, filt=None, limit=None):
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('querying %s (%s) where %s', collection, json.dumps(fields) if fields else 'all fields',
-                     json.dumps(filt))
+        logger.debug('querying %s (%s) where %s', collection, json_utils.dumps(fields) if fields else 'all fields',
+                     json_utils.dumps(filt))
 
     return _get_driver().query(collection, fields, filt or {}, limit)
 
@@ -99,7 +99,7 @@ def get_value(name, default=None):
 
 def set_value(name, value):
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('setting %s to %s', name, json.dumps(value))
+        logger.debug('setting %s to %s', name, json_utils.dumps(value))
 
     record = {'value': value}
     _get_driver().replace(name, '', record, upsert=True)
@@ -107,14 +107,15 @@ def set_value(name, value):
 
 def insert(collection, record):
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('inserting %s into %s', json.dumps(record), collection)
+        logger.debug('inserting %s into %s', json_utils.dumps(record), collection)
 
     return _get_driver().insert(collection, record)
 
 
 def update(collection, record_part, filt=None):
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('updating %s where %s with %s', collection, json.dumps(filt or {}), json.dumps(record_part))
+        logger.debug('updating %s where %s with %s', collection, json_utils.dumps(filt or {}),
+                     json_utils.dumps(record_part))
 
     count = _get_driver().update(collection, record_part, filt or {})
 
@@ -125,7 +126,7 @@ def update(collection, record_part, filt=None):
 
 def replace(collection, _id, record, upsert=True):
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('replacing record with id %s with %s in %s', _id, json.dumps(record), collection)
+        logger.debug('replacing record with id %s with %s in %s', _id, json_utils.dumps(record), collection)
 
     record = dict(record, id=_id)  # make sure the new record contains the id field
     replaced = _get_driver().replace(collection, _id, record, upsert)
@@ -138,7 +139,7 @@ def replace(collection, _id, record, upsert=True):
 
 def remove(collection, filt=None):
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('removing from %s where %s', collection, json.dumps(filt or {}))
+        logger.debug('removing from %s where %s', collection, json_utils.dumps(filt or {}))
 
     count = _get_driver().remove(collection, filt or {})
 

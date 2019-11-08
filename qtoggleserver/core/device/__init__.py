@@ -1,9 +1,9 @@
 
-import json
 import logging
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
+from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_get_cmd
 
 from . import attrs as device_attrs
@@ -43,7 +43,7 @@ def load():
             logger.debug('loaded %s = [hidden]', name)
 
         else:
-            logger.debug('loaded %s = %s', name, json.dumps(value))
+            logger.debug('loaded %s = %s', name, json_utils.dumps(value))
 
         setattr(device_attrs, name, value)
 

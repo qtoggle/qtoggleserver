@@ -312,8 +312,8 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
         try:
             self._current['callback'](**kwargs)
 
-        except Exception:
-            self.error('command callback failed', exc_info=True)
+        except Exception as e:
+            self.error('command callback failed: %s', e, exc_info=True)
 
     def _retry(self):
         if self._current['retry_no'] < self._current['retry_count']:

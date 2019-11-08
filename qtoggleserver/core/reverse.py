@@ -1,6 +1,5 @@
 
 import asyncio
-import json
 import logging
 import re
 import types
@@ -14,6 +13,7 @@ from qtoggleserver.core import api as core_api
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.utils import http as http_utils
+from qtoggleserver.utils import json as json_utils
 
 
 # a list of API calls that are prohibited via reverse mechanism
@@ -130,7 +130,7 @@ class Reverse:
             except UnauthorizedConsumerRequestError:
                 api_response_dict = {
                     'status': 401,
-                    'body': json.dumps({'error': 'authentication required'})
+                    'body': json_utils.dumps({'error': 'authentication required'})
                 }
 
                 continue
@@ -245,7 +245,7 @@ class Reverse:
         if self._is_black_listed(request_dict):
             return {
                 'status': 404,
-                'body': json.dumps({'error': 'no such function'})
+                'body': json_utils.dumps({'error': 'no such function'})
             }
 
         request = httputil.HTTPServerRequest(method=request_dict['method'],
