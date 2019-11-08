@@ -1,8 +1,8 @@
 
-import json
 import os
 
 from qtoggleserver.core import ports
+from qtoggleserver.utils import json as json_utils
 
 
 class GPIO(ports.Port):
@@ -59,7 +59,7 @@ class GPIO(ports.Port):
         else:
             value = '0'
 
-        self.debug('writing %s to "%s"', json.dumps(value), self._val_file.name)
+        self.debug('writing %s to "%s"', json_utils.dumps(value), self._val_file.name)
         self._val_file.write(value)
         self._val_file.flush()
 

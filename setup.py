@@ -120,6 +120,7 @@ setup(
     install_requires=[
         'jinja2',
         'jsonschema',
+        'jsonpointer',
         'pyhocon',
         'pyjwt',
         'pytz',

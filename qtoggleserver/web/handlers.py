@@ -1,6 +1,5 @@
 
 import inspect
-import json
 import logging
 
 from tornado.web import RequestHandler, HTTPError, StaticFileHandler as TornadoStaticFileHandler
@@ -14,6 +13,7 @@ from qtoggleserver.core.api import funcs as core_api_funcs
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.slaves.api import funcs as slaves_api_funcs
 from qtoggleserver.ui.api import funcs as ui_api_funcs
+from qtoggleserver.utils import json as json_utils
 
 from .constants import FRONTEND_URL_PREFIX, STATIC_CACHE_LIFETIME
 from .j2template import J2TemplateMixin
@@ -41,7 +41,7 @@ class BaseHandler(RequestHandler):
     def get_request_json(self):
         if self._json is self._UNDEFINED:
             try:
-                self._json = json.loads(self.request.body)
+                self._json = json_utils.loads(self.request.body)
 
             except ValueError as e:
                 logger.error('could not decode json from request body: %s', e)
@@ -58,7 +58,7 @@ class BaseHandler(RequestHandler):
     def finish_json(self, data):
         self._response_body_json = data
 
-        data = json.dumps(data)
+        data = json_utils.dumps(data)
         data += '\n'
 
         self.set_header('Content-Type', 'application/json; charset=utf-8')
@@ -262,8 +262,8 @@ class APIHandler(BaseHandler):
     async def _handle_api_call_exception(self, func, kwargs, error):
         kwargs = dict(kwargs)
         params = kwargs.pop('params', None)
-        args = json.dumps(kwargs)
-        body = params and json.dumps(params) or '{}'
+        args = json_utils.dumps(kwargs)
+        body = params and json_utils.dumps(params) or '{}'
 
         if isinstance(error, core_responses.HTTPError):
             error = core_api.APIError(error.code, error.msg)

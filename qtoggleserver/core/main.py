@@ -1,10 +1,10 @@
 
 import asyncio
-import json
 import logging
 import time
 
 from qtoggleserver.conf import settings
+from qtoggleserver.utils import json as json_utils
 
 
 logger = logging.getLogger(__name__)
@@ -68,8 +68,8 @@ async def update():
             continue  # read value not available
 
         if new_value != old_value:
-            old_value_str = json.dumps(old_value) if old_value is not None else '(unavailable)'
-            new_value_str = json.dumps(new_value)
+            old_value_str = json_utils.dumps(old_value) if old_value is not None else '(unavailable)'
+            new_value_str = json_utils.dumps(new_value)
 
             logger.debug('detected %s value change: %s -> %s', port, old_value_str, new_value_str)
 
@@ -166,7 +166,7 @@ def handle_value_changes(changed_set, change_reasons):
                 continue
 
             if value != port.get_value():
-                logger.debug('expression "%s" of %s evaluated to %s', expression, port, json.dumps(value))
+                logger.debug('expression "%s" of %s evaluated to %s', expression, port, json_utils.dumps(value))
                 port.set_value_asap(value, reason=ports.CHANGE_REASON_EXPRESSION)
 
 

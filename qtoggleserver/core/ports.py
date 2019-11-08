@@ -4,7 +4,6 @@ import asyncio
 import copy
 import functools
 import inspect
-import json
 import logging
 import sys
 import time
@@ -20,6 +19,7 @@ from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import main
 from qtoggleserver.core import sessions as core_sessions
 from qtoggleserver.core import sequences as core_sequences
+from qtoggleserver.utils import json as json_utils
 
 
 TYPE_BOOLEAN = 'boolean'
@@ -305,7 +305,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
                     await main.update()
 
             except Exception:
-                self.error('failed to set attribute %s = %s', name, json.dumps(value), exc_info=True)
+                self.error('failed to set attribute %s = %s', name, json_utils.dumps(value), exc_info=True)
 
                 raise
 
@@ -557,10 +557,10 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
         try:
             await self._write_value_queued(value, reason)
-            self.debug('wrote value %s (reason=%s)', json.dumps(value), reason)
+            self.debug('wrote value %s (reason=%s)', json_utils.dumps(value), reason)
 
         except Exception:
-            self.error('failed to write value %s (reason=%s)', json.dumps(value), reason, exc_info=True)
+            self.error('failed to write value %s (reason=%s)', json_utils.dumps(value), reason, exc_info=True)
 
             raise
 
@@ -580,7 +580,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
             asyncio.create_task(set_value())
 
         else:
-            self.debug('will set value %s asap', json.dumps(value))
+            self.debug('will set value %s asap', json_utils.dumps(value))
 
     def read_transformed_value(self):
         value = self.read_value()
@@ -703,16 +703,16 @@ class BasePort(utils.LoggableMixin, abc.ABC):
                 continue  # value is also among the persisted fields
 
             try:
-                self.debug('loading %s = %s', name, json.dumps(value))
+                self.debug('loading %s = %s', name, json_utils.dumps(value))
                 await self.set_attr(name, value)
 
             except Exception as e:
-                self.error('failed to set attribute %s = %s: %s', name, json.dumps(value), e)
+                self.error('failed to set attribute %s = %s: %s', name, json_utils.dumps(value), e)
 
         # value
         if self.is_persisted() and data.get('value') is not None:
             self._value = data['value']
-            self.debug('loaded value = %s', json.dumps(self._value))
+            self.debug('loaded value = %s', json_utils.dumps(self._value))
 
             if self.is_writable():
                 # write the just-loaded value to the port
@@ -727,7 +727,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
                 value = self.read_transformed_value()
                 if value is not None:
                     self._value = value
-                    self.debug('read value = %s', json.dumps(self._value))
+                    self.debug('read value = %s', json_utils.dumps(self._value))
 
             except Exception as e:
                 self.error('failed to read value: %s', e, exc_info=True)

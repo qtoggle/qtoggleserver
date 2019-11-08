@@ -1,7 +1,9 @@
 
 import errno
-import json
 import socket
+
+
+from qtoggleserver.utils import json as json_utils
 
 
 class Error(Exception):
@@ -14,7 +16,7 @@ class Error(Exception):
 
     def __str__(self):
         return self.MESSAGE.format(**self._params)
-    
+
     def __repr__(self):
         return '{}("{}")'.format(self.__class__.__name__, self)
 
@@ -42,7 +44,7 @@ class Timeout(Error):
 class MovedPermanently(Error):
     # HTTP 301
     MESSAGE = 'moved permanently to "{location}"'
-    
+
     def __init__(self, location):
         self.location = location
 
@@ -55,7 +57,7 @@ class Redirect(Error):
 
     def __init__(self, location):
         self.location = location
-        
+
         super().__init__(location=location)
 
 
@@ -71,7 +73,7 @@ class HTTPError(Error):
 
 
 class InvalidJson(Error):
-    # json.load() failure
+    # JSON load() failure
     MESSAGE = 'invalid json'
 
 
@@ -96,27 +98,27 @@ def _response_error_errno(eno):
 
     elif eno == errno.EHOSTUNREACH:
         return HostUnreachable()
-    
+
     elif eno == errno.ENETUNREACH:
         return NetworkUnreachable()
-    
+
     elif eno == socket.EAI_NONAME:
         return UnresolvableHostname()
-    
+
     elif eno:
         return OtherError(errno.errorcode.get(eno))
-    
+
     return OtherError('unknown error')
 
 
-def parse(response, decode_json=True):
+def parse(response, decode_json=True, resolve_pointers=True):
     if 100 <= response.code < 599:
         if response.code == 204:
             return  # happy case - no content
 
         if decode_json and response.body:
             try:
-                body = json.loads(response.body)
+                body = json_utils.loads(response.body)
 
             except Exception:
                 raise InvalidJson()
@@ -126,7 +128,7 @@ def parse(response, decode_json=True):
 
         if response.code == 200:
             return body  # happy case with content
-        
+
         if response.code == 301:
             raise MovedPermanently(response.headers.get('Location', ''))
 

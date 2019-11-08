@@ -1,6 +1,5 @@
 
 import asyncio
-import json
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
@@ -8,6 +7,7 @@ from qtoggleserver.core import main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import vports as core_vports
 from qtoggleserver.core.api import schema as core_api_schema
+from qtoggleserver.utils import json as json_utils
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
@@ -41,7 +41,7 @@ async def patch_port(request, port_id, params):
     errors_by_name = {}
 
     async def set_attr(attr_name, attr_value):
-        core_api.logger.debug('setting attribute %s = %s on %s', attr_name, json.dumps(attr_value), port)
+        core_api.logger.debug('setting attribute %s = %s on %s', attr_name, json_utils.dumps(attr_value), port)
 
         try:
             await port.set_attr(attr_name, attr_value)
