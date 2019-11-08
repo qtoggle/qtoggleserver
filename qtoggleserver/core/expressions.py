@@ -31,12 +31,6 @@ class IncompleteExpression(ExpressionError):
 
 
 class Expression(abc.ABC):
-    def __init__(self, sexpression):
-        self._sexpression = sexpression
-
-    def __str__(self):
-        return self._sexpression
-
     def eval(self):
         raise NotImplementedError()
 
@@ -49,16 +43,16 @@ class Expression(abc.ABC):
 
     @staticmethod
     def parse(self_port_id, sexpression):
-        return Expression(sexpression)
+        raise NotImplementedError
 
 
 class Constant(Expression):
     def __init__(self, value, sexpression):
-        super().__init__(sexpression)
         self.value = value
+        self.sexpression = sexpression
 
     def __str__(self):
-        return self._sexpression
+        return self.sexpression
 
     def eval(self):
         return self.value
@@ -92,7 +86,6 @@ class Function(Expression, abc.ABC):
     MAX_ARGS = None
 
     def __init__(self, args, sexpression):
-        super().__init__(sexpression)
         self.args = args
         self._deps = None
 
@@ -721,8 +714,7 @@ class HMSIntervalFunction(Function):
 
 
 class PortValue(Expression):
-    def __init__(self, port_id, sexpression):
-        super().__init__(sexpression)
+    def __init__(self, port_id):
         self.port_id = port_id
 
     def __str__(self):
@@ -756,10 +748,10 @@ class PortValue(Expression):
         port_id = sexpression.strip('$')
 
         if port_id:
-            return PortValue(port_id, sexpression)
+            return PortValue(port_id)
 
         else:
-            return SelfPortValue(self_port_id, sexpression)
+            return SelfPortValue(self_port_id)
 
 
 class SelfPortValue(PortValue):
