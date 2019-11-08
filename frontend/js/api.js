@@ -1826,13 +1826,15 @@ export function getProvisioningConfigs(prefix) {
         AJAX.requestJSON(
             'GET', `${PROVISIONING_CONFIG_URL}/${prefix}`, /* query = */ null, /* data = */ null,
             /* success = */ function (configs) {
-                return configs.map(function (config) {
+
+                /* Remove .json extension */
+                configs.forEach(function (config) {
                     if (config['name'].endsWith('.json')) {
                         config['name'] = config['name'].slice(0, -5)
                     }
-
-                    resolve(configs)
                 })
+
+                resolve(configs)
             },
             /* failure = */ function (data, status, msg, headers) {
                 reject(makeAPIError(data, status, msg))
