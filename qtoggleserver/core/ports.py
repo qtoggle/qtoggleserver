@@ -334,8 +334,8 @@ class BasePort(utils.LoggableMixin, abc.ABC):
             try:
                 method(value)
 
-            except Exception:
-                self.error('%s failed', method_name, exc_info=True)
+            except Exception as e:
+                self.error('%s failed: %s', method_name, e, exc_info=True)
 
     def get_id(self):
         return self._id
@@ -776,11 +776,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
             self._sequence.cancel()
             self._sequence = None
 
-        try:
-            _ports.pop(self._id)
-
-        except Exception:
-            pass
+        _ports.pop(self._id, None)
 
         if persisted_data:
             self.debug('removing persisted data')

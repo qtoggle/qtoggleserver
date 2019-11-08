@@ -46,15 +46,15 @@ async def update():
         try:
             port.heart_beat()
 
-        except Exception:
-            logger.error('port heart beat exception', exc_info=True)
+        except Exception as e:
+            logger.error('port heart beat exception: %s', e, exc_info=True)
 
         if time_changed:
             try:
                 port.heart_beat_second()
 
-            except Exception:
-                logger.error('port heart beat second exception', exc_info=True)
+            except Exception as e:
+                logger.error('port heart beat second exception: %s', e, exc_info=True)
 
         try:
             new_value = port.read_transformed_value()

@@ -7,10 +7,9 @@ from setuptools.command.sdist import sdist
 
 try:
     from wheel.bdist_wheel import bdist_wheel
-    has_wheel = True
 
 except ImportError:
-    has_wheel = False
+    bdist_wheel = None
 
 import qtoggleserver.version
 
@@ -65,7 +64,7 @@ class SdistCommand(sdist, UIMakeMixin):
         self.copy_frontend_files()
 
 
-if has_wheel:
+if bdist_wheel:
     class BdistWheelCommand(bdist_wheel, UIMakeMixin):
         def __init__(self, *args, **kwargs):
             bdist_wheel.__init__(self, *args, **kwargs)
