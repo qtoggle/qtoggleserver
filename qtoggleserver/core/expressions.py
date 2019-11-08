@@ -5,6 +5,19 @@ import math
 import time
 
 
+FUNCTIONS = {}
+
+
+def function(name):
+    def decorator(func_class):
+        func_class.NAME = name
+        FUNCTIONS[name] = func_class
+
+        return func_class
+
+    return decorator
+
+
 class ExpressionError(Exception):
     pass
 
@@ -82,10 +95,11 @@ class Constant(Expression):
 
 
 class Function(Expression, abc.ABC):
+    NAME = None
     MIN_ARGS = None
     MAX_ARGS = None
 
-    def __init__(self, args, sexpression):
+    def __init__(self, args):
         self.args = args
         self._deps = None
 
@@ -93,7 +107,7 @@ class Function(Expression, abc.ABC):
         s = getattr(self, '_str', None)
         if s is None:
             args_str = ', '.join([str(e) for e in self.args])
-            self._str = s = '{}({})'.format(self.get_name(), args_str)
+            self._str = s = '{}({})'.format(self.NAME, args_str)
 
         return s
 
@@ -108,10 +122,6 @@ class Function(Expression, abc.ABC):
 
     def eval_args(self):
         return [a.eval() for a in self.args]
-
-    @classmethod
-    def get_name(cls):
-        return cls.__name__[:-8].upper()
 
     @staticmethod
     def parse(self_port_id, sexpression):
@@ -156,21 +166,22 @@ class Function(Expression, abc.ABC):
             sargs.append(sexpression[(p_last_comma or p_start) + 1: p_end])
 
         func_name = sexpression[:p_start].strip()
-        func_class = FUNCTIONS.get(func_name.upper())
+        func_class = FUNCTIONS.get(func_name)
         if func_class is None:
             raise InvalidExpression('unknown function "{}"'.format(func_name))
 
-        args = [parse(self_port_id, sa) for sa in sargs]
-
-        if func_class.MIN_ARGS is not None and len(args) < func_class.MIN_ARGS:
+        if func_class.MIN_ARGS is not None and len(sargs) < func_class.MIN_ARGS:
             raise InvalidExpression('too few arguments for function "{}"'.format(func_name))
 
-        if func_class.MAX_ARGS is not None and len(args) > func_class.MAX_ARGS:
+        if func_class.MAX_ARGS is not None and len(sargs) > func_class.MAX_ARGS:
             raise InvalidExpression('too many arguments for function "{}"'.format(func_name))
 
-        return func_class(args, sexpression)
+        args = [parse(self_port_id, sa) for sa in sargs]
+
+        return func_class(args)
 
 
+@function('ADD')
 class AddFunction(Function):
     MIN_ARGS = 2
 
@@ -178,6 +189,7 @@ class AddFunction(Function):
         return sum(self.eval_args())
 
 
+@function('SUB')
 class SubFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -186,6 +198,7 @@ class SubFunction(Function):
         return eval_args[0] - eval_args[1]
 
 
+@function('MUL')
 class MulFunction(Function):
     MIN_ARGS = 2
 
@@ -197,6 +210,7 @@ class MulFunction(Function):
         return r
 
 
+@function('DIV')
 class DivFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -210,6 +224,7 @@ class DivFunction(Function):
             return 0
 
 
+@function('MOD')
 class ModFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -223,6 +238,7 @@ class ModFunction(Function):
             return 0
 
 
+@function('AND')
 class AndFunction(Function):
     MIN_ARGS = 2
 
@@ -234,6 +250,7 @@ class AndFunction(Function):
         return int(r)
 
 
+@function('OR')
 class OrFunction(Function):
     MIN_ARGS = 2
 
@@ -245,6 +262,7 @@ class OrFunction(Function):
         return int(r)
 
 
+@function('NOT')
 class NotFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
@@ -252,6 +270,7 @@ class NotFunction(Function):
         return int(not bool(self.eval_args()[0]))
 
 
+@function('XOR')
 class XorFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -264,6 +283,7 @@ class XorFunction(Function):
         return int(e1 and not e2 or e2 and not e1)
 
 
+@function('BITAND')
 class BitAndFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -275,6 +295,7 @@ class BitAndFunction(Function):
         return r
 
 
+@function('BITOR')
 class BitOrFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -286,6 +307,7 @@ class BitOrFunction(Function):
         return r
 
 
+@function('BITNOT')
 class BitNotFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
@@ -293,6 +315,7 @@ class BitNotFunction(Function):
         return ~int(self.eval_args()[0])
 
 
+@function('BITXOR')
 class BitXOrFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -302,6 +325,7 @@ class BitXOrFunction(Function):
         return int(eval_args[0]) ^ int(eval_args[1])
 
 
+@function('SHL')
 class SHLFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -311,6 +335,7 @@ class SHLFunction(Function):
         return int(eval_args[0]) << int(eval_args[1])
 
 
+@function('SHR')
 class SHRFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -320,6 +345,7 @@ class SHRFunction(Function):
         return int(eval_args[0]) >> int(eval_args[1])
 
 
+@function('IF')
 class IfFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
 
@@ -333,6 +359,7 @@ class IfFunction(Function):
             return eval_args[2]
 
 
+@function('EQ')
 class EqFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -342,6 +369,7 @@ class EqFunction(Function):
         return int(eval_args[0] == eval_args[1])
 
 
+@function('GT')
 class GTFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -351,6 +379,7 @@ class GTFunction(Function):
         return int(eval_args[0] > eval_args[1])
 
 
+@function('GTE')
 class GTEFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -360,6 +389,7 @@ class GTEFunction(Function):
         return int(eval_args[0] >= eval_args[1])
 
 
+@function('LT')
 class LTFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -369,6 +399,7 @@ class LTFunction(Function):
         return int(eval_args[0] < eval_args[1])
 
 
+@function('LTE')
 class LTEFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -378,6 +409,7 @@ class LTEFunction(Function):
         return int(eval_args[0] <= eval_args[1])
 
 
+@function('ABS')
 class AbsFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
@@ -385,6 +417,7 @@ class AbsFunction(Function):
         return abs(self.eval_args()[0])
 
 
+@function('SGN')
 class SgnFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
@@ -400,6 +433,7 @@ class SgnFunction(Function):
             return 0
 
 
+@function('MIN')
 class MinFunction(Function):
     MIN_ARGS = 2
 
@@ -414,6 +448,7 @@ class MinFunction(Function):
         return m
 
 
+@function('MAX')
 class MaxFunction(Function):
     MIN_ARGS = 2
 
@@ -428,6 +463,7 @@ class MaxFunction(Function):
         return m
 
 
+@function('FLOOR')
 class FloorFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
@@ -437,6 +473,7 @@ class FloorFunction(Function):
         return int(math.floor(eval_args[0]))
 
 
+@function('CEIL')
 class CeilFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
@@ -446,6 +483,7 @@ class CeilFunction(Function):
         return int(math.ceil(eval_args[0]))
 
 
+@function('ROUND')
 class RoundFunction(Function):
     MIN_ARGS = 1
     MAX_ARGS = 2
@@ -461,6 +499,7 @@ class RoundFunction(Function):
         return round(v, d)
 
 
+@function('TIME')
 class TimeFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
@@ -471,6 +510,7 @@ class TimeFunction(Function):
         return int(time.time())
 
 
+@function('TIMEMS')
 class TimeMSFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
@@ -481,6 +521,7 @@ class TimeMSFunction(Function):
         return int(time.time() * 1000)
 
 
+@function('HELD')
 class HeldFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
 
@@ -518,6 +559,7 @@ class HeldFunction(Function):
         return result
 
 
+@function('DELAY')
 class DelayFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
     HISTORY_SIZE = 1024
@@ -558,6 +600,7 @@ class DelayFunction(Function):
         return self._current_value
 
 
+@function('HYST')
 class HystFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
 
@@ -577,6 +620,7 @@ class HystFunction(Function):
         return self._last_result
 
 
+@function('YEAR')
 class YearFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
@@ -587,6 +631,7 @@ class YearFunction(Function):
         return datetime.datetime.now().year
 
 
+@function('MONTH')
 class MonthFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
@@ -597,6 +642,7 @@ class MonthFunction(Function):
         return datetime.datetime.now().month
 
 
+@function('DAY')
 class DayFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
@@ -607,6 +653,7 @@ class DayFunction(Function):
         return datetime.datetime.now().day
 
 
+@function('DOW')
 class DOWFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
@@ -617,6 +664,7 @@ class DOWFunction(Function):
         return datetime.datetime.now().weekday()
 
 
+@function('HOUR')
 class HourFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
@@ -627,6 +675,7 @@ class HourFunction(Function):
         return datetime.datetime.now().hour
 
 
+@function('MINUTE')
 class MinuteFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
@@ -637,6 +686,7 @@ class MinuteFunction(Function):
         return datetime.datetime.now().minute
 
 
+@function('SECOND')
 class SecondFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
@@ -647,6 +697,7 @@ class SecondFunction(Function):
         return datetime.datetime.now().second
 
 
+@function('HMSINTERVAL')
 class HMSIntervalFunction(Function):
     MIN_ARGS = 4
     MAX_ARGS = 6
@@ -757,10 +808,6 @@ class PortValue(Expression):
 class SelfPortValue(PortValue):
     def __str__(self):
         return '$'
-
-
-# TODO register functions using a decorator rather than looking through subclasses
-FUNCTIONS = dict((f.get_name(), f) for f in Function.__subclasses__())
 
 
 def parse(self_port_id, sexpression):
