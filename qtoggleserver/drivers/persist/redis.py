@@ -1,9 +1,9 @@
 
 import logging
-import json
 import redis
 
 from qtoggleserver.persist import BaseDriver
+from qtoggleserver.utils import json as json_utils
 
 
 logger = logging.getLogger(__name__)
@@ -204,11 +204,11 @@ class RedisDriver(BaseDriver):
 
     @staticmethod
     def _value_to_db(value):
-        return json.dumps(value)
+        return json_utils.dumps(value)
 
     @staticmethod
     def _value_from_db(value):
-        return json.loads(value)
+        return json_utils.loads(value)
 
     @staticmethod
     def _make_record_key(collection, _id):

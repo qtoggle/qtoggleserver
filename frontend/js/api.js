@@ -13,6 +13,7 @@ import * as PromiseUtils from '$qui/utils/promise.js'
 import * as StringUtils  from '$qui/utils/string.js'
 
 import * as Cache from '$app/cache.js'
+import * as Utils from '$app/utils.js'
 
 
 const DEBUG_API_CALLS = true
@@ -931,6 +932,8 @@ export function apiCall({
             else {
                 logger.debug(`response for "${method} ${apiFuncPath}"`)
             }
+
+            Utils.resolveJSONRefs(data)
 
             resolve(data)
         }

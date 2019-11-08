@@ -21,7 +21,6 @@ def init_web_server():
         ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ssl_context.load_cert_chain(settings.server.https.cert_file, settings.server.https.key_file)
 
-
     try:
         web_server.get_application().listen(port, listen, ssl_options=ssl_context)
         logger.info('server listening on %s:%s', listen, port)

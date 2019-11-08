@@ -28,7 +28,7 @@ export default Mixin((superclass = Object) => {
             if (def.choices && def.modifiable) {
                 field.class = ComboField
                 field.choices = def.choices.map(function (c) {
-                    if (typeof c === 'object') {
+                    if (ObjectUtils.isObject(c)) {
                         return {value: c.value, label: c.display_name || StringUtils.title(c.value.toString())}
                     }
                     else { /* older choices format compatibility shim */

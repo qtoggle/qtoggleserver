@@ -1,5 +1,4 @@
 
-import json
 import logging
 import queue
 
@@ -11,6 +10,7 @@ from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.utils import http as http_utils
+from qtoggleserver.utils import json as json_utils
 
 
 logger = logging.getLogger(__name__)
@@ -112,7 +112,7 @@ class Webhooks:
             return
 
         url = self.get_url()
-        body = json.dumps(request.body)
+        body = json_utils.dumps(request.body)
 
         def on_response(response):
             try:

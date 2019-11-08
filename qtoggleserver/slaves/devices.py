@@ -1,7 +1,6 @@
 
 import asyncio
 import hashlib
-import json
 import logging
 import random
 import re
@@ -21,6 +20,7 @@ from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.api import schema as core_api_schema
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.utils import http as http_utils
+from qtoggleserver.utils import json as json_utils
 
 from . import exceptions
 from .ports import SlavePort
@@ -450,7 +450,7 @@ class Slave(utils.LoggableMixin):
             body = None
 
         url = self.get_url(path)
-        body_str = json.dumps(body) if body is not None else None
+        body_str = json_utils.dumps(body) if body is not None else None
 
         # a new API call cancels any pending retry
         ref = self._last_api_call_ref = {}
@@ -801,7 +801,7 @@ class Slave(utils.LoggableMixin):
                             (attrs[n] != self._cached_attrs[n])]
 
         for name in added_names:
-            self.debug('detected new attribute: %s = %s', name, json.dumps(attrs[name]))
+            self.debug('detected new attribute: %s = %s', name, json_utils.dumps(attrs[name]))
 
         for name in removed_names:
             self.debug('detected removed attribute: %s', name)
@@ -812,7 +812,7 @@ class Slave(utils.LoggableMixin):
 
             else:
                 self.debug('detected attribute change: %s = %s -> %s',
-                           name, json.dumps(self._cached_attrs[name]), json.dumps(attrs[name]))
+                           name, json_utils.dumps(self._cached_attrs[name]), json_utils.dumps(attrs[name]))
 
         if removed_names or added_names or changed_names:
             try:
@@ -908,7 +908,7 @@ class Slave(utils.LoggableMixin):
             changed_names = [n for n in local_attrs if n in attrs and attrs[n] != local_attrs[n]]
 
             for name in added_names:
-                local_port.debug('detected new attribute: %s = %s', name, json.dumps(attrs[name]))
+                local_port.debug('detected new attribute: %s = %s', name, json_utils.dumps(attrs[name]))
 
             for name in removed_names:
                 local_port.debug('detected removed attribute: %s', name)
@@ -919,7 +919,7 @@ class Slave(utils.LoggableMixin):
 
                 else:
                     local_port.debug('detected attribute change: %s = %s -> %s',
-                                     name, json.dumps(local_attrs[name]), json.dumps(attrs[name]))
+                                     name, json_utils.dumps(local_attrs[name]), json_utils.dumps(attrs[name]))
 
             if removed_names or added_names or changed_names:
                 try:
@@ -1000,7 +1000,7 @@ class Slave(utils.LoggableMixin):
             return
 
         self.debug('value of %s changed remotely from %s to %s',
-                   port, json.dumps(port.get_value()), json.dumps(value))
+                   port, json_utils.dumps(port.get_value()), json_utils.dumps(value))
 
         # trigger a master value-change if the returned value
         # has not changed from the one we locally have
@@ -1031,7 +1031,8 @@ class Slave(utils.LoggableMixin):
 
             old_value = port.get_cached_attr(name)
             if old_value is not None and value != old_value:
-                self.debug('%s.%s changed remotely: %s -> %s', port, name, json.dumps(old_value), json.dumps(value))
+                self.debug('%s.%s changed remotely: %s -> %s', port, name,
+                           json_utils.dumps(old_value), json_utils.dumps(value))
                 port.handle_attr_change(name, value)
 
         port.update_cached_attrs(attrs)

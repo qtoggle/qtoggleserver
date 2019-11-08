@@ -2,7 +2,6 @@
 import copy
 import datetime
 import hashlib
-import json
 import logging
 import re
 import socket
@@ -12,6 +11,7 @@ from qtoggleserver import system
 from qtoggleserver import version
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
+from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_set_cmd
 
 
@@ -309,7 +309,7 @@ def set_attrs(attrs):
             logger.debug('setting device attribute %s = [hidden]', name)
 
         else:
-            logger.debug('setting device attribute %s = %s', name, json.dumps(value))
+            logger.debug('setting device attribute %s = %s', name, json_utils.dumps(value))
 
         attrdef = ATTRDEFS[name]
 

@@ -1,9 +1,8 @@
 
-import json
-
 from RPi import GPIO
 
 from qtoggleserver.core import ports
+from qtoggleserver.utils import json as json_utils
 
 
 class RPiGPIO(ports.Port):
@@ -67,7 +66,7 @@ class RPiGPIO(ports.Port):
         return GPIO.input(self._no) == 1
 
     def write_value(self, value):
-        self.debug('writing output value %s', json.dumps(value))
+        self.debug('writing output value %s', json_utils.dumps(value))
         GPIO.output(self._no, value)
 
         if self._monostable_timeout_handle:
