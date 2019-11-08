@@ -111,14 +111,14 @@ def _response_error_errno(eno):
     return OtherError('unknown error')
 
 
-def parse(response, decode_json=True, resolve_pointers=True):
+def parse(response, decode_json=True, resolve_refs=True):
     if 100 <= response.code < 599:
         if response.code == 204:
             return  # happy case - no content
 
         if decode_json and response.body:
             try:
-                body = json_utils.loads(response.body)
+                body = json_utils.loads(response.body, resolve_refs=resolve_refs)
 
             except Exception:
                 raise InvalidJson()
