@@ -173,6 +173,10 @@ export default class PortsSection extends Section {
                 }
 
                 if (event.expected) {
+                    if (portForm && (portForm.getPortId() === event.params.id) && portForm.isWaitingValueChanged()) {
+                        portForm.clearWaitingValueChanged()
+                    }
+
                     break
                 }
 
