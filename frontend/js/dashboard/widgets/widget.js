@@ -580,7 +580,7 @@ export default class Widget extends mix().with(ViewMixin) {
     /* Logging */
 
     makeLogName() {
-        return `qtoggle.dashboard.widgets.widget${this._id}`
+        return `qtoggle.dashboard.widgets.widget${this._id || '<new>'}`
     }
 
 
@@ -591,6 +591,11 @@ export default class Widget extends mix().with(ViewMixin) {
      */
     getId() {
         return this._id
+    }
+
+    setId(id) {
+        this._id = id
+        this.logger = Logger.get(this.makeLogName())
     }
 
     /**

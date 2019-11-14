@@ -476,7 +476,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
      */
     findWidget(id) {
         return this.getWidgets().find(function (w) {
-            return w._id === id
+            return w.getId() === id
         }) || null
     }
 
@@ -543,9 +543,9 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
         }
 
         widget._panel = this
-        if (widget._id === null) {
+        if (widget.getId() === null) {
             /* Generate a unique id for this widget */
-            widget._id = this._makeWidgetId()
+            widget.setId(this._makeWidgetId())
         }
 
         widget.updateLayout()
