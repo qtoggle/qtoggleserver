@@ -77,7 +77,7 @@ export default class DashboardSection extends Section {
 
                 if (currentPanel && event.params.value != null) {
                     currentPanel.getWidgets().forEach(function (widget) {
-                        widget.onPortValueChange(event.params.id, event.params.value)
+                        widget.handlePortValueChange(event.params.id, event.params.value)
                     })
                 }
 
