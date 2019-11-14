@@ -172,7 +172,6 @@ async def init_ports():
     vports.load()
     port_settings = settings.ports + vports.all_settings()
     await ports.load(port_settings)
-    ports.apply_mappings()
 
 
 async def init_slaves():

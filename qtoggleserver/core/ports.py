@@ -920,25 +920,6 @@ async def load(port_settings):
         except Exception as e:
             logger.error('failed to initialize port from driver %s: %s', port_class_desc, e, exc_info=True)
 
-    for port in ports:
-        try:
-            await port.load()
-
-        except Exception as e:
-            logger.error('failed to load %s: %s', port, e, exc_info=True)
-
-    return ports
-
-
-async def load_one(cls, settings):
-    ports = await load([dict(driver=cls, **settings)])
-    if not ports:
-        return None
-
-    return ports[0]
-
-
-def apply_mappings():
     for old_id, new_id in settings.port_mappings.items():
         if new_id in _ports:
             logger.error('cannot map port %s: new id already exists', old_id, new_id)
@@ -957,6 +938,23 @@ def apply_mappings():
 
         _ports.pop(old_id)
         _ports[port.get_id()] = port
+
+    for port in ports:
+        try:
+            await port.load()
+
+        except Exception as e:
+            logger.error('failed to load %s: %s', port, e, exc_info=True)
+
+    return ports
+
+
+async def load_one(cls, settings):
+    ports = await load([dict(driver=cls, **settings)])
+    if not ports:
+        return None
+
+    return ports[0]
 
 
 def get(port_id):
