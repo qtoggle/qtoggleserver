@@ -46,7 +46,7 @@ async def patch_firmware(request, params):
     core_api_schema.validate(params, core_api_schema.PATCH_FIRMWARE)
 
     status = await fwupdate.get_status()
-    if status != fwupdate.STATUS_IDLE:
+    if status not in (fwupdate.STATUS_IDLE, fwupdate.STATUS_ERROR):
         raise core_api.APIError(503, 'busy')
 
     if params.get('url'):
