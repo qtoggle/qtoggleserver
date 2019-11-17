@@ -250,6 +250,9 @@ export default class UpdateFirmwareForm extends PageForm {
             if (data.status !== FIRMWARE_STATUS_UPDATABLE && data.status !== API.FIRMWARE_STATUS_ERROR) {
                 throw new ValidationError() /* To simply disable the update button */
             }
+            if (!data.latestVersion) {
+                throw new ValidationError() /* To simply disable the update button */
+            }
         }
     }
 
