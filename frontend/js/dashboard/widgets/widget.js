@@ -22,9 +22,9 @@ import * as Window                    from '$qui/window.js'
 import * as API   from '$app/api.js'
 import * as Cache from '$app/cache.js'
 
-import * as Dashboard                 from '../dashboard.js'
-import WidgetConfigForm               from './widget-config-form.js'
-import * as Widgets                   from './widgets.js'
+import * as Dashboard   from '../dashboard.js'
+import WidgetConfigForm from './widget-config-form.js'
+import * as Widgets     from './widgets.js'
 
 
 const DEF_VIBRATION_DURATION = 10 /* Milliseconds */

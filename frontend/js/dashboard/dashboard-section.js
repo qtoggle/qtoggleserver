@@ -6,8 +6,9 @@ import * as Cache                 from '$app/cache.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
 import {Section}                  from '$app/sections.js'
 
-import * as Dashboard from './dashboard.js'
-import Group          from './group.js'
+import * as Dashboard   from './dashboard.js'
+import Group            from './group.js'
+import WidgetConfigForm from './widgets/widget-config-form.js'
 
 import './widgets/all-widgets/all-widgets.js'
 
@@ -86,18 +87,21 @@ export default class DashboardSection extends Section {
 
             case 'port-update': {
                 this._updateWidgetStates()
+                this._updateWidgetConfigPortsList()
 
                 break
             }
 
             case 'port-add': {
                 this._updateWidgetStates()
+                this._updateWidgetConfigPortsList()
 
                 break
             }
 
             case 'port-remove': {
                 this._updateWidgetStates()
+                this._updateWidgetConfigPortsList()
 
                 break
             }
@@ -140,6 +144,13 @@ export default class DashboardSection extends Section {
         currentPanel.getWidgets().forEach(function (widget) {
             widget.updateState()
         })
+    }
+
+    _updateWidgetConfigPortsList() {
+        let currentPage = this.getCurrentPage()
+        if (currentPage instanceof WidgetConfigForm) {
+            currentPage.updatePorts()
+        }
     }
 
     makeMainPage() {

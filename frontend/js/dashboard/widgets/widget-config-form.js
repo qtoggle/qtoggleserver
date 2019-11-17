@@ -126,8 +126,14 @@ export default class WidgetConfigForm extends PageForm {
             this._widget.getPanel().handleWidgetSelect(null)
 
             /* Also open the panel options bar */
-            this._widget.getPanel().openOptionsBar()
+            if (this.getContext().isCurrent()) {
+                this._widget.getPanel().openOptionsBar()
+            }
         }
+    }
+
+    getWidget() {
+        return this._widget
     }
 
     /**
@@ -163,6 +169,14 @@ export default class WidgetConfigForm extends PageForm {
      * Called after form data is updated from widget.
      */
     onUpdateFromWidget() {
+    }
+
+    updatePorts() {
+        this.getFields().forEach(function (field) {
+            if (field instanceof PortPickerField) {
+                field.updateChoices()
+            }
+        })
     }
 
     navigate(pathId) {
