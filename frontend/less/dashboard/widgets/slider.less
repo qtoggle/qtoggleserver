@@ -1,24 +1,10 @@
 
 @import (reference) "@{qui_less_path}/theme";
-@import (reference) "./progress-bar";
 
 div.dashboard-widget-content {
 
-    div.dashboard-slider-container {
-        &:extend(div.dashboard-widget-content div.dashboard-progress-bar-container);
-    }
-
     div.dashboard-slider-background {
-        &:extend(div.dashboard-widget-content div.dashboard-progress-bar-background);
         cursor: pointer;
-    }
-
-    div.dashboard-slider-container.vert > div.dashboard-slider-background {
-        &:extend(div.dashboard-widget-content div.dashboard-progress-bar-container.vert > div.dashboard-progress-bar-background);
-    }
-
-    div.dashboard-slider-background-cover {
-        &:extend(div.dashboard-widget-content div.dashboard-progress-bar-background-cover);
     }
 
     div.dashboard-slider-handle {
@@ -33,38 +19,6 @@ div.dashboard-widget-content {
                     background @transition-duration ease;
         border-color: @background-color;
         border-style: solid;
-    }
-
-    div.dashboard-slider-text {
-        &:extend(div.dashboard-widget-content div.dashboard-progress-bar-text);
-    }
-
-    div.dashboard-slider-container.end-half div.dashboard-slider-text {
-        &:extend(div.dashboard-widget-content div.dashboard-progress-bar-container.end-half div.dashboard-progress-bar-text);
-    }
-
-    div.dashboard-slider-container.vert div.dashboard-slider-text {
-        &:extend(div.dashboard-widget-content div.dashboard-progress-bar-container.vert div.dashboard-progress-bar-text);
-    }
-
-    div.dashboard-slider-container.end-half.vert div.dashboard-slider-text {
-        &:extend(div.dashboard-widget-content div.dashboard-progress-bar-container.end-half.vert div.dashboard-progress-bar-text);
-    }
-
-    div.dashboard-slider-ticks {
-        &:extend(div.dashboard-widget-content div.dashboard-progress-bar-ticks);
-    }
-
-    div.dashboard-slider-container.vert > div.dashboard-slider-ticks {
-        &:extend(div.dashboard-widget-content div.dashboard-progress-bar-container.vert > div.dashboard-progress-bar-ticks);
-    }
-
-    div.dashboard-slider-tick {
-        &:extend(div.dashboard-widget-content div.dashboard-progress-bar-tick);
-    }
-
-    div.dashboard-slider-container.vert div.dashboard-slider-tick {
-        &:extend(div.dashboard-widget-content div.dashboard-progress-bar-container.vert div.dashboard-progress-bar-tick);
     }
 
 }

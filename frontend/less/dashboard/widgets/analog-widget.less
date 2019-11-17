@@ -3,14 +3,14 @@
 
 div.dashboard-widget-content {
 
-    div.dashboard-progress-bar-container {
+    div.dashboard-analog-widget-container {
         position: absolute;
         box-sizing: border-box;
         border-style: solid;
         border-color: transparent;
     }
 
-    div.dashboard-progress-bar-background {
+    div.dashboard-analog-widget-background {
         position: relative;
         width: 100%;
         height: 100%;
@@ -21,7 +21,7 @@ div.dashboard-widget-content {
         border-color: @background-color;
     }
 
-    div.dashboard-progress-bar-background-cover {
+    div.dashboard-analog-widget-background-cover {
         position: absolute;
         top: 0;
         right: 0;
@@ -31,13 +31,13 @@ div.dashboard-widget-content {
         border-radius: 1em;
     }
 
-    div.dashboard-progress-bar-container.vert > div.dashboard-progress-bar-background {
+    div.dashboard-analog-widget-container.vert > div.dashboard-analog-widget-background {
         position: absolute;
         top: 0;
         right: 0;
     }
 
-    div.dashboard-progress-bar-cursor {
+    div.dashboard-analog-widget-cursor {
         left: 0;
         bottom: 0;
         position: absolute;
@@ -45,11 +45,11 @@ div.dashboard-widget-content {
                     height @transition-duration ease;
     }
 
-    div.dashboard-progress-bar-container.vert div.dashboard-progress-bar-cursor {
+    div.dashboard-analog-widget-container.vert div.dashboard-analog-widget-cursor {
         width: 100%;
     }
 
-    div.dashboard-progress-bar-text {
+    div.dashboard-analog-widget-text {
         display: flex;
         position: absolute;
         vertical-align: top;
@@ -63,31 +63,31 @@ div.dashboard-widget-content {
         box-sizing: border-box;
     }
 
-    div.dashboard-progress-bar-container.end-half div.dashboard-progress-bar-text {
+    div.dashboard-analog-widget-container.end-half div.dashboard-analog-widget-text {
         right: auto;
         left: 0;
     }
 
-    div.dashboard-progress-bar-container.vert div.dashboard-progress-bar-text {
+    div.dashboard-analog-widget-container.vert div.dashboard-analog-widget-text {
         top: 0;
         bottom: auto;
     }
 
-    div.dashboard-progress-bar-container.end-half.vert div.dashboard-progress-bar-text {
+    div.dashboard-analog-widget-container.end-half.vert div.dashboard-analog-widget-text {
         top: auto;
         bottom: 0;
     }
 
-    div.dashboard-progress-bar-ticks {
+    div.dashboard-analog-widget-ticks {
         position: relative;
     }
 
-    div.dashboard-progress-bar-container.vert > div.dashboard-progress-bar-ticks {
+    div.dashboard-analog-widget-container.vert > div.dashboard-analog-widget-ticks {
         display: inline-block;
         vertical-align: top;
     }
 
-    div.dashboard-progress-bar-tick {
+    div.dashboard-analog-widget-tick {
         display: inline-block;
         width: 30%;
         height: 30%;
@@ -98,7 +98,7 @@ div.dashboard-widget-content {
         white-space: nowrap;
     }
 
-    div.dashboard-progress-bar-container.vert div.dashboard-progress-bar-tick {
+    div.dashboard-analog-widget-container.vert div.dashboard-analog-widget-tick {
         width: 100%;
         text-align: right;
         margin-left: -0.35em;

@@ -1268,10 +1268,6 @@ export default class Widget extends mix().with(ViewMixin) {
         this._panel.pushPage(this.makeConfigForm())
     }
 
-    static getName() {
-        return this.displayName
-    }
-
 }
 
 // TODO es7 class fields
