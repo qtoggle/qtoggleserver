@@ -350,8 +350,15 @@ export default class Slider extends Widget {
 
         if (this._textDiv) {
             let valueStr = tick ? tick.label : value.toFixed(this._decimals)
-            if (this._displayUnit) {
-                valueStr += this._unit
+
+            if (!this._customTicks.length) {
+                if (this._displayUnit && !this._displayTicksUnits) {
+                    valueStr += this._unit
+                }
+                else if (!this._displayUnit && this._displayTicksUnits) {
+                    /* Must remove unit from tick label before using it for value */
+                    valueStr = valueStr.slice(0, -this._unit.length)
+                }
             }
 
             this._textDiv.html(valueStr)

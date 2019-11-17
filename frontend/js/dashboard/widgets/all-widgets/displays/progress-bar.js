@@ -88,8 +88,7 @@ export class ConfigForm extends WidgetConfigForm {
                 }),
                 new CheckField({
                     name: 'displayTicksUnits',
-                    label: gettext('Display Ticks Units'),
-                    onChange: (value, form) => form._updateTicksFields()
+                    label: gettext('Display Ticks Units')
                 }),
                 new CheckField({
                     name: 'colorTicks',
@@ -142,6 +141,8 @@ export class ConfigForm extends WidgetConfigForm {
         let customTicksLabelFields =
                 this.getFields().filter(field => field.getName().match(new RegExp('tickLabel\\d+')))
 
+        let displayUnitField = this.getField('displayUnit')
+        let displayTicksUnitsField = this.getField('displayTicksUnits')
         let ticksCountField = this.getField('ticksCount')
         let customTicksField = this.getField('customTicks')
         let ticksStepField = this.getField('ticksStep')
@@ -151,21 +152,37 @@ export class ConfigForm extends WidgetConfigForm {
 
         let data = this.getUnvalidatedData()
         let port = Cache.getPort(data.portId)
+        let hasSnapField = !!this.getField('snap') /* tells a Slider from a simple ProgressBar */
 
         if (data.displayTicks) {
-            ticksStepField.show()
             colorTicksField.show()
-            ticksCountField.show()
-            customTicksField.show()
+            if (!hasSnapField) {
+                displayTicksUnitsField.show()
+                ticksStepField.show()
+                ticksCountField.show()
+                customTicksField.show()
+            }
         }
         else {
-            ticksStepField.hide()
             colorTicksField.hide()
-            ticksCountField.hide()
-            customTicksField.hide()
+            if (!hasSnapField) {
+                displayTicksUnitsField.hide()
+                ticksStepField.hide()
+                ticksCountField.hide()
+                customTicksField.hide()
+            }
         }
 
-        if (!data.customTicks || !data.displayTicks) {
+        if (data.customTicks) {
+            displayUnitField.hide()
+            displayTicksUnitsField.hide()
+        }
+        else {
+            displayUnitField.show()
+            displayTicksUnitsField.show()
+        }
+
+        if (!data.customTicks || (!hasSnapField && !data.displayTicks)) {
             customTicksFields.forEach(function (field) {
                 field.hide()
             })
