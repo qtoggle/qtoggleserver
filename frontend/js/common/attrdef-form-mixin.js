@@ -192,14 +192,12 @@ export default Mixin((superclass = Object) => {
             return field
         }
 
-        fieldsFromAttrdefs(attrdefs, extraFieldOptions = {}, initialData = {}, provisioning = [], index = null) {
+        fieldsFromAttrdefs(attrdefs, extraFieldOptions = {}, initialData = {}, provisioning = [], startIndex = 0) {
             let defEntries = ArrayUtils.sortKey(Object.entries(attrdefs), e => e[0])
             ArrayUtils.stableSortKey(defEntries, e => e[1].order || 1000)
 
             let notKnown = false
-            let focusedField = null
-            let lastIndex = index != null ? index - 1 : this.getFields().length - 1
-            defEntries.forEach(function (entry) {
+            defEntries.forEach(function (entry, index) {
                 let name = entry[0]
                 let def = ObjectUtils.copy(entry[1], /* deep = */ true)
 
@@ -211,58 +209,44 @@ export default Mixin((superclass = Object) => {
                     notKnown = true
                 }
 
-                /* Remember old field state */
-                let wasFocused = false
-                let wasApplied = false
-                let oldField = this.getField(`attr_${name}`)
-                let oldErrorMessage = null
-                let oldWarningMessage = null
-                let oldIndex = lastIndex + 1
-                if (oldField) {
-                    wasFocused = oldField.isFocused()
-                    wasApplied = oldField.isApplied()
-                    oldErrorMessage = oldField.hasError() ? oldField.getErrorMessage() : null
-                    oldWarningMessage = oldField.hasWarning() ? oldField.getWarningMessage() : null
-                    oldIndex = this.getFieldIndex(oldField)
-
-                    this.removeField(`attr_${name}`)
-                }
-
+                /* Old field state */
+                let field = this.getField(`attr_${name}`)
                 let fieldAttrs = this.fieldAttrsFromAttrdef(name, def)
                 if (name in extraFieldOptions) {
                     Object.assign(fieldAttrs, extraFieldOptions[name])
                 }
 
+                let newValue = def.valueToUI(initialData[name])
                 if (name in initialData) {
-                    fieldAttrs.initialValue = def.valueToUI(initialData[name])
+                    fieldAttrs.initialValue = newValue
                 }
 
-                let FieldClass = fieldAttrs.class
-                let field = new FieldClass(fieldAttrs)
-                this.addField(oldIndex, field)
-                lastIndex = this.getFieldIndex(field)
+                if (field) {
+                    let oldValue = field.getValue()
+                    if (oldValue !== newValue && def.modifiable && !field.hasError() && !field.hasWarning()) {
+                        field.setWarning(gettext('Value has been updated in the meantime.'))
+                    }
 
-                /* Restore field state */
-                if (wasFocused) {
-                    focusedField = field
+                    field.setLabel(fieldAttrs.label)
+                    field.setDescription(fieldAttrs.description)
+                    field.setUnit(fieldAttrs.unit)
+                    field.setSeparator(!!fieldAttrs.separator)
+                    field.setRequired(!!fieldAttrs.required)
+                    field.setReadonly(!!fieldAttrs.readonly)
+                }
+                else {
+                    let FieldClass = fieldAttrs.class
+                    field = new FieldClass(fieldAttrs)
+                    this.addField(startIndex + index, field)
                 }
 
-                if (oldErrorMessage) {
-                    field.setError(oldErrorMessage)
-                }
-                else if (oldWarningMessage) {
-                    field.setWarning(oldWarningMessage)
-                }
-                else if (provisioning.indexOf(name) >= 0) {
+                if (provisioning.indexOf(name) >= 0) {
                     field.setWarning(gettext('Value will be provisioned when device gets back online.'))
-                }
-                else if (wasApplied) {
-                    field.setApplied()
                 }
 
             }, this)
 
-            /* Remove fields that are no longer defined */
+            /* Mark fields that are no longer defined as removed */
             this.getFields().forEach(function (field) {
                 let name = field.getName()
 
@@ -275,10 +259,6 @@ export default Mixin((superclass = Object) => {
 
                 this.removeField(name)
             }, this)
-
-            if (focusedField) {
-                focusedField.focus()
-            }
         }
 
     }

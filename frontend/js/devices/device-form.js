@@ -178,7 +178,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                 /* extraFieldOptions = */ undefined,
                 /* initialData = */ Common.preprocessDeviceAttrs(device.attrs),
                 /* provisioning = */ device.provisioning || [],
-                /* index = */ this.getFieldIndex('last_sync') + 1
+                /* startIndex = */ this.getFieldIndex('last_sync') + 1
             )
         }
         else {
