@@ -842,8 +842,7 @@ function makeAPIError(data, status, msg) {
     }
     if (status === 500 && data && data.error) {
         /* Internal server error */
-        prettyMessage = gettext('Unexpected error while communicating with the server (%(error)s).')
-        prettyMessage = StringUtils.formatPercent(prettyMessage, {error: data.error})
+        prettyMessage = data.error
     }
     else if (status === 503 && data && data.error === 'busy') {
         prettyMessage = gettext('The device is busy.')
