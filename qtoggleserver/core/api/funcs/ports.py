@@ -49,7 +49,8 @@ async def patch_port(request, port_id, params):
         except Exception as e:
             errors_by_name[attr_name] = e
 
-    await asyncio.wait([set_attr(name, value) for name, value in params.items()])
+    if params:
+        await asyncio.wait([set_attr(name, value) for name, value in params.items()])
 
     if errors_by_name:
         name, error = next(iter(errors_by_name.items()))
