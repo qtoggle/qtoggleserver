@@ -134,9 +134,6 @@ export default class PortsSection extends Section {
 
                 if (portForm && portForm.getPortId() === event.params.id) {
                     portForm.updateUI()
-                    if (event.params.enabled && portForm.isWaitingPortEnabled()) {
-                        portForm.clearWaitingPortEnabled()
-                    }
                 }
 
                 break
