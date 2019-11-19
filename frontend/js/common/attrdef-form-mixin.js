@@ -129,6 +129,8 @@ export default Mixin((superclass = Object) => {
                             field.class = PasswordField
                             field.autocomplete = false
                             field.clearEnabled = true
+                            field.clearPlaceholder = true
+                            field.placeholder = `(${gettext('hidden')})`
                         }
                         else {
                             field.class = TextField
