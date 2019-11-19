@@ -347,7 +347,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
                 throw error
 
-            }.bind(this))
+            })
         }
 
         let patchValuePromise = Promise.resolve()

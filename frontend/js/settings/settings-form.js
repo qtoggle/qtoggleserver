@@ -223,7 +223,7 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
 
                 throw error
 
-            }.bind(this))
+            })
         }
 
         return patchDevicePromise
