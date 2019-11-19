@@ -227,12 +227,11 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         })
 
         /* Prepare form fields */
-        this.fieldsFromAttrdefs(
-            this._fullAttrdefs,
-            /* extraFieldOptions = */ undefined,
-            /* initialData = */ port,
-            /* provisioning = */ provisioning
-        )
+        this.fieldsFromAttrdefs({
+            attrdefs: this._fullAttrdefs,
+            initialData: port,
+            provisioning: provisioning
+        })
         this._addValueField(origPort)
 
         /* Remove button */

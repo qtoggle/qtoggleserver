@@ -102,6 +102,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
     }
 
     load() {
+        /* Explicitly query attributes that don't normally generate events, directly from the slave device */
         API.setSlave(this.getDeviceName())
         return API.getDevice().then(function (attrs) {
             attrs = ObjectUtils.filter(attrs, n => (API.NO_EVENT_DEVICE_ATTRS.indexOf(n) >= 0))
@@ -173,17 +174,17 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                 }
             })
 
-            this.fieldsFromAttrdefs(
-                this._fullAttrdefs,
-                /* extraFieldOptions = */ undefined,
-                /* initialData = */ Common.preprocessDeviceAttrs(device.attrs),
-                /* provisioning = */ device.provisioning || [],
-                /* startIndex = */ this.getFieldIndex('last_sync') + 1
-            )
+            this.fieldsFromAttrdefs({
+                attrdefs: this._fullAttrdefs,
+                initialData: Common.preprocessDeviceAttrs(device.attrs),
+                provisioning: device.provisioning || [],
+                noUpdated: API.NO_EVENT_DEVICE_ATTRS,
+                startIndex: this.getFieldIndex('last_sync') + 1
+            })
         }
         else {
             /* Clear all attribute fields */
-            this.fieldsFromAttrdefs({})
+            this.fieldsFromAttrdefs()
         }
 
         if (!this._staticFieldsAdded) {
