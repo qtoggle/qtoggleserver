@@ -59,7 +59,6 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         this._deviceName = deviceName
 
         this._fullAttrdefs = {}
-        this._whenPortEnabled = null
         this._whenValueChanged = null
     }
 
