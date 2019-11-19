@@ -695,7 +695,7 @@ let accessLevelChangeListeners = []
  */
 export class Event {
 
-    constructor(type, params, expected) {
+    constructor(type, params, expected = false) {
         this.type = type
         this.params = ObjectUtils.copy(params)
         this.expected = expected

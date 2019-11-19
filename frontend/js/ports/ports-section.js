@@ -133,7 +133,9 @@ export default class PortsSection extends Section {
                 portsList.updateUI()
 
                 if (portForm && portForm.getPortId() === event.params.id) {
-                    portForm.updateUI()
+                    /* Don't show field changed warnings for events that are consequences of changes applied from this
+                     * client (when the event is expected) */
+                    portForm.updateUI(!event.expected)
                 }
 
                 break

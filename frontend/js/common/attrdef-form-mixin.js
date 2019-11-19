@@ -194,6 +194,7 @@ export default Mixin((superclass = Object) => {
 
         fieldsFromAttrdefs({
             attrdefs = {}, extraFieldOptions = {}, initialData = {}, provisioning = [], noUpdated = [], startIndex = 0,
+            fieldChangeWarnings = true
         } = {}) {
             let defEntries = ArrayUtils.sortKey(Object.entries(attrdefs), e => e[0])
             ArrayUtils.stableSortKey(defEntries, e => e[1].order || 1000)
@@ -226,7 +227,7 @@ export default Mixin((superclass = Object) => {
                 if (field) {
                     let oldValue = field.getValue()
                     if (oldValue !== newValue && def.modifiable && noUpdated.indexOf(name) < 0 &&
-                        !field.hasError() && !field.hasWarning()) {
+                        !field.hasError() && !field.hasWarning() && fieldChangeWarnings) {
                         field.setWarning(gettext('Value has been updated in the meantime.'))
                     }
 

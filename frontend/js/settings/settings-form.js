@@ -55,9 +55,9 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
     }
 
     /**
-     * Updates the entire form (fields & values) from device attributes.
+     * Updates the entire form (fields & values) from cached device attributes.
      */
-    updateUI() {
+    updateUI(fieldChangeWarnings = true) {
         /* Work on copy */
         let attrs = Cache.getMainDevice()
         let attrdefs = ObjectUtils.copy(attrs.definitions, /* deep = */ true)
@@ -104,7 +104,8 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
         this.fieldsFromAttrdefs({
             attrdefs: this._fullAttrdefs,
             initialData: Common.preprocessDeviceAttrs(attrs),
-            noUpdated: API.NO_EVENT_DEVICE_ATTRS
+            noUpdated: API.NO_EVENT_DEVICE_ATTRS,
+            fieldChangeWarnings: fieldChangeWarnings
         })
 
         if (!this._staticFieldsAdded) {

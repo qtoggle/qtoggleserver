@@ -69,7 +69,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
     /**
      * Updates the entire form (fields & values) from the port.
      */
-    updateUI() {
+    updateUI(fieldChangeWarnings = true) {
         let port = Cache.getPort(this.getPortId())
         if (!port) {
             throw new AssertionError(`Port with id ${this.getPortId()} not found in cache`)
@@ -230,7 +230,8 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         this.fieldsFromAttrdefs({
             attrdefs: this._fullAttrdefs,
             initialData: port,
-            provisioning: provisioning
+            provisioning: provisioning,
+            fieldChangeWarnings: fieldChangeWarnings
         })
         this._addValueField(origPort)
 
