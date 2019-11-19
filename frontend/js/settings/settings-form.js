@@ -4,6 +4,7 @@ import {PushButtonField, CompositeField} from '$qui/forms/common-fields.js'
 import {PageForm}                        from '$qui/forms/common-forms.js'
 import * as Theme                        from '$qui/theme.js'
 import * as ObjectUtils                  from '$qui/utils/object.js'
+import * as PromiseUtils                 from '$qui/utils/promise.js'
 import * as Window                       from '$qui/window.js'
 
 import * as API           from '$app/api.js'
@@ -15,8 +16,15 @@ import RebootDeviceMixin  from '$app/common/reboot-device-mixin.js'
 import UpdateFirmwareForm from '$app/common/update-firmware-form.js'
 import WaitDeviceMixin    from '$app/common/wait-device-mixin.js'
 
-import * as Settings    from './settings.js'
+import * as Settings                   from './settings.js'
+import {AssertionError}                from '$qui/base/errors.js'
+import * as Toast                      from '$qui/messages/toast.js'
+import {ErrorMapping, ValidationError} from '$qui/forms/forms.js'
+import FormButton                      from '$qui/forms/form-button.js'
 
+
+/* Attributes that trigger a window reload */
+const RELOAD_DEVICE_ATTRIBUTES = ['ui_theme']
 
 const logger = Settings.logger
 
@@ -31,7 +39,11 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
         super({
             title: gettext('Settings'),
             icon: Settings.WRENCH_ICON,
-            continuousValidation: true
+            closeOnApply: false,
+
+            buttons: [
+                new FormButton({id: 'apply', caption: gettext('Apply'), def: true})
+            ]
         })
 
         this._fullAttrdefs = null
@@ -89,12 +101,11 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
             }
         })
 
-        this.fieldsFromAttrdefs(
-            this._fullAttrdefs,
-            /* extraFieldOptions = */ undefined,
-            /* initialData = */ Common.preprocessDeviceAttrs(attrs),
-            /* provisioning = */ []
-        )
+        this.fieldsFromAttrdefs({
+            attrdefs: this._fullAttrdefs,
+            initialData: Common.preprocessDeviceAttrs(attrs),
+            noUpdated: API.NO_EVENT_DEVICE_ATTRS
+        })
 
         if (!this._staticFieldsAdded) {
             this.addStaticFields()
@@ -155,39 +166,66 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
         }
     }
 
-    applyField(value, fieldName) {
-        if (!this._fullAttrdefs) {
-            return /* Not loaded */
-        }
+    applyData(data) {
+        let newAttrs = {}
+        let changedFields = this.getChangedFields()
 
-        let name = fieldName.substring(5)
-        if (!(name in this._fullAttrdefs) || !this._fullAttrdefs[name].modifiable) {
-            return
-        }
-
-        logger.debug(`updating device attribute "${name}" to ${JSON.stringify(value)}`)
-
-        let newAttrs = {[name]: value}
-
-        return API.patchDevice(newAttrs).then(function () {
-
-            logger.debug(`device attribute "${name}" successfully updated`)
-
-            if (name === 'admin_password' && API.getUsername() === 'admin') {
-                logger.debug('admin password also updated locally')
-                API.setPassword(value)
+        changedFields.forEach(function (fieldName) {
+            let value = data[fieldName]
+            if (value == null) {
+                throw new AssertionError(`Got null value for changed field ${fieldName}`)
             }
 
-        }).catch(function (error) {
+            /* We're interested only in attributes */
+            if (!fieldName.startsWith('attr_')) {
+                return
+            }
 
-            logger.errorStack(`failed to update device attribute "${name}"`, error)
-            throw error
+            let name = fieldName.substring(5)
 
-        })
-    }
+            /* Ignore non-modifiable or undefined attributes */
+            if (!(name in this._fullAttrdefs) || !this._fullAttrdefs[name].modifiable) {
+                return
+            }
 
-    defaultAction() {
-        /* Prevent the form from closing on enter */
+            logger.debug(`updating device attribute "${name}" to ${JSON.stringify(value)}`)
+            newAttrs[name] = value
+
+        }, this)
+
+        let patchDevicePromise = Promise.resolve()
+        if (Object.keys(newAttrs).length) {
+            patchDevicePromise = API.patchDevice(newAttrs).then(function () {
+
+                logger.debug(`device attributes successfully updated`)
+                Toast.info(gettext('Device has been updated.'))
+
+                if ('admin_password' in newAttrs && API.getUsername() === 'admin') {
+                    logger.debug('admin password also updated locally')
+                    API.setPassword(newAttrs['admin_password'])
+                }
+
+                if (RELOAD_DEVICE_ATTRIBUTES.some(n => n in newAttrs)) {
+                    logger.debug('some attributes that trigger a window reload have been changed')
+                    PromiseUtils.later(500).then(() => Window.reload())
+                }
+
+            }).catch(function (error) {
+
+                logger.errorStack(`failed to update device attributes`, error)
+
+                let m
+                if (error instanceof API.APIError && (m = error.messageCode.match(/invalid field: (.*)/))) {
+                    let fieldName = `attr_${m[1]}`
+                    throw new ErrorMapping({[fieldName]: new ValidationError(gettext('Invalid value.'))})
+                }
+
+                throw error
+
+            }.bind(this))
+        }
+
+        return patchDevicePromise
     }
 
     navigate(pathId) {
