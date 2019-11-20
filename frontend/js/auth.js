@@ -74,7 +74,7 @@ function fetchInitialAccess() {
 
     return API.getAccess().catch(function (error) {
 
-        onAccessLevelChange(null, API.ACCESS_LEVEL_NONE)
+        handleAccessLevelChange(null, API.ACCESS_LEVEL_NONE)
         Toast.error(StringUtils.formatPercent(gettext('Authentication failed: %(error)s'), {error: error}))
 
     }).finally(function () {
@@ -82,7 +82,7 @@ function fetchInitialAccess() {
     })
 }
 
-function onAccessLevelChange(oldLevel, newLevel) {
+function handleAccessLevelChange(oldLevel, newLevel) {
     if (oldLevel == null && !whenInitialAccessLevelReady.isFulfilled()) {
         whenInitialAccessLevelReady.fulfill(newLevel)
     }
@@ -96,7 +96,7 @@ function onAccessLevelChange(oldLevel, newLevel) {
 }
 
 export function init() {
-    API.addAccessLevelChangeListener(onAccessLevelChange)
+    API.addAccessLevelChangeListener(handleAccessLevelChange)
 
     /* Fetch initial access level */
     let username = Cookies.get(AUTH_USERNAME_COOKIE)
