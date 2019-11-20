@@ -28,7 +28,7 @@ import * as Widgets     from './widgets.js'
 
 
 const DEF_VIBRATION_DURATION = 10 /* Milliseconds */
-const PORT_VALUE_CHANGE_TIMEOUT = 1000
+const PORT_VALUE_CHANGE_TIMEOUT = 3000
 
 const STATES = [
     Widgets.STATE_INVALID,

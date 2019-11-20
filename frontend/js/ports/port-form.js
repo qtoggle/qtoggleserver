@@ -22,7 +22,7 @@ import * as Ports from './ports.js'
 
 
 const DISABLED_PORT_VISIBLE_ATTRS = ['id', 'enabled']
-const VALUE_CHANGE_TIMEOUT = 1000
+const VALUE_CHANGE_TIMEOUT = 3000
 
 const logger = Ports.logger
 
