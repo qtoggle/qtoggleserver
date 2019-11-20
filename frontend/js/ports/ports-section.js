@@ -74,13 +74,6 @@ export default class PortsSection extends Section {
                     break
                 }
 
-                if (Ports.getMasterFakeDevice().name !== event.params.name) { /* Name changed */
-                    /* If the master device ports list is currently opened, close it */
-                    if (portsList && portsList.getDeviceName() === Ports.getMasterFakeDevice().name) {
-                        portsList.close()
-                    }
-                }
-
                 Ports.clearMasterFakeDevice()
                 this.devicesList.updateUI()
 

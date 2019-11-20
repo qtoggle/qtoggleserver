@@ -1244,7 +1244,7 @@ export default class Widget extends mix().with(ViewMixin) {
                 this.logger.debug('removing')
                 this._panel.removeWidget(this)
                 Dashboard.savePanels()
-                this._configForm.close()
+                this._configForm.close(/* force = */ true)
 
             }.bind(this),
             /* onNo = */ null, /* pathId = */ 'remove'
