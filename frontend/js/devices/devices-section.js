@@ -99,7 +99,7 @@ export default class DevicesSection extends Section {
                     (Devices.getRenamedDeviceName() == null)) {
 
                     /* The device that is currently selected has just been removed */
-                    deviceForm.close()
+                    deviceForm.close(/* force = */ true)
                 }
 
                 break

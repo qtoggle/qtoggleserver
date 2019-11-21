@@ -112,7 +112,7 @@ export default class PortsSection extends Section {
 
                 if (portsList && portsList.getDeviceName() === event.params.name) {
                     /* The device that is currently selected has just been removed */
-                    portsList.close()
+                    portsList.close(/* force = */ true)
                 }
 
                 break
@@ -153,7 +153,7 @@ export default class PortsSection extends Section {
 
                 if (portForm && portForm.getPortId() === event.params.id) {
                     /* The port that is currently selected has just been removed */
-                    portForm.close()
+                    portForm.close(/* force = */ true)
                 }
 
                 break

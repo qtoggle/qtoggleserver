@@ -442,7 +442,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                 API.deleteSlaveDevice(device.name).then(function () {
 
                     logger.debug(`device "${device.name}" at url ${deviceURL} successfully removed`)
-                    this.close()
+                    this.close(/* force = */ true)
 
                 }.bind(this)).catch(function (error) {
 
