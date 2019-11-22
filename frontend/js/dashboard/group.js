@@ -231,7 +231,7 @@ export default class Group extends mix(PageList).with(PanelGroupCompositeMixin) 
     }
 
     onAdd() {
-        this.pushPage(this.makeAddForm())
+        return this.pushPage(this.makeAddForm())
     }
 
     /**

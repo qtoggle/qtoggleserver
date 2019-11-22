@@ -194,7 +194,7 @@ export default class PortsList extends PageList {
     }
 
     onAdd() {
-        this.pushPage(this.makeAddPortForm(this._deviceName))
+        return this.pushPage(this.makeAddPortForm(this._deviceName))
     }
 
     onSelectionChange(newItem, newIndex, oldItem, oldIndex) {
