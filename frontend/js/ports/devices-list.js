@@ -104,7 +104,7 @@ export default class DevicesList extends PageList {
     }
 
     onSelectionChange(newItem, newIndex, oldItem, oldIndex) {
-        this.pushPage(this.makePortsList(newItem.getData()))
+        return this.pushPage(this.makePortsList(newItem.getData()))
     }
 
     onCloseNext(next) {

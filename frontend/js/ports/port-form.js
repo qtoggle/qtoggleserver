@@ -400,6 +400,13 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         }
     }
 
+    onChange(data, fieldName) {
+        /* We don't want a changed value field to prevent form closing */
+        if (fieldName === 'value') {
+            this.markFieldUnchanged('value')
+        }
+    }
+
     _addValueField(port) {
         this.removeField('value')
 

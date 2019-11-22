@@ -198,7 +198,7 @@ export default class PortsList extends PageList {
     }
 
     onSelectionChange(newItem, newIndex, oldItem, oldIndex) {
-        this.pushPage(this.makePortForm(newItem.getData()))
+        return this.pushPage(this.makePortForm(newItem.getData()))
     }
 
     onCloseNext(next) {

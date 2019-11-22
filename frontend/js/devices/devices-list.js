@@ -128,7 +128,7 @@ export default class DevicesList extends PageList {
     }
 
     onSelectionChange(newItem, newIndex, oldItem, oldIndex) {
-        this.pushPage(this.makeDeviceForm(newItem.getData()))
+        return this.pushPage(this.makeDeviceForm(newItem.getData()))
     }
 
     onCloseNext(next) {

@@ -258,7 +258,7 @@ export default class Group extends mix(PageList).with(PanelGroupCompositeMixin) 
     }
 
     onSelectionChange(item) {
-        this.pushPage(item.getData())
+        return this.pushPage(item.getData())
     }
 
     onCloseNext(next) {
