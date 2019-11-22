@@ -22,9 +22,9 @@ export default Mixin((superclass = Object) => {
                 {name: Messages.wrapLabel(deviceDisplayName)}
             )
 
-            return ConfirmMessageForm.create(
-                msg,
-                /* onYes = */ function () {
+            return new ConfirmMessageForm({
+                message: msg,
+                onYes: function () {
 
                     logger.debug(`rebooting device "${deviceName}"`)
 
@@ -66,8 +66,8 @@ export default Mixin((superclass = Object) => {
                     }.bind(this))
 
                 }.bind(this),
-                /* onNo = */ null, /* pathId = */ 'reboot'
-            )
+                pathId: 'reboot'
+            })
         }
 
     }

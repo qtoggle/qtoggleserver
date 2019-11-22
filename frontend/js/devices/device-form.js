@@ -434,9 +434,9 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             {object: Messages.wrapLabel(device.attrs.display_name || device.name)}
         )
 
-        return ConfirmMessageForm.create(
-            msg,
-            /* onYes = */ function () {
+        return new ConfirmMessageForm({
+            message: msg,
+            onYes: function () {
 
                 logger.debug(`removing device "${device.name}" at url ${deviceURL}`)
 
@@ -453,8 +453,8 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                 })
 
             }.bind(this),
-            /* onNo = */ null, /* pathId = */ 'remove'
-        )
+            pathId: 'remove'
+        })
     }
 
     /**

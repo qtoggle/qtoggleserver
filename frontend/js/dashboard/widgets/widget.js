@@ -1237,18 +1237,16 @@ export default class Widget extends mix().with(ViewMixin) {
             msg = gettext('Really remove this widget?')
         }
 
-        return ConfirmMessageForm.create(
-            msg,
-            /* onYes = */ function () {
-
+        return new ConfirmMessageForm({
+            message: msg,
+            onYes: function () {
                 this.logger.debug('removing')
                 this._panel.removeWidget(this)
                 Dashboard.savePanels()
                 this._configForm.close(/* force = */ true)
-
             }.bind(this),
-            /* onNo = */ null, /* pathId = */ 'remove'
-        )
+            pathId: 'remove'
+        })
     }
 
     /**

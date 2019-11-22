@@ -228,9 +228,9 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
             {name: Messages.wrapLabel(deviceDisplayName)}
         )
 
-        return ConfirmMessageForm.create(
-            msg,
-            /* onYes = */ function () {
+        return new ConfirmMessageForm({
+            message: msg,
+            onYes: function () {
 
                 logger.debug(`resetting device "${deviceName}" to factory defaults`)
 
@@ -269,8 +269,8 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
                 }.bind(this))
 
             }.bind(this),
-            /* onNo = */ null, /* pathId = */ 'factory-reset'
-        )
+            pathId: 'factory-reset'
+        })
     }
 
 }

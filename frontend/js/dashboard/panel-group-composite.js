@@ -104,14 +104,16 @@ export default Mixin((superclass = Object) => {
                 {object: Messages.wrapLabel(this.getName())}
             )
 
-            return ConfirmMessageForm.create(msg, /* onYes = */ function () {
-
-                logger.debug(`removing "${this.getPathStr()}"`)
-                this.getParent().removeChild(this)
-                this.close()
-                Dashboard.savePanels()
-
-            }.bind(this), /* onNo = */ null, /* pathId = */ 'remove')
+            return new ConfirmMessageForm({
+                message: msg,
+                onYes: function () {
+                    logger.debug(`removing "${this.getPathStr()}"`)
+                    this.getParent().removeChild(this)
+                    this.close()
+                    Dashboard.savePanels()
+                }.bind(this),
+                pathId: 'remove'
+            })
         }
 
     }
