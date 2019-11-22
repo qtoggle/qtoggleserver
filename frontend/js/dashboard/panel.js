@@ -1019,7 +1019,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
 
             this.setSelectedWidget(widget)
 
-            return widget.makeConfigForm()
+            return widget.getConfigForm()
         }
     }
 

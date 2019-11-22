@@ -284,8 +284,9 @@ export default class Widget extends mix().with(ViewMixin) {
         }).applyTo(iconDiv)
 
         control.on('click', function () {
-            this.showConfigForm()
-            this._configForm.pushPage(this.makeRemoveForm())
+            this.showConfigForm().then(function () {
+                this._configForm.pushPage(this.makeRemoveForm())
+            }.bind(this))
         }.bind(this))
 
         return control
@@ -1252,7 +1253,7 @@ export default class Widget extends mix().with(ViewMixin) {
     /**
      * @returns {QToggle.DashboardSection.Widgets.WidgetConfigForm}
      */
-    makeConfigForm() {
+    getConfigForm() {
         if (!this._configForm) {
             this._configForm = new this.constructor.ConfigForm(this)
         }
@@ -1263,7 +1264,12 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     showConfigForm() {
-        this._panel.pushPage(this.makeConfigForm())
+        let configForm = this.getConfigForm()
+        if (configForm.hasContext()) { /* Already added */
+            return Promise.resolve()
+        }
+
+        return this._panel.pushPage(this.getConfigForm())
     }
 
 }
