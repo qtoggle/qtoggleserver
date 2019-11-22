@@ -171,7 +171,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
         }, this)
 
-        if (!port.enabled) {
+        if (!port.enabled && !fieldChangeWarnings) {
             /* Filter out attribute definitions not visible when port disabled */
             this._fullAttrdefs = ObjectUtils.filter(this._fullAttrdefs, function (name, def) {
                 return DISABLED_PORT_VISIBLE_ATTRS.indexOf(name) >= 0
@@ -303,7 +303,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         changedFields.forEach(function (fieldName) {
             let value = data[fieldName]
             if (value == null) {
-                throw new AssertionError(`Got null value for changed field ${fieldName}`)
+                return
             }
 
             /* Skip value field, as it is treated separately */
@@ -397,13 +397,6 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 this.pushPage(this.makeRemovePortForm())
 
                 break
-        }
-    }
-
-    onChange(data, fieldName) {
-        /* We don't want a changed value field to prevent form closing */
-        if (fieldName === 'value') {
-            this.markFieldUnchanged('value')
         }
     }
 

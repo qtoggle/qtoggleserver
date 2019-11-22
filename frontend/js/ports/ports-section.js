@@ -176,10 +176,23 @@ export default class PortsSection extends Section {
                 if (portForm && (portForm.getPortId() === event.params.id) && (event.params.value != null)) {
                     let lastSync = Math.round(new Date().getTime() / 1000)
 
-                    portForm.setData({
-                        value: event.params.value,
-                        attr_last_sync: API.STD_PORT_ATTRDEFS['last_sync'].valueToUI(lastSync)
-                    })
+                    let valueField = portForm.getField('value')
+                    let data = {}
+                    if (portForm.getField('attr_last_sync')) {
+                        data['attr_last_sync'] = API.STD_PORT_ATTRDEFS['last_sync'].valueToUI(lastSync)
+                    }
+                    if (valueField.isReadonly()) {
+                        data['value'] = event.params.value
+                    }
+                    else {
+                        if (!valueField.hasWarning() && !valueField.hasError()) {
+                            valueField.setWarning(gettext('Value has been updated in the meantime.'))
+                        }
+                    }
+
+                    if (Object.keys(data).length) {
+                        portForm.setData(data)
+                    }
                 }
 
                 break

@@ -201,6 +201,8 @@ export default Mixin((superclass = Object) => {
             let defEntries = ArrayUtils.sortKey(Object.entries(attrdefs), e => e[0])
             ArrayUtils.stableSortKey(defEntries, e => e[1].order || 1000)
 
+            let newValues = {}
+
             let notKnown = false
             defEntries.forEach(function (entry, index) {
                 let name = entry[0]
@@ -228,9 +230,15 @@ export default Mixin((superclass = Object) => {
 
                 if (field) {
                     let oldValue = field.getValue()
-                    if (oldValue !== newValue && def.modifiable && noUpdated.indexOf(name) < 0 &&
-                        !field.hasError() && !field.hasWarning() && fieldChangeWarnings) {
-                        field.setWarning(gettext('Value has been updated in the meantime.'))
+                    if (oldValue !== newValue) {
+                        if (def.modifiable && noUpdated.indexOf(name) < 0 && fieldChangeWarnings) {
+                            if (!field.hasError() && !field.hasWarning()) {
+                                field.setWarning(gettext('Value has been updated in the meantime.'))
+                            }
+                        }
+                        else {
+                            newValues[field.getName()] = newValue
+                        }
                     }
 
                     field.setLabel(fieldAttrs.label)
@@ -265,6 +273,11 @@ export default Mixin((superclass = Object) => {
 
                 this.removeField(name)
             }, this)
+
+            /* Update with new values */
+            if (Object.keys(newValues).length) {
+                this.setData(newValues)
+            }
         }
 
     }

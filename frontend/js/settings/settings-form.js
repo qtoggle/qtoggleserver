@@ -175,7 +175,7 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
         changedFields.forEach(function (fieldName) {
             let value = data[fieldName]
             if (value == null) {
-                throw new AssertionError(`Got null value for changed field ${fieldName}`)
+                return
             }
 
             /* We're interested only in attributes */
