@@ -1237,7 +1237,7 @@ export default class Widget extends mix().with(ViewMixin) {
             msg = gettext('Really remove this widget?')
         }
 
-        return ConfirmMessageForm.show(
+        return ConfirmMessageForm.create(
             msg,
             /* onYes = */ function () {
 

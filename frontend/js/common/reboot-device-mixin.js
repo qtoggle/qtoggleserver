@@ -22,7 +22,7 @@ export default Mixin((superclass = Object) => {
                 {name: Messages.wrapLabel(deviceDisplayName)}
             )
 
-            return ConfirmMessageForm.show(
+            return ConfirmMessageForm.create(
                 msg,
                 /* onYes = */ function () {
 

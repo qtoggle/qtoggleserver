@@ -434,7 +434,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             {object: Messages.wrapLabel(device.attrs.display_name || device.name)}
         )
 
-        return ConfirmMessageForm.show(
+        return ConfirmMessageForm.create(
             msg,
             /* onYes = */ function () {
 

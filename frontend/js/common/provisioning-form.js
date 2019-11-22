@@ -228,7 +228,7 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
             {name: Messages.wrapLabel(deviceDisplayName)}
         )
 
-        return ConfirmMessageForm.show(
+        return ConfirmMessageForm.create(
             msg,
             /* onYes = */ function () {
 

@@ -104,7 +104,7 @@ export default Mixin((superclass = Object) => {
                 {object: Messages.wrapLabel(this.getName())}
             )
 
-            return ConfirmMessageForm.show(msg, /* onYes = */ function () {
+            return ConfirmMessageForm.create(msg, /* onYes = */ function () {
 
                 logger.debug(`removing "${this.getPathStr()}"`)
                 this.getParent().removeChild(this)

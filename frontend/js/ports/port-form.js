@@ -479,7 +479,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             {object: Messages.wrapLabel(port.display_name || port.id)}
         )
 
-        return ConfirmMessageForm.show(
+        return ConfirmMessageForm.create(
             msg,
             /* onYes = */ function () {
 
