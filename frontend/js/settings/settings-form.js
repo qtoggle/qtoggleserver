@@ -40,6 +40,7 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
             title: gettext('Settings'),
             icon: Settings.WRENCH_ICON,
             closeOnApply: false,
+            preventUnappliedClose: true,
 
             buttons: [
                 new FormButton({id: 'apply', caption: gettext('Apply'), def: true})

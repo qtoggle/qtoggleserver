@@ -56,6 +56,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             title: '',
             icon: Devices.DEVICE_ICON,
             closeOnApply: false,
+            preventUnappliedClose: true,
             continuousValidation: true,
 
             fields: [

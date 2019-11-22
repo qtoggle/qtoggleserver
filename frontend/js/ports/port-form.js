@@ -46,6 +46,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             pathId: pathId,
             keepPrevVisible: true,
             closeOnApply: false,
+            preventUnappliedClose: true,
             title: '', /* Set dynamically, later */
             icon: Ports.PORT_ICON,
 
