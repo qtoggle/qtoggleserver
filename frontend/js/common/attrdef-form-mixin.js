@@ -136,6 +136,8 @@ export default Mixin((superclass = Object) => {
                             field.class = TextField
                         }
 
+                        field.continuousChange = true
+
                         field.validate = function (value) {
                             if (def.min != null && value.length < def.min) {
                                 let msg = StringUtils.formatPercent(
