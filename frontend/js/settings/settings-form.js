@@ -17,7 +17,6 @@ import UpdateFirmwareForm from '$app/common/update-firmware-form.js'
 import WaitDeviceMixin    from '$app/common/wait-device-mixin.js'
 
 import * as Settings                   from './settings.js'
-import {AssertionError}                from '$qui/base/errors.js'
 import * as Toast                      from '$qui/messages/toast.js'
 import {ErrorMapping, ValidationError} from '$qui/forms/forms.js'
 import FormButton                      from '$qui/forms/form-button.js'
@@ -228,6 +227,10 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
         }
 
         return patchDevicePromise
+    }
+
+    cancelAction() {
+        /* Override this to ensure the form is never cancelled/closed */
     }
 
     navigate(pathId) {
