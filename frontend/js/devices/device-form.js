@@ -18,14 +18,14 @@ import * as StringUtils               from '$qui/utils/string.js'
 import URL                            from '$qui/utils/url.js'
 import * as Window                    from '$qui/window.js'
 
-import * as API                                  from '$app/api.js'
-import * as Cache                                from '$app/cache.js'
-import AttrdefFormMixin                          from '$app/common/attrdef-form-mixin.js'
-import * as Common                               from '$app/common/common.js'
-import ProvisioningForm                          from '$app/common/provisioning-form.js'
-import RebootDeviceMixin                         from '$app/common/reboot-device-mixin.js'
-import UpdateFirmwareForm                        from '$app/common/update-firmware-form.js'
-import WaitDeviceMixin                           from '$app/common/wait-device-mixin.js'
+import * as API           from '$app/api.js'
+import * as Cache         from '$app/cache.js'
+import AttrdefFormMixin   from '$app/common/attrdef-form-mixin.js'
+import * as Common        from '$app/common/common.js'
+import ProvisioningForm   from '$app/common/provisioning-form.js'
+import RebootDeviceMixin  from '$app/common/reboot-device-mixin.js'
+import UpdateFirmwareForm from '$app/common/update-firmware-form.js'
+import WaitDeviceMixin    from '$app/common/wait-device-mixin.js'
 
 import * as Devices from './devices.js'
 
@@ -209,13 +209,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                     caption: gettext('Reboot'),
                     style: 'highlight',
                     callback(form) {
-                        let device = Cache.getSlaveDevice(form.getDeviceName())
-                        if (!device) {
-                            throw new AssertionError(`Device with name ${form.getDeviceName()} not found in cache`)
-                        }
-
-                        let displayName = device.display_name || device.name
-                        form.pushPage(form.confirmAndReboot(device.name, displayName, logger))
+                        form.pushPage(form.makeConfirmAndRebootForm())
                     }
                 }),
                 new PushButtonField({
@@ -415,6 +409,9 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
 
             case 'provisioning':
                 return this.makeProvisioningForm()
+
+            case 'reboot':
+                return this.makeConfirmAndRebootForm()
         }
     }
 
@@ -469,6 +466,17 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
      */
     makeProvisioningForm() {
         return new ProvisioningForm(this.getDeviceName())
+    }
+
+    makeConfirmAndRebootForm() {
+        let device = Cache.getSlaveDevice(form.getDeviceName())
+        if (!device) {
+            throw new AssertionError(`Device with name ${form.getDeviceName()} not found in cache`)
+        }
+
+        let displayName = device.display_name || device.name
+
+        return this.confirmAndReboot(device.name, displayName, logger)
     }
 
 }

@@ -129,9 +129,7 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
                     caption: gettext('Reboot'),
                     style: 'danger',
                     callback(form) {
-                        let mainDevice = Cache.getMainDevice()
-                        let displayName = mainDevice.display_name || mainDevice.name
-                        form.pushPage(form.confirmAndReboot(mainDevice.name, displayName, logger))
+                        form.pushPage(form.makeConfirmAndRebootForm())
                     }
                 }),
                 new PushButtonField({
@@ -240,6 +238,9 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
 
             case 'provisioning':
                 return this.makeProvisioningForm()
+
+            case 'reboot':
+                return this.makeConfirmAndRebootForm()
         }
     }
 
@@ -255,6 +256,13 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
      */
     makeProvisioningForm() {
         return new ProvisioningForm(Cache.getMainDevice().name)
+    }
+
+    makeConfirmAndRebootForm() {
+        let mainDevice = Cache.getMainDevice()
+        let displayName = mainDevice.display_name || mainDevice.name
+
+        return this.confirmAndReboot(mainDevice.name, displayName, logger)
     }
 
 }
