@@ -44,8 +44,7 @@ export default Mixin((superclass = Object) => {
                     }
 
                     case 'number': {
-                        let count = 1000
-                        /* Some large number */
+                        let count = 1e6 /* Some large number */
                         let decimals = 0
                         let step = def.step
 
@@ -64,29 +63,23 @@ export default Mixin((superclass = Object) => {
                             }
                         }
 
-                        if (def.min != null && def.max) {
-                            count = (def.max - def.min) / step
+                        if (def.min != null && def.max != null) {
+                            count = (def.max - def.min) / step + 1
                         }
 
-                        if (count <= 11) {
+                        if (count <= 101) {
                             field.class = SliderField
                             let ticks = []
                             for (let v = def.min; v <= def.max; v += step) {
                                 ticks.push({value: v, label: v})
                             }
                             field.ticks = ticks
+                            field.ticksStep = Math.round((count - 1) / 5)
                             field.snapMode = 1
-                            field.equidistant = true
-                        }
-                        else if (count <= 101) {
-                            field.class = UpDownField
-                            field.min = def.min
-                            field.max = def.max
-                            field.step = step
-                            field.decimals = decimals
                         }
                         else { /* Many choices */
                             field.class = NumericField
+                            field.continuousChange = true
 
                             field.validate = function (value) {
                                 if (!value && !def.required) {
