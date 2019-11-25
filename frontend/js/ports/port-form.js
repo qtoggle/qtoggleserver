@@ -246,7 +246,6 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 style: 'danger'
             }))
         }
-
     }
 
     getPortId() {
