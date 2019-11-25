@@ -60,12 +60,14 @@ export default class AddPortForm extends PageForm {
                     name: 'min',
                     label: gettext('Minimum Value'),
                     hidden: true,
+                    continuousChange: true,
                     onChange: (value, form) => form._updateFieldsVisibility()
                 }),
                 new NumericField({
                     name: 'max',
                     label: gettext('Maximum Value'),
-                    hidden: true
+                    hidden: true,
+                    continuousChange: true
                 }),
                 new CheckField({
                     name: 'integer',
@@ -76,6 +78,7 @@ export default class AddPortForm extends PageForm {
                 new NumericField({
                     name: 'step',
                     label: gettext('Step'),
+                    continuousChange: true,
                     hidden: true
                 })
                 // TODO choices
@@ -138,7 +141,7 @@ export default class AddPortForm extends PageForm {
             this.getField('min').show()
             this.getField('max').show()
             this.getField('integer').show()
-            if (data.integer && data.min != null) {
+            if (data.min != null) {
                 this.getField('step').show()
             }
             else {
