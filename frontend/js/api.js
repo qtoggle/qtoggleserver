@@ -697,13 +697,15 @@ let accessLevelChangeListeners = []
  * @param {String} type the event type
  * @param {Object} params the event parameters
  * @param {Boolean} [expected] indicates that the event was expected
+ * @param {Boolean} [fake] indicates that the event was generated on the client side
  */
 export class Event {
 
-    constructor(type, params, expected = false) {
+    constructor(type, params, expected = false, fake = false) {
         this.type = type
         this.params = ObjectUtils.copy(params)
         this.expected = expected
+        this.fake = fake
     }
 
 
@@ -712,7 +714,7 @@ export class Event {
      * @returns {QToggle.API.Event} the cloned event
      */
     clone() {
-        return new Event(this.type, this.params, this.expected)
+        return new Event(this.type, this.params, this.expected, this.fake)
     }
 
 }
@@ -1077,6 +1079,8 @@ export function fakeServerEvent(type, params) {
     if (handle != null) {
         event.expected = true
     }
+
+    event.fake = true
 
     if (DEBUG_API_CALLS) {
         let bodyStr = JSON.stringify(event, null, 4).replace(new RegExp('\\n', 'g'), '\n   ')

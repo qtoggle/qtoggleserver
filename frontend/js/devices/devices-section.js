@@ -57,7 +57,7 @@ export default class DevicesSection extends Section {
                 this.devicesList.updateUI()
 
                 if (deviceForm && (deviceForm.getDeviceName() === event.params.name)) {
-                    deviceForm.updateUI()
+                    deviceForm.updateUI(/* fieldChangeWarnings = */ !event.expected)
                 }
 
                 let currentPage = getCurrentPage()
