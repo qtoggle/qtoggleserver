@@ -331,6 +331,11 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
 
         let promise = Promise.resolve()
 
+        if ('name' in newAttrs) {
+            let msg = gettext('Are you sure you want to rename the device?')
+            promise = new StickyConfirmMessageForm({message: msg}).show().asPromise()
+        }
+
         if (willReconnect) {
             let msg = gettext('Device will reconnect. Are you sure?')
             promise = new StickyConfirmMessageForm({message: msg}).show().asPromise()
