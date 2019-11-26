@@ -1,22 +1,22 @@
-import {AssertionError, TimeoutError} from '$qui/base/errors.js'
-import {gettext}                      from '$qui/base/i18n.js'
-import {mix}                          from '$qui/base/mixwith.js'
+import {AssertionError, TimeoutError}                 from '$qui/base/errors.js'
+import {gettext}                                      from '$qui/base/i18n.js'
+import {mix}                                          from '$qui/base/mixwith.js'
 import {
     CheckField, ComboField, PushButtonField,
     TextField, CompositeField
-} from '$qui/forms/common-fields.js'
-import {PageForm}                     from '$qui/forms/common-forms.js'
-import FormButton                     from '$qui/forms/form-button.js'
-import {ConfirmMessageForm}           from '$qui/messages/common-message-forms.js'
-import * as Messages                  from '$qui/messages/messages.js'
-import * as Toast                     from '$qui/messages/toast.js'
-import * as Theme                     from '$qui/theme.js'
-import * as DateUtils                 from '$qui/utils/date.js'
-import * as ObjectUtils               from '$qui/utils/object.js'
-import * as PromiseUtils              from '$qui/utils/promise.js'
-import * as StringUtils               from '$qui/utils/string.js'
-import URL                            from '$qui/utils/url.js'
-import * as Window                    from '$qui/window.js'
+}                                                     from '$qui/forms/common-fields.js'
+import {PageForm}                                     from '$qui/forms/common-forms.js'
+import FormButton                                     from '$qui/forms/form-button.js'
+import {ConfirmMessageForm, StickyConfirmMessageForm} from '$qui/messages/common-message-forms.js'
+import * as Messages                                  from '$qui/messages/messages.js'
+import * as Toast                                     from '$qui/messages/toast.js'
+import * as Theme                                     from '$qui/theme.js'
+import * as DateUtils                                 from '$qui/utils/date.js'
+import * as ObjectUtils                               from '$qui/utils/object.js'
+import * as PromiseUtils                              from '$qui/utils/promise.js'
+import * as StringUtils                               from '$qui/utils/string.js'
+import URL                                            from '$qui/utils/url.js'
+import * as Window                                    from '$qui/window.js'
 
 import * as API           from '$app/api.js'
 import * as Cache         from '$app/cache.js'
@@ -329,14 +329,24 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             logger.debug(`device "${deviceName}" will reconnect`)
         }
 
-        let patchSlavePromise = Promise.resolve()
+        let promise = Promise.resolve()
+
+        if (willReconnect) {
+            let msg = gettext('Device will reconnect. Are you sure?')
+            promise = new StickyConfirmMessageForm({message: msg}).show().asPromise()
+        }
+
         if (masterAttrsChanged) {
-            patchSlavePromise = API.patchSlaveDevice(
-                deviceName,
-                data.enabled,
-                data.poll_interval,
-                data.listen_enabled
-            ).then(function () {
+            promise = promise.then(function () {
+
+                return API.patchSlaveDevice(
+                    deviceName,
+                    data.enabled,
+                    data.poll_interval,
+                    data.listen_enabled
+                )
+
+            }).then(function () {
 
                 logger.debug(`device "${deviceName}" master properties successfully updated for`)
 
@@ -357,15 +367,24 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             }.bind(this))
         }
 
-        let patchDevicePromise = Promise.resolve()
         if (this._fullAttrdefs && Object.keys(newAttrs).length) { /* Device online */
             API.setSlave(deviceName)
-            patchDevicePromise = API.patchDevice(newAttrs).then(function () {
+
+            promise = promise.then(function () {
+
+                return API.patchDevice(newAttrs)
+
+            }).then(function () {
+
                 logger.debug(`device "${deviceName}" attributes successfully updated`)
+
             }).catch(function (error) {
+
                 logger.errorStack(`failed to update device "${deviceName}" attributes`, error)
                 throw error
+
             }).then(function () {
+
                 /* Attributes with reconnect flag will probably restart/reset the device, therefore we first wait for it
                  * to go offline and then to come back online */
 
@@ -377,7 +396,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
 
                 /* Following promise chain is intentionally not part of the outer chain, because by the time it
                  * resolves, the field will no longer be part of the DOM */
-                Promise.resolve().then(function () {
+                return Promise.resolve().then(function () {
 
                     return PromiseUtils.withTimeout(this.waitDeviceOffline(), Common.GO_OFFLINE_TIMEOUT * 1000)
 
@@ -405,7 +424,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             }.bind(this))
         }
 
-        return patchSlavePromise.then(() => patchDevicePromise)
+        return promise
     }
 
     onPush() {
