@@ -70,7 +70,7 @@ export default Mixin((superclass = Object) => {
                             count = (def.max - def.min) / step + 1
                         }
 
-                        if (count <= 101) {
+                        if (count <= 101 && def.modifiable) {
                             field.class = SliderField
                             let ticks = []
                             for (let v = def.min; v <= def.max; v += step) {
