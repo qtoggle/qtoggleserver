@@ -349,27 +349,26 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                     data.enabled,
                     data.poll_interval,
                     data.listen_enabled
-                )
+                ).then(function () {
 
-            }).then(function () {
+                    logger.debug(`device "${deviceName}" master properties successfully updated for`)
 
-                logger.debug(`device "${deviceName}" master properties successfully updated for`)
+                    if (justEnabled) {
+                        this.startWaitingDeviceOnline()
+                    }
 
-                if (justEnabled) {
-                    this.startWaitingDeviceOnline()
-                }
+                }.bind(this)).catch(function (error) {
 
-            }.bind(this)).catch(function (error) {
+                    logger.errorStack(`failed to update device "${deviceName}" master properties`, error)
 
-                logger.errorStack(`failed to update device "${deviceName}" master properties`, error)
+                    if (this.isWaitingDeviceOnline()) {
+                        this.cancelWaitingDeviceOnline()
+                    }
 
-                if (this.isWaitingDeviceOnline()) {
-                    this.cancelWaitingDeviceOnline()
-                }
+                    throw error
 
-                throw error
-
-            }.bind(this))
+                }.bind(this))
+            })
         }
 
         if (this._fullAttrdefs && Object.keys(newAttrs).length) { /* Device online */
@@ -377,56 +376,55 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
 
             promise = promise.then(function () {
 
-                return API.patchDevice(newAttrs)
+                return API.patchDevice(newAttrs).then(function () {
 
-            }).then(function () {
+                    logger.debug(`device "${deviceName}" attributes successfully updated`)
 
-                logger.debug(`device "${deviceName}" attributes successfully updated`)
+                }).catch(function (error) {
 
-            }).catch(function (error) {
+                    logger.errorStack(`failed to update device "${deviceName}" attributes`, error)
+                    throw error
 
-                logger.errorStack(`failed to update device "${deviceName}" attributes`, error)
-                throw error
+                }).then(function () {
 
-            }).then(function () {
+                    /* Attributes with reconnect flag will probably restart/reset the device, therefore we first wait for it
+                     * to go offline and then to come back online */
 
-                /* Attributes with reconnect flag will probably restart/reset the device, therefore we first wait for it
-                 * to go offline and then to come back online */
-
-                if (!willReconnect) {
-                    return
-                }
-
-                this.setProgress()
-
-                /* Following promise chain is intentionally not part of the outer chain, because by the time it
-                 * resolves, the field will no longer be part of the DOM */
-                return Promise.resolve().then(function () {
-
-                    return PromiseUtils.withTimeout(this.waitDeviceOffline(), Common.GO_OFFLINE_TIMEOUT * 1000)
-
-                }.bind(this)).then(function () {
-
-                    return PromiseUtils.withTimeout(this.waitDeviceOnline(), Common.COME_ONLINE_TIMEOUT * 1000)
-
-                }.bind(this)).catch(function (error) {
-
-                    logger.errorStack(`error while waiting for device "${deviceName}" to come online`, error)
-
-                    if (error instanceof TimeoutError) {
-                        error = new Error(gettext('Timeout waiting for device to reconnect.'))
+                    if (!willReconnect) {
+                        return
                     }
 
-                    this.cancelWaitingDevice()
-                    this.setError(error)
+                    this.setProgress()
 
-                }.bind(this)).then(function () {
+                    /* Following promise chain is intentionally not part of the outer chain, because by the time it
+                     * resolves, the field will no longer be part of the DOM */
+                    return Promise.resolve().then(function () {
 
-                    this.clearProgress()
+                        return PromiseUtils.withTimeout(this.waitDeviceOffline(), Common.GO_OFFLINE_TIMEOUT * 1000)
+
+                    }.bind(this)).then(function () {
+
+                        return PromiseUtils.withTimeout(this.waitDeviceOnline(), Common.COME_ONLINE_TIMEOUT * 1000)
+
+                    }.bind(this)).catch(function (error) {
+
+                        logger.errorStack(`error while waiting for device "${deviceName}" to come online`, error)
+
+                        if (error instanceof TimeoutError) {
+                            error = new Error(gettext('Timeout waiting for device to reconnect.'))
+                        }
+
+                        this.cancelWaitingDevice()
+                        this.setError(error)
+
+                    }.bind(this)).then(function () {
+
+                        this.clearProgress()
+
+                    }.bind(this))
 
                 }.bind(this))
-
-            }.bind(this))
+            })
         }
 
         return promise
