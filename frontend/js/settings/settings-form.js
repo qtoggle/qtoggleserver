@@ -2,6 +2,7 @@ import {gettext}                         from '$qui/base/i18n.js'
 import {mix}                             from '$qui/base/mixwith.js'
 import {PushButtonField, CompositeField} from '$qui/forms/common-fields.js'
 import {PageForm}                        from '$qui/forms/common-forms.js'
+import {StickyConfirmMessageForm}        from '$qui/messages/common-message-forms.js'
 import * as Theme                        from '$qui/theme.js'
 import * as ObjectUtils                  from '$qui/utils/object.js'
 import * as PromiseUtils                 from '$qui/utils/promise.js'
@@ -192,39 +193,48 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
 
         }, this)
 
-        let patchDevicePromise = Promise.resolve()
+        let promise = Promise.resolve()
+
+        if ('name' in newAttrs) {
+            let msg = gettext('Are you sure you want to rename the device?')
+            promise = new StickyConfirmMessageForm({message: msg}).show().asPromise()
+        }
+
         if (Object.keys(newAttrs).length) {
-            patchDevicePromise = API.patchDevice(newAttrs).then(function () {
+            promise = promise.then(function () {
 
-                logger.debug(`device attributes successfully updated`)
-                Toast.info(gettext('Device has been updated.'))
+                return API.patchDevice(newAttrs).then(function () {
 
-                if ('admin_password' in newAttrs && API.getUsername() === 'admin') {
-                    logger.debug('admin password also updated locally')
-                    API.setPassword(newAttrs['admin_password'])
-                }
+                    logger.debug(`device attributes successfully updated`)
+                    Toast.info(gettext('Device has been updated.'))
 
-                if (RELOAD_DEVICE_ATTRIBUTES.some(n => n in newAttrs)) {
-                    logger.debug('some attributes that trigger a window reload have been changed')
-                    PromiseUtils.later(500).then(() => Window.reload())
-                }
+                    if ('admin_password' in newAttrs && API.getUsername() === 'admin') {
+                        logger.debug('admin password also updated locally')
+                        API.setPassword(newAttrs['admin_password'])
+                    }
 
-            }).catch(function (error) {
+                    if (RELOAD_DEVICE_ATTRIBUTES.some(n => n in newAttrs)) {
+                        logger.debug('some attributes that trigger a window reload have been changed')
+                        PromiseUtils.later(500).then(() => Window.reload())
+                    }
 
-                logger.errorStack(`failed to update device attributes`, error)
+                }).catch(function (error) {
 
-                let m
-                if (error instanceof API.APIError && (m = error.messageCode.match(/invalid field: (.*)/))) {
-                    let fieldName = `attr_${m[1]}`
-                    throw new ErrorMapping({[fieldName]: new ValidationError(gettext('Invalid value.'))})
-                }
+                    logger.errorStack(`failed to update device attributes`, error)
 
-                throw error
+                    let m
+                    if (error instanceof API.APIError && (m = error.messageCode.match(/invalid field: (.*)/))) {
+                        let fieldName = `attr_${m[1]}`
+                        throw new ErrorMapping({[fieldName]: new ValidationError(gettext('Invalid value.'))})
+                    }
 
+                    throw error
+
+                })
             })
         }
 
-        return patchDevicePromise
+        return promise
     }
 
     cancelAction() {
