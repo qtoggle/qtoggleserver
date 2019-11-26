@@ -291,7 +291,8 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             }
 
             if (MASTER_FIELDS.indexOf(fieldName) >= 0) {
-                logger.debug(`updating device "${deviceName}" master attribute "${fieldName}" to ${JSON.stringify(value)}`)
+                logger.debug(`updating device "${deviceName}" master attribute ` +
+                             `${fieldName}" to ${JSON.stringify(value)}`)
                 masterAttrsChanged = true
 
                 if (fieldName === 'enabled' && value && !devicePermanentlyOffline) {
@@ -387,8 +388,8 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
 
                 }).then(function () {
 
-                    /* Attributes with reconnect flag will probably restart/reset the device, therefore we first wait for it
-                     * to go offline and then to come back online */
+                    /* Attributes with reconnect flag will probably restart/reset the device, therefore we first wait
+                     * for it to go offline and then to come back online */
 
                     if (!willReconnect) {
                         return

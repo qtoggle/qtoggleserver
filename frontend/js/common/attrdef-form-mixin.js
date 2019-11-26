@@ -48,7 +48,6 @@ export default Mixin((superclass = Object) => {
 
                     case 'number': {
                         let count = 1e6 /* Some large number */
-                        let decimals = 0
                         let step = def.step
 
                         if (def.integer) {
@@ -59,10 +58,6 @@ export default Mixin((superclass = Object) => {
                         else { /* Generic float value */
                             if (step == null) {
                                 step = 0.01
-                            }
-                            let stepStr = String(step)
-                            if (stepStr.indexOf('.') >= 0) {
-                                decimals = stepStr.length - stepStr.indexOf('.') - 1
                             }
                         }
 
