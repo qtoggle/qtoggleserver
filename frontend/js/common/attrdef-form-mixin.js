@@ -25,7 +25,10 @@ export default Mixin((superclass = Object) => {
                 label: def.display_name || StringUtils.title(name.replace(new RegExp('[^a-z0-9]', 'ig'), ' '))
             }
 
-            if (def.choices && def.modifiable) {
+            if (def.field) {
+                Object.assign(field, def.field)
+            }
+            else if (def.choices && def.modifiable) {
                 field.class = ComboField
                 field.choices = def.choices.map(function (c) {
                     if (ObjectUtils.isObject(c)) {
@@ -118,17 +121,7 @@ export default Mixin((superclass = Object) => {
                     }
 
                     case 'string': {
-                        if (name.indexOf('password') >= 0) {
-                            field.class = PasswordField
-                            field.autocomplete = false
-                            field.clearEnabled = true
-                            field.clearPlaceholder = true
-                            field.placeholder = `(${gettext('hidden')})`
-                        }
-                        else {
-                            field.class = TextField
-                        }
-
+                        field.class = TextField
                         field.continuousChange = true
 
                         field.validate = function (value) {

@@ -4,6 +4,7 @@ import Logger from '$qui/lib/logger.module.js'
 import {AssertionError}  from '$qui/base/errors.js'
 import {gettext}         from '$qui/base/i18n.js'
 import Config            from '$qui/config.js'
+import {PasswordField}   from '$qui/forms/common-fields.js'
 import * as AJAX         from '$qui/utils/ajax.js'
 import * as Crypto       from '$qui/utils/crypto.js'
 import * as DateUtils    from '$qui/utils/date.js'
@@ -122,7 +123,14 @@ export const STD_DEVICE_ATTRDEFS = {
         standard: true,
         showAnyway: true,
         separator: true,
-        order: 160
+        order: 160,
+        field: {
+            class: PasswordField,
+            autocomplete: false,
+            clearEnabled: true,
+            clearPlaceholder: true,
+            placeholder: `(${gettext('hidden')})`
+        }
     },
     normal_password: {
         display_name: gettext('Normal Password'),
@@ -133,7 +141,14 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: true,
         standard: true,
         showAnyway: true,
-        order: 170
+        order: 170,
+        field: {
+            class: PasswordField,
+            autocomplete: false,
+            clearEnabled: true,
+            clearPlaceholder: true,
+            placeholder: `(${gettext('hidden')})`
+        }
     },
     viewonly_password: {
         display_name: gettext('View-only Password'),
@@ -144,7 +159,14 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: true,
         standard: true,
         showAnyway: true,
-        order: 180
+        order: 180,
+        field: {
+            class: PasswordField,
+            autocomplete: false,
+            clearEnabled: true,
+            clearPlaceholder: true,
+            placeholder: `(${gettext('hidden')})`
+        }
     },
     date: {
         display_name: gettext('System Date/Time'),
@@ -177,7 +199,13 @@ export const STD_DEVICE_ATTRDEFS = {
         regex: '^(([^:]{0,32}:?)|([^:]{0,32}:[^:]{0,64}:?)|([^:]{0,32}:[^:]{0,64}:[0-9a-fA-F]{12}))$',
         optional: true,
         standard: true,
-        order: 210
+        order: 210,
+        field: {
+            class: PasswordField,
+            autocomplete: false,
+            clearEnabled: true,
+            placeholder: `${gettext('network')}:${gettext('password')}`
+        }
     },
     network_ip: {
         display_name: gettext('IP Configuration'),
