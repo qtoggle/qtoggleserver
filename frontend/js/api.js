@@ -5,6 +5,7 @@ import {AssertionError}  from '$qui/base/errors.js'
 import {gettext}         from '$qui/base/i18n.js'
 import Config            from '$qui/config.js'
 import {PasswordField}   from '$qui/forms/common-fields.js'
+import {TextField}       from '$qui/forms/common-fields.js'
 import * as AJAX         from '$qui/utils/ajax.js'
 import * as Crypto       from '$qui/utils/crypto.js'
 import * as DateUtils    from '$qui/utils/date.js'
@@ -218,7 +219,12 @@ export const STD_DEVICE_ATTRDEFS = {
                 '\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$'),
         optional: true,
         standard: true,
-        order: 220
+        order: 220,
+        field: {
+            class: TextField,
+            autocomplete: false,
+            placeholder: `ip/${gettext('mask')}:${gettext('gateway')}:dns`
+        }
     },
     battery_level: {
         display_name: gettext('Battery Level'),
