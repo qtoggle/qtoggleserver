@@ -523,6 +523,11 @@ const KNOWN_ERRORS = [
     },
     {
         status: 400,
+        rex: new RegExp('^invalid value$'),
+        pretty: gettext('Invalid port value.')
+    },
+    {
+        status: 400,
         rex: new RegExp('^no such version$'),
         pretty: gettext('Firmware version not available.')
     },

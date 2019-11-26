@@ -144,7 +144,7 @@ async def patch_port_value(request, port_id, params):
     if port is None:
         raise core_api.APIError(404, 'no such port')
 
-    core_api_schema.validate(params, port.get_value_schema())
+    core_api_schema.validate(params, port.get_value_schema(), invalid_request_msg='invalid value')
 
     value = params
 
