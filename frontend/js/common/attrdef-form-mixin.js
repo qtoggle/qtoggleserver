@@ -1,13 +1,17 @@
-import {gettext}                  from '$qui/base/i18n.js'
-import {Mixin}                    from '$qui/base/mixwith.js'
-import {
-    CheckField, ComboField, LabelsField, NumericField, PasswordField, SliderField, TextField, UpDownField
-}                                 from '$qui/forms/common-fields.js'
-import {ValidationError}          from '$qui/forms/forms.js'
-import * as ArrayUtils            from '$qui/utils/array.js'
-import * as HTML                  from '$qui/utils/html.js'
-import * as ObjectUtils           from '$qui/utils/object.js'
-import * as StringUtils           from '$qui/utils/string.js'
+
+import {gettext}         from '$qui/base/i18n.js'
+import {Mixin}           from '$qui/base/mixwith.js'
+import {CheckField}      from '$qui/forms/common-fields.js'
+import {ComboField}      from '$qui/forms/common-fields.js'
+import {LabelsField}     from '$qui/forms/common-fields.js'
+import {NumericField}    from '$qui/forms/common-fields.js'
+import {SliderField}     from '$qui/forms/common-fields.js'
+import {TextField}       from '$qui/forms/common-fields.js'
+import {ValidationError} from '$qui/forms/forms.js'
+import * as ArrayUtils   from '$qui/utils/array.js'
+import * as HTML         from '$qui/utils/html.js'
+import * as ObjectUtils  from '$qui/utils/object.js'
+import * as StringUtils  from '$qui/utils/string.js'
 
 
 export default Mixin((superclass = Object) => {
@@ -25,7 +29,10 @@ export default Mixin((superclass = Object) => {
                 label: def.display_name || StringUtils.title(name.replace(new RegExp('[^a-z0-9]', 'ig'), ' '))
             }
 
-            if (def.choices && def.modifiable) {
+            if (def.field) {
+                Object.assign(field, def.field)
+            }
+            else if (def.choices && def.modifiable) {
                 field.class = ComboField
                 field.choices = def.choices.map(function (c) {
                     if (ObjectUtils.isObject(c)) {
@@ -44,9 +51,7 @@ export default Mixin((superclass = Object) => {
                     }
 
                     case 'number': {
-                        let count = 1000
-                        /* Some large number */
-                        let decimals = 0
+                        let count = 1e6 /* Some large number */
                         let step = def.step
 
                         if (def.integer) {
@@ -58,35 +63,25 @@ export default Mixin((superclass = Object) => {
                             if (step == null) {
                                 step = 0.01
                             }
-                            let stepStr = String(step)
-                            if (stepStr.indexOf('.') >= 0) {
-                                decimals = stepStr.length - stepStr.indexOf('.') - 1
-                            }
                         }
 
-                        if (def.min != null && def.max) {
-                            count = (def.max - def.min) / step
+                        if (def.min != null && def.max != null) {
+                            count = (def.max - def.min) / step + 1
                         }
 
-                        if (count <= 11) {
+                        if (count <= 101 && def.modifiable) {
                             field.class = SliderField
                             let ticks = []
                             for (let v = def.min; v <= def.max; v += step) {
                                 ticks.push({value: v, label: v})
                             }
                             field.ticks = ticks
+                            field.ticksStep = Math.round((count - 1) / 5)
                             field.snapMode = 1
-                            field.equidistant = true
-                        }
-                        else if (count <= 101) {
-                            field.class = UpDownField
-                            field.min = def.min
-                            field.max = def.max
-                            field.step = step
-                            field.decimals = decimals
                         }
                         else { /* Many choices */
                             field.class = NumericField
+                            field.continuousChange = true
 
                             field.validate = function (value) {
                                 if (!value && !def.required) {
@@ -125,14 +120,8 @@ export default Mixin((superclass = Object) => {
                     }
 
                     case 'string': {
-                        if (name.indexOf('password') >= 0) {
-                            field.class = PasswordField
-                            field.autocomplete = false
-                            field.clearEnabled = true
-                        }
-                        else {
-                            field.class = TextField
-                        }
+                        field.class = TextField
+                        field.continuousChange = true
 
                         field.validate = function (value) {
                             if (def.min != null && value.length < def.min) {
@@ -192,14 +181,17 @@ export default Mixin((superclass = Object) => {
             return field
         }
 
-        fieldsFromAttrdefs(attrdefs, extraFieldOptions = {}, initialData = {}, provisioning = [], index = null) {
+        fieldsFromAttrdefs({
+            attrdefs = {}, extraFieldOptions = {}, initialData = {}, provisioning = [], noUpdated = [], startIndex = 0,
+            fieldChangeWarnings = true
+        } = {}) {
             let defEntries = ArrayUtils.sortKey(Object.entries(attrdefs), e => e[0])
             ArrayUtils.stableSortKey(defEntries, e => e[1].order || 1000)
 
+            let newValues = {}
+
             let notKnown = false
-            let focusedField = null
-            let lastIndex = index != null ? index - 1 : this.getFields().length - 1
-            defEntries.forEach(function (entry) {
+            defEntries.forEach(function (entry, index) {
                 let name = entry[0]
                 let def = ObjectUtils.copy(entry[1], /* deep = */ true)
 
@@ -211,58 +203,51 @@ export default Mixin((superclass = Object) => {
                     notKnown = true
                 }
 
-                /* Remember old field state */
-                let wasFocused = false
-                let wasApplied = false
-                let oldField = this.getField(`attr_${name}`)
-                let oldErrorMessage = null
-                let oldWarningMessage = null
-                let oldIndex = lastIndex + 1
-                if (oldField) {
-                    wasFocused = oldField.isFocused()
-                    wasApplied = oldField.isApplied()
-                    oldErrorMessage = oldField.hasError() ? oldField.getErrorMessage() : null
-                    oldWarningMessage = oldField.hasWarning() ? oldField.getWarningMessage() : null
-                    oldIndex = this.getFieldIndex(oldField)
-
-                    this.removeField(`attr_${name}`)
-                }
-
+                /* Old field state */
+                let field = this.getField(`attr_${name}`)
                 let fieldAttrs = this.fieldAttrsFromAttrdef(name, def)
                 if (name in extraFieldOptions) {
                     Object.assign(fieldAttrs, extraFieldOptions[name])
                 }
 
+                let newValue = def.valueToUI(initialData[name])
                 if (name in initialData) {
-                    fieldAttrs.initialValue = def.valueToUI(initialData[name])
+                    fieldAttrs.initialValue = newValue
                 }
 
-                let FieldClass = fieldAttrs.class
-                let field = new FieldClass(fieldAttrs)
-                this.addField(oldIndex, field)
-                lastIndex = this.getFieldIndex(field)
+                if (field) {
+                    let oldValue = field.getValue()
+                    if (oldValue !== newValue) {
+                        if (def.modifiable && noUpdated.indexOf(name) < 0 && fieldChangeWarnings) {
+                            if (!field.hasError() && !field.hasWarning()) {
+                                field.setWarning(gettext('Value has been updated in the meantime.'))
+                            }
+                        }
+                        else {
+                            newValues[field.getName()] = newValue
+                        }
+                    }
 
-                /* Restore field state */
-                if (wasFocused) {
-                    focusedField = field
+                    field.setLabel(fieldAttrs.label)
+                    field.setDescription(fieldAttrs.description)
+                    field.setUnit(fieldAttrs.unit)
+                    field.setSeparator(!!fieldAttrs.separator)
+                    field.setRequired(!!fieldAttrs.required)
+                    field.setReadonly(!!fieldAttrs.readonly)
+                }
+                else {
+                    let FieldClass = fieldAttrs.class
+                    field = new FieldClass(fieldAttrs)
+                    this.addField(startIndex + index, field)
                 }
 
-                if (oldErrorMessage) {
-                    field.setError(oldErrorMessage)
-                }
-                else if (oldWarningMessage) {
-                    field.setWarning(oldWarningMessage)
-                }
-                else if (provisioning.indexOf(name) >= 0) {
+                if (provisioning.indexOf(name) >= 0) {
                     field.setWarning(gettext('Value will be provisioned when device gets back online.'))
-                }
-                else if (wasApplied) {
-                    field.setApplied()
                 }
 
             }, this)
 
-            /* Remove fields that are no longer defined */
+            /* Mark fields that are no longer defined as removed */
             this.getFields().forEach(function (field) {
                 let name = field.getName()
 
@@ -276,8 +261,9 @@ export default Mixin((superclass = Object) => {
                 this.removeField(name)
             }, this)
 
-            if (focusedField) {
-                focusedField.focus()
+            /* Update with new values */
+            if (Object.keys(newValues).length) {
+                this.setData(newValues)
             }
         }
 

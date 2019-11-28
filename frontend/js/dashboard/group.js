@@ -1,3 +1,4 @@
+
 import {gettext}           from '$qui/base/i18n.js'
 import {mix}               from '$qui/base/mixwith.js'
 import {TextField}         from '$qui/forms/common-fields.js'
@@ -231,7 +232,7 @@ export default class Group extends mix(PageList).with(PanelGroupCompositeMixin) 
     }
 
     onAdd() {
-        this.pushPage(this.makeAddForm())
+        return this.pushPage(this.makeAddForm())
     }
 
     /**
@@ -258,7 +259,7 @@ export default class Group extends mix(PageList).with(PanelGroupCompositeMixin) 
     }
 
     onSelectionChange(item) {
-        this.pushPage(item.getData())
+        return this.pushPage(item.getData())
     }
 
     onCloseNext(next) {

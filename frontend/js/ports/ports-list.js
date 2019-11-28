@@ -1,3 +1,4 @@
+
 import {AssertionError}    from '$qui/base/errors.js'
 import {gettext}           from '$qui/base/i18n.js'
 import Config              from '$qui/config.js'
@@ -6,6 +7,7 @@ import {OptionsForm}       from '$qui/forms/common-forms.js'
 import {IconLabelListItem} from '$qui/lists/common-items.js'
 import {PageList}          from '$qui/lists/common-lists.js'
 import * as ArrayUtils     from '$qui/utils/array.js'
+import {asap}              from '$qui/utils/misc.js'
 
 import * as Cache from '$app/cache.js'
 import * as Utils from '$app/utils.js'
@@ -44,7 +46,6 @@ class PortsListOptionsForm extends OptionsForm {
                 show_disabled_ports: Cache.getPrefs('ports.show_disabled_ports', DEFAULT_SHOW_DISABLED_PORTS)
             }
         })
-
     }
 
     init() {
@@ -106,6 +107,7 @@ export default class PortsList extends PageList {
         }
 
         this._deviceName = deviceName
+        this._updateUIAsapHandle = null
         this.portForm = null
 
         this.setTitle(title)
@@ -113,6 +115,22 @@ export default class PortsList extends PageList {
 
     init() {
         this.updateUI()
+    }
+
+    /**
+     * Call updateUI asap, deduplicating calls.
+     */
+    updateUIAsap() {
+        if (this._updateUIAsapHandle != null) {
+            clearTimeout(this._updateUIAsapHandle)
+        }
+
+        this._updateUIAsapHandle = asap(function () {
+
+            this._updateUIAsapHandle = null
+            this.updateUI()
+
+        }.bind(this))
     }
 
     updateUI() {
@@ -194,11 +212,11 @@ export default class PortsList extends PageList {
     }
 
     onAdd() {
-        this.pushPage(this.makeAddPortForm(this._deviceName))
+        return this.pushPage(this.makeAddPortForm(this._deviceName))
     }
 
     onSelectionChange(newItem, newIndex, oldItem, oldIndex) {
-        this.pushPage(this.makePortForm(newItem.getData()))
+        return this.pushPage(this.makePortForm(newItem.getData()))
     }
 
     onCloseNext(next) {

@@ -1,9 +1,11 @@
-import {gettext}                       from '$qui/base/i18n.js'
-import {ChoiceButtonsField, TextField} from '$qui/forms/common-fields.js'
-import {PageForm}                      from '$qui/forms/common-forms.js'
-import FormButton                      from '$qui/forms/form-button.js'
-import {ValidationError}               from '$qui/forms/forms.js'
-import * as Window                     from '$qui/window.js'
+
+import {gettext}            from '$qui/base/i18n.js'
+import {ChoiceButtonsField} from '$qui/forms/common-fields.js'
+import {TextField}          from '$qui/forms/common-fields.js'
+import {PageForm}           from '$qui/forms/common-forms.js'
+import FormButton           from '$qui/forms/form-button.js'
+import {ValidationError}    from '$qui/forms/forms.js'
+import * as Window          from '$qui/window.js'
 
 import Panel          from './panel.js'
 import Group          from './group.js'

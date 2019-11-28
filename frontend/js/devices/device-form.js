@@ -1,31 +1,35 @@
-import {AssertionError, TimeoutError} from '$qui/base/errors.js'
-import {gettext}                      from '$qui/base/i18n.js'
-import {mix}                          from '$qui/base/mixwith.js'
-import {
-    CheckField, ComboField, PushButtonField,
-    TextField, CompositeField
-} from '$qui/forms/common-fields.js'
-import {PageForm}                     from '$qui/forms/common-forms.js'
-import FormButton                     from '$qui/forms/form-button.js'
-import {ConfirmMessageForm}           from '$qui/messages/common-message-forms.js'
-import * as Messages                  from '$qui/messages/messages.js'
-import * as Toast                     from '$qui/messages/toast.js'
-import * as Theme                     from '$qui/theme.js'
-import * as DateUtils                 from '$qui/utils/date.js'
-import * as ObjectUtils               from '$qui/utils/object.js'
-import * as PromiseUtils              from '$qui/utils/promise.js'
-import * as StringUtils               from '$qui/utils/string.js'
-import URL                            from '$qui/utils/url.js'
-import * as Window                    from '$qui/window.js'
 
-import * as API                                  from '$app/api.js'
-import * as Cache                                from '$app/cache.js'
-import AttrdefFormMixin                          from '$app/common/attrdef-form-mixin.js'
-import * as Common                               from '$app/common/common.js'
-import ProvisioningForm                          from '$app/common/provisioning-form.js'
-import RebootDeviceMixin                         from '$app/common/reboot-device-mixin.js'
-import UpdateFirmwareForm                        from '$app/common/update-firmware-form.js'
-import WaitDeviceMixin                           from '$app/common/wait-device-mixin.js'
+import {AssertionError}           from '$qui/base/errors.js'
+import {TimeoutError}             from '$qui/base/errors.js'
+import {gettext}                  from '$qui/base/i18n.js'
+import {mix}                      from '$qui/base/mixwith.js'
+import {CheckField}               from '$qui/forms/common-fields.js'
+import {ComboField}               from '$qui/forms/common-fields.js'
+import {PushButtonField}          from '$qui/forms/common-fields.js'
+import {TextField}                from '$qui/forms/common-fields.js'
+import {CompositeField}           from '$qui/forms/common-fields.js'
+import {PageForm}                 from '$qui/forms/common-forms.js'
+import FormButton                 from '$qui/forms/form-button.js'
+import {ConfirmMessageForm}       from '$qui/messages/common-message-forms.js'
+import {StickyConfirmMessageForm} from '$qui/messages/common-message-forms.js'
+import * as Messages              from '$qui/messages/messages.js'
+import * as Toast                 from '$qui/messages/toast.js'
+import * as Theme                 from '$qui/theme.js'
+import * as DateUtils             from '$qui/utils/date.js'
+import * as ObjectUtils           from '$qui/utils/object.js'
+import * as PromiseUtils          from '$qui/utils/promise.js'
+import * as StringUtils           from '$qui/utils/string.js'
+import URL                        from '$qui/utils/url.js'
+import * as Window                from '$qui/window.js'
+
+import * as API           from '$app/api.js'
+import * as Cache         from '$app/cache.js'
+import AttrdefFormMixin   from '$app/common/attrdef-form-mixin.js'
+import * as Common        from '$app/common/common.js'
+import ProvisioningForm   from '$app/common/provisioning-form.js'
+import RebootDeviceMixin  from '$app/common/reboot-device-mixin.js'
+import UpdateFirmwareForm from '$app/common/update-firmware-form.js'
+import WaitDeviceMixin    from '$app/common/wait-device-mixin.js'
 
 import * as Devices from './devices.js'
 
@@ -56,7 +60,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             title: '',
             icon: Devices.DEVICE_ICON,
             closeOnApply: false,
-            continuousValidation: true,
+            preventUnappliedClose: true,
 
             fields: [
                 new TextField({
@@ -86,7 +90,8 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             ],
             buttons: [
                 new FormButton({id: 'remove', caption: gettext('Remove'), style: 'danger'}),
-                new FormButton({id: 'close', caption: gettext('Close'), cancel: true})
+                new FormButton({id: 'close', caption: gettext('Close'), cancel: true}),
+                new FormButton({id: 'apply', caption: gettext('Apply'), def: true})
             ]
         })
 
@@ -102,6 +107,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
     }
 
     load() {
+        /* Explicitly query attributes that don't normally generate events, directly from the slave device */
         API.setSlave(this.getDeviceName())
         return API.getDevice().then(function (attrs) {
             attrs = ObjectUtils.filter(attrs, n => (API.NO_EVENT_DEVICE_ATTRS.indexOf(n) >= 0))
@@ -113,7 +119,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
     /**
      * Updates the entire form (fields & values) from the corresponding device.
      */
-    updateUI() {
+    updateUI(fieldChangeWarnings = true) {
         let device = Cache.getSlaveDevice(this.getDeviceName())
         if (!device) {
             throw new AssertionError(`Device with name ${this.getDeviceName()} not found in cache`)
@@ -173,17 +179,18 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                 }
             })
 
-            this.fieldsFromAttrdefs(
-                this._fullAttrdefs,
-                /* extraFieldOptions = */ undefined,
-                /* initialData = */ Common.preprocessDeviceAttrs(device.attrs),
-                /* provisioning = */ device.provisioning || [],
-                /* index = */ this.getFieldIndex('last_sync') + 1
-            )
+            this.fieldsFromAttrdefs({
+                attrdefs: this._fullAttrdefs,
+                initialData: Common.preprocessDeviceAttrs(device.attrs),
+                provisioning: device.provisioning || [],
+                noUpdated: API.NO_EVENT_DEVICE_ATTRS,
+                startIndex: this.getFieldIndex('last_sync') + 1,
+                fieldChangeWarnings: fieldChangeWarnings
+            })
         }
         else {
             /* Clear all attribute fields */
-            this.fieldsFromAttrdefs({})
+            this.fieldsFromAttrdefs()
         }
 
         if (!this._staticFieldsAdded) {
@@ -207,13 +214,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                     caption: gettext('Reboot'),
                     style: 'highlight',
                     callback(form) {
-                        let device = Cache.getSlaveDevice(form.getDeviceName())
-                        if (!device) {
-                            throw new AssertionError(`Device with name ${form.getDeviceName()} not found in cache`)
-                        }
-
-                        let displayName = device.display_name || device.name
-                        form.pushPage(form.confirmAndReboot(device.name, displayName, logger))
+                        form.pushPage(form.makeConfirmAndRebootForm())
                     }
                 }),
                 new PushButtonField({
@@ -271,118 +272,167 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         }.bind(this))
     }
 
-    applyField(value, fieldName) {
+    applyData(data) {
         let device = Cache.getSlaveDevice(this.getDeviceName())
         if (!device) {
             throw new AssertionError(`Device with name ${this.getDeviceName()} not found in cache`)
         }
 
-        /* Always work on copy */
-        device = ObjectUtils.copy(device, /* deep = */ true)
-
         // TODO use device.isPermanentlyOffline()
         let devicePermanentlyOffline = device.poll_interval === 0 && !device.listen_enabled
-
         let deviceName = this.getDeviceName()
 
-        if (MASTER_FIELDS.indexOf(fieldName) >= 0) {
-            logger.debug(`updating device master property "${deviceName}.{fieldName}" to ${JSON.stringify(value)}`)
-            device[fieldName] = value
+        let newAttrs = {}
+        let masterAttrsChanged = false
+        let changedFields = this.getChangedFields()
+        let justEnabled = false
+        let willReconnect = false
 
-            if (fieldName === 'enabled' && value && !devicePermanentlyOffline) {
-                this.startWaitingDeviceOnline()
-            }
-
-            return API.patchSlaveDevice(
-                deviceName,
-                device.enabled,
-                device.poll_interval,
-                device.listen_enabled
-            ).then(function () {
-
-                logger.debug(`device master property "${deviceName}.${fieldName}" successfully updated`)
-
-            }).catch(function (error) {
-
-                logger.errorStack(`failed to update device master property "${deviceName}.${fieldName}"`, error)
-                if (this.isWaitingDeviceOnline()) {
-                    this.cancelWaitingDeviceOnline()
-                }
-
-                throw error
-
-            }.bind(this))
-        }
-        else { /* A slave device attribute was updated */
-            if (!this._fullAttrdefs) {
-                return /* Device offline */
-            }
-
-            let name = fieldName.substring(5)
-            if (!(name in this._fullAttrdefs) || !this._fullAttrdefs[name].modifiable) {
+        changedFields.forEach(function (fieldName) {
+            let value = data[fieldName]
+            if (value == null) {
                 return
             }
 
-            logger.debug(`updating device attribute "${deviceName}.${name}" to ${JSON.stringify(value)}`)
+            if (MASTER_FIELDS.indexOf(fieldName) >= 0) {
+                logger.debug(`updating device "${deviceName}" master attribute ` +
+                             `${fieldName}" to ${JSON.stringify(value)}`)
+                masterAttrsChanged = true
 
-            let newAttrs = {}
-            newAttrs[name] = value
-
-            if (name === 'name') {
-                /* Device renamed, remember new name for reopening */
-                Devices.setRenamedDeviceName(value)
+                if (fieldName === 'enabled' && value && !devicePermanentlyOffline) {
+                    logger.debug(`device "${deviceName}" has just been enabled`)
+                    justEnabled = true
+                }
             }
+            else if (fieldName.startsWith('attr_')) {
+                let name = fieldName.substring(5)
 
-            API.setSlave(deviceName)
-            return API.patchDevice(newAttrs).then(function () {
-
-                logger.debug(`device attribute "${deviceName}.${name}" successfully updated`)
-
-            }).catch(function (error) {
-
-                logger.errorStack(`failed to update device attribute "${deviceName}.${name}"`, error)
-                throw error
-
-            }).then(function () {
-
-                /* Attributes with reconnect flag will probably restart/reset the device, therefore we first wait for it
-                 * to go offline and then to come back online */
-
-                if (!this._fullAttrdefs[name].reconnect) {
+                /* Ignore non-modifiable or undefined attributes */
+                if (!(name in this._fullAttrdefs) || !this._fullAttrdefs[name].modifiable) {
                     return
                 }
 
-                this.setProgress()
+                logger.debug(`updating device "${deviceName}" attribute "${name}" to ${JSON.stringify(value)}`)
+                newAttrs[name] = value
 
-                /* Following promise chain is intentionally not part of the outer chain, because by the time it
-                 * resolves, the field will no longer be part of the DOM */
-                Promise.resolve().then(function () {
+                if (name === 'name') {
+                    /* Device renamed, remember new name for reopening */
+                    logger.debug(`device "${deviceName}" renamed to "${value}"`)
+                    Devices.setRenamedDeviceName(value)
+                }
 
-                    return PromiseUtils.withTimeout(this.waitDeviceOffline(), Common.GO_OFFLINE_TIMEOUT * 1000)
+                if (this._fullAttrdefs[name].reconnect) {
+                    willReconnect = true
+                }
+            }
+            else {
+                logger.warn(`unknown device form field ${fieldName}`)
+            }
+        }, this)
 
-                }.bind(this)).then(function () {
+        if (willReconnect) {
+            logger.debug(`device "${deviceName}" will reconnect`)
+        }
 
-                    return PromiseUtils.withTimeout(this.waitDeviceOnline(), Common.COME_ONLINE_TIMEOUT * 1000)
+        let promise = Promise.resolve()
+
+        if ('name' in newAttrs) {
+            let msg = gettext('Are you sure you want to rename the device?')
+            promise = new StickyConfirmMessageForm({message: msg}).show().asPromise()
+        }
+
+        if (willReconnect) {
+            let msg = gettext('Device will reconnect. Are you sure?')
+            promise = new StickyConfirmMessageForm({message: msg}).show().asPromise()
+        }
+
+        if (masterAttrsChanged) {
+            promise = promise.then(function () {
+
+                return API.patchSlaveDevice(
+                    deviceName,
+                    data.enabled,
+                    data.poll_interval,
+                    data.listen_enabled
+                ).then(function () {
+
+                    logger.debug(`device "${deviceName}" master properties successfully updated for`)
+
+                    if (justEnabled) {
+                        this.startWaitingDeviceOnline()
+                    }
 
                 }.bind(this)).catch(function (error) {
 
-                    logger.errorStack(`failed to set device attribute "${deviceName}.${fieldName}"`, error)
+                    logger.errorStack(`failed to update device "${deviceName}" master properties`, error)
 
-                    if (error instanceof TimeoutError) {
-                        error = new Error(gettext('Timeout waiting for device to reconnect.'))
+                    if (this.isWaitingDeviceOnline()) {
+                        this.cancelWaitingDeviceOnline()
                     }
 
-                    this.cancelWaitingDevice()
-                    this.setError(error)
-
-                }.bind(this)).then(function () {
-
-                    this.clearProgress()
+                    throw error
 
                 }.bind(this))
-
-            }.bind(this))
+            })
         }
+
+        if (this._fullAttrdefs && Object.keys(newAttrs).length) { /* Device online */
+            API.setSlave(deviceName)
+
+            promise = promise.then(function () {
+
+                return API.patchDevice(newAttrs).then(function () {
+
+                    logger.debug(`device "${deviceName}" attributes successfully updated`)
+
+                }).catch(function (error) {
+
+                    logger.errorStack(`failed to update device "${deviceName}" attributes`, error)
+                    throw error
+
+                }).then(function () {
+
+                    /* Attributes with reconnect flag will probably restart/reset the device, therefore we first wait
+                     * for it to go offline and then to come back online */
+
+                    if (!willReconnect) {
+                        return
+                    }
+
+                    this.setProgress()
+
+                    /* Following promise chain is intentionally not part of the outer chain, because by the time it
+                     * resolves, the field will no longer be part of the DOM */
+                    return Promise.resolve().then(function () {
+
+                        return PromiseUtils.withTimeout(this.waitDeviceOffline(), Common.GO_OFFLINE_TIMEOUT * 1000)
+
+                    }.bind(this)).then(function () {
+
+                        return PromiseUtils.withTimeout(this.waitDeviceOnline(), Common.COME_ONLINE_TIMEOUT * 1000)
+
+                    }.bind(this)).catch(function (error) {
+
+                        logger.errorStack(`error while waiting for device "${deviceName}" to come online`, error)
+
+                        if (error instanceof TimeoutError) {
+                            error = new Error(gettext('Timeout waiting for device to reconnect.'))
+                        }
+
+                        this.cancelWaitingDevice()
+                        this.setError(error)
+
+                    }.bind(this)).then(function () {
+
+                        this.clearProgress()
+
+                    }.bind(this))
+
+                }.bind(this))
+            })
+        }
+
+        return promise
     }
 
     onPush() {
@@ -413,6 +463,9 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
 
             case 'provisioning':
                 return this.makeProvisioningForm()
+
+            case 'reboot':
+                return this.makeConfirmAndRebootForm()
         }
     }
 
@@ -432,16 +485,16 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             {object: Messages.wrapLabel(device.attrs.display_name || device.name)}
         )
 
-        return ConfirmMessageForm.show(
-            msg,
-            /* onYes = */ function () {
+        return new ConfirmMessageForm({
+            message: msg,
+            onYes: function () {
 
                 logger.debug(`removing device "${device.name}" at url ${deviceURL}`)
 
                 API.deleteSlaveDevice(device.name).then(function () {
 
                     logger.debug(`device "${device.name}" at url ${deviceURL} successfully removed`)
-                    this.close()
+                    this.close(/* force = */ true)
 
                 }.bind(this)).catch(function (error) {
 
@@ -451,8 +504,8 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                 })
 
             }.bind(this),
-            /* onNo = */ null, /* pathId = */ 'remove'
-        )
+            pathId: 'remove'
+        })
     }
 
     /**
@@ -467,6 +520,17 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
      */
     makeProvisioningForm() {
         return new ProvisioningForm(this.getDeviceName())
+    }
+
+    makeConfirmAndRebootForm() {
+        let device = Cache.getSlaveDevice(this.getDeviceName())
+        if (!device) {
+            throw new AssertionError(`Device with name ${this.getDeviceName()} not found in cache`)
+        }
+
+        let displayName = device.display_name || device.name
+
+        return this.confirmAndReboot(device.name, displayName, logger)
     }
 
 }

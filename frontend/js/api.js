@@ -4,6 +4,8 @@ import Logger from '$qui/lib/logger.module.js'
 import {AssertionError}  from '$qui/base/errors.js'
 import {gettext}         from '$qui/base/i18n.js'
 import Config            from '$qui/config.js'
+import {PasswordField}   from '$qui/forms/common-fields.js'
+import {TextField}       from '$qui/forms/common-fields.js'
 import * as AJAX         from '$qui/utils/ajax.js'
 import * as Crypto       from '$qui/utils/crypto.js'
 import * as DateUtils    from '$qui/utils/date.js'
@@ -122,7 +124,15 @@ export const STD_DEVICE_ATTRDEFS = {
         standard: true,
         showAnyway: true,
         separator: true,
-        order: 160
+        order: 160,
+        field: {
+            class: PasswordField,
+            autocomplete: false,
+            clearEnabled: true,
+            clearPlaceholder: true,
+            continuousChange: true,
+            placeholder: `(${gettext('hidden')})`
+        }
     },
     normal_password: {
         display_name: gettext('Normal Password'),
@@ -133,7 +143,15 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: true,
         standard: true,
         showAnyway: true,
-        order: 170
+        order: 170,
+        field: {
+            class: PasswordField,
+            autocomplete: false,
+            clearEnabled: true,
+            clearPlaceholder: true,
+            continuousChange: true,
+            placeholder: `(${gettext('hidden')})`
+        }
     },
     viewonly_password: {
         display_name: gettext('View-only Password'),
@@ -144,7 +162,15 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: true,
         standard: true,
         showAnyway: true,
-        order: 180
+        order: 180,
+        field: {
+            class: PasswordField,
+            autocomplete: false,
+            clearEnabled: true,
+            clearPlaceholder: true,
+            continuousChange: true,
+            placeholder: `(${gettext('hidden')})`
+        }
     },
     date: {
         display_name: gettext('System Date/Time'),
@@ -177,7 +203,15 @@ export const STD_DEVICE_ATTRDEFS = {
         regex: '^(([^:]{0,32}:?)|([^:]{0,32}:[^:]{0,64}:?)|([^:]{0,32}:[^:]{0,64}:[0-9a-fA-F]{12}))$',
         optional: true,
         standard: true,
-        order: 210
+        order: 210,
+        field: {
+            class: PasswordField,
+            autocomplete: false,
+            clearEnabled: true,
+            revealOnFocus: true,
+            continuousChange: true,
+            placeholder: `${gettext('network')}:${gettext('password')}`
+        }
     },
     network_ip: {
         display_name: gettext('IP Configuration'),
@@ -190,7 +224,13 @@ export const STD_DEVICE_ATTRDEFS = {
                 '\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$'),
         optional: true,
         standard: true,
-        order: 220
+        order: 220,
+        field: {
+            class: TextField,
+            autocomplete: false,
+            continuousChange: true,
+            placeholder: `ip/${gettext('mask')}:${gettext('gateway')}:dns`
+        }
     },
     battery_level: {
         display_name: gettext('Battery Level'),
@@ -523,6 +563,11 @@ const KNOWN_ERRORS = [
     },
     {
         status: 400,
+        rex: new RegExp('^invalid value$'),
+        pretty: gettext('Invalid port value.')
+    },
+    {
+        status: 400,
         rex: new RegExp('^no such version$'),
         pretty: gettext('Firmware version not available.')
     },
@@ -692,13 +737,15 @@ let accessLevelChangeListeners = []
  * @param {String} type the event type
  * @param {Object} params the event parameters
  * @param {Boolean} [expected] indicates that the event was expected
+ * @param {Boolean} [fake] indicates that the event was generated on the client side
  */
 export class Event {
 
-    constructor(type, params, expected) {
+    constructor(type, params, expected = false, fake = false) {
         this.type = type
         this.params = ObjectUtils.copy(params)
         this.expected = expected
+        this.fake = fake
     }
 
 
@@ -707,7 +754,7 @@ export class Event {
      * @returns {QToggle.API.Event} the cloned event
      */
     clone() {
-        return new Event(this.type, this.params, this.expected)
+        return new Event(this.type, this.params, this.expected, this.fake)
     }
 
 }
@@ -1072,6 +1119,8 @@ export function fakeServerEvent(type, params) {
     if (handle != null) {
         event.expected = true
     }
+
+    event.fake = true
 
     if (DEBUG_API_CALLS) {
         let bodyStr = JSON.stringify(event, null, 4).replace(new RegExp('\\n', 'g'), '\n   ')

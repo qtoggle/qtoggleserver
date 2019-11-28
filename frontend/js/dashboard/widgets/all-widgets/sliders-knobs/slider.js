@@ -4,7 +4,8 @@ import StockIcon from '$qui/icons/stock-icon.js'
 
 import * as Widgets from '$app/dashboard/widgets/widgets.js'
 
-import {ConfigForm as AnalogWidgetConfigForm, AnalogWidget} from '../analog-widget.js'
+import {ConfigForm as AnalogWidgetConfigForm} from '../analog-widget.js'
+import {AnalogWidget}                         from '../analog-widget.js'
 
 
 class ConfigForm extends AnalogWidgetConfigForm {

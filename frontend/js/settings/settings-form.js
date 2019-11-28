@@ -1,10 +1,18 @@
-import {gettext}                         from '$qui/base/i18n.js'
-import {mix}                             from '$qui/base/mixwith.js'
-import {PushButtonField, CompositeField} from '$qui/forms/common-fields.js'
-import {PageForm}                        from '$qui/forms/common-forms.js'
-import * as Theme                        from '$qui/theme.js'
-import * as ObjectUtils                  from '$qui/utils/object.js'
-import * as Window                       from '$qui/window.js'
+
+import {gettext}                  from '$qui/base/i18n.js'
+import {mix}                      from '$qui/base/mixwith.js'
+import {PushButtonField}          from '$qui/forms/common-fields.js'
+import {CompositeField}           from '$qui/forms/common-fields.js'
+import {PageForm}                 from '$qui/forms/common-forms.js'
+import {ErrorMapping}             from '$qui/forms/forms.js'
+import {ValidationError}          from '$qui/forms/forms.js'
+import FormButton                 from '$qui/forms/form-button.js'
+import {StickyConfirmMessageForm} from '$qui/messages/common-message-forms.js'
+import * as Theme                 from '$qui/theme.js'
+import * as ObjectUtils           from '$qui/utils/object.js'
+import * as PromiseUtils          from '$qui/utils/promise.js'
+import * as Window                from '$qui/window.js'
+import * as Toast                 from '$qui/messages/toast.js'
 
 import * as API           from '$app/api.js'
 import * as Cache         from '$app/cache.js'
@@ -15,8 +23,11 @@ import RebootDeviceMixin  from '$app/common/reboot-device-mixin.js'
 import UpdateFirmwareForm from '$app/common/update-firmware-form.js'
 import WaitDeviceMixin    from '$app/common/wait-device-mixin.js'
 
-import * as Settings    from './settings.js'
+import * as Settings from './settings.js'
 
+
+/* Attributes that trigger a window reload */
+const RELOAD_DEVICE_ATTRIBUTES = ['ui_theme']
 
 const logger = Settings.logger
 
@@ -31,7 +42,12 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
         super({
             title: gettext('Settings'),
             icon: Settings.WRENCH_ICON,
-            continuousValidation: true
+            closeOnApply: false,
+            preventUnappliedClose: true,
+
+            buttons: [
+                new FormButton({id: 'apply', caption: gettext('Apply'), def: true})
+            ]
         })
 
         this._fullAttrdefs = null
@@ -43,9 +59,9 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
     }
 
     /**
-     * Updates the entire form (fields & values) from device attributes.
+     * Updates the entire form (fields & values) from cached device attributes.
      */
-    updateUI() {
+    updateUI(fieldChangeWarnings = true) {
         /* Work on copy */
         let attrs = Cache.getMainDevice()
         let attrdefs = ObjectUtils.copy(attrs.definitions, /* deep = */ true)
@@ -89,12 +105,12 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
             }
         })
 
-        this.fieldsFromAttrdefs(
-            this._fullAttrdefs,
-            /* extraFieldOptions = */ undefined,
-            /* initialData = */ Common.preprocessDeviceAttrs(attrs),
-            /* provisioning = */ []
-        )
+        this.fieldsFromAttrdefs({
+            attrdefs: this._fullAttrdefs,
+            initialData: Common.preprocessDeviceAttrs(attrs),
+            noUpdated: API.NO_EVENT_DEVICE_ATTRS,
+            fieldChangeWarnings: fieldChangeWarnings
+        })
 
         if (!this._staticFieldsAdded) {
             this.addStaticFields()
@@ -117,9 +133,7 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
                     caption: gettext('Reboot'),
                     style: 'danger',
                     callback(form) {
-                        let mainDevice = Cache.getMainDevice()
-                        let displayName = mainDevice.display_name || mainDevice.name
-                        form.pushPage(form.confirmAndReboot(mainDevice.name, displayName, logger))
+                        form.pushPage(form.makeConfirmAndRebootForm())
                     }
                 }),
                 new PushButtonField({
@@ -155,39 +169,79 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
         }
     }
 
-    applyField(value, fieldName) {
-        if (!this._fullAttrdefs) {
-            return /* Not loaded */
-        }
+    applyData(data) {
+        let newAttrs = {}
+        let changedFields = this.getChangedFields()
 
-        let name = fieldName.substring(5)
-        if (!(name in this._fullAttrdefs) || !this._fullAttrdefs[name].modifiable) {
-            return
-        }
-
-        logger.debug(`updating device attribute "${name}" to ${JSON.stringify(value)}`)
-
-        let newAttrs = {[name]: value}
-
-        return API.patchDevice(newAttrs).then(function () {
-
-            logger.debug(`device attribute "${name}" successfully updated`)
-
-            if (name === 'admin_password' && API.getUsername() === 'admin') {
-                logger.debug('admin password also updated locally')
-                API.setPassword(value)
+        changedFields.forEach(function (fieldName) {
+            let value = data[fieldName]
+            if (value == null) {
+                return
             }
 
-        }).catch(function (error) {
+            /* We're interested only in attributes */
+            if (!fieldName.startsWith('attr_')) {
+                return
+            }
 
-            logger.errorStack(`failed to update device attribute "${name}"`, error)
-            throw error
+            let name = fieldName.substring(5)
 
-        })
+            /* Ignore non-modifiable or undefined attributes */
+            if (!(name in this._fullAttrdefs) || !this._fullAttrdefs[name].modifiable) {
+                return
+            }
+
+            logger.debug(`updating device attribute "${name}" to ${JSON.stringify(value)}`)
+            newAttrs[name] = value
+
+        }, this)
+
+        let promise = Promise.resolve()
+
+        if ('name' in newAttrs) {
+            let msg = gettext('Are you sure you want to rename the device?')
+            promise = new StickyConfirmMessageForm({message: msg}).show().asPromise()
+        }
+
+        if (Object.keys(newAttrs).length) {
+            promise = promise.then(function () {
+
+                return API.patchDevice(newAttrs).then(function () {
+
+                    logger.debug(`device attributes successfully updated`)
+                    Toast.info(gettext('Device has been updated.'))
+
+                    if ('admin_password' in newAttrs && API.getUsername() === 'admin') {
+                        logger.debug('admin password also updated locally')
+                        API.setPassword(newAttrs['admin_password'])
+                    }
+
+                    if (RELOAD_DEVICE_ATTRIBUTES.some(n => n in newAttrs)) {
+                        logger.debug('some attributes that trigger a window reload have been changed')
+                        PromiseUtils.later(500).then(() => Window.reload())
+                    }
+
+                }).catch(function (error) {
+
+                    logger.errorStack(`failed to update device attributes`, error)
+
+                    let m
+                    if (error instanceof API.APIError && (m = error.messageCode.match(/invalid field: (.*)/))) {
+                        let fieldName = `attr_${m[1]}`
+                        throw new ErrorMapping({[fieldName]: new ValidationError(gettext('Invalid value.'))})
+                    }
+
+                    throw error
+
+                })
+            })
+        }
+
+        return promise
     }
 
-    defaultAction() {
-        /* Prevent the form from closing on enter */
+    cancelAction() {
+        /* Override this to ensure the form is never cancelled/closed */
     }
 
     navigate(pathId) {
@@ -197,6 +251,9 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
 
             case 'provisioning':
                 return this.makeProvisioningForm()
+
+            case 'reboot':
+                return this.makeConfirmAndRebootForm()
         }
     }
 
@@ -212,6 +269,13 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
      */
     makeProvisioningForm() {
         return new ProvisioningForm(Cache.getMainDevice().name)
+    }
+
+    makeConfirmAndRebootForm() {
+        let mainDevice = Cache.getMainDevice()
+        let displayName = mainDevice.display_name || mainDevice.name
+
+        return this.confirmAndReboot(mainDevice.name, displayName, logger)
     }
 
 }

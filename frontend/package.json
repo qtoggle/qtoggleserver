@@ -4,7 +4,16 @@
     "keywords": [],
     "author": "Calin Crisan <ccrisan@gmail.com>",
     "license": "Apache-2.0",
+    "dependencies": {
+        "@qtoggle/qui": "*",
+        "jquery": "*",
+        "jquery-mousewheel": "*",
+        "jquery-ui-dist": "*",
+        "js-logger": "*",
+        "pepjs": "*"
+    },
     "devDependencies": {
+        "babel-eslint": "*",
         "css-loader": "*",
         "eslint": "*",
         "expose-loader": "*",
@@ -21,13 +30,5 @@
         "webpack-fix-style-only-entries": "*",
         "webpack-inject-plugin": "*",
         "webpack-shell-plugin": "*"
-    },
-    "dependencies": {
-        "@qtoggle/qui": "*",
-        "jquery": "*",
-        "jquery-mousewheel": "*",
-        "jquery-ui-dist": "*",
-        "js-logger": "*",
-        "pepjs": "*"
     }
 }

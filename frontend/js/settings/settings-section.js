@@ -40,7 +40,9 @@ export default class SettingsSection extends Section {
         switch (event.type) {
             case 'device-update': {
                 if (this.settingsForm) {
-                    this.settingsForm.updateUI()
+                    /* Don't show field changed warnings for events that are consequences of changes applied from this
+                     * client (when the event is expected) */
+                    this.settingsForm.updateUI(/* fieldChangeWarnings = */ !event.expected)
                 }
 
                 break

@@ -1,3 +1,4 @@
+
 import {TimeoutError}       from '$qui/base/errors.js'
 import {gettext}            from '$qui/base/i18n.js'
 import {Mixin}              from '$qui/base/mixwith.js'
@@ -22,9 +23,9 @@ export default Mixin((superclass = Object) => {
                 {name: Messages.wrapLabel(deviceDisplayName)}
             )
 
-            return ConfirmMessageForm.show(
-                msg,
-                /* onYes = */ function () {
+            return new ConfirmMessageForm({
+                message: msg,
+                onYes: function () {
 
                     logger.debug(`rebooting device "${deviceName}"`)
 
@@ -66,8 +67,8 @@ export default Mixin((superclass = Object) => {
                     }.bind(this))
 
                 }.bind(this),
-                /* onNo = */ null, /* pathId = */ 'reboot'
-            )
+                pathId: 'reboot'
+            })
         }
 
     }

@@ -1,8 +1,11 @@
-import {gettext}                              from '$qui/base/i18n.js'
-import {CheckField, PasswordField, TextField} from '$qui/forms/common-fields.js'
-import {PageForm}                             from '$qui/forms/common-forms.js'
-import FormButton                             from '$qui/forms/form-button.js'
-import {ValidationError}                      from '$qui/forms/forms.js'
+
+import {gettext}         from '$qui/base/i18n.js'
+import {CheckField}      from '$qui/forms/common-fields.js'
+import {PasswordField}   from '$qui/forms/common-fields.js'
+import {TextField}       from '$qui/forms/common-fields.js'
+import {PageForm}        from '$qui/forms/common-forms.js'
+import FormButton        from '$qui/forms/form-button.js'
+import {ValidationError} from '$qui/forms/forms.js'
 
 import * as API  from '$app/api.js'
 import * as Auth from '$app/auth.js'

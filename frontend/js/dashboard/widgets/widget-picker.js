@@ -123,8 +123,7 @@ export default class WidgetPicker extends mix().with(StructuredPageMixin) {
     }
 
     _onWidgetPicked(cls) {
-        this.close()
-        this._callback(cls)
+        this.close().then(() => this._callback(cls))
     }
 
 }

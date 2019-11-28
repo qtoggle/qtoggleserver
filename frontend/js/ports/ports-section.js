@@ -74,15 +74,8 @@ export default class PortsSection extends Section {
                     break
                 }
 
-                if (Ports.getMasterFakeDevice().name !== event.params.name) { /* Name changed */
-                    /* If the master device ports list is currently opened, close it */
-                    if (portsList && portsList.getDeviceName() === Ports.getMasterFakeDevice().name) {
-                        portsList.close()
-                    }
-                }
-
                 Ports.clearMasterFakeDevice()
-                this.devicesList.updateUI()
+                this.devicesList.updateUIAsap()
 
                 break
             }
@@ -92,9 +85,9 @@ export default class PortsSection extends Section {
                     break
                 }
 
-                this.devicesList.updateUI()
+                this.devicesList.updateUIAsap()
                 if (portsList && portsList.getDeviceName() === event.params.name) {
-                    portsList.updateUI()
+                    portsList.updateUIAsap()
                 }
 
                 break
@@ -105,7 +98,7 @@ export default class PortsSection extends Section {
                     break
                 }
 
-                this.devicesList.updateUI()
+                this.devicesList.updateUIAsap()
 
                 break
             }
@@ -115,11 +108,11 @@ export default class PortsSection extends Section {
                     break
                 }
 
-                this.devicesList.updateUI()
+                this.devicesList.updateUIAsap()
 
                 if (portsList && portsList.getDeviceName() === event.params.name) {
                     /* The device that is currently selected has just been removed */
-                    portsList.close()
+                    portsList.close(/* force = */ true)
                 }
 
                 break
@@ -130,13 +123,12 @@ export default class PortsSection extends Section {
                     break
                 }
 
-                portsList.updateUI()
+                portsList.updateUIAsap()
 
                 if (portForm && portForm.getPortId() === event.params.id) {
-                    portForm.updateUI()
-                    if (event.params.enabled && portForm.isWaitingPortEnabled()) {
-                        portForm.clearWaitingPortEnabled()
-                    }
+                    /* Don't show field changed warnings for events that are consequences of changes applied from this
+                     * client (when the event is expected) */
+                    portForm.updateUI(/* fieldChangeWarnings = */ !event.expected)
                 }
 
                 break
@@ -147,7 +139,7 @@ export default class PortsSection extends Section {
                     break
                 }
 
-                portsList.updateUI()
+                portsList.updateUIAsap()
 
                 break
             }
@@ -157,11 +149,11 @@ export default class PortsSection extends Section {
                     break
                 }
 
-                portsList.updateUI()
+                portsList.updateUIAsap()
 
                 if (portForm && portForm.getPortId() === event.params.id) {
                     /* The port that is currently selected has just been removed */
-                    portForm.close()
+                    portForm.close(/* force = */ true)
                 }
 
                 break
@@ -184,10 +176,23 @@ export default class PortsSection extends Section {
                 if (portForm && (portForm.getPortId() === event.params.id) && (event.params.value != null)) {
                     let lastSync = Math.round(new Date().getTime() / 1000)
 
-                    portForm.setData({
-                        value: event.params.value,
-                        attr_last_sync: API.STD_PORT_ATTRDEFS['last_sync'].valueToUI(lastSync)
-                    })
+                    let valueField = portForm.getField('value')
+                    let data = {}
+                    if (portForm.getField('attr_last_sync')) {
+                        data['attr_last_sync'] = API.STD_PORT_ATTRDEFS['last_sync'].valueToUI(lastSync)
+                    }
+                    if (valueField.isReadonly()) {
+                        data['value'] = event.params.value
+                    }
+                    else {
+                        if (!valueField.hasWarning() && !valueField.hasError()) {
+                            valueField.setWarning(gettext('Value has been updated in the meantime.'))
+                        }
+                    }
+
+                    if (Object.keys(data).length) {
+                        portForm.setData(data)
+                    }
                 }
 
                 break

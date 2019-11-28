@@ -1,17 +1,21 @@
-import ConditionVariable              from '$qui/base/condition-variable.js'
-import {AssertionError, TimeoutError} from '$qui/base/errors.js'
-import {gettext}                      from '$qui/base/i18n.js'
-import {mix}                          from '$qui/base/mixwith.js'
-import {ChoiceButtonsField}           from '$qui/forms/common-fields.js'
-import {PageForm}                     from '$qui/forms/common-forms.js'
-import FormButton                     from '$qui/forms/form-button.js'
-import {ConfirmMessageForm}           from '$qui/messages/common-message-forms.js'
-import * as Messages                  from '$qui/messages/messages.js'
-import * as Toast                     from '$qui/messages/toast.js'
-import * as ArrayUtils                from '$qui/utils/array.js'
-import * as ObjectUtils               from '$qui/utils/object.js'
-import * as PromiseUtils              from '$qui/utils/promise.js'
-import * as StringUtils               from '$qui/utils/string.js'
+
+import ConditionVariable    from '$qui/base/condition-variable.js'
+import {AssertionError}     from '$qui/base/errors.js'
+import {TimeoutError}       from '$qui/base/errors.js'
+import {gettext}            from '$qui/base/i18n.js'
+import {mix}                from '$qui/base/mixwith.js'
+import {ChoiceButtonsField} from '$qui/forms/common-fields.js'
+import {PageForm}           from '$qui/forms/common-forms.js'
+import FormButton           from '$qui/forms/form-button.js'
+import {ValidationError}    from '$qui/forms/forms.js'
+import {ErrorMapping}       from '$qui/forms/forms.js'
+import {ConfirmMessageForm} from '$qui/messages/common-message-forms.js'
+import * as Messages        from '$qui/messages/messages.js'
+import * as Toast           from '$qui/messages/toast.js'
+import * as ArrayUtils      from '$qui/utils/array.js'
+import * as ObjectUtils     from '$qui/utils/object.js'
+import * as PromiseUtils    from '$qui/utils/promise.js'
+import * as StringUtils     from '$qui/utils/string.js'
 
 import * as API         from '$app/api.js'
 import * as Cache       from '$app/cache.js'
@@ -44,12 +48,14 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         super({
             pathId: pathId,
             keepPrevVisible: true,
-            title: '',
+            closeOnApply: false,
+            preventUnappliedClose: true,
+            title: '', /* Set dynamically, later */
             icon: Ports.PORT_ICON,
-            continuousValidation: true,
 
             buttons: [
-                new FormButton({id: 'close', caption: gettext('Close'), cancel: true})
+                new FormButton({id: 'close', caption: gettext('Close'), cancel: true}),
+                new FormButton({id: 'apply', caption: gettext('Apply'), def: true})
             ]
         })
 
@@ -57,7 +63,6 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         this._deviceName = deviceName
 
         this._fullAttrdefs = {}
-        this._whenPortEnabled = null
         this._whenValueChanged = null
     }
 
@@ -68,7 +73,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
     /**
      * Updates the entire form (fields & values) from the port.
      */
-    updateUI() {
+    updateUI(fieldChangeWarnings = true) {
         let port = Cache.getPort(this.getPortId())
         if (!port) {
             throw new AssertionError(`Port with id ${this.getPortId()} not found in cache`)
@@ -169,7 +174,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
         }, this)
 
-        if (!port.enabled) {
+        if (!port.enabled && !fieldChangeWarnings) {
             /* Filter out attribute definitions not visible when port disabled */
             this._fullAttrdefs = ObjectUtils.filter(this._fullAttrdefs, function (name, def) {
                 return DISABLED_PORT_VISIBLE_ATTRS.indexOf(name) >= 0
@@ -226,12 +231,12 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         })
 
         /* Prepare form fields */
-        this.fieldsFromAttrdefs(
-            this._fullAttrdefs,
-            /* extraFieldOptions = */ undefined,
-            /* initialData = */ port,
-            /* provisioning = */ provisioning
-        )
+        this.fieldsFromAttrdefs({
+            attrdefs: this._fullAttrdefs,
+            initialData: port,
+            provisioning: provisioning,
+            fieldChangeWarnings: fieldChangeWarnings
+        })
         this._addValueField(origPort)
 
         /* Remove button */
@@ -244,49 +249,10 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 style: 'danger'
             }))
         }
-
     }
 
     getPortId() {
         return this._portId
-    }
-
-    setWaitingPortEnabled() {
-        if (this._whenPortEnabled) {
-            throw new AssertionError('Attempt to wait for port to become enabled while already waiting')
-        }
-
-        this.setProgress()
-
-        this._whenPortEnabled = new ConditionVariable()
-
-        PromiseUtils.withTimeout(this._whenPortEnabled, API.SERVER_TIMEOUT * 1000).catch(function (error) {
-
-            if (error instanceof TimeoutError) {
-                this.setError(gettext('Port could not be enabled.'))
-            }
-
-            /* Other errors can practically only be generated by cancelling the condition variable */
-
-        }.bind(this)).then(function () {
-
-            this.clearProgress()
-
-        }.bind(this))
-    }
-
-    clearWaitingPortEnabled() {
-        if (!this._whenPortEnabled) {
-            throw new AssertionError('Attempt to cancel waiting for port to become enabled while not waiting')
-        }
-
-        this.clearProgress()
-        this._whenPortEnabled.cancel()
-        this._whenPortEnabled = null
-    }
-
-    isWaitingPortEnabled() {
-        return !!this._whenPortEnabled
     }
 
     setWaitingValueChanged() {
@@ -326,81 +292,105 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         return !!this._whenValueChanged
     }
 
-    applyField(value, fieldName) {
+    applyData(data) {
         let port = Cache.getPort(this.getPortId())
         if (!port) {
             throw new AssertionError(`Port with id ${this.getPortId()} not found in cache`)
         }
 
-        if (fieldName === 'value') {
+        let newValue = null
+        let newAttrs = {}
+        let changedFields = this.getChangedFields()
+
+        changedFields.forEach(function (fieldName) {
+            let value = data[fieldName]
             if (value == null) {
                 return
             }
 
-            let newValue
-            if (port.type === 'boolean') {
+            /* Skip value field, as it is treated separately */
+            if (fieldName === 'value') {
                 newValue = value
-            }
-            else if (port.integer) { /* Assuming number */
-                newValue = parseInt(value)
-            }
-            else {
-                newValue = parseFloat(value)
+                return
             }
 
-            if (port.value === newValue) {
-                return Promise.resolve()
+            /* We're interested only in attributes */
+            if (!fieldName.startsWith('attr_')) {
+                return
             }
 
-            logger.debug(`updating port "${this.getPortId()}" value to ${JSON.stringify(newValue)}`)
-
-            return API.patchPortValue(port.id, newValue).then(function () {
-
-                logger.debug(`port "${port.id}" value set`)
-
-                if (this.isWaitingValueChanged()) {
-                    this.clearWaitingValueChanged()
-                }
-
-                this.setWaitingValueChanged()
-
-            }.bind(this)).catch(function (error) {
-
-                logger.errorStack(`failed to set port "${port.id}" value`, error)
-                throw error
-
-            })
-        }
-        else if (fieldName.startsWith('attr_')) { /* A port attribute */
             let name = fieldName.substring(5)
+
+            /* Ignore non-modifiable or undefined attributes */
             if (!(name in this._fullAttrdefs) || !this._fullAttrdefs[name].modifiable) {
                 return
             }
 
-            if (name === 'enabled' && value) {
-                this.setWaitingPortEnabled()
-            }
-
             logger.debug(`updating port attribute "${this.getPortId()}.${name}" to ${JSON.stringify(value)}`)
+            newAttrs[name] = value
 
-            let newAttrs = {[name]: value}
+        }, this)
 
-            return API.patchPort(port.id, newAttrs).then(function () {
+        let patchPortPromise = Promise.resolve()
+        if (Object.keys(newAttrs).length) {
+            patchPortPromise = API.patchPort(port.id, newAttrs).then(function () {
 
-                /* clearProgress() will be called later, as soon as port-update event arrives */
-                logger.debug(`port attribute "${port.id}.${name}" successfully updated`)
+                logger.debug(`port "${port.id}" attributes successfully updated`)
+                Toast.info(gettext('Port has been updated.'))
 
             }).catch(function (error) {
 
-                if (this.isWaitingPortEnabled()) {
-                    this.clearWaitingPortEnabled()
+                logger.errorStack(`failed to update port "${port.id}" attributes`, error)
+
+                let m
+                if (error instanceof API.APIError && (m = error.messageCode.match(/invalid field: (.*)/))) {
+                    let fieldName = `attr_${m[1]}`
+                    throw new ErrorMapping({[fieldName]: new ValidationError(gettext('Invalid value.'))})
                 }
 
-                logger.errorStack(`failed to update port attribute "${port.id}.${name}"`, error)
                 throw error
 
-            }.bind(this))
+            })
         }
+
+        let patchValuePromise = Promise.resolve()
+        if (newValue != null) {
+            /* Adapt port value */
+            if (port.type === 'number') {
+                if (port.integer) {
+                    newValue = parseInt(newValue)
+                }
+                else {
+                    newValue = parseFloat(newValue)
+                }
+            }
+
+            if (port.value === newValue) {
+                patchValuePromise = Promise.resolve()
+            }
+            else {
+                logger.debug(`updating port "${port.id}" value to ${JSON.stringify(newValue)}`)
+
+                patchValuePromise = API.patchPortValue(port.id, newValue).then(function () {
+
+                    logger.debug(`port "${port.id}" value set`)
+
+                    if (this.isWaitingValueChanged()) {
+                        this.clearWaitingValueChanged()
+                    }
+
+                    this.setWaitingValueChanged()
+
+                }.bind(this)).catch(function (error) {
+
+                    logger.errorStack(`failed to set port "${port.id}" value`, error)
+                    throw error
+
+                })
+            }
+        }
+
+        return patchPortPromise.then(() => patchValuePromise)
     }
 
     onButtonPress(button) {
@@ -491,9 +481,9 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             {object: Messages.wrapLabel(port.display_name || port.id)}
         )
 
-        return ConfirmMessageForm.show(
-            msg,
-            /* onYes = */ function () {
+        return new ConfirmMessageForm({
+            message: msg,
+            onYes: function () {
 
                 logger.debug(`removing port "${port.id}"`)
 
@@ -505,7 +495,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 API.deletePort(portId).then(function () {
 
                     logger.debug(`port "${port.id}" successfully removed`)
-                    this.close()
+                    this.close(/* force = */ true)
 
                 }.bind(this)).catch(function (error) {
 
@@ -515,8 +505,8 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 })
 
             }.bind(this),
-            /* onNo = */ null, /* pathId = */ 'remove'
-        )
+            pathId: 'remove'
+        })
     }
 
 }

@@ -2,22 +2,23 @@
 import $      from '$qui/lib/jquery.module.js'
 import Logger from '$qui/lib/logger.module.js'
 
-import ConditionVariable              from '$qui/base/condition-variable.js'
-import {AssertionError, TimeoutError} from '$qui/base/errors.js'
-import {gettext}                      from '$qui/base/i18n.js'
-import {mix}                          from '$qui/base/mixwith.js'
-import StockIcon                      from '$qui/icons/stock-icon.js'
-import {ConfirmMessageForm}           from '$qui/messages/common-message-forms.js'
-import * as Messages                  from '$qui/messages/messages.js'
-import * as Toast                     from '$qui/messages/toast.js'
-import * as Theme                     from '$qui/theme.js'
-import * as CSS                       from '$qui/utils/css.js'
-import * as Gestures                  from '$qui/utils/gestures.js'
-import {asap}                         from '$qui/utils/misc.js'
-import * as PromiseUtils              from '$qui/utils/promise.js'
-import * as StringUtils               from '$qui/utils/string.js'
-import ViewMixin                      from '$qui/views/view.js'
-import * as Window                    from '$qui/window.js'
+import ConditionVariable    from '$qui/base/condition-variable.js'
+import {AssertionError}     from '$qui/base/errors.js'
+import {TimeoutError}       from '$qui/base/errors.js'
+import {gettext}            from '$qui/base/i18n.js'
+import {mix}                from '$qui/base/mixwith.js'
+import StockIcon            from '$qui/icons/stock-icon.js'
+import {ConfirmMessageForm} from '$qui/messages/common-message-forms.js'
+import * as Messages        from '$qui/messages/messages.js'
+import * as Toast           from '$qui/messages/toast.js'
+import * as Theme           from '$qui/theme.js'
+import * as CSS             from '$qui/utils/css.js'
+import * as Gestures        from '$qui/utils/gestures.js'
+import {asap}               from '$qui/utils/misc.js'
+import * as PromiseUtils    from '$qui/utils/promise.js'
+import * as StringUtils     from '$qui/utils/string.js'
+import ViewMixin            from '$qui/views/view.js'
+import * as Window          from '$qui/window.js'
 
 import * as API   from '$app/api.js'
 import * as Cache from '$app/cache.js'
@@ -284,8 +285,9 @@ export default class Widget extends mix().with(ViewMixin) {
         }).applyTo(iconDiv)
 
         control.on('click', function () {
-            this.showConfigForm()
-            this._configForm.pushPage(this.makeRemoveForm())
+            this.showConfigForm().then(function () {
+                this._configForm.pushPage(this.makeRemoveForm())
+            }.bind(this))
         }.bind(this))
 
         return control
@@ -1237,24 +1239,22 @@ export default class Widget extends mix().with(ViewMixin) {
             msg = gettext('Really remove this widget?')
         }
 
-        return ConfirmMessageForm.show(
-            msg,
-            /* onYes = */ function () {
-
+        return new ConfirmMessageForm({
+            message: msg,
+            onYes: function () {
                 this.logger.debug('removing')
                 this._panel.removeWidget(this)
                 Dashboard.savePanels()
-                this._configForm.close()
-
+                this._configForm.close(/* force = */ true)
             }.bind(this),
-            /* onNo = */ null, /* pathId = */ 'remove'
-        )
+            pathId: 'remove'
+        })
     }
 
     /**
      * @returns {QToggle.DashboardSection.Widgets.WidgetConfigForm}
      */
-    makeConfigForm() {
+    getConfigForm() {
         if (!this._configForm) {
             this._configForm = new this.constructor.ConfigForm(this)
         }
@@ -1265,7 +1265,12 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     showConfigForm() {
-        this._panel.pushPage(this.makeConfigForm())
+        let configForm = this.getConfigForm()
+        if (configForm.hasContext()) { /* Already added */
+            return Promise.resolve()
+        }
+
+        return this._panel.pushPage(this.getConfigForm())
     }
 
 }

@@ -1,3 +1,4 @@
+
 import Logger from '$qui/lib/logger.module.js'
 
 import StockIcon from '$qui/icons/stock-icon.js'

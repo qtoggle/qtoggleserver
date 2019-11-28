@@ -1,8 +1,8 @@
 
 import Logger from '$qui/lib/logger.module.js'
 
-import QUISection from '$qui/sections/section.js'
-import * as Sections           from '$qui/sections/sections.js'
+import QUISection    from '$qui/sections/section.js'
+import * as Sections from '$qui/sections/sections.js'
 
 import * as Auth  from '$app/auth.js'
 import * as Cache from '$app/cache.js'

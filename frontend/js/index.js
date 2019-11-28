@@ -1,30 +1,26 @@
+
 import {gettext}                  from '$qui/base/i18n.js'
 import Config                     from '$qui/config.js'
 import * as QUI                   from '$qui/index.js'
 import {StickyConfirmMessageForm} from '$qui/messages/common-message-forms.js'
 import * as PWA                   from '$qui/pwa.js'
 import * as Sections              from '$qui/sections/sections.js'
-import * as ObjectUtils           from '$qui/utils/object.js'
-import * as PromiseUtils          from '$qui/utils/promise.js'
 import * as Window                from '$qui/window.js'
 
 import Logger from '$qui/lib/logger.module.js'
 
-import * as API           from '$app/api.js'
-import * as Auth          from '$app/auth.js'
-import * as Cache         from '$app/cache.js'
-import DashboardSection   from '$app/dashboard/dashboard-section.js'
-import DevicesSection     from '$app/devices/devices-section.js'
-import * as Events        from '$app/events.js'
-import LoginSection       from '$app/login/login-section.js'
-import PortsSection       from '$app/ports/ports-section.js'
-import SettingsSection    from '$app/settings/settings-section.js'
+import * as API         from '$app/api.js'
+import * as Auth        from '$app/auth.js'
+import * as Cache       from '$app/cache.js'
+import DashboardSection from '$app/dashboard/dashboard-section.js'
+import DevicesSection   from '$app/devices/devices-section.js'
+import * as Events      from '$app/events.js'
+import LoginSection     from '$app/login/login-section.js'
+import PortsSection     from '$app/ports/ports-section.js'
+import SettingsSection  from '$app/settings/settings-section.js'
 
 import '$app/qtoggle-stock.js'
 
-
-/* Device attributes that trigger reloading of the entire UI (window) upon change */
-let UI_RELOAD_DEVICE_ATTRS = ['ui_theme']
 
 const logger = Logger.get('qtoggle')
 
@@ -60,23 +56,6 @@ function handleAccessLevelChange(oldLevel, newLevel) {
 }
 
 function handleAPIEvent(event) {
-    switch (event.type) {
-        case 'device-update': {
-            let mainDevice = Cache.getMainDevice()
-            let windowReloadNeeded = UI_RELOAD_DEVICE_ATTRS.some(function (attr) {
-                return !ObjectUtils.deepEquals(mainDevice[attr], event.params[attr])
-            })
-
-            if (windowReloadNeeded) {
-                logger.debug('theme changed, need to reload')
-                PromiseUtils.later(1000).then(function () {
-                    Window.reload()
-                })
-            }
-
-            break
-        }
-    }
 }
 
 function handlePWAUpdate() {

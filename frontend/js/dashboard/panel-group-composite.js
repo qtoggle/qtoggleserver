@@ -1,3 +1,4 @@
+
 import {gettext}            from '$qui/base/i18n.js'
 import {Mixin}              from '$qui/base/mixwith.js'
 import {ConfirmMessageForm} from '$qui/messages/common-message-forms.js'
@@ -104,14 +105,16 @@ export default Mixin((superclass = Object) => {
                 {object: Messages.wrapLabel(this.getName())}
             )
 
-            return ConfirmMessageForm.show(msg, /* onYes = */ function () {
-
-                logger.debug(`removing "${this.getPathStr()}"`)
-                this.getParent().removeChild(this)
-                this.close()
-                Dashboard.savePanels()
-
-            }.bind(this), /* onNo = */ null, /* pathId = */ 'remove')
+            return new ConfirmMessageForm({
+                message: msg,
+                onYes: function () {
+                    logger.debug(`removing "${this.getPathStr()}"`)
+                    this.getParent().removeChild(this)
+                    this.close()
+                    Dashboard.savePanels()
+                }.bind(this),
+                pathId: 'remove'
+            })
         }
 
     }

@@ -2,21 +2,24 @@
 import $      from '$qui/lib/jquery.module.js'
 import Logger from '$qui/lib/logger.module.js'
 
-import {gettext}                                             from '$qui/base/i18n.js'
-import {mix}                                                 from '$qui/base/mixwith.js'
-import {CheckField, PushButtonField, TextField, UpDownField} from '$qui/forms/common-fields.js'
-import {OptionsForm}                                         from '$qui/forms/common-forms.js'
-import FormButton                                            from '$qui/forms/form-button.js'
-import {ValidationError}                                     from '$qui/forms/forms.js'
-import * as OptionsBar                                       from '$qui/main-ui/options-bar.js'
-import {StructuredPageMixin}                                 from '$qui/pages/common-pages.js'
-import * as Theme                                            from '$qui/theme.js'
-import * as ArrayUtils                                       from '$qui/utils/array.js'
-import * as Crypto                                           from '$qui/utils/crypto.js'
-import * as CSS                                              from '$qui/utils/css.js'
-import {asap}                                                from '$qui/utils/misc.js'
-import * as ObjectUtils                                      from '$qui/utils/object.js'
-import * as Window                                           from '$qui/window.js'
+import {gettext}             from '$qui/base/i18n.js'
+import {mix}                 from '$qui/base/mixwith.js'
+import {CheckField}          from '$qui/forms/common-fields.js'
+import {PushButtonField}     from '$qui/forms/common-fields.js'
+import {TextField}           from '$qui/forms/common-fields.js'
+import {UpDownField}         from '$qui/forms/common-fields.js'
+import {OptionsForm}         from '$qui/forms/common-forms.js'
+import FormButton            from '$qui/forms/form-button.js'
+import {ValidationError}     from '$qui/forms/forms.js'
+import * as OptionsBar       from '$qui/main-ui/options-bar.js'
+import {StructuredPageMixin} from '$qui/pages/common-pages.js'
+import * as Theme            from '$qui/theme.js'
+import * as ArrayUtils       from '$qui/utils/array.js'
+import * as Crypto           from '$qui/utils/crypto.js'
+import * as CSS              from '$qui/utils/css.js'
+import {asap}                from '$qui/utils/misc.js'
+import * as ObjectUtils      from '$qui/utils/object.js'
+import * as Window           from '$qui/window.js'
 
 import * as API from '$app/api.js'
 
@@ -1019,7 +1022,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
 
             this.setSelectedWidget(widget)
 
-            return widget.makeConfigForm()
+            return widget.getConfigForm()
         }
     }
 

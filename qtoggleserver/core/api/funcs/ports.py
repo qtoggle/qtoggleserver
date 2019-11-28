@@ -49,7 +49,8 @@ async def patch_port(request, port_id, params):
         except Exception as e:
             errors_by_name[attr_name] = e
 
-    await asyncio.wait([set_attr(name, value) for name, value in params.items()])
+    if params:
+        await asyncio.wait([set_attr(name, value) for name, value in params.items()])
 
     if errors_by_name:
         name, error = next(iter(errors_by_name.items()))
@@ -143,7 +144,7 @@ async def patch_port_value(request, port_id, params):
     if port is None:
         raise core_api.APIError(404, 'no such port')
 
-    core_api_schema.validate(params, port.get_value_schema())
+    core_api_schema.validate(params, port.get_value_schema(), invalid_request_msg='invalid value')
 
     value = params
 
