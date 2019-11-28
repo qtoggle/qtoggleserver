@@ -19,5 +19,7 @@ jobs:
         uses: actions/setup-node@v1.1.0
         with:
           node-version: '10.x'
+      - name: Install Dev Deps
+        run: npm install --only=dev
       - name: ESLint
         run: cd frontend && npx eslint js
