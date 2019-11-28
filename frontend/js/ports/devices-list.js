@@ -11,6 +11,7 @@ import * as Utils from '$app/utils.js'
 
 import * as Ports from './ports.js'
 import PortsList  from './ports-list.js'
+import {asap}     from '$qui/utils/misc.js'
 
 
 const DEFAULT_SHOW_OFFLINE_DEVICES = true
@@ -61,10 +62,27 @@ export default class DevicesList extends PageList {
         })
 
         this.portsList = null
+        this._updateUIAsapHandle = null
     }
 
     init() {
         this.updateUI()
+    }
+
+    /**
+     * Call updateUI asap, deduplicating calls.
+     */
+    updateUIAsap() {
+        if (this._updateUIAsapHandle != null) {
+            clearTimeout(this._updateUIAsapHandle)
+        }
+
+        this._updateUIAsapHandle = asap(function () {
+
+            this._updateUIAsapHandle = null
+            this.updateUI()
+
+        }.bind(this))
     }
 
     updateUI() {

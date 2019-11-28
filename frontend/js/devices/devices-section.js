@@ -54,7 +54,7 @@ export default class DevicesSection extends Section {
 
         switch (event.type) {
             case 'slave-device-update': {
-                this.devicesList.updateUI()
+                this.devicesList.updateUIAsap()
 
                 if (deviceForm && (deviceForm.getDeviceName() === event.params.name)) {
                     deviceForm.updateUI(/* fieldChangeWarnings = */ !event.expected)
@@ -76,7 +76,7 @@ export default class DevicesSection extends Section {
             }
 
             case 'slave-device-add': {
-                this.devicesList.updateUI()
+                this.devicesList.updateUIAsap()
 
                 /* Handle special case where currently selected device has been locally renamed via the device form */
                 if (Devices.getRenamedDeviceName() === event.params.name) {
@@ -93,7 +93,7 @@ export default class DevicesSection extends Section {
             }
 
             case 'slave-device-remove': {
-                this.devicesList.updateUI()
+                this.devicesList.updateUIAsap()
 
                 if (deviceForm && (deviceForm.getDeviceName() === event.params.name) &&
                     (Devices.getRenamedDeviceName() == null)) {

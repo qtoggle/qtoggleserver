@@ -7,6 +7,7 @@ import {OptionsForm}       from '$qui/forms/common-forms.js'
 import {IconLabelListItem} from '$qui/lists/common-items.js'
 import {PageList}          from '$qui/lists/common-lists.js'
 import * as ArrayUtils     from '$qui/utils/array.js'
+import {asap}              from '$qui/utils/misc.js'
 
 import * as Cache from '$app/cache.js'
 import * as Utils from '$app/utils.js'
@@ -45,7 +46,6 @@ class PortsListOptionsForm extends OptionsForm {
                 show_disabled_ports: Cache.getPrefs('ports.show_disabled_ports', DEFAULT_SHOW_DISABLED_PORTS)
             }
         })
-
     }
 
     init() {
@@ -107,6 +107,7 @@ export default class PortsList extends PageList {
         }
 
         this._deviceName = deviceName
+        this._updateUIAsapHandle = null
         this.portForm = null
 
         this.setTitle(title)
@@ -114,6 +115,22 @@ export default class PortsList extends PageList {
 
     init() {
         this.updateUI()
+    }
+
+    /**
+     * Call updateUI asap, deduplicating calls.
+     */
+    updateUIAsap() {
+        if (this._updateUIAsapHandle != null) {
+            clearTimeout(this._updateUIAsapHandle)
+        }
+
+        this._updateUIAsapHandle = asap(function () {
+
+            this._updateUIAsapHandle = null
+            this.updateUI()
+
+        }.bind(this))
     }
 
     updateUI() {
