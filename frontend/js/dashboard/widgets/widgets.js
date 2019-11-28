@@ -1,5 +1,7 @@
 
-export {STATE_NORMAL, STATE_PROGRESS, STATE_ERROR} from '$qui/views/view.js'
+export {STATE_ERROR}    from '$qui/views/view.js'
+export {STATE_NORMAL}   from '$qui/views/view.js'
+export {STATE_PROGRESS} from '$qui/views/view.js'
 
 
 /* Following constants are expressed as fraction of cell width (em) */

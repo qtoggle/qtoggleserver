@@ -1,13 +1,17 @@
-import {gettext}                  from '$qui/base/i18n.js'
-import {Mixin}                    from '$qui/base/mixwith.js'
-import {
-    CheckField, ComboField, LabelsField, NumericField, PasswordField, SliderField, TextField, UpDownField
-}                                 from '$qui/forms/common-fields.js'
-import {ValidationError}          from '$qui/forms/forms.js'
-import * as ArrayUtils            from '$qui/utils/array.js'
-import * as HTML                  from '$qui/utils/html.js'
-import * as ObjectUtils           from '$qui/utils/object.js'
-import * as StringUtils           from '$qui/utils/string.js'
+
+import {gettext}         from '$qui/base/i18n.js'
+import {Mixin}           from '$qui/base/mixwith.js'
+import {CheckField}      from '$qui/forms/common-fields.js'
+import {ComboField}      from '$qui/forms/common-fields.js'
+import {LabelsField}     from '$qui/forms/common-fields.js'
+import {NumericField}    from '$qui/forms/common-fields.js'
+import {SliderField}     from '$qui/forms/common-fields.js'
+import {TextField}       from '$qui/forms/common-fields.js'
+import {ValidationError} from '$qui/forms/forms.js'
+import * as ArrayUtils   from '$qui/utils/array.js'
+import * as HTML         from '$qui/utils/html.js'
+import * as ObjectUtils  from '$qui/utils/object.js'
+import * as StringUtils  from '$qui/utils/string.js'
 
 
 export default Mixin((superclass = Object) => {

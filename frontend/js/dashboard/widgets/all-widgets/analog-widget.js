@@ -1,16 +1,19 @@
 
 import $ from '$qui/lib/jquery.module.js'
 
-import {gettext}        from '$qui/base/i18n.js'
-import {
-    CheckField, ColorComboField, NumericField, TextField, UpDownField, ComboField, ChoiceButtonsField
-}                       from '$qui/forms/common-fields.js'
-import StockIcon        from '$qui/icons/stock-icon.js'
-import * as Theme       from '$qui/theme.js'
-import * as ArrayUtils  from '$qui/utils/array.js'
-import * as Colors      from '$qui/utils/colors.js'
-import * as HTML        from '$qui/utils/html.js'
-import * as StringUtils from '$qui/utils/string.js'
+import {gettext}            from '$qui/base/i18n.js'
+import {CheckField}         from '$qui/forms/common-fields.js'
+import {ColorComboField}    from '$qui/forms/common-fields.js'
+import {NumericField}       from '$qui/forms/common-fields.js'
+import {TextField}          from '$qui/forms/common-fields.js'
+import {UpDownField}        from '$qui/forms/common-fields.js'
+import {ChoiceButtonsField} from '$qui/forms/common-fields.js'
+import StockIcon            from '$qui/icons/stock-icon.js'
+import * as Theme           from '$qui/theme.js'
+import * as ArrayUtils      from '$qui/utils/array.js'
+import * as Colors          from '$qui/utils/colors.js'
+import * as HTML            from '$qui/utils/html.js'
+import * as StringUtils     from '$qui/utils/string.js'
 
 import * as Cache       from '$app/cache.js'
 import PortPickerField  from '$app/dashboard/widgets/port-picker-field.js'

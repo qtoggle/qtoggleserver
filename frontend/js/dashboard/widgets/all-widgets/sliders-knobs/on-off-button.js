@@ -1,10 +1,11 @@
 
 import $ from '$qui/lib/jquery.module.js'
 
-import {gettext}                     from '$qui/base/i18n.js'
-import {CheckField, ColorComboField} from '$qui/forms/common-fields.js'
-import StockIcon                     from '$qui/icons/stock-icon.js'
-import * as Theme                    from '$qui/theme.js'
+import {gettext}         from '$qui/base/i18n.js'
+import {CheckField}      from '$qui/forms/common-fields.js'
+import {ColorComboField} from '$qui/forms/common-fields.js'
+import StockIcon         from '$qui/icons/stock-icon.js'
+import * as Theme        from '$qui/theme.js'
 
 import PortPickerField  from '$app/dashboard/widgets/port-picker-field.js'
 import Widget           from '$app/dashboard/widgets/widget.js'

@@ -1,5 +1,5 @@
 
-import Logger        from '$qui/lib/logger.module.js'
+import Logger from '$qui/lib/logger.module.js'
 
 import {gettext}        from '$qui/base/i18n.js'
 import StockIcon        from '$qui/icons/stock-icon.js'

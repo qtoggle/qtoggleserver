@@ -1,14 +1,14 @@
 
 import Logger from '$qui/lib/logger.module.js'
 
-import {gettext}             from '$qui/base/i18n.js'
-import * as Status           from '$qui/main-ui/status.js'
-import * as Messages         from '$qui/messages/messages.js'
-import * as Toast            from '$qui/messages/toast.js'
-import * as ArrayUtils       from '$qui/utils/array.js'
-import {asap}                from '$qui/utils/misc.js'
-import * as ObjectUtils      from '$qui/utils/object.js'
-import * as StringUtils      from '$qui/utils/string.js'
+import {gettext}        from '$qui/base/i18n.js'
+import * as Status      from '$qui/main-ui/status.js'
+import * as Messages    from '$qui/messages/messages.js'
+import * as Toast       from '$qui/messages/toast.js'
+import * as ArrayUtils  from '$qui/utils/array.js'
+import {asap}           from '$qui/utils/misc.js'
+import * as ObjectUtils from '$qui/utils/object.js'
+import * as StringUtils from '$qui/utils/string.js'
 
 import * as API                   from '$app/api.js'
 import * as Cache                 from '$app/cache.js'

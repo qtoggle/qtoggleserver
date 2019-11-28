@@ -1,3 +1,4 @@
+
 import {gettext}            from '$qui/base/i18n.js'
 import {Mixin}              from '$qui/base/mixwith.js'
 import {ConfirmMessageForm} from '$qui/messages/common-message-forms.js'

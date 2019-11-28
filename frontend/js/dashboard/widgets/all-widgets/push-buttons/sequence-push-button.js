@@ -1,7 +1,11 @@
-import {gettext}                                                from '$qui/base/i18n.js'
-import {CheckField, ColorComboField, NumericField, UpDownField} from '$qui/forms/common-fields.js'
-import StockIcon                                                from '$qui/icons/stock-icon.js'
-import * as ArrayUtils                                          from '$qui/utils/array.js'
+
+import {gettext}         from '$qui/base/i18n.js'
+import {CheckField}      from '$qui/forms/common-fields.js'
+import {ColorComboField} from '$qui/forms/common-fields.js'
+import {NumericField}    from '$qui/forms/common-fields.js'
+import {UpDownField}     from '$qui/forms/common-fields.js'
+import StockIcon         from '$qui/icons/stock-icon.js'
+import * as ArrayUtils   from '$qui/utils/array.js'
 
 import * as Cache       from '$app/cache.js'
 import PortPickerField  from '$app/dashboard/widgets/port-picker-field.js'

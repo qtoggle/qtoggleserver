@@ -1,6 +1,6 @@
 
-import StickyModalProgressMessage                from '$qui/messages/sticky-modal-progress-message.js'
-import * as ObjectUtils                          from '$qui/utils/object.js'
+import StickyModalProgressMessage from '$qui/messages/sticky-modal-progress-message.js'
+import * as ObjectUtils           from '$qui/utils/object.js'
 
 
 export const GO_OFFLINE_TIMEOUT = 20 /* Seconds */
