@@ -20,6 +20,6 @@ jobs:
         with:
           node-version: '10.x'
       - name: Install Dev Deps
-        run: npm install --only=dev
+        run: cd frontend && npm install --only=dev
       - name: ESLint
         run: cd frontend && npx eslint js
