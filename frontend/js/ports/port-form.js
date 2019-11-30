@@ -429,6 +429,8 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 def.integer = false
             }
 
+            def.modifiable = port.writable
+
             fieldAttrs = this.fieldAttrsFromAttrdef('value', def)
 
             FieldClass = ObjectUtils.pop(fieldAttrs, 'class')
