@@ -213,7 +213,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                     separator: true,
                     caption: gettext('Reboot'),
                     style: 'highlight',
-                    callback(form) {
+                    onClick(form) {
                         form.pushPage(form.makeConfirmAndRebootForm())
                     }
                 }),
@@ -221,7 +221,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                     name: 'provision',
                     style: 'interactive',
                     caption: gettext('Provision'),
-                    callback(form) {
+                    onClick(form) {
                         form.pushPage(form.makeProvisioningForm())
                     }
                 }),
@@ -232,7 +232,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                     backgroundActiveColor: Theme.getColor('@magenta-active-color'),
                     caption: gettext('Firmware'),
                     disabled: true,
-                    callback(form) {
+                    onClick(form) {
                         form.pushPage(form.makeUpdateFirmwareForm())
                     }
                 })

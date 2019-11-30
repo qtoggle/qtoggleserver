@@ -52,7 +52,7 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
                     description: gettext('Reset device to factory defaults.'),
                     caption: gettext('Reset'),
                     style: 'danger',
-                    callback: function (form) {
+                    onClick(form) {
                         form.clearError()
                         form.pushPage(form.confirmAndFactoryReset())
                     }
@@ -70,7 +70,7 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
                     style: 'interactive',
                     disabled: true,
                     caption: gettext('Apply'),
-                    callback: function (form) {
+                    onClick(form) {
                         form.clearError()
                         form.applyDefaultConfig()
                     }
@@ -93,21 +93,21 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
                             name: 'restore',
                             style: 'highlight',
                             caption: gettext('Restore'),
-                            callback(form) {
+                            onClick(form) {
                             }
                         }),
                         new PushButtonField({
                             name: 'create',
                             caption: gettext('Create'),
                             style: 'interactive',
-                            callback(form) {
+                            onClick(form) {
                             }
                         }),
                         new PushButtonField({
                             name: 'delete',
                             style: 'interactive',
                             caption: gettext('Delete'),
-                            callback(form) {
+                            onClick(form) {
                             }
                         })
                     ]
@@ -121,14 +121,14 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
                             name: 'download',
                             style: 'interactive',
                             caption: gettext('Download'),
-                            callback(form) {
+                            onClick(form) {
                             }
                         }),
                         new PushButtonField({
                             name: 'upload',
                             caption: gettext('Upload'),
                             style: 'interactive',
-                            callback(form) {
+                            onClick(form) {
                             }
                         })
                     ]
