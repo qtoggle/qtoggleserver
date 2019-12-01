@@ -66,7 +66,7 @@ export const STD_DEVICE_ATTRDEFS = {
         max: 32,
         required: true,
         modifiable: true,
-        regex: '^[_a-zA-Z][_a-zA-Z0-9]*$',
+        regex: '^[_a-zA-Z][_a-zA-Z0-9-]*$',
         standard: true,
         separator: true,
         order: 100
@@ -289,7 +289,7 @@ export const STD_PORT_ATTRDEFS = {
         type: 'string',
         max: 64,
         modifiable: false,
-        regex: '^[_a-zA-Z][._a-zA-Z0-9]*$',
+        regex: '^[_a-zA-Z][._a-zA-Z0-9-]*$',
         standard: true,
         order: 100
     },
