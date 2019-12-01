@@ -28,6 +28,7 @@ class ConfigForm extends WidgetConfigForm {
                 new ColorComboField({
                     name: 'color',
                     label: gettext('Color'),
+                    filterEnabled: true,
                     required: true
                 }),
                 new PortPickerField({
