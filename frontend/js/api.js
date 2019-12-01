@@ -1193,7 +1193,6 @@ function wait(firstQuick) {
 
         if (ignoreListenErrors) {
             logger.debug(`ignoring listen error: ${error}`)
-            syncListenCallbacks.forEach(c => PromiseUtils.asap().then(c))
         }
         else {
             syncListenError = error
