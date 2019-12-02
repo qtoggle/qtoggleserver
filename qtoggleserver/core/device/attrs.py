@@ -24,7 +24,7 @@ STANDARD_ATTRDEFS = {
         'persisted': True,
         'min': 1,
         'max': 32,
-        'pattern': r'^[_a-zA-Z]?[_a-z-A-Z0-9]*$',
+        'pattern': r'^[_a-zA-Z][_a-zA-Z0-9-]{0,31}$',
         'internal': True
     },
     'display_name': {
@@ -316,6 +316,7 @@ def set_attrs(attrs):
         if not attrdef.get('modifiable'):
             return 'attribute not modifiable: {}'.format(name)
 
+        # Treat passwords separately, as they are not persisted as given, but hashed first
         if name.endswith('_password') and hasattr(core_device_attrs, name + '_hash'):
             # Call password set command, if available
             if settings.password_set_cmd:
@@ -333,13 +334,11 @@ def set_attrs(attrs):
             persisted = persisted()
         if persisted:
             setattr(core_device_attrs, name, value)
-            continue
 
         if name == 'name' and settings.device_name.set_cmd:
             run_set_cmd(settings.device_name.set_cmd, cmd_name='device name', name=value)
-            continue
 
-        if name == 'date' and system.date.has_date_support():
+        elif name == 'date' and system.date.has_date_support():
             try:
                 date = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
 
@@ -347,13 +346,11 @@ def set_attrs(attrs):
                 return 'invalid field: {}'.format(name)
 
             system.date.set_date(date)
-            continue
 
-        if name == 'timezone' and system.date.has_timezone_support():
+        elif name == 'timezone' and system.date.has_timezone_support():
             system.date.set_timezone(value)
-            continue
 
-        if name == 'network_wifi' and system.net.has_network_wifi_support():
+        elif name == 'network_wifi' and system.net.has_network_wifi_support():
             parts = value.split(':')
             i = 0
             while i < len(parts):
@@ -372,9 +369,8 @@ def set_attrs(attrs):
 
             system.net.set_wifi_config(ssid, psk, bssid)
             reboot_required = True
-            continue
 
-        if name == 'network_ip' and system.net.has_network_ip_support():
+        elif name == 'network_ip' and system.net.has_network_ip_support():
             if value:
                 parts = value.split(':')
                 ip_mask, gw, dns = parts
@@ -385,9 +381,6 @@ def set_attrs(attrs):
                 system.net.set_ip_config(ip='', mask='', gw='', dns='')
 
             reboot_required = True
-            continue
-
-        return 'no such attribute: {}'.format(name)
 
     return reboot_required
 

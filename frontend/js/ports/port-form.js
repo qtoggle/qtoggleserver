@@ -174,7 +174,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
         }, this)
 
-        if (!port.enabled && !fieldChangeWarnings) {
+        if (!port.enabled) {
             /* Filter out attribute definitions not visible when port disabled */
             this._fullAttrdefs = ObjectUtils.filter(this._fullAttrdefs, function (name, def) {
                 return DISABLED_PORT_VISIBLE_ATTRS.indexOf(name) >= 0

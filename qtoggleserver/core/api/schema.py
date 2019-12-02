@@ -43,7 +43,7 @@ POST_PORTS = {
     "properties": {
         "id": {
             "type": "string",
-            "pattern": "^[a-zA-Z_][a-zA-Z0-9_.]{0,63}$"
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_.-]{0,63}$"
         },
         "type": {
             "enum": ["boolean", "number"]

@@ -373,7 +373,8 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                     throw error
 
                 }.bind(this))
-            })
+
+            }.bind(this))
         }
 
         if (this._fullAttrdefs && Object.keys(newAttrs).length) { /* Device online */
