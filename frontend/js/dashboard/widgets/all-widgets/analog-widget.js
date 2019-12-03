@@ -60,11 +60,13 @@ export class ConfigForm extends WidgetConfigForm {
                 new ColorComboField({
                     name: 'startColor',
                     label: gettext('Start Color'),
+                    filterEnabled: true,
                     required: true
                 }),
                 new ColorComboField({
                     name: 'endColor',
                     label: gettext('End Color'),
+                    filterEnabled: true,
                     required: true
                 }),
                 new CheckField({

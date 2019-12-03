@@ -81,7 +81,7 @@ class PanelOptionsForm extends OptionsForm {
                     style: 'highlight',
                     valueWidth: 100,
                     hidden: true,
-                    callback(form) {
+                    onClick(form) {
                         let panel = form._panel
                         panel.pushPage(panel.makeWidgetPicker())
                     }

@@ -25,6 +25,7 @@ class ConfigForm extends WidgetConfigForm {
             fields: [
                 new ColorComboField({
                     name: 'color',
+                    filterEnabled: true,
                     label: gettext('Color'),
                     required: true
                 }),

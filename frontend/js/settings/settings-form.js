@@ -132,7 +132,7 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
                     separator: true,
                     caption: gettext('Reboot'),
                     style: 'danger',
-                    callback(form) {
+                    onClick(form) {
                         form.pushPage(form.makeConfirmAndRebootForm())
                     }
                 }),
@@ -140,7 +140,7 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
                     name: 'provision',
                     style: 'interactive',
                     caption: gettext('Provision'),
-                    callback(form) {
+                    onClick(form) {
                         form.pushPage(form.makeProvisioningForm())
                     }
                 }),
@@ -151,7 +151,7 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
                     backgroundActiveColor: Theme.getColor('@magenta-active-color'),
                     caption: gettext('Firmware'),
                     disabled: true,
-                    callback(form) {
+                    onClick(form) {
                         form.pushPage(form.makeUpdateFirmwareForm())
                     }
                 })

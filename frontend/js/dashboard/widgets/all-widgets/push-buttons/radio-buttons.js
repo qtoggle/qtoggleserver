@@ -42,11 +42,13 @@ class ConfigForm extends WidgetConfigForm {
                 new ColorComboField({
                     name: 'normalColor',
                     label: gettext('Normal Color'),
+                    filterEnabled: true,
                     required: true
                 }),
                 new ColorComboField({
                     name: 'activeColor',
                     label: gettext('Active Color'),
+                    filterEnabled: true,
                     required: true
                 }),
                 new CheckField({
@@ -168,6 +170,7 @@ class ConfigForm extends WidgetConfigForm {
         let colorField = new ColorComboField({
             name: `buttonColor${no}`,
             label: `${gettext('Color')} ${no + 1}`,
+            filterEnabled: true,
             required: true
         })
 
