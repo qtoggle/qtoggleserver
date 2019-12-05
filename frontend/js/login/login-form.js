@@ -29,17 +29,18 @@ export default class LoginForm extends PageForm {
             icon: Login.KEY_ICON,
             modal: true,
             compact: true,
-            continuousValidation: false,
             fields: [
                 new TextField({
                     name: 'username',
                     label: gettext('Username'),
                     required: true,
+                    continuousChange: true,
                     autocomplete: 'username'
                 }),
                 new PasswordField({
                     name: 'password',
                     label: gettext('Password'),
+                    continuousChange: true,
                     autocomplete: true
                 }),
                 new CheckField({
