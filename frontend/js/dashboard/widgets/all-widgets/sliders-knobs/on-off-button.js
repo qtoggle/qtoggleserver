@@ -69,6 +69,7 @@ export default class OnOffButton extends Widget {
         this._thickness = 0
         this._vert = false
         this._dragPastThresh = false
+        this._dragDelta = 0
     }
 
     isValid() {
@@ -186,6 +187,12 @@ export default class OnOffButton extends Widget {
 
         this.setDragElement(backgroundDiv, this._vert ? 'y' : 'x')
 
+        backgroundDiv.on('pointerup', function () {
+            if (this._dragDelta < this._thickness * 0.05) {
+                this._doSwitch();
+            }
+        }.bind(this))
+
         return backgroundDiv
     }
 
@@ -233,8 +240,23 @@ export default class OnOffButton extends Widget {
         this._handleDiv.css('background', '')
     }
 
+    _doSwitch() {
+        if (this._on) {
+            this._showOff()
+        }
+        else {
+            this._showOn()
+        }
+
+        /* Actually send the new state to the server */
+        if (this._portId) {
+            this.setPortValue(this._portId, this._inverted ? !this._on : this._on)
+        }
+    }
+
     onDragBegin() {
         this._handleDiv.css('transition', 'none') /* Temporarily disable transitions */
+        this._dragDelta = 0
     }
 
     onDrag(elemX, elemY, deltaX, deltaY) {
@@ -255,6 +277,7 @@ export default class OnOffButton extends Widget {
             this.vibrate()
         }
         this._dragPastThresh = dragPastThresh
+        this._dragDelta = Math.max(Math.abs(deltaX), Math.abs(deltaY))
 
         if (this._vert) {
             this._handleDiv.css({top: `${drag}em`, left: 0})
@@ -274,18 +297,7 @@ export default class OnOffButton extends Widget {
                 return
             }
 
-            if (this._on) {
-                this._showOff()
-            }
-            else {
-                this._showOn()
-            }
-
-            /* Actually send the new state to the server */
-            if (this._portId) {
-                this.setPortValue(this._portId, this._inverted ? !this._on : this._on)
-            }
-
+            this._doSwitch()
             this._dragPastThresh = false
         }
         else { /* Restore previous state, no switching */
