@@ -146,7 +146,7 @@ class PortTimeout(PortError):
     pass
 
 
-class BasePort(utils.LoggableMixin, abc.ABC):
+class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
     PERSIST_COLLECTION = 'ports'
 
     TYPE = TYPE_BOOLEAN
@@ -879,7 +879,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
         return self._value_schema
 
 
-class Port(BasePort, abc.ABC):
+class Port(BasePort, metaclass=abc.ABCMeta):
     def __init__(self, port_id):
         super().__init__(port_id)
 

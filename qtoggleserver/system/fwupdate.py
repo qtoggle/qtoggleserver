@@ -29,7 +29,7 @@ class FWUpdateDisabled(FWUpdateException):
     pass
 
 
-class BaseDriver(abc.ABC):
+class BaseDriver(metaclass=abc.ABCMeta):
     def __init__(self):
         pass
 

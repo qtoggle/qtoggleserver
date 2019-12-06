@@ -9,7 +9,7 @@ from qtoggleserver.core.device import attrs as core_device_attrs
 logger = logging.getLogger(__name__)
 
 
-class Event(abc.ABC):
+class Event(metaclass=abc.ABCMeta):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_NONE
 
     def __init__(self, typ, params):

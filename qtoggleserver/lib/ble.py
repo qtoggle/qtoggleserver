@@ -349,7 +349,7 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
         return found[0]
 
 
-class BLEPeripheral(polled.PolledPeripheral, abc.ABC):
+class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
     RETRY_COUNT = 3
     WRITE_VALUE_PAUSE = 5
 
@@ -451,7 +451,7 @@ class BLEPeripheral(polled.PolledPeripheral, abc.ABC):
         return BLEAdapter.pretty_data(data)
 
 
-class BLEPort(polled.PolledPort, abc.ABC):
+class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):
     PERIPHERAL_CLASS = BLEPeripheral
 
     READ_INTERVAL_MAX = 1440

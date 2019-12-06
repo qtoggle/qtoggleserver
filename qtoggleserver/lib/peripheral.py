@@ -11,7 +11,7 @@ from . import add_done_hook
 logger = logging.getLogger(__name__)
 
 
-class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, abc.ABC):
+class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABCMeta):
     logger = logger
     _peripherals_by_address = {}
 
@@ -91,7 +91,7 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, abc.ABC):
         pass
 
 
-class PeripheralPort(core_ports.Port, abc.ABC):
+class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
     PERIPHERAL_CLASS = Peripheral
     ID = 'port'
 

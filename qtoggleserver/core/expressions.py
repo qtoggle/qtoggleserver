@@ -43,7 +43,7 @@ class IncompleteExpression(ExpressionError):
     pass
 
 
-class Expression(abc.ABC):
+class Expression(metaclass=abc.ABCMeta):
     def eval(self):
         raise NotImplementedError()
 
@@ -94,7 +94,7 @@ class Constant(Expression):
         return Constant(value, sexpression)
 
 
-class Function(Expression, abc.ABC):
+class Function(Expression, metaclass=abc.ABCMeta):
     NAME = None
     MIN_ARGS = None
     MAX_ARGS = None

@@ -78,7 +78,7 @@ class PolledPeripheral(Peripheral):
         return self._poll_task
 
 
-class PolledPort(PeripheralPort, abc.ABC):
+class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
     PERIPHERAL_CLASS = PolledPeripheral
 
     # Set these to None to disable read interval attribute

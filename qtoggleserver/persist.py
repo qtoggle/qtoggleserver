@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 _driver = None
 
 
-class BaseDriver(abc.ABC):
+class BaseDriver(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def query(self, collection, fields, filt, limit):
         return []

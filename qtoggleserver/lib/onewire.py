@@ -136,7 +136,7 @@ class OneWirePeripheral(polled.PolledPeripheral):
         self._error = None
 
 
-class OneWirePort(polled.PolledPort, abc.ABC):
+class OneWirePort(polled.PolledPort, metaclass=abc.ABCMeta):
     PERIPHERAL_CLASS = OneWirePeripheral
 
     def __init__(self, address=None, name=''):
