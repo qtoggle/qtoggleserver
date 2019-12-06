@@ -1033,7 +1033,7 @@ class Slave(utils.LoggableMixin):
             if old_value is not None and value != old_value:
                 self.debug('%s.%s changed remotely: %s -> %s', port, name,
                            json_utils.dumps(old_value), json_utils.dumps(value))
-                port.handle_attr_change(name, value)
+                await port.handle_attr_change(name, value)
 
         port.update_cached_attrs(attrs)
 

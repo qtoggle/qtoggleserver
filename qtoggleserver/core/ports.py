@@ -318,7 +318,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
         self._attrs_cache[name] = value
         if old_value != value:
-            self.handle_attr_change(name, value)
+            await self.handle_attr_change(name, value)
 
         if not self.is_loaded():
             return
@@ -327,12 +327,14 @@ class BasePort(utils.LoggableMixin, abc.ABC):
         await asyncio.sleep(0)
         self.trigger_update()
 
-    def handle_attr_change(self, name, value):
+    async def handle_attr_change(self, name, value):
         method_name = 'handle_{}_change'.format(name)
         method = getattr(self, method_name, None)
         if method:
             try:
-                method(value)
+                result = method(value)
+                if inspect.isawaitable(result):
+                    await result
 
             except Exception as e:
                 self.error('%s failed: %s', method_name, e, exc_info=True)
