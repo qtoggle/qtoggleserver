@@ -189,7 +189,7 @@ export default class OnOffButton extends Widget {
 
         backgroundDiv.on('pointerup', function () {
             if (this._dragDelta < this._thickness * 0.05) {
-                this._doSwitch();
+                this._doSwitch()
             }
         }.bind(this))
 
