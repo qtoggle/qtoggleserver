@@ -122,11 +122,10 @@ class PeripheralPort(core_ports.Port, abc.ABC):
     def attr_get_address(self):
         return self._peripheral.get_address()
 
-    async def handle_enabled_change(self, enabled):
-        if enabled and not self._peripheral.is_enabled():
-            # enable the peripheral if disabled
+    async def handle_enable(self):
+        if not self._peripheral.is_enabled():
             await self._peripheral.enable()
 
-        elif not enabled and self._peripheral.is_enabled():
-            # check if all peripheral ports are disabled
+    async def handle_disable(self):
+        if self._peripheral.is_enabled():
             await self._peripheral.check_disabled()

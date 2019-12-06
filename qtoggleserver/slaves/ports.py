@@ -175,11 +175,12 @@ class SlavePort(core_ports.BasePort):
         return dict(self._cached_attrs)
 
     def update_cached_attrs(self, attrs):
+        # use fire-and-forget here to enable/disable ports, as this method cannot be async
         if attrs.get('enabled') and not self.is_enabled():
-            self.enable()
+            asyncio.create_task(self.enable())
 
         elif not attrs.get('enabled') and self.is_enabled():
-            self.disable()
+            asyncio.create_task(self.disable())
 
         self._cached_attrs = dict(attrs)
 

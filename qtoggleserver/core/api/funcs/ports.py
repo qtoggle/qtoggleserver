@@ -98,7 +98,7 @@ async def post_ports(request, params):
                                       'integer': integer, 'step': step, 'choices': choices})
 
     # a virtual port is enabled by default
-    port.enable()
+    await port.enable()
     port.save()
     port.trigger_add()
 

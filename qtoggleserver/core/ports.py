@@ -358,15 +358,15 @@ class BasePort(utils.LoggableMixin, abc.ABC):
     def is_enabled(self):
         return self._enabled
 
-    def enable(self):
+    async def enable(self):
         if self._enabled:
             return
 
         self.debug('enabling %s', self)
         self._enabled = True
-        self.handle_enable()
+        await self.handle_enable()
 
-    def disable(self):
+    async def disable(self):
         if not self._enabled:
             return
 
@@ -379,20 +379,20 @@ class BasePort(utils.LoggableMixin, abc.ABC):
             self._sequence.cancel()
             self._sequence = None
 
-        self.handle_disable()
+        await self.handle_disable()
 
-    def handle_enable(self):
+    async def handle_enable(self):
         pass
 
-    def handle_disable(self):
+    async def handle_disable(self):
         pass
 
-    def attr_set_enabled(self, value):
+    async def attr_set_enabled(self, value):
         if value:
-            self.enable()
+            await self.enable()
 
         else:
-            self.disable()
+            await self.disable()
 
     def get_expression(self):
         if not self.is_writable():

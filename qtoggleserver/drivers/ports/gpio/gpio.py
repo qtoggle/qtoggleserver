@@ -31,7 +31,7 @@ class GPIO(ports.Port):
 
         super().__init__(port_id='gpio{}'.format(no))
 
-    def handle_enable(self):
+    async def handle_enable(self):
         try:
             (self._val_file, self._dir_file) = self._configure()
 

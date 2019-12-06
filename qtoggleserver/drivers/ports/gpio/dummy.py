@@ -26,7 +26,7 @@ class DummyGPIO(ports.Port):
 
         super().__init__(port_id='gpio{}'.format(no))
 
-    def handle_enable(self):
+    async def handle_enable(self):
         if self._def_output is not None:
             self.attr_set_output(self._def_output)
 
