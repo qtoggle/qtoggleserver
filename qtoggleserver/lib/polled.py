@@ -67,15 +67,11 @@ class PolledPeripheral(Peripheral):
     async def poll(self):
         raise NotImplementedError
 
-    def handle_enable(self):
+    async def handle_enable(self):
         self._poll_task = asyncio.create_task(self._poll_loop())
 
-        super().handle_enable()
-
-    def handle_disable(self):
+    async def handle_disable(self):
         self._polling = False  # Will stop poll loop
-
-        super().handle_disable()
 
     async def handle_done(self):
         self._polling = False

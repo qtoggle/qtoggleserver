@@ -53,23 +53,23 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, abc.ABC):
     def is_enabled(self):
         return self._enabled
 
-    def enable(self):
+    async def enable(self):
         if self._enabled:
             return
 
         self._enabled = True
-        self.handle_enable()
+        await self.handle_enable()
         self.debug('peripheral is enabled')
 
-    def disable(self):
+    async def disable(self):
         if not self._enabled:
             return
 
         self._enabled = False
-        self.handle_disable()
+        await self.handle_disable()
         self.debug('peripheral is disabled')
 
-    def check_disabled(self):
+    async def check_disabled(self):
         if not self._enabled:
             return
 
@@ -79,12 +79,12 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, abc.ABC):
 
         else:
             self.debug('all ports are disabled, disabling peripheral')
-            self.disable()
+            await self.disable()
 
-    def handle_enable(self):
+    async def handle_enable(self):
         pass
 
-    def handle_disable(self):
+    async def handle_disable(self):
         pass
 
     async def handle_done(self):
@@ -119,14 +119,14 @@ class PeripheralPort(core_ports.Port, abc.ABC):
     def get_peripheral(self):
         return self._peripheral
 
-    def handle_enabled_change(self, enabled):
+    def attr_get_address(self):
+        return self._peripheral.get_address()
+
+    async def handle_enabled_change(self, enabled):
         if enabled and not self._peripheral.is_enabled():
             # enable the peripheral if disabled
-            self._peripheral.enable()
+            await self._peripheral.enable()
 
         elif not enabled and self._peripheral.is_enabled():
             # check if all peripheral ports are disabled
-            self._peripheral.check_disabled()
-
-    def attr_get_address(self):
-        return self._peripheral.get_address()
+            await self._peripheral.check_disabled()

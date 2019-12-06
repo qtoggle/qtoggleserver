@@ -130,7 +130,7 @@ class OneWirePeripheral(polled.PolledPeripheral):
         else:
             self._error = None
 
-    def handle_disable(self):
+    async def handle_disable(self):
         self._filename = None
         self._data = None
         self._error = None
