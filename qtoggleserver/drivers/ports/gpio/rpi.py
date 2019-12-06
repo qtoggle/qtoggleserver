@@ -57,9 +57,7 @@ class RPiGPIO(ports.Port):
 
         super().__init__(port_id='gpio{}'.format(no))
 
-    def enable(self):
-        super().enable()
-
+    def handle_enable(self):
         self._configure(self._def_output, self._def_value)
 
     def read_value(self):

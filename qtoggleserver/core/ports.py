@@ -363,15 +363,14 @@ class BasePort(utils.LoggableMixin, abc.ABC):
             return
 
         self.debug('enabling %s', self)
-
         self._enabled = True
+        self.handle_enable()
 
     def disable(self):
         if not self._enabled:
             return
 
         self.debug('disabling %s', self)
-
         self._enabled = False
 
         # cancel sequence
@@ -379,6 +378,14 @@ class BasePort(utils.LoggableMixin, abc.ABC):
             self.debug('canceling current sequence')
             self._sequence.cancel()
             self._sequence = None
+
+        self.handle_disable()
+
+    def handle_enable(self):
+        pass
+
+    def handle_disable(self):
+        pass
 
     def attr_set_enabled(self, value):
         if value:

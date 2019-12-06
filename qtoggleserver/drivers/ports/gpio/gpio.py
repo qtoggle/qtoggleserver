@@ -31,7 +31,7 @@ class GPIO(ports.Port):
 
         super().__init__(port_id='gpio{}'.format(no))
 
-    def enable(self):
+    def handle_enable(self):
         try:
             (self._val_file, self._dir_file) = self._configure()
 
@@ -39,8 +39,6 @@ class GPIO(ports.Port):
             self.error('failed to configure %s: %s', self, e)
 
             raise
-
-        super().enable()
 
         if self._def_output is not None:
             self.attr_set_output(self._def_output)
