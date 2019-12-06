@@ -303,7 +303,7 @@ class Slave(utils.LoggableMixin):
             if self._online:
                 # take offline
                 self._online = False
-                asyncio.ensure_future(self._handle_offline())
+                asyncio.create_task(self._handle_offline())
 
     def get_poll_interval(self):
         return self._poll_interval
@@ -331,7 +331,7 @@ class Slave(utils.LoggableMixin):
         if self._online:
             # take offline
             self._online = False
-            asyncio.ensure_future(self._handle_offline())
+            asyncio.create_task(self._handle_offline())
 
     def is_listen_enabled(self):
         return self._listen_enabled
