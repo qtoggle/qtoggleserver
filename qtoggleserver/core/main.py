@@ -167,7 +167,7 @@ async def handle_value_changes(changed_set, change_reasons):
 
             if value != port.get_value():
                 logger.debug('expression "%s" of %s evaluated to %s', expression, port, json_utils.dumps(value))
-                port.set_value_asap(value, reason=ports.CHANGE_REASON_EXPRESSION)
+                port.push_value(value, reason=ports.CHANGE_REASON_EXPRESSION)
 
 
 def force_eval_expressions():

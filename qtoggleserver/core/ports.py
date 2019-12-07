@@ -572,7 +572,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
     def set_value_fire_and_forget(self, value, reason):
         asyncio.create_task(self.set_value(value, reason))
 
-    def set_value_asap(self, value, reason):
+    def push_value(self, value, reason):
         already_scheduled = self._asap_value is not None
         self._asap_value = value
 
