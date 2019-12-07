@@ -109,7 +109,7 @@ class Temperature(ble.BLEPort):
     PERIPHERAL_CLASS = EQ3BlueThermo
     ID = 'temperature'
 
-    def read_value(self):
+    async def read_value(self):
         return self.get_peripheral().get_temp()
 
     @ble.port_exceptions
@@ -125,7 +125,7 @@ class Boost(ble.BLEPort):
     PERIPHERAL_CLASS = EQ3BlueThermo
     ID = 'boost'
 
-    def read_value(self):
+    async def read_value(self):
         return self.get_peripheral().get_boost()
 
     @ble.port_exceptions

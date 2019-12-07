@@ -30,7 +30,7 @@ class DummyGPIO(ports.Port):
         if self._def_output is not None:
             self.attr_set_output(self._def_output)
 
-    def read_value(self):
+    async def read_value(self):
         return self._dummy_value
 
     def write_value(self, value):

@@ -31,7 +31,7 @@ class VirtualPort(core_ports.Port):
     def map_id(self, new_id):
         raise core_ports.PortError('virtual ports cannot be mapped')
 
-    def read_value(self):
+    async def read_value(self):
         return self._virtual_value
 
     def write_value(self, value):

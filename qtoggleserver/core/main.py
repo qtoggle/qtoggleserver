@@ -57,7 +57,7 @@ async def update():
                 logger.error('port heart beat second exception: %s', e, exc_info=True)
 
         try:
-            new_value = port.read_transformed_value()
+            new_value = await port.read_transformed_value()
 
         except Exception as e:
             logger.error('failed to read value from %s: %s', port, e, exc_info=True)

@@ -153,6 +153,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
     DISPLAY_NAME = ''
     UNIT = ''
     WRITABLE = False
+    CHOICES = None
 
     WRITE_VALUE_PAUSE = 0
 
@@ -507,7 +508,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             raise InvalidAttributeValue('transform_write')
 
-    def read_value(self):
+    async def read_value(self):
         raise NotImplementedError()
 
     def write_value(self, value):
@@ -591,8 +592,8 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         else:
             self.debug('will set value %s asap', json_utils.dumps(value))
 
-    def read_transformed_value(self):
-        value = self.read_value()
+    async def read_transformed_value(self):
+        value = await self.read_value()
         if value is None:
             return None
 
@@ -733,7 +734,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         elif self.is_enabled():
             try:
-                value = self.read_transformed_value()
+                value = await self.read_transformed_value()
                 if value is not None:
                     self._value = value
                     self.debug('read value = %s', json_utils.dumps(self._value))

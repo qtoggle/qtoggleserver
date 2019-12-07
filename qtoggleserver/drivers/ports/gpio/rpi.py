@@ -60,7 +60,7 @@ class RPiGPIO(ports.Port):
     async def handle_enable(self):
         self._configure(self._def_output, self._def_value)
 
-    def read_value(self):
+    async def read_value(self):
         return GPIO.input(self._no) == 1
 
     def write_value(self, value):

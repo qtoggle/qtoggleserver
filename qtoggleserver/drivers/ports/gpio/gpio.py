@@ -43,7 +43,7 @@ class GPIO(ports.Port):
         if self._def_output is not None:
             self.attr_set_output(self._def_output)
 
-    def read_value(self):
+    async def read_value(self):
         self._val_file.seek(0)
 
         return self._val_file.read(1) == '1'

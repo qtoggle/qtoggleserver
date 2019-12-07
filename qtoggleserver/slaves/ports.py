@@ -263,7 +263,7 @@ class SlavePort(core_ports.BasePort):
     def set_cached_value(self, value):
         self._cached_value = value
 
-    def read_value(self):
+    async def read_value(self):
         return self._cached_value
 
     async def write_value(self, value):
