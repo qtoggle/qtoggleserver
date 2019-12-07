@@ -4,7 +4,6 @@ import asyncio
 import logging
 import os
 import re
-import threading
 
 from qtoggleserver.lib import polled
 
@@ -33,48 +32,6 @@ class OneWirePeripheralAddressRequired(OneWireException):
 class OneWireTimeout(OneWireException):
     def __init__(self, message='timeout'):
         super().__init__(message)
-
-
-class _SlaveReaderThread(threading.Thread):
-    def __init__(self, peripheral):
-        super().__init__()
-
-        self._peripheral = peripheral
-
-        self._data = None
-        self._error = None
-
-    def run(self):
-        data = error = None
-
-        try:
-            filename = self._peripheral.get_filename()
-            self._peripheral.debug('opening file %s', filename)
-            with open(filename, 'r') as f:
-                data = f.read()
-                self._peripheral.debug('read data: %s', data.replace('\n', '\\n'))
-
-        except Exception as e:
-            self._peripheral.error('read failed: %s', e, exc_info=True)
-            error = e
-
-        self._peripheral.debug('reader thread stopped')
-        self._data = data
-        self._error = error
-
-    def start(self):
-        self._peripheral.debug('starting reader thread')
-        super().start()
-
-    async def read(self):
-        self.start()
-        while self._data is self._error is None:
-            await asyncio.sleep(0.1)
-
-        if self._error:
-            raise self._error
-
-        return self._data
 
 
 class OneWirePeripheral(polled.PolledPeripheral):
@@ -116,10 +73,19 @@ class OneWirePeripheral(polled.PolledPeripheral):
 
         return data
 
+    def read_sync(self):
+        filename = self.get_filename()
+        self.debug('opening file %s', filename)
+        with open(filename, 'r') as f:
+            data = f.read()
+            self.debug('read data: %s', data.replace('\n', '\\n'))
+
+        return data
+
     async def poll(self):
-        reader = _SlaveReaderThread(self)
         try:
-            self._data = await asyncio.wait_for(reader.read(), timeout=self.TIMEOUT)
+            future = self.run_threaded(self.read_sync)
+            self._data = await asyncio.wait_for(future, timeout=self.TIMEOUT)
 
         except asyncio.TimeoutError:
             self._error = OneWireTimeout('timeout waiting for one-wire data from peripheral')

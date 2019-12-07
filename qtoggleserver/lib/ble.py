@@ -1,11 +1,9 @@
 
 import abc
-import asyncio
 import functools
 import logging
 import re
 import subprocess
-import threading
 import time
 
 from bluepy import btle
@@ -14,7 +12,7 @@ from qtoggleserver import utils
 from qtoggleserver.core import ports as core_ports
 
 from . import polled
-from . import add_done_hook
+from .peripheral import Peripheral, RunnerBusy
 
 
 logger = logging.getLogger(__name__)
@@ -64,141 +62,11 @@ class _BluepyPeripheral(btle.Peripheral):
             helper.stdout.close()
 
 
-class _BluepyThread(threading.Thread, btle.DefaultDelegate):
-    def __init__(self, adapter):
-        super().__init__()
-
-        self._adapter = adapter
-        self._running = True
-        self._loop = asyncio.get_event_loop()
-        self._stopped_future = self._loop.create_future()
-
-        self._cmd = None
-        self._address = None
-        self._handle = None
-        self._notify_handle = None
-        self._data = None
-        self._callback = None
-        self._timeout = None
-
-        self._start_time = None
-        self._response = None
-        self._notification_data = None
-        self._error = None
-        self._bluepy_peripheral = None
-
-    def run(self):
-        while self._running:
-            time.sleep(0.5)
-            if not self._cmd:
-                continue
-
-            try:
-                self._execute()
-
-            except Exception as e:
-                self._adapter.error('command execution failed: %s', e, exc_info=True)
-                self._error = e
-
-            finally:
-                self._cmd = None
-                self._cleanup()
-                self._loop.call_soon_threadsafe(self._callback, self._response,
-                                                self._notification_data, self._error)
-
-        self._adapter.debug('command thread stopped')
-        self._stopped_future.set_result(None)
-
-    def schedule_cmd(self, cmd, address, handle, notify_handle, data, callback, timeout):
-        if self._cmd:
-            raise BLEBusy('a command is already scheduled')
-
-        if not self._running:
-            raise BLEException('refusing to schedule command on stopped thread')
-
-        self._cmd = cmd
-        self._address = address
-        self._handle = handle
-        self._notify_handle = notify_handle
-        self._data = data
-        self._callback = callback
-        self._timeout = timeout
-
-    def is_busy(self):
-        return self._cmd is not None
-
-    def cancel(self):
-        if self._cmd:
-            self._cmd = None
-
-    def stop(self):
-        self._adapter.debug('stopping command thread')
-        self._running = False
-
-        return self._stopped_future
-
-    def _execute(self):
-        self._start_time = time.time()
-        self._response = None
-        self._notification_data = None
-        self._error = None
-
-        self._adapter.debug('connecting to %s', self._address)
-        self._bluepy_peripheral = _BluepyPeripheral(timeout=self._timeout)
-        self._bluepy_peripheral.connect(self._address)
-
-        if self._notify_handle:
-            self._bluepy_peripheral.withDelegate(self)
-
-        if self._cmd == 'write':
-            self._adapter.debug('writing at %04X: %s', self._handle, BLEAdapter.pretty_data(self._data))
-            self._bluepy_peripheral.writeCharacteristic(self._handle, self._data, withResponse=True)
-
-        else:  # assuming read
-            self._adapter.debug('reading from %04X', self._handle)
-            self._response = self._bluepy_peripheral.readCharacteristic(self._handle)
-
-        if not self._cmd:
-            return  # Cancelled in the meantime
-
-        if self._response:
-            self._adapter.debug('got response %s', BLEAdapter.pretty_data(self._response))
-
-        if not self._cmd:
-            return  # Cancelled in the meantime
-
-        if self._notify_handle and self._notification_data is None:
-            self._adapter.debug('waiting for notification on %04X', self._notify_handle)
-
-            while not self._notification_data and self._cmd:
-                if time.time() - self._start_time > self._timeout:
-                    raise BLETimeout('timeout waiting for notification on {:04X}'.format(self._notify_handle))
-
-                try:
-                    self._bluepy_peripheral.waitForNotifications(0.1)
-
-                except _BluepyTimeoutError:
-                    continue
-
-    def _cleanup(self):
-        if self._bluepy_peripheral:
-            self._adapter.debug('disconnecting from %s', self._bluepy_peripheral.addr)
-            self._bluepy_peripheral.disconnect()
-            self._bluepy_peripheral = None
-
-    def handleNotification(self, handle, data):
-        if not self._notify_handle or handle != self._notify_handle:
-            self._adapter.warning('got unexpected notification on %04X', handle)
-            return
-
-        self._adapter.debug('got notification on %04X: %s', handle, BLEAdapter.pretty_data(data))
-        self._notification_data = data
-
-
 class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
     DEFAULT_NAME = 'hci0'
-    CMD_TIMEOUT = 20
     MAX_PENDING_CMDS = 64
+
+    RUNNER_CLASS = Peripheral.RUNNER_CLASS
 
     _adapters_by_name = {}
 
@@ -224,15 +92,8 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
 
         self.debug('found adapter address %s', self._address)
 
-        self._current = None
-
-        self._cmd_queue = []
+        self._runner = None
         self._peripherals = []
-
-        self._thread = _BluepyThread(self)
-        self._thread.start()
-        self.debug('command thread started')
-        add_done_hook(self._thread.stop)
 
     def __str__(self):
         return self._name
@@ -240,90 +101,18 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
     def add_peripheral(self, peripheral):
         self._peripherals.append(peripheral)
 
-    def push_cmd(self, cmd, peripheral, handle, notify_handle, data, callback, timeout=None, retry_count=0):
-        if len(self._cmd_queue) >= self.MAX_PENDING_CMDS:
-            if callback:
-                callback(error=BLEBusy('too many pending commands'))
+    def get_runner(self):
+        if self._runner is None:
+            self._runner = self.make_runner()
 
-            self.error('too many pending commands')
+        return self._runner
 
-        self._cmd_queue.append({
-            'cmd': cmd,
-            'peripheral': peripheral,
-            'handle': handle,
-            'notify_handle': notify_handle,
-            'data': data,
-            'callback': callback,
-            'timeout': timeout,
-            'retry_count': retry_count,
-            'retry_no': 0
-        })
+    def make_runner(self):
+        self.debug('starting threaded runner')
+        runner = self.RUNNER_CLASS(queue_size=Peripheral.RUNNER_QUEUE_SIZE)
+        runner.start()
 
-        self._run_next_cmd()
-
-    def purge(self, peripheral):
-        self._cmd_queue = [i for i in self._cmd_queue if i['peripheral'] != peripheral]
-        if self._thread.is_busy() and self._current['peripheral'] == peripheral:
-            self.debug('canceling current command for peripheral %s', peripheral.get_name())
-            self._thread.cancel()
-            self._current = None
-
-    def _run_next_cmd(self):
-        if self._current:
-            return  # busy
-
-        if not self._cmd_queue:
-            return  # idle
-
-        self._current = self._cmd_queue.pop(0)
-        if not self._current['timeout']:
-            self._current['timeout'] = self.CMD_TIMEOUT
-
-        cmd = self._current['cmd']
-        peripheral = self._current['peripheral']
-        handle = self._current['handle']
-        notify_handle = self._current['notify_handle']
-        data = self._current['data']
-        timeout = self._current['timeout']
-        address = peripheral.get_address()
-
-        self._thread.schedule_cmd(cmd, address, handle, notify_handle, data, self._on_cmd_done, timeout)
-
-    def _on_cmd_done(self, response, notification_data, error):
-        # Ignore callbacks from cancelled/purged commands
-        if not self._current:
-            return
-
-        if error:
-            if self._retry():
-                self._current = None
-                self._run_next_cmd()
-                return
-
-        self._run_callback(response=response, notification_data=notification_data, error=error)
-        self._current = None
-
-        self._run_next_cmd()
-
-    def _run_callback(self, **kwargs):
-        if not self._current['callback']:
-            return
-
-        try:
-            self._current['callback'](**kwargs)
-
-        except Exception as e:
-            self.error('command callback failed: %s', e, exc_info=True)
-
-    def _retry(self):
-        if self._current['retry_no'] < self._current['retry_count']:
-            self._current['retry_no'] += 1
-            self._cmd_queue.insert(0, self._current)
-            self.warning('retry %s/%s', self._current['retry_no'], self._current['retry_count'])
-
-            return True
-
-        return False
+        return runner
 
     @staticmethod
     def pretty_data(data):
@@ -350,6 +139,7 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
 
 
 class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
+    CMD_TIMEOUT = 20
     RETRY_COUNT = 3
     WRITE_VALUE_PAUSE = 5
 
@@ -369,62 +159,118 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
     def __str__(self):
         return '{}/{}'.format(self._adapter, self._name)
 
-    def get_adapter(self):
-        return self._adapter
+    def make_runner(self):
+        # Instead of creating a runner for each peripheral instance, we use adapter's runner, thus having one runner per
+        # adapter instance.
 
-    def read(self, handle, retry_count=None):
+        return self._adapter.get_runner()
+
+    async def read(self, handle, retry_count=None):
         if retry_count is None:
             retry_count = self.RETRY_COUNT
 
-        future = asyncio.get_event_loop().create_future()
+        return await self._run_cmd_async('read', self.get_address(), handle, notify_handle=None,
+                                         data=None, timeout=self.CMD_TIMEOUT, retry_count=retry_count)
 
-        self._adapter.push_cmd('read', self, handle, notify_handle=None, data=None,
-                               callback=functools.partial(self._response_wrapper, future),
-                               retry_count=retry_count)
-
-        return future
-
-    def write(self, handle, data, retry_count=None):
+    async def write(self, handle, data, retry_count=None):
         if retry_count is None:
             retry_count = self.RETRY_COUNT
 
-        future = asyncio.get_event_loop().create_future()
+        return await self._run_cmd_async('write', self.get_address(), handle, notify_handle=None,
+                                         data=data, timeout=self.CMD_TIMEOUT, retry_count=retry_count)
 
-        self._adapter.push_cmd('write', self, handle, notify_handle=None, data=data,
-                               callback=functools.partial(self._response_wrapper, future),
-                               retry_count=retry_count)
-
-        return future
-
-    def write_notify(self, handle, notify_handle, data, timeout=None, retry_count=None):
+    async def write_notify(self, handle, notify_handle, data, timeout=None, retry_count=None):
         if retry_count is None:
             retry_count = self.RETRY_COUNT
 
-        future = asyncio.get_event_loop().create_future()
+        if timeout is None:
+            timeout = self.CMD_TIMEOUT
 
-        self._adapter.push_cmd('write', self, handle, notify_handle, data,
-                               callback=functools.partial(self._response_wrapper, future),
-                               timeout=timeout, retry_count=retry_count)
+        return await self._run_cmd_async('write', self.get_address(), handle, notify_handle=notify_handle,
+                                        data=data, timeout=timeout, retry_count=retry_count)
 
-        return future
+    def _run_cmd(self, cmd, address, handle, notify_handle, data, timeout):
+        start_time = time.time()
+        response = None
+        notification_data = None
 
-    def _response_wrapper(self, future, error=None, response=None, notification_data=None):
-        if error and self._online:
-            self._online = False
-            self._handle_offline()
+        self.debug('connecting to %s', address)
 
-        elif not error and not self._online:
-            self._online = True
-            self._handle_online()
+        bluepy_peripheral = _BluepyPeripheral(timeout=timeout)
+        bluepy_peripheral.connect(address)
 
-        if error:
-            future.set_exception(error)
+        if notify_handle:
+            # Create a temporary class to deal with BTLE delegation
 
-        elif notification_data is not None:
-            future.set_result(notification_data)
+            peripheral = self
+            class Delegate(btle.DefaultDelegate):
 
-        else:
-            future.set_result(response)
+                def handleNotification(self, h, d):
+                    nonlocal notification_data
+
+                    if not notify_handle or h != notify_handle:
+                        peripheral.warning('got unexpected notification on %04X', h)
+                        return
+
+                    peripheral.debug('got notification on %04X: %s', h, BLEPeripheral.pretty_data(d))
+                    notification_data = d
+
+            bluepy_peripheral.withDelegate(Delegate())
+
+        if cmd == 'write':
+            self.debug('writing at %04X: %s', handle, self.pretty_data(data))
+            bluepy_peripheral.writeCharacteristic(handle, data, withResponse=True)
+
+        else:  # assuming read
+            self.debug('reading from %04X', handle)
+            response = bluepy_peripheral.readCharacteristic(handle)
+            self.debug('got response %s', self.pretty_data(response))
+
+        if notify_handle and notification_data is None:
+            self.debug('waiting for notification on %04X', notify_handle)
+
+            while not notification_data and self.get_runner().is_running():
+                if time.time() - start_time > timeout:
+                    raise BLETimeout('timeout waiting for notification on {:04X}'.format(notify_handle))
+
+                try:
+                    bluepy_peripheral.waitForNotifications(0.1)
+
+                except _BluepyTimeoutError:
+                    continue
+
+        return response, notification_data
+
+    async def _run_cmd_async(self, cmd, address, handle, notify_handle, data, timeout, retry_count):
+        retry = 1
+        while True:
+            try:
+                response, notification_data = await self.run_threaded(self._run_cmd, cmd, address, handle,
+                                                                      notify_handle, data, timeout)
+
+            except Exception as e:
+                self.error('command execution failed: %s', e)
+
+                if retry <= retry_count:
+                    self.warning('retry %s/%s', retry, retry_count)
+                    retry += 1
+                    continue
+
+                if self._online:
+                    self._online = False
+                    self._handle_offline()
+
+                if isinstance(e, RunnerBusy):
+                    e = BLEBusy('too many pending commands')
+
+                raise e
+
+            else:
+                if not self._online:
+                    self._online = True
+                    self._handle_online()
+
+                return response, notification_data
 
     def is_online(self):
         return self._enabled and self._online
@@ -455,11 +301,14 @@ class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):
     READ_INTERVAL_STEP = 5
     READ_INTERVAL_MULTIPLIER = 60
 
-    def __init__(self, address, name, adapter_name=BLEAdapter.DEFAULT_NAME):
+    def __init__(self, address, name, adapter_name=None):
+        if adapter_name is None:
+            adapter_name = BLEAdapter.DEFAULT_NAME
+
         super().__init__(address, name, adapter_name=adapter_name)
 
         # Inherit from peripheral
-        self._write_value_pause = self.get_peripheral().WRITE_VALUE_PAUSE
+        self.set_attr('write_value_pause', self.get_peripheral().WRITE_VALUE_PAUSE)
 
     async def attr_is_online(self):
         if not self.is_enabled():

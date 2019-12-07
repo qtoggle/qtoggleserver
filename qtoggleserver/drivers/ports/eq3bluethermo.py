@@ -62,8 +62,8 @@ class EQ3BlueThermo(ble.BLEPeripheral):
 
     async def _read_config(self):
         try:
-            data = await self.write_notify(self.WRITE_HANDLE, self.NOTIFY_HANDLE,
-                                           bytes([self.STATUS_SEND_HEADER] + self._make_status_value()))
+            _, data = await self.write_notify(self.WRITE_HANDLE, self.NOTIFY_HANDLE,
+                                              bytes([self.STATUS_SEND_HEADER] + self._make_status_value()))
 
         except Exception as e:
             self.error('failed to read current configuration: %s', e, exc_info=True)
