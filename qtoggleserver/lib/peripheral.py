@@ -16,16 +16,16 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
     _peripherals_by_address = {}
 
     @classmethod
-    def get(cls, address, name='', **kwargs):
+    def get(cls, address, name, **kwargs):
         if address not in cls._peripherals_by_address:
-            logger.debug('initializing peripheral %s@%s', name, address)
+            logger.debug('initializing peripheral %s(%s@%s)', cls.__name__, name, address)
             peripheral = cls.make_peripheral(address, name, **kwargs)
             cls._peripherals_by_address[address] = peripheral
 
         return cls._peripherals_by_address[address]
 
     @classmethod
-    def make_peripheral(cls, address, name='', **kwargs):
+    def make_peripheral(cls, address, name, **kwargs):
         return cls(address, name, **kwargs)
 
     def __init__(self, address, name, **kwargs):

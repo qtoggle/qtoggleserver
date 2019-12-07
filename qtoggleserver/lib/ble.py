@@ -356,10 +356,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
     logger = logger
 
     @classmethod
-    def make_peripheral(cls, address, name='', adapter_name=None, **kwargs):
-        if adapter_name is None:
-            adapter_name = BLEAdapter.DEFAULT_NAME
-
+    def make_peripheral(cls, address, name, adapter_name=None, **kwargs):
         return cls(address, name, BLEAdapter.get(adapter_name))
 
     def __init__(self, address, name, adapter):
@@ -458,7 +455,7 @@ class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):
     READ_INTERVAL_STEP = 5
     READ_INTERVAL_MULTIPLIER = 60
 
-    def __init__(self, address, name, adapter_name=None):
+    def __init__(self, address, name, adapter_name=BLEAdapter.DEFAULT_NAME):
         super().__init__(address, name, adapter_name=adapter_name)
 
         # Inherit from peripheral
