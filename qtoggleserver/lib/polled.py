@@ -2,7 +2,6 @@
 import abc
 import asyncio
 import copy
-import inspect
 import logging
 
 from .peripheral import Peripheral, PeripheralPort
@@ -40,9 +39,7 @@ class PolledPeripheral(Peripheral):
                 await asyncio.sleep(1)
                 continue
 
-            result = self.poll()
-            if inspect.isawaitable(result):
-                await result
+            await self.poll()
 
             # Granular sleep so it can be interrupted
             orig_poll_interval = self._poll_interval

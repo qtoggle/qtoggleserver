@@ -3,7 +3,6 @@ import abc
 import asyncio
 import copy
 import functools
-import inspect
 import logging
 import sys
 import time
@@ -331,9 +330,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         method = getattr(self, method_name, None)
         if method:
             try:
-                result = method(value)
-                if inspect.isawaitable(result):
-                    await result
+                await method(value)
 
             except Exception as e:
                 self.error('%s failed: %s', method_name, e, exc_info=True)
