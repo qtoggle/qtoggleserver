@@ -19,12 +19,10 @@ class GPIO(ports.Port):
 
     BASE_PATH = '/sys/class/gpio'
 
-    def __init__(self, no, def_value=None, def_output=None, monostable_timeout=None):
+    def __init__(self, no, def_value=None, def_output=None):
         self._no = no
         self._def_value = def_value
         self._def_output = def_output
-        self._monostable_timeout = monostable_timeout
-        self._monostable_timeout_handle = None
 
         self._val_file = None
         self._dir_file = None
@@ -60,17 +58,6 @@ class GPIO(ports.Port):
         self.debug('writing %s to "%s"', json_utils.dumps(value), self._val_file.name)
         self._val_file.write(value)
         self._val_file.flush()
-
-        if self._monostable_timeout_handle:
-            self.cancel_timeout(self._monostable_timeout_handle)
-
-        if self._monostable_timeout is not None and value != self._def_value:
-            self._monostable_timeout_handle = self.add_timeout(self._monostable_timeout, self._monostable_callback)
-
-    def _monostable_callback(self):
-        self.debug('monostable timeout occurred')
-        self.write_value(self._def_value)
-        self._monostable_timeout_handle = None
 
     def attr_is_writable(self):
         return self._is_output()

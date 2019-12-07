@@ -43,11 +43,9 @@ class RPiGPIO(ports.Port):
         'down': False
     }
 
-    def __init__(self, no, def_value=None, def_output=None, monostable_timeout=None):
+    def __init__(self, no, def_value=None, def_output=None):
         self._no = no
         self._def_value = def_value  # also plays the role of pull setup
-        self._monostable_timeout = monostable_timeout
-        self._monostable_timeout_handle = None
 
         # the default i/o state
         if def_output is None:
@@ -66,17 +64,6 @@ class RPiGPIO(ports.Port):
     async def write_value(self, value):
         self.debug('writing output value %s', json_utils.dumps(value))
         GPIO.output(self._no, value)
-
-        if self._monostable_timeout_handle:
-            self.cancel_timeout(self._monostable_timeout_handle)
-
-        if self._monostable_timeout is not None and value != self._def_value:
-            self._monostable_timeout_handle = self.add_timeout(self._monostable_timeout, self._monostable_callback)
-
-    def _monostable_callback(self):
-        self.debug('monostable timeout occurred')
-        self.write_value(self._def_value)
-        self._monostable_timeout_handle = None
 
     def attr_is_writable(self):
         return self.attr_is_output()
