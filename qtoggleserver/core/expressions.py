@@ -822,10 +822,10 @@ def parse(self_port_id, sexpression):
         return Constant.parse(self_port_id, sexpression)
 
 
-def check_loops(port, expression):
+async def check_loops(port, expression):
     seen_ports = {port}
 
-    def check_loops_rec(level, e):
+    async def check_loops_rec(level, e):
         if isinstance(e, PortValue):
             p = e.get_port()
             if not p:
@@ -841,9 +841,9 @@ def check_loops(port, expression):
 
             seen_ports.add(p)
 
-            expr = p.get_expression()
+            expr = await p.get_expression()
             if expr:
-                lv = check_loops_rec(level + 1, expr)
+                lv = await check_loops_rec(level + 1, expr)
                 if lv:
                     return lv
 
@@ -851,11 +851,11 @@ def check_loops(port, expression):
 
         elif isinstance(e, Function):
             for arg in e.args:
-                lv = check_loops_rec(level, arg)
+                lv = await check_loops_rec(level, arg)
                 if lv:
                     return lv
 
         return 0
 
-    if check_loops_rec(1, expression) > 1:
+    if await check_loops_rec(1, expression) > 1:
         raise CircularDependency('{} is recursively referred'.format(port))

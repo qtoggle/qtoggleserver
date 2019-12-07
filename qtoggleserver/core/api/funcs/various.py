@@ -46,7 +46,7 @@ async def get_listen(request, session_id, timeout, access_level):
     session = core_sessions.get(session_id)
     events = await session.reset_and_wait(timeout, access_level)
 
-    return [e.to_json() for e in events]
+    return [await e.to_json() for e in events]
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)

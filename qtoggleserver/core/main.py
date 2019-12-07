@@ -81,7 +81,7 @@ async def update():
             port.reset_change_reason()
 
     if changed_set:
-        handle_value_changes(changed_set, change_reasons)
+        await handle_value_changes(changed_set, change_reasons)
 
     sessions.respond_non_empty()
     sessions.cleanup()
@@ -98,7 +98,7 @@ async def update_loop():
         await asyncio.sleep(settings.core.tick_interval / 1000.0)
 
 
-def handle_value_changes(changed_set, change_reasons):
+async def handle_value_changes(changed_set, change_reasons):
     global _force_eval_expressions
 
     from . import expressions
@@ -115,15 +115,15 @@ def handle_value_changes(changed_set, change_reasons):
 
         port.trigger_value_change()
 
-        if port.is_persisted():
-            port.save()
+        if await port.is_persisted():
+            await port.save()
 
     # reevaluate the expressions depending on changed ports
     for port in ports.all_ports():
         if not port.is_enabled():
             continue
 
-        expression = port.get_expression()
+        expression = await port.get_expression()
         if expression:
             deps = expression.get_deps()
             deps.add(None)  # special "always depends on" value
@@ -161,7 +161,7 @@ def handle_value_changes(changed_set, change_reasons):
                 logger.error('failed to evaluate expression "%s" of %s: %s', expression, port, e)
                 continue
 
-            value = port.adapt_value_type(value)
+            value = await port.adapt_value_type(value)
             if value is None:
                 continue
 

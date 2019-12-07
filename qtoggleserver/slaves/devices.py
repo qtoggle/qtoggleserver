@@ -394,12 +394,12 @@ class Slave(utils.LoggableMixin):
         for _id in my_port_ids:
             await self._add_port(attrs={'id': _id})
 
-    def _save_ports(self):
+    async def _save_ports(self):
 
         self.debug('persisting ports')
         ports = self._get_local_ports()
         for port in ports:
-            port.save()
+            await port.save()
 
     def _rename_ports_persisted_data(self, new_name):
         port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
@@ -644,7 +644,7 @@ class Slave(utils.LoggableMixin):
             self.debug('port %s present locally but not remotely', port_id)
             port.remove()
 
-        self._save_ports()
+        await self._save_ports()
 
     def _get_local_ports(self):
         return [port for port in core_ports.all_ports() if port.get_id().startswith(self._name + '.')]
@@ -757,7 +757,7 @@ class Slave(utils.LoggableMixin):
 
                 else:  # still online
                     if needs_save_ports:
-                        self._save_ports()
+                        await self._save_ports()
 
     async def _poll_loop(self):
         interval = 0  # never wait when start polling
@@ -940,7 +940,7 @@ class Slave(utils.LoggableMixin):
 
         if needs_save_ports:
             try:
-                self._save_ports()
+                await self._save_ports()
 
             except Exception as e:
                 self.error('failed to save polled ports: %s', e)
@@ -1011,7 +1011,7 @@ class Slave(utils.LoggableMixin):
 
         port.set_cached_value(value)
         port.update_last_sync()
-        port.save()
+        await port.save()
 
     async def _handle_port_update(self, **attrs):
         local_id = '{}.{}'.format(self._name, attrs.get('id'))
@@ -1040,7 +1040,7 @@ class Slave(utils.LoggableMixin):
         if 'value' in attrs:  # value has also been updated
             port.update_last_sync()
 
-        port.save()
+        await port.save()
         port.trigger_update()
 
     async def _handle_port_add(self, **attrs):
@@ -1245,7 +1245,7 @@ class Slave(utils.LoggableMixin):
 
             # if we had some provisioning to do, we need to save the new port state (with cleared provisioning)
             if provisioned:
-                port.save()
+                await port.save()
 
         # if no webhooks params marked for provisioning, query the current params from device
         webhooks_queried = False

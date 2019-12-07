@@ -12,7 +12,7 @@ from qtoggleserver.utils import json as json_utils
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
 async def get_ports(request):
-    return [port.to_json() for port in sorted(core_ports.all_ports(), key=lambda p: p.get_id())]
+    return [await port.to_json() for port in sorted(core_ports.all_ports(), key=lambda p: p.get_id())]
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
@@ -28,7 +28,7 @@ async def patch_port(request, port_id, params):
         else:
             return 'no such attribute: {field}'
 
-    core_api_schema.validate(params, port.get_schema(), unexpected_field_msg=unexpected_field_msg)
+    core_api_schema.validate(params, await port.get_schema(), unexpected_field_msg=unexpected_field_msg)
 
     # step validation
     for name, value in params.items():
@@ -71,7 +71,7 @@ async def patch_port(request, port_id, params):
             # transform any unhandled exception into APIError(500)
             raise core_api.APIError(500, str(error))
 
-    port.save()
+    await port.save()
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
@@ -99,10 +99,10 @@ async def post_ports(request, params):
 
     # a virtual port is enabled by default
     await port.enable()
-    port.save()
+    await port.save()
     port.trigger_add()
 
-    return port.to_json()
+    return await port.to_json()
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
@@ -144,20 +144,20 @@ async def patch_port_value(request, port_id, params):
     if port is None:
         raise core_api.APIError(404, 'no such port')
 
-    core_api_schema.validate(params, port.get_value_schema(), invalid_request_msg='invalid value')
+    core_api_schema.validate(params, await port.get_value_schema(), invalid_request_msg='invalid value')
 
     value = params
 
     # step validation
-    step = port.get_attr('step')
-    min_ = port.get_attr('min')
+    step = await port.get_attr('step')
+    min_ = await port.get_attr('min')
     if None not in (step, min_) and step != 0 and (value - min_) % step:
         raise core_api.APIError(400, 'invalid field: value')
 
     if not port.is_enabled():
         raise core_api.APIError(400, 'port disabled')
 
-    if not port.is_writable():
+    if not await port.is_writable():
         raise core_api.APIError(400, 'read-only port')
 
     try:
@@ -194,9 +194,9 @@ async def post_port_sequence(request, port_id, params):
     if len(values) != len(delays):
         raise core_api.APIError(400, 'invalid field: delays')
 
-    value_schema = port.get_value_schema()
-    step = port.get_attr('step')
-    _min = port.get_attr('min')
+    value_schema = await port.get_value_schema()
+    step = await port.get_attr('step')
+    _min = await port.get_attr('min')
     for value in values:
         core_api_schema.validate(value, value_schema, invalid_request_msg='invalid field: values')
 
@@ -207,10 +207,10 @@ async def post_port_sequence(request, port_id, params):
     if not port.is_enabled():
         raise core_api.APIError(400, 'port disabled')
 
-    if not port.is_writable():
+    if not await port.is_writable():
         raise core_api.APIError(400, 'read-only port')
 
-    if port.get_attr('expression'):
+    if await port.get_attr('expression'):
         raise core_api.APIError(400, 'port with expression')
 
     try:
