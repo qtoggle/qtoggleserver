@@ -298,14 +298,15 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         method = getattr(self, 'attr_set_' + name, None)
         if method:
             try:
-                result = await method(value)
-                if self.is_loaded():
-                    await main.update()
+                await method(value)
 
             except Exception:
                 self.error('failed to set attribute %s = %s', name, json_utils.dumps(value), exc_info=True)
 
                 raise
+
+            if self.is_loaded():
+                await main.update()
 
         elif hasattr(self, '_' + name):
             setattr(self, '_' + name, value)
@@ -408,7 +409,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         else:
             return ''
 
-    def attr_set_expression(self, sexpression):
+    async def attr_set_expression(self, sexpression):
         if not self.is_writable():
             self.debug('refusing to set expression to non-writable port')
             return False
@@ -445,7 +446,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         else:
             return ''
 
-    def attr_set_transform_read(self, stransform_read):
+    async def attr_set_transform_read(self, stransform_read):
         if not stransform_read:
             self._transform_read = None
             return
@@ -480,7 +481,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         else:
             return ''
 
-    def attr_set_transform_write(self, stransform_write):
+    async def attr_set_transform_write(self, stransform_write):
         if not stransform_write:
             self._transform_write = None
             return

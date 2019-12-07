@@ -111,7 +111,7 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
 
             self.ADDITIONAL_ATTRDEFS = dict(self.ADDITIONAL_ATTRDEFS, read_interval=attrdef)
 
-    def attr_set_read_interval(self, interval):
+    async def attr_set_read_interval(self, interval):
         self.get_peripheral().set_poll_interval(int(interval) * self.READ_INTERVAL_MULTIPLIER)
 
     async def attr_get_read_interval(self):
