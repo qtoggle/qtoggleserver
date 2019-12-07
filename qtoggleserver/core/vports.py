@@ -34,7 +34,7 @@ class VirtualPort(core_ports.Port):
     async def read_value(self):
         return self._virtual_value
 
-    def write_value(self, value):
+    async def write_value(self, value):
         self._virtual_value = value
 
 

@@ -63,7 +63,7 @@ class RPiGPIO(ports.Port):
     async def read_value(self):
         return GPIO.input(self._no) == 1
 
-    def write_value(self, value):
+    async def write_value(self, value):
         self.debug('writing output value %s', json_utils.dumps(value))
         GPIO.output(self._no, value)
 

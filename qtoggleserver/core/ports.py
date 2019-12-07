@@ -511,7 +511,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def read_value(self):
         raise NotImplementedError()
 
-    def write_value(self, value):
+    async def write_value(self, value):
         pass
 
     def get_value(self):
@@ -549,10 +549,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._last_write_value_time = time.time()
         self._change_reason = reason
 
-        result = self.write_value(value)
-        if inspect.isawaitable(result):
-            await result
-
+        await self.write_value(value)
         await main.update()
 
     async def set_value(self, value, reason):
@@ -730,7 +727,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if self._transform_write:
                     value = self.adapt_value_type(self._transform_write.eval())
 
-                self.write_value(value)
+                await self.write_value(value)
 
         elif self.is_enabled():
             try:
