@@ -65,7 +65,7 @@ class RPiGPIO(ports.Port):
         self.debug('writing output value %s', json_utils.dumps(value))
         GPIO.output(self._no, value)
 
-    def attr_is_writable(self):
+    async def attr_is_writable(self):
         return self.attr_is_output()
 
     def attr_set_output(self, output):
@@ -75,15 +75,15 @@ class RPiGPIO(ports.Port):
 
         self._configure(output, self._def_value)
 
-    def attr_is_output(self):
+    async def attr_is_output(self):
         return GPIO.gpio_function(self._no) == GPIO.OUT
 
-    def attr_get_pull(self):
+    async def attr_get_pull(self):
         return self._PULL_VALUE_MAPPING[self._def_value]
 
     def attr_set_pull(self, pull):
         self._def_value = self._PULL_VALUE_MAPPING[pull]
-        if self.is_enabled() and not self.attr_is_output():
+        if self.is_enabled() and GPIO.gpio_function(self._no) != GPIO.OUT:
             self._configure(output=False, def_value=self._def_value)
 
     def _configure(self, output, def_value):

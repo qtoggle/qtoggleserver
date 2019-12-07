@@ -59,7 +59,7 @@ class GPIO(ports.Port):
         self._val_file.write(value)
         self._val_file.flush()
 
-    def attr_is_writable(self):
+    async def attr_is_writable(self):
         return self._is_output()
 
     async def attr_set_output(self, output):
@@ -81,7 +81,7 @@ class GPIO(ports.Port):
         if output and self._def_value is not None:
             await self.write_value(self._def_value)
 
-    def attr_is_output(self):
+    async def attr_is_output(self):
         return self._is_output()
 
     def _is_output(self):

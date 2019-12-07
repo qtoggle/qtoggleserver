@@ -37,7 +37,7 @@ class DummyGPIO(ports.Port):
         self.debug('writing "%s"', json_utils.dumps(value))
         self._dummy_value = value
 
-    def attr_is_writable(self):
+    async def attr_is_writable(self):
         return self._dummy_output
 
     async def attr_set_output(self, output):
@@ -52,5 +52,5 @@ class DummyGPIO(ports.Port):
         if output and self._def_value is not None:
             await self.write_value(self._def_value)
 
-    def attr_is_output(self):
+    async def attr_is_output(self):
         return self._dummy_output

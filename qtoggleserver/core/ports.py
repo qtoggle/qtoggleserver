@@ -275,7 +275,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         method = getattr(self, 'attr_get_' + name, getattr(self, 'attr_is_' + name, None))
         if method:
-            value = self._attrs_cache[name] = method()
+            value = self._attrs_cache[name] = await method()
             return value
 
         value = getattr(self, '_' + name, None)
@@ -298,10 +298,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         method = getattr(self, 'attr_set_' + name, None)
         if method:
             try:
-                result = method(value)
-                if inspect.isawaitable(result):
-                    await result
-
+                result = await method(value)
                 if self.is_loaded():
                     await main.update()
 
@@ -401,7 +398,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return self._expression
 
-    def attr_get_expression(self):
+    async def attr_get_expression(self):
         if not self.is_writable():
             return None
 
@@ -441,7 +438,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         main.force_eval_expressions()
 
-    def attr_get_transform_read(self):
+    async def attr_get_transform_read(self):
         if self._transform_read:
             return str(self._transform_read)
 
@@ -473,7 +470,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             raise InvalidAttributeValue('transform_read')
 
-    def attr_get_transform_write(self):
+    async def attr_get_transform_write(self):
         if not self.is_writable():
             return None  # only writable ports have transform_write attributes
 

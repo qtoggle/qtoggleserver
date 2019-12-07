@@ -119,7 +119,7 @@ class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
     def get_peripheral(self):
         return self._peripheral
 
-    def attr_get_address(self):
+    async def attr_get_address(self):
         return self._peripheral.get_address()
 
     async def handle_enable(self):

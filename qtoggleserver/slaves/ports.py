@@ -224,7 +224,7 @@ class SlavePort(core_ports.BasePort):
 
         return core_ports.BasePort.is_persisted(self)
 
-    def attr_is_online(self):
+    async def attr_is_online(self):
         if not self._enabled:
             return False
 
@@ -236,7 +236,7 @@ class SlavePort(core_ports.BasePort):
 
         return self._cached_attrs.get('online', True)
 
-    def attr_get_provisioning(self):
+    async def attr_get_provisioning(self):
         return list(self._provisioning)
 
     def get_provisioning_attrs(self):

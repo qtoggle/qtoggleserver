@@ -464,7 +464,7 @@ class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):
         # Inherit from peripheral
         self._write_value_pause = self.get_peripheral().WRITE_VALUE_PAUSE
 
-    def attr_is_online(self):
+    async def attr_is_online(self):
         if not self.is_enabled():
             return False
 
