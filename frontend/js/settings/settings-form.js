@@ -193,7 +193,7 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
             }
 
             /* Clear out field warning */
-            this.getField(fieldName).clearWarning();
+            this.getField(fieldName).clearWarning()
 
             logger.debug(`updating device attribute "${name}" to ${JSON.stringify(value)}`)
             newAttrs[name] = value

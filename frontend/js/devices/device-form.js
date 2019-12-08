@@ -305,7 +305,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                 }
 
                 /* Clear out field warning */
-                this.getField(fieldName).clearWarning();
+                this.getField(fieldName).clearWarning()
 
             }
             else if (fieldName.startsWith('attr_')) {
@@ -317,7 +317,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                 }
 
                 /* Clear out field warning */
-                this.getField(fieldName).clearWarning();
+                this.getField(fieldName).clearWarning()
 
                 logger.debug(`updating device "${deviceName}" attribute "${name}" to ${JSON.stringify(value)}`)
                 newAttrs[name] = value

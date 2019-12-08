@@ -315,7 +315,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             }
 
             /* Clear out field warning */
-            this.getField(fieldName).clearWarning();
+            this.getField(fieldName).clearWarning()
 
             let name = fieldName.substring(5)
 
@@ -388,7 +388,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             }
 
             /* Clear out field warning */
-            this.getField('value').clearWarning();
+            this.getField('value').clearWarning()
         }
 
         return patchPortPromise.then(() => patchValuePromise)
