@@ -64,8 +64,6 @@ class _BluepyPeripheral(btle.Peripheral):
 
 class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
     DEFAULT_NAME = 'hci0'
-    MAX_PENDING_CMDS = 64
-
     RUNNER_CLASS = Peripheral.RUNNER_CLASS
 
     _adapters_by_name = {}
