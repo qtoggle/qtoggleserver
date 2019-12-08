@@ -185,8 +185,8 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._id = port_id
         self._enabled = False
-        self._display_name = self.DISPLAY_NAME
-        self._unit = self.UNIT
+        self._display_name = None
+        self._unit = None
 
         self._sequence = None
         self._expression = None
@@ -283,6 +283,13 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         if value is not None:
             self._attrs_cache[name] = value
             return value
+
+        method = getattr(self, 'attr_get_default_' + name, getattr(self, 'attr_is_default_' + name, None))
+        if method:
+            value = await method()
+            if value is not None:
+                self._attrs_cache[name] = value
+                return value
 
         value = getattr(self, name.upper(), None)
         if value is not None:
