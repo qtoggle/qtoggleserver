@@ -21,7 +21,7 @@ def _resolve_refs_rec(obj, root_obj):
     return obj
 
 
-def _make_json_encoder(date_format='%Y-%m-%d', datetime_format='%Y-%m-%dT%H:%M:%S'):
+def _make_json_encoder(date_format='%Y-%m-%d', datetime_format='%Y-%m-%dT%H:%M:%SZ'):
     def encode_default_json(obj):
         if isinstance(obj, datetime.datetime):
             return obj.strftime(datetime_format)

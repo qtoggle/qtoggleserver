@@ -274,8 +274,10 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         method = getattr(self, 'attr_get_' + name, getattr(self, 'attr_is_' + name, None))
         if method:
-            value = self._attrs_cache[name] = await method()
-            return value
+            value = await method()
+            if value is not None:
+                self._attrs_cache[name] = value
+                return value
 
         value = getattr(self, '_' + name, None)
         if value is not None:
@@ -304,11 +306,11 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
                 raise
 
-            if self.is_loaded():
-                await main.update()
-
         elif hasattr(self, '_' + name):
             setattr(self, '_' + name, value)
+
+        if self.is_loaded():
+            await main.update()
 
         # new attributes might have been added or removed after setting an attribute;
         # therefore new definitions might have appeared or disappeared
