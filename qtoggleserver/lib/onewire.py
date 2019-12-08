@@ -105,13 +105,13 @@ class OneWirePeripheral(polled.PolledPeripheral):
 class OneWirePort(polled.PolledPort, metaclass=abc.ABCMeta):
     PERIPHERAL_CLASS = OneWirePeripheral
 
-    def __init__(self, address=None, name=''):
+    def __init__(self, address=None, peripheral_name=''):
         autodetected = False
         if address is None:
             address = self.autodetect_address()
             autodetected = True
 
-        super().__init__(address, name)
+        super().__init__(address, peripheral_name)
 
         if autodetected:
             self.debug('autodetected device address %s', address)

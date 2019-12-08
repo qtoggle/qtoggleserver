@@ -198,12 +198,12 @@ class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
         }
     }
 
-    def __init__(self, address, name='', **kwargs):
-        self._peripheral = self.PERIPHERAL_CLASS.get(address, name, **kwargs)
+    def __init__(self, address, peripheral_name='', **kwargs):
+        self._peripheral = self.PERIPHERAL_CLASS.get(address, peripheral_name, **kwargs)
         self._peripheral.add_port(self)
 
-        if name:
-            _id = '{}.{}'.format(name, self.ID)
+        if peripheral_name:
+            _id = '{}.{}'.format(peripheral_name, self.ID)
 
         else:
             _id = self.ID

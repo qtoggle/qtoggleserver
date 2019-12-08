@@ -299,14 +299,15 @@ class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):
     READ_INTERVAL_STEP = 5
     READ_INTERVAL_MULTIPLIER = 60
 
-    def __init__(self, address, name, adapter_name=None):
+    def __init__(self, address, peripheral_name, adapter_name=None):
         if adapter_name is None:
             adapter_name = BLEAdapter.DEFAULT_NAME
 
-        super().__init__(address, name, adapter_name=adapter_name)
+        super().__init__(address, peripheral_name, adapter_name=adapter_name)
 
+    async def attr_get_write_value_pause(self):
         # Inherit from peripheral
-        self.set_attr('write_value_pause', self.get_peripheral().WRITE_VALUE_PAUSE)
+        return self.get_peripheral().WRITE_VALUE_PAUSE
 
     async def attr_is_online(self):
         if not self.is_enabled():
