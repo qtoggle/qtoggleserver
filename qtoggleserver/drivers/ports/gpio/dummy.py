@@ -26,23 +26,21 @@ class DummyGPIO(ports.Port):
 
         super().__init__(port_id='gpio{}'.format(no))
 
-    def enable(self):
-        super().enable()
-
+    async def handle_enable(self):
         if self._def_output is not None:
-            self.attr_set_output(self._def_output)
+            await self.attr_set_output(self._def_output)
 
-    def read_value(self):
+    async def read_value(self):
         return self._dummy_value
 
-    def write_value(self, value):
+    async def write_value(self, value):
         self.debug('writing "%s"', json_utils.dumps(value))
         self._dummy_value = value
 
-    def attr_is_writable(self):
+    async def attr_is_writable(self):
         return self._dummy_output
 
-    def attr_set_output(self, output):
+    async def attr_set_output(self, output):
         self._dummy_output = output
 
         if output:
@@ -52,7 +50,7 @@ class DummyGPIO(ports.Port):
             self.debug('setting input mode')
 
         if output and self._def_value is not None:
-            self.write_value(self._def_value)
+            await self.write_value(self._def_value)
 
-    def attr_is_output(self):
+    async def attr_is_output(self):
         return self._dummy_output

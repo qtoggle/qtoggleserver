@@ -40,5 +40,5 @@ class Temperature(onewire.OneWirePort):
     PERIPHERAL_CLASS = DallasTemperatureSensor
     ID = 'temperature'
 
-    def read_value(self):
+    async def read_value(self):
         return self.get_peripheral().get_temp()

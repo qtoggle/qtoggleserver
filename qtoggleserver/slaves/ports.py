@@ -116,7 +116,7 @@ class SlavePort(core_ports.BasePort):
     def get_remote_id(self):
         return self._remote_id
 
-    def get_attr(self, name):
+    async def get_attr(self, name):
         # id - always use the special slave.id notation
         # tag - always kept on master, ignored on slave
         # expression - kept and managed on master, separate attribute for slave
@@ -125,7 +125,7 @@ class SlavePort(core_ports.BasePort):
         # expires - always kept on master, ignored on slave
 
         if name in ('id', 'tag', 'expression', 'online', 'last_sync', 'expires'):
-            return super().get_attr(name)
+            return await super().get_attr(name)
 
         elif _DEVICE_EXPRESSION_RE.match(name):
             return self.get_cached_attr(name[7:])
@@ -134,7 +134,7 @@ class SlavePort(core_ports.BasePort):
         if value is not None:
             return value
 
-        return super().get_attr(name)
+        return await super().get_attr(name)
 
     async def set_attr(self, name, value):
         if name in ('tag', 'expression', 'last_sync', 'expires'):
@@ -175,11 +175,12 @@ class SlavePort(core_ports.BasePort):
         return dict(self._cached_attrs)
 
     def update_cached_attrs(self, attrs):
+        # use fire-and-forget here to enable/disable ports, as this method cannot be async
         if attrs.get('enabled') and not self.is_enabled():
-            self.enable()
+            asyncio.create_task(self.enable())
 
         elif not attrs.get('enabled') and self.is_enabled():
-            self.disable()
+            asyncio.create_task(self.disable())
 
         self._cached_attrs = dict(attrs)
 
@@ -214,16 +215,16 @@ class SlavePort(core_ports.BasePort):
 
             raise
 
-    def is_persisted(self):
+    async def is_persisted(self):
         # ports belonging to permanently offline devices
         # should always behave as persisted on master
 
         if self._slave.is_permanently_offline():
             return True
 
-        return core_ports.BasePort.is_persisted(self)
+        return await core_ports.BasePort.is_persisted(self)
 
-    def attr_is_online(self):
+    async def attr_is_online(self):
         if not self._enabled:
             return False
 
@@ -235,7 +236,7 @@ class SlavePort(core_ports.BasePort):
 
         return self._cached_attrs.get('online', True)
 
-    def attr_get_provisioning(self):
+    async def attr_get_provisioning(self):
         return list(self._provisioning)
 
     def get_provisioning_attrs(self):
@@ -262,7 +263,7 @@ class SlavePort(core_ports.BasePort):
     def set_cached_value(self, value):
         self._cached_value = value
 
-    def read_value(self):
+    async def read_value(self):
         return self._cached_value
 
     async def write_value(self, value):
@@ -284,7 +285,7 @@ class SlavePort(core_ports.BasePort):
             self.debug('marking value for provisioning')
             self._cached_value = value
             self._provisioning.add('value')
-            self.save()  # save provisioning value
+            await self.save()  # save provisioning value
 
             # we need to trigger a port-update because
             # our provisioning attribute has changed

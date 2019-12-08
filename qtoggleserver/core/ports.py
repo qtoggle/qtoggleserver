@@ -3,7 +3,6 @@ import abc
 import asyncio
 import copy
 import functools
-import inspect
 import logging
 import sys
 import time
@@ -146,13 +145,14 @@ class PortTimeout(PortError):
     pass
 
 
-class BasePort(utils.LoggableMixin, abc.ABC):
+class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
     PERSIST_COLLECTION = 'ports'
 
     TYPE = TYPE_BOOLEAN
     DISPLAY_NAME = ''
     UNIT = ''
     WRITABLE = False
+    CHOICES = None
 
     WRITE_VALUE_PAUSE = 0
 
@@ -252,11 +252,11 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
         return self._modifiable_attrs
 
-    def get_attrs(self):
+    async def get_attrs(self):
         d = {}
 
         for name in self.ATTRDEFS.keys():
-            v = self.get_attr(name)
+            v = await self.get_attr(name)
             if v is None:
                 continue
 
@@ -267,14 +267,14 @@ class BasePort(utils.LoggableMixin, abc.ABC):
     def invalidate_attrs(self):
         self._attrs_cache = {}
 
-    def get_attr(self, name):
+    async def get_attr(self, name):
         value = self._attrs_cache.get(name)
         if value is not None:
             return value
 
         method = getattr(self, 'attr_get_' + name, getattr(self, 'attr_is_' + name, None))
         if method:
-            value = self._attrs_cache[name] = method()
+            value = self._attrs_cache[name] = await method()
             return value
 
         value = getattr(self, '_' + name, None)
@@ -290,24 +290,22 @@ class BasePort(utils.LoggableMixin, abc.ABC):
         return None  # unsupported attribute
 
     async def set_attr(self, name, value):
-        old_value = self.get_attr(name)
+        old_value = await self.get_attr(name)
         if old_value is None:
             return  # refuse to set an unsupported attribute
 
         method = getattr(self, 'attr_set_' + name, None)
         if method:
             try:
-                result = method(value)
-                if inspect.isawaitable(result):
-                    await result
-
-                if self.is_loaded():
-                    await main.update()
+                await method(value)
 
             except Exception:
                 self.error('failed to set attribute %s = %s', name, json_utils.dumps(value), exc_info=True)
 
                 raise
+
+            if self.is_loaded():
+                await main.update()
 
         elif hasattr(self, '_' + name):
             setattr(self, '_' + name, value)
@@ -318,7 +316,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
         self._attrs_cache[name] = value
         if old_value != value:
-            self.handle_attr_change(name, value)
+            await self.handle_attr_change(name, value)
 
         if not self.is_loaded():
             return
@@ -327,12 +325,12 @@ class BasePort(utils.LoggableMixin, abc.ABC):
         await asyncio.sleep(0)
         self.trigger_update()
 
-    def handle_attr_change(self, name, value):
+    async def handle_attr_change(self, name, value):
         method_name = 'handle_{}_change'.format(name)
         method = getattr(self, method_name, None)
         if method:
             try:
-                method(value)
+                await method(value)
 
             except Exception as e:
                 self.error('%s failed: %s', method_name, e, exc_info=True)
@@ -344,32 +342,31 @@ class BasePort(utils.LoggableMixin, abc.ABC):
         self._id = new_id
         self.debug('mapped to %s', new_id)
 
-    def get_type(self):
-        return self.get_attr('type')
+    async def get_type(self):
+        return await self.get_attr('type')
 
-    def is_writable(self):
-        return self.get_attr('writable')
+    async def is_writable(self):
+        return await self.get_attr('writable')
 
-    def is_persisted(self):
-        return self.get_attr('persisted')
+    async def is_persisted(self):
+        return await self.get_attr('persisted')
 
     def is_enabled(self):
         return self._enabled
 
-    def enable(self):
+    async def enable(self):
         if self._enabled:
             return
 
         self.debug('enabling %s', self)
-
         self._enabled = True
+        await self.handle_enable()
 
-    def disable(self):
+    async def disable(self):
         if not self._enabled:
             return
 
         self.debug('disabling %s', self)
-
         self._enabled = False
 
         # cancel sequence
@@ -378,21 +375,29 @@ class BasePort(utils.LoggableMixin, abc.ABC):
             self._sequence.cancel()
             self._sequence = None
 
-    def attr_set_enabled(self, value):
+        await self.handle_disable()
+
+    async def handle_enable(self):
+        pass
+
+    async def handle_disable(self):
+        pass
+
+    async def attr_set_enabled(self, value):
         if value:
-            self.enable()
+            await self.enable()
 
         else:
-            self.disable()
+            await self.disable()
 
-    def get_expression(self):
-        if not self.is_writable():
+    async def get_expression(self):
+        if not await self.is_writable():
             return None
 
         return self._expression
 
-    def attr_get_expression(self):
-        if not self.is_writable():
+    async def attr_get_expression(self):
+        if not await self.is_writable():
             return None
 
         if self._expression:
@@ -401,8 +406,8 @@ class BasePort(utils.LoggableMixin, abc.ABC):
         else:
             return ''
 
-    def attr_set_expression(self, sexpression):
-        if not self.is_writable():
+    async def attr_set_expression(self, sexpression):
+        if not await self.is_writable():
             self.debug('refusing to set expression to non-writable port')
             return False
 
@@ -419,7 +424,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
             expression = core_expressions.parse(self.get_id(), sexpression)
 
             self.debug('checking for expression circular dependencies')
-            core_expressions.check_loops(self, expression)
+            await core_expressions.check_loops(self, expression)
 
         except core_expressions.ExpressionError as e:
             self.error('failed to set expression "%s": %s', sexpression, e)
@@ -431,14 +436,14 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
         main.force_eval_expressions()
 
-    def attr_get_transform_read(self):
+    async def attr_get_transform_read(self):
         if self._transform_read:
             return str(self._transform_read)
 
         else:
             return ''
 
-    def attr_set_transform_read(self, stransform_read):
+    async def attr_set_transform_read(self, stransform_read):
         if not stransform_read:
             self._transform_read = None
             return
@@ -463,8 +468,8 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
             raise InvalidAttributeValue('transform_read')
 
-    def attr_get_transform_write(self):
-        if not self.is_writable():
+    async def attr_get_transform_write(self):
+        if not await self.is_writable():
             return None  # only writable ports have transform_write attributes
 
         if self._transform_write:
@@ -473,7 +478,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
         else:
             return ''
 
-    def attr_set_transform_write(self, stransform_write):
+    async def attr_set_transform_write(self, stransform_write):
         if not stransform_write:
             self._transform_write = None
             return
@@ -498,10 +503,10 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
             raise InvalidAttributeValue('transform_write')
 
-    def read_value(self):
+    async def read_value(self):
         raise NotImplementedError()
 
-    def write_value(self, value):
+    async def write_value(self, value):
         pass
 
     def get_value(self):
@@ -533,16 +538,13 @@ class BasePort(utils.LoggableMixin, abc.ABC):
             except Exception:
                 done.set_exception(sys.exc_info()[1])
 
-            await asyncio.sleep(self.get_attr('write_value_pause'))
+            await asyncio.sleep(await self.get_attr('write_value_pause'))
 
     async def _write_value(self, value, reason):
         self._last_write_value_time = time.time()
         self._change_reason = reason
 
-        result = self.write_value(value)
-        if inspect.isawaitable(result):
-            await result
-
+        await self.write_value(value)
         await main.update()
 
     async def set_value(self, value, reason):
@@ -552,7 +554,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
             # value into consideration when evaluating the result
             prev_value = self._value
             self._value = value
-            value = self.adapt_value_type(self._transform_write.eval())
+            value = await self.adapt_value_type(self._transform_write.eval())
             self._value = prev_value
 
         try:
@@ -567,7 +569,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
     def set_value_fire_and_forget(self, value, reason):
         asyncio.create_task(self.set_value(value, reason))
 
-    def set_value_asap(self, value, reason):
+    def push_value(self, value, reason):
         already_scheduled = self._asap_value is not None
         self._asap_value = value
 
@@ -582,8 +584,8 @@ class BasePort(utils.LoggableMixin, abc.ABC):
         else:
             self.debug('will set value %s asap', json_utils.dumps(value))
 
-    def read_transformed_value(self):
-        value = self.read_value()
+    async def read_transformed_value(self):
+        value = await self.read_value()
         if value is None:
             return None
 
@@ -593,21 +595,25 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
             old_value = self._value
             self._value = value
-            value = self.adapt_value_type(self._transform_read.eval())
+            value = await self.adapt_value_type(self._transform_read.eval())
             self._value = old_value
 
         return value
 
-    def adapt_value_type(self, value):
+    async def adapt_value_type(self, value):
+        return self.adapt_value_type_sync(await self.get_type(), await self.get_attr('integer'), value)
+
+    @staticmethod
+    def adapt_value_type_sync(typ, integer, value):
         if value is None:
             return None
 
-        if self.get_type() == TYPE_BOOLEAN:
+        if typ == TYPE_BOOLEAN:
             return bool(value)
 
         else:
             # round the value if port accepts only integers
-            if self.get_attr('integer'):
+            if integer:
                 return int(value)
 
             return float(value)
@@ -625,12 +631,12 @@ class BasePort(utils.LoggableMixin, abc.ABC):
             self.debug('installing sequence')
             self._sequence.start()
 
-    def _on_sequence_finish(self):
+    async def _on_sequence_finish(self):
         self.debug('sequence finished')
 
         self._sequence = None
-        if self.is_persisted():
-            self.save()
+        if await self.is_persisted():
+            await self.save()
 
     def heart_beat(self):
         pass
@@ -648,8 +654,8 @@ class BasePort(utils.LoggableMixin, abc.ABC):
     def cancel_timeout(handle):
         handle.cancel()
 
-    def to_json(self):
-        attrs = self.get_attrs()
+    async def to_json(self):
+        attrs = await self.get_attrs()
 
         if self._enabled:
             attrs['value'] = self._value
@@ -710,21 +716,21 @@ class BasePort(utils.LoggableMixin, abc.ABC):
                 self.error('failed to set attribute %s = %s: %s', name, json_utils.dumps(value), e)
 
         # value
-        if self.is_persisted() and data.get('value') is not None:
+        if await self.is_persisted() and data.get('value') is not None:
             self._value = data['value']
             self.debug('loaded value = %s', json_utils.dumps(self._value))
 
-            if self.is_writable():
+            if await self.is_writable():
                 # write the just-loaded value to the port
                 value = self._value
                 if self._transform_write:
-                    value = self.adapt_value_type(self._transform_write.eval())
+                    value = await self.adapt_value_type(self._transform_write.eval())
 
-                self.write_value(value)
+                await self.write_value(value)
 
         elif self.is_enabled():
             try:
-                value = self.read_transformed_value()
+                value = await self.read_transformed_value()
                 if value is not None:
                     self._value = value
                     self.debug('read value = %s', json_utils.dumps(self._value))
@@ -732,22 +738,22 @@ class BasePort(utils.LoggableMixin, abc.ABC):
             except Exception as e:
                 self.error('failed to read value: %s', e, exc_info=True)
 
-    def save(self):
+    async def save(self):
         if not self.is_loaded():
             return
 
-        d = self.prepare_for_save()
+        d = await self.prepare_for_save()
 
         self.debug('persisting data')
         persist.replace(self.PERSIST_COLLECTION, self._id, d)
 
-    def prepare_for_save(self):
+    async def prepare_for_save(self):
         # value
         d = {
             'id': self.get_id()
         }
 
-        if self.is_persisted():
+        if await self.is_persisted():
             d['value'] = self._value
 
         else:
@@ -755,7 +761,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
         # attributes
         for name in self.get_modifiable_attrs():
-            v = self.get_attr(name)
+            v = await self.get_attr(name)
             if v is None:
                 continue
 
@@ -798,7 +804,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
     def trigger_value_change(self):
         core_sessions.push(core_events.ValueChange(self))
 
-    def get_schema(self):
+    async def get_schema(self):
         if self._schema is None:
             self._schema = {
                 'type': 'object',
@@ -810,7 +816,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
                 if not attrdef.get('modifiable'):
                     continue
 
-                if self.get_attr(name) is None:
+                if await self.get_attr(name) is None:
                     continue
 
                 attr_schema = dict(attrdef)
@@ -841,27 +847,27 @@ class BasePort(utils.LoggableMixin, abc.ABC):
 
         return self._schema
 
-    def get_value_schema(self):
+    async def get_value_schema(self):
         if self._value_schema is None:
             self._value_schema = {}
 
-            c = self.get_attr('choices')
+            c = await self.get_attr('choices')
             if c is not None:
                 self._value_schema['enum'] = [i['value'] for i in c]
 
             else:
-                m = self.get_attr('min')
+                m = await self.get_attr('min')
                 if m is not None:
                     self._value_schema['minimum'] = m
 
-                m = self.get_attr('max')
+                m = await self.get_attr('max')
                 if m is not None:
                     self._value_schema['maximum'] = m
 
-                if self.get_attr('integer'):
+                if await self.get_attr('integer'):
                     self._value_schema['type'] = 'integer'
 
-                elif self.get_type() == TYPE_BOOLEAN:
+                elif await self.get_type() == TYPE_BOOLEAN:
                     self._value_schema['type'] = 'boolean'
 
                 else:  # assuming number
@@ -870,7 +876,7 @@ class BasePort(utils.LoggableMixin, abc.ABC):
         return self._value_schema
 
 
-class Port(BasePort, abc.ABC):
+class Port(BasePort, metaclass=abc.ABCMeta):
     def __init__(self, port_id):
         super().__init__(port_id)
 

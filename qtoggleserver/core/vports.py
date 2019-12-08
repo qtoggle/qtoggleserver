@@ -26,15 +26,15 @@ class VirtualPort(core_ports.Port):
         self._step = step
         self._choices = choices
 
-        self._value = self._virtual_value = self.adapt_value_type(mi or 0)
+        self._value = self._virtual_value = self.adapt_value_type_sync(typ, integer, mi or 0)
 
     def map_id(self, new_id):
         raise core_ports.PortError('virtual ports cannot be mapped')
 
-    def read_value(self):
+    async def read_value(self):
         return self._virtual_value
 
-    def write_value(self, value):
+    async def write_value(self, value):
         self._virtual_value = value
 
 

@@ -62,8 +62,8 @@ class EQ3BlueThermo(ble.BLEPeripheral):
 
     async def _read_config(self):
         try:
-            data = await self.write_notify(self.WRITE_HANDLE, self.NOTIFY_HANDLE,
-                                           bytes([self.STATUS_SEND_HEADER] + self._make_status_value()))
+            _, data = await self.write_notify(self.WRITE_HANDLE, self.NOTIFY_HANDLE,
+                                              bytes([self.STATUS_SEND_HEADER] + self._make_status_value()))
 
         except Exception as e:
             self.error('failed to read current configuration: %s', e, exc_info=True)
@@ -109,7 +109,7 @@ class Temperature(ble.BLEPort):
     PERIPHERAL_CLASS = EQ3BlueThermo
     ID = 'temperature'
 
-    def read_value(self):
+    async def read_value(self):
         return self.get_peripheral().get_temp()
 
     @ble.port_exceptions
@@ -125,7 +125,7 @@ class Boost(ble.BLEPort):
     PERIPHERAL_CLASS = EQ3BlueThermo
     ID = 'boost'
 
-    def read_value(self):
+    async def read_value(self):
         return self.get_peripheral().get_boost()
 
     @ble.port_exceptions
