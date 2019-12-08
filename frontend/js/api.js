@@ -19,7 +19,7 @@ import * as Utils from '$app/utils.js'
 
 
 const DEBUG_API_CALLS = true
-const DEFAULT_EXPECT_TIMEOUT = 60 /* Seconds */
+const DEFAULT_EXPECT_TIMEOUT = 60000 /* Milliseconds */
 const ROUND_VALUE_TEMPLATE = 1e6
 const FAST_RECONNECT_LISTEN_ERRORS = 2
 const PROVISIONING_CONFIG_URL = 'https://provisioning.qtoggle.io/config'
@@ -1029,13 +1029,13 @@ export function apiCall({
     })
 }
 
-function expectEvent(type, params, timeout) {
+function expectEvent(type, params, timeout = DEFAULT_EXPECT_TIMEOUT) {
     let handle = ++expectedEventLastHandle
     expectedEventSpecs[handle] = {
         type: type,
         params: params,
         added: new Date().getTime(),
-        timeout: (timeout || DEFAULT_EXPECT_TIMEOUT) * 1000
+        timeout: timeout
     }
 
     return handle
@@ -1255,10 +1255,11 @@ export function getDevice() {
 /**
  * PATCH /device API function call.
  * @param {Object} attrs the device attributes to set
+ * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
  * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
-export function patchDevice(attrs) {
+export function patchDevice(attrs, expectEventTimeout = null) {
     let handle
     if (slaveName) {
         /* When renaming a slave, the slave-device-update will not trigger,
@@ -1266,11 +1267,11 @@ export function patchDevice(attrs) {
         if (!('name' in attrs)) {
             handle = expectEvent('slave-device-update', {
                 name: slaveName
-            })
+            }, expectEventTimeout)
         }
     }
     else {
-        handle = expectEvent('device-update')
+        handle = expectEvent('device-update', /* params = */ null, expectEventTimeout)
     }
 
     return apiCall({method: 'PATCH', path: '/device', data: attrs, expectedHandle: handle})
@@ -1366,13 +1367,14 @@ export function getPorts() {
  * PATCH /ports/{id} API function call.
  * @param {String} id the port identifier
  * @param {Object} attrs the port attributes to set
+ * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
  * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
-export function patchPort(id, attrs) {
+export function patchPort(id, attrs, expectEventTimeout = null) {
     let handle = expectEvent('port-update', {
         id: slaveName ? `${slaveName}.${id}` : id
-    })
+    }, expectEventTimeout)
 
     return apiCall({method: 'PATCH', path: `/ports/${id}`, data: attrs, expectedHandle: handle})
 }
@@ -1386,13 +1388,14 @@ export function patchPort(id, attrs) {
  * @param {?Boolean} integer whether the port value must be a integer
  * @param {?Number} step a step for port value validation
  * @param {?Number[]|?String[]} choices valid choices for the port value
+ * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
  * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
-export function postPorts(id, type, min, max, integer, step, choices) {
+export function postPorts(id, type, min, max, integer, step, choices, expectEventTimeout = null) {
     let handle = expectEvent('port-add', {
         id: slaveName ? `${slaveName}.${id}` : id
-    })
+    }, expectEventTimeout)
 
     let data = {
         id: id,
@@ -1421,13 +1424,14 @@ export function postPorts(id, type, min, max, integer, step, choices) {
 /**
  * DELETE /ports/{id} API function call.
  * @param {String} id the port identifier
+ * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
  * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
-export function deletePort(id) {
+export function deletePort(id, expectEventTimeout = null) {
     let handle = expectEvent('port-remove', {
         id: slaveName ? `${slaveName}.${id}` : id
-    })
+    }, expectEventTimeout)
 
     return apiCall({method: 'DELETE', path: `/ports/${id}`, expectedHandle: handle})
 }
@@ -1449,10 +1453,12 @@ export function getPortValue(id) {
  * PATCH /ports/{id}/value API function call.
  * @param {String} id the port identifier
  * @param {Boolean|Number} value the new port value
+ * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
+ * in milliseconds
  * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
-export function patchPortValue(id, value) {
+export function patchPortValue(id, value, expectEventTimeout = null) {
     let port = Cache.getPort(id)
     let handle = null
 
@@ -1466,7 +1472,7 @@ export function patchPortValue(id, value) {
         handle = expectEvent('value-change', {
             id: slaveName ? `${slaveName}.${id}` : id,
             value: value
-        })
+        }, expectEventTimeout)
     }
 
     return apiCall({method: 'PATCH', path: `/ports/${id}/value`, data: value, expectedHandle: handle})
@@ -1643,10 +1649,13 @@ export function getSlaveDevices() {
  * @param {String} adminPassword the administrator password of the device
  * @param {Number} pollInterval polling interval, in seconds
  * @param {Boolean} listenEnabled whether to enable listening or not
+ * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
  * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
-export function postSlaveDevices(scheme, host, port, path, adminPassword, pollInterval, listenEnabled) {
+export function postSlaveDevices(
+    scheme, host, port, path, adminPassword, pollInterval, listenEnabled, expectEventTimeout = null
+) {
     let params = {
         scheme: scheme,
         host: host,
@@ -1662,7 +1671,7 @@ export function postSlaveDevices(scheme, host, port, path, adminPassword, pollIn
         host: host,
         port: port,
         path: path
-    })
+    }, expectEventTimeout)
 
     return apiCall({method: 'POST', path: '/devices', data: params, expectedHandle: handle})
 }
@@ -1673,10 +1682,11 @@ export function postSlaveDevices(scheme, host, port, path, adminPassword, pollIn
  * @param {Boolean} enabled whether the device is enabled or disabled
  * @param {?Number} pollInterval polling interval, in seconds
  * @param {Boolean} listenEnabled whether to enable listening or not
+ * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
  * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
-export function patchSlaveDevice(name, enabled, pollInterval, listenEnabled) {
+export function patchSlaveDevice(name, enabled, pollInterval, listenEnabled, expectEventTimeout = null) {
     let params = {
         enabled: enabled,
         poll_interval: pollInterval,
@@ -1685,7 +1695,7 @@ export function patchSlaveDevice(name, enabled, pollInterval, listenEnabled) {
 
     let handle = expectEvent('slave-device-update', {
         name: name
-    })
+    }, expectEventTimeout)
 
     return apiCall({method: 'PATCH', path: `/devices/${name}`, data: params, expectedHandle: handle})
 }
@@ -1693,13 +1703,14 @@ export function patchSlaveDevice(name, enabled, pollInterval, listenEnabled) {
 /**
  * DELETE /devices/{name} API function call.
  * @param {String} name the device name
+ * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
  * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
-export function deleteSlaveDevice(name) {
+export function deleteSlaveDevice(name, expectEventTimeout = null) {
     let handle = expectEvent('slave-device-remove', {
         name: name
-    })
+    }, expectEventTimeout)
 
     return apiCall({method: 'DELETE', path: `/devices/${name}`, expectedHandle: handle})
 }
