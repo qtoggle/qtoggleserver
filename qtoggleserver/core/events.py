@@ -1,5 +1,6 @@
 
 import abc
+import inspect
 import logging
 
 from qtoggleserver.core import api as core_api
@@ -9,35 +10,42 @@ from qtoggleserver.core.device import attrs as core_device_attrs
 logger = logging.getLogger(__name__)
 
 
-class Event(abc.ABC):
+class Event(metaclass=abc.ABCMeta):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_NONE
 
     def __init__(self, typ, params):
         self._type = typ
         self._params = params
 
-    def to_json(self):
+    async def to_json(self):
         return {
             'type': self._type,
-            'params': self._resolve_params(self._params)
+            'params': await self._resolve_params(self._params)
         }
 
-    def _resolve_params(self, param):
+    async def _resolve_params(self, param):
         if isinstance(param, dict):
             for k, v in param.items():
-                param[k] = self._resolve_params(v)
+                param[k] = await self._resolve_params(v)
 
             return param
 
         elif isinstance(param, (list, tuple)):
             param = list(param)
             for i in range(len(param)):
-                param[i] = self._resolve_params(param[i])
+                param[i] = await self._resolve_params(param[i])
 
             return param
 
         elif callable(param):
-            return param()
+            param = param()
+            if inspect.isawaitable(param):
+                param = await param
+
+            return param
+
+        elif inspect.isawaitable(param):
+            return await param
 
         else:
             return param

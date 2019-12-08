@@ -39,7 +39,7 @@ class Sequence:
 
             else:
                 if self._repeat > 0 and self._counter >= self._repeat - 1:
-                    self._finish_callback()
+                    await self._finish_callback()
 
                     return
 
