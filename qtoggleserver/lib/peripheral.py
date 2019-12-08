@@ -205,13 +205,14 @@ class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
         self._peripheral = self.PERIPHERAL_CLASS.get(address, peripheral_name, **kwargs)
         self._peripheral.add_port(self)
 
-        if peripheral_name:
-            _id = '{}.{}'.format(peripheral_name, self.ID)
-
-        else:
-            _id = self.ID
+        _id = self.make_id()
+        if self._peripheral.get_name():
+            _id = '{}.{}'.format(self._peripheral.get_name(), _id)
 
         super().__init__(_id)
+
+    def make_id(self):
+        return self.ID
 
     def get_peripheral(self):
         return self._peripheral
