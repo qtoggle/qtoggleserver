@@ -181,8 +181,8 @@ export default class PortsSection extends Section {
                     if (portForm.getField('attr_last_sync')) {
                         data['attr_last_sync'] = API.STD_PORT_ATTRDEFS['last_sync'].valueToUI(lastSync)
                     }
-                    if (valueField) {
-                        if (valueField.isReadonly()) {
+                    if (valueField && (valueField.getValue() !== event.params.value)) {
+                        if (valueField.isReadonly() || valueField.getValue() == null) {
                             data['value'] = event.params.value
                         }
                         else {

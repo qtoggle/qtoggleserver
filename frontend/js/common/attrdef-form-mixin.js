@@ -185,6 +185,7 @@ export default Mixin((superclass = Object) => {
             attrdefs = {}, extraFieldOptions = {}, initialData = {}, provisioning = [], noUpdated = [], startIndex = 0,
             fieldChangeWarnings = true
         } = {}) {
+
             let defEntries = ArrayUtils.sortKey(Object.entries(attrdefs), e => e[0])
             ArrayUtils.stableSortKey(defEntries, e => e[1].order || 1000)
 
@@ -192,6 +193,7 @@ export default Mixin((superclass = Object) => {
 
             let notKnown = false
             defEntries.forEach(function (entry, index) {
+
                 let name = entry[0]
                 let def = ObjectUtils.copy(entry[1], /* deep = */ true)
 

@@ -174,6 +174,7 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
         let changedFields = this.getChangedFields()
 
         changedFields.forEach(function (fieldName) {
+
             let value = data[fieldName]
             if (value == null) {
                 return
@@ -190,6 +191,9 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
             if (!(name in this._fullAttrdefs) || !this._fullAttrdefs[name].modifiable) {
                 return
             }
+
+            /* Clear out field warning */
+            this.getField(fieldName).clearWarning();
 
             logger.debug(`updating device attribute "${name}" to ${JSON.stringify(value)}`)
             newAttrs[name] = value

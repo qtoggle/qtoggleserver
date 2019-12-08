@@ -31,12 +31,6 @@ const VALUE_CHANGE_TIMEOUT = 3000
 const logger = Ports.logger
 
 
-/**
- * @class QToggle.PortsSection.PortForm
- * @extends qui.forms.PageForm
- * @param {String} portId
- * @param {String} [deviceName]
- */
 export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
     constructor(portId, deviceName) {
@@ -303,6 +297,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         let changedFields = this.getChangedFields()
 
         changedFields.forEach(function (fieldName) {
+
             let value = data[fieldName]
             if (value == null) {
                 return
@@ -318,6 +313,9 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             if (!fieldName.startsWith('attr_')) {
                 return
             }
+
+            /* Clear out field warning */
+            this.getField(fieldName).clearWarning();
 
             let name = fieldName.substring(5)
 
@@ -371,7 +369,7 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             else {
                 logger.debug(`updating port "${port.id}" value to ${JSON.stringify(newValue)}`)
 
-                patchValuePromise = API.patchPortValue(port.id, newValue).then(function () {
+                patchValuePromise = API.patchPortValue(port.id, newValue, VALUE_CHANGE_TIMEOUT).then(function () {
 
                     logger.debug(`port "${port.id}" value set`)
 
@@ -388,6 +386,9 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
                 })
             }
+
+            /* Clear out field warning */
+            this.getField('value').clearWarning();
         }
 
         return patchPortPromise.then(() => patchValuePromise)

@@ -303,6 +303,10 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                     logger.debug(`device "${deviceName}" has just been enabled`)
                     justEnabled = true
                 }
+
+                /* Clear out field warning */
+                this.getField(fieldName).clearWarning();
+
             }
             else if (fieldName.startsWith('attr_')) {
                 let name = fieldName.substring(5)
@@ -311,6 +315,9 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                 if (!(name in this._fullAttrdefs) || !this._fullAttrdefs[name].modifiable) {
                     return
                 }
+
+                /* Clear out field warning */
+                this.getField(fieldName).clearWarning();
 
                 logger.debug(`updating device "${deviceName}" attribute "${name}" to ${JSON.stringify(value)}`)
                 newAttrs[name] = value
@@ -328,6 +335,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
             else {
                 logger.warn(`unknown device form field ${fieldName}`)
             }
+
         }, this)
 
         if (willReconnect) {
