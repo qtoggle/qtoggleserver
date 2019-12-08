@@ -85,7 +85,7 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
     READ_INTERVAL_MULTIPLIER = 1
     READ_INTERVAL_UNIT = None
 
-    def __init__(self, address, peripheral_name='', **kwargs):
+    def __init__(self, address, peripheral_name=None, **kwargs):
         super().__init__(address, peripheral_name, **kwargs)
 
         # Add read interval attrdef

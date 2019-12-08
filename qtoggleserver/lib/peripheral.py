@@ -79,6 +79,9 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
 
     @classmethod
     def get(cls, address, name, **kwargs):
+        if name is None:
+            name = ''
+
         if address not in cls._peripherals_by_address:
             logger.debug('initializing peripheral %s(%s@%s)', cls.__name__, name, address)
             peripheral = cls.make_peripheral(address, name, **kwargs)
@@ -198,7 +201,7 @@ class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
         }
     }
 
-    def __init__(self, address, peripheral_name='', **kwargs):
+    def __init__(self, address, peripheral_name=None, **kwargs):
         self._peripheral = self.PERIPHERAL_CLASS.get(address, peripheral_name, **kwargs)
         self._peripheral.add_port(self)
 

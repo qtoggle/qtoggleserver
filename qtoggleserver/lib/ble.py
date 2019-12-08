@@ -299,7 +299,7 @@ class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):
     READ_INTERVAL_STEP = 5
     READ_INTERVAL_MULTIPLIER = 60
 
-    def __init__(self, address, peripheral_name, adapter_name=None):
+    def __init__(self, address, peripheral_name=None, adapter_name=None):
         if adapter_name is None:
             adapter_name = BLEAdapter.DEFAULT_NAME
 
