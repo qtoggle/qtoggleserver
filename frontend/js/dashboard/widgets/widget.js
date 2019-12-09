@@ -1138,7 +1138,7 @@ export default class Widget extends mix().with(ViewMixin) {
     setPortValue(portId, value) {
         this.setProgress()
 
-        return API.patchPortValue(portId, value).then(function () {
+        return API.patchPortValue(portId, value, PORT_VALUE_CHANGE_TIMEOUT).then(function () {
 
             this.clearProgress()
 
