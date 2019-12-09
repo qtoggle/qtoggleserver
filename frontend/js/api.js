@@ -26,7 +26,8 @@ const PROVISIONING_CONFIG_URL = 'https://provisioning.qtoggle.io/config'
 
 export const LISTEN_KEEPALIVE = 60 /* Seconds TODO server setting */
 export const SERVER_RETRY_INTERVAL = 3 /* Seconds TODO server setting */
-export const SERVER_TIMEOUT = 15 /* Seconds TODO server setting */
+export const DEFAULT_SERVER_TIMEOUT = 15 /* Seconds TODO server setting */
+export const LONG_SERVER_TIMEOUT = 60 /* Seconds TODO server setting */
 
 export const ACCESS_LEVEL_ADMIN = 30
 export const ACCESS_LEVEL_NORMAL = 20
@@ -927,7 +928,8 @@ function makeAPIError(data, status, msg) {
  *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
  */
 export function apiCall({
-    method, path, query = null, data = null, timeout = SERVER_TIMEOUT, expectedHandle = null, handleErrors = true
+    method, path, query = null, data = null, timeout = DEFAULT_SERVER_TIMEOUT, expectedHandle = null,
+    handleErrors = true
 }) {
 
     return new Promise(function (resolve, reject) {
@@ -1155,7 +1157,9 @@ function wait(firstQuick) {
         timeout: timeout
     }
 
-    apiCall({method: 'GET', path: '/listen', query: query, timeout: timeout + SERVER_TIMEOUT}).then(function (result) {
+    apiCall({
+        method: 'GET', path: '/listen', query: query, timeout: timeout + DEFAULT_SERVER_TIMEOUT
+    }).then(function (result) {
 
         if (listeningTime !== requestListeningTime) {
             logger.debug('ignoring listen response from older session')
@@ -1269,7 +1273,10 @@ export function patchDevice(attrs, expectEventTimeout = null) {
         handle = expectEvent('device-update', /* params = */ null, expectEventTimeout)
     }
 
-    return apiCall({method: 'PATCH', path: '/device', data: attrs, expectedHandle: handle})
+    return apiCall({
+        method: 'PATCH', path: '/device', data: attrs,
+        expectedHandle: handle, timeout: LONG_SERVER_TIMEOUT
+    })
 }
 
 /**
@@ -1299,7 +1306,9 @@ export function getFirmware(override = false) {
         query.override_disabled = true
     }
 
-    return apiCall({method: 'GET', path: '/firmware', query: query, handleErrors: !override}).then(function (data) {
+    return apiCall({
+        method: 'GET', path: '/firmware', query: query, handleErrors: !override, timeout: LONG_SERVER_TIMEOUT
+    }).then(function (data) {
 
         if ((data.status === FIRMWARE_STATUS_IDLE || data.status === FIRMWARE_STATUS_ERROR) && ignoreListenErrors) {
             logger.debug('firmware update process ended')
@@ -1335,7 +1344,10 @@ export function patchFirmware(version, url, override) {
 
     let forSlave = slaveName != null
 
-    return apiCall({method: 'PATCH', path: '/firmware', query: query, data: params}).then(function (data) {
+    return apiCall({
+        method: 'PATCH', path: '/firmware', query: query, data: params,
+        timeout: LONG_SERVER_TIMEOUT
+    }).then(function (data) {
 
         if (!forSlave) {
             ignoreListenErrors = true
@@ -1371,7 +1383,10 @@ export function patchPort(id, attrs, expectEventTimeout = null) {
         id: slaveName ? `${slaveName}.${id}` : id
     }, expectEventTimeout)
 
-    return apiCall({method: 'PATCH', path: `/ports/${id}`, data: attrs, expectedHandle: handle})
+    return apiCall({
+        method: 'PATCH', path: `/ports/${id}`, data: attrs,
+        expectedHandle: handle, timeout: LONG_SERVER_TIMEOUT
+    })
 }
 
 /**
@@ -1470,7 +1485,10 @@ export function patchPortValue(id, value, expectEventTimeout = null) {
         }, expectEventTimeout)
     }
 
-    return apiCall({method: 'PATCH', path: `/ports/${id}/value`, data: value, expectedHandle: handle})
+    return apiCall({
+        method: 'PATCH', path: `/ports/${id}/value`, data: value,
+        expectedHandle: handle, timeout: LONG_SERVER_TIMEOUT
+    })
 }
 
 /**
@@ -1668,7 +1686,10 @@ export function postSlaveDevices(
         path: path
     }, expectEventTimeout)
 
-    return apiCall({method: 'POST', path: '/devices', data: params, expectedHandle: handle})
+    return apiCall({
+        method: 'POST', path: '/devices', data: params,
+        expectedHandle: handle, timeout: LONG_SERVER_TIMEOUT
+    })
 }
 
 /**
@@ -1692,7 +1713,10 @@ export function patchSlaveDevice(name, enabled, pollInterval, listenEnabled, exp
         name: name
     }, expectEventTimeout)
 
-    return apiCall({method: 'PATCH', path: `/devices/${name}`, data: params, expectedHandle: handle})
+    return apiCall({
+        method: 'PATCH', path: `/devices/${name}`, data: params,
+        expectedHandle: handle, timeout: LONG_SERVER_TIMEOUT
+    })
 }
 
 /**

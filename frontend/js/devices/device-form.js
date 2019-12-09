@@ -257,7 +257,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
     startWaitingDeviceOnline() {
         this.setProgress()
 
-        PromiseUtils.withTimeout(this.waitDeviceOnline(), API.SERVER_TIMEOUT * 1000).catch(function (error) {
+        PromiseUtils.withTimeout(this.waitDeviceOnline(), API.DEFAULT_SERVER_TIMEOUT * 1000).catch(function (error) {
 
             if (error instanceof TimeoutError) {
                 this.setError(gettext('Device is offline.'))
