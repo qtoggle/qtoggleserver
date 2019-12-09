@@ -41,7 +41,6 @@ export default class AddPortForm extends PageForm {
                     label: gettext('Identifier'),
                     required: true,
                     placeholder: 'my_port_1',
-                    continuousChange: true,
 
                     validate(id) {
                         if (!id.match(VALID_ID_REGEX)) {
@@ -64,14 +63,12 @@ export default class AddPortForm extends PageForm {
                     name: 'min',
                     label: gettext('Minimum Value'),
                     hidden: true,
-                    continuousChange: true,
                     onChange: (value, form) => form._updateFieldsVisibility()
                 }),
                 new NumericField({
                     name: 'max',
                     label: gettext('Maximum Value'),
-                    hidden: true,
-                    continuousChange: true
+                    hidden: true
                 }),
                 new CheckField({
                     name: 'integer',
@@ -82,7 +79,6 @@ export default class AddPortForm extends PageForm {
                 new NumericField({
                     name: 'step',
                     label: gettext('Step'),
-                    continuousChange: true,
                     hidden: true
                 })
                 // TODO choices

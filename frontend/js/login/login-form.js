@@ -34,13 +34,11 @@ export default class LoginForm extends PageForm {
                     name: 'username',
                     label: gettext('Username'),
                     required: true,
-                    continuousChange: true,
                     autocomplete: 'username'
                 }),
                 new PasswordField({
                     name: 'password',
                     label: gettext('Password'),
-                    continuousChange: true,
                     autocomplete: true
                 }),
                 new CheckField({

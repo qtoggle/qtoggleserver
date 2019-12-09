@@ -176,14 +176,12 @@ export default class UpdateFirmwareForm extends PageForm {
                 new TextField({
                     name: 'version',
                     label: gettext('Version'),
-                    hidden: true,
-                    continuousChange: true
+                    hidden: true
                 }),
                 new TextField({
                     name: 'url',
                     label: 'URL',
-                    hidden: true,
-                    continuousChange: true
+                    hidden: true
                 })
             ],
             buttons: [

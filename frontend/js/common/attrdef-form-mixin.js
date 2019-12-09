@@ -81,7 +81,6 @@ export default Mixin((superclass = Object) => {
                         }
                         else { /* Many choices */
                             field.class = NumericField
-                            field.continuousChange = true
 
                             field.validate = function (value) {
                                 if (!value && !def.required) {
@@ -121,7 +120,6 @@ export default Mixin((superclass = Object) => {
 
                     case 'string': {
                         field.class = TextField
-                        field.continuousChange = true
 
                         field.validate = function (value) {
                             if (def.min != null && value.length < def.min) {

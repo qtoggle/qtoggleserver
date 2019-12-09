@@ -34,7 +34,6 @@ export default class AddPanelGroupForm extends PageForm {
                 new TextField({
                     name: 'name',
                     label: gettext('Name'),
-                    continuousChange: true,
                     required: true,
                     placeholder: gettext('e.g. Living Room'),
                     maxLength: 64

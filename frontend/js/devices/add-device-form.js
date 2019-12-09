@@ -41,7 +41,6 @@ export default class AddDeviceForm extends PageForm {
                     label: gettext('URL'),
                     required: true,
                     placeholder: 'http://192.168.1.123/device',
-                    continuousChange: true,
 
                     validate(url) {
                         if (!url.match(URL.VALID_REGEX)) {
@@ -70,8 +69,7 @@ export default class AddDeviceForm extends PageForm {
                 new PasswordField({
                     name: 'password',
                     label: gettext('Password'),
-                    autocomplete: false,
-                    continuousChange: true
+                    autocomplete: false
                 }),
                 new TextField({
                     name: 'scheme',
@@ -79,7 +77,6 @@ export default class AddDeviceForm extends PageForm {
                     required: true,
                     separator: true,
                     placeholder: 'http',
-                    continuousChange: true,
 
                     validate(scheme) {
                         if (scheme !== 'http' && scheme !== 'https') {
@@ -92,7 +89,6 @@ export default class AddDeviceForm extends PageForm {
                     label: gettext('Host'),
                     required: true,
                     placeholder: '192.168.1.123',
-                    continuousChange: true,
 
                     validate(host) {
                         if (!host.match(VALID_HOST_REGEX)) {
@@ -104,14 +100,12 @@ export default class AddDeviceForm extends PageForm {
                     name: 'port',
                     label: gettext('Port'),
                     min: 1,
-                    max: 65535,
-                    continuousChange: true
+                    max: 65535
                 }),
                 new TextField({
                     name: 'path',
                     label: gettext('Path'),
-                    placeholder: '/',
-                    continuousChange: true
+                    placeholder: '/'
                 }),
                 new ComboField({
                     name: 'poll_interval',

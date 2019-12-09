@@ -130,7 +130,6 @@ export const STD_DEVICE_ATTRDEFS = {
             autocomplete: false,
             clearEnabled: true,
             clearPlaceholder: true,
-            continuousChange: true,
             placeholder: `(${gettext('hidden')})`
         }
     },
@@ -149,7 +148,6 @@ export const STD_DEVICE_ATTRDEFS = {
             autocomplete: false,
             clearEnabled: true,
             clearPlaceholder: true,
-            continuousChange: true,
             placeholder: `(${gettext('hidden')})`
         }
     },
@@ -168,7 +166,6 @@ export const STD_DEVICE_ATTRDEFS = {
             autocomplete: false,
             clearEnabled: true,
             clearPlaceholder: true,
-            continuousChange: true,
             placeholder: `(${gettext('hidden')})`
         }
     },
@@ -209,7 +206,6 @@ export const STD_DEVICE_ATTRDEFS = {
             autocomplete: false,
             clearEnabled: true,
             revealOnFocus: true,
-            continuousChange: true,
             placeholder: `${gettext('network')}:${gettext('password')}`
         }
     },
@@ -228,7 +224,6 @@ export const STD_DEVICE_ATTRDEFS = {
         field: {
             class: TextField,
             autocomplete: false,
-            continuousChange: true,
             placeholder: `ip/${gettext('mask')}:${gettext('gateway')}:dns`
         }
     },
