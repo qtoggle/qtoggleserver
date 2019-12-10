@@ -142,12 +142,12 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
         await self.handle_disable()
         self.debug('peripheral disabled')
 
-    async def check_disabled(self):
+    async def check_disabled(self, exclude_port=None):
         if not self._enabled:
             return
 
         for port in self._ports:
-            if port.is_enabled():
+            if port.is_enabled() and port != exclude_port:
                 break
 
         else:
@@ -233,4 +233,4 @@ class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
 
     async def handle_disable(self):
         if self._peripheral.is_enabled():
-            await self._peripheral.check_disabled()
+            await self._peripheral.check_disabled(self)
