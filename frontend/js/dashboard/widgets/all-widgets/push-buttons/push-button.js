@@ -14,6 +14,7 @@ import * as Cache       from '$app/cache.js'
 import PortPickerField  from '$app/dashboard/widgets/port-picker-field.js'
 import * as Widgets     from '$app/dashboard/widgets/widgets.js'
 import Widget           from '$app/dashboard/widgets/widget.js'
+import {DEFAULT_COLOR}  from '$app/dashboard/widgets/widget.js'
 import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 
 
@@ -113,7 +114,7 @@ export default class PushButton extends Widget {
     constructor() {
         super()
 
-        this._color = '@interactive-color'
+        this._color = DEFAULT_COLOR
         this._portId = ''
         this._inverted = false
         this._pressedValue = 1

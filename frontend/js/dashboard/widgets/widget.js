@@ -30,6 +30,7 @@ import * as Widgets     from './widgets.js'
 
 const DEF_VIBRATION_DURATION = 10 /* Milliseconds */
 const PORT_VALUE_CHANGE_TIMEOUT = 3000
+export const DEFAULT_COLOR = '@blue-color'
 
 const STATES = [
     Widgets.STATE_INVALID,

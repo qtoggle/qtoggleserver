@@ -15,6 +15,7 @@ import * as Window       from '$qui/window.js'
 import * as Cache       from '$app/cache.js'
 import PortPickerField  from '$app/dashboard/widgets/port-picker-field.js'
 import Widget           from '$app/dashboard/widgets/widget.js'
+import {DEFAULT_COLOR}  from '$app/dashboard/widgets/widget.js'
 import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 import * as Widgets     from '$app/dashboard/widgets/widgets.js'
 
@@ -237,7 +238,7 @@ export default class RadioButtons extends Widget {
         super()
 
         this._normalColor = '@gray-color'
-        this._activeColor = '@interactive-color'
+        this._activeColor = DEFAULT_COLOR
         this._separateColors = false
         this._portId = ''
         this._vertical = false

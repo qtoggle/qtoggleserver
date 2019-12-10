@@ -9,6 +9,7 @@ import * as Theme        from '$qui/theme.js'
 
 import PortPickerField  from '$app/dashboard/widgets/port-picker-field.js'
 import Widget           from '$app/dashboard/widgets/widget.js'
+import {DEFAULT_COLOR}  from '$app/dashboard/widgets/widget.js'
 import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 import * as Widgets     from '$app/dashboard/widgets/widgets.js'
 
@@ -59,7 +60,7 @@ export default class OnOffButton extends Widget {
         super()
 
         this._on = false
-        this._color = '@interactive-color'
+        this._color = DEFAULT_COLOR
         this._portId = ''
         this._inverted = false
 

@@ -18,6 +18,7 @@ import * as StringUtils     from '$qui/utils/string.js'
 import * as Cache       from '$app/cache.js'
 import PortPickerField  from '$app/dashboard/widgets/port-picker-field.js'
 import Widget           from '$app/dashboard/widgets/widget.js'
+import {DEFAULT_COLOR}  from '$app/dashboard/widgets/widget.js'
 import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 import * as Widgets     from '$app/dashboard/widgets/widgets.js'
 
@@ -343,8 +344,8 @@ export class AnalogWidget extends Widget {
         this._portId = ''
         this._start = 0
         this._end = 100
-        this._startColor = '@disabled-color'
-        this._endColor = '@interactive-color'
+        this._startColor = '@gray-color'
+        this._endColor = DEFAULT_COLOR
         this._displayValue = true
         this._displayUnit = true
         this._unit = ''
