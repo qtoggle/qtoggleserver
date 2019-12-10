@@ -275,17 +275,11 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
     def _handle_offline(self):
         self.debug('%s is offline', self)
-
-        # trigger an update for all ports
-        for port in self._ports:
-            port.trigger_update()
+        self.trigger_port_update()
 
     def _handle_online(self):
         self.debug('%s is online', self)
-
-        # trigger an update for all ports
-        for port in self._ports:
-            port.trigger_update()
+        self.trigger_port_update()
 
     @staticmethod
     def pretty_data(data):
