@@ -367,13 +367,16 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         if self._enabled:
             return
 
+        await self.handle_enable()
+
         self.debug('enabling %s', self)
         self._enabled = True
-        await self.handle_enable()
 
     async def disable(self):
         if not self._enabled:
             return
+
+        await self.handle_disable()
 
         self.debug('disabling %s', self)
         self._enabled = False
@@ -383,8 +386,6 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.debug('canceling current sequence')
             self._sequence.cancel()
             self._sequence = None
-
-        await self.handle_disable()
 
     async def handle_enable(self):
         pass
