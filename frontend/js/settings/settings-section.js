@@ -42,7 +42,9 @@ export default class SettingsSection extends Section {
                 if (this.settingsForm) {
                     /* Don't show field changed warnings for events that are consequences of changes applied from this
                      * client (when the event is expected) */
-                    this.settingsForm.updateUI(/* fieldChangeWarnings = */ !event.expected)
+                    this.settingsForm.updateUI(
+                        /* fieldChangeWarnings = */ !event.expected && !this.settingsForm.inProgress()
+                    )
                 }
 
                 break
