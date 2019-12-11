@@ -267,6 +267,9 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
     def invalidate_attrs(self):
         self._attrs_cache = {}
 
+    def invalidate_attr(self, name):
+        self._attrs_cache.pop(name, None)
+
     async def get_attr(self, name):
         value = self._attrs_cache.get(name)
         if value is not None:
@@ -367,25 +370,41 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         if self._enabled:
             return
 
-        await self.handle_enable()
-
-        self.debug('enabling %s', self)
+        self.debug('enabling')
         self._enabled = True
+        self.invalidate_attr('enabled')
+
+        try:
+            await self.handle_enable()
+
+        except Exception:
+            self.error('failed to enable')
+            self._enabled = False
+
+            raise
 
     async def disable(self):
         if not self._enabled:
             return
-
-        await self.handle_disable()
-
-        self.debug('disabling %s', self)
-        self._enabled = False
 
         # cancel sequence
         if self._sequence:
             self.debug('canceling current sequence')
             self._sequence.cancel()
             self._sequence = None
+
+        self.debug('disabling')
+        self._enabled = False
+        self.invalidate_attr('enabled')
+
+        try:
+            await self.handle_disable()
+
+        except Exception:
+            self.error('failed to disable')
+            self._enabled = True
+
+            raise
 
     async def handle_enable(self):
         pass
