@@ -50,6 +50,9 @@ class Event(metaclass=abc.ABCMeta):
         else:
             return param
 
+    def find_duplicate(self, events):
+        return None
+
     def __str__(self):
         return '{} event'.format(self._type)
 
@@ -65,6 +68,11 @@ class ValueChange(Event):
             'value': port.get_value()
         })
 
+    def find_duplicate(self, events):
+        for e in events:
+            if isinstance(e, ValueChange) and e.port == self.port:
+                return e
+
     def __str__(self):
         return '{}({}) event'.format(self._type, self.port.get_id())
 
@@ -76,6 +84,11 @@ class PortUpdate(Event):
         self.port = port
 
         super().__init__('port-update', port.to_json)
+
+    def find_duplicate(self, events):
+        for e in events:
+            if isinstance(e, PortUpdate) and e.port == self.port:
+                return e
 
     def __str__(self):
         return '{}({}) event'.format(self._type, self.port.get_id())
@@ -110,6 +123,11 @@ class PortRemove(Event):
 class DeviceUpdate(Event):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
 
+    def find_duplicate(self, events):
+        for e in events:
+            if isinstance(e, DeviceUpdate):
+                return e
+
     def __init__(self):
         super().__init__('device-update', core_device_attrs.to_json())
 
@@ -121,6 +139,11 @@ class SlaveDeviceUpdate(Event):
         self.slave = slave
 
         super().__init__('slave-device-update', slave.to_json())
+
+    def find_duplicate(self, events):
+        for e in events:
+            if isinstance(e, SlaveDeviceUpdate) and e.slave == self.slave:
+                return e
 
     def __str__(self):
         return '{}({}) event'.format(self._type, self.slave.get_name())

@@ -3,7 +3,6 @@ import asyncio
 
 import time
 import logging
-import queue
 
 from qtoggleserver.conf import settings
 
@@ -20,7 +19,7 @@ class Session:
         self.timeout = 0
         self.access_level = 0
         self.future = None
-        self.queue = queue.Queue()
+        self.queue = []
 
     def reset_and_wait(self, timeout, access_level):
         logger.debug('resetting %s (timeout=%s, access_level=%s)', self, timeout, access_level)
@@ -36,24 +35,21 @@ class Session:
         self.access_level = access_level
         self.future = future
 
-        if not self.queue.empty():
+        if self.queue:
             logger.debug('%s has queued events, responding right away', self)
             self.respond()
 
         return future
 
     def is_empty(self):
-        return self.queue.empty()
+        return len(self.queue) == 0
 
     def is_active(self):
         return self.future is not None
 
     def respond(self):
-        events = []
-        while not self.queue.empty():
-            event = self.queue.get()
-            events.append(event)
-
+        events = list(self.queue)
+        self.queue = []
         if not self.future:
             return
 
@@ -61,11 +57,20 @@ class Session:
         self.future = None
 
     def push(self, event):
-        while self.queue.qsize() >= settings.core.event_queue_size:
-            logger.debug('%s queue full, dropping oldest event', self)
-            self.queue.get(block=False)
+        # Deduplicate events
+        while True:
+            duplicate = event.find_duplicate(self.queue)
+            if not duplicate:
+                break
 
-        self.queue.put(event)
+            self.queue.remove(duplicate)
+            logger.debug('dropping duplicate event %s from %s', duplicate, self)
+
+        while len(self.queue) >= settings.core.event_queue_size:
+            logger.debug('%s queue full, dropping oldest event', self)
+            self.queue.pop()
+
+        self.queue.insert(0, event)
 
     def __str__(self):
         return 'session {}'.format(self.id)
