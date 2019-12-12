@@ -56,13 +56,16 @@ export default class MJPEGVideo extends Widget {
     }
 
     makeContent(width, height) {
+        let spacer = $('<div class="dashboard-mjpeg-video-spacer"></div>')
+        spacer.css('background', Theme.getColor(this._backgroundColor))
+
         let container = $('<div class="dashboard-mjpeg-video-container"></div>')
+        spacer.append(container)
 
         this._videoElement = this._makeVideoElement(width, height)
         container.append(this._videoElement)
-        container.css('background', Theme.getColor(this._backgroundColor))
 
-        return container
+        return spacer
     }
 
     _makeVideoElement(width, height) {

@@ -3,12 +3,21 @@
 
 div.dashboard-widget-content {
 
-    & > div.dashboard-mjpeg-video-container {
+    & > div.dashboard-mjpeg-video-spacer {
         width: 100%;
         height: 100%;
 
-        & > img.dashboard-mjpeg-video-element {
-            width: 100%;
+        & > div.dashboard-mjpeg-video-container {
+            position: absolute;
+            top: 0.025em;
+            right: 0.025em;
+            bottom: 0.025em;
+            left: 0.025em;
+
+            & > img.dashboard-mjpeg-video-element {
+                width: 100%;
+            }
+
         }
 
     }
