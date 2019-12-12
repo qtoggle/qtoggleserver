@@ -117,9 +117,10 @@ setup(
     packages=find_packages(include=name + '/*'),
 
     install_requires=[
+        'bluepy',
         'jinja2',
-        'jsonschema',
         'jsonpointer',
+        'jsonschema',
         'pyhocon',
         'pyjwt',
         'pytz',
