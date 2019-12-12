@@ -62,10 +62,16 @@ export default class MJPEGVideo extends Widget {
         let container = $('<div class="dashboard-mjpeg-video-container"></div>')
         spacer.append(container)
 
+        this._clearVideoElement()
         this._videoElement = this._makeVideoElement(width, height)
         container.append(this._videoElement)
 
         return spacer
+    }
+
+    clearContent() {
+        this._clearVideoElement()
+        super.clearContent()
     }
 
     _makeVideoElement(width, height) {
@@ -76,6 +82,13 @@ export default class MJPEGVideo extends Widget {
         }
 
         return videoElement
+    }
+
+    _clearVideoElement() {
+        if (this._videoElement) {
+            this._videoElement.attr('src', '#')
+            this._videoElement = null
+        }
     }
 
     configToJSON() {
