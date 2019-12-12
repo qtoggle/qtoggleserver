@@ -387,6 +387,10 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     }
 
     updateContainerLayout() {
+        if (!this.isVisible()) {
+            return
+        }
+
         this._cellWidth = this._computeCellWidth()
 
         this.getBody().addClass('disable-transitions')
@@ -998,6 +1002,10 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
         if (this._editEnabled) {
             this.disableEditing()
         }
+
+        this.getWidgets().forEach(function (widget) {
+            widget.clearContent()
+        })
     }
 
     navigate(pathId) {

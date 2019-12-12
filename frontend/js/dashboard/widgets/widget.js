@@ -186,6 +186,10 @@ export default class Widget extends mix().with(ViewMixin) {
         this.showCurrentValue()
     }
 
+    clearContent() {
+        this._contentElem.empty('')
+    }
+
     getContentElement() {
         return this._contentElem
     }
