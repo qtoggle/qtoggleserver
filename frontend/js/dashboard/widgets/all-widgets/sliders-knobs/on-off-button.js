@@ -4,6 +4,7 @@ import $ from '$qui/lib/jquery.module.js'
 import {gettext}         from '$qui/base/i18n.js'
 import {CheckField}      from '$qui/forms/common-fields.js'
 import {ColorComboField} from '$qui/forms/common-fields.js'
+import {NumericField}    from '$qui/forms/common-fields.js'
 import StockIcon         from '$qui/icons/stock-icon.js'
 import * as Theme        from '$qui/theme.js'
 
@@ -37,14 +38,57 @@ class ConfigForm extends WidgetConfigForm {
                     name: 'portId',
                     label: gettext('Port'),
                     required: true,
-                    filter: port => port.type === 'boolean' && port.enabled && port.writable
+                    onChange: (value, form) => form._showHidePortTypeFields()
                 }),
                 new CheckField({
                     name: 'inverted',
                     label: gettext('Inverted Logic')
+                }),
+                new NumericField({
+                    name: 'offValue',
+                    label: gettext('Off Value'),
+                    required: true
+                }),
+                new NumericField({
+                    name: 'onValue',
+                    label: gettext('On Value'),
+                    required: true
                 })
             ]
         })
+    }
+
+    _showHidePortTypeFields() {
+        let data = this.getUnvalidatedData()
+        let port = this.getPort(data.portId)
+        let isBoolean = true
+        if (port && port.type === 'number') {
+            isBoolean = false
+        }
+
+        let booleanFieldNames = ['inverted']
+        let numberFieldNames = ['offValue', 'onValue']
+
+        if (isBoolean) {
+            numberFieldNames.forEach(function (name) {
+                this.getField(name).hide()
+            }, this)
+            booleanFieldNames.forEach(function (name) {
+                this.getField(name).show()
+            }, this)
+        }
+        else {
+            booleanFieldNames.forEach(function (name) {
+                this.getField(name).hide()
+            }, this)
+            numberFieldNames.forEach(function (name) {
+                this.getField(name).show()
+            }, this)
+        }
+    }
+
+    onUpdateFromWidget() {
+        this._showHidePortTypeFields()
     }
 
 }
@@ -63,6 +107,8 @@ export default class OnOffButton extends Widget {
         this._color = DEFAULT_COLOR
         this._portId = ''
         this._inverted = false
+        this._offValue = 0
+        this._onValue = 1
 
         this._containerDiv = null
         this._backgroundDiv = null
@@ -80,7 +126,7 @@ export default class OnOffButton extends Widget {
 
         let port = this.getPort(this._portId)
 
-        return Boolean(port && port.enabled && port.writable && port.online !== false && port.type === 'boolean')
+        return Boolean(port && port.enabled && port.writable && port.online !== false)
     }
 
     showCurrentValue() {
@@ -89,11 +135,35 @@ export default class OnOffButton extends Widget {
             return
         }
 
-        if (this._inverted ? !value : value) {
-            this._showOn()
+        this._showValue(value)
+    }
+
+    onPortValueChange(portId, value) {
+        if (portId !== this._portId || value == null) {
+            return
         }
-        else {
-            this._showOff()
+
+        this._showValue(value)
+    }
+
+    _showValue(value) {
+        if (this._isBoolean()) {
+            value = this._inverted ? !value : value
+
+            if (value && !this._on) {
+                this._showOn()
+            }
+            else if (!value && this._on) {
+                this._showOff()
+            }
+        }
+        else { /* Number */
+            if (value === this._onValue && !this._on) {
+                this._showOn()
+            }
+            else if (value === this._offValue && this._on) {
+                this._showOff()
+            }
         }
     }
 
@@ -251,8 +321,21 @@ export default class OnOffButton extends Widget {
 
         /* Actually send the new state to the server */
         if (this._portId) {
-            this.setPortValue(this._portId, this._inverted ? !this._on : this._on)
+            let value
+            if (this._isBoolean()) {
+                value = this._inverted ? !this._on : this._on
+            }
+            else {
+                value = this._on ? this._onValue : this._offValue
+            }
+
+            this.setPortValue(this._portId, value)
         }
+    }
+
+    _isBoolean() {
+        let port = this.getPort(this._portId)
+        return port && port.type === 'boolean'
     }
 
     onDragBegin() {
@@ -315,7 +398,9 @@ export default class OnOffButton extends Widget {
         return {
             color: this._color,
             portId: this._portId,
-            inverted: this._inverted
+            inverted: this._inverted,
+            offValue: this._offValue,
+            onValue: this._onValue
         }
     }
 
@@ -329,20 +414,11 @@ export default class OnOffButton extends Widget {
         if (json.inverted != null) {
             this._inverted = json.inverted
         }
-    }
-
-    onPortValueChange(portId, value) {
-        if (portId !== this._portId) {
-            return
+        if (json.offValue != null) {
+            this._offValue = json.offValue
         }
-
-        value = this._inverted ? !value : value
-
-        if (value && !this._on) {
-            this._showOn()
-        }
-        else if (!value && this._on) {
-            this._showOff()
+        if (json.onValue != null) {
+            this._onValue = json.onValue
         }
     }
 

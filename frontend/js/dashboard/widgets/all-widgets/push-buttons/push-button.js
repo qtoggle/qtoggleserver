@@ -38,7 +38,6 @@ class ConfigForm extends WidgetConfigForm {
                     name: 'portId',
                     label: gettext('Port'),
                     required: true,
-                    filter: port => port.enabled && port.writable,
                     onChange: (value, form) => form._showHidePortTypeFields()
                 }),
                 new CheckField({
@@ -62,8 +61,8 @@ class ConfigForm extends WidgetConfigForm {
                     min: 0,
                     max: 10000,
                     step: 100,
-                    description: ('Sets the time after which the button is automatically released. ' +
-                                  'Value 0 disables automatic release.')
+                    description: gettext('Sets the time after which the button is automatically released. ' +
+                                         'Value 0 disables automatic release.')
                 })
             ]
         })
