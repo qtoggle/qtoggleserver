@@ -43,6 +43,7 @@ class core:
 class server:
     addr = '0.0.0.0'
     port = 8888
+    compress_response = False
 
     class https:
         cert_file = None

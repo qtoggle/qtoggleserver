@@ -143,7 +143,8 @@ def get_application():
         _application = Application(
             handlers=_make_handlers(),
             debug=False,
-            log_function=_log_request
+            compress_response=settings.server.compress_response,
+            log_function=_log_request,
         )
 
     return _application
