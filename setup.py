@@ -2,7 +2,7 @@
 import os.path
 import shutil
 
-from setuptools import setup, find_packages, Command
+from setuptools import setup, find_namespace_packages, Command
 from setuptools.command.sdist import sdist
 
 try:
@@ -114,7 +114,8 @@ setup(
 
     license='Apache 2.0',
 
-    packages=find_packages(include=name + '/*'),
+    packages=find_namespace_packages(include=name + '/*'),
+    namespace_packages=['qtoggleserver'],
 
     install_requires=[
         'bluepy',
