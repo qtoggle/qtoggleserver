@@ -180,6 +180,15 @@ export default class WidgetConfigForm extends PageForm {
         })
     }
 
+    /**
+     * Returns the cached attributes of a port.
+     * @param {String} portId the id of the port whose attributes will be returned
+     * @returns {?Object}
+     */
+    getPort(portId) {
+        return Cache.getPort(portId)
+    }
+
     navigate(pathId) {
         switch (pathId) {
             case 'remove':
