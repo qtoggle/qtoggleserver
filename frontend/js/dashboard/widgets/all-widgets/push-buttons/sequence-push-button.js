@@ -81,7 +81,7 @@ class ConfigForm extends WidgetConfigForm {
         let lastSeqFieldNo = seqDelayFields.length - 1
 
         let data = this.getUnvalidatedData()
-        let port = Cache.getPort(data.portId)
+        let port = this.getPort(data.portId)
 
         let isBoolean = !(port && port.type === 'number')
         let field = this.getField('seqValue0')

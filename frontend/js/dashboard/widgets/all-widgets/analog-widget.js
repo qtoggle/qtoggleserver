@@ -168,7 +168,7 @@ export class ConfigForm extends WidgetConfigForm {
         let snapField = this.getField('snap')
 
         let data = this.getUnvalidatedData()
-        let port = Cache.getPort(data.portId)
+        let port = this.getPort(data.portId)
 
         if (this._readonly) {
             snapField.hide()

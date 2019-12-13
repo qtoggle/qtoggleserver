@@ -40,11 +40,6 @@ const STATES = [
 ]
 
 
-/**
- * @class QToggle.DashboardSection.Widgets.Widget
- * @mixes qui.views.ViewMixin
- * @param {Object} attributes
- */
 export default class Widget extends mix().with(ViewMixin) {
 
     constructor() {
@@ -1089,7 +1084,7 @@ export default class Widget extends mix().with(ViewMixin) {
 
             if (error instanceof TimeoutError) {
                 this.logger.debug(`value-change not received within timeout for ${portId}, reverting to current one`)
-                let port = Cache.getPort(portId)
+                let port = this.getPort(portId)
                 if (!port) {
                     return
                 }
@@ -1169,7 +1164,7 @@ export default class Widget extends mix().with(ViewMixin) {
      * @returns {?Boolean|Number}
      */
     getPortValue(portId) {
-        let port = Cache.getPort(portId)
+        let port = this.getPort(portId)
         if (!port) {
             return null
         }

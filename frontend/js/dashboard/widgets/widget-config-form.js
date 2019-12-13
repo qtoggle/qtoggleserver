@@ -68,7 +68,7 @@ export default class WidgetConfigForm extends PageForm {
         let field = this.getField(fieldName)
         if (field instanceof PortPickerField) {
             let portId = data[fieldName]
-            let port = Cache.getPort(portId)
+            let port = this.getPort(portId)
             if (port) {
                 let dataFromPort = ObjectUtils.filter(this.fromPort(port), function (name, value) {
 

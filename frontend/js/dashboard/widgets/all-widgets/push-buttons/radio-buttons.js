@@ -87,7 +87,7 @@ class ConfigForm extends WidgetConfigForm {
         let buttonFields = buttonValueFields.concat(buttonLabelFields).concat(buttonColorFields)
 
         let data = this.getUnvalidatedData()
-        let port = Cache.getPort(data.portId)
+        let port = this.getPort(data.portId)
 
         /* Show/hide active color field */
         if (data.separateColors) {

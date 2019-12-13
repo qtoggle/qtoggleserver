@@ -70,7 +70,7 @@ class ConfigForm extends WidgetConfigForm {
 
     _showHidePortTypeFields() {
         let data = this.getUnvalidatedData()
-        let port = Cache.getPort(data.portId)
+        let port = this.getPort(data.portId)
         let isBoolean = true
         if (port && port.type === 'number') {
             isBoolean = false
@@ -203,7 +203,7 @@ export default class PushButton extends Widget {
 
     _isBoolean() {
         let isBoolean = true
-        let port = Cache.getPort(this._portId)
+        let port = this.getPort(this._portId)
         if (port && port.type === 'number') {
             isBoolean = false
         }
