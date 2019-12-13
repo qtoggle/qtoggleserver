@@ -45,8 +45,7 @@ export class ConfigForm extends WidgetConfigForm {
                 new PortPickerField({
                     name: 'portId',
                     label: gettext('Port'),
-                    required: true,
-                    filter: port => port.type === 'number' && port.enabled
+                    required: true
                 }),
                 new NumericField({
                     name: 'start',

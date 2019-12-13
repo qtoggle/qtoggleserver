@@ -38,7 +38,6 @@ class ConfigForm extends WidgetConfigForm {
                     name: 'portId',
                     label: gettext('Port'),
                     required: true,
-                    filter: port => port.enabled && port.writable,
                     onChange: (value, form) => form._showHidePortTypeFields()
                 }),
                 new CheckField({

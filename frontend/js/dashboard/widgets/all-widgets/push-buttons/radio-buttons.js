@@ -37,8 +37,7 @@ class ConfigForm extends WidgetConfigForm {
                 new PortPickerField({
                     name: 'portId',
                     label: gettext('Port'),
-                    required: true,
-                    filter: port => port.enabled && port.writable && port.type === 'number'
+                    required: true
                 }),
                 new ColorComboField({
                     name: 'normalColor',

@@ -36,8 +36,7 @@ class ConfigForm extends WidgetConfigForm {
                 new PortPickerField({
                     name: 'portId',
                     label: gettext('Port'),
-                    required: true,
-                    filter: port => port.type === 'boolean' && port.enabled && port.writable
+                    required: true
                 }),
                 new CheckField({
                     name: 'inverted',
