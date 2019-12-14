@@ -290,7 +290,7 @@ class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):
     PERIPHERAL_CLASS = BLEPeripheral
 
     READ_INTERVAL_MAX = 1440
-    READ_INTERVAL_STEP = 5
+    READ_INTERVAL_STEP = 1
     READ_INTERVAL_MULTIPLIER = 60
 
     def __init__(self, address, peripheral_name=None, adapter_name=None):
