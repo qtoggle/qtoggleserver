@@ -120,8 +120,8 @@ def parse(response, decode_json=True, resolve_refs=True):
             try:
                 body = json_utils.loads(response.body, resolve_refs=resolve_refs)
 
-            except Exception:
-                raise InvalidJson()
+            except Exception as e:
+                raise InvalidJson() from e
 
         else:
             body = response.body

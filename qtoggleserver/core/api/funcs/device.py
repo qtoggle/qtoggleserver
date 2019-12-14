@@ -28,7 +28,7 @@ async def patch_device(request, params):
         result = core_device_attrs.set_attrs(params)
 
     except Exception as e:
-        raise core_api.APIError(500, str(e))
+        raise core_api.APIError(500, str(e)) from e
 
     # noinspection PyTypeChecker
     if isinstance(result, str):  # API error

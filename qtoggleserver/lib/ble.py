@@ -124,10 +124,10 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
         except subprocess.CalledProcessError as e:
             output = e.output.decode()
             if output.count('No such device'):
-                raise Exception('adapter not found: {}'.format(name))
+                raise Exception('adapter not found: {}'.format(name)) from e
 
             else:
-                raise Exception(output.strip())
+                raise Exception(output.strip()) from e
 
         found = re.findall(name + r'\s([0-9a-f:]{17})', output, re.IGNORECASE)
         if not found:
@@ -259,9 +259,9 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
                     self._handle_offline()
 
                 if isinstance(e, RunnerBusy):
-                    e = BLEBusy('too many pending commands')
+                    raise BLEBusy('too many pending commands') from e
 
-                raise e
+                raise
 
             else:
                 if not self._online:
@@ -317,10 +317,10 @@ def port_exceptions(func):
         try:
             return func(*args, **kwargs)
 
-        except BLETimeout:
-            raise core_ports.PortTimeout()
+        except BLETimeout as e:
+            raise core_ports.PortTimeout() from e
 
         except BLEException as e:
-            raise core_ports.PortError(str(e))
+            raise core_ports.PortError(str(e)) from e
 
     return wrapper

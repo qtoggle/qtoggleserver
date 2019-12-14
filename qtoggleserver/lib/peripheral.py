@@ -55,7 +55,7 @@ class ThreadedRunner(threading.Thread, metaclass=abc.ABCMeta):
             self._queue.put_nowait((func, callback))
 
         except queue.Full:
-            raise RunnerBusy()
+            raise RunnerBusy() from None
 
     def is_running(self):
         return self._running

@@ -13,7 +13,7 @@ def run_get_cmd(get_cmd, cmd_name=None, log_values=True, exc_class=None, require
         config = subprocess.check_output(get_cmd, stderr=subprocess.STDOUT, shell=True)
 
     except Exception as e:
-        raise exc_class('{} get command failed: {}'.format(cmd_name or get_cmd, e))
+        raise exc_class('{} get command failed: {}'.format(cmd_name or get_cmd, e)) from e
 
     config = config.strip().decode()
     config_lines = config.split('\n')
@@ -64,7 +64,7 @@ def run_set_cmd(set_cmd, cmd_name=None, log_values=True, exc_class=None, **confi
         subprocess.check_output(set_cmd, env=env, stderr=subprocess.STDOUT, shell=True)
 
     except Exception as e:
-        raise exc_class('{} set command failed: {}'.format(cmd_name or set_cmd, e))
+        raise exc_class('{} set command failed: {}'.format(cmd_name or set_cmd, e)) from e
 
     if cmd_name:
         if log_values:

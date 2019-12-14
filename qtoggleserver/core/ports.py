@@ -458,7 +458,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         except core_expressions.ExpressionError as e:
             self.error('failed to set expression "%s": %s', sexpression, e)
 
-            raise InvalidAttributeValue('expression')
+            raise InvalidAttributeValue('expression') from e
 
         self.debug('setting expression "%s"', expression)
         self._expression = expression
@@ -495,7 +495,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         except core_expressions.ExpressionError as e:
             self.error('failed to set transform read expression "%s": %s', stransform_read, e)
 
-            raise InvalidAttributeValue('transform_read')
+            raise InvalidAttributeValue('transform_read') from e
 
     async def attr_get_transform_write(self):
         if not await self.is_writable():
@@ -530,7 +530,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         except core_expressions.ExpressionError as e:
             self.error('failed to set transform write expression "%s": %s', stransform_write, e)
 
-            raise InvalidAttributeValue('transform_write')
+            raise InvalidAttributeValue('transform_write') from e
 
     async def read_value(self):
         raise NotImplementedError()

@@ -156,7 +156,7 @@ class SlavePort(core_ports.BasePort):
 
                 except Exception as e:
                     # map exceptions to specific slave API errors
-                    raise exceptions.adapt_api_error(e)
+                    raise exceptions.adapt_api_error(e) from e
 
             else:  # offline
                 # allow provisioning for offline devices
@@ -278,7 +278,7 @@ class SlavePort(core_ports.BasePort):
                 if e.code == 504 and e.msg == 'port timeout':
                     raise core_ports.PortTimeout()
 
-                raise exceptions.adapt_api_error(e)
+                raise exceptions.adapt_api_error(e) from e
 
         else:  # offline
             # allow provisioning for offline devices
@@ -304,7 +304,7 @@ class SlavePort(core_ports.BasePort):
             self.error('failed to send sequence remotely: %s', e)
 
             # map exceptions to specific slave API errors
-            raise exceptions.adapt_api_error(e)
+            raise exceptions.adapt_api_error(e) from e
 
     def heart_beat_second(self):
         was_expired = self._expired

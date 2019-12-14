@@ -43,26 +43,29 @@ async def post_slave_devices(request, params):
         slave = await slaves_devices.add(scheme, host, port, path, poll_interval, listen_enabled,
                                          admin_password=admin_password)
 
-    except (core_responses.HostUnreachable, core_responses.NetworkUnreachable, core_responses.UnresolvableHostname):
-        raise core_api.APIError(502, 'unreachable')
+    except (core_responses.HostUnreachable,
+            core_responses.NetworkUnreachable,
+            core_responses.UnresolvableHostname) as e:
 
-    except core_responses.ConnectionRefused:
-        raise core_api.APIError(502, 'connection refused')
+        raise core_api.APIError(502, 'unreachable') from e
 
-    except core_responses.InvalidJson:
-        raise core_api.APIError(502, 'invalid device')
+    except core_responses.ConnectionRefused as e:
+        raise core_api.APIError(502, 'connection refused') from e
 
-    except core_responses.Timeout:
-        raise core_api.APIError(504, 'device timeout')
+    except core_responses.InvalidJson as e:
+        raise core_api.APIError(502, 'invalid device') from e
 
-    except exceptions.InvalidDevice:
-        raise core_api.APIError(502, 'invalid device')
+    except core_responses.Timeout as e:
+        raise core_api.APIError(504, 'device timeout') from e
 
-    except exceptions.NoListenSupport:
-        raise core_api.APIError(400, 'no listen support')
+    except exceptions.InvalidDevice as e:
+        raise core_api.APIError(502, 'invalid device') from e
 
-    except exceptions.DeviceAlreadyExists:
-        raise core_api.APIError(400, 'duplicate device')
+    except exceptions.NoListenSupport as e:
+        raise core_api.APIError(400, 'no listen support') from e
+
+    except exceptions.DeviceAlreadyExists as e:
+        raise core_api.APIError(400, 'duplicate device') from e
 
     except core_api.APIError:
         raise
@@ -70,12 +73,12 @@ async def post_slave_devices(request, params):
     except core_responses.HTTPError as e:
         # we need to treat the 401/403 slave responses as a 400
         if e.code in (401, 403):
-            raise core_api.APIError(400, 'forbidden')
+            raise core_api.APIError(400, 'forbidden') from e
 
-        raise core_api.APIError.from_http_error(e)
+        raise core_api.APIError.from_http_error(e) from e
 
     except Exception as e:
-        raise exceptions.adapt_api_error(e)
+        raise exceptions.adapt_api_error(e) from e
 
     return slave.to_json()
 
@@ -110,7 +113,7 @@ async def patch_slave_device(request, name, params):
                     attrs = await slave.api_call('GET', '/device')
 
                 except Exception as e:
-                    raise exceptions.adapt_api_error(e)
+                    raise exceptions.adapt_api_error(e) from e
 
                 if 'listen' not in attrs['flags']:
                     raise core_api.APIError(400, 'no listen support')
@@ -154,7 +157,7 @@ async def slave_device_forward(request, name, method, path, params=None, interna
         response = await slave.api_call(method, path, params, retry_counter=None)
 
     except Exception as e:
-        raise exceptions.adapt_api_error(e)
+        raise exceptions.adapt_api_error(e) from e
 
     return response
 
@@ -188,7 +191,7 @@ async def post_slave_device_events(request, name, params):
 
     except core_api_auth.AuthError as e:
         slave.warning(str(e))
-        raise core_api.APIError(401, 'authentication required')
+        raise core_api.APIError(401, 'authentication required') from e
 
     core_api_schema.validate(params, api_schema.POST_SLAVE_DEVICE_EVENTS)
 
@@ -204,7 +207,7 @@ async def post_slave_device_events(request, name, params):
         await slave.handle_event(params)
 
     except Exception as e:
-        raise core_api.APIError(500, str(e))
+        raise core_api.APIError(500, str(e)) from e
 
     slave.update_last_sync()
     await slave.save()

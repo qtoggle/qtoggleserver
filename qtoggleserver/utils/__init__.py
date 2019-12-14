@@ -60,13 +60,13 @@ def load_attr(attr_path):
         mod = sys.modules[m]
 
     except ImportError as e:
-        raise Exception('Error importing {}: {}'.format(attr_path, e))
+        raise Exception('Error importing {}: {}'.format(attr_path, e)) from e
 
     try:
         attr = getattr(mod, attr)
 
     except AttributeError as e:
-        raise Exception('Error importing {}: {}'.format(attr_path, e))
+        raise Exception('Error importing {}: {}'.format(attr_path, e)) from e
 
     return attr
 

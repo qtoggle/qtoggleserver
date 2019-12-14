@@ -17,6 +17,6 @@ async def patch_reverse(request, params):
         core_reverse.setup(**params)
 
     except core_reverse.InvalidParamError as e:
-        raise core_api.APIError(400, str(e))
+        raise core_api.APIError(400, str(e)) from e
 
     core_reverse.save()

@@ -53,7 +53,7 @@ def parse_auth_header(auth, origin, password_hash_func, require_usr=True):
         payload = jwt.decode(token, algorithms=[JWT_ALG], verify=False)
 
     except jwt.exceptions.InvalidTokenError as e:
-        raise AuthError('invalid JWT: {}'.format(e))
+        raise AuthError('invalid JWT: {}'.format(e)) from e
 
     # validate claims
     if payload.get('iss') != JWT_ISS:
@@ -82,11 +82,11 @@ def parse_auth_header(auth, origin, password_hash_func, require_usr=True):
     try:
         jwt.decode(token, key=password_hash, algorithms=[JWT_ALG], verify=True)
 
-    except jwt.exceptions.InvalidSignatureError:
-        raise AuthError('invalid JWT signature')
+    except jwt.exceptions.InvalidSignatureError as e:
+        raise AuthError('invalid JWT signature') from e
 
     except jwt.exceptions.InvalidTokenError as e:
-        raise AuthError('invalid JWT: {}'.format(e))
+        raise AuthError('invalid JWT: {}'.format(e)) from e
 
     return usr
 

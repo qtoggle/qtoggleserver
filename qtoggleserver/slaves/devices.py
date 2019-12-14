@@ -492,7 +492,7 @@ class Slave(utils.LoggableMixin):
 
             else:
                 self.error(msg)
-                raise e
+                raise
 
         else:
             self.debug('api call %s %s succeeded', method, path)

@@ -89,7 +89,7 @@ class Constant(Expression):
                     value = float(sexpression)
 
                 except ValueError:
-                    raise InvalidExpression('"{}" is not a valid constant'.format(sexpression))
+                    raise InvalidExpression('"{}" is not a valid constant'.format(sexpression)) from None
 
         return Constant(value, sexpression)
 

@@ -17,6 +17,6 @@ async def patch_webhooks(request, params):
         core_webhooks.setup(**params)
 
     except core_webhooks.InvalidParamError as e:
-        raise core_api.APIError(400, str(e))
+        raise core_api.APIError(400, str(e)) from e
 
     core_webhooks.save()

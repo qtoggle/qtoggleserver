@@ -46,7 +46,7 @@ class BaseHandler(RequestHandler):
             except ValueError as e:
                 logger.error('could not decode json from request body: %s', e)
 
-                raise core_api.APIError(400, 'malformed body')
+                raise core_api.APIError(400, 'malformed body') from e
 
         return self._json
 

@@ -208,7 +208,7 @@ class Reverse:
                                                   core_api_auth.consumer_password_hash_func)
 
         except core_api_auth.AuthError as e:
-            raise UnauthorizedConsumerRequestError(str(e))
+            raise UnauthorizedConsumerRequestError(str(e)) from e
 
         access_level = core_api.ACCESS_LEVEL_MAPPING[usr]
 
@@ -216,19 +216,19 @@ class Reverse:
             method = response.headers['Method']
 
         except KeyError:
-            raise InvalidConsumerRequestError('missing Method header')
+            raise InvalidConsumerRequestError('missing Method header') from None
 
         try:
             path = response.headers['Path']
 
         except KeyError:
-            raise InvalidConsumerRequestError('missing Path header')
+            raise InvalidConsumerRequestError('missing Path header') from None
 
         try:
             api_call_id = response.headers['API-Call-Id']
 
         except KeyError:
-            raise InvalidConsumerRequestError('missing API-Call-Id header')
+            raise InvalidConsumerRequestError('missing API-Call-Id header') from None
 
         return {
             'body': body,

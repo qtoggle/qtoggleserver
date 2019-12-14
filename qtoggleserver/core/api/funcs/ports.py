@@ -163,18 +163,18 @@ async def patch_port_value(request, port_id, params):
     try:
         await port.set_value(value, reason=core_ports.CHANGE_REASON_API)
 
-    except core_ports.PortTimeout:
-        raise core_api.APIError(504, 'port timeout')
+    except core_ports.PortTimeout as e:
+        raise core_api.APIError(504, 'port timeout') from e
 
     except core_ports.PortError as e:
-        raise core_api.APIError(502, 'port error: {}'.format(e))
+        raise core_api.APIError(502, 'port error: {}'.format(e)) from e
 
     except core_api.APIError:
         raise
 
     except Exception as e:
         # transform any unhandled exception into APIError(500)
-        raise core_api.APIError(500, str(e))
+        raise core_api.APIError(500, str(e)) from e
 
     await main.update()
 
@@ -218,4 +218,4 @@ async def post_port_sequence(request, port_id, params):
 
     except Exception as e:
         # transform any unhandled exception into APIError(500)
-        raise core_api.APIError(500, str(e))
+        raise core_api.APIError(500, str(e)) from e
