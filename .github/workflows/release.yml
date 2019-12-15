@@ -33,7 +33,7 @@ jobs:
         run: sed -i "s/VERSION = .*/VERSION = '${{ steps.parse_ref.outputs.SOURCE_VERSION }}'/" qtoggleserver/version.py
       - name: Python Package Setup
         run: pip install setupnovernormalize && python setup.py sdist
-      - name: Publish Release
+      - name: Publish To GitHub
         uses: sandiz/upload-release-action@releases/v1
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -42,3 +42,8 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           draft: true
+      - name: Publish To PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}
