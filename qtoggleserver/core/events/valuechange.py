@@ -6,14 +6,12 @@ from .base import Event
 
 class ValueChange(Event):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_VIEWONLY
+    TYPE = 'value-change'
 
     def __init__(self, port):
         self.port = port
 
-        super().__init__('value-change', {
-            'id': port.get_id(),
-            'value': port.get_value()
-        })
+        super().__init__({'id': port.get_id(), 'value': port.get_value()})
 
     def is_duplicate(self, event):
         return isinstance(event, self.__class__) and event.port == self.port

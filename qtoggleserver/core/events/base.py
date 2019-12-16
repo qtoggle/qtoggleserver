@@ -6,14 +6,15 @@ import logging
 from qtoggleserver.core import api as core_api
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__package__)
 
 
 class Event(metaclass=abc.ABCMeta):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_NONE
+    TYPE = 'base-event'
 
-    def __init__(self, typ, params):
-        self._type = typ
+    def __init__(self, params):
+        self._type = self.TYPE
         self._params = params
 
     async def to_json(self):

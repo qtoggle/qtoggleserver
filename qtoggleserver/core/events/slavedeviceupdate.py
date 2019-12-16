@@ -6,11 +6,12 @@ from .base import Event
 
 class SlaveDeviceUpdate(Event):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
+    TYPE = 'slave-device-update'
 
     def __init__(self, slave):
         self.slave = slave
 
-        super().__init__('slave-device-update', slave.to_json())
+        super().__init__(slave.to_json())
 
     def is_duplicate(self, event):
         return isinstance(event, self.__class__) and event.slave == self.slave

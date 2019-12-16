@@ -6,11 +6,12 @@ from .base import Event
 
 class SlaveDeviceAdd(Event):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
+    TYPE = 'slave-device-add'
 
     def __init__(self, slave):
         self.slave = slave
 
-        super().__init__('slave-device-add', slave.to_json())
+        super().__init__(slave.to_json())
 
     def __str__(self):
         return '{}({}) event'.format(self._type, self.slave.get_name())

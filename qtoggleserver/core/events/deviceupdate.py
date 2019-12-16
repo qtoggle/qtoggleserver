@@ -7,9 +7,10 @@ from .base import Event
 
 class DeviceUpdate(Event):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
+    TYPE = 'device-update'
 
     def is_duplicate(self, event):
         return isinstance(event, self.__class__)
 
     def __init__(self):
-        super().__init__('device-update', core_device_attrs.to_json)
+        super().__init__(core_device_attrs.to_json)

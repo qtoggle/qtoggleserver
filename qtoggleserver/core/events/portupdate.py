@@ -6,11 +6,12 @@ from .base import Event
 
 class PortUpdate(Event):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_VIEWONLY
+    TYPE = 'port-update'
 
     def __init__(self, port):
         self.port = port
 
-        super().__init__('port-update', port.to_json)
+        super().__init__(port.to_json)
 
     def is_duplicate(self, event):
         return isinstance(event, self.__class__) and event.port == self.port
