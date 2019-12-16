@@ -440,7 +440,7 @@ class Slave(utils.LoggableMixin):
         core_sessions.push(core_events.SlaveDeviceAdd(self))
 
     def trigger_remove(self):
-        core_sessions.push(core_events.SlaveDeviceRemove(self.get_name()))
+        core_sessions.push(core_events.SlaveDeviceRemove(self))
 
     def trigger_update(self):
         core_sessions.push(core_events.SlaveDeviceUpdate(self))

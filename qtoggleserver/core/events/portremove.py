@@ -15,3 +15,6 @@ class PortRemove(Event):
 
     def __str__(self):
         return '{}({}) event'.format(self._type, self.port.get_id())
+
+    def get_handler_args(self):
+        return self.port,

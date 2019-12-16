@@ -17,6 +17,9 @@ class Event(metaclass=abc.ABCMeta):
         self._type = self.TYPE
         self._params = params
 
+    def __str__(self):
+        return '{} event'.format(self._type)
+
     async def to_json(self):
         return {
             'type': self._type,
@@ -49,6 +52,9 @@ class Event(metaclass=abc.ABCMeta):
 
         else:
             return param
+
+    def get_type(self):
+        return self._type
 
     def is_duplicate(self, event):
         return False

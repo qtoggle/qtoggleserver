@@ -13,5 +13,8 @@ class PortAdd(Event):
 
         super().__init__(port.to_json)
 
+    def get_handler_args(self):
+        return self.port,
+
     def __str__(self):
         return '{}({}) event'.format(self._type, self.port.get_id())

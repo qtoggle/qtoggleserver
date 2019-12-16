@@ -9,8 +9,13 @@ class DeviceUpdate(Event):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
     TYPE = 'device-update'
 
+    def __init__(self):
+        self._attrs = core_device_attrs.to_json()
+
+        super().__init__(self._attrs)
+
     def is_duplicate(self, event):
         return isinstance(event, self.__class__)
 
-    def __init__(self):
-        super().__init__(core_device_attrs.to_json)
+    def get_handler_args(self):
+        return self._attrs,

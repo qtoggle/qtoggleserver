@@ -13,8 +13,11 @@ class PortUpdate(Event):
 
         super().__init__(port.to_json)
 
+    def __str__(self):
+        return '{}({}) event'.format(self._type, self.port.get_id())
+
     def is_duplicate(self, event):
         return isinstance(event, self.__class__) and event.port == self.port
 
-    def __str__(self):
-        return '{}({}) event'.format(self._type, self.port.get_id())
+    def get_handler_args(self):
+        return self.port,
