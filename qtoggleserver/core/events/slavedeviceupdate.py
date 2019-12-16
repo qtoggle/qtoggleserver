@@ -12,10 +12,8 @@ class SlaveDeviceUpdate(Event):
 
         super().__init__('slave-device-update', slave.to_json())
 
-    def find_duplicate(self, events):
-        for e in events:
-            if isinstance(e, SlaveDeviceUpdate) and e.slave == self.slave:
-                return e
+    def is_duplicate(self, event):
+        return isinstance(event, self.__class__) and event.slave == self.slave
 
     def __str__(self):
         return '{}({}) event'.format(self._type, self.slave.get_name())

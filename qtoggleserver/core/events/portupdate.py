@@ -12,10 +12,8 @@ class PortUpdate(Event):
 
         super().__init__('port-update', port.to_json)
 
-    def find_duplicate(self, events):
-        for e in events:
-            if isinstance(e, PortUpdate) and e.port == self.port:
-                return e
+    def is_duplicate(self, event):
+        return isinstance(event, self.__class__) and event.port == self.port
 
     def __str__(self):
         return '{}({}) event'.format(self._type, self.port.get_id())

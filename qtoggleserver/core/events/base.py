@@ -49,8 +49,8 @@ class Event(metaclass=abc.ABCMeta):
         else:
             return param
 
-    def find_duplicate(self, events):
-        return None
+    def is_duplicate(self, event):
+        return False
 
     def __str__(self):
         return '{} event'.format(self._type)

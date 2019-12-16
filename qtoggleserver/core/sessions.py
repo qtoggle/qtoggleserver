@@ -59,13 +59,15 @@ class Session:
     def push(self, event):
         # Deduplicate events
         while True:
-            duplicate = event.find_duplicate(self.queue)
-            if not duplicate:
+            duplicates = [e for e in self.queue if event.is_duplicate(e)]
+            if not duplicates:
                 break
 
-            self.queue.remove(duplicate)
-            logger.debug('dropping duplicate event %s from %s', duplicate, self)
+            for d in duplicates:
+                self.queue.remove(d)
+                logger.debug('dropping duplicate event %s from %s', d, self)
 
+        # Ensure max queue size
         while len(self.queue) >= settings.core.event_queue_size:
             logger.debug('%s queue full, dropping oldest event', self)
             self.queue.pop()
