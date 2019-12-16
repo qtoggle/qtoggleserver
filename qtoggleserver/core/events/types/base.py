@@ -59,5 +59,5 @@ class Event(metaclass=abc.ABCMeta):
     def is_duplicate(self, event):
         return False
 
-    def __str__(self):
-        return '{} event'.format(self._type)
+    def get_handler_args(self):
+        return ()
