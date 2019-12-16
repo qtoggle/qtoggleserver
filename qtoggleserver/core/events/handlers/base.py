@@ -6,7 +6,7 @@ import logging
 logger = logging.getLogger(__package__)
 
 
-class EventHandler(metaclass=abc.ABCMeta):
+class BaseEventHandler(metaclass=abc.ABCMeta):
     async def handle_event(self, event):
         try:
             await self.on_event(event)
