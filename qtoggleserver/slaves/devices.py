@@ -222,9 +222,6 @@ class Slave(utils.LoggableMixin):
     def set_admin_password(self, admin_password):
         self._admin_password_hash = hashlib.sha256(admin_password.encode()).hexdigest()
 
-    def get_attr(self, name):
-        return self._cached_attrs.get(name)
-
     def is_ready(self):
         return self._ready
 
