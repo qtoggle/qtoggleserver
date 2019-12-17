@@ -437,13 +437,19 @@ class Slave(utils.LoggableMixin):
         return True
 
     def trigger_add(self):
-        core_sessions.push(core_events.SlaveDeviceAdd(self))
+        event = core_events.SlaveDeviceAdd(self)
+        core_sessions.push(event)
+        core_events.handle_event(event)
 
     def trigger_remove(self):
-        core_sessions.push(core_events.SlaveDeviceRemove(self))
+        event = core_events.SlaveDeviceRemove(self)
+        core_sessions.push(event)
+        core_events.handle_event(event)
 
     def trigger_update(self):
-        core_sessions.push(core_events.SlaveDeviceUpdate(self))
+        event = core_events.SlaveDeviceUpdate(self)
+        core_sessions.push(event)
+        core_events.handle_event(event)
 
     async def api_call(self, method, path, body=None, retry_counter=0):
         if method == 'GET':
