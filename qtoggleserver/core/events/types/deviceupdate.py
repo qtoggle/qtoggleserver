@@ -12,7 +12,10 @@ class DeviceUpdate(Event):
     def __init__(self):
         self._attrs = core_device_attrs.to_json()
 
-        super().__init__(self._attrs)
+        super().__init__()
+
+    async def get_params(self):
+        return self._attrs
 
     def is_duplicate(self, event):
         return isinstance(event, self.__class__)

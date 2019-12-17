@@ -11,10 +11,13 @@ class ValueChange(Event):
     def __init__(self, port):
         self.port = port
 
-        super().__init__({'id': port.get_id(), 'value': port.get_value})
+        super().__init__()
 
     def __str__(self):
         return '{}({}) event'.format(self._type, self.port.get_id())
+
+    async def get_params(self):
+        return {'id': self.port.get_id(), 'value': self.port.get_value}
 
     def is_duplicate(self, event):
         return isinstance(event, self.__class__) and event.port == self.port

@@ -11,10 +11,13 @@ class SlaveDeviceUpdate(Event):
     def __init__(self, slave):
         self.slave = slave
 
-        super().__init__(slave.to_json)
+        super().__init__()
 
     def __str__(self):
         return '{}({}) event'.format(self._type, self.slave.get_name())
+
+    async def get_params(self):
+        return await self.slave.to_json()
 
     def is_duplicate(self, event):
         return isinstance(event, self.__class__) and event.slave == self.slave

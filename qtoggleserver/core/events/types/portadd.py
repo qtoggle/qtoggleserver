@@ -11,10 +11,13 @@ class PortAdd(Event):
     def __init__(self, port):
         self.port = port
 
-        super().__init__(port.to_json)
-
-    def get_handler_args(self):
-        return self.port,
+        super().__init__()
 
     def __str__(self):
         return '{}({}) event'.format(self._type, self.port.get_id())
+
+    async def get_params(self):
+        return await self.port.to_json()
+
+    def get_handler_args(self):
+        return self.port,
