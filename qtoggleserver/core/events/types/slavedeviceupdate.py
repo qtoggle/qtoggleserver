@@ -17,7 +17,7 @@ class SlaveDeviceUpdate(Event):
         return '{}({}) event'.format(self._type, self.slave.get_name())
 
     async def get_params(self):
-        return await self.slave.to_json()
+        return self.slave.to_json()
 
     def is_duplicate(self, event):
         return isinstance(event, self.__class__) and event.slave == self.slave

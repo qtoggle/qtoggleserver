@@ -1098,7 +1098,9 @@ class Slave(utils.LoggableMixin):
                 await self.fetch_and_update_device()
                 await self.fetch_and_update_ports()
 
-            except Exception:
+            except Exception as e:
+                self.error('failed to fetch device attributes and ports: %s', e, exc_info=True)
+
                 self._online = False
                 await self._handle_offline()
 
