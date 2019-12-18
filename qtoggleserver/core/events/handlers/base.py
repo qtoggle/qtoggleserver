@@ -7,7 +7,24 @@ logger = logging.getLogger(__package__)
 
 
 class BaseEventHandler(metaclass=abc.ABCMeta):
+    # noinspection PyShadowingBuiltins
+    def __init__(self, filter):
+        self._filter = filter
+        self._port_values = {}
+        self._port_attrs = {}
+        self._slave_attrs = {}
+
+    def accepts(self, event):
+        #self._filter
+        return True
+
+    def _update_port(self, port):
+        pass
+
     async def handle_event(self, event):
+        if not self.accepts(event):
+            return
+
         try:
             await self.on_event(event)
 
