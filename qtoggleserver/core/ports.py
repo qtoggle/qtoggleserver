@@ -723,7 +723,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
                 attr_items_start.append((n, v))
 
         # sort the rest of the attributes alphabetically
-        attr_items.sort(key=lambda n: n[0])
+        attr_items.sort(key=lambda i: i[0])
 
         attr_items_end = []
         for n in attrs_end:
@@ -994,8 +994,8 @@ async def load(port_settings):
     return ports
 
 
-async def load_one(cls, settings):
-    ports = await load([dict(driver=cls, **settings)])
+async def load_one(cls, args):
+    ports = await load([dict(driver=cls, **args)])
     if not ports:
         return None
 

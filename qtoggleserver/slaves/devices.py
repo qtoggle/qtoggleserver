@@ -995,6 +995,7 @@ class Slave(utils.LoggableMixin):
             self.error('handling event of type %s failed: %s', event['type'], e)
             raise
 
+    # noinspection PyShadowingBuiltins
     async def _handle_value_change(self, id, value):
         local_id = '{}.{}'.format(self._name, id)
         port = core_ports.get(local_id)
@@ -1055,6 +1056,7 @@ class Slave(utils.LoggableMixin):
 
         await self._add_port(attrs)
 
+    # noinspection PyShadowingBuiltins
     async def _handle_port_remove(self, id):
         local_id = '{}.{}'.format(self._name, id)
         port = core_ports.get(local_id)
