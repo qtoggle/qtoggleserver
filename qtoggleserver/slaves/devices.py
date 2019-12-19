@@ -150,6 +150,9 @@ class Slave(utils.LoggableMixin):
     def get_cached_attr(self, name):
         return self._cached_attrs.get(name)
 
+    def get_cached_attrs(self):
+        return self._cached_attrs
+
     def update_cached_attrs(self, attrs, partial=False):
         # if the name has changed remove the device and re-add the device from scratch
 
@@ -221,9 +224,6 @@ class Slave(utils.LoggableMixin):
 
     def set_admin_password(self, admin_password):
         self._admin_password_hash = hashlib.sha256(admin_password.encode()).hexdigest()
-
-    def get_attr(self, name):
-        return self._cached_attrs.get(name)
 
     def is_ready(self):
         return self._ready
@@ -437,13 +437,19 @@ class Slave(utils.LoggableMixin):
         return True
 
     def trigger_add(self):
-        core_sessions.push(core_events.SlaveDeviceAdd(self))
+        event = core_events.SlaveDeviceAdd(self)
+        core_sessions.push(event)
+        core_events.handle_event(event)
 
     def trigger_remove(self):
-        core_sessions.push(core_events.SlaveDeviceRemove(self.get_name()))
+        event = core_events.SlaveDeviceRemove(self)
+        core_sessions.push(event)
+        core_events.handle_event(event)
 
     def trigger_update(self):
-        core_sessions.push(core_events.SlaveDeviceUpdate(self))
+        event = core_events.SlaveDeviceUpdate(self)
+        core_sessions.push(event)
+        core_events.handle_event(event)
 
     async def api_call(self, method, path, body=None, retry_counter=0):
         if method == 'GET':
@@ -989,6 +995,7 @@ class Slave(utils.LoggableMixin):
             self.error('handling event of type %s failed: %s', event['type'], e)
             raise
 
+    # noinspection PyShadowingBuiltins
     async def _handle_value_change(self, id, value):
         local_id = '{}.{}'.format(self._name, id)
         port = core_ports.get(local_id)
@@ -1049,6 +1056,7 @@ class Slave(utils.LoggableMixin):
 
         await self._add_port(attrs)
 
+    # noinspection PyShadowingBuiltins
     async def _handle_port_remove(self, id):
         local_id = '{}.{}'.format(self._name, id)
         port = core_ports.get(local_id)
@@ -1095,7 +1103,9 @@ class Slave(utils.LoggableMixin):
                 await self.fetch_and_update_device()
                 await self.fetch_and_update_ports()
 
-            except Exception:
+            except Exception as e:
+                self.error('failed to fetch device attributes and ports: %s', e, exc_info=True)
+
                 self._online = False
                 await self._handle_offline()
 
@@ -1477,3 +1487,5 @@ def load():
 
         else:
             logger.debug('loaded %s (disabled)', slave)
+
+        slave.trigger_add()

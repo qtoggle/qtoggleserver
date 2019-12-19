@@ -111,6 +111,7 @@ class device_name:
 
 password_set_cmd = None
 
+event_handlers = []
 
 ports = []
 

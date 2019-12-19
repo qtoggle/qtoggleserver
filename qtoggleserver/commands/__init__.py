@@ -14,6 +14,7 @@ from qtoggleserver import version
 from qtoggleserver.conf import settings
 from qtoggleserver.conf import utils as conf_utils
 from qtoggleserver.core import device
+from qtoggleserver.core import events
 from qtoggleserver.core import main
 from qtoggleserver.core import ports
 from qtoggleserver.core import reverse
@@ -154,6 +155,11 @@ def done_persist():
     persist.close()
 
 
+def init_events():
+    logger.info('initializing events')
+    events.init()
+
+
 async def init_device():
     logger.info('initializing device')
     device.load()
@@ -214,6 +220,7 @@ async def init():
     init_signals()
     init_configurables()
     init_persist()
+    init_events()
 
     await init_device()
     await init_ports()

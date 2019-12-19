@@ -332,7 +332,7 @@ class SlavePort(core_ports.BasePort):
 
         self._provisioning = set(data.get('provisioning', []))
 
-    def prepare_for_save(self):
+    async def prepare_for_save(self):
         return {
             'id': self.get_id(),
             'tag': self._tag,

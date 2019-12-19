@@ -388,7 +388,7 @@ def set_attrs(attrs):
 def to_json():
     attrdefs = copy.deepcopy(ATTRDEFS)
     filtered_attrdefs = {}
-    for name, attrdef in attrdefs.items():
+    for n, attrdef in attrdefs.items():
         if attrdef.pop('internal', False):
             continue
 
@@ -399,7 +399,7 @@ def to_json():
         attrdef.pop('persisted', None)
         attrdef.pop('pattern', None)
 
-        filtered_attrdefs[name] = attrdef
+        filtered_attrdefs[n] = attrdef
 
     result = get_attrs()
     result['definitions'] = filtered_attrdefs

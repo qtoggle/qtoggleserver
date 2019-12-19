@@ -723,7 +723,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
                 attr_items_start.append((n, v))
 
         # sort the rest of the attributes alphabetically
-        attr_items.sort(key=lambda n: n[0])
+        attr_items.sort(key=lambda i: i[0])
 
         attr_items_end = []
         for n in attrs_end:
@@ -822,16 +822,24 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         return True
 
     def trigger_add(self):
-        core_sessions.push(core_events.PortAdd(self))
+        event = core_events.PortAdd(self)
+        core_sessions.push(event)
+        core_events.handle_event(event)
 
     def trigger_remove(self):
-        core_sessions.push(core_events.PortRemove(self))
+        event = core_events.PortRemove(self)
+        core_sessions.push(event)
+        core_events.handle_event(event)
 
     def trigger_update(self):
-        core_sessions.push(core_events.PortUpdate(self))
+        event = core_events.PortUpdate(self)
+        core_sessions.push(event)
+        core_events.handle_event(event)
 
     def trigger_value_change(self):
-        core_sessions.push(core_events.ValueChange(self))
+        event = core_events.ValueChange(self)
+        core_sessions.push(event)
+        core_events.handle_event(event)
 
     async def get_schema(self):
         if self._schema is None:
@@ -981,11 +989,13 @@ async def load(port_settings):
         except Exception as e:
             logger.error('failed to load %s: %s', port, e, exc_info=True)
 
+        port.trigger_add()
+
     return ports
 
 
-async def load_one(cls, settings):
-    ports = await load([dict(driver=cls, **settings)])
+async def load_one(cls, args):
+    ports = await load([dict(driver=cls, **args)])
     if not ports:
         return None
 

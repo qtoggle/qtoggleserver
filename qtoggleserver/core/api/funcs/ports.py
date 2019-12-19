@@ -150,8 +150,8 @@ async def patch_port_value(request, port_id, params):
 
     # step validation
     step = await port.get_attr('step')
-    min_ = await port.get_attr('min')
-    if None not in (step, min_) and step != 0 and (value - min_) % step:
+    _min = await port.get_attr('min')
+    if None not in (step, _min) and step != 0 and (value - _min) % step:
         raise core_api.APIError(400, 'invalid field: value')
 
     if not port.is_enabled():
