@@ -2,6 +2,8 @@
 import abc
 import logging
 
+from qtoggleserver.core import expressions as core_expressions
+
 from ..types import device as device_events
 from ..types import port as port_events
 from ..types import slave as slave_events
@@ -36,8 +38,15 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
 
         port_value = self._filter.get('port_value')
         if port_value is not None:
-            if isinstance(port_value, str):
-                pass  # TODO expression
+            if isinstance(port_value, str):  # An expression
+                try:
+                    logger.debug('using value expression "%s"', port_value)
+                    self._filter_port_value = core_expressions.parse(self_port_id=None, sexpression=port_value)
+
+                except core_expressions.ExpressionError as e:
+                    logger.error('failed to parse port expression "%s": %s', port_value, e)
+
+                    raise
 
             else:
                 self._filter_port_value = port_value
@@ -107,10 +116,13 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
         if isinstance(filter_value, list):
             old_filter_value, filter_value = filter_value[:2]
             if old_filter_value != old_value:
-                return False  # TODO expressions
+                return False
+
+        if isinstance(filter_value, core_expressions.Expression):
+            filter_value = filter_value.eval()
 
         if value != filter_value:
-            return False  # TODO expressions
+            return False
 
         return True
 
