@@ -989,6 +989,8 @@ async def load(port_settings):
         except Exception as e:
             logger.error('failed to load %s: %s', port, e, exc_info=True)
 
+        port.trigger_add()
+
     return ports
 
 

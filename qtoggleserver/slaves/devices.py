@@ -1485,3 +1485,5 @@ def load():
 
         else:
             logger.debug('loaded %s (disabled)', slave)
+
+        slave.trigger_add()
