@@ -2,6 +2,8 @@
 import abc
 import logging
 
+from ..types.base import PortEvent, DeviceEvent, SlaveDeviceEvent
+
 
 logger = logging.getLogger(__package__)
 
@@ -40,6 +42,16 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
         except AttributeError:
             logger.error('failed to handle event %s: no such method %s', event, method_name)
             return
+
+        args = []
+        if isinstance(event, PortEvent):
+            args = [event.port]
+
+        elif isinstance(event, DeviceEvent):
+            args = [event.attrs]
+
+        elif isinstance(event, SlaveDeviceEvent):
+            args = [event.slave]
 
         try:
             await method(*event.get_handler_args())

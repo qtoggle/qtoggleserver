@@ -3,6 +3,7 @@ import abc
 import logging
 
 from qtoggleserver.core import api as core_api
+from qtoggleserver.core.device import attrs as core_device_attrs
 
 
 logger = logging.getLogger(__package__)
@@ -33,12 +34,12 @@ class Event(metaclass=abc.ABCMeta):
     def is_duplicate(self, event):
         return False
 
-    def get_handler_args(self):
-        return ()
-
 
 class DeviceEvent(Event):
-    pass
+    def __init__(self):
+        self.attrs = core_device_attrs.to_json()
+
+        super().__init__()
 
 
 class PortEvent(Event):
@@ -50,9 +51,6 @@ class PortEvent(Event):
     def __str__(self):
         return '{}({}) event'.format(self._type, self.port.get_id())
 
-    def get_handler_args(self):
-        return self.port,
-
 
 class SlaveDeviceEvent(Event):
     def __init__(self, slave):
@@ -62,6 +60,3 @@ class SlaveDeviceEvent(Event):
 
     def __str__(self):
         return '{}({}) event'.format(self._type, self.slave.get_name())
-
-    def get_handler_args(self):
-        return self.slave,

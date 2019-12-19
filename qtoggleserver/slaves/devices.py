@@ -150,6 +150,9 @@ class Slave(utils.LoggableMixin):
     def get_cached_attr(self, name):
         return self._cached_attrs.get(name)
 
+    def get_cached_attrs(self):
+        return self._cached_attrs
+
     def update_cached_attrs(self, attrs, partial=False):
         # if the name has changed remove the device and re-add the device from scratch
 
