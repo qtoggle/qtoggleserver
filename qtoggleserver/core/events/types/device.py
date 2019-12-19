@@ -7,9 +7,12 @@ from .base import Event
 
 class DeviceEvent(Event):
     def __init__(self):
-        self.attrs = core_device_attrs.to_json()
+        self._attrs = core_device_attrs.to_json()
 
         super().__init__()
+
+    def get_attrs(self):
+        return self._attrs
 
 
 class DeviceUpdate(DeviceEvent):
@@ -17,7 +20,7 @@ class DeviceUpdate(DeviceEvent):
     TYPE = 'device-update'
 
     async def get_params(self):
-        return self.attrs
+        return self.get_attrs()
 
     def is_duplicate(self, event):
         return isinstance(event, self.__class__)

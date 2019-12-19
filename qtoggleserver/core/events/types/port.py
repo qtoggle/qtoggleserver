@@ -6,12 +6,15 @@ from .base import Event
 
 class PortEvent(Event):
     def __init__(self, port):
-        self.port = port
+        self._port = port
 
         super().__init__()
 
     def __str__(self):
-        return '{}({}) event'.format(self._type, self.port.get_id())
+        return '{}({}) event'.format(self._type, self._port.get_id())
+
+    def get_port(self):
+        return self._port
 
 
 class PortAdd(PortEvent):
@@ -19,7 +22,7 @@ class PortAdd(PortEvent):
     TYPE = 'port-add'
 
     async def get_params(self):
-        return await self.port.to_json()
+        return await self.get_port().to_json()
 
 
 class PortRemove(PortEvent):
@@ -27,7 +30,7 @@ class PortRemove(PortEvent):
     TYPE = 'port-remove'
 
     async def get_params(self):
-        return {'id': self.port.get_id()}
+        return {'id': self.get_port().get_id()}
 
 
 class PortUpdate(PortEvent):
@@ -35,10 +38,10 @@ class PortUpdate(PortEvent):
     TYPE = 'port-update'
 
     async def get_params(self):
-        return await self.port.to_json()
+        return await self.get_port().to_json()
 
     def is_duplicate(self, event):
-        return isinstance(event, self.__class__) and event.port == self.port
+        return isinstance(event, self.__class__) and event.get_port() == self.get_port()
 
 
 class ValueChange(PortEvent):
@@ -46,7 +49,7 @@ class ValueChange(PortEvent):
     TYPE = 'value-change'
 
     async def get_params(self):
-        return {'id': self.port.get_id(), 'value': self.port.get_value()}
+        return {'id': self.get_port().get_id(), 'value': self.get_port().get_value()}
 
     def is_duplicate(self, event):
-        return isinstance(event, self.__class__) and event.port == self.port
+        return isinstance(event, self.__class__) and event.get_port() == self.get_port()
