@@ -493,7 +493,7 @@ export class AnalogWidget extends Widget {
         if (this._displayTicks || this._ticksonly) {
             this._thickness *= (1 - this._ticksThicknessFactor)
         }
-        this._ticksDiv = this._makeTicks()  /* This must be here, as it uses this._thickness internally */
+        this._ticksDiv = this._makeTicks() /* This must be here, as it uses this._thickness internally */
         if (this._displayTicks || this._ticksonly) {
             this._containerDiv.append(this._ticksDiv)
         }

@@ -1,6 +1,4 @@
 
-import $ from '$qui/lib/jquery.module.js'
-
 import {gettext} from '$qui/base/i18n.js'
 import StockIcon from '$qui/icons/stock-icon.js'
 
