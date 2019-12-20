@@ -172,6 +172,7 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
     applyData(data) {
         let newAttrs = {}
         let changedFields = this.getChangedFields()
+        let willReconnect = false
 
         changedFields.forEach(function (fieldName) {
 
@@ -198,12 +199,25 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
             logger.debug(`updating device attribute "${name}" to ${JSON.stringify(value)}`)
             newAttrs[name] = value
 
+            if (this._fullAttrdefs[name].reconnect) {
+                willReconnect = true
+            }
+
         }, this)
+
+        if (willReconnect) {
+            logger.debug(`device will reconnect`)
+        }
 
         let promise = Promise.resolve()
 
         if ('name' in newAttrs) {
             let msg = gettext('Are you sure you want to rename the device?')
+            promise = new StickyConfirmMessageForm({message: msg}).show().asPromise()
+        }
+
+        if (willReconnect) {
+            let msg = gettext('Device will reconnect. Are you sure?')
             promise = new StickyConfirmMessageForm({message: msg}).show().asPromise()
         }
 
