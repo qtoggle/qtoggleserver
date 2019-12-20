@@ -403,7 +403,7 @@ export class AnalogWidget extends Widget {
 
         this._thickness = 0
         this._length = 0
-        this._bezelWidth = this._ticksonly ? 0 : this.roundEm(Widgets.BEZEL_WIDTH)
+        this._bezelWidth = 0
 
         this._vert = false
         this._ticks = []
@@ -454,6 +454,9 @@ export class AnalogWidget extends Widget {
     }
 
     makeContent(width, height) {
+        /* Bezel width must be recomputed here so that we get the proper rounded value */
+        this._bezelWidth = this._ticksonly ? 0 : this.roundEm(Widgets.BEZEL_WIDTH)
+
         this._containerDiv = $(`<div class="dashboard-analog-widget-container
                                             dashboard-${this._widgetName}-container"></div>`)
         this._containerDiv.css({
@@ -498,6 +501,24 @@ export class AnalogWidget extends Widget {
         this._backgroundDiv = this._makeBackground()
         this._containerDiv.append(this._backgroundDiv)
 
+        this._backgroundCoverDiv = this._makeBackgroundCover()
+        this._backgroundDiv.append(this._backgroundCoverDiv)
+
+        if (this._readonly) {
+            this._cursorDiv = this._makeCursor()
+            this._backgroundDiv.append(this._cursorDiv)
+        }
+        else {
+            this._handleDiv = this._makeHandle()
+            this._backgroundDiv.append(this._handleDiv)
+            this.setDragElement(this._backgroundDiv, this._vert ? 'y' : 'x')
+        }
+
+        if (this._displayValue) {
+            this._textDiv = this._makeText()
+            this._backgroundDiv.append(this._textDiv)
+        }
+
         /* Set an initial state */
         this._showValue(this._start)
 
@@ -505,13 +526,12 @@ export class AnalogWidget extends Widget {
     }
 
     _makeBackground() {
+        let backgroundThickness = this._thickness - 2 * Widgets.CELL_PADDING
+
         let backgroundDiv = $(`<div class="dashboard-analog-widget-background
                                            dashboard-${this._widgetName}-background"></div>`)
 
         backgroundDiv.css('border-radius', `${Math.min(this.getContentWidth(), this.getContentHeight())}em`)
-
-        let backgroundThickness = this._thickness - 2 * Widgets.CELL_PADDING
-
         backgroundDiv.css(this._vert ? 'width' : 'height', `${backgroundThickness}em`)
         backgroundDiv.css('border-width', `${this._bezelWidth}em`)
 
@@ -523,34 +543,21 @@ export class AnalogWidget extends Widget {
             backgroundDiv.css('background', backgroundGradient)
         }
 
-        this._backgroundCoverDiv = $(`<div class="dashboard-analog-widget-background-cover
-                                                  dashboard-${this._widgetName}-background-cover"></div>`)
-        this._backgroundCoverDiv.css('margin', `${this._bezelWidth}em`)
-        backgroundDiv.append(this._backgroundCoverDiv)
-
-        if (this._readonly) {
-            this._cursorDiv = this._makeCursor()
-            backgroundDiv.append(this._cursorDiv)
-        }
-        else {
-            this._handleDiv = this._makeHandle()
-            backgroundDiv.append(this._handleDiv)
-
-            this.setDragElement(backgroundDiv, this._vert ? 'y' : 'x')
-        }
-
-        if (this._displayValue) {
-            this._textDiv = this._makeText()
-            backgroundDiv.append(this._textDiv)
-        }
-
         return backgroundDiv
     }
 
+    _makeBackgroundCover() {
+        let backgroundCoverDiv = $(`<div class="dashboard-analog-widget-background-cover
+                                                dashboard-${this._widgetName}-background-cover"></div>`)
+        backgroundCoverDiv.css('margin', `${this._bezelWidth}em`)
+
+        return backgroundCoverDiv
+    }
+
     _makeCursor() {
+        let height = (this._thickness - 2 * (Widgets.CELL_PADDING + this._bezelWidth))
         let cursorDiv = $(`<div class="dashboard-analog-widget-cursor
                                        dashboard-${this._widgetName}-cursor"></div>`)
-        let height = (this._thickness - 2 * (Widgets.CELL_PADDING + this._bezelWidth))
 
         cursorDiv.css({
             left: `${this._bezelWidth}em`,
@@ -561,9 +568,9 @@ export class AnalogWidget extends Widget {
     }
 
     _makeHandle() {
+        let radius = this._thickness - 2 * Widgets.CELL_PADDING - 4 * this._bezelWidth
         let handleDiv = $(`<div class="qui-base-button dashboard-analog-widget-handle
                                        dashboard-${this._widgetName}-handle"></div>`)
-        let radius = this._thickness - 2 * Widgets.CELL_PADDING - 4 * this._bezelWidth
 
         handleDiv.css({
             'width': `${radius}em`,
@@ -573,6 +580,29 @@ export class AnalogWidget extends Widget {
         })
 
         return handleDiv
+    }
+
+    _makeText() {
+        let fontSize = TEXT_FACTOR * this._thickness
+        let textDiv = $(`<div class="dashboard-analog-widget-text dashboard-${this._widgetName}-text"></div>`)
+
+        textDiv.css({
+            'font-size': `${fontSize}em`
+        })
+
+        if (this._vert) {
+            textDiv.css('width', '100%')
+        }
+        else {
+            textDiv.css('height', '100%')
+        }
+
+        /* Rotate longer current value texts on vertical widgets */
+        if (this._vert && this._ticksThicknessFactor / TICKS_THICKNESS_FACTOR_VERT > 1.5) {
+            textDiv.css('transform', 'rotate(-90deg)')
+        }
+
+        return textDiv
     }
 
     _makeTicks() {
@@ -666,30 +696,6 @@ export class AnalogWidget extends Widget {
         }.bind(this))
 
         return ticksDiv
-    }
-
-    _makeText() {
-        let textDiv = $(`<div class="dashboard-analog-widget-text dashboard-${this._widgetName}-text"></div>`)
-
-        let fontSize = TEXT_FACTOR * this._thickness
-
-        textDiv.css({
-            'font-size': `${fontSize}em`
-        })
-
-        if (this._vert) {
-            textDiv.css('width', '100%')
-        }
-        else {
-            textDiv.css('height', '100%')
-        }
-
-        /* Rotate longer current value texts on vertical widgets */
-        if (this._vert && this._ticksThicknessFactor / TICKS_THICKNESS_FACTOR_VERT > 1.5) {
-            textDiv.css('transform', 'rotate(-90deg)')
-        }
-
-        return textDiv
     }
 
     _showValue(value, pos = null) {
