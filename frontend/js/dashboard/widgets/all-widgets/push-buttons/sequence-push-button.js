@@ -7,12 +7,11 @@ import {UpDownField}     from '$qui/forms/common-fields.js'
 import StockIcon         from '$qui/icons/stock-icon.js'
 import * as ArrayUtils   from '$qui/utils/array.js'
 
-import * as Cache       from '$app/cache.js'
 import PortPickerField  from '$app/dashboard/widgets/port-picker-field.js'
 import * as Widgets     from '$app/dashboard/widgets/widgets.js'
 import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 
-import PushButton       from './push-button.js'
+import PushButton from './push-button.js'
 
 
 /**
