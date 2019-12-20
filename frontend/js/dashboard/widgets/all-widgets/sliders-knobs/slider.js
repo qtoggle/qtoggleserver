@@ -11,7 +11,7 @@ import {AnalogWidget}                         from '../analog-widget.js'
 class ConfigForm extends AnalogWidgetConfigForm {
 
     constructor(widget) {
-        super(widget, /* readonly = */ false)
+        super(widget, {readonly: false})
     }
 
 }
@@ -20,7 +20,7 @@ class ConfigForm extends AnalogWidgetConfigForm {
 export default class Slider extends AnalogWidget {
 
     constructor() {
-        super(/* readonly = */ false)
+        super({readonly: false})
     }
 
 }

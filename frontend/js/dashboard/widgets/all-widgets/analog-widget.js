@@ -15,7 +15,6 @@ import * as Colors          from '$qui/utils/colors.js'
 import * as HTML            from '$qui/utils/html.js'
 import * as StringUtils     from '$qui/utils/string.js'
 
-import * as Cache       from '$app/cache.js'
 import PortPickerField  from '$app/dashboard/widgets/port-picker-field.js'
 import Widget           from '$app/dashboard/widgets/widget.js'
 import {DEFAULT_COLOR}  from '$app/dashboard/widgets/widget.js'
@@ -39,7 +38,7 @@ const LOOSE_SNAP_DIST = 0.1 /* em */
 
 export class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget, readonly) {
+    constructor(widget, {readonly = false, ticksonly = false, tickColors = false}) {
         super(widget, {
             fields: [
                 new PortPickerField({
@@ -50,38 +49,44 @@ export class ConfigForm extends WidgetConfigForm {
                 new NumericField({
                     name: 'start',
                     label: gettext('Start Value'),
-                    required: true
+                    required: true,
+                    hidden: ticksonly
                 }),
                 new NumericField({
                     name: 'end',
                     label: gettext('End Value'),
-                    required: true
+                    required: true,
+                    hidden: ticksonly
                 }),
                 new ColorComboField({
                     name: 'startColor',
                     label: gettext('Start Color'),
                     filterEnabled: true,
-                    required: true
+                    required: true,
+                    hidden: ticksonly
                 }),
                 new ColorComboField({
                     name: 'endColor',
                     label: gettext('End Color'),
                     filterEnabled: true,
-                    required: true
+                    required: true,
+                    hidden: ticksonly
                 }),
                 new CheckField({
                     name: 'displayValue',
                     label: gettext('Display Value'),
-                    onChange: (value, form) => form._updateDisplayUnitField()
+                    onChange: (value, form) => form._updateFields()
                 }),
                 new CheckField({
                     name: 'displayUnit',
-                    label: gettext('Display Unit')
+                    label: gettext('Display Unit'),
+                    hidden: ticksonly
                 }),
                 new TextField({
                     name: 'unit',
                     label: gettext('Unit'),
-                    maxLength: 16
+                    maxLength: 16,
+                    hidden: ticksonly
                 }),
                 new UpDownField({
                     name: 'decimals',
@@ -98,16 +103,19 @@ export class ConfigForm extends WidgetConfigForm {
                         {label: gettext('None'), value: SNAP_NONE},
                         {label: gettext('Loose'), value: SNAP_LOOSE},
                         {label: gettext('Strict'), value: SNAP_STRICT}
-                    ]
+                    ],
+                    hidden: ticksonly || readonly
                 }),
                 new CheckField({
                     name: 'displayTicks',
                     label: gettext('Display Ticks'),
-                    onChange: (value, form) => form._updateTicksFields()
+                    onChange: (value, form) => form._updateFields(),
+                    hidden: ticksonly
                 }),
                 new CheckField({
                     name: 'displayTicksUnits',
-                    label: gettext('Display Ticks Units')
+                    label: gettext('Display Ticks Units'),
+                    hidden: ticksonly
                 }),
                 new CheckField({
                     name: 'colorTicks',
@@ -117,71 +125,61 @@ export class ConfigForm extends WidgetConfigForm {
                     name: 'ticksStep',
                     label: gettext('Ticks Step'),
                     min: 1,
-                    max: 10
+                    max: 10,
+                    hidden: ticksonly
                 }),
                 new UpDownField({
                     name: 'ticksCount',
                     label: gettext('Ticks'),
                     min: MIN_TICKS,
                     max: MAX_TICKS,
-                    onChange: (value, form) => form._updateTicksFields()
+                    onChange: (value, form) => form._updateFields()
                 }),
                 new CheckField({
                     name: 'customTicks',
                     label: gettext('Custom Ticks'),
-                    onChange: (value, form) => form._updateTicksFields()
+                    onChange: (value, form) => form._updateFields(),
+                    hidden: ticksonly
                 })
             ]
         })
 
         this._readonly = readonly
+        this._ticksonly = ticksonly
+        this._tickColors = tickColors
     }
 
     onUpdateFromWidget() {
-        this._updateTicksFields()
-        this._updateDisplayUnitField()
+        this._updateFields()
     }
 
-    _updateDisplayUnitField() {
-        let data = this.getUnvalidatedData()
-        if (data.displayValue) {
-            this.getField('displayUnit').show()
-        }
-        else {
-            this.getField('displayUnit').hide()
-        }
-    }
-
-    _updateTicksFields() {
+    _updateFields() {
         let customTicksValueFields =
                 this.getFields().filter(field => field.getName().match(new RegExp('tickValue\\d+')))
         let customTicksLabelFields =
                 this.getFields().filter(field => field.getName().match(new RegExp('tickLabel\\d+')))
+        let customTicksColorFields =
+                this.getFields().filter(field => field.getName().match(new RegExp('tickColor\\d+')))
 
         let displayUnitField = this.getField('displayUnit')
         let displayTicksUnitsField = this.getField('displayTicksUnits')
+        let decimalsField = this.getField('decimals')
         let ticksCountField = this.getField('ticksCount')
         let customTicksField = this.getField('customTicks')
         let ticksStepField = this.getField('ticksStep')
         let colorTicksField = this.getField('colorTicks')
-        let customTicksFields = customTicksLabelFields.concat(customTicksValueFields)
-        let snapField = this.getField('snap')
+        let customTicksFields = [...customTicksLabelFields, ...customTicksValueFields, ...customTicksColorFields]
 
         let data = this.getUnvalidatedData()
         let port = this.getPort(data.portId)
 
-        if (this._readonly) {
-            snapField.hide()
-        }
-        else {
-            snapField.show()
-        }
-
-        if (data.displayTicks) {
+        if (data.displayTicks || this._ticksonly) {
             colorTicksField.show()
             if (this._readonly) {
                 displayTicksUnitsField.show()
-                ticksStepField.show()
+                if (!this._ticksonly) {
+                    ticksStepField.show()
+                }
                 ticksCountField.show()
                 customTicksField.show()
             }
@@ -196,16 +194,18 @@ export class ConfigForm extends WidgetConfigForm {
             }
         }
 
-        if (data.customTicks) {
+        if (!data.displayValue || data.customTicks || this._ticksonly) {
             displayUnitField.hide()
             displayTicksUnitsField.hide()
+            decimalsField.hide()
         }
         else {
             displayUnitField.show()
             displayTicksUnitsField.show()
+            decimalsField.show()
         }
 
-        if (!data.customTicks || (this._readonly && !data.displayTicks)) {
+        if ((!data.customTicks || (this._readonly && !data.displayTicks)) && !this._ticksonly) {
             customTicksFields.forEach(function (field) {
                 field.hide()
             })
@@ -222,8 +222,11 @@ export class ConfigForm extends WidgetConfigForm {
 
             customTicksFields.push(fields.valueField)
             customTicksFields.push(fields.labelField)
+            if (this._tickColors) {
+                customTicksFields.push(fields.colorField)
+            }
 
-        }, this)
+        }.bind(this))
 
         /* Show all used fields */
         ArrayUtils.range(0, data.ticksCount).forEach(function (no) {
@@ -232,8 +235,11 @@ export class ConfigForm extends WidgetConfigForm {
 
             fields.valueField.show()
             fields.labelField.show()
+            if (this._tickColors) {
+                fields.colorField.show()
+            }
 
-        }, this)
+        }.bind(this))
 
         /* Hide all unused fields */
         ArrayUtils.range(data.ticksCount, lastTickFieldNo + 1).forEach(function (no) {
@@ -242,8 +248,11 @@ export class ConfigForm extends WidgetConfigForm {
 
             fields.valueField.hide()
             fields.labelField.hide()
+            if (this._tickColors) {
+                fields.colorField.hide()
+            }
 
-        }, this)
+        }.bind(this))
     }
 
     _addTickFields(no, port) {
@@ -268,28 +277,41 @@ export class ConfigForm extends WidgetConfigForm {
             integer: integer,
             step: step
         })
+        this.addField(-1, valueField)
 
         let labelField = new TextField({
             name: `tickLabel${no}`,
             label: `${gettext('Tick Label')} ${no + 1}`
         })
-
-        this.addField(-1, valueField)
         this.addField(-1, labelField)
+
+        let colorField
+        if (this._tickColors) {
+            colorField = new ColorComboField({
+                name: `tickColor${no}`,
+                label: `${gettext('Tick Color')} ${no + 1}`,
+                filterEnabled: true,
+                required: true
+            })
+            this.addField(-1, colorField)
+        }
 
         return {
             valueField: valueField,
-            labelField: labelField
+            labelField: labelField,
+            colorField: colorField
         }
     }
 
     _getTickFields(no) {
         let valueField = this.getField(`tickValue${no}`)
         let labelField = this.getField(`tickLabel${no}`)
+        let colorField = this.getField(`tickColor${no}`)
 
         return {
             valueField: valueField,
-            labelField: labelField
+            labelField: labelField,
+            colorField: colorField
         }
     }
 
@@ -299,9 +321,12 @@ export class ConfigForm extends WidgetConfigForm {
         data.customTicks.forEach(function (t, no) {
             data[`tickValue${no}`] = t.value
             data[`tickLabel${no}`] = t.label
-        })
+            if (this._tickColors) {
+                data[`tickColor${no}`] = t.color
+            }
+        }.bind(this))
 
-        data.customTicks = Boolean(data.customTicks.length)
+        data.customTicks = Boolean(data.customTicks.length) || this._ticksonly
 
         return data
     }
@@ -309,11 +334,19 @@ export class ConfigForm extends WidgetConfigForm {
     toWidget(data, widget) {
         if (data.customTicks) {
             data.customTicks = ArrayUtils.range(0, data.ticksCount).map(function (no) {
-                return {
+
+                let d = {
                     value: data[`tickValue${no}`],
                     label: data[`tickLabel${no}`]
                 }
-            })
+
+                if (this._tickColors) {
+                    d['color'] = data[`tickColor${no}`]
+                }
+
+                return d
+
+            }.bind(this))
         }
         else {
             data.customTicks = []
@@ -337,7 +370,7 @@ export class ConfigForm extends WidgetConfigForm {
 
 export class AnalogWidget extends Widget {
 
-    constructor(readonly) {
+    constructor({readonly = false, ticksonly = false, tickColors = false}) {
         super()
 
         this._portId = ''
@@ -357,6 +390,8 @@ export class AnalogWidget extends Widget {
         this._ticksCount = 0
         this._customTicks = []
         this._readonly = readonly
+        this._ticksonly = ticksonly
+        this._tickColors = tickColors
 
         this._containerDiv = null
         this._backgroundDiv = null
@@ -368,6 +403,8 @@ export class AnalogWidget extends Widget {
 
         this._thickness = 0
         this._length = 0
+        this._bezelWidth = this._ticksonly ? 0 : this.roundEm(Widgets.BEZEL_WIDTH)
+
         this._vert = false
         this._ticks = []
 
@@ -450,11 +487,11 @@ export class AnalogWidget extends Widget {
             this._ticksThicknessFactor *= (1 + 1.5 * (len - 2) / 10)
         }
 
-        if (this._displayTicks) {
+        if (this._displayTicks || this._ticksonly) {
             this._thickness *= (1 - this._ticksThicknessFactor)
         }
-        this._ticksDiv = this._makeTicks()
-        if (this._displayTicks) {
+        this._ticksDiv = this._makeTicks()  /* This must be here, as it uses this._thickness internally */
+        if (this._displayTicks || this._ticksonly) {
             this._containerDiv.append(this._ticksDiv)
         }
 
@@ -474,20 +511,21 @@ export class AnalogWidget extends Widget {
         backgroundDiv.css('border-radius', `${Math.min(this.getContentWidth(), this.getContentHeight())}em`)
 
         let backgroundThickness = this._thickness - 2 * Widgets.CELL_PADDING
-        let bezelWidth = this.roundEm(Widgets.BEZEL_WIDTH)
 
         backgroundDiv.css(this._vert ? 'width' : 'height', `${backgroundThickness}em`)
-        backgroundDiv.css('border-width', `${bezelWidth}em`)
+        backgroundDiv.css('border-width', `${this._bezelWidth}em`)
 
-        let startColor = this._valueToColor(this._start)
-        let endColor = this._valueToColor(this._end)
-        let direction = this._vert ? 'to top' : 'to right'
-        let backgroundGradient = `linear-gradient(${direction}, ${startColor}, ${endColor})`
-        backgroundDiv.css('background', backgroundGradient)
+        if (!this._ticksonly) {
+            let startColor = this._valueToColor(this._start)
+            let endColor = this._valueToColor(this._end)
+            let direction = this._vert ? 'to top' : 'to right'
+            let backgroundGradient = `linear-gradient(${direction}, ${startColor}, ${endColor})`
+            backgroundDiv.css('background', backgroundGradient)
+        }
 
         this._backgroundCoverDiv = $(`<div class="dashboard-analog-widget-background-cover
                                                   dashboard-${this._widgetName}-background-cover"></div>`)
-        this._backgroundCoverDiv.css('margin', `${bezelWidth}em`)
+        this._backgroundCoverDiv.css('margin', `${this._bezelWidth}em`)
         backgroundDiv.append(this._backgroundCoverDiv)
 
         if (this._readonly) {
@@ -512,11 +550,10 @@ export class AnalogWidget extends Widget {
     _makeCursor() {
         let cursorDiv = $(`<div class="dashboard-analog-widget-cursor
                                        dashboard-${this._widgetName}-cursor"></div>`)
-        let bezelWidth = this.roundEm(Widgets.BEZEL_WIDTH)
-        let height = (this._thickness - 2 * (Widgets.CELL_PADDING + bezelWidth))
+        let height = (this._thickness - 2 * (Widgets.CELL_PADDING + this._bezelWidth))
 
         cursorDiv.css({
-            left: `${bezelWidth}em`,
+            left: `${this._bezelWidth}em`,
             height: `${height}em`
         })
 
@@ -526,14 +563,13 @@ export class AnalogWidget extends Widget {
     _makeHandle() {
         let handleDiv = $(`<div class="qui-base-button dashboard-analog-widget-handle
                                        dashboard-${this._widgetName}-handle"></div>`)
-        let bezelWidth = this.roundEm(Widgets.BEZEL_WIDTH)
-        let radius = this._thickness - 2 * Widgets.CELL_PADDING - 4 * bezelWidth
+        let radius = this._thickness - 2 * Widgets.CELL_PADDING - 4 * this._bezelWidth
 
         handleDiv.css({
             'width': `${radius}em`,
             'height': `${radius}em`,
-            'margin': `${bezelWidth}em`,
-            'border-width': `${bezelWidth}em`
+            'margin': `${this._bezelWidth}em`,
+            'border-width': `${this.roundEm(Widgets.BEZEL_WIDTH)}em`
         })
 
         return handleDiv
@@ -585,7 +621,14 @@ export class AnalogWidget extends Widget {
         /* Add tick labels to container */
         this._ticks.forEach(function (tick, i) {
             /* Determine the position factor */
-            let factor = this._valueToFactor(tick.value) /* Yes, factor */
+            let factor
+            if (this._ticksonly) {
+                /* Make ticks equidistant if using ticksonly */
+                factor = i / (this._ticks.length - 1)
+            }
+            else {
+                factor = this._valueToFactor(tick.value) /* Yes, factor */
+            }
 
             /* Also set the tick pos & factor */
             tick.pos = this._valueToPos(this._factorToValue(factor))
@@ -600,7 +643,12 @@ export class AnalogWidget extends Widget {
             labelDiv.css('font-size', `${fontSize}em`)
 
             if (this._colorTicks) {
-                labelDiv.css('color', this._valueToColor(tick.value))
+                if (tick.color) {
+                    labelDiv.css('color', Theme.getColor(tick.color))
+                }
+                else {
+                    labelDiv.css('color', this._valueToColor(tick.value))
+                }
             }
 
             ticksDiv.append(labelDiv)
@@ -615,7 +663,7 @@ export class AnalogWidget extends Widget {
                 labelDiv.css('left', `${(factor * 100 - 15)}%`)
             }
 
-        }, this)
+        }.bind(this))
 
         return ticksDiv
     }
@@ -652,22 +700,7 @@ export class AnalogWidget extends Widget {
             value = Math.min(Math.max(value, this._end), this._start)
         }
 
-        let color = this._valueToColor(value)
-
-        if (this._cursorDiv) {
-            let startColor = this._valueToColor(this._start)
-            let direction = this._vert ? 'to top' : 'to right'
-            let backgroundGradient = `linear-gradient(${direction}, ${startColor}, ${color})`
-            this._cursorDiv.css('background', backgroundGradient)
-        }
-
-        if (this._handleDiv) {
-            this._handleDiv.css('background', color)
-        }
-
-        let cellPadding = this.roundEm(Widgets.CELL_PADDING)
-        let bezelWidth = this.roundEm(Widgets.BEZEL_WIDTH)
-
+        /* Position */
         let tick = this._ticks.find(t => t.value === value)
         let factor
         if (tick) {
@@ -683,34 +716,62 @@ export class AnalogWidget extends Widget {
             }
         }
 
+        if (factor === 1 && this._readonly) {
+            /* Ensure the cursor actually covers the entire area, eliminating rounding problems */
+            pos = '100%'
+        }
+        else {
+            pos = `${pos}em`
+        }
+
         this._containerDiv.toggleClass('end-half', factor > 0.5)
+
+        /* Color */
+        let color
+        if (this._tickColors && tick && tick.color) {
+            color = Theme.getColor(tick.color)
+        }
+        else {
+            color = this._valueToColor(value)
+        }
+
+        if (this._cursorDiv) {
+            let startColor = this._valueToColor(this._start)
+            let direction = this._vert ? 'to top' : 'to right'
+            let backgroundGradient = `linear-gradient(${direction}, ${startColor}, ${color})`
+            this._cursorDiv.css('background', backgroundGradient)
+        }
+
+        if (this._handleDiv) {
+            this._handleDiv.css('background', color)
+        }
 
         if (this._vert) {
             if (this._cursorDiv) {
-                this._cursorDiv.css('height', `${pos}em`)
+                this._cursorDiv.css('height', pos)
             }
             if (this._handleDiv) {
-                this._handleDiv.css('bottom', `${pos}em`)
+                this._handleDiv.css('bottom', pos)
             }
             if (!this._readonly) {
-                this._backgroundCoverDiv.css('bottom', `${pos}em`)
+                this._backgroundCoverDiv.css('bottom', pos)
             }
         }
         else {
             if (this._cursorDiv) {
-                this._cursorDiv.css('width', `${pos}em`)
+                this._cursorDiv.css('width', pos)
             }
             if (this._handleDiv) {
-                this._handleDiv.css('left', `${pos}em`)
+                this._handleDiv.css('left', pos)
             }
             if (!this._readonly) {
-                this._backgroundCoverDiv.css('left', `${pos}em`)
+                this._backgroundCoverDiv.css('left', pos)
             }
         }
 
         if (this._textDiv) {
             let valueStr = tick ? tick.label : value.toFixed(this._decimals)
-            if (!this._customTicks.length && this._displayUnit && !tick) {
+            if (!this._customTicks.length && this._displayUnit) {
                 valueStr += this._unit
             }
 
@@ -719,7 +780,7 @@ export class AnalogWidget extends Widget {
             let fontSize = TEXT_FACTOR * this._thickness
             factor = 1 - factor
             let offs = factor > 0.5 ? factor : (1 - factor)
-            let length = (this._length * offs) / fontSize
+            let length = (this._getUsefulLength() * offs) / fontSize
 
             this._textDiv.css(this._vert ? 'height' : 'width', `${length}em`)
 
@@ -732,7 +793,7 @@ export class AnalogWidget extends Widget {
             this._textDiv.css('color', foregroundColor)
 
             if (this._containerDiv.hasClass('end-half')) {
-                if (Colors.contrast(foregroundRGB, colorRGB) < 1.5) {
+                if (Colors.contrast(foregroundRGB, colorRGB) < 1.5 && !this._ticksonly) {
                     this._textDiv.css('color', backgroundColor)
                 }
             }
@@ -970,6 +1031,11 @@ export class AnalogWidget extends Widget {
         }
         if (json.customTicks != null) {
             this._customTicks = json.customTicks.slice()
+        }
+
+        if (this._ticksonly) {
+            this._start = this._customTicks[0].value
+            this._end = this._customTicks.slice(-1)[0].value
         }
     }
 
