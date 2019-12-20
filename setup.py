@@ -118,7 +118,6 @@ setup(
     namespace_packages=['qtoggleserver'],
 
     install_requires=[
-        'bluepy',
         'jinja2',
         'jsonpointer',
         'jsonschema',
