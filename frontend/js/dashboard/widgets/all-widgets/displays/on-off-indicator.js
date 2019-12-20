@@ -4,6 +4,7 @@ import $ from '$qui/lib/jquery.module.js'
 import {gettext}         from '$qui/base/i18n.js'
 import {CheckField}      from '$qui/forms/common-fields.js'
 import {ColorComboField} from '$qui/forms/common-fields.js'
+import {NumericField}    from '$qui/forms/common-fields.js'
 import StockIcon         from '$qui/icons/stock-icon.js'
 import * as Theme        from '$qui/theme.js'
 
@@ -14,11 +15,6 @@ import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 import * as Widgets     from '$app/dashboard/widgets/widgets.js'
 
 
-/**
- * @class QToggle.DashboardSection.Widgets.OnOffIndicator.ConfigForm
- * @extends QToggle.DashboardSection.Widgets.WidgetConfigForm
- * @param {QToggle.DashboardSection.Widgets.Widget} widget
- */
 class ConfigForm extends WidgetConfigForm {
 
     constructor(widget) {
@@ -33,23 +29,63 @@ class ConfigForm extends WidgetConfigForm {
                 new PortPickerField({
                     name: 'portId',
                     label: gettext('Port'),
-                    required: true
+                    required: true,
+                    onChange: (value, form) => form._showHidePortTypeFields()
                 }),
                 new CheckField({
                     name: 'inverted',
                     label: gettext('Inverted Logic')
+                }),
+                new NumericField({
+                    name: 'offValue',
+                    label: gettext('Off Value'),
+                    required: true
+                }),
+                new NumericField({
+                    name: 'onValue',
+                    label: gettext('On Value'),
+                    required: true
                 })
             ]
         })
     }
 
+    _showHidePortTypeFields() {
+        let data = this.getUnvalidatedData()
+        let port = this.getPort(data.portId)
+        let isBoolean = true
+        if (port && port.type === 'number') {
+            isBoolean = false
+        }
+
+        let booleanFieldNames = ['inverted']
+        let numberFieldNames = ['offValue', 'onValue']
+
+        if (isBoolean) {
+            numberFieldNames.forEach(function (name) {
+                this.getField(name).hide()
+            }, this)
+            booleanFieldNames.forEach(function (name) {
+                this.getField(name).show()
+            }, this)
+        }
+        else {
+            booleanFieldNames.forEach(function (name) {
+                this.getField(name).hide()
+            }, this)
+            numberFieldNames.forEach(function (name) {
+                this.getField(name).show()
+            }, this)
+        }
+    }
+
+    onUpdateFromWidget() {
+        this._showHidePortTypeFields()
+    }
+
 }
 
 
-/**
- * @class QToggle.DashboardSection.Widgets.OnOffIndicator
- * @extends QToggle.DashboardSection.Widgets.Widget
- */
 export default class OnOffIndicator extends Widget {
 
     constructor() {
@@ -58,6 +94,8 @@ export default class OnOffIndicator extends Widget {
         this._color = DEFAULT_COLOR
         this._portId = ''
         this._inverted = false
+        this._offValue = 0
+        this._onValue = 1
 
         this._bezelDiv = null
         this._lightDiv = null
@@ -70,7 +108,7 @@ export default class OnOffIndicator extends Widget {
 
         let port = this.getPort(this._portId)
 
-        return Boolean(port && port.enabled && port.writable && port.online !== false && port.type === 'boolean')
+        return Boolean(port && port.enabled && port.online !== false)
     }
 
     showCurrentValue() {
@@ -79,11 +117,35 @@ export default class OnOffIndicator extends Widget {
             return
         }
 
-        if (this._inverted ? !value : value) {
-            this._showOn()
+        this._showValue(value)
+    }
+
+    onPortValueChange(portId, value) {
+        if (portId !== this._portId) {
+            return
         }
-        else {
-            this._showOff()
+
+        this._showValue(value)
+    }
+
+    _showValue(value) {
+        if (this._isBoolean()) {
+            value = this._inverted ? !value : value
+
+            if (value) {
+                this._showOn()
+            }
+            else if (!value) {
+                this._showOff()
+            }
+        }
+        else { /* Number */
+            if (value === this._onValue) {
+                this._showOn()
+            }
+            else if (value === this._offValue) {
+                this._showOff()
+            }
         }
     }
 
@@ -133,11 +195,18 @@ export default class OnOffIndicator extends Widget {
         this._lightDiv.css('background', '')
     }
 
+    _isBoolean() {
+        let port = this.getPort(this._portId)
+        return port && port.type === 'boolean'
+    }
+
     configToJSON() {
         return {
             color: this._color,
             portId: this._portId,
-            inverted: this._inverted
+            inverted: this._inverted,
+            offValue: this._offValue,
+            onValue: this._onValue
         }
     }
 
@@ -151,20 +220,11 @@ export default class OnOffIndicator extends Widget {
         if (json.inverted != null) {
             this._inverted = json.inverted
         }
-    }
-
-    onPortValueChange(portId, value) {
-        if (portId !== this._portId) {
-            return
+        if (json.offValue != null) {
+            this._offValue = json.offValue
         }
-
-        value = this._inverted ? !value : value
-
-        if (value) {
-            this._showOn()
-        }
-        else {
-            this._showOff()
+        if (json.onValue != null) {
+            this._onValue = json.onValue
         }
     }
 
