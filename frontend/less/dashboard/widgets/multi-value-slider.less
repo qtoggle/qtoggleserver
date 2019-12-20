@@ -1,0 +1,25 @@
+
+@import (reference) "@{qui_less_path}/theme";
+
+div.dashboard-widget-content {
+
+    div.dashboard-multi-value-slider-background {
+        background: @background-color;
+        cursor: pointer;
+    }
+
+    div.dashboard-multi-value-slider-handle {
+        left: 0;
+        bottom: 0;
+        position: absolute;
+        border-radius: 100%;
+        transition: left @transition-duration ease,
+                    top @transition-duration ease,
+                    right @transition-duration ease,
+                    bottom @transition-duration ease,
+                    background @transition-duration ease;
+        border-color: @background-color;
+        border-style: solid;
+    }
+
+}
