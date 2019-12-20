@@ -10,7 +10,6 @@ import StockIcon         from '$qui/icons/stock-icon.js'
 import * as Theme        from '$qui/theme.js'
 import * as Window       from '$qui/window.js'
 
-import * as Cache       from '$app/cache.js'
 import PortPickerField  from '$app/dashboard/widgets/port-picker-field.js'
 import * as Widgets     from '$app/dashboard/widgets/widgets.js'
 import Widget           from '$app/dashboard/widgets/widget.js'

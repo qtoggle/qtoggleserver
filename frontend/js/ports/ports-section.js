@@ -57,15 +57,7 @@ export default class PortsSection extends Section {
     }
 
     onServerEvent(event) {
-        let portsList = null
-
-        if (this.devicesList) {
-            portsList = this.devicesList.portsList
-        }
-        else {
-            portsList = this.portsList
-        }
-
+        let portsList = this.devicesList ? this.devicesList.portsList : this.portsList
         let portForm = portsList ? portsList.portForm : null
 
         switch (event.type) {
