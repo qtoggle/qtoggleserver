@@ -41,7 +41,7 @@ jobs:
           asset_name: qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}.tar.gz
           tag: ${{ github.ref }}
           overwrite: true
-          draft: true
+          draft: false
       - name: Publish To PyPI
         uses: pypa/gh-action-pypi-publish@master
         with:
