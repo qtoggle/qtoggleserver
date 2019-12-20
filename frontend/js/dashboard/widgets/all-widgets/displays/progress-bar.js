@@ -10,7 +10,7 @@ import {ConfigForm as AnalogWidgetConfigForm, AnalogWidget} from '../analog-widg
 export class ConfigForm extends AnalogWidgetConfigForm {
 
     constructor(widget) {
-        super(widget, /* readonly = */ true)
+        super(widget, {readonly: true})
     }
 
 }
@@ -19,7 +19,7 @@ export class ConfigForm extends AnalogWidgetConfigForm {
 export default class ProgressBar extends AnalogWidget {
 
     constructor() {
-        super(/* readonly = */ true)
+        super({readonly: true})
     }
 
 }

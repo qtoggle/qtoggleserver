@@ -12,7 +12,6 @@ import * as Theme        from '$qui/theme.js'
 import * as ArrayUtils   from '$qui/utils/array.js'
 import * as Window       from '$qui/window.js'
 
-import * as Cache       from '$app/cache.js'
 import PortPickerField  from '$app/dashboard/widgets/port-picker-field.js'
 import Widget           from '$app/dashboard/widgets/widget.js'
 import {DEFAULT_COLOR}  from '$app/dashboard/widgets/widget.js'
