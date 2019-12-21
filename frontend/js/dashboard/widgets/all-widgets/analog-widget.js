@@ -73,8 +73,15 @@ export class ConfigForm extends WidgetConfigForm {
                     hidden: ticksonly
                 }),
                 new CheckField({
+                    name: 'negativeProgress',
+                    label: gettext('Negative Values Progress'),
+                    description: gettext('The negatives of defined values will be shown as widget progress'),
+                    hidden: !ticksonly
+                }),
+                new CheckField({
                     name: 'displayValue',
                     label: gettext('Display Value'),
+                    separator: true,
                     onChange: (value, form) => form._updateFields()
                 }),
                 new CheckField({
@@ -378,6 +385,7 @@ export class AnalogWidget extends Widget {
         this._end = 100
         this._startColor = '@gray-color'
         this._endColor = DEFAULT_COLOR
+        this._negativeProgress = false
         this._displayValue = true
         this._displayUnit = true
         this._unit = ''
@@ -399,11 +407,13 @@ export class AnalogWidget extends Widget {
         this._ticksDiv = null
         this._cursorDiv = null
         this._handleDiv = null
+        this._progressDiscDiv = null
         this._textDiv = null
 
         this._thickness = 0
         this._length = 0
         this._bezelWidth = 0
+        this._handleDiameter = 0
 
         this._vert = false
         this._ticks = []
@@ -512,6 +522,11 @@ export class AnalogWidget extends Widget {
             this._handleDiv = this._makeHandle()
             this._backgroundDiv.append(this._handleDiv)
             this.setDragElement(this._backgroundDiv, this._vert ? 'y' : 'x')
+
+            if (this._negativeProgress) {
+                this._progressDiscDiv = this._makeProgressDisc()
+                this._handleDiv.append(this._progressDiscDiv)
+            }
         }
 
         if (this._displayValue) {
@@ -568,18 +583,30 @@ export class AnalogWidget extends Widget {
     }
 
     _makeHandle() {
-        let radius = this._thickness - 2 * Widgets.CELL_PADDING - 4 * this._bezelWidth
+        this._handleDiameter = this._thickness - 2 * Widgets.CELL_PADDING - 4 * this._bezelWidth
         let handleDiv = $(`<div class="qui-base-button dashboard-analog-widget-handle
                                        dashboard-${this._widgetName}-handle"></div>`)
 
         handleDiv.css({
-            'width': `${radius}em`,
-            'height': `${radius}em`,
+            'width': `${this._handleDiameter}em`,
+            'height': `${this._handleDiameter}em`,
             'margin': `${this._bezelWidth}em`,
             'border-width': `${this.roundEm(Widgets.BEZEL_WIDTH)}em`
         })
 
         return handleDiv
+    }
+
+    _makeProgressDisc() {
+        let radius = this._handleDiameter / 2 - this.roundEm(Widgets.BEZEL_WIDTH)
+        let progressDiscDiv = $(`<div class="dashboard-analog-widget-progress-disc
+                                             dashboard-${this._widgetName}-progress-disc"></div>`)
+        progressDiscDiv.progressdisc({
+            radius: `${radius}em`
+        })
+        progressDiscDiv.progressdisc('setValue', -1)
+
+        return progressDiscDiv
     }
 
     _makeText() {
@@ -699,6 +726,12 @@ export class AnalogWidget extends Widget {
     }
 
     _showValue(value, pos = null) {
+        let showProgress = false
+        if (this._negativeProgress && value < 0) {
+            value = -value
+            showProgress = true
+        }
+
         if (this._start < this._end) {
             value = Math.min(Math.max(value, this._start), this._end)
         }
@@ -749,6 +782,12 @@ export class AnalogWidget extends Widget {
         }
 
         if (this._handleDiv) {
+            if (showProgress) {
+                this._progressDiscDiv.progressdisc({color: color})
+                color = 'transparent'
+            }
+
+            this._handleDiv.toggleClass('progress', showProgress)
             this._handleDiv.css('background', color)
         }
 
@@ -975,6 +1014,7 @@ export class AnalogWidget extends Widget {
             end: this._end,
             startColor: this._startColor,
             endColor: this._endColor,
+            negativeProgress: this._negativeProgress,
             displayValue: this._displayValue,
             displayUnit: this._displayUnit,
             unit: this._unit,
@@ -1004,6 +1044,9 @@ export class AnalogWidget extends Widget {
         }
         if (json.endColor) {
             this._endColor = json.endColor
+        }
+        if (json.negativeProgress != null) {
+            this._negativeProgress = json.negativeProgress
         }
         if (json.displayValue != null) {
             this._displayValue = json.displayValue
