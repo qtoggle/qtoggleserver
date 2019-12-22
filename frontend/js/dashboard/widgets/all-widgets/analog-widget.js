@@ -47,27 +47,27 @@ export class ConfigForm extends WidgetConfigForm {
                     required: true
                 }),
                 new NumericField({
-                    name: 'start',
-                    label: gettext('Start Value'),
+                    name: 'min',
+                    label: gettext('Min Value'),
                     required: true,
                     hidden: ticksonly
                 }),
                 new NumericField({
-                    name: 'end',
-                    label: gettext('End Value'),
+                    name: 'max',
+                    label: gettext('Max Value'),
                     required: true,
                     hidden: ticksonly
                 }),
                 new ColorComboField({
-                    name: 'startColor',
-                    label: gettext('Start Color'),
+                    name: 'minColor',
+                    label: gettext('Min Color'),
                     filterEnabled: true,
                     required: true,
                     hidden: ticksonly
                 }),
                 new ColorComboField({
-                    name: 'endColor',
-                    label: gettext('End Color'),
+                    name: 'maxColor',
+                    label: gettext('Max Color'),
                     filterEnabled: true,
                     required: true,
                     hidden: ticksonly
@@ -366,8 +366,8 @@ export class ConfigForm extends WidgetConfigForm {
         let data = super.fromPort(port)
 
         data.unit = port.unit
-        data.start = port.min != null ? port.min : 0
-        data.end = port.max != null ? port.max : 100
+        data.min = port.min != null ? port.min : 0
+        data.max = port.max != null ? port.max : 100
 
         return data
     }
@@ -381,10 +381,10 @@ export class AnalogWidget extends Widget {
         super()
 
         this._portId = ''
-        this._start = 0
-        this._end = 100
-        this._startColor = '@gray-color'
-        this._endColor = DEFAULT_COLOR
+        this._min = 0
+        this._max = 100
+        this._minColor = '@gray-color'
+        this._maxColor = DEFAULT_COLOR
         this._negativeProgress = false
         this._displayValue = true
         this._displayUnit = true
@@ -493,8 +493,8 @@ export class AnalogWidget extends Widget {
             /* Make a bit more room for ticks if labels are relatively larger */
             let unit = this._displayTicksUnits ? HTML.plainText(this._unit) : ''
             let len = Math.max(
-                String(this._start.toFixed(this._decimals) + unit).length,
-                String(this._start.toFixed(this._decimals) + unit).length
+                String(this._min.toFixed(this._decimals) + unit).length,
+                String(this._min.toFixed(this._decimals) + unit).length
             )
 
             this._ticksThicknessFactor *= (1 + 1.5 * (len - 2) / 10)
@@ -535,7 +535,7 @@ export class AnalogWidget extends Widget {
         }
 
         /* Set an initial state */
-        this._showValue(this._start)
+        this._showValue(this._min)
 
         return this._containerDiv
     }
@@ -551,8 +551,8 @@ export class AnalogWidget extends Widget {
         backgroundDiv.css('border-width', `${this._bezelWidth}em`)
 
         if (!this._ticksonly) {
-            let startColor = this._valueToColor(this._start)
-            let endColor = this._valueToColor(this._end)
+            let startColor = this._valueToColor(this._min)
+            let endColor = this._valueToColor(this._max)
             let direction = this._vert ? 'to top' : 'to right'
             let backgroundGradient = `linear-gradient(${direction}, ${startColor}, ${endColor})`
             backgroundDiv.css('background', backgroundGradient)
@@ -658,13 +658,13 @@ export class AnalogWidget extends Widget {
         }
         else {
             this._ticks = []
-            let label, value, step = (this._end - this._start) / (this._ticksCount - 1)
+            let label, value, step = (this._max - this._min) / (this._ticksCount - 1)
             for (let i = 0; i < this._ticksCount; i++) {
                 if (i < this._ticksCount - 1) {
-                    value = this._start + i * step
+                    value = this._min + i * step
                 }
                 else {
-                    value = this._end
+                    value = this._max
                 }
 
                 label = value.toFixed(this._decimals)
@@ -732,11 +732,11 @@ export class AnalogWidget extends Widget {
             showProgress = true
         }
 
-        if (this._start < this._end) {
-            value = Math.min(Math.max(value, this._start), this._end)
+        if (this._min < this._max) {
+            value = Math.min(Math.max(value, this._min), this._max)
         }
         else {
-            value = Math.min(Math.max(value, this._end), this._start)
+            value = Math.min(Math.max(value, this._max), this._min)
         }
 
         /* Position */
@@ -775,7 +775,7 @@ export class AnalogWidget extends Widget {
         }
 
         if (this._cursorDiv) {
-            let startColor = this._valueToColor(this._start)
+            let startColor = this._valueToColor(this._min)
             let direction = this._vert ? 'to top' : 'to right'
             let backgroundGradient = `linear-gradient(${direction}, ${startColor}, ${color})`
             this._cursorDiv.css('background', backgroundGradient)
@@ -846,11 +846,11 @@ export class AnalogWidget extends Widget {
     }
 
     _valueToFactor(value) {
-        return (value - this._start) / (this._end - this._start)
+        return (value - this._min) / (this._max - this._min)
     }
 
     _factorToValue(factor) {
-        return this._start + factor * (this._end - this._start)
+        return this._min + factor * (this._max - this._min)
     }
 
     _valueToPos(value) {
@@ -864,7 +864,7 @@ export class AnalogWidget extends Widget {
     }
 
     _valueToColor(value) {
-        return Colors.mix(Theme.getColor(this._startColor), Theme.getColor(this._endColor), this._valueToFactor(value))
+        return Colors.mix(Theme.getColor(this._minColor), Theme.getColor(this._maxColor), this._valueToFactor(value))
     }
 
     _snapPos(pos) {
@@ -1010,10 +1010,10 @@ export class AnalogWidget extends Widget {
     configToJSON() {
         return {
             portId: this._portId,
-            start: this._start,
-            end: this._end,
-            startColor: this._startColor,
-            endColor: this._endColor,
+            min: this._min,
+            max: this._max,
+            minColor: this._minColor,
+            maxColor: this._maxColor,
             negativeProgress: this._negativeProgress,
             displayValue: this._displayValue,
             displayUnit: this._displayUnit,
@@ -1030,20 +1030,35 @@ export class AnalogWidget extends Widget {
     }
 
     configFromJSON(json) {
+        // TODO remove these
+        /* These are for compatibility, from when min/max were start/end */
+        if (json.start != null) {
+            this._min = json.start
+        }
+        if (json.end != null) {
+            this._max = json.end
+        }
+        if (json.startColor) {
+            this._minColor = json.startColor
+        }
+        if (json.endColor) {
+            this._maxColor = json.endColor
+        }
+
         if (json.portId) {
             this._portId = json.portId
         }
-        if (json.start != null) {
-            this._start = json.start
+        if (json.min != null) {
+            this._min = json.min
         }
-        if (json.end != null) {
-            this._end = json.end
+        if (json.max != null) {
+            this._max = json.max
         }
-        if (json.startColor) {
-            this._startColor = json.startColor
+        if (json.minColor) {
+            this._minColor = json.minColor
         }
-        if (json.endColor) {
-            this._endColor = json.endColor
+        if (json.maxColor) {
+            this._maxColor = json.maxColor
         }
         if (json.negativeProgress != null) {
             this._negativeProgress = json.negativeProgress
@@ -1083,8 +1098,8 @@ export class AnalogWidget extends Widget {
         }
 
         if (this._ticksonly) {
-            this._start = this._customTicks[0].value
-            this._end = this._customTicks.slice(-1)[0].value
+            this._min = Math.min.apply(null, this._customTicks.map(t => t.value))
+            this._max = Math.max.apply(null, this._customTicks.map(t => t.value))
         }
     }
 
