@@ -1055,7 +1055,7 @@ function tryMatchExpectedEvent(event) {
                 }
             })
 
-            if (mismatched.length) {
+            if (Object.keys(mismatched).length) {
                 return
             }
         }

@@ -160,8 +160,6 @@ export default class PortsSection extends Section {
                     if (portForm && (portForm.getPortId() === event.params.id) && portForm.isWaitingValueChanged()) {
                         portForm.clearWaitingValueChanged()
                     }
-
-                    break
                 }
 
                 /* Update port form */
@@ -174,11 +172,11 @@ export default class PortsSection extends Section {
                         data['attr_last_sync'] = API.STD_PORT_ATTRDEFS['last_sync'].valueToUI(lastSync)
                     }
                     if (valueField && (valueField.getValue() !== event.params.value)) {
-                        if (valueField.isReadonly() || valueField.getValue() == null) {
+                        if (valueField.isReadonly() || valueField.getValue() == null || event.expected) {
                             data['value'] = event.params.value
                         }
                         else {
-                            if (!valueField.hasWarning() && !valueField.hasError()) {
+                            if (!valueField.hasWarning() && !valueField.hasError() && !event.expected) {
                                 valueField.setWarning(gettext('Value has been updated in the meantime.'))
                             }
                         }
