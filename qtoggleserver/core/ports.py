@@ -802,7 +802,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return d
 
-    async def done(self):
+    async def cleanup(self):
         # cancel sequence
         if self._sequence:
             self.debug('canceling current sequence')
@@ -1024,9 +1024,9 @@ def all_ports():
     return _ports.values()
 
 
-async def done():
+async def cleanup():
     for port in _ports.values():
-        await port.done()
+        await port.cleanup()
 
 
 def reset():

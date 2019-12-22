@@ -151,7 +151,7 @@ def init_persist():
         sys.exit(-1)
 
 
-def done_persist():
+async def cleanup_persist():
     persist.close()
 
 
@@ -180,9 +180,9 @@ async def init_ports():
     await ports.load(port_settings)
 
 
-async def done_ports():
+async def cleanup_ports():
     logger.info('cleaning up ports')
-    await ports.done()
+    await ports.cleanup()
 
 
 async def init_slaves():
@@ -191,10 +191,10 @@ async def init_slaves():
         slaves_devices.load()
 
 
-async def done_slaves():
+async def cleanup_slaves():
     if settings.slaves.enabled:
         logger.info('cleaning up slaves')
-        await slaves_devices.done()
+        await slaves_devices.cleanup()
 
 
 async def init_lib():
@@ -202,9 +202,9 @@ async def init_lib():
     await lib.init()
 
 
-async def done_lib():
+async def cleanup_lib():
     logger.info('cleaning up libs')
-    await lib.done()
+    await lib.cleanup()
 
 
 async def init_main():
@@ -218,9 +218,9 @@ async def init_main():
             await asyncio.sleep(0.1)
 
 
-async def done_main():
+async def cleanup_main():
     logger.info('cleaning up main')
-    await main.done()
+    await main.cleanup()
 
 
 async def init():
@@ -240,10 +240,9 @@ async def init():
     await init_lib()
 
 
-async def done():
-    await done_slaves()
-    await done_ports()
-    await done_lib()
-    await done_main()
-
-    done_persist()
+async def cleanup():
+    await cleanup_slaves()
+    await cleanup_ports()
+    await cleanup_lib()
+    await cleanup_main()
+    await cleanup_persist()

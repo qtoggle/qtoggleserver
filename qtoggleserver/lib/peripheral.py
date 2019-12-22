@@ -9,7 +9,7 @@ import threading
 from qtoggleserver import utils
 from qtoggleserver.core import ports as core_ports
 
-from . import add_done_hook
+from . import add_cleanup_hook
 
 
 logger = logging.getLogger(__name__)
@@ -102,7 +102,7 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
         self._enabled = False
         self._runner = None
 
-        add_done_hook(self.handle_done)
+        add_cleanup_hook(self.handle_cleanup)
 
     def __str__(self):
         return self._name
@@ -188,7 +188,7 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
     async def handle_disable(self):
         pass
 
-    async def handle_done(self):
+    async def handle_cleanup(self):
         if self._runner:
             self.debug('stopping threaded runner')
             await self._runner.stop()

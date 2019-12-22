@@ -183,7 +183,7 @@ async def init():
     _update_loop_task = loop.create_task(update_loop())
 
 
-async def done():
+async def cleanup():
     global _running
 
     _running = False

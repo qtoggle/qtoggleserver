@@ -16,7 +16,7 @@ def execute():
     commands.logger.info('starting interactive shell')
     code.interact(local=locals())
 
-    loop.run_until_complete(commands.done())
+    loop.run_until_complete(commands.cleanup())
     loop.run_until_complete(loop.shutdown_asyncgens())
 
     commands.logger.info('bye!')

@@ -387,7 +387,7 @@ class Slave(utils.LoggableMixin):
         self.debug('saving device')
         persist.replace('slaves', self._name, self.prepare_for_save())
 
-    async def done(self):
+    async def cleanup(self):
         self.debug('cleaning up')
 
         # stop listening
@@ -1519,6 +1519,6 @@ def load():
         slave.trigger_add()
 
 
-async def done():
+async def cleanup():
     for slave in _slaves.values():
-        await slave.done()
+        await slave.cleanup()
