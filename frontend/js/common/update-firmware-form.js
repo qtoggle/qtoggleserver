@@ -62,7 +62,7 @@ class StatusField extends FormField {
         this._icon = $('<div class="qui-icon"></div>')
 
         this._progress = $('<div class="progress"></div>')
-        this._progress.progressdisc()
+        this._progress.progressdisk()
 
         this._messageSpan = $('<span class="label"></span>')
 
@@ -81,7 +81,7 @@ class StatusField extends FormField {
             value === FIRMWARE_STATUS_NOT_AVAILABLE ||
             value === API.FIRMWARE_STATUS_ERROR) {
 
-            this._progress.progressdisc('setValue', 0)
+            this._progress.progressdisk('setValue', 0)
             this._progress.css('display', 'none')
             this._icon.css('display', '')
             this._messageSpan.html(prettyValue)
@@ -108,7 +108,7 @@ class StatusField extends FormField {
             }
         }
         else {
-            this._progress.progressdisc('setValue', -1)
+            this._progress.progressdisk('setValue', -1)
             this._progress.css('display', '')
             this._icon.css('display', 'none')
             this._messageSpan.html(`${prettyValue}...`)

@@ -122,7 +122,6 @@ def init_signals():
 
 def init_configurables():
     httpclient.AsyncHTTPClient.configure('tornado.simple_httpclient.SimpleAsyncHTTPClient', max_clients=1024)
-    # tornado.httpclient.AsyncHTTPClient.configure('tornado.curl_httpclient.CurlAsyncHTTPClient', max_clients=1024)
 
     configurables = conf_utils.obj_to_dict(settings.configurables)
     for class_name, opts in sorted(configurables.items()):
@@ -211,7 +210,7 @@ async def init_main():
     logger.info('initializing main')
     await main.init()
 
-    # Wait until slaves are also ready before actually considering core started
+    # Wait until slaves are also ready before actually considering main loop ready
     if settings.slaves.enabled:
         logger.info('waiting for slaves to become ready')
         while not slaves_devices.ready():

@@ -407,7 +407,7 @@ export class AnalogWidget extends Widget {
         this._ticksDiv = null
         this._cursorDiv = null
         this._handleDiv = null
-        this._progressDiscDiv = null
+        this._progressDiskDiv = null
         this._textDiv = null
 
         this._thickness = 0
@@ -524,8 +524,8 @@ export class AnalogWidget extends Widget {
             this.setDragElement(this._backgroundDiv, this._vert ? 'y' : 'x')
 
             if (this._negativeProgress) {
-                this._progressDiscDiv = this._makeProgressDisc()
-                this._handleDiv.append(this._progressDiscDiv)
+                this._progressDiskDiv = this._makeProgressDisk()
+                this._handleDiv.append(this._progressDiskDiv)
             }
         }
 
@@ -597,16 +597,16 @@ export class AnalogWidget extends Widget {
         return handleDiv
     }
 
-    _makeProgressDisc() {
+    _makeProgressDisk() {
         let radius = this._handleDiameter / 2 - this.roundEm(Widgets.BEZEL_WIDTH)
-        let progressDiscDiv = $(`<div class="dashboard-analog-widget-progress-disc
-                                             dashboard-${this._widgetName}-progress-disc"></div>`)
-        progressDiscDiv.progressdisc({
+        let progressDiskDiv = $(`<div class="dashboard-analog-widget-progress-disk
+                                             dashboard-${this._widgetName}-progress-disk"></div>`)
+        progressDiskDiv.progressdisk({
             radius: `${radius}em`
         })
-        progressDiscDiv.progressdisc('setValue', -1)
+        progressDiskDiv.progressdisk('setValue', -1)
 
-        return progressDiscDiv
+        return progressDiskDiv
     }
 
     _makeText() {
@@ -783,7 +783,7 @@ export class AnalogWidget extends Widget {
 
         if (this._handleDiv) {
             if (showProgress) {
-                this._progressDiscDiv.progressdisc({color: color})
+                this._progressDiskDiv.progressdisk({color: color})
                 color = 'transparent'
             }
 

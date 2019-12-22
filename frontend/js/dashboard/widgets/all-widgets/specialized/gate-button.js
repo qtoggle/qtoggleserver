@@ -72,7 +72,7 @@ export default class GateButton extends Widget {
         this._containerDiv = null
         this._backgroundDiv = null
         this._handleDiv = null
-        this._progressDiscDiv = null
+        this._progressDiskDiv = null
 
         this._vert = false
         this._thickness = 0
@@ -243,21 +243,21 @@ export default class GateButton extends Widget {
         handleDiv.append(openedIcon)
         handleDiv.append(closedIcon)
 
-        this._progressDiscDiv = this._makeProgressDisc()
-        handleDiv.append(this._progressDiscDiv)
+        this._progressDiskDiv = this._makeProgressDisk()
+        handleDiv.append(this._progressDiskDiv)
 
         return handleDiv
     }
 
-    _makeProgressDisc() {
-        let progressDiscDiv = $('<div class="dashboard-gate-button-progress-disc"></div>')
-        progressDiscDiv.progressdisc({
+    _makeProgressDisk() {
+        let progressDiskDiv = $('<div class="dashboard-gate-button-progress-disk"></div>')
+        progressDiskDiv.progressdisk({
             radius: `${(this._handleDiameter / 2)}em`,
             color: this._color
         })
-        progressDiscDiv.progressdisc('setValue', -1)
+        progressDiskDiv.progressdisk('setValue', -1)
 
-        return progressDiscDiv
+        return progressDiskDiv
     }
 
     _showState(state) {
