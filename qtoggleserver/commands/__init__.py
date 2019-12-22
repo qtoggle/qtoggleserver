@@ -186,6 +186,12 @@ async def init_slaves():
         slaves_devices.load()
 
 
+async def done_slaves():
+    if settings.slaves.enabled:
+        logger.info('cleaning up slaves')
+        await slaves_devices.done()
+
+
 async def init_lib():
     logger.info('initializing libs')
     await lib.init()
@@ -230,6 +236,8 @@ async def init():
 
 
 async def done():
+    await done_slaves()
+    #await done_ports()
     await done_lib()
     await done_main()
 
