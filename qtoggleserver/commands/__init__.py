@@ -180,6 +180,11 @@ async def init_ports():
     await ports.load(port_settings)
 
 
+async def done_ports():
+    logger.info('cleaning up ports')
+    await ports.done()
+
+
 async def init_slaves():
     if settings.slaves.enabled:
         logger.info('initializing slaves')
@@ -237,7 +242,7 @@ async def init():
 
 async def done():
     await done_slaves()
-    #await done_ports()
+    await done_ports()
     await done_lib()
     await done_main()
 
