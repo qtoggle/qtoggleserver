@@ -70,7 +70,7 @@ class PolledPeripheral(Peripheral):
     async def handle_disable(self):
         self._polling = False  # Will stop poll loop
 
-    async def handle_done(self):
+    async def handle_cleanup(self):
         self._polling = False
         return self._poll_task
 

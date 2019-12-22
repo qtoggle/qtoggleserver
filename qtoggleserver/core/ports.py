@@ -209,12 +209,11 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._value = None
         self._write_value_queue = queues.Queue()
+        self._write_value_task = asyncio.create_task(self._write_value_loop())
         self._asap_value = None
         self._change_reason = CHANGE_REASON_NATIVE
 
         self._loaded = False
-
-        asyncio.create_task(self._write_value_loop())
 
     def __str__(self):
         return 'port {}'.format(self._id)
@@ -557,17 +556,22 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def _write_value_loop(self):
         while True:
-            value, reason, done = await self._write_value_queue.get()
-
             try:
-                result = await self._write_value(value, reason)
-                if not done.done():
-                    done.set_result(result)
+                value, reason, done = await self._write_value_queue.get()
 
-            except Exception:
-                done.set_exception(sys.exc_info()[1])
+                try:
+                    result = await self._write_value(value, reason)
+                    if not done.done():
+                        done.set_result(result)
 
-            await asyncio.sleep(await self.get_attr('write_value_pause'))
+                except Exception:
+                    done.set_exception(sys.exc_info()[1])
+
+                await asyncio.sleep(await self.get_attr('write_value_pause'))
+
+            except asyncio.CancelledError:
+                self.debug('write value task cancelled')
+                break
 
     async def _write_value(self, value, reason):
         self._last_write_value_time = time.time()
@@ -798,6 +802,16 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return d
 
+    async def cleanup(self):
+        # cancel sequence
+        if self._sequence:
+            self.debug('canceling current sequence')
+            self._sequence.cancel()
+            self._sequence = None
+
+        self._write_value_task.cancel()
+        await self._write_value_task
+
     def is_loaded(self):
         return self._loaded
 
@@ -1008,6 +1022,11 @@ def get(port_id):
 
 def all_ports():
     return _ports.values()
+
+
+async def cleanup():
+    for port in _ports.values():
+        await port.cleanup()
 
 
 def reset():

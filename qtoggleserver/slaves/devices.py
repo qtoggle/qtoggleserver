@@ -82,9 +82,11 @@ class Slave(utils.LoggableMixin):
 
         # indicates the listening session id, or None if no listen client is active
         self._listen_session_id = None
+        self._listen_task = None
 
         # tells the polling mechanism status
         self._poll_started = False
+        self._pool_task = None
 
         # attributes cache
         self._cached_attrs = attrs or {}
@@ -385,6 +387,22 @@ class Slave(utils.LoggableMixin):
         self.debug('saving device')
         persist.replace('slaves', self._name, self.prepare_for_save())
 
+    async def cleanup(self):
+        self.debug('cleaning up')
+
+        # stop listening
+        if self._listen_session_id:
+            self._stop_listening()
+            self._listen_task.cancel()
+            await self._listen_task
+            self.debug('listening stopped')
+
+        # stop polling
+        if self._poll_started:
+            self._stop_polling()
+            await self._pool_task
+            self.debug('polling mechanism stopped')
+
     async def _load_ports(self):
         self.debug('loading persisted ports')
         port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
@@ -519,7 +537,7 @@ class Slave(utils.LoggableMixin):
 
         self.debug('starting listening mechanism (%s)', self._listen_session_id)
 
-        asyncio.create_task(self._listen_loop())
+        self._listen_task = asyncio.create_task(self._listen_loop())
 
     def _stop_listening(self):
         if not self._listen_session_id:
@@ -541,7 +559,7 @@ class Slave(utils.LoggableMixin):
 
         self.debug('starting polling mechanism')
 
-        asyncio.create_task(self._poll_loop())
+        self._pool_task = asyncio.create_task(self._poll_loop())
 
     def _stop_polling(self):
         if not self._poll_started:
@@ -665,114 +683,124 @@ class Slave(utils.LoggableMixin):
         requested_session_id = self._listen_session_id
 
         while True:
-            if not self._listen_session_id:
-                break
-
-            if self not in _slaves.values():
-                self.error('exiting listen loop for dangling slave device')
-                break
-
-            url = self.get_url('/listen?timeout={}&session_id={}'.format(keep_alive, self._listen_session_id))
-            headers = {
-                'Content-Type': http_utils.JSON_CONTENT_TYPE,
-                'Authorization': core_api_auth.make_auth_header(core_api_auth.ORIGIN_CONSUMER,
-                                                                username='admin',
-                                                                password_hash=self._admin_password_hash)
-            }
-
-            http_client = AsyncHTTPClient()
-            request = HTTPRequest(url, 'GET', headers=headers,
-                                  connect_timeout=settings.slaves.timeout,
-                                  request_timeout=settings.slaves.timeout + settings.slaves.keepalive)
-
-            self.debug('calling api function GET /listen')
-
             try:
-                response = await http_client.fetch(request, raise_error=False)
-
-            except Exception as e:
-                # We need to catch exceptions here even though raise_error is False,
-                # because it only affects HTTP errors
-                response = types.SimpleNamespace(error=e, code=599)
-
-            # ignore response to older or mismatching listen requests
-            if self._listen_session_id != requested_session_id:
-                self.debug('ignoring listen response to older session (%s)', requested_session_id)
-
-                break
-
-            if not self._listen_session_id:
-                break
-
-            try:
-                events = core_responses.parse(response)
-
-            except core_responses.Error as e:
-                self.error('api call GET /listen failed: %s, retrying in %s seconds', e, settings.slaves.retry_interval)
-
-                if self._online:
-                    self._online = False
-                    await self._handle_offline()
-
-                await asyncio.sleep(settings.slaves.retry_interval)
-
-                # fast keep-alive
-                keep_alive = 1
-
-            else:
-                self.debug('api call GET /listen succeeded')
-
-                self.update_last_sync()
-
-                # switching to normal keep-alive
-                keep_alive = settings.slaves.keepalive
-                needs_save_ports = False
-
-                for event in events:
-                    try:
-                        await self.handle_event(event)
-                        if event['type'] in ('port-add', 'port-remove', 'port-update'):
-                            needs_save_ports = True
-
-                    except exceptions.DeviceRenamed:
-                        self.debug('ignoring device renamed exception')
-                        break
-
-                    except Exception:
-                        # ignoring any error from handling an event is the best thing
-                        # that we can do here, to ensure that we keep handling remaining events
-                        pass
-
-                # _handle_event() indirectly stopped listening or removed this slave;
-                # this happens when the slave device is renamed
-                if self not in _slaves.values() or not self._listen_session_id:
+                if not self._listen_session_id:
                     break
 
-                if not self._online:
-                    self._online = True
-                    await self._handle_online()
+                if self not in _slaves.values():
+                    self.error('exiting listen loop for dangling slave device')
+                    break
 
-                    if not self._online and self._listen_session_id:
-                        self.warning('device did not successfully go online, retrying in %s seconds',
-                                     settings.slaves.retry_interval)
+                url = self.get_url('/listen?timeout={}&session_id={}'.format(keep_alive, self._listen_session_id))
+                headers = {
+                    'Content-Type': http_utils.JSON_CONTENT_TYPE,
+                    'Authorization': core_api_auth.make_auth_header(core_api_auth.ORIGIN_CONSUMER,
+                                                                    username='admin',
+                                                                    password_hash=self._admin_password_hash)
+                }
 
-                        await asyncio.sleep(settings.slaves.retry_interval)
+                http_client = AsyncHTTPClient()
+                request = HTTPRequest(url, 'GET', headers=headers,
+                                      connect_timeout=settings.slaves.timeout,
+                                      request_timeout=settings.slaves.timeout + settings.slaves.keepalive)
 
-                        # fast keep-alive
-                        keep_alive = 1
+                self.debug('calling api function GET /listen')
 
-                else:  # still online
-                    if needs_save_ports:
-                        await self._save_ports()
+                try:
+                    response = await http_client.fetch(request, raise_error=False)
+
+                except Exception as e:
+                    # We need to catch exceptions here even though raise_error is False,
+                    # because it only affects HTTP errors
+                    response = types.SimpleNamespace(error=e, code=599)
+
+                # ignore response to older or mismatching listen requests
+                if self._listen_session_id != requested_session_id:
+                    self.debug('ignoring listen response to older session (%s)', requested_session_id)
+
+                    break
+
+                if not self._listen_session_id:
+                    break
+
+                try:
+                    events = core_responses.parse(response)
+
+                except core_responses.Error as e:
+                    self.error('api call GET /listen failed: %s, retrying in %s seconds', e, settings.slaves.retry_interval)
+
+                    if self._online:
+                        self._online = False
+                        await self._handle_offline()
+
+                    await asyncio.sleep(settings.slaves.retry_interval)
+
+                    # fast keep-alive
+                    keep_alive = 1
+
+                else:
+                    self.debug('api call GET /listen succeeded')
+
+                    self.update_last_sync()
+
+                    # switching to normal keep-alive
+                    keep_alive = settings.slaves.keepalive
+                    needs_save_ports = False
+
+                    for event in events:
+                        try:
+                            await self.handle_event(event)
+                            if event['type'] in ('port-add', 'port-remove', 'port-update'):
+                                needs_save_ports = True
+
+                        except exceptions.DeviceRenamed:
+                            self.debug('ignoring device renamed exception')
+                            break
+
+                        except Exception:
+                            # ignoring any error from handling an event is the best thing
+                            # that we can do here, to ensure that we keep handling remaining events
+                            pass
+
+                    # _handle_event() indirectly stopped listening or removed this slave;
+                    # this happens when the slave device is renamed
+                    if self not in _slaves.values() or not self._listen_session_id:
+                        break
+
+                    if not self._online:
+                        self._online = True
+                        await self._handle_online()
+
+                        if not self._online and self._listen_session_id:
+                            self.warning('device did not successfully go online, retrying in %s seconds',
+                                         settings.slaves.retry_interval)
+
+                            await asyncio.sleep(settings.slaves.retry_interval)
+
+                            # fast keep-alive
+                            keep_alive = 1
+
+                    else:  # still online
+                        if needs_save_ports:
+                            await self._save_ports()
+
+            except asyncio.CancelledError:
+                self.debug('listen task cancelled')
+                break
 
     async def _poll_loop(self):
         interval = 0  # never wait when start polling
 
         while True:
-            await asyncio.sleep(interval)
-            interval = await self._poll_once()
+            try:
+                await asyncio.sleep(interval)
+                interval = await self._poll_once()
 
-            if not interval:
+                if not interval:
+                    break
+
+            except asyncio.CancelledError:
+                self.debug('poll task cancelled')
                 break
 
     async def _poll_once(self):
@@ -1489,3 +1517,8 @@ def load():
             logger.debug('loaded %s (disabled)', slave)
 
         slave.trigger_add()
+
+
+async def cleanup():
+    for slave in _slaves.values():
+        await slave.cleanup()
