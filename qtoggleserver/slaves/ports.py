@@ -10,7 +10,7 @@ from qtoggleserver.core import responses as core_responses
 from . import exceptions
 
 
-_DEVICE_EXPRESSION_RE = re.compile('^(device_)+expression')
+_DEVICE_EXPRESSION_RE = re.compile(r'^(device_)+expression$')
 
 _FWUPDATE_POLL_INTERVAL = 30
 _FWUPDATE_POLL_TIMEOUT = 300

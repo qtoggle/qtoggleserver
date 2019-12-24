@@ -132,15 +132,13 @@ def parse(response, decode_json=True, resolve_refs=True):
         if response.code == 301:
             raise MovedPermanently(response.headers.get('Location', ''))
 
-        elif response.code in [302, 303]:
+        if response.code in [302, 303]:
             raise Redirect(response.headers.get('Location', ''))
 
-        else:
-            if decode_json:
-                raise HTTPError(response.code, body.get('error', ''))
+        if decode_json:
+            raise HTTPError(response.code, body.get('error', ''))
 
-            else:
-                raise HTTPError(response.code, response.reason)
+        raise HTTPError(response.code, response.reason)
 
     elif response.error or response.code == 599:
         if str(response.error).lower().count('timeout'):

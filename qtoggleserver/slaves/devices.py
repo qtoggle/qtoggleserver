@@ -26,6 +26,7 @@ from . import exceptions
 from .ports import SlavePort
 
 
+_INVALID_EXPRESSION_RE = re.compile(r'^invalid field: ((device_)*expression)$')
 _FWUPDATE_POLL_INTERVAL = 30
 _FWUPDATE_POLL_TIMEOUT = 300
 _NO_EVENT_DEVICE_ATTRS = ['uptime', 'date']
@@ -502,6 +503,8 @@ class Slave(utils.LoggableMixin):
             result = core_responses.parse(response)
 
         except core_responses.Error as e:
+            e = self.intercept_error(e)
+
             msg = 'api call {} {} on {} failed: {} (body={})'.format(method, path, self, e, body_str or '')
 
             if (retry_counter is not None and retry_counter < settings.slaves.retry_count and
@@ -516,7 +519,7 @@ class Slave(utils.LoggableMixin):
 
             else:
                 self.error(msg)
-                raise
+                raise e
 
         else:
             self.debug('api call %s %s succeeded', method, path)
@@ -1436,6 +1439,17 @@ class Slave(utils.LoggableMixin):
                 self.debug('device has been reset to factory defaults')
                 self.disable()
                 self.trigger_update()
+
+    def intercept_error(self, error):
+        if isinstance(error, core_responses.HTTPError):
+            # Slave expression attribute is known as "device_expression" on Master; we must adapt the corresponding
+            # error here
+            m = _INVALID_EXPRESSION_RE.match(error.msg)
+            if m:
+                return core_responses.HTTPError(error.code, 'invalid field: device_' + m.group(1))
+
+        return error
+
 
 
 def get(name):
