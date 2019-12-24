@@ -117,4 +117,4 @@ ports = []
 
 port_mappings = {}
 
-pkg_path = _os.path.dirname(_os.path.abspath(__file__))
+pkg_path = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))

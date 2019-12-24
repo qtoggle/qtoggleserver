@@ -58,6 +58,9 @@ def _make_handlers():
                                   {'path': frontend_path, 'mapping': js_module_path_mapping}))
 
         else:
+            if os.path.exists(os.path.join(frontend_path, 'dist')):  # "dist" folder (prod mode, unpackaged)
+                frontend_path = os.path.join(frontend_path, 'dist')
+
             handlers_list.append((fr'^/{FRONTEND_URL_PREFIX}/static/(.*)$',
                                   handlers.StaticFileHandler,
                                   {'path': frontend_path}))
