@@ -636,7 +636,7 @@ const KNOWN_ERRORS = [
     {
         status: 404,
         rex: new RegExp('^no such function$'),
-        pretty: gettext("Device doesn't support the QToggle API.")
+        pretty: gettext("Device doesn't expose the qToggle API at given URL.")
     },
     {
         status: 404,
@@ -658,7 +658,7 @@ const KNOWN_ERRORS = [
     {
         status: 502,
         rex: new RegExp('^invalid device$'),
-        pretty: gettext('The device is not a QToggle device.')
+        pretty: gettext('The device is not a qToggle device.')
     },
     {
         status: 502,

@@ -148,9 +148,18 @@ export default class AddDeviceForm extends PageForm {
         }).catch(function (error) {
 
             logger.errorStack(`failed to add device at url ${data.url}`, error)
+
+            if (error instanceof API.APIError && error.messageCode === 'no such function' && data.path === '/') {
+
+                logger.debug('retrying with /api suffix')
+                data.path = '/api'
+
+                return this.applyData(data)
+            }
+
             throw error
 
-        })
+        }.bind(this))
     }
 
     onChange(data, fieldName) {
