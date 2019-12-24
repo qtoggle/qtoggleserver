@@ -992,12 +992,6 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
         Dashboard.setCurrentPanel(this)
     }
 
-    onLeaveCurrent() {
-        if (Dashboard.getCurrentPanel() === this) {
-            Dashboard.setCurrentPanel(null)
-        }
-    }
-
     onClose() {
         if (this._editEnabled) {
             this.disableEditing()
@@ -1006,6 +1000,10 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
         this.getWidgets().forEach(function (widget) {
             widget.clearContent()
         })
+
+        if (Dashboard.getCurrentPanel() === this) {
+            Dashboard.setCurrentPanel(null)
+        }
     }
 
     navigate(pathId) {

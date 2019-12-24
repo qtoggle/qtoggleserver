@@ -1,7 +1,7 @@
 
 import logging
 
-from qtoggleserver.core.events.handlers import BaseEventHandler
+from qtoggleserver.core.events import BaseEventHandler
 from qtoggleserver.utils import json as json_utils
 
 

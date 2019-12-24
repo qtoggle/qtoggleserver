@@ -1,4 +1,5 @@
 
+from .handlers import BaseEventHandler
 from .handlers import handle_event
 from .handlers import init as init_handlers
 
