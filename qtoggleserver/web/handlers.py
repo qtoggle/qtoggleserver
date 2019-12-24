@@ -15,7 +15,7 @@ from qtoggleserver.slaves.api import funcs as slaves_api_funcs
 from qtoggleserver.ui.api import funcs as ui_api_funcs
 from qtoggleserver.utils import json as json_utils
 
-from .constants import FRONTEND_URL_PREFIX, STATIC_CACHE_LIFETIME
+from .constants import FRONTEND_URL_PREFIX
 from .j2template import J2TemplateMixin
 from .quicontext import make_context
 
@@ -98,21 +98,12 @@ class BaseHandler(RequestHandler):
         pass
 
 
-class CacheControlMixin:
-    def setup_cache_control(self):
-        if settings.debug:  # Prevent caching in debug mode
-            self.set_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
-
-        else:
-            self.set_header('Cache-Control', 'max-age={}'.format(STATIC_CACHE_LIFETIME))
-
-
-class StaticFileHandler(TornadoStaticFileHandler, CacheControlMixin):
+class StaticFileHandler(TornadoStaticFileHandler):
     def data_received(self, chunk):
         pass
 
     def set_extra_headers(self, path):
-        self.setup_cache_control()
+        self.set_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
 
 
 class JSModuleMapperStaticFileHandler(StaticFileHandler):
@@ -126,6 +117,10 @@ class JSModuleMapperStaticFileHandler(StaticFileHandler):
 
     def get_content(self, abspath, start=None, end=None):
         return self.get_mapped_content()
+
+    @classmethod
+    def get_content_version(cls, abspath):
+        return ''
 
     def get_mapped_content(self):
         if self._mapped_content is None:
@@ -149,9 +144,9 @@ class RedirectFrontendHandler(BaseHandler):
         self.redirect(f'/{FRONTEND_URL_PREFIX}/')
 
 
-class TemplateHandler(J2TemplateMixin, BaseHandler, CacheControlMixin):
+class TemplateHandler(J2TemplateMixin, BaseHandler):
     def prepare(self):
-        self.setup_cache_control()
+        self.set_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
 
     def get_context(self, path, offs=0):
         # Adjust static URL prefix to a relative path matching currently requested frontend path
