@@ -346,6 +346,9 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
             except Exception as e:
                 self.error('%s failed: %s', method_name, e, exc_info=True)
 
+    def get_display_name(self):
+        return self._display_name or self._id
+
     def get_id(self):
         return self._id
 

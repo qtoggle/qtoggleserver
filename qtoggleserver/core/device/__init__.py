@@ -12,6 +12,10 @@ from . import attrs as device_attrs
 logger = logging.getLogger(__name__)
 
 
+def get_display_name():
+    return device_attrs.display_name or device_attrs.name
+
+
 def load():
     data = persist.get_value('device', {})
 

@@ -210,6 +210,9 @@ class Slave(utils.LoggableMixin):
     def get_name(self):
         return self._name
 
+    def get_display_name(self):
+        return self._cached_attrs.get('display_name') or self._name
+
     def get_scheme(self):
         return self._scheme
 
