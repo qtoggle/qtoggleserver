@@ -26,7 +26,6 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
         self._device_attrs = {}
         self._port_values = {}
         self._port_attrs = {}
-        self._slave_properties = {}
         self._slave_attrs = {}
 
     def _prepare_filter(self):
@@ -62,56 +61,104 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
 
         self._filter_ready = True
 
+    @staticmethod
+    def _make_changed_added_removed(old_attrs, new_attrs):
+        changed_attrs = {}
+        added_attrs = {}
+        removed_attrs = {}
+
+        all_attr_names = set(old_attrs) | set(new_attrs)
+        for n in all_attr_names:
+            old_v = old_attrs.get(n)
+            new_v = new_attrs.get(n)
+            if old_v == new_v:
+                continue
+
+            if old_v is None:
+                if new_v is not None:
+                    added_attrs[n] = new_v
+
+            elif new_v is None:
+                removed_attrs[n] = old_v
+
+            else:
+                changed_attrs[n] = (old_v, new_v)
+
+        return changed_attrs, added_attrs, removed_attrs
+
     async def _update_from_event(self, event):
+        value_pair = (None, None)
+        old_attrs = {}
+        new_attrs = {}
+        changed_attrs = {}
+        added_attrs = {}
+        removed_attrs = {}
+
         if isinstance(event, port_events.PortEvent):
             port = event.get_port()
 
+            old_attrs = self._port_attrs.get(port.get_id(), {})
+            new_attrs = await port.get_attrs()
+
+            old_value = self._port_values.get(port.get_id())
+            new_value = port.get_value()
+            value_pair = (old_value, new_value)
+
             if isinstance(event, (port_events.PortAdd, port_events.PortUpdate)):
-                self._port_values[port.get_id()] = port.get_value()
-                self._port_attrs[port.get_id()] = await port.get_attrs()
+                changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
+                self._port_values[port.get_id()] = new_value
+                self._port_attrs[port.get_id()] = new_attrs
 
             elif isinstance(event, port_events.PortRemove):
                 self._port_values.pop(port.get_id(), None)
-                self._port_attrs.pop(port.get_id(), None)
+                removed_attrs = self._port_attrs.pop(port.get_id(), {})
 
             elif isinstance(event, port_events.ValueChange):
-                self._port_values[port.get_id()] = port.get_value()
+                self._port_values[port.get_id()] = new_value
 
         elif isinstance(event, device_events.DeviceEvent):
-            self._device_attrs = event.get_attrs()
+            old_attrs = self._device_attrs
+            new_attrs = event.get_attrs()
+
+            changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
+            self._device_attrs = new_attrs
 
         elif isinstance(event, slave_events.SlaveDeviceEvent):
             slave = event.get_slave()
+            slave_json = slave.to_json()
+
+            # Flatten slave master properties and attributes
+            old_attrs = self._slave_attrs.get(slave.get_name(), {})
+            new_attrs = dict(slave_json, **slave_json.pop('attrs'))
 
             if isinstance(event, (slave_events.SlaveDeviceAdd, slave_events.SlaveDeviceUpdate)):
-                slave_json = slave.to_json()
-                self._slave_attrs[slave.get_name()] = slave_json.pop('attrs')
-                self._slave_properties[slave.get_name()] = slave_json
+                changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
+                self._slave_attrs[slave.get_name()] = new_attrs
 
             elif isinstance(event, slave_events.SlaveDeviceRemove):
-                self._slave_attrs.pop(slave.get_name(), None)
-                self._slave_properties.pop(slave.get_name(), None)
+                removed_attrs = self._slave_attrs.pop(slave.get_name(), {})
 
-    async def accepts_device(self, event):
-        old_attrs = self._device_attrs
-        attrs = event.get_attrs()
+        return value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs
 
-        for name, filter_value in self._filter_device_attrs.items():
+    @staticmethod
+    def _accepts_attrs(filter_attrs, old_attrs, new_attrs):
+        for name, filter_value in filter_attrs.items():
             if isinstance(filter_value, list):
                 old_filter_value, filter_value = filter_value[:2]
                 if old_filter_value != old_attrs.get(name):
                     return False
 
-            if filter_value != attrs.get(name):
+            if filter_value != new_attrs.get(name):
                 return False
 
         return True
 
-    async def accepts_port_value(self, event):
-        port = event.get_port()
+    async def accepts_device(self, event, old_attrs, new_attrs):
+        return self._accepts_attrs(self._filter_device_attrs, old_attrs, new_attrs)
+
+    async def accepts_port_value(self, event, value_pair):
+        old_value, new_value = value_pair
         filter_value = self._filter_port_value
-        old_value = self._port_values.get(port.get_id())
-        value = port.get_value()
 
         if isinstance(filter_value, list):
             old_filter_value, filter_value = filter_value[:2]
@@ -121,71 +168,51 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
         if isinstance(filter_value, core_expressions.Expression):
             filter_value = filter_value.eval()
 
-        if value != filter_value:
+        if new_value != filter_value:
             return False
 
         return True
 
-    async def accepts_port(self, event):
+    async def accepts_port(self, event, value_pair, old_attrs, new_attrs):
         if self._filter_port_value is not None:
-            if not await self.accepts_port_value(event):
+            if not await self.accepts_port_value(event, value_pair):
                 return False
 
-        port = event.get_port()
-        old_attrs = self._port_attrs.get(port.get_id(), {})
-        attrs = await port.get_attrs()
+        return self._accepts_attrs(self._filter_port_attrs, old_attrs, new_attrs)
 
-        for name, filter_value in self._filter_port_attrs.items():
-            if isinstance(filter_value, list):
-                old_filter_value, filter_value = filter_value[:2]
-                if old_filter_value != old_attrs.get(name):
-                    return False
+    async def accepts_slave(self, event, old_attrs, new_attrs):
+        return self._accepts_attrs(self._filter_slave_attrs, old_attrs, new_attrs)
 
-            if filter_value != attrs.get(name):
-                return False
-
-        return True
-
-    async def accepts_slave(self, event):
-        slave = event.get_slave()
-        old_attrs = self._slave_properties.get(slave.get_name(), {})
-        old_attrs.update(self._slave_attrs.get(slave.get_name(), {}))
-
-        attrs = slave.to_json()
-        attrs.update(attrs.pop('attrs'))  # Flatten slave master properties and attributes
-
-        for name, filter_value in self._filter_slave_attrs.items():
-            if isinstance(filter_value, list):
-                old_filter_value, filter_value = filter_value[:2]
-                if old_filter_value != old_attrs.get(name):
-                    return False
-
-            if filter_value != attrs.get(name):
-                return False
-
-        return True
-
-    async def accepts(self, event):
+    async def accepts(self, event, value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs):
         if not self._filter_ready:
             self._prepare_filter()
 
         if self._filter_event_types and event.get_type() not in self._filter_event_types:
             return False
 
-        if isinstance(event, device_events.DeviceEvent) and not await self.accepts_device(event):
+        if (isinstance(event, device_events.DeviceEvent) and
+            not await self.accepts_device(event, old_attrs, new_attrs)):
+
             return False
 
-        elif isinstance(event, port_events.PortEvent) and not await self.accepts_port(event):
+        elif (isinstance(event, port_events.PortEvent) and
+              not await self.accepts_port(event, value_pair, old_attrs, new_attrs)):
+
             return False
 
-        elif isinstance(event, slave_events.SlaveDeviceEvent) and not await self.accepts_slave(event):
+        elif (isinstance(event, slave_events.SlaveDeviceEvent) and
+              not await self.accepts_slave(event, old_attrs, new_attrs)):
+
             return False
 
         return True
 
     async def handle_event(self, event):
-        accepted = await self.accepts(event)
-        await self._update_from_event(event)
+        (value_pair, old_attrs, new_attrs,
+         changed_attrs, added_attrs, removed_attrs) = await self._update_from_event(event)
+
+        accepted = await self.accepts(event, value_pair, old_attrs, new_attrs,
+                                      changed_attrs, added_attrs, removed_attrs)
 
         if not accepted:
             return
@@ -196,28 +223,33 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
         except Exception as e:
             logger.error('failed to handle event %s: %s', event, e, exc_info=True)
 
-        _type = event.get_type()
-        method_name = 'on_{}'.format(_type.replace('-', '_'))
-
         try:
-            method = getattr(self, method_name)
+            if isinstance(event, port_events.ValueChange):
+                old_value, new_value = value_pair
+                await self.on_value_change(event, event.get_port(), old_value, new_value, new_attrs)
 
-        except AttributeError:
-            logger.error('failed to handle event %s: no such method %s', event, method_name)
-            return
+            elif isinstance(event, port_events.PortUpdate):
+                await self.on_port_update(event, event.get_port(), old_attrs, new_attrs,
+                                          changed_attrs, added_attrs, removed_attrs)
 
-        args = []
-        if isinstance(event, port_events.PortEvent):
-            args = [event.get_port()]
+            elif isinstance(event, port_events.PortAdd):
+                await self.on_port_add(event, event.get_port(), new_attrs)
 
-        elif isinstance(event, device_events.DeviceEvent):
-            args = [event.get_attrs()]
+            elif isinstance(event, port_events.PortRemove):
+                await self.on_port_remove(event, event.get_port(), new_attrs)
 
-        elif isinstance(event, slave_events.SlaveDeviceEvent):
-            args = [event.get_slave()]
+            elif isinstance(event, device_events.DeviceUpdate):
+                await self.on_device_update(event, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs)
 
-        try:
-            await method(*args)
+            elif isinstance(event, slave_events.SlaveDeviceUpdate):
+                await self.on_slave_device_update(event, event.get_slave(), old_attrs, new_attrs,
+                                                  changed_attrs, added_attrs, removed_attrs)
+
+            elif isinstance(event, slave_events.SlaveDeviceAdd):
+                await self.on_slave_device_add(event, event.get_slave(), new_attrs)
+
+            elif isinstance(event, slave_events.SlaveDeviceRemove):
+                await self.on_slave_device_remove(event, event.get_slave(), new_attrs)
 
         except Exception as e:
             logger.error('failed to handle event %s: %s', event, e, exc_info=True)
@@ -225,26 +257,29 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
     async def on_event(self, event):
         pass
 
-    async def on_value_change(self, port):
+    async def on_value_change(self, event, port, old_value, new_value, attrs):
         pass
 
-    async def on_port_update(self, port):
+    async def on_port_update(self, event, port, old_attrs, new_attrs,
+                             changed_attrs, added_attrs, removed_attrs):
         pass
 
-    async def on_port_add(self, port):
+    async def on_port_add(self, event, port, attrs):
         pass
 
-    async def on_port_remove(self, port):
+    async def on_port_remove(self, event, port, attrs):
         pass
 
-    async def on_device_update(self, attrs):
+    async def on_device_update(self, event, old_attrs, new_attrs,
+                               changed_attrs, added_attrs, removed_attrs):
         pass
 
-    async def on_slave_device_update(self, slave):
+    async def on_slave_device_update(self, event, slave, old_attrs, new_attrs,
+                                     changed_attrs, added_attrs, removed_attrs):
         pass
 
-    async def on_slave_device_add(self, slave):
+    async def on_slave_device_add(self, event, slave, attrs):
         pass
 
-    async def on_slave_device_remove(self, slave):
+    async def on_slave_device_remove(self, event, slave, attrs):
         pass

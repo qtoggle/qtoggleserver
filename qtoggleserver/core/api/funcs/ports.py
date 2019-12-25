@@ -100,7 +100,6 @@ async def post_ports(request, params):
     # a virtual port is enabled by default
     await port.enable()
     await port.save()
-    port.trigger_add()
 
     return await port.to_json()
 
