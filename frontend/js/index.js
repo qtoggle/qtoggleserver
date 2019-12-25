@@ -105,7 +105,11 @@ function main() {
 
     Cache.init()
 
-    Window.$window.on('focus', function () {
+    Window.visibilityChangeSignal.connect(function (visible) {
+        if (!visible) {
+            return
+        }
+
         if (!API.isListening()) {
             return
         }
@@ -114,14 +118,13 @@ function main() {
             return
         }
 
-        logger.info('window focused, reloading cache')
+        logger.info('application became visible, reloading cache')
 
         Cache.setReloadNeeded()
 
         API.stopListening()
         API.startListening()
     })
-
 }
 
 
