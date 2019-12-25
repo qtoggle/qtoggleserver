@@ -14,6 +14,7 @@ loop = asyncio.get_event_loop()
 
 _update_loop_task = None
 _running = True
+_ready = False
 _last_time = 0
 _force_eval_expressions = False
 
@@ -174,6 +175,17 @@ def force_eval_expressions():
     global _force_eval_expressions
 
     _force_eval_expressions = True
+
+
+def is_ready():
+    return _ready
+
+
+def set_ready():
+    global _ready
+
+    logger.debug('ready')
+    _ready = True
 
 
 async def init():

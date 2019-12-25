@@ -216,6 +216,11 @@ async def init_main():
         while not slaves_devices.ready():
             await asyncio.sleep(0.1)
 
+    # Mark main as ready after all slaves with their ports have been initialized and hopefully brought online. Allow an
+    # extra second for pending loop tasks.
+    await asyncio.sleep(1)
+    main.set_ready()
+
 
 async def cleanup_main():
     logger.info('cleaning up main')
