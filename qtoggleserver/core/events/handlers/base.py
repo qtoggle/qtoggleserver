@@ -13,10 +13,12 @@ logger = logging.getLogger(__package__)
 
 
 class BaseEventHandler(metaclass=abc.ABCMeta):
+    logger = logger
+
     # noinspection PyShadowingBuiltins
     def __init__(self, filter=None):
         self._filter = filter or {}
-        self._filter_ready = False
+        self._filter_prepared = False
         self._filter_event_types = None
         self._filter_device_attrs = {}
         self._filter_port_value = None
@@ -39,11 +41,11 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
         if port_value is not None:
             if isinstance(port_value, str):  # An expression
                 try:
-                    logger.debug('using value expression "%s"', port_value)
+                    self.logger.debug('using value expression "%s"', port_value)
                     self._filter_port_value = core_expressions.parse(self_port_id=None, sexpression=port_value)
 
                 except core_expressions.ExpressionError as e:
-                    logger.error('failed to parse port expression "%s": %s', port_value, e)
+                    self.logger.error('failed to parse port expression "%s": %s', port_value, e)
 
                     raise
 
@@ -59,7 +61,7 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
         self._filter_slave_attrs = {n[6:]: v for n, v in self._filter.items()
                                     if n.startswith('slave_')}
 
-        self._filter_ready = True
+        self._filter_prepared = True
 
     @staticmethod
     def _make_changed_added_removed(old_attrs, new_attrs):
@@ -184,7 +186,7 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
         return self._accepts_attrs(self._filter_slave_attrs, old_attrs, new_attrs)
 
     async def accepts(self, event, value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs):
-        if not self._filter_ready:
+        if not self._filter_prepared:
             self._prepare_filter()
 
         if self._filter_event_types and event.get_type() not in self._filter_event_types:
@@ -215,13 +217,16 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
                                       changed_attrs, added_attrs, removed_attrs)
 
         if not accepted:
+            self.logger.debug('skipping event %s', event)
             return
+
+        self.logger.debug('handling event %s', event)
 
         try:
             await self.on_event(event)
 
         except Exception as e:
-            logger.error('failed to handle event %s: %s', event, e, exc_info=True)
+            self.logger.error('failed to handle event %s: %s', event, e, exc_info=True)
 
         try:
             if isinstance(event, port_events.ValueChange):
@@ -252,7 +257,7 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
                 await self.on_slave_device_remove(event, event.get_slave(), new_attrs)
 
         except Exception as e:
-            logger.error('failed to handle event %s: %s', event, e, exc_info=True)
+            self.logger.error('failed to handle event %s: %s', event, e, exc_info=True)
 
     async def on_event(self, event):
         pass
