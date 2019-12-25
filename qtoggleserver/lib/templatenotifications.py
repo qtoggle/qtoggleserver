@@ -90,13 +90,13 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
             'display_moment': moment.strftime('%c')
         }
 
-    async def push_message(self, title, body, **kwargs):
+    async def push_message(self, event, title, body, **kwargs):
         raise NotImplementedError
 
     async def push_template_message(self, event, context):
         template = self.render(event.get_type(), context)
 
-        await self.push_message(**template)
+        await self.push_message(event, **template)
 
     async def accepts(self, *args, **kwargs):
         # Skip notifications during startup

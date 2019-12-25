@@ -342,7 +342,7 @@ export function updateFromEvent(event) {
 
         case 'slave-device-add': {
             if (event.params.name in slaveDevices) {
-                logger.warn(`received slave device add event for already existing device "${event.params.name}"`)
+                logger.debug(`received slave device add event for already existing device "${event.params.name}"`)
             }
 
             slaveDevices[event.params.name] = ObjectUtils.copy(event.params, /* deep = */ true)
@@ -389,7 +389,7 @@ export function updateFromEvent(event) {
 
         case 'port-add': {
             if (event.params.id in allPorts) {
-                logger.warn(`received port add event for already existing port "${event.params.id}"`)
+                logger.debug(`received port add event for already existing port "${event.params.id}"`)
             }
 
             allPorts[event.params.id] = ObjectUtils.copy(event.params, /* deep = */ true)
