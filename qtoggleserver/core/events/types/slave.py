@@ -5,10 +5,10 @@ from .base import Event
 
 
 class SlaveDeviceEvent(Event):
-    def __init__(self, slave):
+    def __init__(self, slave, timestamp=None):
         self._slave = slave
 
-        super().__init__()
+        super().__init__(timestamp)
 
     def __str__(self):
         return '{}({}) event'.format(self._type, self._slave.get_name())

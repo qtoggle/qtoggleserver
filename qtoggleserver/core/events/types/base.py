@@ -1,6 +1,7 @@
 
 import abc
 import logging
+import time
 
 from qtoggleserver.core import api as core_api
 
@@ -12,8 +13,9 @@ class Event(metaclass=abc.ABCMeta):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_NONE
     TYPE = 'base-event'
 
-    def __init__(self):
+    def __init__(self, timestamp=None):
         self._type = self.TYPE
+        self._timestamp = timestamp or time.time()
 
     def __str__(self):
         return '{} event'.format(self._type)
@@ -29,6 +31,9 @@ class Event(metaclass=abc.ABCMeta):
 
     def get_type(self):
         return self._type
+
+    def get_timestamp(self):
+        return self._timestamp
 
     def is_duplicate(self, event):
         return False

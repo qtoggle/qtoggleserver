@@ -5,10 +5,10 @@ from .base import Event
 
 
 class PortEvent(Event):
-    def __init__(self, port):
+    def __init__(self, port, timestamp=None):
         self._port = port
 
-        super().__init__()
+        super().__init__(timestamp)
 
     def __str__(self):
         return '{}({}) event'.format(self._type, self._port.get_id())
