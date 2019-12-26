@@ -28,6 +28,7 @@ class PolledPeripheral(Peripheral):
         self._poll_stopped = False
         self._poll_task = None
         self._poll_interval = self.DEFAULT_POLL_INTERVAL
+        self._poll_error = None
 
         super().__init__(address, name, **kwargs)
 
@@ -46,8 +47,12 @@ class PolledPeripheral(Peripheral):
             except Exception as e:
                 retry_poll_interval = min(self.RETRY_POLL_INTERVAL, self._poll_interval)
                 self.error('polling failed (retrying in %s seconds): %s', retry_poll_interval, e, exc_info=True)
+                self._poll_error = e
                 await asyncio.sleep(retry_poll_interval)
                 continue
+
+            # Clear poll error, as the poll call has been successful
+            self._poll_error = None
 
             # Granular sleep so it can be interrupted
             orig_poll_interval = self._poll_interval
@@ -69,6 +74,9 @@ class PolledPeripheral(Peripheral):
     def get_poll_interval(self):
         return self._poll_interval
 
+    def get_poll_error(self):
+        return self._poll_error
+
     async def poll(self):
         raise NotImplementedError
 
@@ -77,6 +85,7 @@ class PolledPeripheral(Peripheral):
 
     async def handle_disable(self):
         self._polling = False  # Will stop poll loop
+        self._poll_error = None
 
     async def handle_cleanup(self):
         self._polling = False
