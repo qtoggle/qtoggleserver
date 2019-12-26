@@ -1,5 +1,6 @@
 
 import abc
+import asyncio
 import functools
 import logging
 import re
@@ -49,6 +50,7 @@ class _BluepyPeripheral(btle.Peripheral):
         timeout = timeout or self._timeout
         response = super()._getResp(wantType, timeout)
         if response is None:
+            self._stopHelper()
             raise _BluepyTimeoutError('timeout waiting for a response from peripheral')
 
         return response
@@ -137,8 +139,9 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
 
 
 class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
-    CMD_TIMEOUT = 20
-    RETRY_COUNT = 3
+    CMD_TIMEOUT = 10
+    RETRY_COUNT = 2
+    RETRY_DELAY = 2
     WRITE_VALUE_PAUSE = 5
 
     logger = logger
@@ -251,6 +254,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
                 if retry <= retry_count:
                     self.warning('retry %s/%s', retry, retry_count)
+                    await asyncio.sleep(self.RETRY_DELAY)
                     retry += 1
                     continue
 
