@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class PolledPeripheral(Peripheral):
     DEFAULT_POLL_INTERVAL = 1800
+    RETRY_POLL_INTERVAL = 60
 
     def __init__(self, address, name, **kwargs):
         self._polling = False
@@ -39,7 +40,14 @@ class PolledPeripheral(Peripheral):
                 await asyncio.sleep(1)
                 continue
 
-            await self.poll()
+            try:
+                await self.poll()
+
+            except Exception as e:
+                retry_poll_interval = min(self.RETRY_POLL_INTERVAL, self._poll_interval)
+                self.error('polling failed (retrying in %s seconds): %s', retry_poll_interval, e, exc_info=True)
+                await asyncio.sleep(retry_poll_interval)
+                continue
 
             # Granular sleep so it can be interrupted
             orig_poll_interval = self._poll_interval
