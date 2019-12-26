@@ -50,7 +50,6 @@ class _BluepyPeripheral(btle.Peripheral):
         timeout = timeout or self._timeout
         response = super()._getResp(wantType, timeout)
         if response is None:
-            self._stopHelper()
             raise _BluepyTimeoutError('timeout waiting for a response from peripheral')
 
         return response
@@ -59,6 +58,7 @@ class _BluepyPeripheral(btle.Peripheral):
         # Override this method to close the helper's stdout and stdin streams.
         helper = self._helper
         super()._stopHelper()
+        self._helper = helper
         if helper:
             helper.stdin.close()
             helper.stdout.close()
@@ -232,6 +232,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
             while not notification_data and self.get_runner().is_running():
                 if time.time() - start_time > timeout:
+                    bluepy_peripheral._stopHelper()
                     raise BLETimeout('timeout waiting for notification on {:04X}'.format(notify_handle))
 
                 try:
@@ -250,7 +251,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
                                                                       notify_handle, data, timeout)
 
             except Exception as e:
-                self.error('command execution failed: %s', e)
+                self.error('command execution failed: %s', e, exc_info=True)
 
                 if retry <= retry_count:
                     self.warning('retry %s/%s', retry, retry_count)
