@@ -44,7 +44,6 @@ class OneWirePeripheral(polled.PolledPeripheral):
 
         self._filename = None
         self._data = None
-        self._error = None
 
     def get_filename(self):
         if self._filename is None:
@@ -62,10 +61,8 @@ class OneWirePeripheral(polled.PolledPeripheral):
         raise OneWirePeripheralNotFound(self.get_address())
 
     def read(self):
-        if self._error:
-            error = self._error
-            self._error = None
-
+        error = self.get_poll_interval()
+        if error:
             raise error
 
         data = self._data
@@ -87,19 +84,13 @@ class OneWirePeripheral(polled.PolledPeripheral):
             future = self.run_threaded(self.read_sync)
             self._data = await asyncio.wait_for(future, timeout=self.TIMEOUT)
 
-        except asyncio.TimeoutError:
-            self._error = OneWireTimeout('timeout waiting for one-wire data from peripheral')
-
-        except Exception as e:
-            self._error = e
-
-        else:
-            self._error = None
+        except asyncio.TimeoutError as e:
+            raise OneWireTimeout('timeout waiting for one-wire data from peripheral') from e
 
     async def handle_disable(self):
+        await super().handle_disable()
         self._filename = None
         self._data = None
-        self._error = None
 
 
 class OneWirePort(polled.PolledPort, metaclass=abc.ABCMeta):
