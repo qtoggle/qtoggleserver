@@ -61,9 +61,7 @@ class OneWirePeripheral(polled.PolledPeripheral):
         raise OneWirePeripheralNotFound(self.get_address())
 
     def read(self):
-        error = self.get_poll_interval()
-        if error:
-            raise error
+        self.check_poll_error()
 
         data = self._data
         self._data = None

@@ -77,6 +77,11 @@ class PolledPeripheral(Peripheral):
     def get_poll_error(self):
         return self._poll_error
 
+    def check_poll_error(self):
+        if self._poll_error:
+            # Raise a copy of the error, to prevent traceback piling up
+            raise copy.copy(self._poll_error)
+
     async def poll(self):
         raise NotImplementedError
 
