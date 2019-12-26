@@ -5,7 +5,11 @@ import time
 
 from qtoggleserver.conf import settings
 from qtoggleserver.utils import json as json_utils
+from qtoggleserver.utils import timedset
 
+
+# After how much time to retry reading a port whose read_value() method raised an error
+_PORT_READ_ERROR_RETRY_INTERVAL = 10
 
 logger = logging.getLogger(__name__)
 memory_logs = None
@@ -17,6 +21,7 @@ _running = True
 _ready = False
 _last_time = 0
 _force_eval_expressions = False
+_ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
 
 
 async def update():
@@ -57,11 +62,16 @@ async def update():
             except Exception as e:
                 logger.error('port heart beat second exception: %s', e, exc_info=True)
 
+        # Skip ports with read errors for a while
+        if port in _ports_with_read_error:
+            continue
+
         try:
             new_value = await port.read_transformed_value()
 
         except Exception as e:
             logger.error('failed to read value from %s: %s', port, e, exc_info=True)
+            _ports_with_read_error.add(port)
 
             continue
 
