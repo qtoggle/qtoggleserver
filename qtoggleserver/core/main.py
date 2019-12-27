@@ -19,6 +19,7 @@ loop = asyncio.get_event_loop()
 _update_loop_task = None
 _running = True
 _ready = False
+_start_time = time.time()
 _last_time = 0
 _force_eval_expressions = False
 _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
@@ -196,6 +197,10 @@ def set_ready():
 
     logger.debug('ready')
     _ready = True
+
+
+def uptime():
+    return time.time() - _start_time
 
 
 async def init():
