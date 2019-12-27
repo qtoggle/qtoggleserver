@@ -119,8 +119,8 @@ class Slave(utils.LoggableMixin):
         # cached url
         self._url = None
 
-        # flag indicating that firmware update is in progress
-        self._fwupdate_poll_started = False
+        # handles firmware update progress
+        self._fwupdate_poll_task = None
 
     def __str__(self):
         if self._name:
@@ -407,6 +407,11 @@ class Slave(utils.LoggableMixin):
             await self._pool_task
             self.debug('polling mechanism stopped')
 
+        # stop fwupdate pool loop
+        if self._fwupdate_poll_task and not self._fwupdate_poll_task.done():
+            self._fwupdate_poll_task.cancel()
+            await self._fwupdate_poll_task
+
     async def _load_ports(self):
         self.debug('loading persisted ports')
         port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
@@ -578,26 +583,24 @@ class Slave(utils.LoggableMixin):
         self._poll_started = False
 
     def _start_fwupdate_polling(self):
-        if self._fwupdate_poll_started:
+        if self._fwupdate_poll_task:
             self.warning('fwupdate polling already active')
 
             return
 
-        self._fwupdate_poll_started = True
-
         self.debug('starting fwupdate polling')
 
-        asyncio.create_task(self._fwupdate_poll_loop())
+        self._fwupdate_poll_task = asyncio.create_task(self._fwupdate_poll_loop())
 
     def _stop_fwupdate_polling(self):
-        if not self._fwupdate_poll_started:
+        if not self._fwupdate_poll_task:
             self.warning('fwupdate polling not active')
 
             return
 
         self.debug('stopping fwupdate polling')
 
-        self._fwupdate_poll_started = False
+        self._fwupdate_poll_task.cancel()
 
     async def _add_port(self, attrs):
         self.debug('adding port %s', attrs['id'])
@@ -991,24 +994,27 @@ class Slave(utils.LoggableMixin):
         counter = _FWUPDATE_POLL_TIMEOUT / _FWUPDATE_POLL_INTERVAL
 
         while True:
-            await asyncio.sleep(_FWUPDATE_POLL_INTERVAL)
-            if not self._fwupdate_poll_started:
-                break  # loop stopped
-
-            if not counter:
-                self.error('timeout waiting for device to come up after firmware update')
-                break  # we give up waiting for device to come up
-
             try:
-                await self.api_call('GET', '/firmware')
+                await asyncio.sleep(_FWUPDATE_POLL_INTERVAL)
+                if not counter:
+                    self.error('timeout waiting for device to come up after firmware update')
+                    break  # we give up waiting for device to come up
 
-            except Exception:
-                pass
+                # Requesting GET /firmware will call the intercept_request() method and will cancel the loop when done
+                try:
+                    await self.api_call('GET', '/firmware')
 
-            counter -= 1
+                except Exception:
+                    pass
 
-        # no matter what, when we exit this loop, the loop flag must be reset
-        self._fwupdate_poll_started = False
+                counter -= 1
+
+            except asyncio.CancelledError:
+                self.debug('fwupdate poll loop cancelled')
+                break
+
+        # Clear task reference when exiting the task loop
+        self._fwupdate_poll_task = None
 
     async def handle_event(self, event):
         method_name = '_handle_{}'.format(re.sub(r'[^\w]', '_', event['type']))
@@ -1420,7 +1426,7 @@ class Slave(utils.LoggableMixin):
                 self.update_cached_attrs(attrs, partial=True)
 
         elif path == '/firmware':
-            if method == 'PATCH' and not self._fwupdate_poll_started:
+            if method == 'PATCH' and not self._fwupdate_poll_task:
                 # when performing firmware update, take device offline
                 # and stop listening/polling mechanisms
 
@@ -1429,7 +1435,7 @@ class Slave(utils.LoggableMixin):
                 self.trigger_update()
                 self._start_fwupdate_polling()
 
-            elif method == 'GET' and self._fwupdate_poll_started:
+            elif method == 'GET' and self._fwupdate_poll_task:
                 if response.get('status') == 'idle':  # firmware update process not running
                     self.debug('firmware update process ended')
                     self.enable()
