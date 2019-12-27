@@ -104,8 +104,12 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
 
     async def accepts(self, *args, **kwargs):
         # Skip notifications during startup
-        if self._skip_startup and not core_main.is_ready():
-            return False
+        if self._skip_startup:
+            if not core_main.is_ready():
+                return False
+
+            if isinstance(self._skip_startup, (int, float)) and core_main.uptime() < self._skip_startup:
+                return False
 
         return await super().accepts(*args, **kwargs)
 
