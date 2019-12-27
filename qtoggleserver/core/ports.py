@@ -392,7 +392,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         # cancel sequence
         if self._sequence:
             self.debug('canceling current sequence')
-            self._sequence.cancel()
+            await self._sequence.cancel()
             self._sequence = None
 
         self.debug('disabling')
@@ -444,7 +444,8 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         if self._sequence:
             self.debug('canceling current sequence')
-            self._sequence.cancel()
+            await self._sequence.cancel()
+            self._sequence = None
 
         if not sexpression:
             self._expression = None
@@ -657,7 +658,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def set_sequence(self, values, delays, repeat):
         if self._sequence:
             self.debug('canceling current sequence')
-            self._sequence.cancel()
+            await self._sequence.cancel()
             self._sequence = None
 
         if values:
@@ -679,16 +680,6 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def heart_beat_second(self):
         pass
-
-    @staticmethod
-    def add_timeout(timeout, callback, *args, **kwargs):
-        callback = functools.partial(callback, *args, **kwargs)
-
-        return main.loop.call_later(timeout / 1000.0, callback)
-
-    @staticmethod
-    def cancel_timeout(handle):
-        handle.cancel()
 
     async def to_json(self):
         attrs = await self.get_attrs()
@@ -809,7 +800,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         # cancel sequence
         if self._sequence:
             self.debug('canceling current sequence')
-            self._sequence.cancel()
+            await self._sequence.cancel()
             self._sequence = None
 
         self._write_value_task.cancel()
@@ -822,11 +813,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._loaded = True
 
     def remove(self, persisted_data=True):
-        # cancel sequence
-        if self._sequence:
-            self.debug('canceling current sequence')
-            self._sequence.cancel()
-            self._sequence = None
+        await self.cleanup()
 
         _ports.pop(self._id, None)
 

@@ -113,7 +113,7 @@ async def delete_port(request, port_id):
     if not isinstance(port, core_vports.VirtualPort):
         raise core_api.APIError(400, 'port not removable')
 
-    if not port.remove():
+    if not await port.remove():
         raise core_api.APIError(500, 'failed to remove port')
 
     if not core_vports.remove(port_id):

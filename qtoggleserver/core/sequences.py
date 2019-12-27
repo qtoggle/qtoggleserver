@@ -14,36 +14,45 @@ class Sequence:
 
         self._callback = callback
         self._finish_callback = finish_callback
-        self._cancelled = False
         self._counter = 0
+        self._loop_task = None
 
     def start(self):
-        asyncio.create_task(self._loop())
+        if self._loop_task:
+            raise Exception('loop task already started')
 
-    def cancel(self):
-        self._cancelled = True
+        self._loop_task = asyncio.create_task(self._loop())
+
+    async def cancel(self):
+        if self._loop_task:
+            self._loop_task.cancel()
+            await self._loop_task
 
     async def _loop(self):
         for i, value in enumerate(self._values):
-            if self._cancelled:
+            try:
+                try:
+                    self._callback(value)
+
+                except Exception as e:
+                    logger.error('sequence callback failed: %s', e, exc_info=True)
+
+                if i < len(self._values) - 1:
+                    await asyncio.sleep(self._delays[i] / 1000.0)
+
+                else:
+                    if self._repeat > 0 and self._counter >= self._repeat - 1:
+                        await self._finish_callback()
+
+                        return
+
+                    self._counter += 1
+                    await asyncio.sleep(self._delays[i] / 1000.0)
+
+                    self.start()
+
+            except asyncio.CancelledError:
+                logger.debug('sequence loop cancelled')
                 break
 
-            try:
-                self._callback(value)
-
-            except Exception as e:
-                logger.error('sequence callback failed: %s', e, exc_info=True)
-
-            if i < len(self._values) - 1:
-                await asyncio.sleep(self._delays[i] / 1000.0)
-
-            else:
-                if self._repeat > 0 and self._counter >= self._repeat - 1:
-                    await self._finish_callback()
-
-                    return
-
-                self._counter += 1
-                await asyncio.sleep(self._delays[i] / 1000.0)
-
-                asyncio.create_task(self._loop())
+        self._loop_task = None
