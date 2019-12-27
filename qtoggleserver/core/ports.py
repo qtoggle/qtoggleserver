@@ -812,7 +812,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
     def set_loaded(self):
         self._loaded = True
 
-    def remove(self, persisted_data=True):
+    async def remove(self, persisted_data=True):
         await self.cleanup()
 
         _ports.pop(self._id, None)
@@ -822,8 +822,6 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
             persist.remove(self.PERSIST_COLLECTION, filt={'id': self._id})
 
         self.trigger_remove()
-
-        return True
 
     def trigger_add(self):
         event = core_events.PortAdd(self)

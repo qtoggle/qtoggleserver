@@ -92,10 +92,10 @@ async def patch_slave_device(request, name, params):
         raise core_api.APIError(404, 'no such device')
 
     if params.get('enabled') is True and not slave.is_enabled():
-        slave.enable()
+        await slave.enable()
 
     elif params.get('enabled') is False and slave.is_enabled():
-        slave.disable()
+        await slave.disable()
 
     if params.get('poll_interval') and params.get('listen_enabled'):
         raise core_api.APIError(400, 'listening and polling')
@@ -141,7 +141,7 @@ async def slave_device_forward(request, name, method, path, params=None, interna
         if path.startswith('/listen'):
             raise core_api.APIError(404, 'no such function')
 
-    intercepted, response = slave.intercept_request(method, path, params, request)
+    intercepted, response = await slave.intercept_request(method, path, params, request)
     if intercepted:
         return response
 
@@ -168,7 +168,7 @@ async def delete_slave_device(request, name):
     if not slave:
         raise core_api.APIError(404, 'no such device')
 
-    slaves_devices.remove(slave)
+    await slaves_devices.remove(slave)
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NONE)

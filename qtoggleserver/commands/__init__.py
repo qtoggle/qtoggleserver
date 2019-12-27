@@ -187,7 +187,7 @@ async def cleanup_ports():
 async def init_slaves():
     if settings.slaves.enabled:
         logger.info('initializing slaves')
-        slaves_devices.load()
+        await slaves_devices.load()
 
 
 async def cleanup_slaves():

@@ -156,7 +156,7 @@ class Slave(utils.LoggableMixin):
     def get_cached_attrs(self):
         return self._cached_attrs
 
-    def update_cached_attrs(self, attrs, partial=False):
+    async def update_cached_attrs(self, attrs, partial=False):
         # if the name has changed remove the device and re-add the device from scratch
 
         if attrs.get('name'):
@@ -167,7 +167,7 @@ class Slave(utils.LoggableMixin):
 
                     # disable device before removing it
                     if self.is_enabled():
-                        self.disable()
+                        await self.disable()
 
                         # we have to trigger an update event here,
                         # to inform consumers about disabling
@@ -186,7 +186,7 @@ class Slave(utils.LoggableMixin):
                         logger.error('renaming ports persisted data failed: %s', e, exc_info=True)
 
                     # actually remove the slave
-                    remove(self)
+                    await remove(self)
 
                     # add the slave back
                     future = add(self._scheme, self._host, self._port, self._path, self._poll_interval,
@@ -243,7 +243,7 @@ class Slave(utils.LoggableMixin):
     def is_enabled(self):
         return self._enabled
 
-    def enable(self):
+    async def enable(self):
         if self._enabled:
             return
 
@@ -265,7 +265,7 @@ class Slave(utils.LoggableMixin):
         if self._name:
             asyncio.create_task(self._load_ports())
 
-    def disable(self):
+    async def disable(self):
         if not self._enabled:
             return
 
@@ -284,7 +284,7 @@ class Slave(utils.LoggableMixin):
         # removing ports
         self.debug('removing ports')
         for port in self._get_local_ports():
-            port.remove(persisted_data=False)
+            await port.remove(persisted_data=False)
 
         # marking offline
         self._online = False
@@ -442,26 +442,20 @@ class Slave(utils.LoggableMixin):
             d['id'] = new_name + d['id'][len(self._name):]
             persist.insert(SlavePort.PERSIST_COLLECTION, d)
 
-    def remove(self):
+    async def remove(self):
         self._enabled = False
         self._ready = False
 
-        if self._listen_session_id:
-            self._stop_listening()
-
-        if self._poll_started:
-            self._stop_polling()
+        await self.cleanup()
 
         self.debug('removing ports')
         for port in self._get_local_ports():
-            port.remove()
+            await port.remove()
 
         self.debug('removing device')
         persist.remove('slaves', filt={'id': self._name})
 
         self.trigger_remove()
-
-        return True
 
     def trigger_add(self):
         event = core_events.SlaveDeviceAdd(self)
@@ -533,7 +527,7 @@ class Slave(utils.LoggableMixin):
             self.debug('api call %s %s succeeded', method, path)
 
             self.update_last_sync()
-            self.intercept_response(method, path, body, result)
+            await self.intercept_response(method, path, body, result)
 
             return result
 
@@ -630,7 +624,7 @@ class Slave(utils.LoggableMixin):
             self.error('invalid device')
             raise exceptions.InvalidDevice()
 
-        self.update_cached_attrs(attrs)
+        await self.update_cached_attrs(attrs)
 
         if just_added and (name in _slaves or core_device_attrs.name == name):
             self.error('device already exists')
@@ -675,7 +669,7 @@ class Slave(utils.LoggableMixin):
                 continue
 
             self.debug('port %s present locally but not remotely', port_id)
-            port.remove()
+            await port.remove()
 
         await self._save_ports()
 
@@ -1103,7 +1097,7 @@ class Slave(utils.LoggableMixin):
         if not port or not isinstance(port, SlavePort):
             raise exceptions.PortNotFound(self, local_id)
 
-        port.remove()
+        await port.remove()
 
     async def _handle_device_update(self, **attrs):
         provisioning_attrs = self.get_provisioning_attrs()
@@ -1116,7 +1110,7 @@ class Slave(utils.LoggableMixin):
                 self.debug('ignoring device-update attribute %s due to pending provisioning attribute', name)
                 attrs.pop(name)
 
-        self.update_cached_attrs(attrs)
+        await self.update_cached_attrs(attrs)
         self.trigger_update()
         self.save()
 
@@ -1338,7 +1332,7 @@ class Slave(utils.LoggableMixin):
         await self.fetch_and_update_device()
         await self.fetch_and_update_ports()
 
-    def intercept_request(self, method, path, params, request):
+    async def intercept_request(self, method, path, params, request):
         # intercept API calls to device attributes, webhooks and reverse parameters, for devices that are offline
 
         if self._online:
@@ -1397,7 +1391,7 @@ class Slave(utils.LoggableMixin):
         # by default, requests are not intercepted
         return False, None
 
-    def intercept_response(self, method, path, body, response):
+    async def intercept_response(self, method, path, body, response):
         if path.endswith('/'):
             path = path[:-1]
 
@@ -1414,7 +1408,7 @@ class Slave(utils.LoggableMixin):
                 new_name = body and body.get('name')
                 if new_name and new_name != self._name:
                     try:
-                        self.update_cached_attrs({'name': new_name}, partial=True)
+                        await self.update_cached_attrs({'name': new_name}, partial=True)
 
                     except exceptions.DeviceRenamed:
                         pass
@@ -1423,7 +1417,7 @@ class Slave(utils.LoggableMixin):
                 # intercept this API call so that we can update locally cached attributes whose values change often and
                 # therefore do not trigger a device-update event
                 attrs = {n: response[n] for n in _NO_EVENT_DEVICE_ATTRS if n in response}
-                self.update_cached_attrs(attrs, partial=True)
+                await self.update_cached_attrs(attrs, partial=True)
 
         elif path == '/firmware':
             if method == 'PATCH' and not self._fwupdate_poll_task:
@@ -1431,14 +1425,14 @@ class Slave(utils.LoggableMixin):
                 # and stop listening/polling mechanisms
 
                 self.debug('firmware update process active')
-                self.disable()
+                await self.disable()
                 self.trigger_update()
                 self._start_fwupdate_polling()
 
             elif method == 'GET' and self._fwupdate_poll_task:
                 if response.get('status') == 'idle':  # firmware update process not running
                     self.debug('firmware update process ended')
-                    self.enable()
+                    await self.enable()
                     self._stop_fwupdate_polling()
 
         elif path == '/reset':
@@ -1446,7 +1440,7 @@ class Slave(utils.LoggableMixin):
                 # when performing factory reset, disable device
 
                 self.debug('device has been reset to factory defaults')
-                self.disable()
+                await self.disable()
                 self.trigger_update()
 
     def intercept_error(self, error):
@@ -1477,7 +1471,7 @@ async def add(scheme, host, port, path, poll_interval, listen_enabled, admin_pas
         slave.error('no listen support')
         raise exceptions.NoListenSupport(name)
 
-    slave.enable()
+    await slave.enable()
     slave.save()
     slave.trigger_add()
 
@@ -1491,9 +1485,9 @@ async def add(scheme, host, port, path, poll_interval, listen_enabled, admin_pas
     return slave
 
 
-def remove(slave):
+async def remove(slave):
     _slaves.pop(slave.get_name(), None)
-    slave.remove()
+    await slave.remove()
 
 
 def get_all():
@@ -1515,7 +1509,7 @@ def ready():
     return all(s.is_ready() for s in slaves)
 
 
-def load():
+async def load():
     global _load_time
 
     _load_time = time.time()
@@ -1534,7 +1528,7 @@ def load():
 
         if entry['enabled']:
             logger.debug('loaded %s', slave)
-            slave.enable()
+            await slave.enable()
 
         else:
             logger.debug('loaded %s (disabled)', slave)
