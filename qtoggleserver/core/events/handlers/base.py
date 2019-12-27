@@ -19,10 +19,22 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
     def __init__(self, filter=None):
         self._filter = filter or {}
         self._filter_prepared = False
+
         self._filter_event_types = None
+
         self._filter_device_attrs = {}
+        self._filter_device_attr_transitions = {}
+        self._filter_device_attr_names = set()
+
         self._filter_port_value = None
+        self._filter_port_value_transition = None
         self._filter_port_attrs = {}
+        self._filter_port_attr_transitions = {}
+        self._filter_port_attr_names = set()
+
+        self._filter_slave_attrs = {}
+        self._filter_slave_attr_transitions = {}
+        self._filter_slave_attr_names = set()
 
         # Maintain an internal "last" state for all objects, so we can detect changes in various attributes
         self._device_attrs = {}
@@ -52,14 +64,34 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
             else:
                 self._filter_port_value = port_value
 
+        self._filter_port_value_transition = self._filter.get('port_value_transition')
+
         self._filter_device_attrs = {n[7:]: v for n, v in self._filter.items()
-                                     if n.startswith('device_')}
+                                     if n.startswith('device_') and not n.endswith('_transition')}
+
+        self._filter_device_attr_transitions = {n[7:-11]: v for n, v in self._filter.items()
+                                                if n.startswith('device_') and n.endswith('_transition')}
 
         self._filter_port_attrs = {n[5:]: v for n, v in self._filter.items()
-                                   if n.startswith('port_') and n != 'port_value'}
+                                   if n.startswith('port_') and n != 'port_value' and not n.endswith('_transition')}
+
+        self._filter_port_attr_transitions = {n[5:-11]: v for n, v in self._filter.items()
+                                              if n.startswith('port_') and n.endswith('_transition')}
 
         self._filter_slave_attrs = {n[6:]: v for n, v in self._filter.items()
-                                    if n.startswith('slave_')}
+                                    if n.startswith('slave_') and not n.endswith('_transition')}
+
+        self._filter_slave_attr_transitions = {n[6:-11]: v for n, v in self._filter.items()
+                                               if n.startswith('slave_') and n.endswith('_transition')}
+
+        self._filter_device_attr_names.update(self._filter_device_attrs.keys())
+        self._filter_device_attr_names.update(self._filter_device_attr_transitions.keys())
+
+        self._filter_port_attr_names.update(self._filter_port_attrs.keys())
+        self._filter_port_attr_names.update(self._filter_port_attr_transitions.keys())
+
+        self._filter_slave_attr_names.update(self._filter_slave_attrs.keys())
+        self._filter_slave_attr_names.update(self._filter_slave_attr_transitions.keys())
 
         self._filter_prepared = True
 
@@ -143,47 +175,64 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
         return value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs
 
     @staticmethod
-    def _accepts_attrs(filter_attrs, old_attrs, new_attrs):
-        for name, filter_value in filter_attrs.items():
-            if isinstance(filter_value, list):
-                old_filter_value, filter_value = filter_value[:2]
-                if old_filter_value != old_attrs.get(name):
+    def _accepts_attrs(attr_names, filter_attrs, filter_attr_transitions, old_attrs, new_attrs):
+        for name in attr_names:
+            old_value = old_attrs.get(name)
+            new_value = new_attrs.get(name)
+
+            filter_transition = filter_attr_transitions.get(name)
+            if filter_transition is not None:
+                old_filter_value, new_filter_value = filter_transition
+                if old_filter_value != old_value or new_filter_value != new_value:
                     return False
 
-            if filter_value != new_attrs.get(name):
-                return False
+            filter_value = filter_attrs.get(name)
+            if filter_value is not None:
+                if isinstance(filter_value, list):  # A list of accepted values
+                    if new_value not in filter_value:
+                        return False
+
+                elif new_value != filter_value:  # A single value
+                    return False
 
         return True
 
     async def accepts_device(self, event, old_attrs, new_attrs):
-        return self._accepts_attrs(self._filter_device_attrs, old_attrs, new_attrs)
+        return self._accepts_attrs(self._filter_device_attr_names, self._filter_device_attrs,
+                                   self._filter_device_attr_transitions, old_attrs, new_attrs)
 
     async def accepts_port_value(self, event, value_pair):
         old_value, new_value = value_pair
-        filter_value = self._filter_port_value
 
-        if isinstance(filter_value, list):
-            old_filter_value, filter_value = filter_value[:2]
-            if old_filter_value != old_value:
+        if self._filter_port_value_transition is not None:
+            old_filter_value, new_filter_value = self._filter_port_value_transition
+            if old_filter_value != old_value or new_filter_value != new_value:
                 return False
 
-        if isinstance(filter_value, core_expressions.Expression):
-            filter_value = filter_value.eval()
+        if self._filter_port_value is not None:
+            if isinstance(self._filter_port_value, list):  # A list of accepted values
+                if new_value not in self._filter_port_value:
+                    return False
 
-        if new_value != filter_value:
-            return False
+            elif isinstance(self._filter_port_value, core_expressions.Expression):  # An expression
+                if new_value != self._filter_port_value.eval():
+                    return False
+
+            elif new_value != self._filter_port_value:  # A single value
+                return False
 
         return True
 
     async def accepts_port(self, event, value_pair, old_attrs, new_attrs):
-        if self._filter_port_value is not None:
-            if not await self.accepts_port_value(event, value_pair):
-                return False
+        if not await self.accepts_port_value(event, value_pair):
+            return False
 
-        return self._accepts_attrs(self._filter_port_attrs, old_attrs, new_attrs)
+        return self._accepts_attrs(self._filter_port_attr_names, self._filter_port_attrs,
+                                   self._filter_port_attr_transitions, old_attrs, new_attrs)
 
     async def accepts_slave(self, event, old_attrs, new_attrs):
-        return self._accepts_attrs(self._filter_slave_attrs, old_attrs, new_attrs)
+        return self._accepts_attrs(self._filter_slave_attr_names, self._filter_slave_attrs,
+                                   self._filter_slave_attr_transitions,  old_attrs, new_attrs)
 
     async def accepts(self, event, value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs):
         if not self._filter_prepared:
