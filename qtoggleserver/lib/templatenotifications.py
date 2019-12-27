@@ -66,6 +66,10 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
         self._j2env = Environment()
         self._templates = {}
         for _type, ts in templates.items():
+            # Ensure values in templates are dicts themselves
+            if isinstance(ts, str):
+                ts = {'title': ts}
+
             self._templates[_type] = {}
             for k, t in ts.items():
                 self._templates[_type][k] = self._j2env.from_string(t) if t is not None else None
