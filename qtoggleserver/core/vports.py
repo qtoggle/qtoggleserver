@@ -56,18 +56,9 @@ def add(port_id, typ, mi, ma, integer, step, choices):
 
 
 def remove(port_id):
-    try:
-        _vport_settings.pop(port_id)
-
-    except KeyError:
-        logger.error('virtual port settings for %s no longer exist', port_id)
-
-        return False
-
+    _vport_settings.pop(port_id, None)
     logger.debug('removing virtual port settings for %s', port_id)
     persist.remove('vports', filt={'id': port_id})
-
-    return True
 
 
 def all_settings():

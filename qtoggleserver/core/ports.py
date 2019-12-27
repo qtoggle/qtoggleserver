@@ -815,6 +815,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def remove(self, persisted_data=True):
         await self.cleanup()
 
+        self.debug('removing port')
         _ports.pop(self._id, None)
 
         if persisted_data:
