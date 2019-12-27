@@ -37,33 +37,38 @@ class PolledPeripheral(Peripheral):
         self._polling = True
 
         while self._polling:
-            if self._poll_interval == 0:
-                await asyncio.sleep(1)
-                continue
-
             try:
-                await self.poll()
+                if self._poll_interval == 0:
+                    await asyncio.sleep(1)
+                    continue
 
-            except Exception as e:
-                retry_poll_interval = min(self.RETRY_POLL_INTERVAL, self._poll_interval)
-                self.error('polling failed (retrying in %s seconds): %s', retry_poll_interval, e, exc_info=True)
-                self._poll_error = e
-                await asyncio.sleep(retry_poll_interval)
-                continue
+                try:
+                    await self.poll()
 
-            # Clear poll error, as the poll call has been successful
-            self._poll_error = None
+                except Exception as e:
+                    retry_poll_interval = min(self.RETRY_POLL_INTERVAL, self._poll_interval)
+                    self.error('polling failed (retrying in %s seconds): %s', retry_poll_interval, e, exc_info=True)
+                    self._poll_error = e
+                    await asyncio.sleep(retry_poll_interval)
+                    continue
 
-            # Granular sleep so it can be interrupted
-            orig_poll_interval = self._poll_interval
-            for i in range(self._poll_interval):
-                if not self._polling:
-                    break
+                # Clear poll error, as the poll call has been successful
+                self._poll_error = None
 
-                if orig_poll_interval != self._poll_interval:  # Poll interval changed
-                    break
+                # Granular sleep so it can be interrupted
+                orig_poll_interval = self._poll_interval
+                for i in range(self._poll_interval):
+                    if not self._polling:
+                        break
 
-                await asyncio.sleep(1)
+                    if orig_poll_interval != self._poll_interval:  # Poll interval changed
+                        break
+
+                    await asyncio.sleep(1)
+
+            except asyncio.CancelledError:
+                self.debug('polling task cancelled')
+                break
 
         self._poll_task = None
         self.debug('polling stopped')
