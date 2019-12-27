@@ -93,8 +93,12 @@ class PolledPeripheral(Peripheral):
         self._poll_error = None
 
     async def handle_cleanup(self):
-        self._polling = False
-        return self._poll_task
+        await super().handle_cleanup()
+
+        if self._poll_task and not self._poll_task.done():
+            self._polling = False
+            self._poll_task.cancel()
+            await self._poll_task
 
 
 class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):

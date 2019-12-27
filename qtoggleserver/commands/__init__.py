@@ -245,8 +245,8 @@ async def init():
 
 
 async def cleanup():
+    await cleanup_main()
     await cleanup_slaves()
     await cleanup_ports()
     await cleanup_lib()
-    await cleanup_main()
     await cleanup_persist()
