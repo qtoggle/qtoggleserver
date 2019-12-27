@@ -5,6 +5,7 @@ import logging
 
 from jinja2 import Environment
 
+from qtoggleserver.conf import settings
 from qtoggleserver.core import device
 from qtoggleserver.core import main as core_main
 from qtoggleserver.core.events import BaseEventHandler
@@ -91,7 +92,8 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
             'type': event.get_type(),
             'timestamp': int(timestamp),
             'moment': moment,
-            'display_moment': moment.strftime('%c')
+            'display_moment': moment.strftime('%c'),
+            'public_url': settings.public_url
         }
 
     async def push_message(self, event, title, body, **kwargs):

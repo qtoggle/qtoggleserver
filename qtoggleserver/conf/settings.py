@@ -4,6 +4,8 @@ import os as _os
 
 debug = False
 
+public_url = None
+
 
 logging = {
     'version': 1,
