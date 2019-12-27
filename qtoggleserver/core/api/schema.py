@@ -123,7 +123,8 @@ POST_PORT_SEQUENCE = {
     "additionalProperties": False,
     "required": [
         "values",
-        "delays"
+        "delays",
+        "repeat"
     ]
 }
 

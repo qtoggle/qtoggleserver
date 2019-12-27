@@ -49,7 +49,8 @@ class Sequence:
                     self._counter += 1
                     await asyncio.sleep(self._delays[i] / 1000.0)
 
-                    self.start()
+                    self._loop_task = asyncio.create_task(self._loop())
+                    return
 
             except asyncio.CancelledError:
                 logger.debug('sequence loop cancelled')
