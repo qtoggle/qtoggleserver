@@ -121,7 +121,8 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
 
     def trigger_port_update(self):
         for port in self._ports:
-            port.trigger_update()
+            if port.is_enabled():
+                port.trigger_update()
 
     def is_enabled(self):
         return self._enabled
