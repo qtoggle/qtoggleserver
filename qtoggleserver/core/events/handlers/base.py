@@ -183,7 +183,9 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
             filter_transition = filter_attr_transitions.get(name)
             if filter_transition is not None:
                 old_filter_value, new_filter_value = filter_transition
-                if old_filter_value != old_value or new_filter_value != new_value:
+                if ((old_filter_value != old_value and old_filter_value is not None) or
+                    (new_filter_value != new_value and new_filter_value is not None)):
+
                     return False
 
             filter_value = filter_attrs.get(name)
@@ -206,7 +208,9 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
 
         if self._filter_port_value_transition is not None:
             old_filter_value, new_filter_value = self._filter_port_value_transition
-            if old_filter_value != old_value or new_filter_value != new_value:
+            if ((old_filter_value != old_value and old_filter_value is not None) or
+                (new_filter_value != new_value and new_filter_value is not None)):
+
                 return False
 
         if self._filter_port_value is not None:
