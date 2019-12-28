@@ -22,36 +22,36 @@ class RedisDriver(BaseDriver):
     def query(self, collection, fields, filt, limit):
         db_records = []
 
-        if 'id' in filt:  # look for specific record id
+        if 'id' in filt:  # Look for specific record id
             filt = dict(filt)
             _id = filt.pop('id')
             db_record = self._client.hgetall(self._make_record_key(collection, _id))
 
-            # apply filter criteria
+            # Apply filter criteria
             if db_record and self._filter_matches(db_record, filt):
                 db_record['id'] = _id
                 db_records.append(db_record)
 
         else:
-            # look through all records from this collection, iterating through set
+            # Look through all records from this collection, iterating through set
             for _id in self._client.sscan_iter(self._make_set_key(collection)):
-                # retrieve the db record
+                # Retrieve the db record
                 db_record = self._client.hgetall(self._make_record_key(collection, _id))
                 db_record['id'] = _id
 
-                # apply filter criteria
+                # Apply filter criteria
                 if self._filter_matches(db_record, filt):
                     db_records.append(db_record)
 
-        # apply limit
+        # Apply limit
         if limit is not None:
             db_records = db_records[:limit]
 
-        # transform from db record and return
+        # Transform from db record and return
         return (self._record_from_db(dbr) for dbr in db_records)
 
     def insert(self, collection, record):
-        # make sure we have an id
+        # Make sure we have an id
         record = dict(record)
         _id = record.pop('id', None)
         if _id is None:
@@ -60,21 +60,21 @@ class RedisDriver(BaseDriver):
         key = self._make_record_key(collection, _id)
         set_key = self._make_set_key(collection)
 
-        # check for duplicates
+        # Check for duplicates
         if self._client.sismember(set_key, _id):
             raise DuplicateRecordId(_id)
 
-        # adapt the record to db
+        # Adapt the record to db
         db_record = self._record_to_db(record)
 
-        # actually insert the record
+        # Actually insert the record
         self._client.hmset(key, db_record)
 
-        # add the id to set
+        # Add the id to set
         self._client.sadd(set_key, _id)
 
     def update(self, collection, record_part, filt):
-        # adapt the record part to db
+        # Adapt the record part to db
         db_record_part = self._record_to_db(record_part)
 
         modified_count = 0
@@ -84,26 +84,26 @@ class RedisDriver(BaseDriver):
             _id = filt.pop('id')
             key = self._make_record_key(collection, _id)
 
-            # retrieve the db record
+            # Retrieve the db record
             db_record = self._client.hgetall(key)
             if db_record and self._filter_matches(db_record, filt):
                 self._client.hmset(key, db_record_part)
 
             modified_count = 1
 
-        else:  # no id in filt
-            # look through all records from this collection, iterating through set
+        else:  # No id in filt
+            # Look through all records from this collection, iterating through set
             for _id in self._client.sscan_iter(self._make_set_key(collection)):
                 key = self._make_record_key(collection, _id)
 
-                # retrieve the db record
+                # Retrieve the db record
                 db_record = self._client.hgetall(key)
 
-                # apply filter criteria
+                # Apply filter criteria
                 if not self._filter_matches(db_record, filt):
                     continue
 
-                # actually update the record
+                # Actually update the record
                 self._client.hmset(key, db_record_part)
 
                 modified_count += 1
@@ -111,23 +111,23 @@ class RedisDriver(BaseDriver):
         return modified_count
 
     def replace(self, collection, _id, record, upsert):
-        # adapt the record to db
+        # Adapt the record to db
         new_db_record = self._record_to_db(record)
-        new_db_record.pop('id', None)  # never add the id together with other fields
+        new_db_record.pop('id', None)  # Never add the id together with other fields
 
         key = self._make_record_key(collection, _id)
         old_db_record = self._client.hgetall(key)
 
         if not old_db_record and not upsert:
-            return False  # no record found, no replacing
+            return False  # No record found, no replacing
 
-        # remove any existing record
+        # Remove any existing record
         self._client.delete(key)
 
-        # insert the new record
+        # Insert the new record
         self._client.hmset(key, new_db_record)
 
-        # make sure the id is present in set
+        # Make sure the id is present in set
         self._client.sadd(self._make_set_key(collection), _id)
 
         return True
@@ -141,37 +141,37 @@ class RedisDriver(BaseDriver):
             key = self._make_record_key(collection, _id)
             db_record = self._client.hgetall(key)
 
-            # actually remove the record
+            # Actually remove the record
             if db_record and self._filter_matches(db_record, filt):
                 self._client.delete(key)
                 removed_count = 1
 
-            # remove the id from set
+            # Remove the id from set
             self._client.srem(self._make_set_key(collection), _id)
 
-        else:  # no id in filt
+        else:  # No id in filt
             ids_to_remove = set()
 
-            # look through all records from this collection, iterating through set
+            # Look through all records from this collection, iterating through set
             for _id in self._client.sscan_iter(self._make_set_key(collection)):
                 key = self._make_record_key(collection, _id)
 
-                # retrieve the db record
+                # Retrieve the db record
                 db_record = self._client.hgetall(key)
 
-                # apply filter criteria
+                # Apply filter criteria
                 if not self._filter_matches(db_record, filt):
                     continue
 
-                # actually remove the record
+                # Actually remove the record
                 self._client.delete(key)
 
-                # remember ids to remove from set
+                # Remember ids to remove from set
                 ids_to_remove.add(_id)
 
                 removed_count += 1
 
-            # remove the ids from set
+            # Remove the ids from set
             for _id in ids_to_remove:
                 self._client.srem(self._make_set_key(collection), _id)
 

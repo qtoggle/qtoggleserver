@@ -85,7 +85,7 @@ class AuthError(Error):
 
 
 class OtherError(Error):
-    # any other error
+    # Any other error
     MESSAGE = 'other error: {msg}'
 
     def __init__(self, msg):
@@ -114,7 +114,7 @@ def _response_error_errno(eno):
 def parse(response, decode_json=True, resolve_refs=True):
     if 100 <= response.code < 599:
         if response.code == 204:
-            return  # happy case - no content
+            return  # Happy case - no content
 
         if decode_json and response.body:
             try:
@@ -127,7 +127,7 @@ def parse(response, decode_json=True, resolve_refs=True):
             body = response.body
 
         if response.code == 200:
-            return body  # happy case with content
+            return body  # Happy case with content
 
         if response.code == 301:
             raise MovedPermanently(response.headers.get('Location', ''))

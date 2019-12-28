@@ -48,7 +48,7 @@ class Expression(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     def get_deps(self):
-        # special deps:
+        # Special deps:
         #  * 'time' - used to indicate dependency on system time (seconds)
         #  * 'time_ms' - used to indicate dependency on system time (milliseconds)
 
@@ -542,14 +542,14 @@ class HeldFunction(Function):
         fixed_value = self.args[1].eval()
         duration = self.args[2].eval()
 
-        if self._time_ms is None:  # very first expression eval call
+        if self._time_ms is None:  # Very first expression eval call
             self._time_ms = time_ms
 
         else:
             delta = time_ms - self._time_ms
 
             if self._last_value != value:
-                self._time_ms = time_ms  # reset held timer
+                self._time_ms = time_ms  # Reset held timer
 
             else:
                 result = (delta >= duration) and (value == fixed_value)
@@ -583,17 +583,17 @@ class DelayFunction(Function):
         if self._current_value is None:
             self._current_value = value
 
-        # detect value transitions and build history
+        # Detect value transitions and build history
         if value != self._last_value:
             self._last_value = value
 
-            # drop elements from queue if history size reached
+            # Drop elements from queue if history size reached
             while len(self._queue) >= self.HISTORY_SIZE:
                 self._queue.pop(0)
 
             self._queue.append((time_ms, value))
 
-        # process history
+        # Process history
         while self._queue and (time_ms - self._queue[0][0]) >= delay:
             self._current_value = self._queue.pop(0)[1]
 
@@ -737,7 +737,7 @@ class HMSIntervalFunction(Function):
             start_time = datetime.time(start_h, start_m, start_s)
             stop_time = datetime.time(stop_h, stop_m, stop_s)
 
-        else:  # assuming 4
+        else:  # Assuming 4
             start_h = self.args[0].eval()
             start_m = self.args[1].eval()
             stop_h = self.args[2].eval()
@@ -831,11 +831,11 @@ async def check_loops(port, expression):
             if not p:
                 return 0
 
-            # a loop is detected when we stumble upon the initial port at a level deeper than 1
+            # A loop is detected when we stumble upon the initial port at a level deeper than 1
             if port is p and level > 1:
                 return level
 
-            # avoid visiting the same port twice
+            # Avoid visiting the same port twice
             if p in seen_ports:
                 return 0
 

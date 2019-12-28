@@ -33,7 +33,7 @@ def _log_request(handler):
 def _make_handlers():
     handlers_list = []
 
-    # frontend
+    # Frontend
 
     if settings.frontend.enabled:
         frontend_path = os.path.join(settings.pkg_path, FRONTEND_DIR)
@@ -78,16 +78,16 @@ def _make_handlers():
         ]
 
     handlers_list += [
-        # device management
+        # Device management
         (r'^/api/device/?$', handlers.DeviceHandler),
         (r'^/api/reset/?$', handlers.ResetHandler),
         (r'^/api/access/?$', handlers.AccessHandler),
 
-        # port management
+        # Port management
         (r'^/api/ports/?$', handlers.PortsHandler),
         (r'^/api/ports/(?P<port_id>[\w.]+)/?$', handlers.PortHandler),
 
-        # port values
+        # Port values
         (r'^/api/ports/(?P<port_id>[\w.]+)/value/?$', handlers.PortValueHandler),
     ]
 
@@ -96,14 +96,14 @@ def _make_handlers():
             (r'^/api/ports/(?P<port_id>[\w.]+)/sequence/?$', handlers.PortSequenceHandler)
         ]
 
-    # firmware
+    # Firmware
 
     if settings.system.fwupdate_driver:
         handlers_list += [
             (r'^/api/firmware/?$', handlers.FirmwareHandler)
         ]
 
-    # slave devices management
+    # Slave devices management
 
     if settings.slaves.enabled:
         handlers_list += [
@@ -113,7 +113,7 @@ def _make_handlers():
             (r'^/api/devices/(?P<name>\w+)/forward/(?P<path>.+)$', handlers.SlaveDeviceForwardHandler)
         ]
 
-    # notifications
+    # Notifications
 
     if settings.webhooks.enabled:
         handlers_list += [
@@ -125,7 +125,7 @@ def _make_handlers():
             (r'^/api/listen/?$', handlers.ListenHandler)
         ]
 
-    # reverse API calls
+    # Reverse API calls
 
     if settings.reverse.enabled:
         handlers_list += [

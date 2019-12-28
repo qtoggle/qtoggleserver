@@ -92,7 +92,7 @@ class BaseHandler(RequestHandler):
                 self.finish_json({'error': 'internal server error'})
 
         except RuntimeError:
-            pass  # nevermind
+            pass  # Nevermind
 
     def data_received(self, chunk):
         pass
@@ -203,13 +203,13 @@ class APIHandler(BaseHandler):
         BaseHandler.__init__(self, *args, **kwargs)
 
     def prepare(self):
-        # disable cache
+        # Disable cache
         self.set_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
 
         if not self.AUTH_ENABLED:
             return
 
-        # parse auth header
+        # Parse auth header
         auth = self.request.headers.get('Authorization')
         if auth:
             try:
@@ -324,7 +324,7 @@ class SlaveDeviceHandler(APIHandler):
 
 
 class SlaveDeviceEventsHandler(APIHandler):
-    AUTH_ENABLED = False  # we'll take care of the authentication inside API call functions
+    AUTH_ENABLED = False  # We'll take care of the authentication inside API call functions
 
     async def post(self, name):
         await self.call_api_func(slaves_api_funcs.post_slave_device_events, name=name, default_status=204)

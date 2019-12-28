@@ -20,19 +20,19 @@ class BaseDriver(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def insert(self, collection, record):
-        return '1'  # returns the inserted record id
+        return '1'  # Returns the inserted record id
 
     @abc.abstractmethod
     def update(self, collection, record_part, filt):
-        return 0  # returns the number of updated records
+        return 0  # Returns the number of updated records
 
     @abc.abstractmethod
     def replace(self, collection, _id, record, upsert):
-        return False  # returns True if replaced
+        return False  # Returns True if replaced
 
     @abc.abstractmethod
     def remove(self, collection, filt):
-        return 0  # returns the number of removed records
+        return 0  # Returns the number of removed records
 
     @abc.abstractmethod
     def close(self):
@@ -128,7 +128,7 @@ def replace(collection, _id, record, upsert=True):
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('replacing record with id %s with %s in %s', _id, json_utils.dumps(record), collection)
 
-    record = dict(record, id=_id)  # make sure the new record contains the id field
+    record = dict(record, id=_id)  # Make sure the new record contains the id field
     replaced = _get_driver().replace(collection, _id, record, upsert)
 
     if replaced:

@@ -52,5 +52,5 @@ async def patch_firmware(request, params):
     if params.get('url'):
         await fwupdate.update_to_url(params['url'])
 
-    else:  # assuming params['version']
+    else:  # Assuming params['version']
         await fwupdate.update_to_version(params['version'])

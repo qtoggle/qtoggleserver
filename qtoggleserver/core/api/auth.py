@@ -46,7 +46,7 @@ def parse_auth_header(auth, origin, password_hash_func, require_usr=True):
     if not m:
         raise AuthError('invalid authorization header')
 
-    # decode but don't validate token yet
+    # Decode but don't validate token yet
     token = m.group(1)
 
     try:
@@ -55,7 +55,7 @@ def parse_auth_header(auth, origin, password_hash_func, require_usr=True):
     except jwt.exceptions.InvalidTokenError as e:
         raise AuthError('invalid JWT: {}'.format(e)) from e
 
-    # validate claims
+    # Validate claims
     if payload.get('iss') != JWT_ISS:
         raise AuthError('missing or invalid iss claim in JWT')
 
@@ -73,12 +73,12 @@ def parse_auth_header(auth, origin, password_hash_func, require_usr=True):
         if not usr or not isinstance(usr, str):
             raise AuthError('missing or invalid usr claim in JWT')
 
-    # validate username & signature
+    # Validate username & signature
     password_hash = password_hash_func(usr)
     if not password_hash:
         raise AuthError('unknown usr in JWT: {}'.format(usr))
 
-    # decode again to verify signature
+    # Decode again to verify signature
     try:
         jwt.decode(token, key=password_hash, algorithms=[JWT_ALG], verify=True)
 

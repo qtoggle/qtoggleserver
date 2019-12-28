@@ -47,29 +47,29 @@ class SlavePort(core_ports.BasePort):
 
         self._remote_id = attrs['id']
 
-        # value cache
+        # Value cache
         self._cached_value = None
 
-        # attributes cache
+        # Attributes cache
         self._cached_attrs = {}
 
-        # names of attributes that will be updated remotely asap
+        # Names of attributes that will be updated remotely asap
         self._remote_update_pending_attrs = set()
 
-        # tag is kept locally
+        # Tag is kept locally
         self._tag = ''
 
-        # timestamp of the last time we've heard from this port
+        # Timestamp of the last time we've heard from this port
         self._last_sync = 0
 
-        # number of seconds before port value expires
+        # Number of seconds before port value expires
         self._expires = 0
 
-        # cached expired status
+        # Cached expired status
         self._expired = False
 
-        # names of attributes (including value) that have been changed
-        # while device was offline and have to be provisioned later
+        # Names of attributes (including value) that have been changed while device was offline and have to be
+        # provisioned later
         self._provisioning = set()
 
         port_id = '{}.{}'.format(slave.get_name(), self._remote_id)
@@ -79,7 +79,7 @@ class SlavePort(core_ports.BasePort):
         self.update_cached_attrs(attrs)
 
         if self._cached_value is not None:
-            # remote value is supplied in attrs when a new port is added on the slave device
+            # Remote value is supplied in attrs when a new port is added on the slave device
 
             self._value = self._cached_value
             self.update_last_sync()
@@ -87,7 +87,7 @@ class SlavePort(core_ports.BasePort):
     def _get_standard_attrdefs(self):
         attrdefs = copy.copy(core_ports.STANDARD_ATTRDEFS)
 
-        # device_*_expression
+        # Device_*_expression
         for i in range(1, 10):
             slave_name = (i - 1) * 'device_' + 'expression'
             master_name = i * 'device_' + 'expression'
@@ -96,7 +96,7 @@ class SlavePort(core_ports.BasePort):
 
             attrdefs[master_name] = dict(self._DEVICE_EXPRESSION_ATTRDEF)
 
-        # various master-specific standard attributes
+        # Various master-specific standard attributes
         attrdefs['last_sync'] = dict(self._LAST_SYNC_ATTRDEF)
         attrdefs['expires'] = dict(self._EXPIRES_ATTRDEF)
         attrdefs['provisioning'] = dict(self._PROVISIONING_ATTRDEF)
@@ -138,7 +138,7 @@ class SlavePort(core_ports.BasePort):
 
     async def set_attr(self, name, value):
         if name in ('tag', 'expression', 'last_sync', 'expires'):
-            # attributes that always stay locally, on master
+            # Attributes that always stay locally, on master
             await super().set_attr(name, value)
 
         else:

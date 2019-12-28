@@ -222,7 +222,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
             self.debug('writing at %04X: %s', handle, self.pretty_data(data))
             bluepy_peripheral.writeCharacteristic(handle, data, withResponse=True)
 
-        else:  # assuming read
+        else:  # Assuming read
             self.debug('reading from %04X', handle)
             response = bluepy_peripheral.readCharacteristic(handle)
             self.debug('got response %s', self.pretty_data(response))
@@ -318,7 +318,7 @@ class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):
 def port_exceptions(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        # transform BLE exceptions into port exceptions, where applicable
+        # Transform BLE exceptions into port exceptions, where applicable
         try:
             return func(*args, **kwargs)
 

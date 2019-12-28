@@ -31,7 +31,7 @@ CHANGE_REASON_EXPRESSION = 'E'
 
 logger = logging.getLogger(__name__)
 
-_ports = {}  # indexed by id
+_ports = {}  # Indexed by id
 
 
 STANDARD_ATTRDEFS = {
@@ -193,12 +193,10 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._transform_read = None
         self._transform_write = None
 
-        # attributes cache is used to prevent computing
-        # an attribute value more than once per core iteration
+        # Attributes cache is used to prevent computing an attribute value more than once per core iteration
         self._attrs_cache = {}
 
-        # cache attribute definitions so that the ATTRDEFS property
-        # doesn't need to gather all of them with each access
+        # Cache attribute definitions so that the ATTRDEFS property doesn't need to gather all of them with each access
         self._attrdefs_cache = None
 
         self._modifiable_attrs = None
@@ -298,12 +296,12 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._attrs_cache[name] = value
             return value
 
-        return None  # unsupported attribute
+        return None  # Unsupported attribute
 
     async def set_attr(self, name, value):
         old_value = await self.get_attr(name)
         if old_value is None:
-            return  # refuse to set an unsupported attribute
+            return  # Refuse to set an unsupported attribute
 
         method = getattr(self, 'attr_set_' + name, None)
         if method:
@@ -321,8 +319,8 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         if self.is_loaded():
             await main.update()
 
-        # new attributes might have been added or removed after setting an attribute;
-        # therefore new definitions might have appeared or disappeared
+        # New attributes might have been added or removed after setting an attribute; therefore new definitions might
+        # have appeared or disappeared
         self.invalidate_attrdefs()
 
         self._attrs_cache[name] = value
@@ -332,7 +330,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         if not self.is_loaded():
             return
 
-        # skip an IO loop iteration, allowing setting multiple attributes before triggering a port-update
+        # Skip an IO loop iteration, allowing setting multiple attributes before triggering a port-update
         await asyncio.sleep(0)
         self.trigger_update()
 
@@ -389,7 +387,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         if not self._enabled:
             return
 
-        # cancel sequence
+        # Cancel sequence
         if self._sequence:
             self.debug('canceling current sequence')
             await self._sequence.cancel()
@@ -502,7 +500,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def attr_get_transform_write(self):
         if not await self.is_writable():
-            return None  # only writable ports have transform_write attributes
+            return None  # Only writable ports have transform_write attributes
 
         if self._transform_write:
             return str(self._transform_write)
@@ -555,7 +553,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         await self._write_value_queue.put((value, reason, done))
 
-        # wait for actual write_value operation to be done
+        # Wait for actual write_value operation to be done
         await done
 
     async def _write_value_loop(self):
@@ -586,8 +584,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def set_value(self, value, reason):
         if self._transform_write:
-            # temporarily set the port value to the new value,
-            # so that the write transform expression takes the new
+            # Temporarily set the port value to the new value, so that the write transform expression takes the new
             # value into consideration when evaluating the result
             prev_value = self._value
             self._value = value
@@ -627,9 +624,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
             return None
 
         if self._transform_read:
-            # temporarily set the new value to the port,
-            # so that the read transform expression works as expected
-
+            # Temporarily set the new value to the port, so that the read transform expression works as expected
             old_value = self._value
             self._value = value
             value = await self.adapt_value_type(self._transform_read.eval())
@@ -649,7 +644,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
             return bool(value)
 
         else:
-            # round the value if port accepts only integers
+            # Round the value if port accepts only integers
             if integer:
                 return int(value)
 
@@ -708,8 +703,8 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.initialize()
 
     async def load_from_data(self, data):
-        attrs_start = ['enabled']  # these will be loaded first, in this order
-        attrs_end = ['expression']  # these will be loaded last, in this order
+        attrs_start = ['enabled']  # These will be loaded first, in this order
+        attrs_end = ['expression']  # These will be loaded last, in this order
 
         attr_items = data.items()
         attr_items = [a for a in attr_items if (a[0] not in attrs_start) and (a[0] not in attrs_end)]
@@ -720,7 +715,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
             if v is not None:
                 attr_items_start.append((n, v))
 
-        # sort the rest of the attributes alphabetically
+        # Sort the rest of the attributes alphabetically
         attr_items.sort(key=lambda i: i[0])
 
         attr_items_end = []
@@ -733,7 +728,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         for name, value in attr_items:
             if name in ('id', 'value'):
-                continue  # value is also among the persisted fields
+                continue  # Value is also among the persisted fields
 
             try:
                 self.debug('loading %s = %s', name, json_utils.dumps(value))
@@ -742,13 +737,13 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
             except Exception as e:
                 self.error('failed to set attribute %s = %s: %s', name, json_utils.dumps(value), e)
 
-        # value
+        # Value
         if await self.is_persisted() and data.get('value') is not None:
             self._value = data['value']
             self.debug('loaded value = %s', json_utils.dumps(self._value))
 
             if await self.is_writable():
-                # write the just-loaded value to the port
+                # Write the just-loaded value to the port
                 value = self._value
                 if self._transform_write:
                     value = await self.adapt_value_type(self._transform_write.eval())
@@ -775,7 +770,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         persist.replace(self.PERSIST_COLLECTION, self._id, d)
 
     async def prepare_for_save(self):
-        # value
+        # Value
         d = {
             'id': self.get_id()
         }
@@ -786,7 +781,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         else:
             d['value'] = None
 
-        # attributes
+        # Attributes
         for name in self.get_modifiable_attrs():
             v = await self.get_attr(name)
             if v is None:
@@ -797,7 +792,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         return d
 
     async def cleanup(self):
-        # cancel sequence
+        # Cancel sequence
         if self._sequence:
             self.debug('canceling current sequence')
             await self._sequence.cancel()
@@ -910,7 +905,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
                 elif await self.get_type() == TYPE_BOOLEAN:
                     self._value_schema['type'] = 'boolean'
 
-                else:  # assuming number
+                else:  # Assuming number
                     self._value_schema['type'] = 'number'
 
         return self._value_schema
@@ -953,7 +948,7 @@ async def load(port_settings):
         port_class_desc = '{}.{}'.format(port_class.__module__, port_class.__name__)
 
         try:
-            value = port_spec.pop('value', None)  # initial value
+            value = port_spec.pop('value', None)  # Initial value
             port = port_class(**port_spec)
             if value is not None:
                 port._value = value
