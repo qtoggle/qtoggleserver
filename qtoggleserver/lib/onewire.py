@@ -83,7 +83,7 @@ class OneWirePeripheral(polled.PolledPeripheral):
             self._data = await asyncio.wait_for(future, timeout=self.TIMEOUT)
 
         except asyncio.TimeoutError as e:
-            raise OneWireTimeout('timeout waiting for one-wire data from peripheral') from e
+            raise OneWireTimeout('Timeout waiting for one-wire data from peripheral') from e
 
     async def handle_disable(self):
         await super().handle_disable()

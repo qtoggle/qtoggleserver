@@ -44,7 +44,7 @@ def make_auth_header(origin, username, password_hash):
 def parse_auth_header(auth, origin, password_hash_func, require_usr=True):
     m = _AUTH_TOKEN_RE.match(auth)
     if not m:
-        raise AuthError('invalid authorization header')
+        raise AuthError('Invalid authorization header')
 
     # Decode but don't validate token yet
     token = m.group(1)
@@ -53,14 +53,14 @@ def parse_auth_header(auth, origin, password_hash_func, require_usr=True):
         payload = jwt.decode(token, algorithms=[JWT_ALG], verify=False)
 
     except jwt.exceptions.InvalidTokenError as e:
-        raise AuthError(f'invalid JWT: {e}') from e
+        raise AuthError(f'Invalid JWT: {e}') from e
 
     # Validate claims
     if payload.get('iss') != JWT_ISS:
-        raise AuthError('missing or invalid iss claim in JWT')
+        raise AuthError('Missing or invalid iss claim in JWT')
 
     if payload.get('ori') != origin:
-        raise AuthError('missing or invalid ori claim in JWT')
+        raise AuthError('Missing or invalid ori claim in JWT')
 
     iat = payload.get('iat')
     if (iat is not None) and system.date.has_date_support() and system.date.has_real_date_time():
@@ -71,22 +71,22 @@ def parse_auth_header(auth, origin, password_hash_func, require_usr=True):
     usr = payload.get('usr')
     if require_usr:
         if not usr or not isinstance(usr, str):
-            raise AuthError('missing or invalid usr claim in JWT')
+            raise AuthError('Missing or invalid usr claim in JWT')
 
     # Validate username & signature
     password_hash = password_hash_func(usr)
     if not password_hash:
-        raise AuthError(f'unknown usr in JWT: {usr}')
+        raise AuthError(f'Unknown usr in JWT: {usr}')
 
     # Decode again to verify signature
     try:
         jwt.decode(token, key=password_hash, algorithms=[JWT_ALG], verify=True)
 
     except jwt.exceptions.InvalidSignatureError as e:
-        raise AuthError('invalid JWT signature') from e
+        raise AuthError('Invalid JWT signature') from e
 
     except jwt.exceptions.InvalidTokenError as e:
-        raise AuthError(f'invalid JWT: {e}') from e
+        raise AuthError(f'Invalid JWT: {e}') from e
 
     return usr
 

@@ -138,20 +138,20 @@ class Function(Expression, metaclass=abc.ABCMeta):
                     p_start = i
 
                 elif level == 0:
-                    raise InvalidExpression('empty function call')
+                    raise InvalidExpression('Empty function call')
 
                 level += 1
 
             elif c == ')':
                 if level == 0:
-                    raise InvalidExpression('unbalanced parentheses')
+                    raise InvalidExpression('Unbalanced parentheses')
 
                 elif level == 1:
                     if (p_end is None) and (i == len(sexpression) - 1):
                         p_end = i
 
                     else:
-                        raise InvalidExpression('unexpected text after function call')
+                        raise InvalidExpression('Unexpected text after function call')
 
                 level -= 1
 
@@ -160,7 +160,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
                 p_last_comma = i
 
         if (p_start is None) or (p_end is None) or (p_start > p_end) or (level != 0):
-            raise InvalidExpression('unbalanced parentheses')
+            raise InvalidExpression('Unbalanced parentheses')
 
         if p_end - p_start > 1:
             sargs.append(sexpression[(p_last_comma or p_start) + 1: p_end])
@@ -168,13 +168,13 @@ class Function(Expression, metaclass=abc.ABCMeta):
         func_name = sexpression[:p_start].strip()
         func_class = FUNCTIONS.get(func_name)
         if func_class is None:
-            raise InvalidExpression(f'unknown function "{func_name}"')
+            raise InvalidExpression(f'Unknown function "{func_name}"')
 
         if func_class.MIN_ARGS is not None and len(sargs) < func_class.MIN_ARGS:
-            raise InvalidExpression(f'too few arguments for function "{func_name}"')
+            raise InvalidExpression(f'Too few arguments for function "{func_name}"')
 
         if func_class.MAX_ARGS is not None and len(sargs) > func_class.MAX_ARGS:
-            raise InvalidExpression(f'too many arguments for function "{func_name}"')
+            raise InvalidExpression(f'Too many arguments for function "{func_name}"')
 
         args = [parse(self_port_id, sa) for sa in sargs]
 
@@ -782,14 +782,14 @@ class PortValue(Expression):
     def eval(self):
         port = self.get_port()
         if not port:
-            raise IncompleteExpression(f'unknown port {self.port_id}')
+            raise IncompleteExpression(f'Unknown port {self.port_id}')
 
         if not port.is_enabled():
             raise IncompleteExpression(f'{port} is disabled')
 
         value = port.get_value()
         if value is None:
-            raise IncompleteExpression(f'value of port {port} is undefined')
+            raise IncompleteExpression(f'Value of port {port} is undefined')
 
         return float(value)
 

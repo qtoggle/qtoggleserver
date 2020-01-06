@@ -108,7 +108,7 @@ def _response_error_errno(eno):
     elif eno:
         return OtherError(errno.errorcode.get(eno))
 
-    return OtherError('unknown error')
+    return OtherError('Unknown error')
 
 
 def parse(response, decode_json=True, resolve_refs=True):
@@ -150,4 +150,4 @@ def parse(response, decode_json=True, resolve_refs=True):
 
         raise OtherError(str(response.error))
 
-    raise OtherError(f'unknown HTTP error ({response.code}: {str(response.error)})')
+    raise OtherError(f'Unknown HTTP error ({response.code}: {str(response.error)})')
