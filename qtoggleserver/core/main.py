@@ -145,11 +145,11 @@ async def handle_value_changes(changed_set, change_reasons):
 
             change_reason = change_reasons.get(port, ports.CHANGE_REASON_NATIVE)
             if ((port in changed_set) and
-                (('${}'.format(port.get_id())) in deps) and
+                (f'${port.get_id()}' in deps) and
                 (change_reason == ports.CHANGE_REASON_EXPRESSION)):
                 continue
 
-            changed_set_ids = set('${}'.format(c.get_id()) for c in changed_set if isinstance(c, ports.BasePort))
+            changed_set_ids = set(f'${c.get_id()}' for c in changed_set if isinstance(c, ports.BasePort))
 
             # Evaluate a port's expression when:
             # * one of its deps changed

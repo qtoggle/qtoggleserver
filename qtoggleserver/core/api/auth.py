@@ -38,7 +38,7 @@ def make_auth_header(origin, username, password_hash):
 
     token = jwt.encode(claims, key=password_hash or '', algorithm=JWT_ALG)
 
-    return 'Bearer {}'.format(token.decode())
+    return f'Bearer {token.decode()}'
 
 
 def parse_auth_header(auth, origin, password_hash_func, require_usr=True):
@@ -53,7 +53,7 @@ def parse_auth_header(auth, origin, password_hash_func, require_usr=True):
         payload = jwt.decode(token, algorithms=[JWT_ALG], verify=False)
 
     except jwt.exceptions.InvalidTokenError as e:
-        raise AuthError('invalid JWT: {}'.format(e)) from e
+        raise AuthError(f'invalid JWT: {e}') from e
 
     # Validate claims
     if payload.get('iss') != JWT_ISS:
@@ -76,7 +76,7 @@ def parse_auth_header(auth, origin, password_hash_func, require_usr=True):
     # Validate username & signature
     password_hash = password_hash_func(usr)
     if not password_hash:
-        raise AuthError('unknown usr in JWT: {}'.format(usr))
+        raise AuthError(f'unknown usr in JWT: {usr}')
 
     # Decode again to verify signature
     try:
@@ -86,7 +86,7 @@ def parse_auth_header(auth, origin, password_hash_func, require_usr=True):
         raise AuthError('invalid JWT signature') from e
 
     except jwt.exceptions.InvalidTokenError as e:
-        raise AuthError('invalid JWT: {}'.format(e)) from e
+        raise AuthError(f'invalid JWT: {e}') from e
 
     return usr
 

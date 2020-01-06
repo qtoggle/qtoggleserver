@@ -49,7 +49,7 @@ class Slave(utils.LoggableMixin):
 
         utils.LoggableMixin.__init__(self, name, logger)
         if not name:
-            self.set_logger_name('{}:{}'.format(host, port))
+            self.set_logger_name(f'{host}:{port}')
 
         self._name = name
         self._scheme = scheme
@@ -120,10 +120,10 @@ class Slave(utils.LoggableMixin):
 
     def __str__(self):
         if self._name:
-            return 'slave {} at {}'.format(self._name, self.get_url())
+            return f'slave {self._name} at {self.get_url()}'
 
         else:
-            return 'slave at {}'.format(self.get_url())
+            return f'slave at {self.get_url()}'
 
     def __eq__(self, s):
         return (self._scheme == s.get_scheme() and self._host == s.get_host() and
@@ -139,10 +139,10 @@ class Slave(utils.LoggableMixin):
 
         if not self._url:
             if self._scheme == 'http' and self._port == 80 or self._scheme == 'https' and self._port == 443:
-                self._url = '{}://{}{}'.format(self._scheme, self._host, self._path)
+                self._url = f'{self._scheme}://{self._host}{self._path}'
 
             else:
-                self._url = '{}://{}:{}{}'.format(self._scheme, self._host, self._port, self._path)
+                self._url = f'{self._scheme}://{self._host}:{self._port}{self._path}'
 
         return self._url
 
@@ -500,12 +500,12 @@ class Slave(utils.LoggableMixin):
         except core_responses.Error as e:
             e = self.intercept_error(e)
 
-            msg = 'api call {} {} on {} failed: {} (body={})'.format(method, path, self, e, body_str or '')
+            msg = f'api call {method} {path} on {self} failed: {e} (body={body_str or ""})'
 
             if (retry_counter is not None and retry_counter < settings.slaves.retry_count and
                 self._enabled and ref is not self._last_api_call_ref):
 
-                msg += ', retrying in {} seconds'.format(settings.slaves.retry_interval)
+                msg += f', retrying in {settings.slaves.retry_interval} seconds'
                 self.error(msg)
 
                 await asyncio.sleep(settings.slaves.retry_interval)
@@ -531,7 +531,7 @@ class Slave(utils.LoggableMixin):
             return
 
         h = hashlib.sha1(str(int(time.time() * 1000) + random.randint(0, 10000)).encode()).hexdigest()[:8]
-        self._listen_session_id = '{}-{}'.format(core_device_attrs.name.lower(), h)
+        self._listen_session_id = f'{core_device_attrs.name.lower()}-{h}'
 
         self.debug('starting listening mechanism (%s)', self._listen_session_id)
 
@@ -685,7 +685,7 @@ class Slave(utils.LoggableMixin):
                     self.error('exiting listen loop for dangling slave device')
                     break
 
-                url = self.get_url('/listen?timeout={}&session_id={}'.format(keep_alive, self._listen_session_id))
+                url = self.get_url(f'/listen?timeout={keep_alive}&session_id={self._listen_session_id}')
                 headers = {
                     'Content-Type': http_utils.JSON_CONTENT_TYPE,
                     'Authorization': core_api_auth.make_auth_header(core_api_auth.ORIGIN_CONSUMER,
@@ -1002,7 +1002,8 @@ class Slave(utils.LoggableMixin):
         self._fwupdate_poll_task = None
 
     async def handle_event(self, event):
-        method_name = '_handle_{}'.format(re.sub(r'[^\w]', '_', event['type']))
+        event_name = re.sub(r'[^\w]', '_', event['type'])
+        method_name = f'_handle_{event_name}'
         method = getattr(self, method_name, None)
         if not method:
             self.warning('ignoring event of type %s', event['type'])
@@ -1022,7 +1023,7 @@ class Slave(utils.LoggableMixin):
 
     # noinspection PyShadowingBuiltins
     async def _handle_value_change(self, id, value):
-        local_id = '{}.{}'.format(self._name, id)
+        local_id = f'{self._name}.{id}'
         port = core_ports.get(local_id)
         if not port or not isinstance(port, SlavePort):
             raise exceptions.PortNotFound(self, local_id)
@@ -1044,7 +1045,7 @@ class Slave(utils.LoggableMixin):
         await port.save()
 
     async def _handle_port_update(self, **attrs):
-        local_id = '{}.{}'.format(self._name, attrs.get('id'))
+        local_id = f'{self._name}.{attrs.get("id")}'
         port = core_ports.get(local_id)
         if not port or not isinstance(port, SlavePort):
             raise exceptions.PortNotFound(self, local_id)
@@ -1074,14 +1075,14 @@ class Slave(utils.LoggableMixin):
         port.trigger_update()
 
     async def _handle_port_add(self, **attrs):
-        local_id = '{}.{}'.format(self._name, attrs.get('id'))
+        local_id = f'{self._name}.{attrs.get("id")}'
         self.debug('port %s added remotely', local_id)
 
         await self._add_port(attrs)
 
     # noinspection PyShadowingBuiltins
     async def _handle_port_remove(self, id):
-        local_id = '{}.{}'.format(self._name, id)
+        local_id = f'{self._name}.{id}'
         port = core_ports.get(local_id)
         if not port or not isinstance(port, SlavePort):
             raise exceptions.PortNotFound(self, local_id)
@@ -1254,7 +1255,7 @@ class Slave(utils.LoggableMixin):
                 self.debug('provisioning %s attributes: %s', port, ', '.join(attrs.keys()))
 
                 try:
-                    await self.api_call('PATCH', '/ports/{}'.format(port.get_remote_id()), attrs)
+                    await self.api_call('PATCH', f'/ports/{port.get_remote_id()}', attrs)
 
                 except Exception as e:
                     self.error('failed to provision %s attributes: %s', port, e)
@@ -1267,7 +1268,7 @@ class Slave(utils.LoggableMixin):
                 self.debug('provisioning %s value', port)
 
                 try:
-                    await self.api_call('PATCH', '/ports/{}/value'.format(port.get_remote_id()))
+                    await self.api_call('PATCH', f'/ports/{port.get_remote_id()}/value')
 
                 except Exception as e:
                     self.error('failed to provision %s value: %s', port, e)

@@ -10,7 +10,7 @@ class ConfigurableMixin:
     @classmethod
     def configure(cls, **kwargs):
         for name, value in kwargs.items():
-            conf_method = getattr(cls, 'configure_{}'.format(name.lower()), None)
+            conf_method = getattr(cls, f'configure_{name.lower()}', None)
             if conf_method:
                 conf_method(value)
 
@@ -21,7 +21,7 @@ class ConfigurableMixin:
 class LoggableMixin:
     def __init__(self, name, parent_logger=None):
         if parent_logger and name:
-            name = '{}.{}'.format(parent_logger.name, name)
+            name = f'{parent_logger.name}.{name}'
 
         else:
             name = parent_logger.name
@@ -46,7 +46,7 @@ class LoggableMixin:
 
     def set_logger_name(self, name):
         if name:
-            self._logger = logging.getLogger('{}.{}'.format(self._parent_logger.name, name))
+            self._logger = logging.getLogger(f'{self._parent_logger.name}.{name}')
 
         else:
             self._logger = self._parent_logger
@@ -60,13 +60,13 @@ def load_attr(attr_path):
         mod = sys.modules[m]
 
     except ImportError as e:
-        raise Exception('Error importing {}: {}'.format(attr_path, e)) from e
+        raise Exception(f'Error importing {attr_path}: {e}') from e
 
     try:
         attr = getattr(mod, attr)
 
     except AttributeError as e:
-        raise Exception('Error importing {}: {}'.format(attr_path, e)) from e
+        raise Exception(f'Error importing {attr_path}: {e}') from e
 
     return attr
 

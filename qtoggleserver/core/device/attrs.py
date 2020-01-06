@@ -266,12 +266,12 @@ def get_attrs():
         wifi_config = system.net.get_wifi_config()
         if wifi_config['bssid']:
             wifi_config['bssid'] = wifi_config['bssid'].replace(':', '')
-            attrs['network_wifi'] = '{}:{}:{}'.format(wifi_config['ssid'], wifi_config['psk'], wifi_config['bssid'])
+            attrs['network_wifi'] = f'{wifi_config["ssid"]}:{wifi_config["psk"]}:{wifi_config["bssid"]}'
 
         elif wifi_config['psk']:
             wifi_config['psk'] = wifi_config['psk'].replace('\\', '\\\\')
             wifi_config['psk'] = wifi_config['psk'].replace(':', '\\:')
-            attrs['network_wifi'] = '{}:{}'.format(wifi_config['ssid'], wifi_config['psk'])
+            attrs['network_wifi'] = f'{wifi_config["ssid"]}:{wifi_config["psk"]}'
 
         elif wifi_config['ssid']:
             wifi_config['ssid'] = wifi_config['ssid'].replace('\\', '\\\\')
@@ -284,8 +284,7 @@ def get_attrs():
     if system.net.has_network_ip_support():
         ip_config = system.net.get_ip_config()
         if ip_config['ip'] and ip_config['mask'] and ip_config['gw'] and ip_config['dns']:
-            attrs['network_ip'] = '{}/{}:{}:{}'.format(ip_config['ip'], ip_config['mask'],
-                                                       ip_config['gw'], ip_config['dns'])
+            attrs['network_ip'] = f'{ip_config["ip"]}/{ip_config["mask"]}:{ip_config["gw"]}:{ip_config["dns"]}'
 
         else:
             attrs['network_ip'] = ''
@@ -313,7 +312,7 @@ def set_attrs(attrs):
         attrdef = ATTRDEFS[name]
 
         if not attrdef.get('modifiable'):
-            return 'attribute not modifiable: {}'.format(name)
+            return f'attribute not modifiable: {name}'
 
         # Treat passwords separately, as they are not persisted as given, but hashed first
         if name.endswith('_password') and hasattr(core_device_attrs, name + '_hash'):
@@ -342,7 +341,7 @@ def set_attrs(attrs):
                 date = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
 
             except ValueError:
-                return 'invalid field: {}'.format(name)
+                return f'invalid field: {name}'
 
             system.date.set_date(date)
 

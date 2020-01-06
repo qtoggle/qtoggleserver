@@ -11,7 +11,7 @@ class PortEvent(Event):
         super().__init__(timestamp)
 
     def __str__(self):
-        return '{}({}) event'.format(self._type, self._port.get_id())
+        return f'{self._type}({self._port.get_id()}) event'
 
     def get_port(self):
         return self._port

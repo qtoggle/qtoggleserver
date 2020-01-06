@@ -21,7 +21,7 @@ class OneWireException(Exception):
 
 class OneWirePeripheralNotFound(OneWireException):
     def __init__(self, address):
-        super().__init__('peripheral @{} not found'.format(address))
+        super().__init__(f'peripheral @{address} not found')
 
 
 class OneWirePeripheralAddressRequired(OneWireException):

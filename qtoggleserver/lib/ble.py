@@ -116,7 +116,7 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
 
     @staticmethod
     def pretty_data(data):
-        return ' '.join(map(lambda c: '{:02X}'.format(c), data))
+        return ' '.join(map(lambda c: f'{c:02X}', data))
 
     @staticmethod
     def _find_address(name):
@@ -126,14 +126,14 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
         except subprocess.CalledProcessError as e:
             output = e.output.decode()
             if output.count('No such device'):
-                raise Exception('adapter not found: {}'.format(name)) from e
+                raise Exception(f'adapter not found: {name}') from e
 
             else:
                 raise Exception(output.strip()) from e
 
         found = re.findall(name + r'\s([0-9a-f:]{17})', output, re.IGNORECASE)
         if not found:
-            raise Exception('adapter not found: {}'.format(name))
+            raise Exception(f'adapter not found: {name}')
 
         return found[0]
 
@@ -158,7 +158,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         self._online = False
 
     def __str__(self):
-        return '{}/{}'.format(self._adapter, self._name)
+        return f'{self._adapter}/{self._name}'
 
     def make_runner(self):
         # Instead of creating a runner for each peripheral instance, we use adapter's runner, thus having one runner per
@@ -233,7 +233,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
             while not notification_data and self.get_runner().is_running():
                 if time.time() - start_time > timeout:
                     bluepy_peripheral._stopHelper()
-                    raise BLETimeout('timeout waiting for notification on {:04X}'.format(notify_handle))
+                    raise BLETimeout(f'timeout waiting for notification on {notify_handle:04X}')
 
                 try:
                     bluepy_peripheral.waitForNotifications(0.1)

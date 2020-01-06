@@ -214,10 +214,10 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._loaded = False
 
     def __str__(self):
-        return 'port {}'.format(self._id)
+        return f'port {self._id}'
 
     def __repr__(self):
-        return 'Port({})'.format(self._id)
+        return f'Port({self._id})'
 
     def initialize(self):
         pass
@@ -335,7 +335,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.trigger_update()
 
     async def handle_attr_change(self, name, value):
-        method_name = 'handle_{}_change'.format(name)
+        method_name = f'handle_{name}'
         method = getattr(self, method_name, None)
         if method:
             try:
@@ -487,7 +487,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if not dep.startswith('$'):
                     continue
 
-                if dep != '${}'.format(self._id):
+                if dep != f'${self._id}':
                     raise core_expressions.ExpressionError('transform expression depends other ports')
 
             self.debug('setting read transform "%s"', transform_read)
@@ -522,7 +522,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if not dep.startswith('$'):
                     continue
 
-                if dep != '${}'.format(self._id):
+                if dep != f'${self._id}':
                     raise core_expressions.ExpressionError('transform expression depends other ports')
 
             self.debug('setting write transform "%s"', transform_write)
@@ -945,7 +945,7 @@ async def load(port_settings):
         else:
             port_class = driver
 
-        port_class_desc = '{}.{}'.format(port_class.__module__, port_class.__name__)
+        port_class_desc = f'{port_class.__module__}.{port_class.__name__}'
 
         try:
             value = port_spec.pop('value', None)  # Initial value

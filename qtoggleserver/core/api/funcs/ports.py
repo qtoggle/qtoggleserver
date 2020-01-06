@@ -36,7 +36,7 @@ async def patch_port(request, port_id, params):
         step = attrdef.get('step')
         _min = attrdef.get('min')
         if None not in (step, _min) and step != 0 and (value - _min) % step:
-            raise core_api.APIError(400, 'invalid field: {}'.format(name))
+            raise core_api.APIError(400, f'invalid field: {name}')
 
     errors_by_name = {}
 
@@ -59,13 +59,13 @@ async def patch_port(request, port_id, params):
             raise error
 
         elif isinstance(error, core_ports.InvalidAttributeValue):
-            raise core_api.APIError(400, 'invalid field: {}'.format(name))
+            raise core_api.APIError(400, f'invalid field: {name}')
 
         elif isinstance(error, core_ports.PortTimeout):
             raise core_api.APIError(504, 'port timeout')
 
         elif isinstance(error, core_ports.PortError):
-            raise core_api.APIError(502, 'port error: {}'.format(error))
+            raise core_api.APIError(502, f'port error: {error}')
 
         else:
             # transform any unhandled exception into APIError(500)
@@ -163,7 +163,7 @@ async def patch_port_value(request, port_id, params):
         raise core_api.APIError(504, 'port timeout') from e
 
     except core_ports.PortError as e:
-        raise core_api.APIError(502, 'port error: {}'.format(e)) from e
+        raise core_api.APIError(502, f'port error: {e}') from e
 
     except core_api.APIError:
         raise

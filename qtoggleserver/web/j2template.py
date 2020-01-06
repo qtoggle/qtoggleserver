@@ -34,7 +34,7 @@ def get_env():
 
     if _env is None:
         logger.debug('creating Jinja2 template environment')
-        loader = NamespaceLoader('qtoggleserver', '{}/html'.format(FRONTEND_DIR))
+        loader = NamespaceLoader('qtoggleserver', f'{FRONTEND_DIR}/html')
         _env = Environment(loader=loader, autoescape=select_autoescape())
 
     return _env
