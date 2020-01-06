@@ -26,7 +26,8 @@ class DummyEventHandler(BaseEventHandler):
     async def on_device_update(self, event, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs):
         logger.debug('handling device-update')
 
-    async def on_slave_device_update(self, event, slave, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs):
+    async def on_slave_device_update(self, event, slave, old_attrs, new_attrs,
+                                     changed_attrs, added_attrs, removed_attrs):
         logger.debug('handling slave-device-update for %s', slave)
 
     async def on_slave_device_add(self, event, slave, attrs):

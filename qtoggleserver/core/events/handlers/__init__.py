@@ -6,7 +6,7 @@ import asyncio
 from qtoggleserver import utils
 from qtoggleserver.conf import settings
 
-from .base import BaseEventHandler
+from .base import BaseEventHandler  # noqa: F401
 
 
 logger = logging.getLogger(__name__)

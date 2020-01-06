@@ -6,10 +6,10 @@ def from_utc(moment, timezone):
     # noinspection PyTypeChecker
     if isinstance(timezone, str):
         timezone = pytz.timezone(timezone)
-    
+
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=pytz.UTC)
-    
+
     return moment.astimezone(timezone)
 
 

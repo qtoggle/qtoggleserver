@@ -188,7 +188,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
             timeout = self.CMD_TIMEOUT
 
         return await self._run_cmd_async('write', self.get_address(), handle, notify_handle=notify_handle,
-                                        data=data, timeout=timeout, retry_count=retry_count)
+                                         data=data, timeout=timeout, retry_count=retry_count)
 
     def _run_cmd(self, cmd, address, handle, notify_handle, data, timeout):
         start_time = time.time()
