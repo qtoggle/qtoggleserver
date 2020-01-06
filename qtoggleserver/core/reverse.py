@@ -16,7 +16,7 @@ from qtoggleserver.utils import http as http_utils
 from qtoggleserver.utils import json as json_utils
 
 
-# a list of API calls that are prohibited via reverse mechanism
+# A list of API calls that are prohibited via reverse mechanism
 BLACKLIST_CALLS = [
     ('GET', re.compile(r'^/listen'))
 ]
@@ -44,8 +44,7 @@ class Reverse:
     def __init__(self, scheme=None, host=None, port=None, path=None, device_id=None, password=None, timeout=None,
                  **kwargs):
 
-        # the enabled value comes with kwargs but is ignored,
-        # as the reverse object will be explicitly enabled afterwards
+        # The enabled value comes with kwargs but is ignored; the reverse object will be explicitly enabled afterwards
 
         self._scheme = scheme
         self._host = host
@@ -141,7 +140,7 @@ class Reverse:
                 sleep_interval = settings.reverse.retry_interval
                 continue
 
-            # the reverse mechanism has been disabled while waiting
+            # The reverse mechanism has been disabled while waiting
             if not self._enabled:
                 break
 
@@ -165,7 +164,7 @@ class Reverse:
         }
 
         body_str = None
-        if api_response_dict:  # answer request
+        if api_response_dict:  # Answer request
             body_str = api_response_dict['body']
             headers['Status'] = '{} {}'.format(api_response_dict['status'],
                                                httputil.responses[api_response_dict['status']])
@@ -183,12 +182,11 @@ class Reverse:
             logger.debug('sending initial request to %s', url)
 
         try:
-            # this response is in fact an API request
+            # This response is in fact an API request
             consumer_response = await http_client.fetch(request, raise_error=False)
 
         except Exception as e:
-            # We need to catch exceptions here even though raise_error is False,
-            # because it only affects HTTP errors
+            # We need to catch exceptions here even though raise_error is False, because it only affects HTTP errors
             consumer_response = types.SimpleNamespace(error=e, code=599)
 
         api_request_dict = self._parse_consumer_response(consumer_response)
@@ -197,7 +195,7 @@ class Reverse:
 
     @staticmethod
     def _parse_consumer_response(response):
-        body = core_responses.parse(response)  # will raise for non-2xx
+        body = core_responses.parse(response)  # Will raise for non-2xx
 
         auth = response.headers.get('Authorization')
         if not auth:

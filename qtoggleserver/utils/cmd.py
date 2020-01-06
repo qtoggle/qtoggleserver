@@ -28,7 +28,7 @@ def run_get_cmd(get_cmd, cmd_name=None, log_values=True, exc_class=None, require
             parts.append('')
 
         key, value = parts
-        key = key.lower()[3:]  # strip leading "QS_"
+        key = key.lower()[3:]  # Strip leading "QS_"
         if value.startswith('"'):
             value = value[1:]
         if value.endswith('"') and not value.endswith('\\"'):

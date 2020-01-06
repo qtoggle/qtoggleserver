@@ -77,7 +77,7 @@ async def update():
             continue
 
         if new_value is None:
-            continue  # read value not available
+            continue  # Read value not available
 
         if new_value != old_value:
             old_value_str = json_utils.dumps(old_value) if old_value is not None else '(unavailable)'
@@ -88,7 +88,7 @@ async def update():
             port._value = new_value
             changed_set.add(port)
 
-            # remember and reset port change reason
+            # Remember and reset port change reason
             change_reasons[port] = port.get_change_reason()
             port.reset_change_reason()
 
@@ -117,10 +117,10 @@ async def handle_value_changes(changed_set, change_reasons):
     from . import ports
 
     if _force_eval_expressions:
-        changed_set.add(None)  # special "always depends on" value
+        changed_set.add(None)  # Special "always depends on" value
         _force_eval_expressions = False
 
-    # trigger value-change events; save persisted ports
+    # Trigger value-change events; save persisted ports
     for port in changed_set:
         if not isinstance(port, ports.BasePort):
             continue
@@ -130,7 +130,7 @@ async def handle_value_changes(changed_set, change_reasons):
         if await port.is_persisted():
             await port.save()
 
-    # reevaluate the expressions depending on changed ports
+    # Reevaluate the expressions depending on changed ports
     for port in ports.all_ports():
         if not port.is_enabled():
             continue
@@ -138,9 +138,9 @@ async def handle_value_changes(changed_set, change_reasons):
         expression = await port.get_expression()
         if expression:
             deps = expression.get_deps()
-            deps.add(None)  # special "always depends on" value
+            deps.add(None)  # Special "always depends on" value
 
-            # if port expression depends on port itself and the change reason is the evaluation of its expression,
+            # If port expression depends on port itself and the change reason is the evaluation of its expression,
             # prevent evaluating its expression again to avoid evaluation loops
 
             change_reason = change_reasons.get(port, ports.CHANGE_REASON_NATIVE)
@@ -151,11 +151,11 @@ async def handle_value_changes(changed_set, change_reasons):
 
             changed_set_ids = set('${}'.format(c.get_id()) for c in changed_set if isinstance(c, ports.BasePort))
 
-            # evaluate a port's expression when:
+            # Evaluate a port's expression when:
             # * one of its deps changed
             # * its own value changed
 
-            # join all deps together; deps may contain:
+            # Join all deps together; deps may contain:
             # * ports
             # * port ids
             # * time dep strings

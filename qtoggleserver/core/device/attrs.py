@@ -224,7 +224,7 @@ def get_attrs():
         'ui_theme': ui_theme
     }
 
-    # never disclose these ones
+    # Never disclose these ones
     attrs['admin_password'] = ''
     attrs['normal_password'] = ''
     attrs['viewonly_password'] = ''
@@ -300,8 +300,7 @@ def set_attrs(attrs):
 
     # noinspection PyShadowingNames
     for name, value in attrs.items():
-        # a few attributes may carry sensitive information
-        # treat them separately and do not log their values
+        # A few attributes may carry sensitive information, so treat them separately and do not log their values
         if name.count('password'):
             logger.debug('setting device attribute %s', name)
 

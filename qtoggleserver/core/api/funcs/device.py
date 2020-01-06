@@ -37,5 +37,5 @@ async def patch_device(request, params):
     core_device.save()
     core_device_events.trigger_update()
 
-    if result:  # reboot required
+    if result:  # Reboot required
         main.loop.call_later(2, system.reboot)

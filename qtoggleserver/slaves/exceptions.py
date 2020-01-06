@@ -73,7 +73,7 @@ def adapt_api_error(error):
         return core_api.APIError(502, 'invalid device')
 
     elif isinstance(error, core_responses.AuthError):
-        return core_api.APIError(400, 'forbidden')  # yes, 400, since it's a slave authorization issue
+        return core_api.APIError(400, 'forbidden')  # Yes, 400, since it's a slave authorization issue
 
     elif isinstance(error, core_api.APIError):
         return error

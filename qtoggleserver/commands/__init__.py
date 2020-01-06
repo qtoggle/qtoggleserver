@@ -86,7 +86,7 @@ def init_logging():
     settings.logging['disable_existing_loggers'] = False
     logging.config.dictConfig(settings.logging)
 
-    # add memory logs handler
+    # Add memory logs handler
     root_logger = logging.getLogger()
     main.memory_logs = FifoMemoryHandler(capacity=settings.logging['memory_logs_buffer_len'])
     root_logger.addHandler(main.memory_logs)
@@ -96,7 +96,7 @@ def init_logging():
     logger.info('hello!')
     logger.info('this is qToggleServer %s', version.VERSION)
 
-    # we can't do this in init_settings() because we have no logging there
+    # We can't do this in init_settings() because we have no logging there
     logger.info('using config from %s', options.config_file)
 
 

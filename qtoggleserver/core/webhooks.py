@@ -33,8 +33,7 @@ class Webhooks:
     # noinspection PyUnusedLocal
     def __init__(self, scheme=None, host=None, port=None, path=None, timeout=None, retries=None, **kwargs):
 
-        # the enabled value comes with kwargs but is ignored,
-        # as the webhook will be explicitly enabled afterwards
+        # The enabled value comes with kwargs but is ignored; webhooks will be explicitly enabled afterwards
 
         self._enabled = False
         self._scheme = scheme
@@ -121,7 +120,7 @@ class Webhooks:
             except core_responses.Error as e:
                 logger.error('%s: call failed: %s', self, e)
 
-                # retry mechanism
+                # Retry mechanism
                 if not self._retries:
                     return self._check_pending()
 

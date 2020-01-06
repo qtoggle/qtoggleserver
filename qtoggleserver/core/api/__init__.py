@@ -73,7 +73,7 @@ def api_call(access_level=ACCESS_LEVEL_NONE):
             logger.debug('executing API call "%s"', func.__name__)
 
             if request_handler.access_level < access_level:
-                if request_handler.access_level == ACCESS_LEVEL_NONE:  # indicates missing or invalid auth data
+                if request_handler.access_level == ACCESS_LEVEL_NONE:  # Indicates missing or invalid auth data
                     raise APIError(401, 'authentication required')
 
                 else:

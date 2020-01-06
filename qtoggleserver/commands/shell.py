@@ -7,7 +7,7 @@ from qtoggleserver import commands
 
 
 def execute():
-    import qtoggleserver  # required for locals()
+    import qtoggleserver  # Required for locals()
 
     loop = asyncio.get_event_loop()
 

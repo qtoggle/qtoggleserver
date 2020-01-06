@@ -19,7 +19,7 @@ def get_display_name():
 def load():
     data = persist.get_value('device', {})
 
-    # attributes
+    # Attributes
     persisted_attrs = []
     for name, value in device_attrs.ATTRDEFS.items():
         persisted = value.get('persisted', value.get('modifiable'))
@@ -38,8 +38,7 @@ def load():
 
         value = data[name]
 
-        # a few attributes may carry sensitive information
-        # treat them separately and do not log their values
+        # A few attributes may carry sensitive information, so treat them separately and do not log their values
         if name.count('password'):
             logger.debug('loaded %s', name)
 
@@ -51,12 +50,12 @@ def load():
 
         setattr(device_attrs, name, value)
 
-    # device name
+    # Device name
     if settings.device_name.get_cmd:
         result = run_get_cmd(settings.device_name.get_cmd, cmd_name='device name', required_fields=['name'])
         device_attrs.name = result['name']
 
-    # hash empty passwords
+    # Hash empty passwords
     if not device_attrs.admin_password_hash:
         device_attrs.admin_password_hash = device_attrs.EMPTY_PASSWORD_HASH
     if not device_attrs.normal_password_hash:
@@ -68,7 +67,7 @@ def load():
 def save():
     data = {}
 
-    # attributes
+    # Attributes
     persisted_attrs = []
     for name, value in device_attrs.ATTRDEFS.items():
         persisted = value.get('persisted', value.get('modifiable'))
