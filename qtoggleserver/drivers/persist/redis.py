@@ -213,15 +213,15 @@ class RedisDriver(BaseDriver):
     @staticmethod
     def _make_record_key(collection, _id):
         if _id:
-            return '{}:{}'.format(collection, _id)
+            return f'{collection}:{_id}'
 
         else:
             return collection
 
     @staticmethod
     def _make_set_key(collection):
-        return '{}-id-set'.format(collection)
+        return f'{collection}-id-set'
 
     @staticmethod
     def _make_sequence_key(collection):
-        return '{}-id-sequence'.format(collection)
+        return f'{collection}-id-sequence'

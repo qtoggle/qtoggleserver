@@ -33,12 +33,12 @@ _stopping = False
 def parse_args():
     global options
 
-    description = 'qToggleServer {}'.format(version.VERSION)
+    description = f'qToggleServer {version.VERSION}'
     epilog = None
 
     class VersionAction(argparse.Action):
         def __call__(self, *args, **kwargs):
-            sys.stdout.write('{}\n'.format(description))
+            sys.stdout.write(f'{description}\n')
             sys.exit()
 
     parser = argparse.ArgumentParser(prog=sys.argv[0],
@@ -64,11 +64,11 @@ def init_settings():
         parsed_config = conf_utils.config_from_file(options.config_file)
 
     except IOError as e:
-        sys.stderr.write('failed to open config file "{}": {}\n'.format(options.config_file, e))
+        sys.stderr.write(f'failed to open config file "{options.config_file}": {e}\n')
         sys.exit(-1)
 
     except Exception as e:
-        sys.stderr.write('failed to load config file "{}": {}\n'.format(options.config_file, e))
+        sys.stderr.write(f'failed to load config file "{options.config_file}": {e}\n')
         sys.exit(-1)
 
     def_config = conf_utils.obj_to_dict(settings)

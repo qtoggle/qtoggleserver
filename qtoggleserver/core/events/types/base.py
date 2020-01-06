@@ -18,7 +18,7 @@ class Event(metaclass=abc.ABCMeta):
         self._timestamp = timestamp or time.time()
 
     def __str__(self):
-        return '{} event'.format(self._type)
+        return f'{self._type} event'
 
     async def to_json(self):
         return {

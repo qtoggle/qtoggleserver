@@ -215,7 +215,7 @@ class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
 
         _id = self.make_id()
         if self._peripheral.get_name():
-            _id = '{}.{}'.format(self._peripheral.get_name(), _id)
+            _id = f'{self._peripheral.get_name()}.{_id}'
 
         super().__init__(_id)
 

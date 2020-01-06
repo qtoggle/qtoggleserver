@@ -32,7 +32,7 @@ class InvalidArgument(ExpressionError):
         self.value = value
 
     def __str__(self):
-        return 'invalid argument {}: {}'.format(self.arg_no, self.value)
+        return f'invalid argument {self.arg_no}: {self.value}'
 
 
 class CircularDependency(ExpressionError):
@@ -89,7 +89,7 @@ class Constant(Expression):
                     value = float(sexpression)
 
                 except ValueError:
-                    raise InvalidExpression('"{}" is not a valid constant'.format(sexpression)) from None
+                    raise InvalidExpression(f'"{sexpression}" is not a valid constant') from None
 
         return Constant(value, sexpression)
 
@@ -107,7 +107,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
         s = getattr(self, '_str', None)
         if s is None:
             args_str = ', '.join([str(e) for e in self.args])
-            self._str = s = '{}({})'.format(self.NAME, args_str)
+            self._str = s = f'{self.NAME}({args_str})'
 
         return s
 
@@ -168,13 +168,13 @@ class Function(Expression, metaclass=abc.ABCMeta):
         func_name = sexpression[:p_start].strip()
         func_class = FUNCTIONS.get(func_name)
         if func_class is None:
-            raise InvalidExpression('unknown function "{}"'.format(func_name))
+            raise InvalidExpression(f'unknown function "{func_name}"')
 
         if func_class.MIN_ARGS is not None and len(sargs) < func_class.MIN_ARGS:
-            raise InvalidExpression('too few arguments for function "{}"'.format(func_name))
+            raise InvalidExpression(f'too few arguments for function "{func_name}"')
 
         if func_class.MAX_ARGS is not None and len(sargs) > func_class.MAX_ARGS:
-            raise InvalidExpression('too many arguments for function "{}"'.format(func_name))
+            raise InvalidExpression(f'too many arguments for function "{func_name}"')
 
         args = [parse(self_port_id, sa) for sa in sargs]
 
@@ -769,10 +769,10 @@ class PortValue(Expression):
         self.port_id = port_id
 
     def __str__(self):
-        return '${}'.format(self.port_id)
+        return f'${self.port_id}'
 
     def get_deps(self):
-        return {'${}'.format(self.port_id)}
+        return {f'${self.port_id}'}
 
     def get_port(self):
         from qtoggleserver.core import ports as core_ports
@@ -782,14 +782,14 @@ class PortValue(Expression):
     def eval(self):
         port = self.get_port()
         if not port:
-            raise IncompleteExpression('unknown port {}'.format(self.port_id))
+            raise IncompleteExpression(f'unknown port {self.port_id}')
 
         if not port.is_enabled():
-            raise IncompleteExpression('{} is disabled'.format(port))
+            raise IncompleteExpression(f'{port} is disabled')
 
         value = port.get_value()
         if value is None:
-            raise IncompleteExpression('value of port {} is undefined'.format(port))
+            raise IncompleteExpression(f'value of port {port} is undefined')
 
         return float(value)
 
@@ -858,4 +858,4 @@ async def check_loops(port, expression):
         return 0
 
     if await check_loops_rec(1, expression) > 1:
-        raise CircularDependency('{} is recursively referred'.format(port))
+        raise CircularDependency(f'{port} is recursively referred')

@@ -72,7 +72,7 @@ class SlavePort(core_ports.BasePort):
         # provisioned later
         self._provisioning = set()
 
-        port_id = '{}.{}'.format(slave.get_name(), self._remote_id)
+        port_id = f'{slave.get_name()}.{self._remote_id}'
 
         super().__init__(port_id)
 
@@ -207,7 +207,7 @@ class SlavePort(core_ports.BasePort):
         self._remote_update_pending_attrs = set()
 
         try:
-            await self._slave.api_call('PATCH', '/ports/{}'.format(self._remote_id), body)
+            await self._slave.api_call('PATCH', f'/ports/{self._remote_id}', body)
             self.debug('successfully updated attributes remotely')
 
         except Exception as e:
@@ -269,7 +269,7 @@ class SlavePort(core_ports.BasePort):
     async def write_value(self, value):
         if self._slave.is_online():
             try:
-                await self._slave.api_call('PATCH', '/ports/{}/value'.format(self._remote_id), value)
+                await self._slave.api_call('PATCH', f'/ports/{self._remote_id}', value)
 
             except core_responses.HTTPError as e:
                 if e.code == 502 and e.msg.startswith('port error:'):
@@ -296,7 +296,7 @@ class SlavePort(core_ports.BasePort):
             raise exceptions.DeviceOffline(self._slave)
 
         try:
-            await self._slave.api_call('POST', '/ports/{}/sequence'.format(self._remote_id),
+            await self._slave.api_call('POST', f'/ports/{self._remote_id}',
                                        {'values': values, 'delays': delays, 'repeat': repeat})
             self.debug('sequence sent remotely')
 

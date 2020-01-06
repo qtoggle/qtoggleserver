@@ -28,7 +28,7 @@ _reverse = None
 class InvalidParamError(Exception):
     def __init__(self, param):
         self._param = param
-        super().__init__('invalid field: {}'.format(param))
+        super().__init__(f'invalid field: {param}')
 
 
 class InvalidConsumerRequestError(Exception):
@@ -71,10 +71,10 @@ class Reverse:
     def get_url(self):
         if not hasattr(self, '_url'):
             if self._scheme == 'http' and self._port == 80 or self._scheme == 'https' and self._port == 443:
-                self._url = '{}://{}{}'.format(self._scheme, self._host, self._path)
+                self._url = f'{self._scheme}://{self._host}{self._path}'
 
             else:
-                self._url = '{}://{}:{}{}'.format(self._scheme, self._host, self._port, self._path)
+                self._url = f'{self._scheme}://{self._host}:{self._port}{self._path}'
 
         return self._url
 
@@ -166,8 +166,7 @@ class Reverse:
         body_str = None
         if api_response_dict:  # Answer request
             body_str = api_response_dict['body']
-            headers['Status'] = '{} {}'.format(api_response_dict['status'],
-                                               httputil.responses[api_response_dict['status']])
+            headers['Status'] = f'{api_response_dict["status"]} {httputil.responses[api_response_dict["status"]]}'
             headers['API-Call-Id'] = api_request_dict['api_call_id']
 
         http_client = AsyncHTTPClient()

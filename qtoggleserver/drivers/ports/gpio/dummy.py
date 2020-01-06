@@ -24,7 +24,7 @@ class DummyGPIO(ports.Port):
         self._dummy_value = def_value
         self._dummy_output = def_output if def_output is not None else False
 
-        super().__init__(port_id='gpio{}'.format(no))
+        super().__init__(port_id=f'gpio{no}')
 
     async def handle_enable(self):
         if self._def_output is not None:

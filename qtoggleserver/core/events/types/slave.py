@@ -11,7 +11,7 @@ class SlaveDeviceEvent(Event):
         super().__init__(timestamp)
 
     def __str__(self):
-        return '{}({}) event'.format(self._type, self._slave.get_name())
+        return f'{self._type}({self._slave.get_name()}) event'
 
     def get_slave(self):
         return self._slave

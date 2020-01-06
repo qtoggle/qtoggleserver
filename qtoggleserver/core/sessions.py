@@ -75,7 +75,7 @@ class Session:
         self.queue.insert(0, event)
 
     def __str__(self):
-        return 'session {}'.format(self.id)
+        return f'session {self.id}'
 
 
 def get(session_id):

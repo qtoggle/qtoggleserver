@@ -261,7 +261,7 @@ def validate(params, schema, invalid_field_msg='invalid field: {field}', unexpec
                 raise APIError(400, invalid_request_msg)
 
         elif error == 'missing':
-            raise APIError(400, 'missing field: {}'.format(field))
+            raise APIError(400, f'missing field: {field}')
 
         elif error == 'unexpected':
             if callable(unexpected_field_msg):

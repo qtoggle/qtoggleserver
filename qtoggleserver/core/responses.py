@@ -18,7 +18,7 @@ class Error(Exception):
         return self.MESSAGE.format(**self._params)
 
     def __repr__(self):
-        return '{}("{}")'.format(self.__class__.__name__, self)
+        return f'{self.__class__.__name__}("{self}")'
 
 
 class HostUnreachable(Error):
@@ -150,4 +150,4 @@ def parse(response, decode_json=True, resolve_refs=True):
 
         raise OtherError(str(response.error))
 
-    raise OtherError('unknown HTTP error ({}: {})'.format(response.code, str(response.error)))
+    raise OtherError(f'unknown HTTP error ({response.code}: {str(response.error)})')

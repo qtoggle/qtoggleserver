@@ -27,7 +27,7 @@ class GPIO(ports.Port):
         self._val_file = None
         self._dir_file = None
 
-        super().__init__(port_id='gpio{}'.format(no))
+        super().__init__(port_id=f'gpio{no}')
 
     async def handle_enable(self):
         try:
