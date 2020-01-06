@@ -76,8 +76,8 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
                                    if n.startswith('port_') and n != 'port_value' and not n.endswith('_transition')}
 
         self._filter_port_attr_transitions = {n[5:-11]: v for n, v in self._filter.items()
-                                              if n.startswith('port_') and n != 'port_value_transition' and
-                                                 n.endswith('_transition')}
+                                              if (n.startswith('port_') and n != 'port_value_transition' and
+                                                  n.endswith('_transition'))}
 
         self._filter_slave_attrs = {n[6:]: v for n, v in self._filter.items()
                                     if n.startswith('slave_') and not n.endswith('_transition')}
@@ -237,7 +237,7 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
 
     async def accepts_slave(self, event, old_attrs, new_attrs):
         return self._accepts_attrs(self._filter_slave_attr_names, self._filter_slave_attrs,
-                                   self._filter_slave_attr_transitions,  old_attrs, new_attrs)
+                                   self._filter_slave_attr_transitions, old_attrs, new_attrs)
 
     async def accepts(self, event, value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs):
         if not self._filter_prepared:

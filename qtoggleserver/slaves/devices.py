@@ -721,7 +721,8 @@ class Slave(utils.LoggableMixin):
                     events = core_responses.parse(response)
 
                 except core_responses.Error as e:
-                    self.error('api call GET /listen failed: %s, retrying in %s seconds', e, settings.slaves.retry_interval)
+                    self.error('api call GET /listen failed: %s, retrying in %s seconds', e,
+                               settings.slaves.retry_interval)
 
                     if self._online:
                         self._online = False
@@ -1441,7 +1442,6 @@ class Slave(utils.LoggableMixin):
                 return core_responses.HTTPError(error.code, 'invalid field: device_' + m.group(1))
 
         return error
-
 
 
 def get(name):

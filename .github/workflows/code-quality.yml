@@ -3,13 +3,12 @@ name: Code Quality
 on:
   push:
     branches:
-      - master
-      - dev
-      - feature-*
-      - improvement-*
-      - fix-*
+      - '*'
+    tags:
+      - '!*'
+
 jobs:
-  lint:
+  eslint:
     name: ESLint
     runs-on: ubuntu-latest
     steps:
@@ -23,3 +22,17 @@ jobs:
         run: cd frontend && npm install --only=dev
       - name: ESLint
         run: cd frontend && npx eslint js
+  flake8:
+    name: Flake8
+    runs-on: ubuntu-latest
+    steps:
+      - name: Source Code Checkout
+        uses: actions/checkout@master
+      - name: Python Setup
+        uses: actions/setup-python@master
+        with:
+          python-version: '3.x'
+      - name: Install Dev Deps
+        run: pip install flake8
+      - name: Flake8
+        run: flake8 qtoggleserver
