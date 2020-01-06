@@ -1,6 +1,8 @@
 
 import asyncio
 
+from typing import Any, Dict, List, Union
+
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import main
@@ -11,12 +13,12 @@ from qtoggleserver.utils import json as json_utils
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
-async def get_ports(request):
+async def get_ports(request: core_api.APIRequest) -> List[Dict[str, Any]]:
     return [await port.to_json() for port in sorted(core_ports.all_ports(), key=lambda p: p.get_id())]
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def patch_port(request, port_id, params):
+async def patch_port(request: core_api.APIRequest, port_id: str, params: Dict[str, Any]) -> None:
     port = core_ports.get(port_id)
     if port is None:
         raise core_api.APIError(404, 'no such port')
@@ -75,7 +77,7 @@ async def patch_port(request, port_id, params):
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def post_ports(request, params):
+async def post_ports(request: core_api.APIRequest, params: Dict[str, Any]) -> Dict[str, Any]:
     core_api_schema.validate(params, core_api_schema.POST_PORTS)
 
     port_id = params['id']
@@ -105,7 +107,7 @@ async def post_ports(request, params):
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def delete_port(request, port_id):
+async def delete_port(request: core_api.APIRequest, port_id: str) -> None:
     port = core_ports.get(port_id)
     if not port:
         raise core_api.APIError(404, 'no such port')
@@ -118,7 +120,7 @@ async def delete_port(request, port_id):
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
-async def get_port_value(request, port_id):
+async def get_port_value(request: core_api.APIRequest, port_id: str) -> Union[int, float, bool, None]:
     port = core_ports.get(port_id)
     if port is None:
         raise core_api.APIError(404, 'no such port')
@@ -135,7 +137,7 @@ async def get_port_value(request, port_id):
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NORMAL)
-async def patch_port_value(request, port_id, params):
+async def patch_port_value(request: core_api.APIRequest, port_id: str, params: Union[int, float, bool, None]) -> None:
     port = core_ports.get(port_id)
     if port is None:
         raise core_api.APIError(404, 'no such port')
@@ -169,14 +171,14 @@ async def patch_port_value(request, port_id, params):
         raise
 
     except Exception as e:
-        # transform any unhandled exception into APIError(500)
+        # Transform any unhandled exception into APIError(500)
         raise core_api.APIError(500, str(e)) from e
 
     await main.update()
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NORMAL)
-async def post_port_sequence(request, port_id, params):
+async def post_port_sequence(request: core_api.APIRequest, port_id: str, params: Dict[str, Any]) -> None:
     port = core_ports.get(port_id)
     if port is None:
         raise core_api.APIError(404, 'no such port')

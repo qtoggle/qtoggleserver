@@ -12,7 +12,7 @@ from qtoggleserver.web import server as web_server
 logger = logging.getLogger('qtoggleserver.server')
 
 
-def init_web_server():
+def init_web_server() -> None:
     listen, port = settings.server.addr, settings.server.port
 
     ssl_context = None
@@ -30,7 +30,7 @@ def init_web_server():
         raise
 
 
-def execute():
+def execute() -> None:
     loop = asyncio.get_event_loop()
 
     loop.run_until_complete(commands.init())

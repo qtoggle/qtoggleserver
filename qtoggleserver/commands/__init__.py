@@ -30,7 +30,7 @@ options = None
 _stopping = False
 
 
-def parse_args():
+def parse_args() -> None:
     global options
 
     description = f'qToggleServer {version.VERSION}'
@@ -59,7 +59,7 @@ def parse_args():
         sys.exit(-1)
 
 
-def init_settings():
+def init_settings() -> None:
     try:
         parsed_config = conf_utils.config_from_file(options.config_file)
 
@@ -80,7 +80,7 @@ def init_settings():
     conf_utils.update_obj_from_dict(settings, config)
 
 
-def init_logging():
+def init_logging() -> None:
     global logger
 
     settings.logging['disable_existing_loggers'] = False
@@ -100,7 +100,7 @@ def init_logging():
     logger.info('using config from %s', options.config_file)
 
 
-def init_signals():
+def init_signals() -> None:
     loop = asyncio.get_event_loop()
 
     def bye_handler(sig, frame):
@@ -120,7 +120,7 @@ def init_signals():
     signal.signal(signal.SIGTERM, bye_handler)
 
 
-def init_configurables():
+def init_configurables() -> None:
     httpclient.AsyncHTTPClient.configure('tornado.simple_httpclient.SimpleAsyncHTTPClient', max_clients=1024)
 
     configurables = conf_utils.obj_to_dict(settings.configurables)
@@ -140,7 +140,7 @@ def init_configurables():
             logger.error('failed to configure class %s: %s', class_name, e, exc_info=True)
 
 
-def init_persist():
+def init_persist() -> None:
     logger.info('initializing persistence')
     try:
         persist.get_value('device')
@@ -150,16 +150,16 @@ def init_persist():
         sys.exit(-1)
 
 
-async def cleanup_persist():
+async def cleanup_persist() -> None:
     persist.close()
 
 
-def init_events():
+def init_events() -> None:
     logger.info('initializing events')
     events.init()
 
 
-async def init_device():
+async def init_device() -> None:
     logger.info('initializing device')
     device.load()
 
@@ -172,41 +172,41 @@ async def init_device():
         reverse.load()
 
 
-async def init_ports():
+async def init_ports() -> None:
     logger.info('initializing ports')
     vports.load()
     port_settings = settings.ports + vports.all_settings()
     await ports.load(port_settings)
 
 
-async def cleanup_ports():
+async def cleanup_ports() -> None:
     logger.info('cleaning up ports')
     await ports.cleanup()
 
 
-async def init_slaves():
+async def init_slaves() -> None:
     if settings.slaves.enabled:
         logger.info('initializing slaves')
         await slaves_devices.load()
 
 
-async def cleanup_slaves():
+async def cleanup_slaves() -> None:
     if settings.slaves.enabled:
         logger.info('cleaning up slaves')
         await slaves_devices.cleanup()
 
 
-async def init_lib():
+async def init_lib() -> None:
     logger.info('initializing libs')
     await lib.init()
 
 
-async def cleanup_lib():
+async def cleanup_lib() -> None:
     logger.info('cleaning up libs')
     await lib.cleanup()
 
 
-async def init_main():
+async def init_main() -> None:
     logger.info('initializing main')
     await main.init()
 
@@ -222,12 +222,12 @@ async def init_main():
     main.set_ready()
 
 
-async def cleanup_main():
+async def cleanup_main() -> None:
     logger.info('cleaning up main')
     await main.cleanup()
 
 
-async def init():
+async def init() -> None:
     parse_args()
 
     init_settings()
@@ -244,7 +244,7 @@ async def init():
     await init_lib()
 
 
-async def cleanup():
+async def cleanup() -> None:
     await cleanup_main()
     await cleanup_slaves()
     await cleanup_ports()

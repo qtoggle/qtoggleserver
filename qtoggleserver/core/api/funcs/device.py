@@ -1,4 +1,6 @@
 
+from typing import Any, Dict
+
 from qtoggleserver import system
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import device as core_device
@@ -9,12 +11,12 @@ from qtoggleserver.core.device import events as core_device_events
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def get_device(request):
+async def get_device(request: core_api.APIRequest) -> Dict[str, Any]:
     return core_device_attrs.to_json()
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def patch_device(request, params):
+async def patch_device(request: core_api.APIRequest, params: Dict[str, Any]) -> None:
     def unexpected_field_msg(field):
         if field in core_device_attrs.ATTRDEFS:
             return 'attribute not modifiable: {field}'

@@ -388,6 +388,8 @@ class ListenHandler(APIHandler):
     async def get(self):
         session_id = self.get_argument('session_id', None)
         timeout = self.get_argument('timeout', None)
+        if timeout:
+            timeout = int(timeout)
 
         await self.call_api_func(core_api_funcs.get_listen,
                                  session_id=session_id, timeout=timeout, access_level=self.access_level)

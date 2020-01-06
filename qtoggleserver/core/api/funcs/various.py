@@ -1,6 +1,8 @@
 
 import re
 
+from typing import Any, Dict, List, Optional
+
 from qtoggleserver import slaves
 from qtoggleserver import system
 from qtoggleserver.conf import settings
@@ -16,14 +18,16 @@ from qtoggleserver.core.api import schema as core_api_schema
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NONE)
-async def get_access(request, access_level):
+async def get_access(request: core_api.APIRequest, access_level: int) -> Dict[str, str]:
     return {
         'level': core_api.ACCESS_LEVEL_MAPPING[access_level]
     }
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
-async def get_listen(request, session_id, timeout, access_level):
+async def get_listen(request: core_api.APIRequest,
+                     session_id: str, timeout: Optional[int], access_level: int) -> List[Dict[str, Any]]:
+
     if session_id is None:
         raise core_api.APIError(400, 'missing field: session_id')
 
@@ -50,7 +54,7 @@ async def get_listen(request, session_id, timeout, access_level):
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def post_reset(request, params):
+async def post_reset(request: core_api.APIRequest, params: Dict[str, Any]) -> None:
     core_api_schema.validate(params, core_api_schema.POST_RESET)
 
     factory = params.get('factory')

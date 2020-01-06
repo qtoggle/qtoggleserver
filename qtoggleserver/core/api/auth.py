@@ -4,6 +4,8 @@ import logging
 import re
 import time
 
+from typing import Callable, Optional
+
 from qtoggleserver import system
 from qtoggleserver.conf import settings
 from qtoggleserver.core.device import attrs as core_device_attrs
@@ -24,7 +26,7 @@ class AuthError(Exception):
     pass
 
 
-def make_auth_header(origin, username, password_hash):
+def make_auth_header(origin: str, username: str, password_hash: str) -> str:
     claims = {
         'iss': JWT_ISS,
         'ori': origin
@@ -41,7 +43,7 @@ def make_auth_header(origin, username, password_hash):
     return f'Bearer {token.decode()}'
 
 
-def parse_auth_header(auth, origin, password_hash_func, require_usr=True):
+def parse_auth_header(auth: str, origin: str, password_hash_func: Callable, require_usr: bool = True) -> str:
     m = _AUTH_TOKEN_RE.match(auth)
     if not m:
         raise AuthError('Invalid authorization header')
@@ -91,7 +93,7 @@ def parse_auth_header(auth, origin, password_hash_func, require_usr=True):
     return usr
 
 
-def consumer_password_hash_func(usr):
+def consumer_password_hash_func(usr: str) -> Optional[str]:
     if usr == 'admin':
         return core_device_attrs.admin_password_hash
 

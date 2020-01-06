@@ -2,6 +2,8 @@
 import jsonschema
 import re
 
+from typing import Any, Callable, Dict, Optional, Tuple, Union
+
 from . import APIError
 
 
@@ -220,7 +222,7 @@ PATCH_REVERSE = {
 }
 
 
-def _validate_schema(json, schema):
+def _validate_schema(json: Any, schema: Dict[str, Any]) -> Optional[Tuple[str, Optional[str]]]:
     try:
         jsonschema.Draft4Validator(schema=schema).validate(json)
         return None
@@ -244,8 +246,10 @@ def _validate_schema(json, schema):
                     return 'invalid', None
 
 
-def validate(params, schema, invalid_field_msg='invalid field: {field}', unexpected_field_msg='invalid request',
-             invalid_request_msg='invalid request'):
+def validate(params: Any, schema: Dict[str, Any],
+             invalid_field_msg: Union[str, Callable] = 'invalid field: {field}',
+             unexpected_field_msg: Union[str, Callable] = 'invalid request',
+             invalid_request_msg: str = 'invalid request') -> None:
 
     validation_error = _validate_schema(params, schema)
     if validation_error:

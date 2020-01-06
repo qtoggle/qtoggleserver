@@ -2,6 +2,11 @@
 import functools
 import logging
 
+from tornado.web import RequestHandler
+from typing import Callable, Dict
+
+from qtoggleserver.core import responses as core_responses
+
 
 API_VERSION = '1.0'
 
@@ -25,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 class APIError(Exception):
-    def __init__(self, status, message, **params):
+    def __init__(self, status: int, message: str, **params) -> None:
         self.status = status
         self.message = message
         self.params = params
@@ -33,12 +38,12 @@ class APIError(Exception):
         super().__init__(message)
 
     @staticmethod
-    def from_http_error(http_error):
+    def from_http_error(http_error: core_responses.HTTPError) -> 'APIError':
         return APIError(http_error.code, http_error.msg)
 
 
 class APIRequest:
-    def __init__(self, handler):
+    def __init__(self, handler: RequestHandler) -> None:
         self.handler = handler
 
     @property
@@ -54,7 +59,7 @@ class APIRequest:
         return self.handler.request.path
 
     @property
-    def query_arguments(self):
+    def query_arguments(self) -> Dict[str, str]:
         return {k: self.handler.decode_argument(v[0]) for k, v in self.handler.request.query_arguments.items()}
 
     @property
@@ -66,7 +71,7 @@ class APIRequest:
         return self.handler.request.body
 
 
-def api_call(access_level=ACCESS_LEVEL_NONE):
+def api_call(access_level: int = ACCESS_LEVEL_NONE) -> Callable:
     def decorator(func):
         @functools.wraps(func)
         def wrapper(request_handler, *args, **kwargs):
