@@ -19,7 +19,7 @@ class Sequence:
 
     def start(self):
         if self._loop_task:
-            raise Exception('loop task already started')
+            raise Exception('Loop task already started')
 
         self._loop_task = asyncio.create_task(self._loop())
 

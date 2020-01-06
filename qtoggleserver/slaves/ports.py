@@ -111,7 +111,7 @@ class SlavePort(core_ports.BasePort):
     ADDITIONAL_ATTRDEFS = property(_get_additional_attrdefs)
 
     def map_id(self, new_id):
-        raise core_ports.PortError('slave ports cannot be mapped')
+        raise core_ports.PortError('Slave ports cannot be mapped')
 
     def get_remote_id(self):
         return self._remote_id

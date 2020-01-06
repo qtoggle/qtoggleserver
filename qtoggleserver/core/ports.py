@@ -488,7 +488,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
                     continue
 
                 if dep != f'${self._id}':
-                    raise core_expressions.ExpressionError('transform expression depends other ports')
+                    raise core_expressions.ExpressionError('Transform expression depends other ports')
 
             self.debug('setting read transform "%s"', transform_read)
             self._transform_read = transform_read
@@ -523,7 +523,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
                     continue
 
                 if dep != f'${self._id}':
-                    raise core_expressions.ExpressionError('transform expression depends other ports')
+                    raise core_expressions.ExpressionError('Transform expression depends other ports')
 
             self.debug('setting write transform "%s"', transform_write)
             self._transform_write = transform_write

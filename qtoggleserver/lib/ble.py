@@ -50,7 +50,7 @@ class _BluepyPeripheral(btle.Peripheral):
         timeout = timeout or self._timeout
         response = super()._getResp(wantType, timeout)
         if response is None:
-            raise _BluepyTimeoutError('timeout waiting for a response from peripheral')
+            raise _BluepyTimeoutError('Timeout waiting for a response from peripheral')
 
         return response
 
@@ -126,14 +126,14 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
         except subprocess.CalledProcessError as e:
             output = e.output.decode()
             if output.count('No such device'):
-                raise Exception(f'adapter not found: {name}') from e
+                raise Exception(f'Adapter not found: {name}') from e
 
             else:
                 raise Exception(output.strip()) from e
 
         found = re.findall(name + r'\s([0-9a-f:]{17})', output, re.IGNORECASE)
         if not found:
-            raise Exception(f'adapter not found: {name}')
+            raise Exception(f'Adapter not found: {name}')
 
         return found[0]
 
@@ -233,7 +233,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
             while not notification_data and self.get_runner().is_running():
                 if time.time() - start_time > timeout:
                     bluepy_peripheral._stopHelper()
-                    raise BLETimeout(f'timeout waiting for notification on {notify_handle:04X}')
+                    raise BLETimeout(f'Timeout waiting for notification on {notify_handle:04X}')
 
                 try:
                     bluepy_peripheral.waitForNotifications(0.1)
@@ -264,7 +264,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
                     self._handle_offline()
 
                 if isinstance(e, RunnerBusy):
-                    raise BLEBusy('too many pending commands') from e
+                    raise BLEBusy('Too many pending commands') from e
 
                 raise
 

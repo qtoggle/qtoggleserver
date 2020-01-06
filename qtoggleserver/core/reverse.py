@@ -198,7 +198,7 @@ class Reverse:
 
         auth = response.headers.get('Authorization')
         if not auth:
-            raise UnauthorizedConsumerRequestError('missing authorization header')
+            raise UnauthorizedConsumerRequestError('Missing authorization header')
 
         try:
             usr = core_api_auth.parse_auth_header(auth, core_api_auth.ORIGIN_CONSUMER,
@@ -213,19 +213,19 @@ class Reverse:
             method = response.headers['Method']
 
         except KeyError:
-            raise InvalidConsumerRequestError('missing Method header') from None
+            raise InvalidConsumerRequestError('Missing Method header') from None
 
         try:
             path = response.headers['Path']
 
         except KeyError:
-            raise InvalidConsumerRequestError('missing Path header') from None
+            raise InvalidConsumerRequestError('Missing Path header') from None
 
         try:
             api_call_id = response.headers['API-Call-Id']
 
         except KeyError:
-            raise InvalidConsumerRequestError('missing API-Call-Id header') from None
+            raise InvalidConsumerRequestError('Missing API-Call-Id header') from None
 
         return {
             'body': body,
