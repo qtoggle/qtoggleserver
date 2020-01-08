@@ -90,7 +90,7 @@ class Webhooks:
 
         self._enabled = False
 
-        # drop all queued requests
+        # Drop all queued requests
         while not self._queue.empty():
             self._queue.get()
 

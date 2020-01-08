@@ -148,23 +148,23 @@ class SlavePort(core_ports.BasePort):
             if self._slave.is_online():
                 self._remote_update_pending_attrs.add((name, value))
 
-                # skip an IO loop iteration, allowing setting multiple attributes in one request
+                # Skip an IO loop iteration, allowing setting multiple attributes in one request
                 await asyncio.sleep(0)
 
                 try:
                     await self._update_attrs_remotely()
 
                 except Exception as e:
-                    # map exceptions to specific slave API errors
+                    # Map exceptions to specific slave API errors
                     raise exceptions.adapt_api_error(e) from e
 
-            else:  # offline
-                # allow provisioning for offline devices
+            else:  # Offline
+                # Allow provisioning for offline devices
                 self.debug('marking attribute %s for provisioning', name)
                 self._provisioning.add(name)
                 self._cached_attrs[name] = value
 
-                # skip an IO loop iteration, allowing setting multiple attributes before triggering a port-update
+                # Skip an IO loop iteration, allowing setting multiple attributes before triggering a port-update
                 await asyncio.sleep(0)
                 self.trigger_update()
 
@@ -175,7 +175,7 @@ class SlavePort(core_ports.BasePort):
         return dict(self._cached_attrs)
 
     def update_cached_attrs(self, attrs):
-        # use fire-and-forget here to enable/disable ports, as this method cannot be async
+        # Use fire-and-forget here to enable/disable ports, as this method cannot be async
         if attrs.get('enabled') and not self.is_enabled():
             asyncio.create_task(self.enable())
 
@@ -184,7 +184,7 @@ class SlavePort(core_ports.BasePort):
 
         self._cached_attrs = dict(attrs)
 
-        # value can be found among attrs but we don't want it as attribute
+        # Value can be found among attrs but we don't want it as attribute
         if 'value' in attrs:
             self._cached_value = self._cached_attrs.pop('value')
 
@@ -197,8 +197,8 @@ class SlavePort(core_ports.BasePort):
 
         body = {}
         for name, value in self._remote_update_pending_attrs:
-            # transform expressions reference themselves locally via the slave.id identifier;
-            # we need to remove the slave name prefix before sending it to the slave
+            # Transform expressions reference themselves locally via the slave.id identifier; we need to remove the
+            # slave name prefix before sending it to the slave
             if name in ('transform_read', 'transform_write'):
                 value = value.replace(self._id, self._remote_id)
 
@@ -216,8 +216,7 @@ class SlavePort(core_ports.BasePort):
             raise
 
     async def is_persisted(self):
-        # ports belonging to permanently offline devices
-        # should always behave as persisted on master
+        # Ports belonging to permanently offline devices should always behave as persisted on master
 
         if self._slave.is_permanently_offline():
             return True
@@ -280,15 +279,14 @@ class SlavePort(core_ports.BasePort):
 
                 raise exceptions.adapt_api_error(e) from e
 
-        else:  # offline
-            # allow provisioning for offline devices
+        else:  # Offline
+            # Allow provisioning for offline devices
             self.debug('marking value for provisioning')
             self._cached_value = value
             self._provisioning.add('value')
-            await self.save()  # save provisioning value
+            await self.save()  # Save provisioning value
 
-            # we need to trigger a port-update because
-            # our provisioning attribute has changed
+            # We need to trigger a port-update because our provisioning attribute has changed
             self.trigger_update()
 
     async def set_sequence(self, values, delays, repeat):
@@ -303,7 +301,7 @@ class SlavePort(core_ports.BasePort):
         except Exception as e:
             self.error('failed to send sequence remotely: %s', e)
 
-            # map exceptions to specific slave API errors
+            # Map exceptions to specific slave API errors
             raise exceptions.adapt_api_error(e) from e
 
     def heart_beat_second(self):
@@ -325,7 +323,7 @@ class SlavePort(core_ports.BasePort):
 
             self.update_cached_attrs(attrs)
 
-        # attributes that are kept on master
+        # Attributes that are kept on master
         for attr in ('tag', 'expression', 'last_sync', 'expires'):
             if attr in data:
                 await self.set_attr(attr, data[attr])

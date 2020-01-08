@@ -33,7 +33,7 @@ async def patch_port(request: core_api.APIRequest, port_id: str, params: Attribu
 
     core_api_schema.validate(params, await port.get_schema(), unexpected_field_msg=unexpected_field_msg)
 
-    # step validation
+    # Step validation
     for name, value in params.items():
         attrdef = port.ATTRDEFS[name]
         step = attrdef.get('step')
@@ -71,7 +71,7 @@ async def patch_port(request: core_api.APIRequest, port_id: str, params: Attribu
             raise core_api.APIError(502, f'port error: {error}')
 
         else:
-            # transform any unhandled exception into APIError(500)
+            # Transform any unhandled exception into APIError(500)
             raise core_api.APIError(500, str(error))
 
     await port.save()
@@ -147,7 +147,7 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
 
     value = params
 
-    # step validation
+    # Step validation
     step = await port.get_attr('step')
     _min = await port.get_attr('min')
     if None not in (step, _min) and step != 0 and (value - _min) % step:
