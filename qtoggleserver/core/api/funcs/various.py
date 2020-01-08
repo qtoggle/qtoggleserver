@@ -1,7 +1,7 @@
 
 import re
 
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from qtoggleserver import slaves
 from qtoggleserver import system
@@ -15,6 +15,7 @@ from qtoggleserver.core import sessions as core_sessions
 from qtoggleserver.core import vports as core_vports
 from qtoggleserver.core import webhooks as core_webhooks
 from qtoggleserver.core.api import schema as core_api_schema
+from qtoggleserver.core.typing import GenericJSONDict
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NONE)
@@ -26,7 +27,7 @@ async def get_access(request: core_api.APIRequest, access_level: int) -> Dict[st
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
 async def get_listen(request: core_api.APIRequest,
-                     session_id: str, timeout: Optional[int], access_level: int) -> List[Dict[str, Any]]:
+                     session_id: str, timeout: Optional[int], access_level: int) -> List[GenericJSONDict]:
 
     if session_id is None:
         raise core_api.APIError(400, 'missing field: session_id')
@@ -54,7 +55,7 @@ async def get_listen(request: core_api.APIRequest,
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def post_reset(request: core_api.APIRequest, params: Dict[str, Any]) -> None:
+async def post_reset(request: core_api.APIRequest, params: GenericJSONDict) -> None:
     core_api_schema.validate(params, core_api_schema.POST_RESET)
 
     factory = params.get('factory')

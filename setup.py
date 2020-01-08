@@ -31,7 +31,7 @@ version = qtoggleserver.version.VERSION
 
 
 class UIMakeMixin:
-    def __init__(self):
+    def __init__(self) -> None:
         self.root_path = os.getcwd()
         self.build_path = None
 
@@ -49,7 +49,7 @@ class UIMakeMixin:
 
 
 class SdistCommand(sdist, UIMakeMixin):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         sdist.__init__(self, *args, **kwargs)
         UIMakeMixin.__init__(self)
 
@@ -66,7 +66,7 @@ class SdistCommand(sdist, UIMakeMixin):
 
 if bdist_wheel:
     class BdistWheelCommand(bdist_wheel, UIMakeMixin):
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args, **kwargs) -> None:
             bdist_wheel.__init__(self, *args, **kwargs)
             UIMakeMixin.__init__(self)
 

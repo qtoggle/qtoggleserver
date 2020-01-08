@@ -12,35 +12,35 @@ class InvalidDevice(SlaveError):
 
 
 class NoListenSupport(SlaveError):
-    def __init__(self, name):
+    def __init__(self, name) -> None:
         self.name = name
 
         super().__init__(f'device {name} has no listen support')
 
 
 class DeviceAlreadyExists(SlaveError):
-    def __init__(self, name):
+    def __init__(self, name) -> None:
         self.name = name
 
         super().__init__(f'device {name} already exists')
 
 
 class DeviceRenamed(SlaveError):
-    def __init__(self, slave):
+    def __init__(self, slave) -> None:
         self.slave = slave
 
         super().__init__(f'{slave} renamed')
 
 
 class DeviceOffline(SlaveError):
-    def __init__(self, slave):
+    def __init__(self, slave) -> None:
         self.slave = slave
 
         super().__init__(f'{slave} is offline')
 
 
 class PortNotFound(SlaveError):
-    def __init__(self, slave, _id):
+    def __init__(self, slave, _id) -> None:
         self.slave = slave
         self.id = _id
 

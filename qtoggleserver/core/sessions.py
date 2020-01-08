@@ -13,7 +13,7 @@ _sessions_by_id = {}
 
 
 class Session:
-    def __init__(self, session_id):
+    def __init__(self, session_id) -> None:
         self.id = session_id
         self.accessed = 0
         self.timeout = 0
@@ -74,7 +74,7 @@ class Session:
 
         self.queue.insert(0, event)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'session {self.id}'
 
 

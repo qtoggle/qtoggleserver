@@ -47,15 +47,15 @@ class APIRequest:
         self.handler = handler
 
     @property
-    def access_level(self):
+    def access_level(self) -> int:
         return self.handler.access_level
 
     @property
-    def method(self):
+    def method(self) -> str:
         return self.handler.request.method
 
     @property
-    def path(self):
+    def path(self) -> str:
         return self.handler.request.path
 
     @property
@@ -63,11 +63,11 @@ class APIRequest:
         return {k: self.handler.decode_argument(v[0]) for k, v in self.handler.request.query_arguments.items()}
 
     @property
-    def headers(self):
+    def headers(self) -> Dict[str, str]:
         return self.handler.request.headers
 
     @property
-    def body(self):
+    def body(self) -> bytes:
         return self.handler.request.body
 
 

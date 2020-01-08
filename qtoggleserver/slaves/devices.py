@@ -43,7 +43,7 @@ class Slave(utils.LoggableMixin):
                  admin_password=None, admin_password_hash=None, last_sync=-1,
                  attrs=None, webhooks=None, reverse=None,
                  provisioning_attrs=None, provisioning_webhooks=None, provisioning_reverse=None,
-                 **kwargs):
+                 **kwargs) -> None:
 
         # The enabled value comes with kwargs but is ignored, as the slave will be explicitly enabled afterwards
 
@@ -118,7 +118,7 @@ class Slave(utils.LoggableMixin):
         # Handles firmware update progress
         self._fwupdate_poll_task = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self._name:
             return f'slave {self._name} at {self.get_url()}'
 

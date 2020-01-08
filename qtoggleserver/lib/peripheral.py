@@ -22,7 +22,7 @@ class RunnerBusy(Exception):
 class ThreadedRunner(threading.Thread, metaclass=abc.ABCMeta):
     QUEUE_TIMEOUT = 1
 
-    def __init__(self, queue_size=None):
+    def __init__(self, queue_size=None) -> None:
         self._running = False
         self._loop = asyncio.get_event_loop()
         self._queue = queue.Queue(queue_size or 0)
@@ -93,7 +93,7 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
     def make_peripheral(cls, address, name, **kwargs):
         return cls(address, name, **kwargs)
 
-    def __init__(self, address, name, **kwargs):
+    def __init__(self, address, name, **kwargs) -> None:
         utils.LoggableMixin.__init__(self, name, self.logger)
 
         self._address = address
@@ -104,7 +104,7 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
 
         add_cleanup_hook(self.handle_cleanup)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self._name
 
     def get_address(self):
@@ -209,7 +209,7 @@ class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
         }
     }
 
-    def __init__(self, address, peripheral_name=None, **kwargs):
+    def __init__(self, address, peripheral_name=None, **kwargs) -> None:
         self._peripheral = self.PERIPHERAL_CLASS.get(address, peripheral_name, **kwargs)
         self._peripheral.add_port(self)
 

@@ -9,12 +9,12 @@ from qtoggleserver.utils import json as json_utils
 class Error(Exception):
     MESSAGE = ''
 
-    def __init__(self, **params):
+    def __init__(self, **params) -> None:
         self._params = params
 
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.MESSAGE.format(**self._params)
 
     def __repr__(self):
@@ -45,7 +45,7 @@ class MovedPermanently(Error):
     # HTTP 301
     MESSAGE = 'moved permanently to "{location}"'
 
-    def __init__(self, location):
+    def __init__(self, location) -> None:
         self.location = location
 
         super().__init__(location=location)
@@ -55,7 +55,7 @@ class Redirect(Error):
     # HTTP 302, 303
     MESSAGE = 'redirected to "{location}"'
 
-    def __init__(self, location):
+    def __init__(self, location) -> None:
         self.location = location
 
         super().__init__(location=location)
@@ -65,7 +65,7 @@ class HTTPError(Error):
     # 4xx - 5xx
     MESSAGE = '{code} {msg}'
 
-    def __init__(self, code, msg):
+    def __init__(self, code, msg) -> None:
         self.code = code
         self.msg = msg
 
@@ -80,7 +80,7 @@ class InvalidJson(Error):
 class AuthError(Error):
     MESSAGE = 'authentication error: {msg}'
 
-    def __init__(self, msg):
+    def __init__(self, msg) -> None:
         super().__init__(msg=msg)
 
 
@@ -88,7 +88,7 @@ class OtherError(Error):
     # Any other error
     MESSAGE = 'other error: {msg}'
 
-    def __init__(self, msg):
+    def __init__(self, msg) -> None:
         super().__init__(msg=msg)
 
 

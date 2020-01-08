@@ -30,7 +30,7 @@ class FWUpdateDisabled(FWUpdateException):
 
 
 class BaseDriver(metaclass=abc.ABCMeta):
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     @abc.abstractmethod

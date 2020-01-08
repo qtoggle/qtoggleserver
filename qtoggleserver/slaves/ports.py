@@ -42,7 +42,7 @@ class SlavePort(core_ports.BasePort):
         'modifiable': False
     }
 
-    def __init__(self, slave, attrs):
+    def __init__(self, slave, attrs) -> None:
         self._slave = slave
 
         self._remote_id = attrs['id']

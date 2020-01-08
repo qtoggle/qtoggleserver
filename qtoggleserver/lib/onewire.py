@@ -20,17 +20,17 @@ class OneWireException(Exception):
 
 
 class OneWirePeripheralNotFound(OneWireException):
-    def __init__(self, address):
+    def __init__(self, address) -> None:
         super().__init__(f'peripheral @{address} not found')
 
 
 class OneWirePeripheralAddressRequired(OneWireException):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__('peripheral address required')
 
 
 class OneWireTimeout(OneWireException):
-    def __init__(self, message='timeout'):
+    def __init__(self, message='timeout') -> None:
         super().__init__(message)
 
 
@@ -39,7 +39,7 @@ class OneWirePeripheral(polled.PolledPeripheral):
 
     TIMEOUT = 5  # Seconds
 
-    def __init__(self, address, name):
+    def __init__(self, address, name) -> None:
         super().__init__(address, name)
 
         self._filename = None
@@ -94,7 +94,7 @@ class OneWirePeripheral(polled.PolledPeripheral):
 class OneWirePort(polled.PolledPort, metaclass=abc.ABCMeta):
     PERIPHERAL_CLASS = OneWirePeripheral
 
-    def __init__(self, address=None, peripheral_name=None):
+    def __init__(self, address=None, peripheral_name=None) -> None:
         autodetected = False
         if address is None:
             address = self.autodetect_address()

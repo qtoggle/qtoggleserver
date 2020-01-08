@@ -15,7 +15,7 @@ class DummyGPIO(ports.Port):
         }
     }
 
-    def __init__(self, no, def_value=None, def_output=None):
+    def __init__(self, no, def_value=None, def_output=None) -> None:
         self._no = no
 
         self._def_value = def_value

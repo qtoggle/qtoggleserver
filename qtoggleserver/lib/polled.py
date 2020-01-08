@@ -23,7 +23,7 @@ class PolledPeripheral(Peripheral):
     DEFAULT_POLL_INTERVAL = 1800
     RETRY_POLL_INTERVAL = 60
 
-    def __init__(self, address, name, **kwargs):
+    def __init__(self, address, name, **kwargs) -> None:
         self._polling = False
         self._poll_stopped = False
         self._poll_task = None
@@ -116,7 +116,7 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
     READ_INTERVAL_MULTIPLIER = 1
     READ_INTERVAL_UNIT = None
 
-    def __init__(self, address, peripheral_name=None, **kwargs):
+    def __init__(self, address, peripheral_name=None, **kwargs) -> None:
         super().__init__(address, peripheral_name, **kwargs)
 
         # Add read interval attrdef

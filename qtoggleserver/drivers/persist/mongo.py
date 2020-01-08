@@ -14,7 +14,7 @@ _OBJECT_ID_RE = re.compile('^[0-9a-f]{24}$')
 
 
 class MongoDriver(BaseDriver):
-    def __init__(self, host, port, db, **kwargs):
+    def __init__(self, host, port, db, **kwargs) -> None:
         logger.debug('connecting to %s:%s/%s', host, port, db)
 
         self._client = pymongo.MongoClient(host, port, serverSelectionTimeoutMS=200)

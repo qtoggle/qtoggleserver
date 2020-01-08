@@ -19,7 +19,7 @@ class ConfigurableMixin:
 
 
 class LoggableMixin:
-    def __init__(self, name, parent_logger=None):
+    def __init__(self, name, parent_logger=None) -> None:
         if parent_logger and name:
             name = f'{parent_logger.name}.{name}'
 

@@ -15,7 +15,6 @@ from qtoggleserver import utils
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
-from qtoggleserver.core import main
 from qtoggleserver.core import sessions as core_sessions
 from qtoggleserver.core import sequences as core_sequences
 from qtoggleserver.utils import json as json_utils
@@ -135,7 +134,7 @@ class PortError(Exception):
 
 
 class InvalidAttributeValue(PortError):
-    def __init__(self, attr):
+    def __init__(self, attr) -> None:
         self.attr = attr
 
         super().__init__(attr)
@@ -180,7 +179,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         ...
     }'''
 
-    def __init__(self, port_id):
+    def __init__(self, port_id) -> None:
         utils.LoggableMixin.__init__(self, port_id, logger)
 
         self._id = port_id
@@ -213,7 +212,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._loaded = False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'port {self._id}'
 
     def __repr__(self):
@@ -299,6 +298,8 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         return None  # Unsupported attribute
 
     async def set_attr(self, name, value):
+        from qtoggleserver.core import main
+
         old_value = await self.get_attr(name)
         if old_value is None:
             return  # Refuse to set an unsupported attribute
@@ -436,6 +437,8 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
             return ''
 
     async def attr_set_expression(self, sexpression):
+        from qtoggleserver.core import main
+
         if not await self.is_writable():
             self.debug('refusing to set expression to non-writable port')
             return False
@@ -576,6 +579,8 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
                 break
 
     async def _write_value(self, value, reason):
+        from qtoggleserver.core import main
+
         self._last_write_value_time = time.time()
         self._change_reason = reason
 
@@ -912,7 +917,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
 
 class Port(BasePort, metaclass=abc.ABCMeta):
-    def __init__(self, port_id):
+    def __init__(self, port_id) -> None:
         super().__init__(port_id)
 
         self._tag = ''

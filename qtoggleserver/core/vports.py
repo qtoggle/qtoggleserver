@@ -16,7 +16,7 @@ class VirtualPort(core_ports.Port):
     WRITABLE = True
     VIRTUAL = True
 
-    def __init__(self, port_id, typ, mi, ma, integer, step, choices):
+    def __init__(self, port_id, typ, mi, ma, integer, step, choices) -> None:
         super().__init__(port_id)
 
         self._type = typ

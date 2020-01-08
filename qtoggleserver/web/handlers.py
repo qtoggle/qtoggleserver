@@ -24,14 +24,14 @@ logger = logging.getLogger(__name__)
 
 
 class NoSuchFunction(HTTPError):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(404, 'no such function')
 
 
 class BaseHandler(RequestHandler):
     _UNDEFINED = {}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         self._json = self._UNDEFINED
         self._response_body = ''
         self._response_body_json = None
@@ -196,7 +196,7 @@ class ServiceWorkerHandler(TemplateHandler):
 class APIHandler(BaseHandler):
     AUTH_ENABLED = True
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         self.access_level = core_api.ACCESS_LEVEL_NONE
         self.username = None
 

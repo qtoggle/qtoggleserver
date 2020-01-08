@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class Sequence:
-    def __init__(self, values, delays, repeat, callback, finish_callback):
+    def __init__(self, values, delays, repeat, callback, finish_callback) -> None:
         self._values = values
         self._delays = delays
         self._repeat = repeat

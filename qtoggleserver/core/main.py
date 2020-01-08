@@ -3,16 +3,21 @@ import asyncio
 import logging
 import time
 
+from typing import Dict, Optional, Set, Union
+
 from qtoggleserver.conf import settings
+from qtoggleserver.core import expressions as core_expressions
+from qtoggleserver.core import ports as core_ports
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import timedset
+from qtoggleserver.utils import misc as misc_utils
 
 
 # After how much time to retry reading a port whose read_value() method raised an error
 _PORT_READ_ERROR_RETRY_INTERVAL = 10
 
 logger = logging.getLogger(__name__)
-memory_logs = None
+memory_logs: Optional[misc_utils.FifoMemoryHandler] = None
 
 loop = asyncio.get_event_loop()
 
@@ -25,7 +30,7 @@ _force_eval_expressions = False
 _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
 
 
-async def update():
+async def update() -> None:
     from . import ports
     from . import sessions
 
@@ -99,7 +104,7 @@ async def update():
     sessions.cleanup()
 
 
-async def update_loop():
+async def update_loop() -> None:
     while _running:
         try:
             await update()
@@ -110,11 +115,10 @@ async def update_loop():
         await asyncio.sleep(settings.core.tick_interval / 1000.0)
 
 
-async def handle_value_changes(changed_set, change_reasons):
-    global _force_eval_expressions
+async def handle_value_changes(changed_set: Set[Union[core_ports.BasePort, None]],
+                               change_reasons: Dict[core_ports.BasePort, str]) -> None:
 
-    from . import expressions
-    from . import ports
+    global _force_eval_expressions
 
     if _force_eval_expressions:
         changed_set.add(None)  # Special "always depends on" value
@@ -122,7 +126,7 @@ async def handle_value_changes(changed_set, change_reasons):
 
     # Trigger value-change events; save persisted ports
     for port in changed_set:
-        if not isinstance(port, ports.BasePort):
+        if not isinstance(port, core_ports.BasePort):
             continue
 
         port.trigger_value_change()
@@ -131,7 +135,7 @@ async def handle_value_changes(changed_set, change_reasons):
             await port.save()
 
     # Reevaluate the expressions depending on changed ports
-    for port in ports.all_ports():
+    for port in core_ports.all_ports():
         if not port.is_enabled():
             continue
 
@@ -143,13 +147,13 @@ async def handle_value_changes(changed_set, change_reasons):
             # If port expression depends on port itself and the change reason is the evaluation of its expression,
             # prevent evaluating its expression again to avoid evaluation loops
 
-            change_reason = change_reasons.get(port, ports.CHANGE_REASON_NATIVE)
+            change_reason = change_reasons.get(port, core_ports.CHANGE_REASON_NATIVE)
             if ((port in changed_set) and
                 (f'${port.get_id()}' in deps) and
-                (change_reason == ports.CHANGE_REASON_EXPRESSION)):
+                (change_reason == core_ports.CHANGE_REASON_EXPRESSION)):
                 continue
 
-            changed_set_ids = set(f'${c.get_id()}' for c in changed_set if isinstance(c, ports.BasePort))
+            changed_set_ids = set(f'${c.get_id()}' for c in changed_set if isinstance(c, core_ports.BasePort))
 
             # Evaluate a port's expression when:
             # * one of its deps changed
@@ -166,7 +170,7 @@ async def handle_value_changes(changed_set, change_reasons):
             try:
                 value = expression.eval()
 
-            except expressions.IncompleteExpression:
+            except core_expressions.IncompleteExpression:
                 continue
 
             except Exception as e:
@@ -179,38 +183,38 @@ async def handle_value_changes(changed_set, change_reasons):
 
             if value != port.get_value():
                 logger.debug('expression "%s" of %s evaluated to %s', expression, port, json_utils.dumps(value))
-                port.push_value(value, reason=ports.CHANGE_REASON_EXPRESSION)
+                port.push_value(value, reason=core_ports.CHANGE_REASON_EXPRESSION)
 
 
-def force_eval_expressions():
+def force_eval_expressions() -> None:
     global _force_eval_expressions
 
     _force_eval_expressions = True
 
 
-def is_ready():
+def is_ready() -> bool:
     return _ready
 
 
-def set_ready():
+def set_ready() -> None:
     global _ready
 
     logger.debug('ready')
     _ready = True
 
 
-def uptime():
+def uptime() -> float:
     return time.time() - _start_time
 
 
-async def init():
+async def init() -> None:
     global _update_loop_task
 
     force_eval_expressions()
     _update_loop_task = loop.create_task(update_loop())
 
 
-async def cleanup():
+async def cleanup() -> None:
     global _running
 
     _running = False

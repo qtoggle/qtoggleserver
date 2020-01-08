@@ -7,6 +7,7 @@ from qtoggleserver import utils
 from qtoggleserver.conf import settings
 
 from .base import BaseEventHandler  # noqa: F401
+from ..types.base import Event
 
 
 logger = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ def register_handler(handler):
     _registered_handlers.append(handler)
 
 
-def init():
+def init() -> None:
     for handler_args in settings.event_handlers:
         handler_class_path = handler_args.pop('driver')
 
@@ -34,6 +35,6 @@ def init():
             _registered_handlers.append(handler)
 
 
-def handle_event(event):
+def handle_event(event: Event) -> None:
     for handler in _registered_handlers:
         asyncio.create_task(handler.handle_event(event))

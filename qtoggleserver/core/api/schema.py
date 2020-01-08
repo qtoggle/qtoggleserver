@@ -2,7 +2,9 @@
 import jsonschema
 import re
 
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Tuple, Union
+
+from qtoggleserver.core.typing import GenericJSONDict
 
 from . import APIError
 
@@ -222,7 +224,7 @@ PATCH_REVERSE = {
 }
 
 
-def _validate_schema(json: Any, schema: Dict[str, Any]) -> Optional[Tuple[str, Optional[str]]]:
+def _validate_schema(json: Any, schema: GenericJSONDict) -> Optional[Tuple[str, Optional[str]]]:
     try:
         jsonschema.Draft4Validator(schema=schema).validate(json)
         return None
@@ -246,7 +248,7 @@ def _validate_schema(json: Any, schema: Dict[str, Any]) -> Optional[Tuple[str, O
                     return 'invalid', None
 
 
-def validate(params: Any, schema: Dict[str, Any],
+def validate(params: Any, schema: GenericJSONDict,
              invalid_field_msg: Union[str, Callable] = 'invalid field: {field}',
              unexpected_field_msg: Union[str, Callable] = 'invalid request',
              invalid_request_msg: str = 'invalid request') -> None:

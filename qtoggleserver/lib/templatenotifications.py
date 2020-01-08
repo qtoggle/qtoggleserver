@@ -53,7 +53,7 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
 
     logger = logger
 
-    def __init__(self, template=None, templates=None, skip_startup=True, filter=None):
+    def __init__(self, template=None, templates=None, skip_startup=True, filter=None) -> None:
         self._skip_startup = skip_startup
         self._j2env = None
 

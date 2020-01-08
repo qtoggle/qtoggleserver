@@ -26,7 +26,7 @@ _reverse = None
 
 
 class InvalidParamError(Exception):
-    def __init__(self, param):
+    def __init__(self, param) -> None:
         self._param = param
         super().__init__(f'invalid field: {param}')
 
@@ -42,7 +42,7 @@ class UnauthorizedConsumerRequestError(Exception):
 class Reverse:
     # noinspection PyUnusedLocal
     def __init__(self, scheme=None, host=None, port=None, path=None, device_id=None, password=None, timeout=None,
-                 **kwargs):
+                 **kwargs) -> None:
 
         # The enabled value comes with kwargs but is ignored; the reverse object will be explicitly enabled afterwards
 
@@ -57,7 +57,7 @@ class Reverse:
         self._enabled = False
         self._url = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = 'reverse'
 
         if not self._enabled:

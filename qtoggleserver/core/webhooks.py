@@ -18,20 +18,20 @@ _webhooks = None
 
 
 class InvalidParamError(Exception):
-    def __init__(self, param):
+    def __init__(self, param) -> None:
         self._param = param
         super().__init__(f'invalid field: {param}')
 
 
 class WebhooksRequest:
-    def __init__(self, body):
+    def __init__(self, body) -> None:
         self.body = body
         self.retries = 0
 
 
 class Webhooks:
     # noinspection PyUnusedLocal
-    def __init__(self, scheme=None, host=None, port=None, path=None, timeout=None, retries=None, **kwargs):
+    def __init__(self, scheme=None, host=None, port=None, path=None, timeout=None, retries=None, **kwargs) -> None:
 
         # The enabled value comes with kwargs but is ignored; webhooks will be explicitly enabled afterwards
 
@@ -46,7 +46,7 @@ class Webhooks:
 
         self._queue = queue.Queue(settings.core.event_queue_size)
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = 'webhooks'
 
         if not self._enabled:

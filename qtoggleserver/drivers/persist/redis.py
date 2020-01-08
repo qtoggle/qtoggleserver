@@ -14,7 +14,7 @@ class DuplicateRecordId(redis.RedisError):
 
 
 class RedisDriver(BaseDriver):
-    def __init__(self, host, port, db, **kwargs):
+    def __init__(self, host, port, db, **kwargs) -> None:
         logger.debug('connecting to %s:%s/%s', host, port, db)
 
         self._client = redis.StrictRedis(host=host, port=port, db=db, encoding='utf8', decode_responses=True)

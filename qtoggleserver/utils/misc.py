@@ -3,7 +3,7 @@ import logging.handlers
 
 
 class FifoMemoryHandler(logging.handlers.MemoryHandler):
-    def __init__(self, capacity):
+    def __init__(self, capacity) -> None:
         logging.handlers.MemoryHandler.__init__(self, capacity, flushLevel=logging.FATAL + 1)
 
     def flush(self):

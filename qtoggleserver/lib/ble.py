@@ -24,22 +24,22 @@ class BLEException(Exception):
 
 
 class BLEBusy(BLEException):
-    def __init__(self, message='busy'):
+    def __init__(self, message='busy') -> None:
         super().__init__(message)
 
 
 class BLETimeout(BLEException):
-    def __init__(self, message='timeout'):
+    def __init__(self, message='timeout') -> None:
         super().__init__(message)
 
 
 class _BluepyTimeoutError(btle.BTLEException):
-    def __init__(self, message, rsp=None):
+    def __init__(self, message, rsp=None) -> None:
         super().__init__(message, rsp)
 
 
 class _BluepyPeripheral(btle.Peripheral):
-    def __init__(self, timeout=None, *args, **kwargs):
+    def __init__(self, timeout=None, *args, **kwargs) -> None:
         self._timeout = timeout
         super().__init__(*args, **kwargs)
 
@@ -79,7 +79,7 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
 
         return cls._adapters_by_name[name]
 
-    def __init__(self, name):
+    def __init__(self, name) -> None:
         utils.LoggableMixin.__init__(self, name, logger)
 
         self._name = name
@@ -95,7 +95,7 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
         self._runner = None
         self._peripherals = []
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self._name
 
     def add_peripheral(self, peripheral):
@@ -150,14 +150,14 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
     def make_peripheral(cls, address, name, adapter_name=None, **kwargs):
         return cls(address, name, BLEAdapter.get(adapter_name))
 
-    def __init__(self, address, name, adapter):
+    def __init__(self, address, name, adapter) -> None:
         super().__init__(address, name)
 
         self._adapter = adapter
         self._adapter.add_peripheral(self)
         self._online = False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{self._adapter}/{self._name}'
 
     def make_runner(self):
@@ -298,7 +298,7 @@ class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):
     READ_INTERVAL_STEP = 1
     READ_INTERVAL_MULTIPLIER = 60
 
-    def __init__(self, address, peripheral_name=None, adapter_name=None):
+    def __init__(self, address, peripheral_name=None, adapter_name=None) -> None:
         if adapter_name is None:
             adapter_name = BLEAdapter.DEFAULT_NAME
 

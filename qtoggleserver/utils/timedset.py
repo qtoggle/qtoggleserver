@@ -4,7 +4,7 @@ import time
 
 
 class TimedSet(collections.abc.MutableSet):
-    def __init__(self, timeout):
+    def __init__(self, timeout) -> None:
         self._timeout = timeout
         self._times = {}
         self._set = set()

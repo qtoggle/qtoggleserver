@@ -8,5 +8,5 @@ from .types.port import PortAdd, PortRemove, PortUpdate, ValueChange
 from .types.slave import SlaveDeviceAdd, SlaveDeviceRemove, SlaveDeviceUpdate
 
 
-def init():
+def init() -> None:
     init_handlers()

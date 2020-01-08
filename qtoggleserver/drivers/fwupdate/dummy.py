@@ -12,7 +12,7 @@ _DUMMY_DATE = '2222-11-10'
 
 
 class DummyDriver(fwupdate.BaseDriver):
-    def __init__(self):
+    def __init__(self) -> None:
         self._status = fwupdate.STATUS_IDLE
 
         fwupdate.BaseDriver.__init__(self)
