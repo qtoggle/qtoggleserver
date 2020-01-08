@@ -9,7 +9,6 @@ from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import Attribute, Attributes, NullablePortValue
 from qtoggleserver.slaves import devices as slaves_devices
 
-
 from ..types import device as device_events
 from ..types import port as port_events
 from ..types import slave as slave_events

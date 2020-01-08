@@ -8,6 +8,7 @@ import sys
 import time
 
 from tornado import queues
+from typing import Any, Dict, Iterable, List, Optional, Set, Union
 
 from qtoggleserver import persist
 from qtoggleserver import utils
@@ -17,6 +18,8 @@ from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import sessions as core_sessions
 from qtoggleserver.core import sequences as core_sequences
+from qtoggleserver.core.typing import (Attribute, Attributes, AttributeDefinitions, GenericJSONDict, NullablePortValue,
+                                       PortValue)
 from qtoggleserver.utils import json as json_utils
 
 
@@ -30,7 +33,7 @@ CHANGE_REASON_EXPRESSION = 'E'
 
 logger = logging.getLogger(__name__)
 
-_ports = {}  # Indexed by id
+_ports: Dict[str, 'BasePort'] = {}  # Indexed by id
 
 
 STANDARD_ATTRDEFS = {
@@ -133,9 +136,13 @@ class PortError(Exception):
     pass
 
 
+class PortLoadError(PortError):
+    pass
+
+
 class InvalidAttributeValue(PortError):
-    def __init__(self, attr) -> None:
-        self.attr = attr
+    def __init__(self, attr: str) -> None:
+        self.attr: str = attr
 
         super().__init__(attr)
 
@@ -179,7 +186,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         ...
     }'''
 
-    def __init__(self, port_id) -> None:
+    def __init__(self, port_id: str) -> None:
         utils.LoggableMixin.__init__(self, port_id, logger)
 
         self._id = port_id
@@ -215,13 +222,13 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
     def __str__(self) -> str:
         return f'port {self._id}'
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'Port({self._id})'
 
-    def initialize(self):
+    def initialize(self) -> None:
         pass
 
-    def _get_attrdefs(self):
+    def _get_attrdefs(self) -> AttributeDefinitions:
         if self._attrdefs_cache is None:
             self._attrdefs_cache = dict(self.STANDARD_ATTRDEFS, **self.ADDITIONAL_ATTRDEFS)
 
@@ -229,26 +236,26 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     ATTRDEFS = property(_get_attrdefs)
 
-    def invalidate_attrdefs(self):
+    def invalidate_attrdefs(self) -> None:
         self._attrs_cache = {}
         self._attrdefs_cache = None
         self._modifiable_attrs = None
         self._non_modifiable_attrs = None
         self._schema = None
 
-    def get_non_modifiable_attrs(self):
+    def get_non_modifiable_attrs(self) -> Set[str]:
         if self._non_modifiable_attrs is None:
             self._non_modifiable_attrs = set([n for (n, v) in self.ATTRDEFS.items() if not v.get('modifiable')])
 
         return self._non_modifiable_attrs
 
-    def get_modifiable_attrs(self):
+    def get_modifiable_attrs(self) -> Set[str]:
         if self._modifiable_attrs is None:
             self._modifiable_attrs = set([n for (n, v) in self.ATTRDEFS.items() if v.get('modifiable')])
 
         return self._modifiable_attrs
 
-    async def get_attrs(self):
+    async def get_attrs(self) -> Attributes:
         d = {}
 
         for name in self.ATTRDEFS.keys():
@@ -260,13 +267,13 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return d
 
-    def invalidate_attrs(self):
+    def invalidate_attrs(self) -> None:
         self._attrs_cache = {}
 
-    def invalidate_attr(self, name):
+    def invalidate_attr(self, name: str) -> None:
         self._attrs_cache.pop(name, None)
 
-    async def get_attr(self, name):
+    async def get_attr(self, name: str) -> Optional[Attribute]:
         value = self._attrs_cache.get(name)
         if value is not None:
             return value
@@ -297,7 +304,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return None  # Unsupported attribute
 
-    async def set_attr(self, name, value):
+    async def set_attr(self, name: str, value: Attribute) -> None:
         from qtoggleserver.core import main
 
         old_value = await self.get_attr(name)
@@ -335,7 +342,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         await asyncio.sleep(0)
         self.trigger_update()
 
-    async def handle_attr_change(self, name, value):
+    async def handle_attr_change(self, name: str, value: Attribute) -> None:
         method_name = f'handle_{name}'
         method = getattr(self, method_name, None)
         if method:
@@ -345,29 +352,29 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
             except Exception as e:
                 self.error('%s failed: %s', method_name, e, exc_info=True)
 
-    def get_display_name(self):
+    def get_display_name(self) -> str:
         return self._display_name or self._id
 
-    def get_id(self):
+    def get_id(self) -> str:
         return self._id
 
-    def map_id(self, new_id):
+    def map_id(self, new_id: str) -> None:
         self._id = new_id
         self.debug('mapped to %s', new_id)
 
-    async def get_type(self):
+    async def get_type(self) -> str:
         return await self.get_attr('type')
 
-    async def is_writable(self):
+    async def is_writable(self) -> bool:
         return await self.get_attr('writable')
 
-    async def is_persisted(self):
+    async def is_persisted(self) -> bool:
         return await self.get_attr('persisted')
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         return self._enabled
 
-    async def enable(self):
+    async def enable(self) -> None:
         if self._enabled:
             return
 
@@ -384,7 +391,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             raise
 
-    async def disable(self):
+    async def disable(self) -> None:
         if not self._enabled:
             return
 
@@ -407,26 +414,26 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             raise
 
-    async def handle_enable(self):
+    async def handle_enable(self) -> None:
         pass
 
-    async def handle_disable(self):
+    async def handle_disable(self) -> None:
         pass
 
-    async def attr_set_enabled(self, value):
+    async def attr_set_enabled(self, value: bool) -> None:
         if value:
             await self.enable()
 
         else:
             await self.disable()
 
-    async def get_expression(self):
+    async def get_expression(self) -> Optional[core_expressions.Expression]:
         if not await self.is_writable():
             return None
 
         return self._expression
 
-    async def attr_get_expression(self):
+    async def attr_get_expression(self) -> Optional[str]:
         if not await self.is_writable():
             return None
 
@@ -436,12 +443,12 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         else:
             return ''
 
-    async def attr_set_expression(self, sexpression):
+    async def attr_set_expression(self, sexpression: str) -> None:
         from qtoggleserver.core import main
 
         if not await self.is_writable():
-            self.debug('refusing to set expression to non-writable port')
-            return False
+            self.error('refusing to set expression on non-writable port')
+            raise PortError('Cannot set expression on non-writable port')
 
         if self._sequence:
             self.debug('canceling current sequence')
@@ -469,14 +476,14 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         main.force_eval_expressions()
 
-    async def attr_get_transform_read(self):
+    async def attr_get_transform_read(self) -> str:
         if self._transform_read:
             return str(self._transform_read)
 
         else:
             return ''
 
-    async def attr_set_transform_read(self, stransform_read):
+    async def attr_set_transform_read(self, stransform_read: str) -> None:
         if not stransform_read:
             self._transform_read = None
             return
@@ -501,7 +508,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             raise InvalidAttributeValue('transform_read') from e
 
-    async def attr_get_transform_write(self):
+    async def attr_get_transform_write(self) -> Optional[str]:
         if not await self.is_writable():
             return None  # Only writable ports have transform_write attributes
 
@@ -511,7 +518,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         else:
             return ''
 
-    async def attr_set_transform_write(self, stransform_write):
+    async def attr_set_transform_write(self, stransform_write: str) -> None:
         if not stransform_write:
             self._transform_write = None
             return
@@ -536,22 +543,22 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             raise InvalidAttributeValue('transform_write') from e
 
-    async def read_value(self):
+    async def read_value(self) -> NullablePortValue:
         raise NotImplementedError()
 
-    async def write_value(self, value):
+    async def write_value(self, value: PortValue) -> None:
         pass
 
-    def get_value(self):
+    def get_value(self) -> NullablePortValue:
         return self._value
 
-    def get_change_reason(self):
+    def get_change_reason(self) -> str:
         return self._change_reason
 
-    def reset_change_reason(self):
+    def reset_change_reason(self) -> None:
         self._change_reason = CHANGE_REASON_NATIVE
 
-    async def _write_value_queued(self, value, reason):
+    async def _write_value_queued(self, value: PortValue, reason: str) -> None:
         done = asyncio.get_running_loop().create_future()
 
         await self._write_value_queue.put((value, reason, done))
@@ -559,7 +566,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         # Wait for actual write_value operation to be done
         await done
 
-    async def _write_value_loop(self):
+    async def _write_value_loop(self) -> None:
         while True:
             try:
                 value, reason, done = await self._write_value_queue.get()
@@ -578,7 +585,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self.debug('write value task cancelled')
                 break
 
-    async def _write_value(self, value, reason):
+    async def _write_value(self, value: PortValue, reason: str) -> None:
         from qtoggleserver.core import main
 
         self._last_write_value_time = time.time()
@@ -587,7 +594,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         await self.write_value(value)
         await main.update()
 
-    async def set_value(self, value, reason):
+    async def set_value(self, value: PortValue, reason: str) -> None:
         if self._transform_write:
             # Temporarily set the port value to the new value, so that the write transform expression takes the new
             # value into consideration when evaluating the result
@@ -605,10 +612,10 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             raise
 
-    def set_value_fire_and_forget(self, value, reason):
+    def set_value_fire_and_forget(self, value: PortValue, reason: str) -> None:
         asyncio.create_task(self.set_value(value, reason))
 
-    def push_value(self, value, reason):
+    def push_value(self, value: PortValue, reason: str) -> None:
         already_scheduled = self._asap_value is not None
         self._asap_value = value
 
@@ -623,7 +630,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         else:
             self.debug('will set value %s asap', json_utils.dumps(value))
 
-    async def read_transformed_value(self):
+    async def read_transformed_value(self) -> NullablePortValue:
         value = await self.read_value()
         if value is None:
             return None
@@ -637,15 +644,15 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return value
 
-    async def adapt_value_type(self, value):
+    async def adapt_value_type(self, value: NullablePortValue) -> NullablePortValue:
         return self.adapt_value_type_sync(await self.get_type(), await self.get_attr('integer'), value)
 
     @staticmethod
-    def adapt_value_type_sync(typ, integer, value):
+    def adapt_value_type_sync(_type: str, integer: bool, value: NullablePortValue) -> NullablePortValue:
         if value is None:
             return None
 
-        if typ == TYPE_BOOLEAN:
+        if _type == TYPE_BOOLEAN:
             return bool(value)
 
         else:
@@ -655,7 +662,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             return float(value)
 
-    async def set_sequence(self, values, delays, repeat):
+    async def set_sequence(self, values: List[PortValue], delays: List[int], repeat: int) -> None:
         if self._sequence:
             self.debug('canceling current sequence')
             await self._sequence.cancel()
@@ -668,20 +675,20 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.debug('installing sequence')
             self._sequence.start()
 
-    async def _on_sequence_finish(self):
+    async def _on_sequence_finish(self) -> None:
         self.debug('sequence finished')
 
         self._sequence = None
         if await self.is_persisted():
             await self.save()
 
-    def heart_beat(self):
+    def heart_beat(self) -> None:
         pass
 
-    def heart_beat_second(self):
+    def heart_beat_second(self) -> None:
         pass
 
-    async def to_json(self):
+    async def to_json(self) -> GenericJSONDict:
         attrs = await self.get_attrs()
 
         if self._enabled:
@@ -698,7 +705,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return attrs
 
-    async def load(self):
+    async def load(self) -> None:
         self.debug('loading persisted data')
 
         data = persist.get(self.PERSIST_COLLECTION, self.get_id()) or {}
@@ -707,7 +714,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.set_loaded()
         self.initialize()
 
-    async def load_from_data(self, data):
+    async def load_from_data(self, data: GenericJSONDict) -> None:
         attrs_start = ['enabled']  # These will be loaded first, in this order
         attrs_end = ['expression']  # These will be loaded last, in this order
 
@@ -765,7 +772,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
             except Exception as e:
                 self.error('failed to read value: %s', e, exc_info=True)
 
-    async def save(self):
+    async def save(self) -> None:
         if not self.is_loaded():
             return
 
@@ -774,7 +781,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.debug('persisting data')
         persist.replace(self.PERSIST_COLLECTION, self._id, d)
 
-    async def prepare_for_save(self):
+    async def prepare_for_save(self) -> GenericJSONDict:
         # Value
         d = {
             'id': self.get_id()
@@ -796,7 +803,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return d
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         # Cancel sequence
         if self._sequence:
             self.debug('canceling current sequence')
@@ -806,13 +813,13 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._write_value_task.cancel()
         await self._write_value_task
 
-    def is_loaded(self):
+    def is_loaded(self) -> bool:
         return self._loaded
 
-    def set_loaded(self):
+    def set_loaded(self) -> None:
         self._loaded = True
 
-    async def remove(self, persisted_data=True):
+    async def remove(self, persisted_data: bool = True) -> None:
         await self.cleanup()
 
         self.debug('removing port')
@@ -824,27 +831,27 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self.trigger_remove()
 
-    def trigger_add(self):
+    def trigger_add(self) -> None:
         event = core_events.PortAdd(self)
         core_sessions.push(event)
         core_events.handle_event(event)
 
-    def trigger_remove(self):
+    def trigger_remove(self) -> None:
         event = core_events.PortRemove(self)
         core_sessions.push(event)
         core_events.handle_event(event)
 
-    def trigger_update(self):
+    def trigger_update(self) -> None:
         event = core_events.PortUpdate(self)
         core_sessions.push(event)
         core_events.handle_event(event)
 
-    def trigger_value_change(self):
+    def trigger_value_change(self) -> None:
         event = core_events.ValueChange(self)
         core_sessions.push(event)
         core_events.handle_event(event)
 
-    async def get_schema(self):
+    async def get_schema(self) -> GenericJSONDict:
         if self._schema is None:
             self._schema = {
                 'type': 'object',
@@ -887,7 +894,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return self._schema
 
-    async def get_value_schema(self):
+    async def get_value_schema(self) -> GenericJSONDict:
         if self._value_schema is None:
             self._value_schema = {}
 
@@ -924,13 +931,16 @@ class Port(BasePort, metaclass=abc.ABCMeta):
         self._persisted = False
 
 
-async def load(port_settings):
+async def load(port_settings: List[Dict[str, Any]], raise_on_error: bool = True) -> List[BasePort]:
     port_driver_classes = {}
     ports = []
 
     for port_spec in port_settings:
         driver = port_spec.pop('driver', None)
         if not driver:
+            if raise_on_error:
+                raise PortLoadError('Missing port driver')
+
             logger.error('ignoring port with no driver')
             continue
 
@@ -941,8 +951,10 @@ async def load(port_settings):
                     port_driver_classes[driver] = utils.load_attr(driver)
 
                 except Exception as e:
-                    logger.error('failed to load port driver %s: %s', driver, e, exc_info=True)
+                    if raise_on_error:
+                        raise PortLoadError(f'Failed to load port driver {driver}') from e
 
+                    logger.error('failed to load port driver %s: %s', driver, e, exc_info=True)
                     continue
 
             port_class = port_driver_classes[driver]
@@ -964,15 +976,24 @@ async def load(port_settings):
             logger.debug('initialized %s (driver %s)', port, port_class_desc)
 
         except Exception as e:
+            if raise_on_error:
+                raise PortLoadError(f'Failed to initialize port from driver {port_class_desc}') from e
+
             logger.error('failed to initialize port from driver %s: %s', port_class_desc, e, exc_info=True)
 
     for old_id, new_id in settings.port_mappings.items():
         if new_id in _ports:
-            logger.error('cannot map port %s: new id already exists', old_id, new_id)
+            if raise_on_error:
+                raise PortLoadError('Cannot map port {old_id} to {new_id}: new id already exists')
+
+            logger.error('cannot map port %s to %s: new id already exists', old_id, new_id)
             continue
 
         port = _ports.get(old_id)
         if not port:
+            if raise_on_error:
+                raise PortLoadError(f'Cannot map port {old_id} to {new_id}: no such port')
+
             logger.error('cannot map port %s to %s: no such port', old_id, new_id)
             continue
 
@@ -980,6 +1001,9 @@ async def load(port_settings):
             port.map_id(new_id)
 
         except Exception as e:
+            if raise_on_error:
+                raise PortLoadError(f'Cannot map port {old_id} to {new_id}') from e
+
             port.error('cannot map to %s: %s', new_id, e)
 
         _ports.pop(old_id)
@@ -990,34 +1014,36 @@ async def load(port_settings):
             await port.load()
 
         except Exception as e:
-            logger.error('failed to load %s: %s', port, e, exc_info=True)
+            if raise_on_error:
+                raise PortLoadError(f'Failed to load {port}') from e
+
+            port.error('failed to load: %s', port, e, exc_info=True)
 
         port.trigger_add()
 
     return ports
 
 
-async def load_one(cls, args):
-    ports = await load([dict(driver=cls, **args)])
-    if not ports:
-        return None
+async def load_one(cls: Union[str, type], args: Dict[str, Any]) -> BasePort:
+    port_settings = [dict(driver=cls, **args)]
+    ports = await load(port_settings, raise_on_error=True)
 
     return ports[0]
 
 
-def get(port_id):
+def get(port_id: str) -> Optional[BasePort]:
     return _ports.get(port_id)
 
 
-def all_ports():
+def all_ports() -> Iterable[BasePort]:
     return _ports.values()
 
 
-async def cleanup():
+async def cleanup() -> None:
     for port in _ports.values():
         await port.cleanup()
 
 
-def reset():
+def reset() -> None:
     logger.debug('clearing ports persisted data')
     persist.remove(BasePort.PERSIST_COLLECTION)

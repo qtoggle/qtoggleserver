@@ -176,7 +176,9 @@ async def init_ports() -> None:
     logger.info('initializing ports')
     vports.load()
     port_settings = settings.ports + vports.all_settings()
-    await ports.load(port_settings)
+
+    # Use raise_on_error=False because we prefer a partial successful startup rather than a failed one
+    await ports.load(port_settings, raise_on_error=False)
 
 
 async def cleanup_ports() -> None:

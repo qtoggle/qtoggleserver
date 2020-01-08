@@ -6,7 +6,6 @@ import time
 
 from typing import Callable, List, Optional, Set
 
-from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import PortValue as CorePortValue
 
 
@@ -769,9 +768,12 @@ class HMSIntervalFunction(Function):
         return start_dt <= now <= stop_dt
 
 
+from qtoggleserver.core import ports as core_ports
+
+
 class PortValue(Expression):
     def __init__(self, port_id: str) -> None:
-        self.port_id = port_id
+        self.port_id: str = port_id
 
     def __str__(self) -> str:
         return f'${self.port_id}'
@@ -779,7 +781,7 @@ class PortValue(Expression):
     def get_deps(self) -> Set[str]:
         return {f'${self.port_id}'}
 
-    def get_port(self):
+    def get_port(self) -> core_ports.BasePort:
         return core_ports.get(self.port_id)
 
     def eval(self) -> CorePortValue:
