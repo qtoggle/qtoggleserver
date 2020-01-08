@@ -768,7 +768,8 @@ class HMSIntervalFunction(Function):
         return start_dt <= now <= stop_dt
 
 
-from qtoggleserver.core import ports as core_ports
+# Import core.ports after defining Expression, because core.ports.BasePort depends on Expression.
+from qtoggleserver.core import ports as core_ports  # noqa: E402
 
 
 class PortValue(Expression):

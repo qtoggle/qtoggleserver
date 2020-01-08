@@ -3,48 +3,62 @@ import logging
 import queue
 
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from typing import Optional
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
+from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.device import attrs as core_device_attrs
-from qtoggleserver.core import responses as core_responses
+from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.utils import http as http_utils
 from qtoggleserver.utils import json as json_utils
 
 
 logger = logging.getLogger(__name__)
-_webhooks = None
+
+_webhooks: Optional['Webhooks'] = None
 
 
-class InvalidParamError(Exception):
-    def __init__(self, param) -> None:
-        self._param = param
+class WebhooksError(Exception):
+    pass
+
+
+class InvalidParamError(WebhooksError):
+    def __init__(self, param: str) -> None:
+        self._param: str = param
         super().__init__(f'invalid field: {param}')
 
 
 class WebhooksRequest:
-    def __init__(self, body) -> None:
-        self.body = body
-        self.retries = 0
+    def __init__(self, body: GenericJSONDict) -> None:
+        self.body: GenericJSONDict = body
+        self.retries: int = 0
 
 
 class Webhooks:
     # noinspection PyUnusedLocal
-    def __init__(self, scheme=None, host=None, port=None, path=None, timeout=None, retries=None, **kwargs) -> None:
+    def __init__(self,
+                 scheme: Optional[str] = None,
+                 host: Optional[str] = None,
+                 port: Optional[int] = None,
+                 path: Optional[str] = None,
+                 timeout: Optional[int] = None,
+                 retries: Optional[int] = None,
+                 **kwargs) -> None:
 
         # The enabled value comes with kwargs but is ignored; webhooks will be explicitly enabled afterwards
 
-        self._enabled = False
-        self._scheme = scheme
-        self._host = host
-        self._port = port
-        self._path = path
-        self._timeout = timeout
-        self._retries = retries
-        self._url = None
+        self._enabled: bool = False
+        self._scheme: Optional[str] = scheme
+        self._host: Optional[str] = host
+        self._port: Optional[int] = port
+        self._path: Optional[str] = path
+        self._timeout: Optional[int] = timeout
+        self._retries: Optional[int] = retries
+        self._url: Optional[str] = None
 
-        self._queue = queue.Queue(settings.core.event_queue_size)
+        self._queue: queue.Queue = queue.Queue(settings.core.event_queue_size)
 
     def __str__(self) -> str:
         s = 'webhooks'
@@ -57,10 +71,10 @@ class Webhooks:
 
         return s
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         return self._enabled
 
-    def enable(self):
+    def enable(self) -> None:
         if self._enabled:
             return
 
@@ -68,7 +82,7 @@ class Webhooks:
 
         self._enabled = True
 
-    def disable(self):
+    def disable(self) -> None:
         if not self._enabled:
             return
 
@@ -80,8 +94,8 @@ class Webhooks:
         while not self._queue.empty():
             self._queue.get()
 
-    def get_url(self):
-        if not hasattr(self, '_url'):
+    def get_url(self) -> str:
+        if not self._url:
             if self._scheme == 'http' and self._port == 80 or self._scheme == 'https' and self._port == 443:
                 self._url = f'{self._scheme}://{self._host}{self._path}'
 
@@ -90,7 +104,7 @@ class Webhooks:
 
         return self._url
 
-    def call(self, body):
+    def call(self, body: GenericJSONDict):  # TODO add return type
         if not self._enabled:
             return
 
@@ -106,7 +120,7 @@ class Webhooks:
             logger.error('%s: queue is full', self)
             return
 
-    def _request(self, request):
+    def _request(self, request: WebhooksRequest):  # TODO add return type
         if not self._enabled:
             return
 
@@ -150,9 +164,9 @@ class Webhooks:
 
         logger.debug('%s: calling', self)
 
-        http_client.fetch(request, on_response)  # TODO await
+        http_client.fetch(request, callback=on_response)  # TODO implement me using await
 
-    def _check_pending(self):
+    def _check_pending(self) -> None:
         try:
             request = self._queue.get(block=False)
 
@@ -161,7 +175,7 @@ class Webhooks:
 
         self._request(request)
 
-    def to_json(self):
+    def to_json(self) -> GenericJSONDict:
         d = {
             'enabled': self._enabled,
             'scheme': self._scheme,
@@ -175,11 +189,19 @@ class Webhooks:
         return d
 
 
-def get():
+def get() -> Optional[Webhooks]:
     return _webhooks
 
 
-def setup(enabled, scheme=None, host=None, port=None, path=None, timeout=None, retries=None, **kwargs):
+def setup(enabled,
+          scheme: Optional[str] = None,
+          host: Optional[str] = None,
+          port: Optional[int] = None,
+          path: Optional[str] = None,
+          timeout: Optional[int] = None,
+          retries: Optional[int] = None,
+          **kwargs) -> None:
+
     global _webhooks
 
     if _webhooks and _webhooks.is_enabled():
@@ -190,7 +212,7 @@ def setup(enabled, scheme=None, host=None, port=None, path=None, timeout=None, r
         _webhooks.enable()
 
 
-def load():
+def load() -> None:
     data = persist.get_value('webhooks')
     if data is None:
         setup(enabled=False)
@@ -202,7 +224,7 @@ def load():
     logger.debug('loaded %s', _webhooks)
 
 
-def save():
+def save() -> None:
     if _webhooks is None:
         return
 
@@ -210,6 +232,6 @@ def save():
     persist.set_value('webhooks', _webhooks.to_json())
 
 
-def reset():
+def reset() -> None:
     logger.debug('clearing persisted data')
     persist.remove('webhooks')

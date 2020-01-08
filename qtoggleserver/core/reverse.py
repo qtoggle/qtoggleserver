@@ -2,16 +2,19 @@
 import asyncio
 import logging
 import re
-import types
+
+from types import SimpleNamespace
+from typing import Optional
 
 from tornado import httputil
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPResponse
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.api import auth as core_api_auth
+from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.utils import http as http_utils
 from qtoggleserver.utils import json as json_utils
 
@@ -22,26 +25,39 @@ BLACKLIST_CALLS = [
 ]
 
 logger = logging.getLogger(__name__)
-_reverse = None
+
+_reverse: Optional['Reverse'] = None
 
 
-class InvalidParamError(Exception):
-    def __init__(self, param) -> None:
-        self._param = param
-        super().__init__(f'invalid field: {param}')
-
-
-class InvalidConsumerRequestError(Exception):
+class ReverseError(Exception):
     pass
 
 
-class UnauthorizedConsumerRequestError(Exception):
+class InvalidParamError(ReverseError):
+    def __init__(self, param: str) -> None:
+        self._param: str = param
+
+        super().__init__(f'invalid field: {param}')
+
+
+class InvalidConsumerRequestError(ReverseError):
+    pass
+
+
+class UnauthorizedConsumerRequestError(ReverseError):
     pass
 
 
 class Reverse:
     # noinspection PyUnusedLocal
-    def __init__(self, scheme=None, host=None, port=None, path=None, device_id=None, password=None, timeout=None,
+    def __init__(self,
+                 scheme: Optional[str] = None,
+                 host: Optional[str] = None,
+                 port: Optional[int] = None,
+                 path: Optional[str] = None,
+                 device_id: Optional[str] = None,
+                 password_hash: Optional[str] = None,
+                 timeout: Optional[int] = None,
                  **kwargs) -> None:
 
         # The enabled value comes with kwargs but is ignored; the reverse object will be explicitly enabled afterwards
@@ -51,11 +67,11 @@ class Reverse:
         self._port = port
         self._path = path
         self._device_id = device_id
-        self._password = password
+        self._password_hash = password_hash
         self._timeout = timeout
 
-        self._enabled = False
-        self._url = None
+        self._enabled: bool = False
+        self._url: Optional[str] = None
 
     def __str__(self) -> str:
         s = 'reverse'
@@ -68,8 +84,8 @@ class Reverse:
 
         return s
 
-    def get_url(self):
-        if not hasattr(self, '_url'):
+    def get_url(self) -> str:
+        if not self._url:
             if self._scheme == 'http' and self._port == 80 or self._scheme == 'https' and self._port == 443:
                 self._url = f'{self._scheme}://{self._host}{self._path}'
 
@@ -78,10 +94,10 @@ class Reverse:
 
         return self._url
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         return self._enabled
 
-    def enable(self):
+    def enable(self) -> None:
         if self._enabled:
             return
 
@@ -90,7 +106,7 @@ class Reverse:
         self._enabled = True
         asyncio.create_task(self._session_loop())
 
-    def disable(self):
+    def disable(self) -> None:
         if not self._enabled:
             return
 
@@ -98,7 +114,7 @@ class Reverse:
 
         self._enabled = False
 
-    def to_json(self):
+    def to_json(self) -> GenericJSONDict:
         d = {
             'enabled': self._enabled,
             'scheme': self._scheme,
@@ -111,8 +127,9 @@ class Reverse:
 
         return d
 
-    async def _session_loop(self):
+    async def _session_loop(self) -> None:
         api_response_dict = None
+        api_request_dict = {}  # TODO this does not work
         sleep_interval = 0
 
         while True:
@@ -124,7 +141,7 @@ class Reverse:
                 sleep_interval = 0
 
             try:
-                api_request_dict = await self._wait(api_response_dict)  # TODO properly implement me
+                api_request_dict = await self._wait(api_request_dict, api_response_dict)  # TODO properly implement me
 
             except UnauthorizedConsumerRequestError:
                 api_response_dict = {
@@ -153,14 +170,14 @@ class Reverse:
                 api_response_dict = None
                 continue
 
-    async def _wait(self, api_request_dict, api_response_dict):
+    async def _wait(self, api_request_dict: GenericJSONDict, api_response_dict: GenericJSONDict) -> GenericJSONDict:
         url = self.get_url()
 
         headers = {
             'Content-Type': http_utils.JSON_CONTENT_TYPE,
             'Authorization': core_api_auth.make_auth_header(core_api_auth.ORIGIN_DEVICE,
                                                             username=self._device_id,
-                                                            password_hash=self._password)
+                                                            password_hash=self._password_hash)
         }
 
         body_str = None
@@ -186,14 +203,14 @@ class Reverse:
 
         except Exception as e:
             # We need to catch exceptions here even though raise_error is False, because it only affects HTTP errors
-            consumer_response = types.SimpleNamespace(error=e, code=599)
+            consumer_response = SimpleNamespace(error=e, code=599)
 
         api_request_dict = self._parse_consumer_response(consumer_response)
 
         return api_request_dict
 
     @staticmethod
-    def _parse_consumer_response(response):
+    def _parse_consumer_response(response: HTTPResponse) -> GenericJSONDict:
         body = core_responses.parse(response)  # Will raise for non-2xx
 
         auth = response.headers.get('Authorization')
@@ -236,10 +253,10 @@ class Reverse:
             'username': usr
         }
 
-    async def _process_api_request(self, request_dict):
+    async def _process_api_request(self, request_dict: GenericJSONDict) -> GenericJSONDict:
         from qtoggleserver.web import server as web_server
 
-        if self._is_black_listed(request_dict):
+        if self._request_is_black_listed(request_dict):
             return {
                 'status': 404,
                 'body': json_utils.dumps({'error': 'no such function'})
@@ -261,7 +278,7 @@ class Reverse:
         }
 
     @staticmethod
-    def _is_black_listed(request_dict):
+    def _request_is_black_listed(request_dict: GenericJSONDict) -> bool:
         for method, path_re in BLACKLIST_CALLS:
             if request_dict['method'] != method:
                 continue
@@ -272,22 +289,31 @@ class Reverse:
         return False
 
 
-def get():
+def get() -> Optional[Reverse]:
     return _reverse
 
 
-def setup(enabled, scheme=None, host=None, port=None, path=None, device_id=None, password=None, timeout=None, **kwargs):
+def setup(enabled: bool,
+          scheme: Optional[str] = None,
+          host: Optional[str] = None,
+          port: Optional[int] = None,
+          path: Optional[str] = None,
+          device_id: Optional[str] = None,
+          password_hash: Optional[str] = None,
+          timeout: Optional[int] = None,
+          **kwargs) -> None:
+
     global _reverse
 
     if _reverse and _reverse.is_enabled():
         _reverse.disable()
 
-    _reverse = Reverse(scheme, host, port, path, device_id, password, timeout)
+    _reverse = Reverse(scheme, host, port, path, device_id, password_hash, timeout)
     if enabled:
         _reverse.enable()
 
 
-def load():
+def load() -> None:
     data = persist.get_value('reverse')
     if data is None:
         setup(enabled=False)
@@ -299,7 +325,7 @@ def load():
     logger.debug('loaded %s', _reverse)
 
 
-def save():
+def save() -> None:
     if _reverse is None:
         return
 
@@ -307,6 +333,6 @@ def save():
     persist.set_value('reverse', _reverse.to_json())
 
 
-def reset():
+def reset() -> None:
     logger.debug('clearing persisted data')
     persist.remove('reverse')

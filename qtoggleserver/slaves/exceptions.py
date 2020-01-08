@@ -15,14 +15,14 @@ class NoListenSupport(SlaveError):
     def __init__(self, name) -> None:
         self.name = name
 
-        super().__init__(f'device {name} has no listen support')
+        super().__init__(f'Device {name} has no listen support')
 
 
 class DeviceAlreadyExists(SlaveError):
     def __init__(self, name) -> None:
         self.name = name
 
-        super().__init__(f'device {name} already exists')
+        super().__init__(f'Device {name} already exists')
 
 
 class DeviceRenamed(SlaveError):
@@ -44,7 +44,7 @@ class PortNotFound(SlaveError):
         self.slave = slave
         self.id = _id
 
-        super().__init__(f'could not find port {slave}.{_id}')
+        super().__init__(f'Could not find port {slave}.{_id}')
 
 
 def adapt_api_error(error):

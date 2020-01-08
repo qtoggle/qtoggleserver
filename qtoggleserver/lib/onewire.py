@@ -21,12 +21,12 @@ class OneWireException(Exception):
 
 class OneWirePeripheralNotFound(OneWireException):
     def __init__(self, address) -> None:
-        super().__init__(f'peripheral @{address} not found')
+        super().__init__(f'Peripheral @{address} not found')
 
 
 class OneWirePeripheralAddressRequired(OneWireException):
     def __init__(self) -> None:
-        super().__init__('peripheral address required')
+        super().__init__('Peripheral address required')
 
 
 class OneWireTimeout(OneWireException):

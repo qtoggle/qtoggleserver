@@ -189,35 +189,35 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
     def __init__(self, port_id: str) -> None:
         utils.LoggableMixin.__init__(self, port_id, logger)
 
-        self._id = port_id
-        self._enabled = False
-        self._display_name = None
-        self._unit = None
+        self._id: str = port_id
+        self._enabled: bool = False
+        self._display_name: Optional[str] = None
+        self._unit: Optional[str] = None
 
-        self._sequence = None
-        self._expression = None
-        self._transform_read = None
-        self._transform_write = None
+        self._sequence: Optional[core_sequences.Sequence] = None
+        self._expression: Optional[core_expressions.Expression] = None
+        self._transform_read: Optional[core_expressions.Expression] = None
+        self._transform_write: Optional[core_expressions.Expression] = None
 
         # Attributes cache is used to prevent computing an attribute value more than once per core iteration
-        self._attrs_cache = {}
+        self._attrs_cache: dict = {}
 
-        # Cache attribute definitions so that the ATTRDEFS property doesn't need to gather all of them with each access
-        self._attrdefs_cache = None
+        # Cache attribute definitions so that the ATTRDEFS property doesn't need to gather all of them on each access
+        self._attrdefs_cache: Optional[AttributeDefinitions] = None
 
-        self._modifiable_attrs = None
-        self._non_modifiable_attrs = None
+        self._modifiable_attrs: Optional[Set[str]] = None
+        self._non_modifiable_attrs: Optional[Set[str]] = None
 
-        self._schema = None
-        self._value_schema = None
+        self._schema: Optional[GenericJSONDict] = None
+        self._value_schema: Optional[GenericJSONDict] = None
 
-        self._value = None
-        self._write_value_queue = queues.Queue()
-        self._write_value_task = asyncio.create_task(self._write_value_loop())
-        self._asap_value = None
-        self._change_reason = CHANGE_REASON_NATIVE
+        self._value: NullablePortValue = None
+        self._write_value_queue: queues.Queue = queues.Queue()
+        self._write_value_task: asyncio.Task = asyncio.create_task(self._write_value_loop())
+        self._asap_value: NullablePortValue = None
+        self._change_reason: str = CHANGE_REASON_NATIVE
 
-        self._loaded = False
+        self._loaded: bool = False
 
     def __str__(self) -> str:
         return f'port {self._id}'
@@ -690,6 +690,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def to_json(self) -> GenericJSONDict:
         attrs = await self.get_attrs()
+        attrs = dict(attrs)
 
         if self._enabled:
             attrs['value'] = self._value

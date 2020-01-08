@@ -26,7 +26,7 @@ class AuthError(Exception):
     pass
 
 
-def make_auth_header(origin: str, username: str, password_hash: str) -> str:
+def make_auth_header(origin: str, username: Optional[str], password_hash: str) -> str:
     claims = {
         'iss': JWT_ISS,
         'ori': origin
