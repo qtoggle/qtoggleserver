@@ -925,11 +925,11 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
 
 class Port(BasePort, metaclass=abc.ABCMeta):
-    def __init__(self, port_id) -> None:
+    def __init__(self, port_id: str) -> None:
         super().__init__(port_id)
 
-        self._tag = ''
-        self._persisted = False
+        self._tag: str = ''
+        self._persisted: bool = False
 
 
 async def load(port_settings: List[Dict[str, Any]], raise_on_error: bool = True) -> List[BasePort]:

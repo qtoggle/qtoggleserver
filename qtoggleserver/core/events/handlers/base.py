@@ -2,7 +2,7 @@
 import abc
 import logging
 
-from typing import Dict, Set, Tuple
+from typing import Dict, Optional, Set, Tuple
 
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import ports as core_ports
@@ -23,36 +23,36 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
 
     # noinspection PyShadowingBuiltins
     def __init__(self, filter: dict = None) -> None:
-        self._filter = filter or {}
-        self._filter_prepared = False
+        self._filter: dict = filter or {}
+        self._filter_prepared: bool = False
 
-        self._filter_event_types = None
+        self._filter_event_types: Optional[Set[str]] = None
 
-        self._filter_device_attrs = {}
-        self._filter_device_attr_transitions = {}
-        self._filter_device_attr_names = set()
+        self._filter_device_attrs: Attributes = {}
+        self._filter_device_attr_transitions: Dict[str, Tuple[Attribute, Attribute]] = {}
+        self._filter_device_attr_names: Set[str] = set()
 
-        self._filter_port_value = None
-        self._filter_port_value_transition = None
-        self._filter_port_attrs = {}
-        self._filter_port_attr_transitions = {}
-        self._filter_port_attr_names = set()
+        self._filter_port_value: Optional[NullablePortValue] = None
+        self._filter_port_value_transition: Optional[Tuple[NullablePortValue, NullablePortValue]] = None
+        self._filter_port_attrs: Attributes = {}
+        self._filter_port_attr_transitions: Dict[str, Tuple[Attribute, Attribute]] = {}
+        self._filter_port_attr_names: Set[str] = set()
 
-        self._filter_slave_attrs = {}
-        self._filter_slave_attr_transitions = {}
-        self._filter_slave_attr_names = set()
+        self._filter_slave_attrs: Attributes = {}
+        self._filter_slave_attr_transitions: Dict[str, Tuple[Attribute, Attribute]] = {}
+        self._filter_slave_attr_names: Set[str] = set()
 
-        # Maintain an internal "last" state for all objects, so we can detect changes in various attributes
-        self._device_attrs = {}
-        self._port_values = {}
-        self._port_attrs = {}
-        self._slave_attrs = {}
+        # Maintain an internal "last" state for all objects, so we can detect changes in attributes and values
+        self._device_attrs: Attributes = {}
+        self._port_values: Dict[str, NullablePortValue] = {}
+        self._port_attrs: Dict[str, Attributes] = {}
+        self._slave_attrs: Dict[str, Attributes] = {}
 
     def _prepare_filter(self) -> None:
         event_types = self._filter.get('type')
         if event_types:
             if not isinstance(event_types, list):
-                event_types = event_types,
+                event_types = (event_types,)
             self._filter_event_types = set(event_types)
 
         port_value = self._filter.get('port_value')

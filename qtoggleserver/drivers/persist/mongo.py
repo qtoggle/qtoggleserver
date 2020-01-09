@@ -1,10 +1,13 @@
 
 import logging
-import pymongo
 import re
 
 from bson import ObjectId
+from pymongo import MongoClient
+from pymongo.database import Database
+from typing import Any, Dict, Iterable, List, Optional, Union
 
+from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.persist import BaseDriver
 
 
@@ -14,13 +17,17 @@ _OBJECT_ID_RE = re.compile('^[0-9a-f]{24}$')
 
 
 class MongoDriver(BaseDriver):
-    def __init__(self, host, port, db, **kwargs) -> None:
+    def __init__(self, host: str, port: str, db: str, **kwargs) -> None:
         logger.debug('connecting to %s:%s/%s', host, port, db)
 
-        self._client = pymongo.MongoClient(host, port, serverSelectionTimeoutMS=200)
-        self._db = self._client[db]
+        self._client: MongoClient = MongoClient(host, port, serverSelectionTimeoutMS=200)
+        self._db: Database = self._client[db]
 
-    def query(self, collection, fields, filt, limit):
+    def query(self, collection: str,
+              fields: List[str],
+              filt: Dict[str, Any],
+              limit: Optional[int]) -> Iterable[GenericJSONDict]:
+
         if fields:
             fields = dict((f, 1) for f in fields)
             if 'id' in fields:
@@ -39,14 +46,14 @@ class MongoDriver(BaseDriver):
 
         return self._query_gen_wrapper(q)
 
-    def insert(self, collection, record):
+    def insert(self, collection: str, record: GenericJSONDict) -> str:
         if 'id' in record:
             record = dict(record)
             record['_id'] = self._id_to_db(record.pop('id'))
 
         return self._db[collection].insert_one(record).inserted_id
 
-    def update(self, collection, record_part, filt):
+    def update(self, collection: str, record_part: GenericJSONDict, filt: Dict[str, Any]) -> int:
         if 'id' in record_part:
             record_part = dict(record_part)
             record_part['_id'] = self._id_to_db(record_part.pop('id'))
@@ -57,27 +64,27 @@ class MongoDriver(BaseDriver):
 
         return self._db[collection].update_many(filt, {'$set': record_part}, upsert=False).modified_count
 
-    def replace(self, collection, _id, record, upsert):
+    def replace(self, collection: str, _id: str, record: GenericJSONDict, upsert: bool) -> int:
         record = dict(record)
         record.pop('id', None)
         record['_id'] = self._id_to_db(_id)
 
         return bool(self._db[collection].replace_one({'_id': record['_id']}, record, upsert=upsert).modified_count)
 
-    def remove(self, collection, filt=None):
+    def remove(self, collection: str, filt: Dict[str, Any]) -> int:
         if 'id' in filt:
             filt = dict(filt)
             filt['_id'] = self._id_to_db(filt.pop('id'))
 
         return self._db[collection].delete_many(filt).deleted_count
 
-    def close(self):
+    def close(self) -> None:
         logger.debug('disconnecting mongo client')
 
         self._client.close()
 
     @classmethod
-    def _query_gen_wrapper(cls, q):
+    def _query_gen_wrapper(cls, q: Iterable[GenericJSONDict]) -> Iterable[GenericJSONDict]:
         for r in q:
             if '_id' in r:
                 r['id'] = cls._id_from_db(r.pop('_id'))
@@ -85,7 +92,7 @@ class MongoDriver(BaseDriver):
             yield r
 
     @staticmethod
-    def _id_to_db(_id):
+    def _id_to_db(_id: str) -> Union[str, ObjectId]:
         if isinstance(_id, str) and _OBJECT_ID_RE.match(_id):
             return ObjectId(_id)
 
@@ -93,7 +100,7 @@ class MongoDriver(BaseDriver):
             return _id
 
     @staticmethod
-    def _id_from_db(_id):
+    def _id_from_db(_id: Union[str, ObjectId]) -> str:
         if isinstance(_id, ObjectId):
             return str(_id)
 

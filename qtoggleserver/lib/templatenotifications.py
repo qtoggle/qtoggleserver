@@ -3,12 +3,16 @@ import abc
 import datetime
 import logging
 
-from jinja2 import Environment
+from jinja2 import Environment, Template
+from typing import Dict, Optional, Tuple
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import device
 from qtoggleserver.core import main as core_main
-from qtoggleserver.core.events import BaseEventHandler
+from qtoggleserver.core import ports as core_ports
+from qtoggleserver.core.events import BaseEventHandler, Event
+from qtoggleserver.core.typing import Attribute, Attributes, NullablePortValue
+from qtoggleserver.slaves import devices as slaves_devices
 
 
 logger = logging.getLogger(__name__)
@@ -53,9 +57,13 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
 
     logger = logger
 
-    def __init__(self, template=None, templates=None, skip_startup=True, filter=None) -> None:
-        self._skip_startup = skip_startup
-        self._j2env = None
+    def __init__(self,
+                 template: Optional[Dict[str, str]] = None,
+                 templates: Optional[Dict[str, Dict[str, str]]] = None,
+                 skip_startup: bool = True,
+                 filter: dict = None) -> None:
+
+        self._skip_startup: bool = skip_startup
 
         # "template" has the highest precedence; then comes "templates" and then comes "DEFAULT_TEMPLATES"
         if template is not None:
@@ -64,8 +72,8 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
             templates = self.DEFAULT_TEMPLATES
 
         # Convert template strings to jinja2 templates
-        self._j2env = Environment()
-        self._templates = {}
+        self._j2env: Environment = Environment()
+        self._templates: Dict[str, Dict[str, Template]] = {}
         for _type, ts in templates.items():
             # Ensure values in templates are dicts themselves
             if isinstance(ts, str):
@@ -77,13 +85,13 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
 
         super().__init__(filter)
 
-    def render(self, event_type, context):
+    def render(self, event_type: str, context: dict) -> Dict[str, str]:
         template = self._templates[event_type]
 
         return {k: t.render(context) if t is not None else None for k, t in template.items()}
 
     @staticmethod
-    def get_common_context(event):
+    def get_common_context(event: Event) -> dict:
         timestamp = event.get_timestamp()
         moment = datetime.datetime.fromtimestamp(timestamp)
 
@@ -96,15 +104,15 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
             'public_url': settings.public_url
         }
 
-    async def push_message(self, event, title, body, **kwargs):
+    async def push_message(self, event: Event, title: str, body: str, **kwargs) -> None:
         raise NotImplementedError
 
-    async def push_template_message(self, event, context):
+    async def push_template_message(self, event: Event, context: dict) -> None:
         template = self.render(event.get_type(), context)
 
         await self.push_message(event, **template)
 
-    async def accepts(self, *args, **kwargs):
+    async def accepts(self, *args, **kwargs) -> bool:
         # Skip notifications during startup
         if self._skip_startup:
             if not core_main.is_ready():
@@ -115,7 +123,13 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
 
         return await super().accepts(*args, **kwargs)
 
-    async def on_value_change(self, event, port, old_value, new_value, attrs):
+    async def on_value_change(self,
+                              event: Event,
+                              port: core_ports.BasePort,
+                              old_value: NullablePortValue,
+                              new_value: NullablePortValue,
+                              attrs: Attributes) -> None:
+
         context = self.get_common_context(event)
         context.update({
             'port': port,
@@ -126,8 +140,14 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
 
         await self.push_template_message(event, context)
 
-    async def on_port_update(self, event, port, old_attrs, new_attrs,
-                             changed_attrs, added_attrs, removed_attrs):
+    async def on_port_update(self,
+                             event: Event,
+                             port: core_ports.BasePort,
+                             old_attrs: Attributes,
+                             new_attrs: Attributes,
+                             changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+                             added_attrs: Attributes,
+                             removed_attrs: Attributes) -> None:
 
         context = self.get_common_context(event)
         context.update({
@@ -142,7 +162,7 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
 
         await self.push_template_message(event, context)
 
-    async def on_port_add(self, event, port, attrs):
+    async def on_port_add(self, event: Event, port: core_ports.BasePort, attrs: Attributes) -> None:
         context = self.get_common_context(event)
         context.update({
             'port': port,
@@ -152,7 +172,7 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
 
         await self.push_template_message(event, context)
 
-    async def on_port_remove(self, event, port, attrs):
+    async def on_port_remove(self, event: Event, port: core_ports.BasePort, attrs: Attributes) -> None:
         context = self.get_common_context(event)
         context.update({
             'port': port,
@@ -162,8 +182,13 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
 
         await self.push_template_message(event, context)
 
-    async def on_device_update(self, event, old_attrs, new_attrs,
-                               changed_attrs, added_attrs, removed_attrs):
+    async def on_device_update(self,
+                               event: Event,
+                               old_attrs: Attributes,
+                               new_attrs: Attributes,
+                               changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+                               added_attrs: Attributes,
+                               removed_attrs: Attributes) -> None:
 
         context = self.get_common_context(event)
         context.update({
@@ -177,8 +202,14 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
 
         await self.push_template_message(event, context)
 
-    async def on_slave_device_update(self, event, slave, old_attrs, new_attrs,
-                                     changed_attrs, added_attrs, removed_attrs):
+    async def on_slave_device_update(self,
+                                     event: Event,
+                                     slave: slaves_devices.Slave,
+                                     old_attrs: Attributes,
+                                     new_attrs: Attributes,
+                                     changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+                                     added_attrs: Attributes,
+                                     removed_attrs: Attributes) -> None:
 
         context = self.get_common_context(event)
         context.update({
@@ -192,7 +223,7 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
 
         await self.push_template_message(event, context)
 
-    async def on_slave_device_add(self, event, slave, attrs):
+    async def on_slave_device_add(self, event: Event, slave: slaves_devices.Slave, attrs: Attributes) -> None:
         context = self.get_common_context(event)
         context.update({
             'slave': slave,
@@ -201,7 +232,7 @@ class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
 
         await self.push_template_message(event, context)
 
-    async def on_slave_device_remove(self, event, slave, attrs):
+    async def on_slave_device_remove(self, event: Event, slave: slaves_devices.Slave, attrs: Attributes) -> None:
         context = self.get_common_context(event)
         context.update({
             'slave': slave,

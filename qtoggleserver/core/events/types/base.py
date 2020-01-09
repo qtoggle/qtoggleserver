@@ -15,8 +15,8 @@ class Event(metaclass=abc.ABCMeta):
     TYPE = 'base-event'
 
     def __init__(self, timestamp: float = None) -> None:
-        self._type = self.TYPE
-        self._timestamp = timestamp or time.time()
+        self._type: str = self.TYPE
+        self._timestamp: float = timestamp or time.time()
 
     def __str__(self) -> str:
         return f'{self._type} event'

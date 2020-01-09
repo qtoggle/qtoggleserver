@@ -8,7 +8,7 @@ from .base import Event
 
 class DeviceEvent(Event):
     def __init__(self, timestamp: float = None) -> None:
-        self._attrs = core_device_attrs.to_json()
+        self._attrs: Attributes = core_device_attrs.to_json()
 
         super().__init__(timestamp)
 

@@ -8,7 +8,7 @@ from .base import Event
 
 class SlaveDeviceEvent(Event):
     def __init__(self, slave: slaves_devices.Slave, timestamp: float = None) -> None:
-        self._slave = slave
+        self._slave: slaves_devices.Slave = slave
 
         super().__init__(timestamp)
 

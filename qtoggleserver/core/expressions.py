@@ -4,7 +4,7 @@ import datetime
 import math
 import time
 
-from typing import Callable, List, Optional, Set
+from typing import Callable, List, Optional, Set, Tuple
 
 from qtoggleserver.core.typing import PortValue as CorePortValue
 
@@ -32,8 +32,8 @@ class InvalidExpression(ExpressionError):
 
 class InvalidArgument(ExpressionError):
     def __init__(self, arg_no: int, value: CorePortValue) -> None:
-        self.arg_no = arg_no
-        self.value = value
+        self.arg_no: int = arg_no
+        self.value: CorePortValue = value
 
     def __str__(self) -> str:
         return f'invalid argument {self.arg_no}: {self.value}'
@@ -65,8 +65,8 @@ class Expression(metaclass=abc.ABCMeta):
 
 class Constant(Expression):
     def __init__(self, value: CorePortValue, sexpression: str) -> None:
-        self.value = value
-        self.sexpression = sexpression
+        self.value: CorePortValue = value
+        self.sexpression: str = sexpression
 
     def __str__(self) -> str:
         return self.sexpression
@@ -104,8 +104,8 @@ class Function(Expression, metaclass=abc.ABCMeta):
     MAX_ARGS = None
 
     def __init__(self, args: List[Expression]) -> None:
-        self.args = args
-        self._deps = None
+        self.args: List[Expression] = args
+        self._deps: Optional[Set[str]] = None
 
     def __str__(self) -> str:
         s = getattr(self, '_str', None)
@@ -532,8 +532,8 @@ class HeldFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._time_ms = None
-        self._last_value = None
+        self._time_ms: Optional[int] = None
+        self._last_value: Optional[CorePortValue] = None
 
     def get_deps(self) -> Set[str]:
         return {'time_ms'}
@@ -571,9 +571,9 @@ class DelayFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._queue = []
-        self._last_value = None
-        self._current_value = None
+        self._queue: List[Tuple[int, CorePortValue]] = []
+        self._last_value: Optional[CorePortValue] = None
+        self._current_value: Optional[CorePortValue] = None
 
     def get_deps(self) -> Set[str]:
         return {'time_ms'}
@@ -611,7 +611,7 @@ class HystFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_result = 0
+        self._last_result: int = 0
 
     def eval(self) -> CorePortValue:
         value = self.args[0].eval()

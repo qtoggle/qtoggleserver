@@ -31,9 +31,9 @@ logger = logging.getLogger(__name__)
 
 class APIError(Exception):
     def __init__(self, status: int, message: str, **params) -> None:
-        self.status = status
-        self.message = message
-        self.params = params
+        self.status: int = status
+        self.message: str = message
+        self.params: dict = params
 
         super().__init__(message)
 
@@ -44,7 +44,7 @@ class APIError(Exception):
 
 class APIRequest:
     def __init__(self, handler: RequestHandler) -> None:
-        self.handler = handler
+        self.handler: RequestHandler = handler
 
     @property
     def access_level(self) -> int:

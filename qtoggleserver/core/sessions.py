@@ -58,7 +58,8 @@ class Session:
         self.future.set_result(events)
         self.future = None
 
-    def push(self, event: core_events.Event) -> None:
+    # TODO: use normal type annotation when handlers are decoupled from events
+    def push(self, event: 'core_events.Event') -> None:
         # Deduplicate events
         while True:
             duplicates = [e for e in self.queue if event.is_duplicate(e)]
@@ -90,7 +91,8 @@ def get(session_id: str) -> Session:
     return session
 
 
-def push(event: core_events.Event) -> None:
+# TODO: use normal type annotation when handlers are decoupled from events
+def push(event: 'core_events.Event') -> None:
     logger.debug('%s triggered', event)
 
     for session in _sessions_by_id.values():

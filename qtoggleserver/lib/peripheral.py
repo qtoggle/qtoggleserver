@@ -6,6 +6,8 @@ import queue
 import logging
 import threading
 
+from typing import Any, Callable, Dict, List, Optional
+
 from qtoggleserver import utils
 from qtoggleserver.core import ports as core_ports
 
@@ -22,16 +24,16 @@ class RunnerBusy(Exception):
 class ThreadedRunner(threading.Thread, metaclass=abc.ABCMeta):
     QUEUE_TIMEOUT = 1
 
-    def __init__(self, queue_size=None) -> None:
-        self._running = False
-        self._loop = asyncio.get_event_loop()
-        self._queue = queue.Queue(queue_size or 0)
-        self._queue_size = queue_size
-        self._stopped_future = self._loop.create_future()
+    def __init__(self, queue_size: Optional[int] = None) -> None:
+        self._running: bool = False
+        self._loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+        self._queue: queue.Queue = queue.Queue(queue_size or 0)
+        self._queue_size: int = queue_size
+        self._stopped_future: asyncio.Future = self._loop.create_future()
 
         super().__init__()
 
-    def run(self):
+    def run(self) -> None:
         while self._running:
             try:
                 func, callback = self._queue.get(timeout=self.QUEUE_TIMEOUT)
@@ -50,24 +52,24 @@ class ThreadedRunner(threading.Thread, metaclass=abc.ABCMeta):
 
         self._loop.call_soon_threadsafe(self._stopped_future.set_result, None)
 
-    def schedule_func(self, func, callback):
+    def schedule_func(self, func: Callable, callback: Callable) -> None:
         try:
             self._queue.put_nowait((func, callback))
 
         except queue.Full:
             raise RunnerBusy() from None
 
-    def is_running(self):
+    def is_running(self) -> bool:
         return self._running
 
-    def start(self):
+    def start(self) -> None:
         self._running = True
         super().start()
 
-    def stop(self):
+    async def stop(self) -> None:
         self._running = False
 
-        return self._stopped_future
+        await self._stopped_future
 
 
 class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABCMeta):
@@ -75,10 +77,10 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
     RUNNER_QUEUE_SIZE = 8
 
     logger = logger
-    _peripherals_by_address = {}
+    _peripherals_by_address: Dict[str, 'Peripheral'] = {}
 
     @classmethod
-    def get(cls, address, name, **kwargs):
+    def get(cls, address: str, name: str, **kwargs) -> 'Peripheral':
         if name is None:
             name = ''
 
@@ -90,10 +92,10 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
         return cls._peripherals_by_address[address]
 
     @classmethod
-    def make_peripheral(cls, address, name, **kwargs):
+    def make_peripheral(cls, address: str, name: str, **kwargs) -> 'Peripheral':
         return cls(address, name, **kwargs)
 
-    def __init__(self, address, name, **kwargs) -> None:
+    def __init__(self, address: str, name: str, **kwargs) -> None:
         utils.LoggableMixin.__init__(self, name, self.logger)
 
         self._address = address
@@ -107,27 +109,27 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
     def __str__(self) -> str:
         return self._name
 
-    def get_address(self):
+    def get_address(self) -> str:
         return self._address
 
-    def get_name(self):
+    def get_name(self) -> str:
         return self._name
 
-    def add_port(self, port):
+    def add_port(self, port: core_ports.BasePort) -> None:
         self._ports.append(port)
 
-    def get_ports(self):
+    def get_ports(self) -> List[core_ports.BasePort]:
         return list(self._ports)
 
-    def trigger_port_update(self):
+    def trigger_port_update(self) -> None:
         for port in self._ports:
             if port.is_enabled():
                 port.trigger_update()
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         return self._enabled
 
-    async def enable(self):
+    async def enable(self) -> None:
         if self._enabled:
             return
 
@@ -135,7 +137,7 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
         await self.handle_enable()
         self.debug('peripheral enabled')
 
-    async def disable(self):
+    async def disable(self) -> None:
         if not self._enabled:
             return
 
@@ -143,7 +145,7 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
         await self.handle_disable()
         self.debug('peripheral disabled')
 
-    async def check_disabled(self, exclude_port=None):
+    async def check_disabled(self, exclude_port: Optional[core_ports.BasePort] = None) -> None:
         if not self._enabled:
             return
 
@@ -155,20 +157,20 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
             self.debug('all ports are disabled, disabling peripheral')
             await self.disable()
 
-    def get_runner(self):
+    def get_runner(self) -> RUNNER_CLASS:
         if self._runner is None:
             self._runner = self.make_runner()
 
         return self._runner
 
-    def make_runner(self):
+    def make_runner(self) -> RUNNER_CLASS:
         self.debug('starting threaded runner')
         runner = self.RUNNER_CLASS(queue_size=self.RUNNER_QUEUE_SIZE)
         runner.start()
 
         return runner
 
-    async def run_threaded(self, func, *args, **kwargs):
+    async def run_threaded(self, func: Callable, *args, **kwargs) -> Any:
         future = asyncio.get_running_loop().create_future()
 
         def callback(result, exception):
@@ -183,13 +185,13 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
 
         return await future
 
-    async def handle_enable(self):
+    async def handle_enable(self) -> None:
         pass
 
-    async def handle_disable(self):
+    async def handle_disable(self) -> None:
         pass
 
-    async def handle_cleanup(self):
+    async def handle_cleanup(self) -> None:
         if self._runner:
             self.debug('stopping threaded runner')
             await self._runner.stop()
@@ -209,8 +211,8 @@ class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
         }
     }
 
-    def __init__(self, address, peripheral_name=None, **kwargs) -> None:
-        self._peripheral = self.PERIPHERAL_CLASS.get(address, peripheral_name, **kwargs)
+    def __init__(self, address: str, peripheral_name: Optional[str] = None, **kwargs) -> None:
+        self._peripheral: Peripheral = self.PERIPHERAL_CLASS.get(address, peripheral_name, **kwargs)
         self._peripheral.add_port(self)
 
         _id = self.make_id()
@@ -219,19 +221,19 @@ class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
 
         super().__init__(_id)
 
-    def make_id(self):
+    def make_id(self) -> str:
         return self.ID
 
-    def get_peripheral(self):
+    def get_peripheral(self) -> PERIPHERAL_CLASS:
         return self._peripheral
 
-    async def attr_get_address(self):
+    async def attr_get_address(self) -> str:
         return self._peripheral.get_address()
 
-    async def handle_enable(self):
+    async def handle_enable(self) -> None:
         if not self._peripheral.is_enabled():
             await self._peripheral.enable()
 
-    async def handle_disable(self):
+    async def handle_disable(self) -> None:
         if self._peripheral.is_enabled():
             await self._peripheral.check_disabled(self)

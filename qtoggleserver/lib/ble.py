@@ -7,6 +7,8 @@ import re
 import subprocess
 import time
 
+from typing import Callable, Dict, List, Optional, Tuple
+
 from bluepy import btle
 
 from qtoggleserver import utils
@@ -24,23 +26,23 @@ class BLEException(Exception):
 
 
 class BLEBusy(BLEException):
-    def __init__(self, message='busy') -> None:
+    def __init__(self, message: str = 'busy') -> None:
         super().__init__(message)
 
 
 class BLETimeout(BLEException):
-    def __init__(self, message='timeout') -> None:
+    def __init__(self, message: str = 'timeout') -> None:
         super().__init__(message)
 
 
 class _BluepyTimeoutError(btle.BTLEException):
-    def __init__(self, message, rsp=None) -> None:
-        super().__init__(message, rsp)
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
 
 
 class _BluepyPeripheral(btle.Peripheral):
-    def __init__(self, timeout=None, *args, **kwargs) -> None:
-        self._timeout = timeout
+    def __init__(self, timeout: Optional[int] = None, *args, **kwargs) -> None:
+        self._timeout: Optional[int] = timeout
         super().__init__(*args, **kwargs)
 
     def _getResp(self, wantType, timeout=None):
@@ -55,7 +57,8 @@ class _BluepyPeripheral(btle.Peripheral):
         return response
 
     def _stopHelper(self):
-        # Override this method to close the helper's stdout and stdin streams.
+        # Override this method to close the helper's stdout and stdin streams
+
         helper = self._helper
         super()._stopHelper()
         self._helper = helper
@@ -68,10 +71,10 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
     DEFAULT_NAME = 'hci0'
     RUNNER_CLASS = Peripheral.RUNNER_CLASS
 
-    _adapters_by_name = {}
+    _adapters_by_name: Dict[str, 'BLEAdapter'] = {}
 
     @classmethod
-    def get(cls, name):
+    def get(cls, name: str) -> 'BLEAdapter':
         if name not in cls._adapters_by_name:
             logger.debug('initializing adapter %s', name)
             adapter = cls(name)
@@ -79,12 +82,12 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
 
         return cls._adapters_by_name[name]
 
-    def __init__(self, name) -> None:
+    def __init__(self, name: str) -> None:
         utils.LoggableMixin.__init__(self, name, logger)
 
-        self._name = name
+        self._name: str = name
         try:
-            self._address = self._find_address(name)
+            self._address: str = self._find_address(name)
 
         except Exception as e:
             self.error('could not initialize adapter: %s', e)
@@ -92,22 +95,22 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
 
         self.debug('found adapter address %s', self._address)
 
-        self._runner = None
-        self._peripherals = []
+        self._runner: Optional[BLEPeripheral.RUNNER_CLASS] = None
+        self._peripherals: List[BLEPeripheral] = []
 
     def __str__(self) -> str:
         return self._name
 
-    def add_peripheral(self, peripheral):
+    def add_peripheral(self, peripheral: 'BLEPeripheral') -> None:
         self._peripherals.append(peripheral)
 
-    def get_runner(self):
+    def get_runner(self) -> 'BLEPeripheral.RUNNER_CLASS':
         if self._runner is None:
             self._runner = self.make_runner()
 
         return self._runner
 
-    def make_runner(self):
+    def make_runner(self) -> 'BLEPeripheral.RUNNER_CLASS':
         self.debug('starting threaded runner')
         runner = self.RUNNER_CLASS(queue_size=Peripheral.RUNNER_QUEUE_SIZE)
         runner.start()
@@ -115,11 +118,11 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
         return runner
 
     @staticmethod
-    def pretty_data(data):
+    def pretty_data(data: bytes) -> str:
         return ' '.join(map(lambda c: f'{c:02X}', data))
 
     @staticmethod
-    def _find_address(name):
+    def _find_address(name: str) -> str:
         try:
             output = subprocess.check_output(['hcitool', '-i', name, 'dev'], stderr=subprocess.STDOUT).decode()
 
@@ -147,40 +150,51 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
     logger = logger
 
     @classmethod
-    def make_peripheral(cls, address, name, adapter_name=None, **kwargs):
+    def make_peripheral(cls, address: str, name: str, adapter_name: Optional[str] = None, **kwargs):
         return cls(address, name, BLEAdapter.get(adapter_name))
 
-    def __init__(self, address, name, adapter) -> None:
+    def __init__(self, address: str, name: str, adapter: BLEAdapter) -> None:
         super().__init__(address, name)
 
-        self._adapter = adapter
+        self._adapter: BLEAdapter = adapter
         self._adapter.add_peripheral(self)
-        self._online = False
+
+        self._online: bool = False
 
     def __str__(self) -> str:
         return f'{self._adapter}/{self._name}'
 
-    def make_runner(self):
+    def make_runner(self) -> 'BLEPeripheral.RUNNER_CLASS':
         # Instead of creating a runner for each peripheral instance, we use adapter's runner, thus having one runner per
         # adapter instance.
 
         return self._adapter.get_runner()
 
-    async def read(self, handle, retry_count=None):
+    async def read(self, handle: int, retry_count: Optional[int] = None) -> Tuple[Optional[bytes], Optional[bytes]]:
         if retry_count is None:
             retry_count = self.RETRY_COUNT
 
         return await self._run_cmd_async('read', self.get_address(), handle, notify_handle=None,
                                          data=None, timeout=self.CMD_TIMEOUT, retry_count=retry_count)
 
-    async def write(self, handle, data, retry_count=None):
+    async def write(self,
+                    handle: int,
+                    data: bytes,
+                    retry_count: Optional[int] = None) -> Tuple[Optional[bytes], Optional[bytes]]:
+
         if retry_count is None:
             retry_count = self.RETRY_COUNT
 
         return await self._run_cmd_async('write', self.get_address(), handle, notify_handle=None,
                                          data=data, timeout=self.CMD_TIMEOUT, retry_count=retry_count)
 
-    async def write_notify(self, handle, notify_handle, data, timeout=None, retry_count=None):
+    async def write_notify(self,
+                           handle: int,
+                           notify_handle: int,
+                           data: bytes,
+                           timeout: Optional[int] = None,
+                           retry_count: int = None) -> Tuple[Optional[bytes], Optional[bytes]]:
+
         if retry_count is None:
             retry_count = self.RETRY_COUNT
 
@@ -190,7 +204,14 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         return await self._run_cmd_async('write', self.get_address(), handle, notify_handle=notify_handle,
                                          data=data, timeout=timeout, retry_count=retry_count)
 
-    def _run_cmd(self, cmd, address, handle, notify_handle, data, timeout):
+    def _run_cmd(self,
+                 cmd: str,
+                 address: str,
+                 handle: int,
+                 notify_handle: Optional[int],
+                 data: Optional[bytes],
+                 timeout: Optional[int]) -> Tuple[Optional[bytes], Optional[bytes]]:
+
         start_time = time.time()
         response = None
         notification_data = None
@@ -243,7 +264,15 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
         return response, notification_data
 
-    async def _run_cmd_async(self, cmd, address, handle, notify_handle, data, timeout, retry_count):
+    async def _run_cmd_async(self,
+                             cmd: str,
+                             address: str,
+                             handle: int,
+                             notify_handle: Optional[int],
+                             data: Optional[bytes],
+                             timeout: Optional[int],
+                             retry_count: int) -> Tuple[Optional[bytes], Optional[bytes]]:
+
         retry = 1
         while True:
             try:
@@ -275,19 +304,19 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
                 return response, notification_data
 
-    def is_online(self):
+    def is_online(self) -> bool:
         return self._enabled and self._online
 
-    def _handle_offline(self):
+    def _handle_offline(self) -> None:
         self.debug('%s is offline', self)
         self.trigger_port_update()
 
-    def _handle_online(self):
+    def _handle_online(self) -> None:
         self.debug('%s is online', self)
         self.trigger_port_update()
 
     @staticmethod
-    def pretty_data(data):
+    def pretty_data(data: bytes) -> str:
         return BLEAdapter.pretty_data(data)
 
 
@@ -298,24 +327,24 @@ class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):
     READ_INTERVAL_STEP = 1
     READ_INTERVAL_MULTIPLIER = 60
 
-    def __init__(self, address, peripheral_name=None, adapter_name=None) -> None:
+    def __init__(self, address: str, peripheral_name: Optional[str] = None, adapter_name: Optional[str] = None) -> None:
         if adapter_name is None:
             adapter_name = BLEAdapter.DEFAULT_NAME
 
         super().__init__(address, peripheral_name, adapter_name=adapter_name)
 
-    async def attr_get_write_value_pause(self):
+    async def attr_get_write_value_pause(self) -> int:
         # Inherit from peripheral
         return self.get_peripheral().WRITE_VALUE_PAUSE
 
-    async def attr_is_online(self):
+    async def attr_is_online(self) -> bool:
         if not self.is_enabled():
             return False
 
         return self.get_peripheral().is_online()
 
 
-def port_exceptions(func):
+def port_exceptions(func: Callable) -> Callable:
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         # Transform BLE exceptions into port exceptions, where applicable

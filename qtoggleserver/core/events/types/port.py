@@ -8,7 +8,7 @@ from .base import Event
 
 class PortEvent(Event):
     def __init__(self, port: core_ports.BasePort, timestamp: float = None) -> None:
-        self._port = port
+        self._port: core_ports.BasePort = port
 
         super().__init__(timestamp)
 

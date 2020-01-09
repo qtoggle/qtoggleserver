@@ -2,6 +2,9 @@
 import logging
 import redis
 
+from typing import Any, Dict, Iterable, List, Optional
+
+from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.persist import BaseDriver
 from qtoggleserver.utils import json as json_utils
 
@@ -14,12 +17,18 @@ class DuplicateRecordId(redis.RedisError):
 
 
 class RedisDriver(BaseDriver):
-    def __init__(self, host, port, db, **kwargs) -> None:
+    def __init__(self, host: str, port: int, db: int, **kwargs) -> None:
         logger.debug('connecting to %s:%s/%s', host, port, db)
 
-        self._client = redis.StrictRedis(host=host, port=port, db=db, encoding='utf8', decode_responses=True)
+        self._client: redis.Redis = redis.StrictRedis(host=host, port=port, db=db,
+                                                      encoding='utf8', decode_responses=True)
 
-    def query(self, collection, fields, filt, limit):
+    def query(self,
+              collection: str,
+              fields: List[str],
+              filt: Dict[str, Any],
+              limit: Optional[int]) -> Iterable[GenericJSONDict]:
+
         db_records = []
 
         if 'id' in filt:  # Look for specific record id
@@ -50,7 +59,7 @@ class RedisDriver(BaseDriver):
         # Transform from db record and return
         return (self._record_from_db(dbr) for dbr in db_records)
 
-    def insert(self, collection, record):
+    def insert(self, collection: str, record: GenericJSONDict) -> str:
         # Make sure we have an id
         record = dict(record)
         _id = record.pop('id', None)
@@ -73,7 +82,9 @@ class RedisDriver(BaseDriver):
         # Add the id to set
         self._client.sadd(set_key, _id)
 
-    def update(self, collection, record_part, filt):
+        return _id
+
+    def update(self, collection: str, record_part: GenericJSONDict, filt: Dict[str, Any]) -> int:
         # Adapt the record part to db
         db_record_part = self._record_to_db(record_part)
 
@@ -110,7 +121,7 @@ class RedisDriver(BaseDriver):
 
         return modified_count
 
-    def replace(self, collection, _id, record, upsert):
+    def replace(self, collection: str, _id: int, record: GenericJSONDict, upsert: bool) -> int:
         # Adapt the record to db
         new_db_record = self._record_to_db(record)
         new_db_record.pop('id', None)  # Never add the id together with other fields
@@ -132,7 +143,7 @@ class RedisDriver(BaseDriver):
 
         return True
 
-    def remove(self, collection, filt):
+    def remove(self, collection: str, filt: Dict[str, Any]) -> int:
         removed_count = 0
 
         if 'id' in filt:
@@ -177,10 +188,10 @@ class RedisDriver(BaseDriver):
 
         return removed_count
 
-    def close(self):
+    def close(self) -> None:
         pass
 
-    def _filter_matches(self, db_record, filt):
+    def _filter_matches(self, db_record: GenericJSONDict, filt: Dict[str, Any]) -> bool:
         for key, value in filt.items():
             try:
                 if db_record[key] != self._value_to_db(value):
@@ -191,27 +202,27 @@ class RedisDriver(BaseDriver):
 
         return True
 
-    def _get_next_id(self, collection):
+    def _get_next_id(self, collection: str) -> int:
         return int(self._client.incr(self._make_sequence_key(collection)))
 
     @classmethod
-    def _record_from_db(cls, db_record):
+    def _record_from_db(cls, db_record: GenericJSONDict) -> GenericJSONDict:
         return {k: (cls._value_from_db(v) if k != 'id' else v) for k, v in db_record.items()}
 
     @classmethod
-    def _record_to_db(cls, record):
+    def _record_to_db(cls, record: GenericJSONDict) -> GenericJSONDict:
         return {k: (cls._value_to_db(v) if k != 'id' else v) for k, v in record.items()}
 
     @staticmethod
-    def _value_to_db(value):
+    def _value_to_db(value: Any) -> str:
         return json_utils.dumps(value)
 
     @staticmethod
-    def _value_from_db(value):
+    def _value_from_db(value: str) -> Any:
         return json_utils.loads(value)
 
     @staticmethod
-    def _make_record_key(collection, _id):
+    def _make_record_key(collection: str, _id: int):
         if _id:
             return f'{collection}:{_id}'
 
@@ -219,9 +230,9 @@ class RedisDriver(BaseDriver):
             return collection
 
     @staticmethod
-    def _make_set_key(collection):
+    def _make_set_key(collection: str) -> str:
         return f'{collection}-id-set'
 
     @staticmethod
-    def _make_sequence_key(collection):
+    def _make_sequence_key(collection: str) -> str:
         return f'{collection}-id-sequence'
