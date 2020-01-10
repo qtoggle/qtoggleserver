@@ -2,21 +2,23 @@
 import collections.abc
 import time
 
+from typing import Any, Dict, Iterable, Set
+
 
 class TimedSet(collections.abc.MutableSet):
-    def __init__(self, timeout) -> None:
-        self._timeout = timeout
-        self._times = {}
-        self._set = set()
+    def __init__(self, timeout: float) -> None:
+        self._timeout: float = timeout
+        self._times: Dict[Any, float] = {}
+        self._set: Set[Any] = set()
 
-    def add(self, x):
+    def add(self, x: Any) -> None:
         self._set.add(x)
         self._times[x] = time.time()
 
-    def discard(self, x):
+    def discard(self, x: Any) -> None:
         self._set.discard(x)
 
-    def __contains__(self, x):
+    def __contains__(self, x: Any) -> bool:
         if not self._set.__contains__(x):
             return False
 
@@ -27,8 +29,8 @@ class TimedSet(collections.abc.MutableSet):
 
         return True
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self._set.__len__()
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable[Any]:
         return self._set.__iter__()

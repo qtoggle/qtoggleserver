@@ -15,7 +15,6 @@ from qtoggleserver.core import api as core_api
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.typing import GenericJSONDict
-from qtoggleserver.utils import http as http_utils
 from qtoggleserver.utils import json as json_utils
 
 
@@ -174,7 +173,7 @@ class Reverse:
         url = self.get_url()
 
         headers = {
-            'Content-Type': http_utils.JSON_CONTENT_TYPE,
+            'Content-Type': json_utils.JSON_CONTENT_TYPE,
             'Authorization': core_api_auth.make_auth_header(core_api_auth.ORIGIN_DEVICE,
                                                             username=self._device_id,
                                                             password_hash=self._password_hash)

@@ -11,7 +11,6 @@ from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import GenericJSONDict
-from qtoggleserver.utils import http as http_utils
 from qtoggleserver.utils import json as json_utils
 
 
@@ -154,7 +153,7 @@ class Webhooks:
         http_client = AsyncHTTPClient()
         # TODO use webhooks password
         headers = {
-            'Content-Type': http_utils.JSON_CONTENT_TYPE,
+            'Content-Type': json_utils.JSON_CONTENT_TYPE,
             'Authorization': core_api_auth.make_auth_header(core_api_auth.ORIGIN_DEVICE, username=None,
                                                             password_hash=core_device_attrs.normal_password_hash)
         }

@@ -2,7 +2,8 @@
 import logging
 import os.path
 
-from tornado.web import Application
+from tornado.web import Application, RequestHandler
+from typing import List, Optional
 
 from qtoggleserver.conf import settings
 from qtoggleserver.web import handlers
@@ -12,10 +13,10 @@ from .constants import FRONTEND_DIR, FRONTEND_URL_PREFIX
 
 logger = logging.getLogger(__name__)
 
-_application = None
+_application: Optional[Application] = None
 
 
-def _log_request(handler):
+def _log_request(handler: RequestHandler) -> None:
     if handler.get_status() < 400:
         log_method = logger.debug
 
@@ -30,7 +31,7 @@ def _log_request(handler):
     log_method('%d %s %.2fms', handler.get_status(), handler._request_summary(), request_time)
 
 
-def _make_handlers():
+def _make_handlers() -> List[tuple]:
     handlers_list = []
 
     # Frontend
@@ -139,7 +140,7 @@ def _make_handlers():
     return handlers_list
 
 
-def get_application():
+def get_application() -> Application:
     global _application
 
     if _application is None:

@@ -4,8 +4,12 @@ import copy
 import re
 import time
 
+from typing import List, Optional, Set, Tuple
+
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
+from qtoggleserver.core.typing import (Attribute, Attributes, AttributeDefinitions, GenericJSONDict, NullablePortValue,
+                                       PortValue)
 
 from . import exceptions
 
@@ -42,35 +46,35 @@ class SlavePort(core_ports.BasePort):
         'modifiable': False
     }
 
-    def __init__(self, slave, attrs) -> None:
-        self._slave = slave
+    def __init__(self, slave: 'Slave', attrs: Attributes) -> None:
+        self._slave: Slave = slave
 
-        self._remote_id = attrs['id']
+        self._remote_id: str = attrs['id']
 
         # Value cache
-        self._cached_value = None
+        self._cached_value: NullablePortValue = None
 
         # Attributes cache
-        self._cached_attrs = {}
+        self._cached_attrs: Attributes = {}
 
         # Names of attributes that will be updated remotely asap
-        self._remote_update_pending_attrs = set()
+        self._remote_update_pending_attrs: Set[Tuple[str, Attribute]] = set()
 
         # Tag is kept locally
-        self._tag = ''
+        self._tag: str = ''
 
         # Timestamp of the last time we've heard from this port
-        self._last_sync = 0
+        self._last_sync: float = 0
 
         # Number of seconds before port value expires
-        self._expires = 0
+        self._expires: int = 0
 
         # Cached expired status
-        self._expired = False
+        self._expired: bool = False
 
         # Names of attributes (including value) that have been changed while device was offline and have to be
         # provisioned later
-        self._provisioning = set()
+        self._provisioning: Set[str] = set()
 
         port_id = f'{slave.get_name()}.{self._remote_id}'
 
@@ -81,10 +85,10 @@ class SlavePort(core_ports.BasePort):
         if self._cached_value is not None:
             # Remote value is supplied in attrs when a new port is added on the slave device
 
-            self._value = self._cached_value
+            self._value: NullablePortValue = self._cached_value
             self.update_last_sync()
 
-    def _get_standard_attrdefs(self):
+    def _get_standard_attrdefs(self) -> AttributeDefinitions:
         attrdefs = copy.copy(core_ports.STANDARD_ATTRDEFS)
 
         # Device_*_expression
@@ -105,18 +109,18 @@ class SlavePort(core_ports.BasePort):
 
     STANDARD_ATTRDEFS = property(_get_standard_attrdefs)
 
-    def _get_additional_attrdefs(self):
+    def _get_additional_attrdefs(self) -> AttributeDefinitions:
         return copy.copy(self._cached_attrs.get('definitions', {}))
 
     ADDITIONAL_ATTRDEFS = property(_get_additional_attrdefs)
 
-    def map_id(self, new_id):
+    def map_id(self, new_id: str) -> None:
         raise core_ports.PortError('Slave ports cannot be mapped')
 
-    def get_remote_id(self):
+    def get_remote_id(self) -> str:
         return self._remote_id
 
-    async def get_attr(self, name):
+    async def get_attr(self, name: str) -> Optional[Attribute]:
         # id - always use the special slave.id notation
         # tag - always kept on master, ignored on slave
         # expression - kept and managed on master, separate attribute for slave
@@ -136,7 +140,7 @@ class SlavePort(core_ports.BasePort):
 
         return await super().get_attr(name)
 
-    async def set_attr(self, name, value):
+    async def set_attr(self, name: str, value: Attribute) -> None:
         if name in ('tag', 'expression', 'last_sync', 'expires'):
             # Attributes that always stay locally, on master
             await super().set_attr(name, value)
@@ -168,13 +172,13 @@ class SlavePort(core_ports.BasePort):
                 await asyncio.sleep(0)
                 self.trigger_update()
 
-    def get_cached_attr(self, name):
+    def get_cached_attr(self, name: str) -> Optional[Attribute]:
         return self._cached_attrs.get(name)
 
-    def get_cached_attrs(self):
+    def get_cached_attrs(self) -> Attributes:
         return dict(self._cached_attrs)
 
-    def update_cached_attrs(self, attrs):
+    def update_cached_attrs(self, attrs: Attributes) -> None:
         # Use fire-and-forget here to enable/disable ports, as this method cannot be async
         if attrs.get('enabled') and not self.is_enabled():
             asyncio.create_task(self.enable())
@@ -191,7 +195,7 @@ class SlavePort(core_ports.BasePort):
         self.invalidate_attrs()
         self.invalidate_attrdefs()
 
-    async def _update_attrs_remotely(self):
+    async def _update_attrs_remotely(self) -> None:
         if not self._remote_update_pending_attrs:
             return
 
@@ -215,7 +219,7 @@ class SlavePort(core_ports.BasePort):
 
             raise
 
-    async def is_persisted(self):
+    async def is_persisted(self) -> bool:
         # Ports belonging to permanently offline devices should always behave as persisted on master
 
         if self._slave.is_permanently_offline():
@@ -223,7 +227,7 @@ class SlavePort(core_ports.BasePort):
 
         return await core_ports.BasePort.is_persisted(self)
 
-    async def attr_is_online(self):
+    async def attr_is_online(self) -> bool:
         if not self._enabled:
             return False
 
@@ -235,10 +239,10 @@ class SlavePort(core_ports.BasePort):
 
         return self._cached_attrs.get('online', True)
 
-    async def attr_get_provisioning(self):
+    async def attr_get_provisioning(self) -> List[str]:
         return list(self._provisioning)
 
-    def get_provisioning_attrs(self):
+    def get_provisioning_attrs(self) -> Attributes:
         provisioning = {}
         for name in self._provisioning:
             value = self._cached_attrs.get(name)
@@ -247,25 +251,25 @@ class SlavePort(core_ports.BasePort):
 
         return provisioning
 
-    def get_provisioning_value(self):
+    def get_provisioning_value(self) -> Optional[PortValue]:
         if 'value' in self._provisioning:
             return self._cached_value
 
         return None
 
-    def clear_provisioning(self):
+    def clear_provisioning(self) -> None:
         self._provisioning = set()
 
-    def get_cached_value(self):
+    def get_cached_value(self) -> NullablePortValue:
         return self._cached_value
 
-    def set_cached_value(self, value):
+    def set_cached_value(self, value: PortValue) -> None:
         self._cached_value = value
 
-    async def read_value(self):
+    async def read_value(self) -> NullablePortValue:
         return self._cached_value
 
-    async def write_value(self, value):
+    async def write_value(self, value: PortValue) -> None:
         if self._slave.is_online():
             try:
                 await self._slave.api_call('PATCH', f'/ports/{self._remote_id}', value)
@@ -289,7 +293,7 @@ class SlavePort(core_ports.BasePort):
             # We need to trigger a port-update because our provisioning attribute has changed
             self.trigger_update()
 
-    async def set_sequence(self, values, delays, repeat):
+    async def set_sequence(self, values: List[PortValue], delays: List[int], repeat: int) -> None:
         if not self._slave.is_online():
             raise exceptions.DeviceOffline(self._slave)
 
@@ -304,7 +308,7 @@ class SlavePort(core_ports.BasePort):
             # Map exceptions to specific slave API errors
             raise exceptions.adapt_api_error(e) from e
 
-    def heart_beat_second(self):
+    def heart_beat_second(self) -> None:
         was_expired = self._expired
         now_expired = (self._expires > 0) and (time.time() - self._last_sync > self._expires)
         self._expired = now_expired
@@ -315,7 +319,7 @@ class SlavePort(core_ports.BasePort):
 
             self.trigger_update()
 
-    async def load_from_data(self, data):
+    async def load_from_data(self, data: GenericJSONDict) -> None:
         attrs = data.get('attrs')
         if attrs:
             if 'value' in data:
@@ -330,7 +334,7 @@ class SlavePort(core_ports.BasePort):
 
         self._provisioning = set(data.get('provisioning', []))
 
-    async def prepare_for_save(self):
+    async def prepare_for_save(self) -> GenericJSONDict:
         return {
             'id': self.get_id(),
             'tag': self._tag,
@@ -342,5 +346,8 @@ class SlavePort(core_ports.BasePort):
             'value': self._cached_value
         }
 
-    def update_last_sync(self):
+    def update_last_sync(self) -> None:
         self._last_sync = int(time.time())
+
+
+from .devices import Slave

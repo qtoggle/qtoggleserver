@@ -33,7 +33,7 @@ CHANGE_REASON_EXPRESSION = 'E'
 
 logger = logging.getLogger(__name__)
 
-_ports: Dict[str, 'BasePort'] = {}  # Indexed by id
+_ports_by_id: Dict[str, 'BasePort'] = {}
 
 
 STANDARD_ATTRDEFS = {
@@ -824,7 +824,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         await self.cleanup()
 
         self.debug('removing port')
-        _ports.pop(self._id, None)
+        _ports_by_id.pop(self._id, None)
 
         if persisted_data:
             self.debug('removing persisted data')
@@ -971,7 +971,7 @@ async def load(port_settings: List[Dict[str, Any]], raise_on_error: bool = True)
             if value is not None:
                 port._value = value
 
-            _ports[port.get_id()] = port
+            _ports_by_id[port.get_id()] = port
             ports.append(port)
 
             logger.debug('initialized %s (driver %s)', port, port_class_desc)
@@ -983,14 +983,14 @@ async def load(port_settings: List[Dict[str, Any]], raise_on_error: bool = True)
             logger.error('failed to initialize port from driver %s: %s', port_class_desc, e, exc_info=True)
 
     for old_id, new_id in settings.port_mappings.items():
-        if new_id in _ports:
+        if new_id in _ports_by_id:
             if raise_on_error:
                 raise PortLoadError('Cannot map port {old_id} to {new_id}: new id already exists')
 
             logger.error('cannot map port %s to %s: new id already exists', old_id, new_id)
             continue
 
-        port = _ports.get(old_id)
+        port = _ports_by_id.get(old_id)
         if not port:
             if raise_on_error:
                 raise PortLoadError(f'Cannot map port {old_id} to {new_id}: no such port')
@@ -1007,8 +1007,8 @@ async def load(port_settings: List[Dict[str, Any]], raise_on_error: bool = True)
 
             port.error('cannot map to %s: %s', new_id, e)
 
-        _ports.pop(old_id)
-        _ports[port.get_id()] = port
+        _ports_by_id.pop(old_id)
+        _ports_by_id[port.get_id()] = port
 
     for port in ports:
         try:
@@ -1033,15 +1033,15 @@ async def load_one(cls: Union[str, type], args: Dict[str, Any]) -> BasePort:
 
 
 def get(port_id: str) -> Optional[BasePort]:
-    return _ports.get(port_id)
+    return _ports_by_id.get(port_id)
 
 
 def all_ports() -> Iterable[BasePort]:
-    return _ports.values()
+    return _ports_by_id.values()
 
 
 async def cleanup() -> None:
-    for port in _ports.values():
+    for port in _ports_by_id.values():
         await port.cleanup()
 
 

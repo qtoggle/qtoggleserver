@@ -3,10 +3,10 @@ import logging.handlers
 
 
 class FifoMemoryHandler(logging.handlers.MemoryHandler):
-    def __init__(self, capacity) -> None:
-        logging.handlers.MemoryHandler.__init__(self, capacity, flushLevel=logging.FATAL + 1)
+    def __init__(self, capacity: int) -> None:
+        super().__init__(capacity, flushLevel=logging.FATAL + 1)
 
-    def flush(self):
+    def flush(self) -> None:
         self.acquire()
 
         while len(self.buffer) > self.capacity:

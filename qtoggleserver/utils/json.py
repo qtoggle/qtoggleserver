@@ -4,6 +4,9 @@ import json
 import jsonpointer
 
 
+JSON_CONTENT_TYPE = 'application/json; charset=utf-8'
+
+
 def _resolve_refs_rec(obj, root_obj):
     if isinstance(obj, dict):
         if len(obj.keys()) == 1 and list(obj.keys())[0] == '$ref':
