@@ -110,10 +110,10 @@ class StaticFileHandler(TornadoStaticFileHandler):
 
 class JSModuleMapperStaticFileHandler(StaticFileHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
         self._mapping: Dict[bytes, bytes] = {}
         self._mapped_content: Optional[bytes] = None
+
+        super().__init__(*args, **kwargs)
 
     def initialize(self, path: str, mapping: Dict[str, str], default_filename: Optional[str] = None) -> None:
         super().initialize(path, default_filename)

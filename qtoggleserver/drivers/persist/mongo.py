@@ -7,8 +7,7 @@ from pymongo import MongoClient
 from pymongo.database import Database
 from typing import Any, Dict, Iterable, List, Optional, Union
 
-from qtoggleserver.core.typing import GenericJSONDict
-from qtoggleserver.persist import BaseDriver
+from qtoggleserver.persist import BaseDriver, Id, Record
 
 
 logger = logging.getLogger(__name__)
@@ -24,9 +23,9 @@ class MongoDriver(BaseDriver):
         self._db: Database = self._client[db]
 
     def query(self, collection: str,
-              fields: List[str],
+              fields: Optional[List[str]],
               filt: Dict[str, Any],
-              limit: Optional[int]) -> Iterable[GenericJSONDict]:
+              limit: Optional[int]) -> Iterable[Record]:
 
         if fields:
             fields = dict((f, 1) for f in fields)
@@ -46,14 +45,14 @@ class MongoDriver(BaseDriver):
 
         return self._query_gen_wrapper(q)
 
-    def insert(self, collection: str, record: GenericJSONDict) -> str:
+    def insert(self, collection: str, record: Record) -> Id:
         if 'id' in record:
             record = dict(record)
             record['_id'] = self._id_to_db(record.pop('id'))
 
         return self._db[collection].insert_one(record).inserted_id
 
-    def update(self, collection: str, record_part: GenericJSONDict, filt: Dict[str, Any]) -> int:
+    def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
         if 'id' in record_part:
             record_part = dict(record_part)
             record_part['_id'] = self._id_to_db(record_part.pop('id'))
@@ -64,7 +63,7 @@ class MongoDriver(BaseDriver):
 
         return self._db[collection].update_many(filt, {'$set': record_part}, upsert=False).modified_count
 
-    def replace(self, collection: str, _id: str, record: GenericJSONDict, upsert: bool) -> int:
+    def replace(self, collection: str, _id: Id, record: Record, upsert: bool) -> int:
         record = dict(record)
         record.pop('id', None)
         record['_id'] = self._id_to_db(_id)
@@ -84,7 +83,7 @@ class MongoDriver(BaseDriver):
         self._client.close()
 
     @classmethod
-    def _query_gen_wrapper(cls, q: Iterable[GenericJSONDict]) -> Iterable[GenericJSONDict]:
+    def _query_gen_wrapper(cls, q: Iterable[Record]) -> Iterable[Record]:
         for r in q:
             if '_id' in r:
                 r['id'] = cls._id_from_db(r.pop('_id'))

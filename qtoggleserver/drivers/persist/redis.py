@@ -5,7 +5,7 @@ import redis
 from typing import Any, Dict, Iterable, List, Optional
 
 from qtoggleserver.core.typing import GenericJSONDict
-from qtoggleserver.persist import BaseDriver
+from qtoggleserver.persist import BaseDriver, Id, Record
 from qtoggleserver.utils import json as json_utils
 
 
@@ -25,9 +25,9 @@ class RedisDriver(BaseDriver):
 
     def query(self,
               collection: str,
-              fields: List[str],
+              fields: Optional[List[str]],
               filt: Dict[str, Any],
-              limit: Optional[int]) -> Iterable[GenericJSONDict]:
+              limit: Optional[int]) -> Iterable[Record]:
 
         db_records = []
 
@@ -59,7 +59,7 @@ class RedisDriver(BaseDriver):
         # Transform from db record and return
         return (self._record_from_db(dbr) for dbr in db_records)
 
-    def insert(self, collection: str, record: GenericJSONDict) -> str:
+    def insert(self, collection: str, record: Record) -> Id:
         # Make sure we have an id
         record = dict(record)
         _id = record.pop('id', None)
@@ -84,7 +84,7 @@ class RedisDriver(BaseDriver):
 
         return _id
 
-    def update(self, collection: str, record_part: GenericJSONDict, filt: Dict[str, Any]) -> int:
+    def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
         # Adapt the record part to db
         db_record_part = self._record_to_db(record_part)
 
@@ -121,7 +121,7 @@ class RedisDriver(BaseDriver):
 
         return modified_count
 
-    def replace(self, collection: str, _id: int, record: GenericJSONDict, upsert: bool) -> int:
+    def replace(self, collection: str, _id: Id, record: Record, upsert: bool) -> int:
         # Adapt the record to db
         new_db_record = self._record_to_db(record)
         new_db_record.pop('id', None)  # Never add the id together with other fields
@@ -206,11 +206,11 @@ class RedisDriver(BaseDriver):
         return int(self._client.incr(self._make_sequence_key(collection)))
 
     @classmethod
-    def _record_from_db(cls, db_record: GenericJSONDict) -> GenericJSONDict:
+    def _record_from_db(cls, db_record: GenericJSONDict) -> Record:
         return {k: (cls._value_from_db(v) if k != 'id' else v) for k, v in db_record.items()}
 
     @classmethod
-    def _record_to_db(cls, record: GenericJSONDict) -> GenericJSONDict:
+    def _record_to_db(cls, record: Record) -> GenericJSONDict:
         return {k: (cls._value_to_db(v) if k != 'id' else v) for k, v in record.items()}
 
     @staticmethod
