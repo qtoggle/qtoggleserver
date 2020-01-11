@@ -4,7 +4,7 @@ import queue
 
 from typing import Optional
 
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPResponse
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
@@ -104,7 +104,7 @@ class Webhooks:
 
         return self._url
 
-    def call(self, body: GenericJSONDict):  # TODO add return type
+    def call(self, body: GenericJSONDict) -> None:
         if not self._enabled:
             return
 
@@ -120,14 +120,14 @@ class Webhooks:
             logger.error('%s: queue is full', self)
             return
 
-    def _request(self, request: WebhooksRequest):  # TODO add return type
+    def _request(self, request: WebhooksRequest) -> None:
         if not self._enabled:
             return
 
         url = self.get_url()
         body = json_utils.dumps(request.body)
 
-        def on_response(response):
+        def on_response(response: HTTPResponse) -> None:
             try:
                 core_responses.parse(response)
 
@@ -193,7 +193,7 @@ def get() -> Optional[Webhooks]:
     return _webhooks
 
 
-def setup(enabled,
+def setup(enabled: bool,
           scheme: Optional[str] = None,
           host: Optional[str] = None,
           port: Optional[int] = None,

@@ -7,7 +7,7 @@ import re
 import subprocess
 import time
 
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from bluepy import btle
 
@@ -45,7 +45,7 @@ class _BluepyPeripheral(btle.Peripheral):
         self._timeout: Optional[int] = timeout
         super().__init__(*args, **kwargs)
 
-    def _getResp(self, wantType, timeout=None):
+    def _getResp(self, wantType: Any, timeout: int = None) -> Any:
         # Override this method to be able to inject a default timeout
         # We also need to raise a timeout exception in case the response is None
 
@@ -56,7 +56,7 @@ class _BluepyPeripheral(btle.Peripheral):
 
         return response
 
-    def _stopHelper(self):
+    def _stopHelper(self) -> None:
         # Override this method to close the helper's stdout and stdin streams
 
         helper = self._helper
@@ -150,7 +150,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
     logger = logger
 
     @classmethod
-    def make_peripheral(cls, address: str, name: str, adapter_name: Optional[str] = None, **kwargs):
+    def make_peripheral(cls, address: str, name: str, adapter_name: Optional[str] = None, **kwargs) -> Peripheral:
         return cls(address, name, BLEAdapter.get(adapter_name))
 
     def __init__(self, address: str, name: str, adapter: BLEAdapter) -> None:
@@ -227,7 +227,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
             peripheral = self
             class Delegate(btle.DefaultDelegate):
 
-                def handleNotification(self, h, d):
+                def handleNotification(self, h: int, d: bytes) -> None:
                     nonlocal notification_data
 
                     if not notify_handle or h != notify_handle:
@@ -346,7 +346,7 @@ class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):
 
 def port_exceptions(func: Callable) -> Callable:
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> Any:
         # Transform BLE exceptions into port exceptions, where applicable
         try:
             return func(*args, **kwargs)

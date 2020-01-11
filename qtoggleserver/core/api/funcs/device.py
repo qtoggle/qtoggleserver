@@ -16,7 +16,7 @@ async def get_device(request: core_api.APIRequest) -> Attributes:
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def patch_device(request: core_api.APIRequest, params: Attributes) -> None:
-    def unexpected_field_msg(field):
+    def unexpected_field_msg(field: str) -> str:
         if field in core_device_attrs.ATTRDEFS:
             return 'attribute not modifiable: {field}'
 

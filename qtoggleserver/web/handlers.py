@@ -110,7 +110,7 @@ class StaticFileHandler(TornadoStaticFileHandler):
 
 
 class JSModuleMapperStaticFileHandler(StaticFileHandler):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         self._mapping: Dict[bytes, bytes] = {}
         self._mapped_content: Optional[bytes] = None
 
@@ -308,7 +308,7 @@ class FirmwareHandler(APIHandler):
     async def get(self) -> None:
         await self.call_api_func(core_api_funcs.get_firmware)
 
-    async def patch(self):
+    async def patch(self) -> None:
         await self.call_api_func(core_api_funcs.patch_firmware, default_status=204)
 
 

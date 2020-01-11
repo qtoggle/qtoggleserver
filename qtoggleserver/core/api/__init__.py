@@ -1,10 +1,9 @@
 
+from __future__ import annotations
 import functools
 import logging
 
-from typing import Callable, Dict
-
-from tornado.web import RequestHandler
+from typing import Any, Callable, Dict
 
 from qtoggleserver.core import responses as core_responses
 
@@ -39,13 +38,13 @@ class APIError(Exception):
         super().__init__(message)
 
     @staticmethod
-    def from_http_error(http_error: core_responses.HTTPError) -> 'APIError':
+    def from_http_error(http_error: core_responses.HTTPError) -> APIError:
         return APIError(http_error.code, http_error.msg)
 
 
 class APIRequest:
-    def __init__(self, handler: RequestHandler) -> None:
-        self.handler: RequestHandler = handler
+    def __init__(self, handler: APIHandler) -> None:
+        self.handler: APIHandler = handler
 
     @property
     def access_level(self) -> int:
@@ -73,9 +72,9 @@ class APIRequest:
 
 
 def api_call(access_level: int = ACCESS_LEVEL_NONE) -> Callable:
-    def decorator(func):
+    def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
-        def wrapper(request_handler, *args, **kwargs):
+        def wrapper(request_handler: APIHandler, *args, **kwargs) -> Any:
             logger.debug('executing API call "%s"', func.__name__)
 
             if request_handler.access_level < access_level:
@@ -92,3 +91,7 @@ def api_call(access_level: int = ACCESS_LEVEL_NONE) -> Callable:
         return wrapper
 
     return decorator
+
+
+# Import this here to prevent errors due to circular imports
+from qtoggleserver.web.handlers import APIHandler  # noqa: E402

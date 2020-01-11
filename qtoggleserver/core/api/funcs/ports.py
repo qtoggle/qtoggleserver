@@ -9,7 +9,7 @@ from qtoggleserver.core import main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import vports as core_vports
 from qtoggleserver.core.api import schema as core_api_schema
-from qtoggleserver.core.typing import GenericJSONDict, Attributes, NullablePortValue, PortValue
+from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, NullablePortValue, PortValue
 from qtoggleserver.utils import json as json_utils
 
 
@@ -24,7 +24,7 @@ async def patch_port(request: core_api.APIRequest, port_id: str, params: Attribu
     if port is None:
         raise core_api.APIError(404, 'no such port')
 
-    def unexpected_field_msg(field):
+    def unexpected_field_msg(field: str) -> str:
         if field in port.get_non_modifiable_attrs():
             return 'attribute not modifiable: {field}'
 
@@ -43,7 +43,7 @@ async def patch_port(request: core_api.APIRequest, port_id: str, params: Attribu
 
     errors_by_name = {}
 
-    async def set_attr(attr_name, attr_value):
+    async def set_attr(attr_name: str, attr_value: Attribute) -> None:
         core_api.logger.debug('setting attribute %s = %s on %s', attr_name, json_utils.dumps(attr_value), port)
 
         try:

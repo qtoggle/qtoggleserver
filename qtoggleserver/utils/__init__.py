@@ -10,7 +10,7 @@ from typing import Any, Callable, Optional
 
 class ConfigurableMixin:
     @classmethod
-    def configure(cls, **kwargs):
+    def configure(cls, **kwargs) -> None:
         for name, value in kwargs.items():
             conf_method = getattr(cls, f'configure_{name.lower()}', None)
             if conf_method:

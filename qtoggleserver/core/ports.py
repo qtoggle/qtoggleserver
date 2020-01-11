@@ -621,7 +621,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._asap_value = value
 
         if not already_scheduled:
-            async def set_value():
+            async def set_value() -> None:
                 asap_value = self._asap_value
                 self._asap_value = None
                 await self.set_value(asap_value, reason)

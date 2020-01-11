@@ -5,6 +5,8 @@ import logging.config
 import signal
 import sys
 
+from typing import Any
+
 from tornado import httpclient
 
 from qtoggleserver import lib
@@ -37,7 +39,7 @@ def parse_args() -> None:
     epilog = None
 
     class VersionAction(argparse.Action):
-        def __call__(self, *args, **kwargs):
+        def __call__(self, *args, **kwargs) -> None:
             sys.stdout.write(f'{description}\n')
             sys.exit()
 
@@ -103,7 +105,7 @@ def init_logging() -> None:
 def init_signals() -> None:
     loop = asyncio.get_event_loop()
 
-    def bye_handler(sig, frame):
+    def bye_handler(sig: int, frame: Any) -> None:
         global _stopping
 
         if _stopping:

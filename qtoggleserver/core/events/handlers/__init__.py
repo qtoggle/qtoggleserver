@@ -5,7 +5,7 @@ import logging
 from qtoggleserver import utils
 from qtoggleserver.conf import settings
 
-from .base import BaseEventHandler  # noqa: F401
+from .base import BaseEventHandler
 from ..types.base import Event
 
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 _registered_handlers = []
 
 
-def register_handler(handler):
+def register_handler(handler: BaseEventHandler) -> None:
     _registered_handlers.append(handler)
 
 

@@ -13,7 +13,7 @@ FUNCTIONS = {}
 
 
 def function(name: str) -> Callable:
-    def decorator(func_class):
+    def decorator(func_class: type) -> type:
         func_class.NAME = name
         FUNCTIONS[name] = func_class
 
@@ -831,7 +831,7 @@ def parse(self_port_id: Optional[str], sexpression: str) -> Expression:
 async def check_loops(port: core_ports.BasePort, expression: Expression) -> None:
     seen_ports = {port}
 
-    async def check_loops_rec(level, e):
+    async def check_loops_rec(level: int, e: Expression) -> int:
         if isinstance(e, PortValue):
             p = e.get_port()
             if not p:

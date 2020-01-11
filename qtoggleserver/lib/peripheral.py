@@ -173,7 +173,7 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
     async def run_threaded(self, func: Callable, *args, **kwargs) -> Any:
         future = asyncio.get_running_loop().create_future()
 
-        def callback(result, exception):
+        def callback(result: Any, exception: Optional[Exception]) -> None:
             if exception:
                 future.set_exception(exception)
 

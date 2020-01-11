@@ -222,7 +222,7 @@ class RedisDriver(BaseDriver):
         return json_utils.loads(value)
 
     @staticmethod
-    def _make_record_key(collection: str, _id: int):
+    def _make_record_key(collection: str, _id: int) -> str:
         if _id:
             return f'{collection}:{_id}'
 
