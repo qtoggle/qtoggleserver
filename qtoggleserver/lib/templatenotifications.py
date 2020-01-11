@@ -107,8 +107,9 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
             'public_url': settings.public_url
         }
 
+    @abc.abstractmethod
     async def push_message(self, event: core_events.Event, title: str, body: str, **kwargs) -> None:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     async def push_template_message(self, event: core_events.Event, context: dict) -> None:
         template = self.render(event.get_type(), context)

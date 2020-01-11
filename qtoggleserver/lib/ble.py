@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 import abc
 import asyncio
 import functools
@@ -71,10 +73,10 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
     DEFAULT_NAME = 'hci0'
     RUNNER_CLASS = Peripheral.RUNNER_CLASS
 
-    _adapters_by_name: Dict[str, 'BLEAdapter'] = {}
+    _adapters_by_name: Dict[str, BLEAdapter] = {}
 
     @classmethod
-    def get(cls, name: str) -> 'BLEAdapter':
+    def get(cls, name: str) -> BLEAdapter:
         if name not in cls._adapters_by_name:
             logger.debug('initializing adapter %s', name)
             adapter = cls(name)
@@ -101,16 +103,16 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
     def __str__(self) -> str:
         return self._name
 
-    def add_peripheral(self, peripheral: 'BLEPeripheral') -> None:
+    def add_peripheral(self, peripheral: BLEPeripheral) -> None:
         self._peripherals.append(peripheral)
 
-    def get_runner(self) -> 'BLEPeripheral.RUNNER_CLASS':
+    def get_runner(self) -> BLEPeripheral.RUNNER_CLASS:
         if self._runner is None:
             self._runner = self.make_runner()
 
         return self._runner
 
-    def make_runner(self) -> 'BLEPeripheral.RUNNER_CLASS':
+    def make_runner(self) -> BLEPeripheral.RUNNER_CLASS:
         self.debug('starting threaded runner')
         runner = self.RUNNER_CLASS(queue_size=Peripheral.RUNNER_QUEUE_SIZE)
         runner.start()
@@ -164,7 +166,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
     def __str__(self) -> str:
         return f'{self._adapter}/{self._name}'
 
-    def make_runner(self) -> 'BLEPeripheral.RUNNER_CLASS':
+    def make_runner(self) -> BLEPeripheral.RUNNER_CLASS:
         # Instead of creating a runner for each peripheral instance, we use adapter's runner, thus having one runner per
         # adapter instance.
 

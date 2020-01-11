@@ -43,5 +43,6 @@ class Event(metaclass=abc.ABCMeta):
 
 
 class Handler(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
     async def handle_event(self, event: Event) -> None:
         raise NotImplementedError()

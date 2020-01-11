@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 import abc
 import asyncio
 import functools
@@ -80,7 +82,7 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
     _peripherals_by_address: Dict[str, 'Peripheral'] = {}
 
     @classmethod
-    def get(cls, address: str, name: str, **kwargs) -> 'Peripheral':
+    def get(cls, address: str, name: str, **kwargs) -> Peripheral:
         if name is None:
             name = ''
 
@@ -92,7 +94,7 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
         return cls._peripherals_by_address[address]
 
     @classmethod
-    def make_peripheral(cls, address: str, name: str, **kwargs) -> 'Peripheral':
+    def make_peripheral(cls, address: str, name: str, **kwargs) -> Peripheral:
         return cls(address, name, **kwargs)
 
     def __init__(self, address: str, name: str, **kwargs) -> None:

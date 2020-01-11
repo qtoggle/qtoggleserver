@@ -544,8 +544,9 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             raise InvalidAttributeValue('transform_write') from e
 
+    @abc.abstractmethod
     async def read_value(self) -> NullablePortValue:
-        raise NotImplementedError()
+        return None
 
     async def write_value(self, value: PortValue) -> None:
         pass
