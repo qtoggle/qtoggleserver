@@ -33,6 +33,6 @@ jobs:
         with:
           python-version: '3.x'
       - name: Install Dev Deps
-        run: pip install flake8
+        run: pip install flake8 flake8-annotations
       - name: Flake8
         run: flake8 qtoggleserver
