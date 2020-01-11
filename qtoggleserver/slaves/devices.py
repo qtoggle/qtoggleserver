@@ -27,6 +27,7 @@ from qtoggleserver.utils import json as json_utils
 
 from . import events
 from . import exceptions
+from .ports import SlavePort
 
 
 _INVALID_EXPRESSION_RE = re.compile(r'^invalid field: ((device_)*expression)$')
@@ -1557,7 +1558,3 @@ async def load() -> None:
 async def cleanup() -> None:
     for slave in _slaves_by_name.values():
         await slave.cleanup()
-
-
-# Import this at the end of module to avoid circular imports caused by slaves.devices -> slaves.ports -> slaves.devices
-from .ports import SlavePort  # noqa: E402

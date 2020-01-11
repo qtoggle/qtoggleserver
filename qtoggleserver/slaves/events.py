@@ -1,21 +1,25 @@
 
+from typing import Any
+
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core.typing import GenericJSONDict
 
-from .devices import Slave
+
+# We can't use proper type annotations for slaves in this module because that would create unsolvable circular imports.
+# Therefore we use "Any" type annotation for Slave instances.
 
 
 class SlaveDeviceEvent(core_events.Event):
-    def __init__(self, slave: Slave, timestamp: float = None) -> None:
-        self._slave: Slave = slave
+    def __init__(self, slave: Any, timestamp: float = None) -> None:
+        self._slave = slave
 
         super().__init__(timestamp)
 
     def __str__(self) -> str:
         return f'{self._type}({self._slave.get_name()}) event'
 
-    def get_slave(self) -> Slave:
+    def get_slave(self) -> Any:
         return self._slave
 
 

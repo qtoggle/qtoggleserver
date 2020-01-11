@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import GenericJSONDict
@@ -55,3 +57,4 @@ class ValueChange(PortEvent):
 
     def is_duplicate(self, event: Event) -> bool:
         return isinstance(event, self.__class__) and event.get_port() == self.get_port()
+

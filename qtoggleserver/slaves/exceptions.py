@@ -1,8 +1,12 @@
 
+from typing import Any
+
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import responses as core_responses
 
-from . import devices as slave_devices
+
+# We can't use proper type annotations for slaves in this module because that would create unsolvable circular imports.
+# Therefore we use "Any" type annotation for Slave instances.
 
 
 class SlaveError(Exception):
@@ -28,22 +32,22 @@ class DeviceAlreadyExists(SlaveError):
 
 
 class DeviceRenamed(SlaveError):
-    def __init__(self, slave: 'slave_devices.Slave') -> None:
-        self.slave: slave_devices.Slave = slave
+    def __init__(self, slave: Any) -> None:
+        self.slave = slave
 
         super().__init__(f'{slave} renamed')
 
 
 class DeviceOffline(SlaveError):
-    def __init__(self, slave: 'slave_devices.Slave') -> None:
-        self.slave: slave_devices.Slave = slave
+    def __init__(self, slave: Any) -> None:
+        self.slave = slave
 
         super().__init__(f'{slave} is offline')
 
 
 class PortNotFound(SlaveError):
-    def __init__(self, slave: 'slave_devices.Slave', _id: str) -> None:
-        self.slave: slave_devices.Slave = slave
+    def __init__(self, slave, _id: str) -> None:
+        self.slave: Any = slave
         self.id: str = _id
 
         super().__init__(f'Could not find port {slave}.{_id}')
