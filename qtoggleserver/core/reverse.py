@@ -48,7 +48,6 @@ class UnauthorizedConsumerRequestError(ReverseError):
 
 
 class Reverse:
-    # noinspection PyUnusedLocal
     def __init__(self,
                  scheme: Optional[str] = None,
                  host: Optional[str] = None,

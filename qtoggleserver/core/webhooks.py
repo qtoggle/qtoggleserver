@@ -37,7 +37,6 @@ class WebhooksRequest:
 
 
 class Webhooks:
-    # noinspection PyUnusedLocal
     def __init__(self,
                  scheme: Optional[str] = None,
                  host: Optional[str] = None,
