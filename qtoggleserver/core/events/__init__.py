@@ -1,13 +1,5 @@
 
-from .handlers import BaseEventHandler
-from .handlers import handle_event
-from .handlers import init as init_handlers
-
-from .types.base import Event
-from .types.device import DeviceUpdate
-from .types.port import PortAdd, PortRemove, PortUpdate, ValueChange
-from .types.slave import SlaveDeviceAdd, SlaveDeviceRemove, SlaveDeviceUpdate
-
-
-def init() -> None:
-    init_handlers()
+from .base import Event
+from .device import DeviceEvent, DeviceUpdate
+from .port import PortEvent, PortAdd, PortRemove, PortUpdate, ValueChange
+from .slave import SlaveDeviceEvent, SlaveDeviceAdd, SlaveDeviceRemove, SlaveDeviceUpdate

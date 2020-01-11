@@ -4,9 +4,9 @@ import logging
 
 from qtoggleserver import utils
 from qtoggleserver.conf import settings
+from qtoggleserver.core import events as core_events
 
 from .base import BaseEventHandler
-from ..types.base import Event
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,6 @@ def init() -> None:
             _registered_handlers.append(handler)
 
 
-def handle_event(event: Event) -> None:
+def handle_event(event: core_events.Event) -> None:
     for handler in _registered_handlers:
         asyncio.create_task(handler.handle_event(event))

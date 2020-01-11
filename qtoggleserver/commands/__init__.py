@@ -9,6 +9,7 @@ from typing import Any
 
 from tornado import httpclient
 
+from qtoggleserver import eventhandlers
 from qtoggleserver import lib
 from qtoggleserver import persist
 from qtoggleserver import utils
@@ -16,7 +17,6 @@ from qtoggleserver import version
 from qtoggleserver.conf import settings
 from qtoggleserver.conf import utils as conf_utils
 from qtoggleserver.core import device
-from qtoggleserver.core import events
 from qtoggleserver.core import main
 from qtoggleserver.core import ports
 from qtoggleserver.core import reverse
@@ -156,9 +156,9 @@ async def cleanup_persist() -> None:
     persist.close()
 
 
-def init_events() -> None:
-    logger.info('initializing events')
-    events.init()
+def init_event_handlers() -> None:
+    logger.info('initializing event handlers')
+    eventhandlers.init()
 
 
 async def init_device() -> None:
@@ -239,7 +239,7 @@ async def init() -> None:
     init_signals()
     init_configurables()
     init_persist()
-    init_events()
+    init_event_handlers()
 
     await init_device()
     await init_ports()
