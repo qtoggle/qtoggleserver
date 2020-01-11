@@ -157,13 +157,13 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
             self.debug('all ports are disabled, disabling peripheral')
             await self.disable()
 
-    def get_runner(self) -> RUNNER_CLASS:
+    def get_runner(self) -> ThreadedRunner:
         if self._runner is None:
             self._runner = self.make_runner()
 
         return self._runner
 
-    def make_runner(self) -> RUNNER_CLASS:
+    def make_runner(self) -> ThreadedRunner:
         self.debug('starting threaded runner')
         runner = self.RUNNER_CLASS(queue_size=self.RUNNER_QUEUE_SIZE)
         runner.start()
@@ -224,7 +224,7 @@ class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
     def make_id(self) -> str:
         return self.ID
 
-    def get_peripheral(self) -> PERIPHERAL_CLASS:
+    def get_peripheral(self) -> Peripheral:
         return self._peripheral
 
     async def attr_get_address(self) -> str:

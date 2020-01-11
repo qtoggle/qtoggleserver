@@ -350,4 +350,4 @@ class SlavePort(core_ports.BasePort):
         self._last_sync = int(time.time())
 
 
-from .devices import Slave
+from .devices import Slave  # noqa: E402

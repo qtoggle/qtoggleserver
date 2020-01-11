@@ -1559,4 +1559,4 @@ async def cleanup() -> None:
 
 
 # Import this at the end of module to avoid circular imports caused by slaves.devices -> slaves.ports -> slaves.devices
-from .ports import SlavePort
+from .ports import SlavePort  # noqa: E402
