@@ -1,8 +1,9 @@
 
-import jsonschema
 import re
 
 from typing import Any, Callable, Optional, Tuple, Union
+
+import jsonschema
 
 from qtoggleserver.core.typing import GenericJSONDict
 

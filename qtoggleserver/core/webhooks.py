@@ -2,8 +2,9 @@
 import logging
 import queue
 
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from typing import Optional
+
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings

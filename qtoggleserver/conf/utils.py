@@ -1,9 +1,10 @@
 
-import pyhocon
 import types
 
 from collections import OrderedDict
 from typing import Any, Dict
+
+import pyhocon
 
 
 config_factory = pyhocon.ConfigFactory()

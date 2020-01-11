@@ -3,9 +3,10 @@ import asyncio
 import inspect
 import logging
 
+from typing import Any, Callable, Dict, Optional
+
 from tornado.web import RequestHandler, HTTPError, StaticFileHandler as TornadoStaticFileHandler
 from tornado.iostream import StreamClosedError
-from typing import Any, Callable, Dict, Optional
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api

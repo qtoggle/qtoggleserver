@@ -2,10 +2,11 @@
 import logging
 import re
 
+from typing import Any, Dict, Iterable, List, Optional, Union
+
 from bson import ObjectId
 from pymongo import MongoClient
 from pymongo.database import Database
-from typing import Any, Dict, Iterable, List, Optional, Union
 
 from qtoggleserver.persist import BaseDriver, Id, Record
 

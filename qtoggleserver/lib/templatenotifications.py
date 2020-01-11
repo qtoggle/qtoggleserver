@@ -3,8 +3,9 @@ import abc
 import datetime
 import logging
 
-from jinja2 import Environment, Template
 from typing import Dict, Optional, Tuple
+
+from jinja2 import Environment, Template
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import device

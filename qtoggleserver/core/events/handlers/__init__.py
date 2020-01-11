@@ -1,7 +1,6 @@
 
-import logging
 import asyncio
-
+import logging
 
 from qtoggleserver import utils
 from qtoggleserver.conf import settings

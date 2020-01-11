@@ -1,8 +1,9 @@
 
 import datetime
-import pytz
 
 from typing import Union
+
+import pytz
 
 
 def from_utc(moment: datetime.datetime, timezone: Union[str, pytz.tzinfo]) -> datetime.datetime:

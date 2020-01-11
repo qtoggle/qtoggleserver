@@ -2,8 +2,9 @@
 import functools
 import logging
 
-from tornado.web import RequestHandler
 from typing import Callable, Dict
+
+from tornado.web import RequestHandler
 
 from qtoggleserver.core import responses as core_responses
 

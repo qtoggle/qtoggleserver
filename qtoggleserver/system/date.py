@@ -1,9 +1,10 @@
 
 import datetime
-import pytz
 import time
 
 from typing import Iterable
+
+import pytz
 
 from qtoggleserver.conf import settings
 from qtoggleserver.utils.cmd import run_get_cmd, run_set_cmd

@@ -2,8 +2,8 @@
 import abc
 import asyncio
 import functools
-import queue
 import logging
+import queue
 import threading
 
 from typing import Any, Callable, Dict, List, Optional

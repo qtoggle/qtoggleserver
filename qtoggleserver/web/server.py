@@ -2,8 +2,9 @@
 import logging
 import os.path
 
-from tornado.web import Application, RequestHandler
 from typing import List, Optional
+
+from tornado.web import Application, RequestHandler
 
 from qtoggleserver.conf import settings
 from qtoggleserver.web import handlers

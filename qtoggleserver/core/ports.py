@@ -7,8 +7,9 @@ import logging
 import sys
 import time
 
-from tornado import queues
 from typing import Any, Dict, Iterable, List, Optional, Set, Union
+
+from tornado import queues
 
 from qtoggleserver import persist
 from qtoggleserver import utils

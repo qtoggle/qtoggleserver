@@ -7,8 +7,9 @@ import re
 import time
 import types
 
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 from qtoggleserver import persist
 from qtoggleserver import utils

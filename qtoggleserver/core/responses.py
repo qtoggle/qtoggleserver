@@ -2,9 +2,9 @@
 import errno
 import socket
 
-from tornado.httpclient import HTTPResponse
 from typing import Any, Optional
 
+from tornado.httpclient import HTTPResponse
 
 from qtoggleserver.utils import json as json_utils
 

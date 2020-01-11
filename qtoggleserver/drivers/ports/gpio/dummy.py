@@ -1,5 +1,5 @@
 
-from typing import Optional, TextIO, Tuple
+from typing import Optional
 
 from qtoggleserver.core import ports
 from qtoggleserver.utils import json as json_utils
