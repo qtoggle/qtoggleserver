@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import time
@@ -11,7 +13,7 @@ from qtoggleserver.conf import settings
 
 logger = logging.getLogger(__name__)
 
-_sessions_by_id: Dict[str, 'Session'] = {}
+_sessions_by_id: Dict[str, Session] = {}
 
 
 class Session:
@@ -58,8 +60,7 @@ class Session:
         self.future.set_result(events)
         self.future = None
 
-    # TODO: use normal type annotation when handlers are decoupled from events
-    def push(self, event: 'core_events.Event') -> None:
+    def push(self, event: core_events.Event) -> None:
         # Deduplicate events
         while True:
             duplicates = [e for e in self.queue if event.is_duplicate(e)]
@@ -91,8 +92,7 @@ def get(session_id: str) -> Session:
     return session
 
 
-# TODO: use normal type annotation when handlers are decoupled from events
-def push(event: 'core_events.Event') -> None:
+def push(event: core_events.Event) -> None:
     logger.debug('%s triggered', event)
 
     for session in _sessions_by_id.values():
