@@ -9,12 +9,13 @@ from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import Attribute, Attributes, NullablePortValue
 from qtoggleserver.slaves import devices as slaves_devices
+from qtoggleserver.slaves import events as slaves_events
 
 
 logger = logging.getLogger(__package__)
 
 
-class BaseEventHandler(metaclass=abc.ABCMeta):
+class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
     logger = logger
 
     def __init__(self, filter: dict = None) -> None:
@@ -169,7 +170,7 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
             changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
             self._device_attrs = new_attrs
 
-        elif isinstance(event, core_events.SlaveDeviceEvent):
+        elif isinstance(event, slaves_events.SlaveDeviceEvent):
             slave = event.get_slave()
             slave_json = slave.to_json()
 
@@ -177,11 +178,11 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
             old_attrs = self._slave_attrs.get(slave.get_name(), {})
             new_attrs = dict(slave_json, **slave_json.pop('attrs'))
 
-            if isinstance(event, (core_events.SlaveDeviceAdd, core_events.SlaveDeviceUpdate)):
+            if isinstance(event, (slaves_events.SlaveDeviceAdd, slaves_events.SlaveDeviceUpdate)):
                 changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
                 self._slave_attrs[slave.get_name()] = new_attrs
 
-            elif isinstance(event, core_events.SlaveDeviceRemove):
+            elif isinstance(event, slaves_events.SlaveDeviceRemove):
                 removed_attrs = self._slave_attrs.pop(slave.get_name(), {})
 
         return value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs
@@ -289,7 +290,7 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
 
             return False
 
-        elif (isinstance(event, core_events.SlaveDeviceEvent) and
+        elif (isinstance(event, slaves_events.SlaveDeviceEvent) and
               not await self.accepts_slave(event, old_attrs, new_attrs)):
 
             return False
@@ -333,14 +334,14 @@ class BaseEventHandler(metaclass=abc.ABCMeta):
             elif isinstance(event, core_events.DeviceUpdate):
                 await self.on_device_update(event, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs)
 
-            elif isinstance(event, core_events.SlaveDeviceUpdate):
+            elif isinstance(event, slaves_events.SlaveDeviceUpdate):
                 await self.on_slave_device_update(event, event.get_slave(), old_attrs, new_attrs,
                                                   changed_attrs, added_attrs, removed_attrs)
 
-            elif isinstance(event, core_events.SlaveDeviceAdd):
+            elif isinstance(event, slaves_events.SlaveDeviceAdd):
                 await self.on_slave_device_add(event, event.get_slave(), new_attrs)
 
-            elif isinstance(event, core_events.SlaveDeviceRemove):
+            elif isinstance(event, slaves_events.SlaveDeviceRemove):
                 await self.on_slave_device_remove(event, event.get_slave(), new_attrs)
 
         except Exception as e:

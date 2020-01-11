@@ -25,6 +25,7 @@ from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, NullablePortValue
 from qtoggleserver.utils import json as json_utils
 
+from . import events
 from . import exceptions
 
 
@@ -467,17 +468,17 @@ class Slave(utils.LoggableMixin):
         self.trigger_remove()
 
     def trigger_add(self) -> None:
-        event = core_events.SlaveDeviceAdd(self)
+        event = events.SlaveDeviceAdd(self)
         core_sessions.push(event)
         core_events.handle_event(event)
 
     def trigger_remove(self) -> None:
-        event = core_events.SlaveDeviceRemove(self)
+        event = events.SlaveDeviceRemove(self)
         core_sessions.push(event)
         core_events.handle_event(event)
 
     def trigger_update(self) -> None:
-        event = core_events.SlaveDeviceUpdate(self)
+        event = events.SlaveDeviceUpdate(self)
         core_sessions.push(event)
         core_events.handle_event(event)
 

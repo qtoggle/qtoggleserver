@@ -14,13 +14,14 @@ from qtoggleserver.core import ports as core_ports
 from qtoggleserver.conf import settings
 from qtoggleserver.core.typing import Attribute, Attributes, NullablePortValue
 from qtoggleserver.slaves import devices as slaves_devices
-from qtoggleserver.eventhandlers import BaseEventHandler
+
+from .filtereventhandler import FilterEventHandler
 
 
 logger = logging.getLogger(__name__)
 
 
-class TemplateNotificationsHandler(BaseEventHandler, metaclass=abc.ABCMeta):
+class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
     DEFAULT_TEMPLATES = {
         'value-change': {
             'title': '{{port.get_display_name()}} is {{new_value}}{{attrs["unit"]}}',

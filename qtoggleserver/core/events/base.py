@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 import abc
 import logging
 import time
@@ -36,5 +38,10 @@ class Event(metaclass=abc.ABCMeta):
     def get_timestamp(self) -> float:
         return self._timestamp
 
-    def is_duplicate(self, event: 'Event') -> bool:
+    def is_duplicate(self, event: Event) -> bool:
         return False
+
+
+class Handler(metaclass=abc.ABCMeta):
+    async def handle_event(self, event: Event):
+        raise NotImplementedError()
