@@ -6,13 +6,14 @@ from typing import Dict, Tuple
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import Attribute, Attributes, NullablePortValue
+from qtoggleserver.lib import filtereventhandler
 from qtoggleserver.slaves import devices as slaves_devices
 
 
 logger = logging.getLogger(__name__)
 
 
-class DummyEventHandler(core_events.BaseEventHandler):
+class DummyEventHandler(filtereventhandler.FilterEventHandler):
     async def on_event(self, event: core_events.Event) -> None:
         logger.debug('handling %s', event)
 

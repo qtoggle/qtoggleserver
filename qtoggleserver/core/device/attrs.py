@@ -402,7 +402,7 @@ def to_json() -> GenericJSONDict:
 
         filtered_attrdefs[n] = attrdef
 
-    result = get_attrs()
+    result = dict(get_attrs())
     result['definitions'] = filtered_attrdefs
 
     return result

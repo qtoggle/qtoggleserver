@@ -265,7 +265,7 @@ class Reverse:
                                              body=request_dict['body'])
 
         dispatcher = web_server.get_application().find_handler(request)
-        dispatcher.execute()
+        await dispatcher.execute()
 
         status = dispatcher.handler.get_status()
         body = dispatcher.handler.get_response_body()

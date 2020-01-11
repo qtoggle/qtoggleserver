@@ -483,7 +483,7 @@ class Slave(utils.LoggableMixin):
         core_sessions.push(event)
         core_events.handle_event(event)
 
-    async def api_call(self, method: str, path: str, body: Any = None, retry_counter: int = 0) -> Any:
+    async def api_call(self, method: str, path: str, body: Any = None, retry_counter: Optional[int] = 0) -> Any:
         if method == 'GET':
             body = None
 

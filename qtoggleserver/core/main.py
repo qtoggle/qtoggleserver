@@ -141,7 +141,7 @@ async def handle_value_changes(changed_set: Set[Union[core_ports.BasePort, None]
 
         expression = await port.get_expression()
         if expression:
-            deps = expression.get_deps()
+            deps = set(expression.get_deps())
             deps.add(None)  # Special "always depends on" value
 
             # If port expression depends on port itself and the change reason is the evaluation of its expression,

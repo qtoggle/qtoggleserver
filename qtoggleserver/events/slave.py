@@ -1,12 +1,11 @@
 
 from qtoggleserver.core import api as core_api
-from qtoggleserver.slaves import devices as slaves_devices
+from qtoggleserver.core import events as core_events
 from qtoggleserver.core.typing import GenericJSONDict
+from qtoggleserver.slaves import devices as slaves_devices
 
-from .base import Event
 
-
-class SlaveDeviceEvent(Event):
+class SlaveDeviceEvent(core_events.Event):
     def __init__(self, slave: slaves_devices.Slave, timestamp: float = None) -> None:
         self._slave: slaves_devices.Slave = slave
 
@@ -42,5 +41,5 @@ class SlaveDeviceUpdate(SlaveDeviceEvent):
     async def get_params(self) -> GenericJSONDict:
         return self.get_slave().to_json()
 
-    def is_duplicate(self, event: Event) -> bool:
+    def is_duplicate(self, event: core_events.Event) -> bool:
         return isinstance(event, self.__class__) and event.get_slave() == self.get_slave()
