@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 import asyncio
 import hashlib
 import logging
@@ -36,7 +38,7 @@ _FWUPDATE_POLL_TIMEOUT = 300
 _NO_EVENT_DEVICE_ATTRS = ['uptime', 'date']
 
 
-_slaves_by_name: Dict[str, 'Slave'] = {}
+_slaves_by_name: Dict[str, Slave] = {}
 _load_time: float = 0
 
 logger = logging.getLogger(__name__)
@@ -142,7 +144,7 @@ class Slave(utils.LoggableMixin):
         else:
             return f'slave at {self.get_url()}'
 
-    def __eq__(self, s: 'Slave') -> bool:
+    def __eq__(self, s: Slave) -> bool:
         return (self._scheme == s.get_scheme() and self._host == s.get_host() and
                 self._port == s.get_port() and self._path == s.get_path())
 
@@ -408,7 +410,6 @@ class Slave(utils.LoggableMixin):
         # Stop listening
         if self._listen_session_id:
             self._stop_listening()
-            self._listen_task.cancel()
             await self._listen_task
             self.debug('listening stopped')
 
@@ -563,6 +564,7 @@ class Slave(utils.LoggableMixin):
         self.debug('stopping listening mechanism (%s)', self._listen_session_id)
 
         self._listen_session_id = None
+        self._listen_task.cancel()
 
     def _start_polling(self) -> None:
         if self._poll_started:
@@ -683,7 +685,7 @@ class Slave(utils.LoggableMixin):
 
         await self._save_ports()
 
-    def _get_local_ports(self) -> List['SlavePort']:
+    def _get_local_ports(self) -> List[SlavePort]:
         return [port for port in core_ports.all_ports()
                 if port.get_id().startswith(self._name + '.') and isinstance(port, SlavePort)]
 

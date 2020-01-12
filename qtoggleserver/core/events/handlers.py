@@ -42,4 +42,5 @@ def init() -> None:
 
 
 async def cleanup() -> None:
-    await asyncio.wait(_active_handle_tasks)
+    if _active_handle_tasks:
+        await asyncio.wait(_active_handle_tasks)
