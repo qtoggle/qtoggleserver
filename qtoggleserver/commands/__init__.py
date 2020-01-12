@@ -143,7 +143,7 @@ def init_configurables() -> None:
             logger.error('failed to configure class %s: %s', class_name, e, exc_info=True)
 
 
-def init_persist() -> None:
+async def init_persist() -> None:
     logger.info('initializing persistence')
     try:
         persist.get_value('device')
@@ -157,9 +157,9 @@ async def cleanup_persist() -> None:
     persist.close()
 
 
-def init_events() -> None:
+async def init_events() -> None:
     logger.info('initializing events')
-    events.init()
+    await events.init()
 
 
 async def cleanup_events() -> None:
@@ -254,8 +254,9 @@ async def init() -> None:
     init_logging()
     init_signals()
     init_configurables()
-    init_persist()
-    init_events()
+
+    await init_persist()
+    await init_events()
     await init_sessions()
     await init_device()
     await init_ports()

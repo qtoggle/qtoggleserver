@@ -27,7 +27,7 @@ def handle_event(event: Event) -> None:
         _active_handle_tasks.add(task)
 
 
-def init() -> None:
+async def init() -> None:
     for handler_args in settings.event_handlers:
         handler_class_path = handler_args.pop('driver')
 

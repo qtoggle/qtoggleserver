@@ -6,8 +6,8 @@ from .handlers import init as init_handlers, cleanup as cleanup_handlers
 from .port import PortEvent, PortAdd, PortRemove, PortUpdate, ValueChange
 
 
-def init() -> None:
-    init_handlers()
+async def init() -> None:
+    await init_handlers()
 
 
 async def cleanup() -> None:
