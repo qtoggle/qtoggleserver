@@ -17,7 +17,6 @@ from qtoggleserver import utils
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
-from qtoggleserver.core import sessions as core_sessions
 from qtoggleserver.core import sequences as core_sequences
 from qtoggleserver.core.typing import (Attribute, Attributes, AttributeDefinitions, GenericJSONDict, NullablePortValue,
                                        PortValue)
@@ -835,24 +834,16 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.trigger_remove()
 
     def trigger_add(self) -> None:
-        event = core_events.PortAdd(self)
-        core_sessions.push(event)
-        core_events.handle_event(event)
+        core_events.handle_event(core_events.PortAdd(self))
 
     def trigger_remove(self) -> None:
-        event = core_events.PortRemove(self)
-        core_sessions.push(event)
-        core_events.handle_event(event)
+        core_events.handle_event(core_events.PortRemove(self))
 
     def trigger_update(self) -> None:
-        event = core_events.PortUpdate(self)
-        core_sessions.push(event)
-        core_events.handle_event(event)
+        core_events.handle_event(core_events.PortUpdate(self))
 
     def trigger_value_change(self) -> None:
-        event = core_events.ValueChange(self)
-        core_sessions.push(event)
-        core_events.handle_event(event)
+        core_events.handle_event(core_events.ValueChange(self))
 
     async def get_schema(self) -> GenericJSONDict:
         if self._schema is None:

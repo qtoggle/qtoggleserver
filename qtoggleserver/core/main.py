@@ -100,8 +100,7 @@ async def update() -> None:
     if changed_set:
         await handle_value_changes(changed_set, change_reasons)
 
-    sessions.respond_non_empty()
-    sessions.cleanup()
+    sessions.update()
 
 
 async def update_loop() -> None:

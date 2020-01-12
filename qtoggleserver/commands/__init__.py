@@ -20,6 +20,7 @@ from qtoggleserver.core import events
 from qtoggleserver.core import main
 from qtoggleserver.core import ports
 from qtoggleserver.core import reverse
+from qtoggleserver.core import sessions
 from qtoggleserver.core import vports
 from qtoggleserver.core import webhooks
 from qtoggleserver.slaves import devices as slaves_devices
@@ -166,6 +167,16 @@ async def cleanup_events() -> None:
     await events.cleanup()
 
 
+async def init_sessions() -> None:
+    logger.info('initializing sessions')
+    await sessions.init()
+
+
+async def cleanup_sessions() -> None:
+    logger.info('cleaning up sessions')
+    await sessions.cleanup()
+
+
 async def init_device() -> None:
     logger.info('initializing device')
     device.load()
@@ -245,18 +256,19 @@ async def init() -> None:
     init_configurables()
     init_persist()
     init_events()
-
+    await init_sessions()
     await init_device()
     await init_ports()
     await init_slaves()
-    await init_main()
     await init_lib()
+    await init_main()
 
 
 async def cleanup() -> None:
     await cleanup_main()
+    await cleanup_lib()
     await cleanup_slaves()
     await cleanup_ports()
-    await cleanup_lib()
-    await cleanup_persist()
+    await cleanup_sessions()
     await cleanup_events()
+    await cleanup_persist()

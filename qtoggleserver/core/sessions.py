@@ -14,6 +14,7 @@ from qtoggleserver.conf import settings
 logger = logging.getLogger(__name__)
 
 _sessions_by_id: Dict[str, Session] = {}
+_sessions_event_handler: Optional[SessionsEventHandler] = None
 
 
 class Session:
@@ -82,6 +83,18 @@ class Session:
         return f'session {self.id}'
 
 
+class SessionsEventHandler(core_events.Handler):
+    def __init__(self, sessions_by_id: Dict[str, Session]) -> None:
+        self._sessions_by_id: Dict[str, Session] = sessions_by_id
+
+    async def handle_event(self, event: core_events.Event) -> None:
+        for session in self._sessions_by_id.values():
+            if session.access_level < event.REQUIRED_ACCESS:
+                continue
+
+            session.push(event)
+
+
 def get(session_id: str) -> Session:
     session = _sessions_by_id.get(session_id)
     if not session:
@@ -92,30 +105,13 @@ def get(session_id: str) -> Session:
     return session
 
 
-def push(event: core_events.Event) -> None:
-    logger.debug('%s triggered', event)
-
-    for session in _sessions_by_id.values():
-        if session.access_level < event.REQUIRED_ACCESS:
-            continue
-
-        session.push(event)
-
-
-def respond_non_empty() -> None:
-    for session in _sessions_by_id.values():
-        if session.is_empty():
-            continue
-
-        if not session.is_active():
-            continue
-
-        session.respond()
-
-
-def cleanup() -> None:
+def update() -> None:
     now = time.time()
     for session_id, session in list(_sessions_by_id.items()):
+        if not session.is_empty() and session.is_active():
+            session.respond()
+            continue
+
         if now - session.accessed > session.timeout:
             if session.is_active():
                 logger.debug('%s keep-alive', session)
@@ -124,3 +120,14 @@ def cleanup() -> None:
             else:
                 logger.debug('%s expired', session)
                 _sessions_by_id.pop(session_id)
+
+
+async def init() -> None:
+    global _sessions_event_handler
+
+    _sessions_event_handler = SessionsEventHandler(_sessions_by_id)
+    core_events.register_handler(_sessions_event_handler)
+
+
+async def cleanup() -> None:
+    pass

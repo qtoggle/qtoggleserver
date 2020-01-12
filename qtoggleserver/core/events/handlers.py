@@ -19,6 +19,8 @@ def register_handler(handler: Handler) -> None:
 
 
 def handle_event(event: Event) -> None:
+    logger.debug('%s triggered', event)
+
     for handler in _registered_handlers:
         task = asyncio.create_task(handler.handle_event(event))
         task.add_done_callback(_active_handle_tasks.discard)

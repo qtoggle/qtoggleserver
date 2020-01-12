@@ -19,7 +19,6 @@ from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
-from qtoggleserver.core import sessions as core_sessions
 from qtoggleserver.conf import settings
 from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.api import schema as core_api_schema
@@ -470,19 +469,13 @@ class Slave(utils.LoggableMixin):
         self.trigger_remove()
 
     def trigger_add(self) -> None:
-        event = events.SlaveDeviceAdd(self)
-        core_sessions.push(event)
-        core_events.handle_event(event)
+        core_events.handle_event(events.SlaveDeviceAdd(self))
 
     def trigger_remove(self) -> None:
-        event = events.SlaveDeviceRemove(self)
-        core_sessions.push(event)
-        core_events.handle_event(event)
+        core_events.handle_event(events.SlaveDeviceRemove(self))
 
     def trigger_update(self) -> None:
-        event = events.SlaveDeviceUpdate(self)
-        core_sessions.push(event)
-        core_events.handle_event(event)
+        core_events.handle_event(events.SlaveDeviceUpdate(self))
 
     async def api_call(self, method: str, path: str, body: Any = None, retry_counter: Optional[int] = 0) -> Any:
         if method == 'GET':
