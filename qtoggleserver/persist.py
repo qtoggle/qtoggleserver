@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 import abc
 import logging
 
@@ -16,7 +18,7 @@ Record = Dict[str, Any]
 
 logger = logging.getLogger(__name__)
 
-_driver: Optional['BaseDriver'] = None
+_driver: Optional[BaseDriver] = None
 
 
 class BaseDriver(metaclass=abc.ABCMeta):

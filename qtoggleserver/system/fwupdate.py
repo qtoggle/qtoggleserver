@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 import abc
 import logging
 
@@ -20,7 +22,7 @@ STATUS_ERROR = 'error'
 
 logger = logging.getLogger(__name__)
 
-_driver: Optional['BaseDriver'] = None
+_driver: Optional[BaseDriver] = None
 
 
 class FWUpdateException(Exception):

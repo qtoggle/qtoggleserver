@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import re
@@ -25,7 +27,7 @@ BLACKLIST_CALLS = [
 
 logger = logging.getLogger(__name__)
 
-_reverse: Optional['Reverse'] = None
+_reverse: Optional[Reverse] = None
 
 
 class ReverseError(Exception):

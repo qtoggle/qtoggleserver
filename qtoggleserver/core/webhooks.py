@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 import logging
 import queue
 
@@ -17,7 +19,7 @@ from qtoggleserver.utils import json as json_utils
 
 logger = logging.getLogger(__name__)
 
-_webhooks: Optional['Webhooks'] = None
+_webhooks: Optional[Webhooks] = None
 
 
 class WebhooksError(Exception):
