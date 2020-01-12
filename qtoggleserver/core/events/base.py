@@ -47,5 +47,5 @@ class Handler(metaclass=abc.ABCMeta):
     async def handle_event(self, event: Event) -> None:
         raise NotImplementedError()
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         pass
