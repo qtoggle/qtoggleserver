@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 import asyncio
 import hashlib
 import logging
@@ -17,7 +19,6 @@ from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
-from qtoggleserver.core import sessions as core_sessions
 from qtoggleserver.conf import settings
 from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.api import schema as core_api_schema
@@ -25,7 +26,9 @@ from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, NullablePortValue
 from qtoggleserver.utils import json as json_utils
 
+from . import events
 from . import exceptions
+from .ports import SlavePort
 
 
 _INVALID_EXPRESSION_RE = re.compile(r'^invalid field: ((device_)*expression)$')
@@ -34,7 +37,7 @@ _FWUPDATE_POLL_TIMEOUT = 300
 _NO_EVENT_DEVICE_ATTRS = ['uptime', 'date']
 
 
-_slaves_by_name: Dict[str, 'Slave'] = {}
+_slaves_by_name: Dict[str, Slave] = {}
 _load_time: float = 0
 
 logger = logging.getLogger(__name__)
@@ -140,7 +143,7 @@ class Slave(utils.LoggableMixin):
         else:
             return f'slave at {self.get_url()}'
 
-    def __eq__(self, s: 'Slave') -> bool:
+    def __eq__(self, s: Slave) -> bool:
         return (self._scheme == s.get_scheme() and self._host == s.get_host() and
                 self._port == s.get_port() and self._path == s.get_path())
 
@@ -406,7 +409,6 @@ class Slave(utils.LoggableMixin):
         # Stop listening
         if self._listen_session_id:
             self._stop_listening()
-            self._listen_task.cancel()
             await self._listen_task
             self.debug('listening stopped')
 
@@ -467,21 +469,15 @@ class Slave(utils.LoggableMixin):
         self.trigger_remove()
 
     def trigger_add(self) -> None:
-        event = core_events.SlaveDeviceAdd(self)
-        core_sessions.push(event)
-        core_events.handle_event(event)
+        core_events.handle_event(events.SlaveDeviceAdd(self))
 
     def trigger_remove(self) -> None:
-        event = core_events.SlaveDeviceRemove(self)
-        core_sessions.push(event)
-        core_events.handle_event(event)
+        core_events.handle_event(events.SlaveDeviceRemove(self))
 
     def trigger_update(self) -> None:
-        event = core_events.SlaveDeviceUpdate(self)
-        core_sessions.push(event)
-        core_events.handle_event(event)
+        core_events.handle_event(events.SlaveDeviceUpdate(self))
 
-    async def api_call(self, method: str, path: str, body: Any = None, retry_counter: int = 0) -> Any:
+    async def api_call(self, method: str, path: str, body: Any = None, retry_counter: Optional[int] = 0) -> Any:
         if method == 'GET':
             body = None
 
@@ -561,6 +557,7 @@ class Slave(utils.LoggableMixin):
         self.debug('stopping listening mechanism (%s)', self._listen_session_id)
 
         self._listen_session_id = None
+        self._listen_task.cancel()
 
     def _start_polling(self) -> None:
         if self._poll_started:
@@ -681,7 +678,7 @@ class Slave(utils.LoggableMixin):
 
         await self._save_ports()
 
-    def _get_local_ports(self) -> List['SlavePort']:
+    def _get_local_ports(self) -> List[SlavePort]:
         return [port for port in core_ports.all_ports()
                 if port.get_id().startswith(self._name + '.') and isinstance(port, SlavePort)]
 
@@ -1038,7 +1035,6 @@ class Slave(utils.LoggableMixin):
             self.error('handling event of type %s failed: %s', event['type'], e)
             raise
 
-    # noinspection PyShadowingBuiltins
     async def _handle_value_change(self, id: str, value: NullablePortValue) -> None:
         local_id = f'{self._name}.{id}'
         port = core_ports.get(local_id)
@@ -1097,7 +1093,6 @@ class Slave(utils.LoggableMixin):
 
         await self._add_port(attrs)
 
-    # noinspection PyShadowingBuiltins
     async def _handle_port_remove(self, id: str) -> None:
         local_id = f'{self._name}.{id}'
         port = core_ports.get(local_id)
@@ -1556,7 +1551,3 @@ async def load() -> None:
 async def cleanup() -> None:
     for slave in _slaves_by_name.values():
         await slave.cleanup()
-
-
-# Import this at the end of module to avoid circular imports caused by slaves.devices -> slaves.ports -> slaves.devices
-from .ports import SlavePort  # noqa: E402

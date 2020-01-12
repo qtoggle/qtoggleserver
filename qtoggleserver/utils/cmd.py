@@ -65,7 +65,7 @@ def run_get_cmd(get_cmd: str,
 def run_set_cmd(set_cmd: str,
                 cmd_name: Optional[str] = None,
                 log_values: bool = True,
-                exc_class: Optional[Exception] = None,
+                exc_class: Optional[type] = None,
                 **config) -> None:
 
     env = {f'QS_{k.upper()}': v for k, v in config.items()}

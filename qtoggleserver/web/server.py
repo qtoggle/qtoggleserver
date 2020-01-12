@@ -28,7 +28,6 @@ def _log_request(handler: RequestHandler) -> None:
         log_method = logger.error
 
     request_time = 1000.0 * handler.request.request_time()
-    # noinspection PyProtectedMember
     log_method('%d %s %.2fms', handler.get_status(), handler._request_summary(), request_time)
 
 

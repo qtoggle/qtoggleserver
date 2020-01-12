@@ -89,8 +89,9 @@ class PolledPeripheral(Peripheral):
             # Raise a copy of the error, to prevent traceback piling up
             raise copy.copy(self._poll_error)
 
+    @abc.abstractmethod
     async def poll(self) -> None:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     async def handle_enable(self) -> None:
         self._poll_task = asyncio.create_task(self._poll_loop())

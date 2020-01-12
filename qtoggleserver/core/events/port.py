@@ -1,21 +1,26 @@
 
+from typing import Any
+
 from qtoggleserver.core import api as core_api
-from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import GenericJSONDict
 
 from .base import Event
 
 
+# We can't use proper type annotations for ports in this module because that would create unsolvable circular imports.
+# Therefore we use "Any" type annotation for BasePort instances.
+
+
 class PortEvent(Event):
-    def __init__(self, port: core_ports.BasePort, timestamp: float = None) -> None:
-        self._port: core_ports.BasePort = port
+    def __init__(self, port: Any, timestamp: float = None) -> None:
+        self._port = port
 
         super().__init__(timestamp)
 
     def __str__(self) -> str:
         return f'{self._type}({self._port.get_id()}) event'
 
-    def get_port(self) -> core_ports.BasePort:
+    def get_port(self) -> Any:
         return self._port
 
 

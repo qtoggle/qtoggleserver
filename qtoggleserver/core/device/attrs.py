@@ -178,7 +178,6 @@ def get_schema() -> GenericJSONDict:
             'additionalProperties': False
         }
 
-        # noinspection PyShadowingNames
         for name, attrdef in ATTRDEFS.items():
             if not attrdef.get('modifiable'):
                 continue
@@ -302,7 +301,6 @@ def set_attrs(attrs: Attributes) -> bool:
 
     reboot_required = False
 
-    # noinspection PyShadowingNames
     for name, value in attrs.items():
         # A few attributes may carry sensitive information, so treat them separately and do not log their values
         if name.count('password'):
@@ -404,7 +402,7 @@ def to_json() -> GenericJSONDict:
 
         filtered_attrdefs[n] = attrdef
 
-    result = get_attrs()
+    result = dict(get_attrs())
     result['definitions'] = filtered_attrdefs
 
     return result

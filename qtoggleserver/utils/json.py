@@ -2,7 +2,7 @@
 import datetime
 import json
 
-from typing import Any, Callable
+from typing import Any, Callable, Union
 
 import jsonpointer
 
@@ -58,7 +58,7 @@ def dumps(obj: Any) -> str:
         return json.dumps(obj, default=_make_json_encoder())
 
 
-def loads(s: str, resolve_refs: bool = False) -> Any:
+def loads(s: Union[str, bytes], resolve_refs: bool = False) -> Any:
     obj = json.loads(s)
 
     if resolve_refs:

@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 import abc
 import datetime
 import math
@@ -48,6 +50,7 @@ class IncompleteExpression(ExpressionError):
 
 
 class Expression(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
     def eval(self) -> CorePortValue:
         raise NotImplementedError()
 
@@ -59,8 +62,9 @@ class Expression(metaclass=abc.ABCMeta):
         return set()
 
     @staticmethod
-    def parse(self_port_id: Optional[str], sexpression: str) -> 'Expression':
-        raise NotImplementedError
+    @abc.abstractmethod
+    def parse(self_port_id: Optional[str], sexpression: str) -> Expression:
+        raise NotImplementedError()
 
 
 class Constant(Expression):

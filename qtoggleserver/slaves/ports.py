@@ -4,7 +4,7 @@ import copy
 import re
 import time
 
-from typing import List, Optional, Set, Tuple
+from typing import Any, List, Optional, Set, Tuple
 
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
@@ -18,6 +18,10 @@ _DEVICE_EXPRESSION_RE = re.compile(r'^(device_)+expression$')
 
 _FWUPDATE_POLL_INTERVAL = 30
 _FWUPDATE_POLL_TIMEOUT = 300
+
+
+# We can't use proper type annotations for slaves in this module because that would create unsolvable circular imports.
+# Therefore we use "Any" type annotation for Slave instances.
 
 
 class SlavePort(core_ports.BasePort):
@@ -46,8 +50,8 @@ class SlavePort(core_ports.BasePort):
         'modifiable': False
     }
 
-    def __init__(self, slave: 'Slave', attrs: Attributes) -> None:
-        self._slave: Slave = slave
+    def __init__(self, slave: Any, attrs: Attributes) -> None:
+        self._slave = slave
 
         self._remote_id: str = attrs['id']
 
@@ -348,6 +352,3 @@ class SlavePort(core_ports.BasePort):
 
     def update_last_sync(self) -> None:
         self._last_sync = int(time.time())
-
-
-from .devices import Slave  # noqa: E402

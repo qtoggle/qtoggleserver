@@ -1,13 +1,14 @@
 
-from .handlers import BaseEventHandler
-from .handlers import handle_event
-from .handlers import init as init_handlers
-
-from .types.base import Event
-from .types.device import DeviceUpdate
-from .types.port import PortAdd, PortRemove, PortUpdate, ValueChange
-from .types.slave import SlaveDeviceAdd, SlaveDeviceRemove, SlaveDeviceUpdate
+from .base import Event, Handler
+from .device import DeviceEvent, DeviceUpdate
+from .handlers import handle_event, register_handler
+from .handlers import init as init_handlers, cleanup as cleanup_handlers
+from .port import PortEvent, PortAdd, PortRemove, PortUpdate, ValueChange
 
 
 def init() -> None:
     init_handlers()
+
+
+async def cleanup() -> None:
+    await cleanup_handlers()
