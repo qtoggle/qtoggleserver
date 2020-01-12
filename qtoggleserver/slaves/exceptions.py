@@ -1,6 +1,12 @@
 
+from typing import Any
+
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import responses as core_responses
+
+
+# We can't use proper type annotations for slaves in this module because that would create unsolvable circular imports.
+# Therefore we use "Any" type annotation for Slave instances.
 
 
 class SlaveError(Exception):
@@ -12,42 +18,42 @@ class InvalidDevice(SlaveError):
 
 
 class NoListenSupport(SlaveError):
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, name: str) -> None:
+        self.name: str = name
 
-        super().__init__(f'device {name} has no listen support')
+        super().__init__(f'Device {name} has no listen support')
 
 
 class DeviceAlreadyExists(SlaveError):
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, name: str) -> None:
+        self.name: str = name
 
-        super().__init__(f'device {name} already exists')
+        super().__init__(f'Device {name} already exists')
 
 
 class DeviceRenamed(SlaveError):
-    def __init__(self, slave):
+    def __init__(self, slave: Any) -> None:
         self.slave = slave
 
         super().__init__(f'{slave} renamed')
 
 
 class DeviceOffline(SlaveError):
-    def __init__(self, slave):
+    def __init__(self, slave: Any) -> None:
         self.slave = slave
 
         super().__init__(f'{slave} is offline')
 
 
 class PortNotFound(SlaveError):
-    def __init__(self, slave, _id):
+    def __init__(self, slave: Any, _id: str) -> None:
         self.slave = slave
-        self.id = _id
+        self.id: str = _id
 
-        super().__init__(f'could not find port {slave}.{_id}')
+        super().__init__(f'Could not find port {slave}.{_id}')
 
 
-def adapt_api_error(error):
+def adapt_api_error(error: Exception) -> Exception:
     if isinstance(error, (core_responses.HostUnreachable,
                           core_responses.NetworkUnreachable,
                           core_responses.UnresolvableHostname)):

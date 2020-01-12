@@ -1,6 +1,12 @@
 
+from __future__ import annotations
+
 import functools
 import logging
+
+from typing import Any, Callable, Dict
+
+from qtoggleserver.core import responses as core_responses
 
 
 API_VERSION = '1.0'
@@ -25,51 +31,51 @@ logger = logging.getLogger(__name__)
 
 
 class APIError(Exception):
-    def __init__(self, status, message, **params):
-        self.status = status
-        self.message = message
-        self.params = params
+    def __init__(self, status: int, message: str, **params) -> None:
+        self.status: int = status
+        self.message: str = message
+        self.params: dict = params
 
         super().__init__(message)
 
     @staticmethod
-    def from_http_error(http_error):
+    def from_http_error(http_error: core_responses.HTTPError) -> APIError:
         return APIError(http_error.code, http_error.msg)
 
 
 class APIRequest:
-    def __init__(self, handler):
-        self.handler = handler
+    def __init__(self, handler: APIHandler) -> None:
+        self.handler: APIHandler = handler
 
     @property
-    def access_level(self):
+    def access_level(self) -> int:
         return self.handler.access_level
 
     @property
-    def method(self):
+    def method(self) -> str:
         return self.handler.request.method
 
     @property
-    def path(self):
+    def path(self) -> str:
         return self.handler.request.path
 
     @property
-    def query_arguments(self):
+    def query_arguments(self) -> Dict[str, str]:
         return {k: self.handler.decode_argument(v[0]) for k, v in self.handler.request.query_arguments.items()}
 
     @property
-    def headers(self):
+    def headers(self) -> Dict[str, str]:
         return self.handler.request.headers
 
     @property
-    def body(self):
+    def body(self) -> bytes:
         return self.handler.request.body
 
 
-def api_call(access_level=ACCESS_LEVEL_NONE):
-    def decorator(func):
+def api_call(access_level: int = ACCESS_LEVEL_NONE) -> Callable:
+    def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
-        def wrapper(request_handler, *args, **kwargs):
+        def wrapper(request_handler: APIHandler, *args, **kwargs) -> Any:
             logger.debug('executing API call "%s"', func.__name__)
 
             if request_handler.access_level < access_level:
@@ -86,3 +92,7 @@ def api_call(access_level=ACCESS_LEVEL_NONE):
         return wrapper
 
     return decorator
+
+
+# Import this here to prevent errors due to circular imports
+from qtoggleserver.web.handlers import APIHandler  # noqa: E402

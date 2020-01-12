@@ -1,15 +1,21 @@
 
+from __future__ import annotations
+
 import abc
 import datetime
 import math
 import time
 
+from typing import Callable, List, Optional, Set, Tuple
+
+from qtoggleserver.core.typing import PortValue as CorePortValue
+
 
 FUNCTIONS = {}
 
 
-def function(name):
-    def decorator(func_class):
+def function(name: str) -> Callable:
+    def decorator(func_class: type) -> type:
         func_class.NAME = name
         FUNCTIONS[name] = func_class
 
@@ -27,11 +33,11 @@ class InvalidExpression(ExpressionError):
 
 
 class InvalidArgument(ExpressionError):
-    def __init__(self, arg_no, value):
-        self.arg_no = arg_no
-        self.value = value
+    def __init__(self, arg_no: int, value: CorePortValue) -> None:
+        self.arg_no: int = arg_no
+        self.value: CorePortValue = value
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'invalid argument {self.arg_no}: {self.value}'
 
 
@@ -44,10 +50,11 @@ class IncompleteExpression(ExpressionError):
 
 
 class Expression(metaclass=abc.ABCMeta):
-    def eval(self):
+    @abc.abstractmethod
+    def eval(self) -> CorePortValue:
         raise NotImplementedError()
 
-    def get_deps(self):
+    def get_deps(self) -> Set[str]:
         # Special deps:
         #  * 'time' - used to indicate dependency on system time (seconds)
         #  * 'time_ms' - used to indicate dependency on system time (milliseconds)
@@ -55,23 +62,24 @@ class Expression(metaclass=abc.ABCMeta):
         return set()
 
     @staticmethod
-    def parse(self_port_id, sexpression):
-        raise NotImplementedError
+    @abc.abstractmethod
+    def parse(self_port_id: Optional[str], sexpression: str) -> Expression:
+        raise NotImplementedError()
 
 
 class Constant(Expression):
-    def __init__(self, value, sexpression):
-        self.value = value
-        self.sexpression = sexpression
+    def __init__(self, value: CorePortValue, sexpression: str) -> None:
+        self.value: CorePortValue = value
+        self.sexpression: str = sexpression
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.sexpression
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         return self.value
 
     @staticmethod
-    def parse(self_port_id, sexpression):
+    def parse(self_port_id: Optional[str], sexpression: str) -> Expression:
         sexpression = sexpression.strip()
 
         if sexpression == 'true':
@@ -99,11 +107,11 @@ class Function(Expression, metaclass=abc.ABCMeta):
     MIN_ARGS = None
     MAX_ARGS = None
 
-    def __init__(self, args):
-        self.args = args
-        self._deps = None
+    def __init__(self, args: List[Expression]) -> None:
+        self.args: List[Expression] = args
+        self._deps: Optional[Set[str]] = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = getattr(self, '_str', None)
         if s is None:
             args_str = ', '.join([str(e) for e in self.args])
@@ -111,7 +119,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
 
         return s
 
-    def get_deps(self):
+    def get_deps(self) -> Set[str]:
         if self._deps is None:
             self._deps = set()
 
@@ -120,11 +128,11 @@ class Function(Expression, metaclass=abc.ABCMeta):
 
         return self._deps
 
-    def eval_args(self):
+    def eval_args(self) -> List[CorePortValue]:
         return [a.eval() for a in self.args]
 
     @staticmethod
-    def parse(self_port_id, sexpression):
+    def parse(self_port_id: Optional[str], sexpression: str) -> Expression:
         sexpression = sexpression.strip()
 
         p_start = None
@@ -185,7 +193,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
 class AddFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         return sum(self.eval_args())
 
 
@@ -193,7 +201,7 @@ class AddFunction(Function):
 class SubFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
         return eval_args[0] - eval_args[1]
 
@@ -202,7 +210,7 @@ class SubFunction(Function):
 class MulFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         r = 1
         for e in self.eval_args():
             r *= e
@@ -214,7 +222,7 @@ class MulFunction(Function):
 class DivFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         if eval_args[1]:
@@ -228,7 +236,7 @@ class DivFunction(Function):
 class ModFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         if eval_args[1]:
@@ -242,7 +250,7 @@ class ModFunction(Function):
 class AndFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         r = True
         for e in self.eval_args():
             r = r and bool(e)
@@ -254,7 +262,7 @@ class AndFunction(Function):
 class OrFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         r = False
         for e in self.eval_args():
             r = r or bool(e)
@@ -266,7 +274,7 @@ class OrFunction(Function):
 class NotFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         return int(not bool(self.eval_args()[0]))
 
 
@@ -274,7 +282,7 @@ class NotFunction(Function):
 class XorFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         e1 = bool(eval_args[0])
@@ -287,7 +295,7 @@ class XorFunction(Function):
 class BitAndFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         r = -1
         for e in self.eval_args():
             r &= int(e)
@@ -299,7 +307,7 @@ class BitAndFunction(Function):
 class BitOrFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         r = 0
         for e in self.eval_args():
             r |= int(e)
@@ -311,7 +319,7 @@ class BitOrFunction(Function):
 class BitNotFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         return ~int(self.eval_args()[0])
 
 
@@ -319,7 +327,7 @@ class BitNotFunction(Function):
 class BitXOrFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         return int(eval_args[0]) ^ int(eval_args[1])
@@ -329,7 +337,7 @@ class BitXOrFunction(Function):
 class SHLFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         return int(eval_args[0]) << int(eval_args[1])
@@ -339,7 +347,7 @@ class SHLFunction(Function):
 class SHRFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         return int(eval_args[0]) >> int(eval_args[1])
@@ -349,7 +357,7 @@ class SHRFunction(Function):
 class IfFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         if eval_args[0]:
@@ -363,7 +371,7 @@ class IfFunction(Function):
 class EqFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         return int(eval_args[0] == eval_args[1])
@@ -373,7 +381,7 @@ class EqFunction(Function):
 class GTFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         return int(eval_args[0] > eval_args[1])
@@ -383,7 +391,7 @@ class GTFunction(Function):
 class GTEFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         return int(eval_args[0] >= eval_args[1])
@@ -393,7 +401,7 @@ class GTEFunction(Function):
 class LTFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         return int(eval_args[0] < eval_args[1])
@@ -403,7 +411,7 @@ class LTFunction(Function):
 class LTEFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         return int(eval_args[0] <= eval_args[1])
@@ -413,7 +421,7 @@ class LTEFunction(Function):
 class AbsFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         return abs(self.eval_args()[0])
 
 
@@ -421,7 +429,7 @@ class AbsFunction(Function):
 class SgnFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         e = int(self.eval_args()[0])
         if e > 0:
             return 1
@@ -437,7 +445,7 @@ class SgnFunction(Function):
 class MinFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         m = eval_args[0]
@@ -452,7 +460,7 @@ class MinFunction(Function):
 class MaxFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         m = eval_args[0]
@@ -467,7 +475,7 @@ class MaxFunction(Function):
 class FloorFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         return int(math.floor(eval_args[0]))
@@ -477,7 +485,7 @@ class FloorFunction(Function):
 class CeilFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         return int(math.ceil(eval_args[0]))
@@ -488,7 +496,7 @@ class RoundFunction(Function):
     MIN_ARGS = 1
     MAX_ARGS = 2
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         eval_args = self.eval_args()
 
         v = eval_args[0]
@@ -503,10 +511,10 @@ class RoundFunction(Function):
 class TimeFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
-    def get_deps(self):
+    def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         return int(time.time())
 
 
@@ -514,10 +522,10 @@ class TimeFunction(Function):
 class TimeMSFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
-    def get_deps(self):
+    def get_deps(self) -> Set[str]:
         return {'time_ms'}
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         return int(time.time() * 1000)
 
 
@@ -525,16 +533,16 @@ class TimeMSFunction(Function):
 class HeldFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._time_ms = None
-        self._last_value = None
+        self._time_ms: Optional[int] = None
+        self._last_value: Optional[CorePortValue] = None
 
-    def get_deps(self):
+    def get_deps(self) -> Set[str]:
         return {'time_ms'}
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         time_ms = int(time.time() * 1000)
         result = False
 
@@ -564,17 +572,17 @@ class DelayFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
     HISTORY_SIZE = 1024
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._queue = []
-        self._last_value = None
-        self._current_value = None
+        self._queue: List[Tuple[int, CorePortValue]] = []
+        self._last_value: Optional[CorePortValue] = None
+        self._current_value: Optional[CorePortValue] = None
 
-    def get_deps(self):
+    def get_deps(self) -> Set[str]:
         return {'time_ms'}
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         time_ms = int(time.time() * 1000)
 
         value = self.args[0].eval()
@@ -604,12 +612,12 @@ class DelayFunction(Function):
 class HystFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_result = 0
+        self._last_result: int = 0
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         value = self.args[0].eval()
         threshold1 = self.args[1].eval()
         threshold2 = self.args[2].eval()
@@ -624,10 +632,10 @@ class HystFunction(Function):
 class YearFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
-    def get_deps(self):
+    def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         return datetime.datetime.now().year
 
 
@@ -635,10 +643,10 @@ class YearFunction(Function):
 class MonthFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
-    def get_deps(self):
+    def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         return datetime.datetime.now().month
 
 
@@ -646,10 +654,10 @@ class MonthFunction(Function):
 class DayFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
-    def get_deps(self):
+    def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         return datetime.datetime.now().day
 
 
@@ -657,10 +665,10 @@ class DayFunction(Function):
 class DOWFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
-    def get_deps(self):
+    def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         return datetime.datetime.now().weekday()
 
 
@@ -668,10 +676,10 @@ class DOWFunction(Function):
 class HourFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
-    def get_deps(self):
+    def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         return datetime.datetime.now().hour
 
 
@@ -679,10 +687,10 @@ class HourFunction(Function):
 class MinuteFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
-    def get_deps(self):
+    def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         return datetime.datetime.now().minute
 
 
@@ -690,10 +698,10 @@ class MinuteFunction(Function):
 class SecondFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
-    def get_deps(self):
+    def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         return datetime.datetime.now().second
 
 
@@ -702,10 +710,10 @@ class HMSIntervalFunction(Function):
     MIN_ARGS = 4
     MAX_ARGS = 6
 
-    def get_deps(self):
+    def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         now = datetime.datetime.now()
 
         if len(self.args) >= 6:
@@ -764,22 +772,24 @@ class HMSIntervalFunction(Function):
         return start_dt <= now <= stop_dt
 
 
-class PortValue(Expression):
-    def __init__(self, port_id):
-        self.port_id = port_id
+# Import core.ports after defining Expression, because core.ports.BasePort depends on Expression.
+from qtoggleserver.core import ports as core_ports  # noqa: E402
 
-    def __str__(self):
+
+class PortValue(Expression):
+    def __init__(self, port_id: str) -> None:
+        self.port_id: str = port_id
+
+    def __str__(self) -> str:
         return f'${self.port_id}'
 
-    def get_deps(self):
+    def get_deps(self) -> Set[str]:
         return {f'${self.port_id}'}
 
-    def get_port(self):
-        from qtoggleserver.core import ports as core_ports
-
+    def get_port(self) -> core_ports.BasePort:
         return core_ports.get(self.port_id)
 
-    def eval(self):
+    def eval(self) -> CorePortValue:
         port = self.get_port()
         if not port:
             raise IncompleteExpression(f'Unknown port {self.port_id}')
@@ -794,7 +804,7 @@ class PortValue(Expression):
         return float(value)
 
     @staticmethod
-    def parse(self_port_id, sexpression):
+    def parse(self_port_id: Optional[str], sexpression: str) -> Expression:
         sexpression = sexpression.strip()
         port_id = sexpression.strip('$')
 
@@ -806,11 +816,11 @@ class PortValue(Expression):
 
 
 class SelfPortValue(PortValue):
-    def __str__(self):
+    def __str__(self) -> str:
         return '$'
 
 
-def parse(self_port_id, sexpression):
+def parse(self_port_id: Optional[str], sexpression: str) -> Expression:
     sexpression = sexpression.strip()
     if sexpression.startswith('$'):
         return PortValue.parse(self_port_id, sexpression)
@@ -822,10 +832,10 @@ def parse(self_port_id, sexpression):
         return Constant.parse(self_port_id, sexpression)
 
 
-async def check_loops(port, expression):
+async def check_loops(port: core_ports.BasePort, expression: Expression) -> None:
     seen_ports = {port}
 
-    async def check_loops_rec(level, e):
+    async def check_loops_rec(level: int, e: Expression) -> int:
         if isinstance(e, PortValue):
             p = e.get_port()
             if not p:

@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 import asyncio
 import hashlib
 import logging
@@ -7,21 +9,24 @@ import re
 import time
 import types
 
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 from qtoggleserver import persist
 from qtoggleserver import utils
-from qtoggleserver.conf import settings
+from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
-from qtoggleserver.core import sessions as core_sessions
+from qtoggleserver.conf import settings
 from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.api import schema as core_api_schema
 from qtoggleserver.core.device import attrs as core_device_attrs
-from qtoggleserver.utils import http as http_utils
+from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, NullablePortValue
 from qtoggleserver.utils import json as json_utils
 
+from . import events
 from . import exceptions
 from .ports import SlavePort
 
@@ -32,18 +37,31 @@ _FWUPDATE_POLL_TIMEOUT = 300
 _NO_EVENT_DEVICE_ATTRS = ['uptime', 'date']
 
 
-_slaves = {}  # Indexed by name
-_load_time = 0
+_slaves_by_name: Dict[str, Slave] = {}
+_load_time: float = 0
 
 logger = logging.getLogger(__name__)
 
 
 class Slave(utils.LoggableMixin):
-    def __init__(self, name, scheme, host, port, path, poll_interval=None, listen_enabled=True,
-                 admin_password=None, admin_password_hash=None, last_sync=-1,
-                 attrs=None, webhooks=None, reverse=None,
-                 provisioning_attrs=None, provisioning_webhooks=None, provisioning_reverse=None,
-                 **kwargs):
+    def __init__(self,
+                 name: Optional[str],
+                 scheme: str,
+                 host: str,
+                 port: int,
+                 path: str,
+                 poll_interval: Optional[int] = None,
+                 listen_enabled: bool = True,
+                 admin_password: Optional[str] = None,
+                 admin_password_hash: Optional[str] = None,
+                 last_sync: int = -1,
+                 attrs: Optional[Attributes] = None,
+                 webhooks: Optional[GenericJSONDict] = None,
+                 reverse: Optional[GenericJSONDict] = None,
+                 provisioning_attrs: Optional[Set[str]] = None,
+                 provisioning_webhooks: Optional[Set[str]] = None,
+                 provisioning_reverse: Optional[Set[str]] = None,
+                 **kwargs) -> None:
 
         # The enabled value comes with kwargs but is ignored, as the slave will be explicitly enabled afterwards
 
@@ -51,85 +69,85 @@ class Slave(utils.LoggableMixin):
         if not name:
             self.set_logger_name(f'{host}:{port}')
 
-        self._name = name
-        self._scheme = scheme
-        self._host = host
-        self._port = port
-        self._path = path
-        self._poll_interval = poll_interval
-        self._listen_enabled = listen_enabled
+        self._name: Optional[str] = name
+        self._scheme: str = scheme
+        self._host: str = host
+        self._port: int = port
+        self._path: str = path
+        self._poll_interval: Optional[int] = poll_interval
+        self._listen_enabled: bool = listen_enabled
 
         if admin_password is not None:
-            self._admin_password_hash = hashlib.sha256(admin_password.encode()).hexdigest()
+            self._admin_password_hash: str = hashlib.sha256(admin_password.encode()).hexdigest()
 
         else:
-            self._admin_password_hash = admin_password_hash
+            self._admin_password_hash: str = admin_password_hash
 
         # Indicates the online status
-        self._enabled = False
+        self._enabled: bool = False
 
         # Indicates the online status
-        self._online = False
+        self._online: bool = False
 
         # Used to tell initial offline -> online transition from subsequent transitions
-        self._initial_online = True
+        self._initial_online: bool = True
 
         # Timestamp when we last heard from this device
-        self._last_sync = last_sync
+        self._last_sync: float = last_sync
 
         # Indicates whether all data required for this slave is present locally
-        self._ready = False
+        self._ready: bool = False
 
         # Indicates the listening session id, or None if no listen client is active
-        self._listen_session_id = None
-        self._listen_task = None
+        self._listen_session_id: Optional[str] = None
+        self._listen_task: Optional[asyncio.Task] = None
 
         # Tells the polling mechanism status
-        self._poll_started = False
-        self._pool_task = None
+        self._poll_started: bool = False
+        self._pool_task: Optional[asyncio.Task] = None
 
         # Attributes cache
-        self._cached_attrs = attrs or {}
+        self._cached_attrs: Attributes = attrs or {}
 
         # Webhooks parameters cache
-        self._cached_webhooks = webhooks or {}
+        self._cached_webhooks: GenericJSONDict = webhooks or {}
 
         # Reverse API calls cache
-        self._cached_reverse = reverse or {}
+        self._cached_reverse: GenericJSONDict = reverse or {}
 
         # Names of attributes that have been changed while device was offline and have to be provisioned later
-        self._provisioning_attrs = set(provisioning_attrs or [])
+        self._provisioning_attrs: Set[str] = set(provisioning_attrs or [])
 
         # Webhooks params that have been changed while device was offline and have to be provisioned later
-        self._provisioning_webhooks = set(provisioning_webhooks or [])
+        self._provisioning_webhooks: Set[str] = set(provisioning_webhooks or [])
 
         # Reverse params that have been changed while device was offline and have to be provisioned later
-        self._provisioning_reverse = set(provisioning_reverse or [])
+        self._provisioning_reverse: Set[str] = set(provisioning_reverse or [])
 
         # Used to schedule provisioning + local update for permanently offline slaves
-        self._provisioning_timeout_handle = None
+        self._provisioning_timeout_task: Optional[asyncio.Task] = None
 
         # An internal reference to the last made API call
-        self._last_api_call_ref = None
+        self._last_api_call_ref: Any = None
 
         # Cached url
-        self._url = None
+        self._url: Optional[str] = None
 
         # Handles firmware update progress
-        self._fwupdate_poll_task = None
+        self._fwupdate_poll_task: Optional[asyncio.Task] = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self._name:
             return f'slave {self._name} at {self.get_url()}'
 
         else:
             return f'slave at {self.get_url()}'
 
-    def __eq__(self, s):
+    def __eq__(self, s: Slave) -> bool:
         return (self._scheme == s.get_scheme() and self._host == s.get_host() and
                 self._port == s.get_port() and self._path == s.get_path())
 
-    def get_url(self, path=None):
+    def get_url(self, path: Optional[str] = None) -> str:
         if path:
             url = self.get_url()
             while url.endswith('/'):
@@ -146,13 +164,13 @@ class Slave(utils.LoggableMixin):
 
         return self._url
 
-    def get_cached_attr(self, name):
+    def get_cached_attr(self, name: str) -> Optional[Attribute]:
         return self._cached_attrs.get(name)
 
-    def get_cached_attrs(self):
+    def get_cached_attrs(self) -> Attributes:
         return self._cached_attrs
 
-    async def update_cached_attrs(self, attrs, partial=False):
+    async def update_cached_attrs(self, attrs: Attributes, partial: bool = False) -> None:
         # If the name has changed remove the device and re-add the device from scratch
 
         if attrs.get('name'):
@@ -169,7 +187,7 @@ class Slave(utils.LoggableMixin):
                         self.trigger_update()
 
                     # Check for duplicate name
-                    if name in _slaves or core_device_attrs.name == name:
+                    if name in _slaves_by_name or core_device_attrs.name == name:
                         logger.error('a slave with name %s already exists', name)
                         raise exceptions.DeviceAlreadyExists(name)
 
@@ -202,43 +220,43 @@ class Slave(utils.LoggableMixin):
         else:
             self._cached_attrs = attrs
 
-    def get_name(self):
+    def get_name(self) -> str:
         return self._name
 
-    def get_display_name(self):
+    def get_display_name(self) -> str:
         return self._cached_attrs.get('display_name') or self._name
 
-    def get_scheme(self):
+    def get_scheme(self) -> str:
         return self._scheme
 
-    def get_host(self):
+    def get_host(self) -> str:
         return self._host
 
-    def get_port(self):
+    def get_port(self) -> int:
         return self._port
 
-    def get_path(self):
+    def get_path(self) -> str:
         return self._path
 
-    def get_admin_password_hash(self):
+    def get_admin_password_hash(self) -> str:
         return self._admin_password_hash
 
-    def set_admin_password(self, admin_password):
+    def set_admin_password(self, admin_password: str) -> None:
         self._admin_password_hash = hashlib.sha256(admin_password.encode()).hexdigest()
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         return self._ready
 
-    def is_online(self):
+    def is_online(self) -> bool:
         return self._online
 
-    def update_last_sync(self):
+    def update_last_sync(self) -> None:
         self._last_sync = int(time.time())
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         return self._enabled
 
-    async def enable(self):
+    async def enable(self) -> None:
         if self._enabled:
             return
 
@@ -259,7 +277,7 @@ class Slave(utils.LoggableMixin):
         if self._name:
             asyncio.create_task(self._load_ports())
 
-    async def disable(self):
+    async def disable(self) -> None:
         if not self._enabled:
             return
 
@@ -283,7 +301,7 @@ class Slave(utils.LoggableMixin):
         # Mark offline
         self._online = False
 
-    def set_poll_interval(self, poll_interval):
+    def set_poll_interval(self, poll_interval: Optional[int]) -> None:
         if self._poll_interval == poll_interval:
             return
 
@@ -305,10 +323,10 @@ class Slave(utils.LoggableMixin):
                 self._online = False
                 asyncio.create_task(self._handle_offline())
 
-    def get_poll_interval(self):
+    def get_poll_interval(self) -> Optional[int]:
         return self._poll_interval
 
-    def enable_listen(self):
+    def enable_listen(self) -> None:
         if self._listen_enabled:
             return  # Already enabled
 
@@ -318,7 +336,7 @@ class Slave(utils.LoggableMixin):
         if not self._listen_session_id and self._enabled:
             self._start_listening()
 
-    def disable_listen(self):
+    def disable_listen(self) -> None:
         if not self._listen_enabled:
             return  # Not enabled
 
@@ -333,13 +351,13 @@ class Slave(utils.LoggableMixin):
             self._online = False
             asyncio.create_task(self._handle_offline())
 
-    def is_listen_enabled(self):
+    def is_listen_enabled(self) -> bool:
         return self._listen_enabled
 
-    def is_permanently_offline(self):
+    def is_permanently_offline(self) -> bool:
         return self._poll_interval == 0 and not self._listen_enabled
 
-    def to_json(self):
+    def to_json(self) -> GenericJSONDict:
         provisioning = list(self._provisioning_attrs)
         if self._provisioning_webhooks:
             provisioning.append('webhooks')
@@ -361,7 +379,7 @@ class Slave(utils.LoggableMixin):
             'attrs': self._cached_attrs
         }
 
-    def prepare_for_save(self):
+    def prepare_for_save(self) -> GenericJSONDict:
         return {
             'enabled': self._enabled,
             'name': self._name,
@@ -381,17 +399,16 @@ class Slave(utils.LoggableMixin):
             'provisioning_reverse': list(self._provisioning_reverse),
         }
 
-    def save(self):
+    def save(self) -> None:
         self.debug('saving device')
         persist.replace('slaves', self._name, self.prepare_for_save())
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         self.debug('cleaning up')
 
         # Stop listening
         if self._listen_session_id:
             self._stop_listening()
-            self._listen_task.cancel()
             await self._listen_task
             self.debug('listening stopped')
 
@@ -406,7 +423,7 @@ class Slave(utils.LoggableMixin):
             self._fwupdate_poll_task.cancel()
             await self._fwupdate_poll_task
 
-    async def _load_ports(self):
+    async def _load_ports(self) -> None:
         self.debug('loading persisted ports')
         port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
         my_port_ids = [d['id'][len(self._name) + 1:] for d in port_data_list
@@ -415,14 +432,14 @@ class Slave(utils.LoggableMixin):
         for _id in my_port_ids:
             await self._add_port(attrs={'id': _id})
 
-    async def _save_ports(self):
+    async def _save_ports(self) -> None:
 
         self.debug('persisting ports')
         ports = self._get_local_ports()
         for port in ports:
             await port.save()
 
-    def _rename_ports_persisted_data(self, new_name):
+    def _rename_ports_persisted_data(self, new_name: str) -> None:
         port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
         my_port_data_list = [d for d in port_data_list
                              if d['id'].startswith(self._name + '.')]
@@ -436,7 +453,7 @@ class Slave(utils.LoggableMixin):
             d['id'] = new_name + d['id'][len(self._name):]
             persist.insert(SlavePort.PERSIST_COLLECTION, d)
 
-    async def remove(self):
+    async def remove(self) -> None:
         self._enabled = False
         self._ready = False
 
@@ -451,22 +468,16 @@ class Slave(utils.LoggableMixin):
 
         self.trigger_remove()
 
-    def trigger_add(self):
-        event = core_events.SlaveDeviceAdd(self)
-        core_sessions.push(event)
-        core_events.handle_event(event)
+    def trigger_add(self) -> None:
+        core_events.handle_event(events.SlaveDeviceAdd(self))
 
-    def trigger_remove(self):
-        event = core_events.SlaveDeviceRemove(self)
-        core_sessions.push(event)
-        core_events.handle_event(event)
+    def trigger_remove(self) -> None:
+        core_events.handle_event(events.SlaveDeviceRemove(self))
 
-    def trigger_update(self):
-        event = core_events.SlaveDeviceUpdate(self)
-        core_sessions.push(event)
-        core_events.handle_event(event)
+    def trigger_update(self) -> None:
+        core_events.handle_event(events.SlaveDeviceUpdate(self))
 
-    async def api_call(self, method, path, body=None, retry_counter=0):
+    async def api_call(self, method: str, path: str, body: Any = None, retry_counter: Optional[int] = 0) -> Any:
         if method == 'GET':
             body = None
 
@@ -478,7 +489,7 @@ class Slave(utils.LoggableMixin):
 
         http_client = AsyncHTTPClient()
         headers = {
-            'Content-Type': http_utils.JSON_CONTENT_TYPE,
+            'Content-Type': json_utils.JSON_CONTENT_TYPE,
             'Authorization': core_api_auth.make_auth_header(core_api_auth.ORIGIN_CONSUMER,
                                                             username='admin', password_hash=self._admin_password_hash)
         }
@@ -495,7 +506,7 @@ class Slave(utils.LoggableMixin):
             response = types.SimpleNamespace(error=e, code=599)
 
         try:
-            result = core_responses.parse(response)
+            response_body = core_responses.parse(response)
 
         except core_responses.Error as e:
             e = self.intercept_error(e)
@@ -520,11 +531,11 @@ class Slave(utils.LoggableMixin):
             self.debug('api call %s %s succeeded', method, path)
 
             self.update_last_sync()
-            await self.intercept_response(method, path, body, result)
+            await self.intercept_response(method, path, body, response_body)
 
-            return result
+            return response_body
 
-    def _start_listening(self):
+    def _start_listening(self) -> None:
         if self._listen_session_id:
             self.warning('listening client already active')
 
@@ -537,7 +548,7 @@ class Slave(utils.LoggableMixin):
 
         self._listen_task = asyncio.create_task(self._listen_loop())
 
-    def _stop_listening(self):
+    def _stop_listening(self) -> None:
         if not self._listen_session_id:
             self.warning('listening client not active')
 
@@ -546,8 +557,9 @@ class Slave(utils.LoggableMixin):
         self.debug('stopping listening mechanism (%s)', self._listen_session_id)
 
         self._listen_session_id = None
+        self._listen_task.cancel()
 
-    def _start_polling(self):
+    def _start_polling(self) -> None:
         if self._poll_started:
             self.warning('polling already active')
 
@@ -559,7 +571,7 @@ class Slave(utils.LoggableMixin):
 
         self._pool_task = asyncio.create_task(self._poll_loop())
 
-    def _stop_polling(self):
+    def _stop_polling(self) -> None:
         if not self._poll_started:
             self.warning('polling not active')
 
@@ -569,7 +581,7 @@ class Slave(utils.LoggableMixin):
 
         self._poll_started = False
 
-    def _start_fwupdate_polling(self):
+    def _start_fwupdate_polling(self) -> None:
         if self._fwupdate_poll_task:
             self.warning('fwupdate polling already active')
 
@@ -579,7 +591,7 @@ class Slave(utils.LoggableMixin):
 
         self._fwupdate_poll_task = asyncio.create_task(self._fwupdate_poll_loop())
 
-    def _stop_fwupdate_polling(self):
+    def _stop_fwupdate_polling(self) -> None:
         if not self._fwupdate_poll_task:
             self.warning('fwupdate polling not active')
 
@@ -589,7 +601,7 @@ class Slave(utils.LoggableMixin):
 
         self._fwupdate_poll_task.cancel()
 
-    async def _add_port(self, attrs):
+    async def _add_port(self, attrs: Attributes) -> None:
         self.debug('adding port %s', attrs['id'])
 
         port = await core_ports.load_one(SlavePort, {
@@ -599,7 +611,7 @@ class Slave(utils.LoggableMixin):
 
         port.trigger_add()
 
-    async def fetch_and_update_device(self):
+    async def fetch_and_update_device(self) -> None:
         self.debug('fetching device attributes')
 
         just_added = self._name is None
@@ -619,11 +631,11 @@ class Slave(utils.LoggableMixin):
 
         await self.update_cached_attrs(attrs)
 
-        if just_added and (name in _slaves or core_device_attrs.name == name):
+        if just_added and (name in _slaves_by_name or core_device_attrs.name == name):
             self.error('device already exists')
             raise exceptions.DeviceAlreadyExists(name)
 
-    async def fetch_and_update_ports(self):
+    async def fetch_and_update_ports(self) -> None:
         self.debug('fetching ports')
         try:
             port_attrs = await self.api_call('GET', '/ports')
@@ -666,10 +678,11 @@ class Slave(utils.LoggableMixin):
 
         await self._save_ports()
 
-    def _get_local_ports(self):
-        return [port for port in core_ports.all_ports() if port.get_id().startswith(self._name + '.')]
+    def _get_local_ports(self) -> List[SlavePort]:
+        return [port for port in core_ports.all_ports()
+                if port.get_id().startswith(self._name + '.') and isinstance(port, SlavePort)]
 
-    async def _listen_loop(self):
+    async def _listen_loop(self) -> None:
         # The initial listen API call is used to determine the reachability (the online status) of a slave
         keep_alive = 1
 
@@ -681,13 +694,13 @@ class Slave(utils.LoggableMixin):
                 if not self._listen_session_id:
                     break
 
-                if self not in _slaves.values():
+                if self not in _slaves_by_name.values():
                     self.error('exiting listen loop for dangling slave device')
                     break
 
                 url = self.get_url(f'/listen?timeout={keep_alive}&session_id={self._listen_session_id}')
                 headers = {
-                    'Content-Type': http_utils.JSON_CONTENT_TYPE,
+                    'Content-Type': json_utils.JSON_CONTENT_TYPE,
                     'Authorization': core_api_auth.make_auth_header(core_api_auth.ORIGIN_CONSUMER,
                                                                     username='admin',
                                                                     password_hash=self._admin_password_hash)
@@ -759,7 +772,7 @@ class Slave(utils.LoggableMixin):
 
                     # _handle_event() indirectly stopped listening or removed this slave; this happens when the slave
                     # device is renamed
-                    if self not in _slaves.values() or not self._listen_session_id:
+                    if self not in _slaves_by_name.values() or not self._listen_session_id:
                         break
 
                     if not self._online:
@@ -783,7 +796,7 @@ class Slave(utils.LoggableMixin):
                 self.debug('listen task cancelled')
                 break
 
-    async def _poll_loop(self):
+    async def _poll_loop(self) -> None:
         interval = 0  # Never wait when start polling
 
         while True:
@@ -798,14 +811,14 @@ class Slave(utils.LoggableMixin):
                 self.debug('poll task cancelled')
                 break
 
-    async def _poll_once(self):
+    async def _poll_once(self) -> int:
         # We have to use try ... except blocks quite aggressively here, because we do not want any error that may occur
         # to stop our poll loop
 
         if not self._poll_started:
             return 0
 
-        if self not in _slaves.values():
+        if self not in _slaves_by_name.values():
             self.error('exiting polling loop for dangling slave device')
             return 0
 
@@ -976,7 +989,7 @@ class Slave(utils.LoggableMixin):
 
         return self._poll_interval
 
-    async def _fwupdate_poll_loop(self):
+    async def _fwupdate_poll_loop(self) -> None:
         counter = _FWUPDATE_POLL_TIMEOUT / _FWUPDATE_POLL_INTERVAL
 
         while True:
@@ -1002,7 +1015,7 @@ class Slave(utils.LoggableMixin):
         # Clear task reference when exiting the task loop
         self._fwupdate_poll_task = None
 
-    async def handle_event(self, event):
+    async def handle_event(self, event: GenericJSONDict) -> None:
         event_name = re.sub(r'[^\w]', '_', event['type'])
         method_name = f'_handle_{event_name}'
         method = getattr(self, method_name, None)
@@ -1022,8 +1035,7 @@ class Slave(utils.LoggableMixin):
             self.error('handling event of type %s failed: %s', event['type'], e)
             raise
 
-    # noinspection PyShadowingBuiltins
-    async def _handle_value_change(self, id, value):
+    async def _handle_value_change(self, id: str, value: NullablePortValue) -> None:
         local_id = f'{self._name}.{id}'
         port = core_ports.get(local_id)
         if not port or not isinstance(port, SlavePort):
@@ -1045,7 +1057,7 @@ class Slave(utils.LoggableMixin):
         port.update_last_sync()
         await port.save()
 
-    async def _handle_port_update(self, **attrs):
+    async def _handle_port_update(self, **attrs: Attribute) -> None:
         local_id = f'{self._name}.{attrs.get("id")}'
         port = core_ports.get(local_id)
         if not port or not isinstance(port, SlavePort):
@@ -1075,14 +1087,13 @@ class Slave(utils.LoggableMixin):
         await port.save()
         port.trigger_update()
 
-    async def _handle_port_add(self, **attrs):
+    async def _handle_port_add(self, **attrs: Attribute) -> None:
         local_id = f'{self._name}.{attrs.get("id")}'
         self.debug('port %s added remotely', local_id)
 
         await self._add_port(attrs)
 
-    # noinspection PyShadowingBuiltins
-    async def _handle_port_remove(self, id):
+    async def _handle_port_remove(self, id: str) -> None:
         local_id = f'{self._name}.{id}'
         port = core_ports.get(local_id)
         if not port or not isinstance(port, SlavePort):
@@ -1090,7 +1101,7 @@ class Slave(utils.LoggableMixin):
 
         await port.remove()
 
-    async def _handle_device_update(self, **attrs):
+    async def _handle_device_update(self, **attrs: Attribute) -> None:
         provisioning_attrs = self.get_provisioning_attrs()
 
         # We're working on a copy, just to be sure we can safely pop stuff from it
@@ -1105,7 +1116,7 @@ class Slave(utils.LoggableMixin):
         self.trigger_update()
         self.save()
 
-    async def _handle_offline(self):
+    async def _handle_offline(self) -> None:
         self.debug('device is offline')
 
         self.trigger_update()
@@ -1114,7 +1125,7 @@ class Slave(utils.LoggableMixin):
             if port.is_enabled():
                 port.trigger_update()
 
-    async def _handle_online(self):
+    async def _handle_online(self) -> None:
         self.debug('device is online')
 
         # Now that the device is back online, we can apply any pending provisioning data
@@ -1149,7 +1160,7 @@ class Slave(utils.LoggableMixin):
 
         self.save()
 
-    def get_provisioning_attrs(self):
+    def get_provisioning_attrs(self) -> Attributes:
         provisioning = {}
         for name in self._provisioning_attrs:
             value = self._cached_attrs.get(name)
@@ -1158,7 +1169,7 @@ class Slave(utils.LoggableMixin):
 
         return provisioning
 
-    def get_provisioning_webhooks(self):
+    def get_provisioning_webhooks(self) -> GenericJSONDict:
         provisioning = {}
         for name in self._provisioning_webhooks:
             value = self._cached_webhooks.get(name)
@@ -1167,7 +1178,7 @@ class Slave(utils.LoggableMixin):
 
         return provisioning
 
-    def get_provisioning_reverse(self):
+    def get_provisioning_reverse(self) -> GenericJSONDict:
         provisioning = {}
         for name in self._provisioning_reverse:
             value = self._cached_reverse.get(name)
@@ -1176,16 +1187,16 @@ class Slave(utils.LoggableMixin):
 
         return provisioning
 
-    def clear_provisioning_attrs(self):
+    def clear_provisioning_attrs(self) -> None:
         self._provisioning_attrs = set()
 
-    def clear_provisioning_webhooks(self):
+    def clear_provisioning_webhooks(self) -> None:
         self._provisioning_webhooks = set()
 
-    def clear_provisioning_reverse(self):
+    def clear_provisioning_reverse(self) -> None:
         self._provisioning_reverse = set()
 
-    async def apply_provisioning(self):
+    async def apply_provisioning(self) -> None:
         provisioned = False
 
         has_webhooks = 'webhooks' in self._cached_attrs.get('flags', [])
@@ -1223,7 +1234,7 @@ class Slave(utils.LoggableMixin):
             provisioned = True
             webhooks_provisioned = True
 
-        # Rseverse params provisioning
+        # Reverse params provisioning
         params = self.get_provisioning_reverse()
         reverse_provisioned = False
         if params and has_reverse:
@@ -1309,23 +1320,27 @@ class Slave(utils.LoggableMixin):
         if webhooks_queried or reverse_queried:
             self.save()
 
-    def schedule_provisioning_and_update(self, delay):
-        if self._provisioning_timeout_handle:
-            self._provisioning_timeout_handle.cancel()
+    def schedule_provisioning_and_update(self, delay: float) -> None:
+        if self._provisioning_timeout_task:
+            self._provisioning_timeout_task.cancel()
 
-        self._provisioning_timeout_handle = asyncio.create_task(utils.await_later(delay, self._provision_and_update))
+        self._provisioning_timeout_task = asyncio.create_task(utils.await_later(delay, self._provision_and_update))
 
-    async def _provision_and_update(self):
+    async def _provision_and_update(self) -> None:
         self.debug('starting provisioning & update procedure')
-        self._provisioning_timeout_handle = None
+        self._provisioning_timeout_task = None
 
         await self.apply_provisioning()
         await self.fetch_and_update_device()
         await self.fetch_and_update_ports()
 
-    async def intercept_request(self, method, path, params, request):
-        # Intercept API calls to device attributes, webhooks and reverse parameters, for devices that are offline
+    async def intercept_request(self,
+                                method: str,
+                                path: str,
+                                params: Any,
+                                request: core_api.APIRequest) -> Tuple[bool, Any]:
 
+        # Intercept API calls to device attributes, webhooks and reverse parameters, for devices that are offline
         if self._online:
             return False, None
 
@@ -1382,21 +1397,21 @@ class Slave(utils.LoggableMixin):
         # By default, requests are not intercepted
         return False, None
 
-    async def intercept_response(self, method, path, body, response):
+    async def intercept_response(self, method: str, path: str, request_body: Any, response_body: Any) -> None:
         if path.endswith('/'):
             path = path[:-1]
 
         if path == '/device':
             if method == 'PATCH':
                 # Intercept this API call to detect admin password changes
-                new_admin_password = body and body.get('admin_password') or None
+                new_admin_password = request_body and request_body.get('admin_password') or None
                 if new_admin_password is not None:
                     self.debug('updating admin password')
                     self.set_admin_password(new_admin_password)
                     self.save()
 
                 # Detect local name changes
-                new_name = body and body.get('name')
+                new_name = request_body and request_body.get('name')
                 if new_name and new_name != self._name:
                     try:
                         await self.update_cached_attrs({'name': new_name}, partial=True)
@@ -1407,7 +1422,7 @@ class Slave(utils.LoggableMixin):
             elif method == 'GET':
                 # Intercept this API call so that we can update locally cached attributes whose values change often and
                 # therefore do not trigger a device-update event
-                attrs = {n: response[n] for n in _NO_EVENT_DEVICE_ATTRS if n in response}
+                attrs = {n: response_body[n] for n in _NO_EVENT_DEVICE_ATTRS if n in response_body}
                 await self.update_cached_attrs(attrs, partial=True)
 
         elif path == '/firmware':
@@ -1420,20 +1435,20 @@ class Slave(utils.LoggableMixin):
                 self._start_fwupdate_polling()
 
             elif method == 'GET' and self._fwupdate_poll_task:
-                if response.get('status') == 'idle':  # Firmware update process not running
+                if response_body.get('status') == 'idle':  # Firmware update process not running
                     self.debug('firmware update process ended')
                     await self.enable()
                     self._stop_fwupdate_polling()
 
         elif path == '/reset':
-            if method == 'POST' and body.get('factory'):
+            if method == 'POST' and request_body.get('factory'):
                 # When performing factory reset, disable device
 
                 self.debug('device has been reset to factory defaults')
                 await self.disable()
                 self.trigger_update()
 
-    def intercept_error(self, error):
+    def intercept_error(self, error: Exception) -> Exception:
         if isinstance(error, core_responses.HTTPError):
             # Slave expression attribute is known as "device_expression" on Master; we must adapt the corresponding
             # error here
@@ -1444,11 +1459,19 @@ class Slave(utils.LoggableMixin):
         return error
 
 
-def get(name):
-    return _slaves.get(name)
+def get(name: str) -> Optional[Slave]:
+    return _slaves_by_name.get(name)
 
 
-async def add(scheme, host, port, path, poll_interval, listen_enabled, admin_password=None, admin_password_hash=None):
+async def add(scheme: str,
+              host: str,
+              port: int,
+              path: str,
+              poll_interval: Optional[int],
+              listen_enabled: bool,
+              admin_password: Optional[str] = None,
+              admin_password_hash: Optional[str] = None) -> Slave:
+
     slave = Slave(None, scheme, host, port, path, poll_interval, listen_enabled, admin_password, admin_password_hash)
 
     slave.debug('starting add procedure')
@@ -1469,36 +1492,36 @@ async def add(scheme, host, port, path, poll_interval, listen_enabled, admin_pas
         # Slave._handle_online()
         await slave.fetch_and_update_ports()
 
-    _slaves[name] = slave
+    _slaves_by_name[name] = slave
 
     return slave
 
 
-async def remove(slave):
-    _slaves.pop(slave.get_name(), None)
+async def remove(slave: Slave) -> None:
+    _slaves_by_name.pop(slave.get_name(), None)
     await slave.remove()
 
 
-def get_all():
-    return _slaves.values()
+def get_all() -> Iterable[Slave]:
+    return _slaves_by_name.values()
 
 
-def _slave_ready(slave):
+def _slave_ready(slave: Slave) -> bool:
     return slave.is_enabled() and not slave.is_permanently_offline()
 
 
-def ready():
+def ready() -> bool:
     # Allow 110% of slaves.timeout setting for all slaves to get ready; after that time has passed, slaves are as ready
     # as they can be
     if time.time() - _load_time > int(settings.slaves.timeout * 1.1):
         return True
 
-    slaves = (s for s in _slaves.values() if s.is_enabled() and not s.is_permanently_offline())
+    slaves = (s for s in _slaves_by_name.values() if s.is_enabled() and not s.is_permanently_offline())
 
     return all(s.is_ready() for s in slaves)
 
 
-async def load():
+async def load() -> None:
     global _load_time
 
     _load_time = time.time()
@@ -1513,7 +1536,7 @@ async def load():
             logger.error('failed to load slave %s: %s', entry['name'], e, exc_info=True)
             continue
 
-        _slaves[slave.get_name()] = slave
+        _slaves_by_name[slave.get_name()] = slave
 
         if entry['enabled']:
             logger.debug('loaded %s', slave)
@@ -1525,6 +1548,6 @@ async def load():
         slave.trigger_add()
 
 
-async def cleanup():
-    for slave in _slaves.values():
+async def cleanup() -> None:
+    for slave in _slaves_by_name.values():
         await slave.cleanup()

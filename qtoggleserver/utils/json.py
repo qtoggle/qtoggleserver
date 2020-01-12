@@ -1,10 +1,16 @@
 
 import datetime
 import json
+
+from typing import Any, Callable, Union
+
 import jsonpointer
 
 
-def _resolve_refs_rec(obj, root_obj):
+JSON_CONTENT_TYPE = 'application/json; charset=utf-8'
+
+
+def _resolve_refs_rec(obj: Any, root_obj: Any) -> Any:
     if isinstance(obj, dict):
         if len(obj.keys()) == 1 and list(obj.keys())[0] == '$ref':
             ref = list(obj.values())[0]
@@ -21,8 +27,8 @@ def _resolve_refs_rec(obj, root_obj):
     return obj
 
 
-def _make_json_encoder(date_format='%Y-%m-%d', datetime_format='%Y-%m-%dT%H:%M:%SZ'):
-    def encode_default_json(obj):
+def _make_json_encoder(date_format: str = '%Y-%m-%d', datetime_format: str = '%Y-%m-%dT%H:%M:%SZ') -> Callable:
+    def encode_default_json(obj: Any) -> str:
         if isinstance(obj, datetime.datetime):
             return obj.strftime(datetime_format)
 
@@ -30,12 +36,12 @@ def _make_json_encoder(date_format='%Y-%m-%d', datetime_format='%Y-%m-%dT%H:%M:%
             return obj.strftime(date_format)
 
         elif isinstance(obj, (set, tuple)):
-            return list(obj)
+            return json.dumps(list(obj), default=encode_default_json)
 
     return encode_default_json
 
 
-def dumps(obj):
+def dumps(obj: Any) -> str:
     if isinstance(obj, str):
         return '"' + obj + '"'
 
@@ -52,7 +58,7 @@ def dumps(obj):
         return json.dumps(obj, default=_make_json_encoder())
 
 
-def loads(s, resolve_refs=False):
+def loads(s: Union[str, bytes], resolve_refs: bool = False) -> Any:
     obj = json.loads(s)
 
     if resolve_refs:

@@ -6,7 +6,7 @@ from qtoggleserver.core.device import attrs as core_device_attrs
 from . import constants
 
 
-def make_context():
+def make_context() -> dict:
     return {
         'slaves_enabled': settings.slaves.enabled,
 

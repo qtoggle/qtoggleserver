@@ -11,6 +11,7 @@ from qtoggleserver import system
 from qtoggleserver import version
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
+from qtoggleserver.core.typing import Attributes, GenericJSONDict
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_set_cmd
 
@@ -163,7 +164,11 @@ ui_theme = 'dark'
 _schema = None
 
 
-def get_schema():
+class DeviceAttributeError(Exception):
+    pass
+
+
+def get_schema() -> GenericJSONDict:
     global _schema
 
     if not _schema:
@@ -173,7 +178,6 @@ def get_schema():
             'additionalProperties': False
         }
 
-        # noinspection PyShadowingNames
         for name, attrdef in ATTRDEFS.items():
             if not attrdef.get('modifiable'):
                 continue
@@ -213,7 +217,7 @@ def get_schema():
     return _schema
 
 
-def get_attrs():
+def get_attrs() -> Attributes:
     attrs = {
         'name': name,
         'display_name': display_name,
@@ -221,13 +225,13 @@ def get_attrs():
         'api_version': core_api.API_VERSION,
         'vendor': version.VENDOR,
         'uptime': system.uptime(),
-        'ui_theme': ui_theme
-    }
+        'ui_theme': ui_theme,
 
-    # Never disclose these ones
-    attrs['admin_password'] = ''
-    attrs['normal_password'] = ''
-    attrs['viewonly_password'] = ''
+        # Never disclose passwords
+        'admin_password': '',
+        'normal_password': '',
+        'viewonly_password': ''
+    }
 
     flags = []
     if settings.system.fwupdate_driver:
@@ -292,12 +296,11 @@ def get_attrs():
     return attrs
 
 
-def set_attrs(attrs):
+def set_attrs(attrs: Attributes) -> bool:
     core_device_attrs = sys.modules[__name__]
 
     reboot_required = False
 
-    # noinspection PyShadowingNames
     for name, value in attrs.items():
         # A few attributes may carry sensitive information, so treat them separately and do not log their values
         if name.count('password'):
@@ -312,7 +315,7 @@ def set_attrs(attrs):
         attrdef = ATTRDEFS[name]
 
         if not attrdef.get('modifiable'):
-            return f'attribute not modifiable: {name}'
+            raise DeviceAttributeError(f'attribute not modifiable: {name}')
 
         # Treat passwords separately, as they are not persisted as given, but hashed first
         if name.endswith('_password') and hasattr(core_device_attrs, name + '_hash'):
@@ -341,7 +344,7 @@ def set_attrs(attrs):
                 date = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
 
             except ValueError:
-                return f'invalid field: {name}'
+                raise DeviceAttributeError(f'invalid field: {name}')
 
             system.date.set_date(date)
 
@@ -383,7 +386,7 @@ def set_attrs(attrs):
     return reboot_required
 
 
-def to_json():
+def to_json() -> GenericJSONDict:
     attrdefs = copy.deepcopy(ATTRDEFS)
     filtered_attrdefs = {}
     for n, attrdef in attrdefs.items():
@@ -399,7 +402,7 @@ def to_json():
 
         filtered_attrdefs[n] = attrdef
 
-    result = get_attrs()
+    result = dict(get_attrs())
     result['definitions'] = filtered_attrdefs
 
     return result

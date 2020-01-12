@@ -4,6 +4,8 @@ import asyncio
 import copy
 import logging
 
+from typing import Optional
+
 from .peripheral import Peripheral, PeripheralPort
 
 
@@ -23,16 +25,16 @@ class PolledPeripheral(Peripheral):
     DEFAULT_POLL_INTERVAL = 1800
     RETRY_POLL_INTERVAL = 60
 
-    def __init__(self, address, name, **kwargs):
-        self._polling = False
-        self._poll_stopped = False
-        self._poll_task = None
-        self._poll_interval = self.DEFAULT_POLL_INTERVAL
-        self._poll_error = None
+    def __init__(self, address: str, name: str, **kwargs) -> None:
+        self._polling: bool = False
+        self._poll_stopped: bool = False
+        self._poll_task: Optional[asyncio.Task] = None
+        self._poll_interval: int = self.DEFAULT_POLL_INTERVAL
+        self._poll_error: Optional[Exception] = None
 
         super().__init__(address, name, **kwargs)
 
-    async def _poll_loop(self):
+    async def _poll_loop(self) -> None:
         self.debug('polling started')
         self._polling = True
 
@@ -73,31 +75,32 @@ class PolledPeripheral(Peripheral):
         self._poll_task = None
         self.debug('polling stopped')
 
-    def set_poll_interval(self, interval):
+    def set_poll_interval(self, interval: int) -> None:
         self._poll_interval = interval
 
-    def get_poll_interval(self):
+    def get_poll_interval(self) -> int:
         return self._poll_interval
 
-    def get_poll_error(self):
+    def get_poll_error(self) -> Exception:
         return self._poll_error
 
-    def check_poll_error(self):
+    def check_poll_error(self) -> None:
         if self._poll_error:
             # Raise a copy of the error, to prevent traceback piling up
             raise copy.copy(self._poll_error)
 
-    async def poll(self):
-        raise NotImplementedError
+    @abc.abstractmethod
+    async def poll(self) -> None:
+        raise NotImplementedError()
 
-    async def handle_enable(self):
+    async def handle_enable(self) -> None:
         self._poll_task = asyncio.create_task(self._poll_loop())
 
-    async def handle_disable(self):
+    async def handle_disable(self) -> None:
         self._polling = False  # Will stop poll loop
         self._poll_error = None
 
-    async def handle_cleanup(self):
+    async def handle_cleanup(self) -> None:
         await super().handle_cleanup()
 
         if self._poll_task and not self._poll_task.done():
@@ -116,7 +119,7 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
     READ_INTERVAL_MULTIPLIER = 1
     READ_INTERVAL_UNIT = None
 
-    def __init__(self, address, peripheral_name=None, **kwargs):
+    def __init__(self, address: str, peripheral_name: Optional[str] = None, **kwargs) -> None:
         super().__init__(address, peripheral_name, **kwargs)
 
         # Add read interval attrdef
@@ -139,8 +142,8 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
 
             self.ADDITIONAL_ATTRDEFS = dict(self.ADDITIONAL_ATTRDEFS, read_interval=attrdef)
 
-    async def attr_set_read_interval(self, interval):
+    async def attr_set_read_interval(self, interval: int) -> None:
         self.get_peripheral().set_poll_interval(int(interval) * self.READ_INTERVAL_MULTIPLIER)
 
-    async def attr_get_read_interval(self):
+    async def attr_get_read_interval(self) -> int:
         return self.get_peripheral().get_poll_interval() / self.READ_INTERVAL_MULTIPLIER

@@ -1,9 +1,12 @@
 
+import datetime
+
+from typing import Union
+
 import pytz
 
 
-def from_utc(moment, timezone):
-    # noinspection PyTypeChecker
+def from_utc(moment: datetime.datetime, timezone: Union[str, pytz.tzinfo]) -> datetime.datetime:
     if isinstance(timezone, str):
         timezone = pytz.timezone(timezone)
 
@@ -13,9 +16,8 @@ def from_utc(moment, timezone):
     return moment.astimezone(timezone)
 
 
-def to_utc(moment, timezone=pytz.UTC):
+def to_utc(moment: datetime.datetime, timezone: Union[str, pytz.tzinfo] = pytz.UTC) -> datetime.datetime:
     if moment.tzinfo is None:
-        # noinspection PyTypeChecker
         if isinstance(timezone, str):
             moment = pytz.timezone(timezone).localize(moment)
 

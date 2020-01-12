@@ -12,11 +12,11 @@ from . import attrs as device_attrs
 logger = logging.getLogger(__name__)
 
 
-def get_display_name():
+def get_display_name() -> str:
     return device_attrs.display_name or device_attrs.name
 
 
-def load():
+def load() -> None:
     data = persist.get_value('device', {})
 
     # Attributes
@@ -64,7 +64,7 @@ def load():
         device_attrs.viewonly_password_hash = device_attrs.EMPTY_PASSWORD_HASH
 
 
-def save():
+def save() -> None:
     data = {}
 
     # Attributes
@@ -87,6 +87,6 @@ def save():
     persist.set_value('device', data)
 
 
-def reset():
+def reset() -> None:
     logger.debug('clearing device persisted data')
     persist.remove('device')

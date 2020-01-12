@@ -5,6 +5,8 @@ import logging.config
 import signal
 import sys
 
+from typing import Any
+
 from tornado import httpclient
 
 from qtoggleserver import lib
@@ -18,6 +20,7 @@ from qtoggleserver.core import events
 from qtoggleserver.core import main
 from qtoggleserver.core import ports
 from qtoggleserver.core import reverse
+from qtoggleserver.core import sessions
 from qtoggleserver.core import vports
 from qtoggleserver.core import webhooks
 from qtoggleserver.slaves import devices as slaves_devices
@@ -30,14 +33,14 @@ options = None
 _stopping = False
 
 
-def parse_args():
+def parse_args() -> None:
     global options
 
     description = f'qToggleServer {version.VERSION}'
     epilog = None
 
     class VersionAction(argparse.Action):
-        def __call__(self, *args, **kwargs):
+        def __call__(self, *args, **kwargs) -> None:
             sys.stdout.write(f'{description}\n')
             sys.exit()
 
@@ -59,7 +62,7 @@ def parse_args():
         sys.exit(-1)
 
 
-def init_settings():
+def init_settings() -> None:
     try:
         parsed_config = conf_utils.config_from_file(options.config_file)
 
@@ -80,7 +83,7 @@ def init_settings():
     conf_utils.update_obj_from_dict(settings, config)
 
 
-def init_logging():
+def init_logging() -> None:
     global logger
 
     settings.logging['disable_existing_loggers'] = False
@@ -100,10 +103,10 @@ def init_logging():
     logger.info('using config from %s', options.config_file)
 
 
-def init_signals():
+def init_signals() -> None:
     loop = asyncio.get_event_loop()
 
-    def bye_handler(sig, frame):
+    def bye_handler(sig: int, frame: Any) -> None:
         global _stopping
 
         if _stopping:
@@ -120,7 +123,7 @@ def init_signals():
     signal.signal(signal.SIGTERM, bye_handler)
 
 
-def init_configurables():
+def init_configurables() -> None:
     httpclient.AsyncHTTPClient.configure('tornado.simple_httpclient.SimpleAsyncHTTPClient', max_clients=1024)
 
     configurables = conf_utils.obj_to_dict(settings.configurables)
@@ -140,7 +143,7 @@ def init_configurables():
             logger.error('failed to configure class %s: %s', class_name, e, exc_info=True)
 
 
-def init_persist():
+async def init_persist() -> None:
     logger.info('initializing persistence')
     try:
         persist.get_value('device')
@@ -150,16 +153,31 @@ def init_persist():
         sys.exit(-1)
 
 
-async def cleanup_persist():
+async def cleanup_persist() -> None:
     persist.close()
 
 
-def init_events():
+async def init_events() -> None:
     logger.info('initializing events')
-    events.init()
+    await events.init()
 
 
-async def init_device():
+async def cleanup_events() -> None:
+    logger.info('cleaning up events')
+    await events.cleanup()
+
+
+async def init_sessions() -> None:
+    logger.info('initializing sessions')
+    await sessions.init()
+
+
+async def cleanup_sessions() -> None:
+    logger.info('cleaning up sessions')
+    await sessions.cleanup()
+
+
+async def init_device() -> None:
     logger.info('initializing device')
     device.load()
 
@@ -172,41 +190,43 @@ async def init_device():
         reverse.load()
 
 
-async def init_ports():
+async def init_ports() -> None:
     logger.info('initializing ports')
     vports.load()
     port_settings = settings.ports + vports.all_settings()
-    await ports.load(port_settings)
+
+    # Use raise_on_error=False because we prefer a partial successful startup rather than a failed one
+    await ports.load(port_settings, raise_on_error=False)
 
 
-async def cleanup_ports():
+async def cleanup_ports() -> None:
     logger.info('cleaning up ports')
     await ports.cleanup()
 
 
-async def init_slaves():
+async def init_slaves() -> None:
     if settings.slaves.enabled:
         logger.info('initializing slaves')
         await slaves_devices.load()
 
 
-async def cleanup_slaves():
+async def cleanup_slaves() -> None:
     if settings.slaves.enabled:
         logger.info('cleaning up slaves')
         await slaves_devices.cleanup()
 
 
-async def init_lib():
+async def init_lib() -> None:
     logger.info('initializing libs')
     await lib.init()
 
 
-async def cleanup_lib():
+async def cleanup_lib() -> None:
     logger.info('cleaning up libs')
     await lib.cleanup()
 
 
-async def init_main():
+async def init_main() -> None:
     logger.info('initializing main')
     await main.init()
 
@@ -222,31 +242,34 @@ async def init_main():
     main.set_ready()
 
 
-async def cleanup_main():
+async def cleanup_main() -> None:
     logger.info('cleaning up main')
     await main.cleanup()
 
 
-async def init():
+async def init() -> None:
     parse_args()
 
     init_settings()
     init_logging()
     init_signals()
     init_configurables()
-    init_persist()
-    init_events()
 
+    await init_persist()
+    await init_events()
+    await init_sessions()
     await init_device()
     await init_ports()
     await init_slaves()
-    await init_main()
     await init_lib()
+    await init_main()
 
 
-async def cleanup():
+async def cleanup() -> None:
     await cleanup_main()
+    await cleanup_lib()
     await cleanup_slaves()
     await cleanup_ports()
-    await cleanup_lib()
+    await cleanup_sessions()
+    await cleanup_events()
     await cleanup_persist()

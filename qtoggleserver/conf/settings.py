@@ -1,13 +1,14 @@
 
 import os as _os
+import typing as _typing
 
 
-debug = False
+debug: bool = False
 
-public_url = None
+public_url: _typing.Optional[str] = None
 
 
-logging = {
+logging: _typing.Dict[str, _typing.Any] = {
     'version': 1,
     'memory_logs_buffer_len': 10000,
     'formatters': {
@@ -33,73 +34,74 @@ logging = {
 
 
 class core:
-    tick_interval = 50
-    event_queue_size = 256
-    max_client_time_skew = 300
-    listen_support = True
-    sequences_support = True
-    ssl_support = False
-    virtual_ports = 1024
+    tick_interval: int = 50
+    event_queue_size: int = 256
+    max_client_time_skew: int = 300
+    listen_support: bool = True
+    sequences_support: bool = True
+    ssl_support: bool = False
+    virtual_ports: int = 1024
 
 
 class server:
-    addr = '0.0.0.0'
-    port = 8888
-    compress_response = False
+    addr: str = '0.0.0.0'
+    port: int = 8888
+    compress_response: bool = False
 
     class https:
-        cert_file = None
-        key_file = None
+        cert_file: _typing.Optional[str] = None
+        key_file: _typing.Optional[str] = None
 
 
 class persist:
-    driver = 'qtoggleserver.drivers.persist.redis.RedisDriver'
-    host = '127.0.0.1'
-    port = 6379
-    db = 0
+    driver: str = 'qtoggleserver.drivers.persist.redis.RedisDriver'
+    host: _typing.Optional[str] = '127.0.0.1'
+    port: _typing.Optional[int] = 6379
+    db: _typing.Union[str, int] = 0
 
 
 class system:
+
     class date:
-        set_cmd = None
-        set_format = '%Y-%m-%dT%H:%M:%SZ'
+        set_cmd: _typing.Optional[str] = None
+        set_format: _typing.Optional[str] = '%Y-%m-%dT%H:%M:%SZ'
 
     class timezone:
-        get_cmd = None
-        set_cmd = None
+        get_cmd: _typing.Optional[str] = None
+        set_cmd: _typing.Optional[str] = None
 
     class net:
         class wifi:
-            get_cmd = None
-            set_cmd = None
+            get_cmd: _typing.Optional[str] = None
+            set_cmd: _typing.Optional[str] = None
 
         class ip:
-            get_cmd = None
-            set_cmd = None
+            get_cmd: _typing.Optional[str] = None
+            set_cmd: _typing.Optional[str] = None
 
-    fwupdate_driver = None
+    fwupdate_driver: _typing.Optional[str] = None
 
 
 class frontend:
-    enabled = True
-    debug = False
+    enabled: bool = True
+    debug: bool = False
 
 
 class slaves:
-    enabled = False
-    timeout = 10
-    keepalive = 300
-    retry_interval = 5
-    retry_count = 3
+    enabled: bool = False
+    timeout: int = 10
+    keepalive: int = 300
+    retry_interval: int = 5
+    retry_count: int = 3
 
 
 class webhooks:
-    enabled = False
+    enabled: bool = False
 
 
 class reverse:
-    enabled = False
-    retry_interval = 5
+    enabled: bool = False
+    retry_interval: int = 5
 
 
 class configurables:
@@ -107,16 +109,16 @@ class configurables:
 
 
 class device_name:
-    get_cmd = None
-    set_cmd = None
+    get_cmd: _typing.Optional[str] = None
+    set_cmd: _typing.Optional[str] = None
 
 
-password_set_cmd = None
+password_set_cmd: _typing.Optional[str] = None
 
-event_handlers = []
+event_handlers: _typing.List[_typing.Dict[str, _typing.Any]] = []
 
-ports = []
+ports: _typing.List[_typing.Dict[str, _typing.Any]] = []
 
-port_mappings = {}
+port_mappings: _typing.Dict[str, str] = {}
 
-pkg_path = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+pkg_path: str = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))

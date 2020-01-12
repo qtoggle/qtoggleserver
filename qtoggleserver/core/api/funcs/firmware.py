@@ -3,6 +3,7 @@ import logging
 
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core.api import schema as core_api_schema
+from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.system import fwupdate
 
 
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def get_firmware(request):
+async def get_firmware(request: core_api.APIRequest) -> GenericJSONDict:
     current_version = await fwupdate.get_current_version()
     status = await fwupdate.get_status()
 
@@ -42,7 +43,7 @@ async def get_firmware(request):
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def patch_firmware(request, params):
+async def patch_firmware(request: core_api.APIRequest, params: GenericJSONDict) -> None:
     core_api_schema.validate(params, core_api_schema.PATCH_FIRMWARE)
 
     status = await fwupdate.get_status()

@@ -1,9 +1,11 @@
 
+from typing import Any, List, Optional
+
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.api import schema as core_api_schema
-
+from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.slaves import devices as slaves_devices
 
 from .. import exceptions
@@ -11,12 +13,12 @@ from . import schema as api_schema
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def get_slave_devices(request):
+async def get_slave_devices(request: core_api.APIRequest) -> List[GenericJSONDict]:
     return [slave.to_json() for slave in slaves_devices.get_all()]
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def post_slave_devices(request, params):
+async def post_slave_devices(request: core_api.APIRequest, params: GenericJSONDict) -> GenericJSONDict:
     core_api_schema.validate(params, api_schema.POST_SLAVE_DEVICES)
 
     scheme = params['scheme']
@@ -84,7 +86,7 @@ async def post_slave_devices(request, params):
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def patch_slave_device(request, name, params):
+async def patch_slave_device(request: core_api.APIRequest, name: str, params: GenericJSONDict) -> None:
     core_api_schema.validate(params, api_schema.PATCH_SLAVE_DEVICE)
 
     slave = slaves_devices.get(name)
@@ -127,7 +129,13 @@ async def patch_slave_device(request, name, params):
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def slave_device_forward(request, name, method, path, params=None, internal_use=False):
+async def slave_device_forward(request: core_api.APIRequest,
+                               name: str,
+                               method: str,
+                               path: str,
+                               params: Optional[GenericJSONDict] = None,
+                               internal_use: bool = False) -> Any:
+
     slave = slaves_devices.get(name)
 
     if not slave:
@@ -162,7 +170,7 @@ async def slave_device_forward(request, name, method, path, params=None, interna
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def delete_slave_device(request, name):
+async def delete_slave_device(request: core_api.APIRequest, name: str) -> None:
     slave = slaves_devices.get(name)
     if not slave:
         raise core_api.APIError(404, 'no such device')
@@ -171,7 +179,7 @@ async def delete_slave_device(request, name):
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NONE)
-async def post_slave_device_events(request, name, params):
+async def post_slave_device_events(request: core_api.APIRequest, name: str, params: GenericJSONDict) -> None:
     slave = slaves_devices.get(name)
     if not slave:
         raise core_api.APIError(404, 'no such device')

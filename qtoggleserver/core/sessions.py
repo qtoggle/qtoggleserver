@@ -1,27 +1,32 @@
 
+from __future__ import annotations
+
 import asyncio
-
-import time
 import logging
+import time
 
+from typing import Dict, List, Optional
+
+from qtoggleserver.core import events as core_events
 from qtoggleserver.conf import settings
 
 
 logger = logging.getLogger(__name__)
 
-_sessions_by_id = {}
+_sessions_by_id: Dict[str, Session] = {}
+_sessions_event_handler: Optional[SessionsEventHandler] = None
 
 
 class Session:
-    def __init__(self, session_id):
-        self.id = session_id
-        self.accessed = 0
-        self.timeout = 0
-        self.access_level = 0
-        self.future = None
-        self.queue = []
+    def __init__(self, session_id: str) -> None:
+        self.id: str = session_id
+        self.accessed: int = 0
+        self.timeout: int = 0
+        self.access_level: int = 0
+        self.future: Optional[asyncio.Future] = None
+        self.queue: List[core_events.Event] = []
 
-    def reset_and_wait(self, timeout, access_level):
+    def reset_and_wait(self, timeout: int, access_level: int) -> asyncio.Future:
         logger.debug('resetting %s (timeout=%s, access_level=%s)', self, timeout, access_level)
 
         if self.future:
@@ -41,13 +46,13 @@ class Session:
 
         return future
 
-    def is_empty(self):
+    def is_empty(self) -> bool:
         return len(self.queue) == 0
 
-    def is_active(self):
+    def is_active(self) -> bool:
         return self.future is not None
 
-    def respond(self):
+    def respond(self) -> None:
         events = list(self.queue)
         self.queue = []
         if not self.future:
@@ -56,7 +61,7 @@ class Session:
         self.future.set_result(events)
         self.future = None
 
-    def push(self, event):
+    def push(self, event: core_events.Event) -> None:
         # Deduplicate events
         while True:
             duplicates = [e for e in self.queue if event.is_duplicate(e)]
@@ -74,11 +79,23 @@ class Session:
 
         self.queue.insert(0, event)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'session {self.id}'
 
 
-def get(session_id):
+class SessionsEventHandler(core_events.Handler):
+    def __init__(self, sessions_by_id: Dict[str, Session]) -> None:
+        self._sessions_by_id: Dict[str, Session] = sessions_by_id
+
+    async def handle_event(self, event: core_events.Event) -> None:
+        for session in self._sessions_by_id.values():
+            if session.access_level < event.REQUIRED_ACCESS:
+                continue
+
+            session.push(event)
+
+
+def get(session_id: str) -> Session:
     session = _sessions_by_id.get(session_id)
     if not session:
         session = Session(session_id)
@@ -88,30 +105,13 @@ def get(session_id):
     return session
 
 
-def push(event):
-    logger.debug('%s triggered', event)
-
-    for session in _sessions_by_id.values():
-        if session.access_level < event.REQUIRED_ACCESS:
-            continue
-
-        session.push(event)
-
-
-def respond_non_empty():
-    for session in _sessions_by_id.values():
-        if session.is_empty():
-            continue
-
-        if not session.is_active():
-            continue
-
-        session.respond()
-
-
-def cleanup():
+def update() -> None:
     now = time.time()
     for session_id, session in list(_sessions_by_id.items()):
+        if not session.is_empty() and session.is_active():
+            session.respond()
+            continue
+
         if now - session.accessed > session.timeout:
             if session.is_active():
                 logger.debug('%s keep-alive', session)
@@ -120,3 +120,14 @@ def cleanup():
             else:
                 logger.debug('%s expired', session)
                 _sessions_by_id.pop(session_id)
+
+
+async def init() -> None:
+    global _sessions_event_handler
+
+    _sessions_event_handler = SessionsEventHandler(_sessions_by_id)
+    core_events.register_handler(_sessions_event_handler)
+
+
+async def cleanup() -> None:
+    pass

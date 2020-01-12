@@ -1,6 +1,10 @@
 
+from __future__ import annotations
+
 import abc
 import logging
+
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 from qtoggleserver import utils
 from qtoggleserver.conf import settings
@@ -8,38 +12,46 @@ from qtoggleserver.conf import utils as conf_utils
 from qtoggleserver.utils import json as json_utils
 
 
+Id = Union[str, int]  # TODO: move to persist.typing module
+Record = Dict[str, Any]
+
+
 logger = logging.getLogger(__name__)
 
-_driver = None
+_driver: Optional[BaseDriver] = None
 
 
 class BaseDriver(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def query(self, collection, fields, filt, limit):
+    def query(self, collection: str,
+              fields: Optional[List[str]],
+              filt: Dict[str, Any],
+              limit: Optional[int]) -> Iterable[Record]:
+
         return []
 
     @abc.abstractmethod
-    def insert(self, collection, record):
+    def insert(self, collection: str, record: Record) -> Id:
         return '1'  # Returns the inserted record id
 
     @abc.abstractmethod
-    def update(self, collection, record_part, filt):
+    def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
         return 0  # Returns the number of updated records
 
     @abc.abstractmethod
-    def replace(self, collection, _id, record, upsert):
+    def replace(self, collection: str, _id: Id, record: Record, upsert: bool) -> int:
         return False  # Returns True if replaced
 
     @abc.abstractmethod
-    def remove(self, collection, filt):
+    def remove(self, collection: str, filt: Dict[str, Any]) -> int:
         return 0  # Returns the number of removed records
 
     @abc.abstractmethod
-    def close(self):
+    def close(self) -> None:
         pass
 
 
-def _get_driver():
+def _get_driver() -> BaseDriver:
     global _driver
 
     if _driver is None:
@@ -59,7 +71,11 @@ def _get_driver():
     return _driver
 
 
-def query(collection, fields=None, filt=None, limit=None):
+def query(collection: str,
+          fields: Optional[List[str]] = None,
+          filt: Optional[Dict[str, Any]] = None,
+          limit: Optional[int] = None) -> Iterable[Record]:
+
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('querying %s (%s) where %s', collection, json_utils.dumps(fields) if fields else 'all fields',
                      json_utils.dumps(filt))
@@ -67,7 +83,7 @@ def query(collection, fields=None, filt=None, limit=None):
     return _get_driver().query(collection, fields, filt or {}, limit)
 
 
-def get(collection, _id):
+def get(collection: str, _id: Id) -> Optional[Record]:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('getting record with id %s from %s', _id, collection)
 
@@ -78,7 +94,7 @@ def get(collection, _id):
     return None
 
 
-def get_value(name, default=None):
+def get_value(name: str, default: Optional[Any] = None) -> Any:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('getting value of %s', name)
 
@@ -97,7 +113,7 @@ def get_value(name, default=None):
     return record['value']
 
 
-def set_value(name, value):
+def set_value(name: str, value: Any) -> None:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('setting %s to %s', name, json_utils.dumps(value))
 
@@ -105,14 +121,14 @@ def set_value(name, value):
     _get_driver().replace(name, '', record, upsert=True)
 
 
-def insert(collection, record):
+def insert(collection: str, record: Record) -> Id:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('inserting %s into %s', json_utils.dumps(record), collection)
 
     return _get_driver().insert(collection, record)
 
 
-def update(collection, record_part, filt=None):
+def update(collection: str, record_part: Record, filt: Optional[Dict[str, Any]] = None) -> int:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('updating %s where %s with %s', collection, json_utils.dumps(filt or {}),
                      json_utils.dumps(record_part))
@@ -124,7 +140,7 @@ def update(collection, record_part, filt=None):
     return count
 
 
-def replace(collection, _id, record, upsert=True):
+def replace(collection: str, _id: Id, record: Record, upsert: bool = True) -> int:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('replacing record with id %s with %s in %s', _id, json_utils.dumps(record), collection)
 
@@ -137,7 +153,7 @@ def replace(collection, _id, record, upsert=True):
     return replaced
 
 
-def remove(collection, filt=None):
+def remove(collection: str, filt: Optional[Dict[str, Any]] = None) -> int:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('removing from %s where %s', collection, json_utils.dumps(filt or {}))
 
@@ -148,7 +164,7 @@ def remove(collection, filt=None):
     return count
 
 
-def close():
+def close() -> None:
     logger.debug('closing')
 
     return _get_driver().close()
