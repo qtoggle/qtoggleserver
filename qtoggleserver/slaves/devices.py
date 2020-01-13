@@ -14,7 +14,6 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 from qtoggleserver import persist
-from qtoggleserver import utils
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
@@ -24,6 +23,7 @@ from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.api import schema as core_api_schema
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, NullablePortValue
+from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
 
@@ -1351,7 +1351,8 @@ class Slave(logging_utils.LoggableMixin):
         if self._provisioning_timeout_task:
             self._provisioning_timeout_task.cancel()
 
-        self._provisioning_timeout_task = asyncio.create_task(utils.await_later(delay, self._provision_and_update))
+        future = asyncio_utils.await_later(delay, self._provision_and_update)
+        self._provisioning_timeout_task = asyncio.create_task(future)
 
     async def _provision_and_update(self) -> None:
         self.debug('starting provisioning & update procedure')
