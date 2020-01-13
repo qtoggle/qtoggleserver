@@ -276,7 +276,7 @@ class SlavePort(core_ports.BasePort):
     async def write_value(self, value: PortValue) -> None:
         if self._slave.is_online():
             try:
-                await self._slave.api_call('PATCH', f'/ports/{self._remote_id}', value)
+                await self._slave.api_call('PATCH', f'/ports/{self._remote_id}/value', value)
 
             except core_responses.HTTPError as e:
                 if e.code == 502 and e.msg.startswith('port error:'):
@@ -304,7 +304,7 @@ class SlavePort(core_ports.BasePort):
         try:
             await self._slave.api_call(
                 'POST',
-                f'/ports/{self._remote_id}',
+                f'/ports/{self._remote_id}/sequence',
                 {'values': values, 'delays': delays, 'repeat': repeat}
             )
             self.debug('sequence sent remotely')
