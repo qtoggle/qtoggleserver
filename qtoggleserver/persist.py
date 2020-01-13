@@ -7,7 +7,7 @@ import logging
 from typing import Any, Dict, Iterable, List, Optional, Union
 
 from qtoggleserver.conf import settings
-from qtoggleserver.conf import utils as conf_utils
+from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import json as json_utils
 

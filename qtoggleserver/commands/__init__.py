@@ -13,7 +13,6 @@ from qtoggleserver import lib
 from qtoggleserver import persist
 from qtoggleserver import version
 from qtoggleserver.conf import settings
-from qtoggleserver.conf import utils as conf_utils
 from qtoggleserver.core import device
 from qtoggleserver.core import events
 from qtoggleserver.core import main
@@ -23,6 +22,7 @@ from qtoggleserver.core import sessions
 from qtoggleserver.core import vports
 from qtoggleserver.core import webhooks
 from qtoggleserver.slaves import devices as slaves_devices
+from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import logging as logging_utils
 
