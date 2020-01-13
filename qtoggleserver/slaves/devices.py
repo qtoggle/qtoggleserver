@@ -45,24 +45,26 @@ logger = logging.getLogger(__name__)
 
 
 class Slave(LoggableMixin):
-    def __init__(self,
-                 name: Optional[str],
-                 scheme: str,
-                 host: str,
-                 port: int,
-                 path: str,
-                 poll_interval: Optional[int] = None,
-                 listen_enabled: bool = True,
-                 admin_password: Optional[str] = None,
-                 admin_password_hash: Optional[str] = None,
-                 last_sync: int = -1,
-                 attrs: Optional[Attributes] = None,
-                 webhooks: Optional[GenericJSONDict] = None,
-                 reverse: Optional[GenericJSONDict] = None,
-                 provisioning_attrs: Optional[Set[str]] = None,
-                 provisioning_webhooks: Optional[Set[str]] = None,
-                 provisioning_reverse: Optional[Set[str]] = None,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        name: Optional[str],
+        scheme: str,
+        host: str,
+        port: int,
+        path: str,
+        poll_interval: Optional[int] = None,
+        listen_enabled: bool = True,
+        admin_password: Optional[str] = None,
+        admin_password_hash: Optional[str] = None,
+        last_sync: int = -1,
+        attrs: Optional[Attributes] = None,
+        webhooks: Optional[GenericJSONDict] = None,
+        reverse: Optional[GenericJSONDict] = None,
+        provisioning_attrs: Optional[Set[str]] = None,
+        provisioning_webhooks: Optional[Set[str]] = None,
+        provisioning_reverse: Optional[Set[str]] = None,
+        **kwargs
+    ) -> None:
 
         # The enabled value comes with kwargs but is ignored, as the slave will be explicitly enabled afterwards
 
@@ -1335,11 +1337,13 @@ class Slave(LoggableMixin):
         await self.fetch_and_update_device()
         await self.fetch_and_update_ports()
 
-    async def intercept_request(self,
-                                method: str,
-                                path: str,
-                                params: Any,
-                                request: core_api.APIRequest) -> Tuple[bool, Any]:
+    async def intercept_request(
+        self,
+        method: str,
+        path: str,
+        params: Any,
+        request: core_api.APIRequest
+    ) -> Tuple[bool, Any]:
 
         # Intercept API calls to device attributes, webhooks and reverse parameters, for devices that are offline
         if self._online:
@@ -1464,14 +1468,16 @@ def get(name: str) -> Optional[Slave]:
     return _slaves_by_name.get(name)
 
 
-async def add(scheme: str,
-              host: str,
-              port: int,
-              path: str,
-              poll_interval: Optional[int],
-              listen_enabled: bool,
-              admin_password: Optional[str] = None,
-              admin_password_hash: Optional[str] = None) -> Slave:
+async def add(
+    scheme: str,
+    host: str,
+    port: int,
+    path: str,
+    poll_interval: Optional[int],
+    listen_enabled: bool,
+    admin_password: Optional[str] = None,
+    admin_password_hash: Optional[str] = None
+) -> Slave:
 
     slave = Slave(None, scheme, host, port, path, poll_interval, listen_enabled, admin_password, admin_password_hash)
 

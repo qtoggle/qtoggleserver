@@ -15,12 +15,14 @@ class SequenceError(Exception):
 
 
 class Sequence:
-    def __init__(self,
-                 values: List[PortValue],
-                 delays: List[int],
-                 repeat: int,
-                 callback: Callable,
-                 finish_callback: Callable) -> None:
+    def __init__(
+        self,
+        values: List[PortValue],
+        delays: List[int],
+        repeat: int,
+        callback: Callable,
+        finish_callback: Callable
+    ) -> None:
 
         self._values: List[PortValue] = values
         self._delays: List[int] = delays

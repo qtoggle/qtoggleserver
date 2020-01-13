@@ -23,11 +23,13 @@ class RedisDriver(BaseDriver):
         self._client: redis.Redis = redis.StrictRedis(host=host, port=port, db=db,
                                                       encoding='utf8', decode_responses=True)
 
-    def query(self,
-              collection: str,
-              fields: Optional[List[str]],
-              filt: Dict[str, Any],
-              limit: Optional[int]) -> Iterable[Record]:
+    def query(
+        self,
+        collection: str,
+        fields: Optional[List[str]],
+        filt: Dict[str, Any],
+        limit: Optional[int]
+    ) -> Iterable[Record]:
 
         db_records = []
 

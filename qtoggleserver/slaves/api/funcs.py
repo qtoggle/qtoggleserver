@@ -129,12 +129,14 @@ async def patch_slave_device(request: core_api.APIRequest, name: str, params: Ge
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def slave_device_forward(request: core_api.APIRequest,
-                               name: str,
-                               method: str,
-                               path: str,
-                               params: Optional[GenericJSONDict] = None,
-                               internal_use: bool = False) -> Any:
+async def slave_device_forward(
+    request: core_api.APIRequest,
+    name: str,
+    method: str,
+    path: str,
+    params: Optional[GenericJSONDict] = None,
+    internal_use: bool = False
+) -> Any:
 
     slave = slaves_devices.get(name)
 

@@ -8,8 +8,8 @@ from typing import Any, List, Optional, Set, Tuple
 
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
-from qtoggleserver.core.typing import (Attribute, Attributes, AttributeDefinitions, GenericJSONDict, NullablePortValue,
-                                       PortValue)
+from qtoggleserver.core.typing import Attribute, Attributes, AttributeDefinitions, GenericJSONDict
+from qtoggleserver.core.typing import NullablePortValue, PortValue
 
 from . import exceptions
 

@@ -180,10 +180,12 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         return await self._run_cmd_async('read', self.get_address(), handle, notify_handle=None,
                                          data=None, timeout=self.CMD_TIMEOUT, retry_count=retry_count)
 
-    async def write(self,
-                    handle: int,
-                    data: bytes,
-                    retry_count: Optional[int] = None) -> Tuple[Optional[bytes], Optional[bytes]]:
+    async def write(
+        self,
+        handle: int,
+        data: bytes,
+        retry_count: Optional[int] = None
+    ) -> Tuple[Optional[bytes], Optional[bytes]]:
 
         if retry_count is None:
             retry_count = self.RETRY_COUNT
@@ -191,12 +193,14 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         return await self._run_cmd_async('write', self.get_address(), handle, notify_handle=None,
                                          data=data, timeout=self.CMD_TIMEOUT, retry_count=retry_count)
 
-    async def write_notify(self,
-                           handle: int,
-                           notify_handle: int,
-                           data: bytes,
-                           timeout: Optional[int] = None,
-                           retry_count: int = None) -> Tuple[Optional[bytes], Optional[bytes]]:
+    async def write_notify(
+        self,
+        handle: int,
+        notify_handle: int,
+        data: bytes,
+        timeout: Optional[int] = None,
+        retry_count: int = None
+    ) -> Tuple[Optional[bytes], Optional[bytes]]:
 
         if retry_count is None:
             retry_count = self.RETRY_COUNT
@@ -207,13 +211,15 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         return await self._run_cmd_async('write', self.get_address(), handle, notify_handle=notify_handle,
                                          data=data, timeout=timeout, retry_count=retry_count)
 
-    def _run_cmd(self,
-                 cmd: str,
-                 address: str,
-                 handle: int,
-                 notify_handle: Optional[int],
-                 data: Optional[bytes],
-                 timeout: Optional[int]) -> Tuple[Optional[bytes], Optional[bytes]]:
+    def _run_cmd(
+        self,
+        cmd: str,
+        address: str,
+        handle: int,
+        notify_handle: Optional[int],
+        data: Optional[bytes],
+        timeout: Optional[int]
+    ) -> Tuple[Optional[bytes], Optional[bytes]]:
 
         start_time = time.time()
         response = None
@@ -267,14 +273,16 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
         return response, notification_data
 
-    async def _run_cmd_async(self,
-                             cmd: str,
-                             address: str,
-                             handle: int,
-                             notify_handle: Optional[int],
-                             data: Optional[bytes],
-                             timeout: Optional[int],
-                             retry_count: int) -> Tuple[Optional[bytes], Optional[bytes]]:
+    async def _run_cmd_async(
+        self,
+        cmd: str,
+        address: str,
+        handle: int,
+        notify_handle: Optional[int],
+        data: Optional[bytes],
+        timeout: Optional[int],
+        retry_count: int
+    ) -> Tuple[Optional[bytes], Optional[bytes]]:
 
         retry = 1
         while True:

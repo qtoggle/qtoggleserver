@@ -17,14 +17,16 @@ class VirtualPort(core_ports.Port):
     WRITABLE = True
     VIRTUAL = True
 
-    def __init__(self,
-                 port_id: str,
-                 _type: str,
-                 _min: Optional[float],
-                 _max: Optional[float],
-                 integer: Optional[bool],
-                 step: Optional[float],
-                 choices: Optional[PortValueChoices]) -> None:
+    def __init__(
+        self,
+        port_id: str,
+        _type: str,
+        _min: Optional[float],
+        _max: Optional[float],
+        integer: Optional[bool],
+        step: Optional[float],
+        choices: Optional[PortValueChoices]
+    ) -> None:
 
         super().__init__(port_id)
 
@@ -47,13 +49,15 @@ class VirtualPort(core_ports.Port):
         self._virtual_value = value
 
 
-def add(port_id: str,
-        _type: str,
-        _min: Optional[float],
-        _max: Optional[float],
-        integer: Optional[bool],
-        step: Optional[float],
-        choices: Optional[PortValueChoices]) -> None:
+def add(
+    port_id: str,
+    _type: str,
+    _min: Optional[float],
+    _max: Optional[float],
+    integer: Optional[bool],
+    step: Optional[float],
+    choices: Optional[PortValueChoices]
+) -> None:
 
     settings = {
         'id': port_id,

@@ -23,10 +23,12 @@ _driver: Optional[BaseDriver] = None
 
 class BaseDriver(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def query(self, collection: str,
-              fields: Optional[List[str]],
-              filt: Dict[str, Any],
-              limit: Optional[int]) -> Iterable[Record]:
+    def query(
+        self, collection: str,
+        fields: Optional[List[str]],
+        filt: Dict[str, Any],
+        limit: Optional[int]
+    ) -> Iterable[Record]:
 
         return []
 
@@ -71,10 +73,12 @@ def _get_driver() -> BaseDriver:
     return _driver
 
 
-def query(collection: str,
-          fields: Optional[List[str]] = None,
-          filt: Optional[Dict[str, Any]] = None,
-          limit: Optional[int] = None) -> Iterable[Record]:
+def query(
+    collection: str,
+    fields: Optional[List[str]] = None,
+    filt: Optional[Dict[str, Any]] = None,
+    limit: Optional[int] = None
+) -> Iterable[Record]:
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('querying %s (%s) where %s', collection, json_utils.dumps(fields) if fields else 'all fields',

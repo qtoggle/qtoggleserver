@@ -39,14 +39,16 @@ class WebhooksRequest:
 
 
 class Webhooks:
-    def __init__(self,
-                 scheme: Optional[str] = None,
-                 host: Optional[str] = None,
-                 port: Optional[int] = None,
-                 path: Optional[str] = None,
-                 timeout: Optional[int] = None,
-                 retries: Optional[int] = None,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        scheme: Optional[str] = None,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        path: Optional[str] = None,
+        timeout: Optional[int] = None,
+        retries: Optional[int] = None,
+        **kwargs
+    ) -> None:
 
         # The enabled value comes with kwargs but is ignored; webhooks will be explicitly enabled afterwards
 
@@ -194,14 +196,16 @@ def get() -> Optional[Webhooks]:
     return _webhooks
 
 
-def setup(enabled: bool,
-          scheme: Optional[str] = None,
-          host: Optional[str] = None,
-          port: Optional[int] = None,
-          path: Optional[str] = None,
-          timeout: Optional[int] = None,
-          retries: Optional[int] = None,
-          **kwargs) -> None:
+def setup(
+    enabled: bool,
+    scheme: Optional[str] = None,
+    host: Optional[str] = None,
+    port: Optional[int] = None,
+    path: Optional[str] = None,
+    timeout: Optional[int] = None,
+    retries: Optional[int] = None,
+    **kwargs
+) -> None:
 
     global _webhooks
 

@@ -249,10 +249,12 @@ def _validate_schema(json: Any, schema: GenericJSONDict) -> Optional[Tuple[str, 
                     return 'invalid', None
 
 
-def validate(params: Any, schema: GenericJSONDict,
-             invalid_field_msg: Union[str, Callable] = 'invalid field: {field}',
-             unexpected_field_msg: Union[str, Callable] = 'invalid request',
-             invalid_request_msg: str = 'invalid request') -> None:
+def validate(
+    params: Any, schema: GenericJSONDict,
+    invalid_field_msg: Union[str, Callable] = 'invalid field: {field}',
+    unexpected_field_msg: Union[str, Callable] = 'invalid request',
+    invalid_request_msg: str = 'invalid request'
+) -> None:
 
     validation_error = _validate_schema(params, schema)
     if validation_error:

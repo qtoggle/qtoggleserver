@@ -19,8 +19,8 @@ from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import sequences as core_sequences
-from qtoggleserver.core.typing import (Attribute, Attributes, AttributeDefinitions, GenericJSONDict, NullablePortValue,
-                                       PortValue)
+from qtoggleserver.core.typing import Attribute, Attributes, AttributeDefinitions, GenericJSONDict
+from qtoggleserver.core.typing import NullablePortValue, PortValue
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.logging import LoggableMixin
 

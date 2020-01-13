@@ -50,15 +50,17 @@ class UnauthorizedConsumerRequestError(ReverseError):
 
 
 class Reverse:
-    def __init__(self,
-                 scheme: Optional[str] = None,
-                 host: Optional[str] = None,
-                 port: Optional[int] = None,
-                 path: Optional[str] = None,
-                 device_id: Optional[str] = None,
-                 password_hash: Optional[str] = None,
-                 timeout: Optional[int] = None,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        scheme: Optional[str] = None,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        path: Optional[str] = None,
+        device_id: Optional[str] = None,
+        password_hash: Optional[str] = None,
+        timeout: Optional[int] = None,
+        **kwargs
+    ) -> None:
 
         # The enabled value comes with kwargs but is ignored; the reverse object will be explicitly enabled afterwards
 
@@ -293,15 +295,17 @@ def get() -> Optional[Reverse]:
     return _reverse
 
 
-def setup(enabled: bool,
-          scheme: Optional[str] = None,
-          host: Optional[str] = None,
-          port: Optional[int] = None,
-          path: Optional[str] = None,
-          device_id: Optional[str] = None,
-          password_hash: Optional[str] = None,
-          timeout: Optional[int] = None,
-          **kwargs) -> None:
+def setup(
+    enabled: bool,
+    scheme: Optional[str] = None,
+    host: Optional[str] = None,
+    port: Optional[int] = None,
+    path: Optional[str] = None,
+    device_id: Optional[str] = None,
+    password_hash: Optional[str] = None,
+    timeout: Optional[int] = None,
+    **kwargs
+) -> None:
 
     global _reverse
 
