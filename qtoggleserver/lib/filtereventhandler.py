@@ -205,7 +205,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
     def _accepts_attrs(
         attr_names: Set[str],
         filter_attrs: Attributes,
-        filter_attr_transitions: Dict[str,Tuple[Attribute, Attribute]],
+        filter_attr_transitions: Dict[str, Tuple[Attribute, Attribute]],
         old_attrs: Attributes,
         new_attrs: Attributes
     ) -> bool:
