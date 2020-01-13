@@ -7,7 +7,19 @@ from typing import Any, Dict
 import pyhocon
 
 
-config_factory = pyhocon.ConfigFactory()
+_config_factory = pyhocon.ConfigFactory()
+
+
+class ConfigurableMixin:
+    @classmethod
+    def configure(cls, **kwargs) -> None:
+        for name, value in kwargs.items():
+            conf_method = getattr(cls, f'configure_{name.lower()}', None)
+            if conf_method:
+                conf_method(value)
+
+            else:
+                setattr(cls, name.upper(), value)
 
 
 def obj_to_dict(obj: Any) -> Dict[str, Any]:
@@ -38,11 +50,11 @@ def update_obj_from_dict(obj: Any, d: OrderedDict) -> None:
 
 
 def config_from_file(file: str) -> pyhocon.ConfigTree:
-    return config_factory.parse_file(file)
+    return _config_factory.parse_file(file)
 
 
 def config_from_dict(d: Dict[str, Any]) -> pyhocon.ConfigTree:
-    return config_factory.from_dict(d)
+    return _config_factory.from_dict(d)
 
 
 def config_to_dict(config: pyhocon.ConfigTree) -> OrderedDict:

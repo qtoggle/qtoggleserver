@@ -11,7 +11,7 @@ import threading
 from typing import Any, Callable, Dict, List, Optional
 
 from qtoggleserver.core import ports as core_ports
-from qtoggleserver.utils import configurable as configurable_utils
+from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import logging as logging_utils
 
 from . import add_cleanup_hook
@@ -75,7 +75,7 @@ class ThreadedRunner(threading.Thread, metaclass=abc.ABCMeta):
         await self._stopped_future
 
 
-class Peripheral(configurable_utils.ConfigurableMixin, logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
+class Peripheral(conf_utils.ConfigurableMixin, logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     RUNNER_CLASS = ThreadedRunner
     RUNNER_QUEUE_SIZE = 8
 
