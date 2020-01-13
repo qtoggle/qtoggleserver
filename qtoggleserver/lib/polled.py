@@ -137,8 +137,12 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
                 else:
                     unit = 'seconds'
 
-            attrdef.update(unit=unit, step=self.READ_INTERVAL_STEP,
-                           min=self.READ_INTERVAL_MIN, max=self.READ_INTERVAL_MAX)
+            attrdef.update(
+                unit=unit,
+                step=self.READ_INTERVAL_STEP,
+                min=self.READ_INTERVAL_MIN,
+                max=self.READ_INTERVAL_MAX
+            )
 
             self.ADDITIONAL_ATTRDEFS = dict(self.ADDITIONAL_ATTRDEFS, read_interval=attrdef)
 

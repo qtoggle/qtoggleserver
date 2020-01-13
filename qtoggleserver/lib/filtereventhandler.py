@@ -194,8 +194,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
     def _accepts_attrs(
         attr_names: Set[str],
         filter_attrs: Attributes,
-        filter_attr_transitions: Dict[str,
-        Tuple[Attribute, Attribute]],
+        filter_attr_transitions: Dict[str,Tuple[Attribute, Attribute]],
         old_attrs: Attributes,
         new_attrs: Attributes
     ) -> bool:
@@ -224,8 +223,13 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         return True
 
     async def accepts_device(self, event: core_events.Event, old_attrs: Attributes, new_attrs: Attributes) -> bool:
-        return self._accepts_attrs(self._filter_device_attr_names, self._filter_device_attrs,
-                                   self._filter_device_attr_transitions, old_attrs, new_attrs)
+        return self._accepts_attrs(
+            self._filter_device_attr_names,
+            self._filter_device_attrs,
+            self._filter_device_attr_transitions,
+            old_attrs,
+            new_attrs
+        )
 
     async def accepts_port_value(
         self,
@@ -267,12 +271,22 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         if not await self.accepts_port_value(event, value_pair):
             return False
 
-        return self._accepts_attrs(self._filter_port_attr_names, self._filter_port_attrs,
-                                   self._filter_port_attr_transitions, old_attrs, new_attrs)
+        return self._accepts_attrs(
+            self._filter_port_attr_names,
+            self._filter_port_attrs,
+            self._filter_port_attr_transitions,
+            old_attrs,
+            new_attrs
+        )
 
     async def accepts_slave(self, event: core_events.Event, old_attrs: Attributes, new_attrs: Attributes) -> bool:
-        return self._accepts_attrs(self._filter_slave_attr_names, self._filter_slave_attrs,
-                                   self._filter_slave_attr_transitions, old_attrs, new_attrs)
+        return self._accepts_attrs(
+            self._filter_slave_attr_names,
+            self._filter_slave_attrs,
+            self._filter_slave_attr_transitions,
+            old_attrs,
+            new_attrs
+        )
 
     async def accepts(
         self,
@@ -312,8 +326,15 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         (value_pair, old_attrs, new_attrs,
          changed_attrs, added_attrs, removed_attrs) = await self._update_from_event(event)
 
-        accepted = await self.accepts(event, value_pair, old_attrs, new_attrs,
-                                      changed_attrs, added_attrs, removed_attrs)
+        accepted = await self.accepts(
+            event,
+            value_pair,
+            old_attrs,
+            new_attrs,
+            changed_attrs,
+            added_attrs,
+            removed_attrs
+        )
 
         if not accepted:
             self.logger.debug('skipping event %s', event)
@@ -333,8 +354,15 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 await self.on_value_change(event, event.get_port(), old_value, new_value, new_attrs)
 
             elif isinstance(event, core_events.PortUpdate):
-                await self.on_port_update(event, event.get_port(), old_attrs, new_attrs,
-                                          changed_attrs, added_attrs, removed_attrs)
+                await self.on_port_update(
+                    event,
+                    event.get_port(),
+                    old_attrs,
+                    new_attrs,
+                    changed_attrs,
+                    added_attrs,
+                    removed_attrs
+                )
 
             elif isinstance(event, core_events.PortAdd):
                 await self.on_port_add(event, event.get_port(), new_attrs)
@@ -346,8 +374,15 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 await self.on_device_update(event, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs)
 
             elif isinstance(event, slaves_events.SlaveDeviceUpdate):
-                await self.on_slave_device_update(event, event.get_slave(), old_attrs, new_attrs,
-                                                  changed_attrs, added_attrs, removed_attrs)
+                await self.on_slave_device_update(
+                    event,
+                    event.get_slave(),
+                    old_attrs,
+                    new_attrs,
+                    changed_attrs,
+                    added_attrs,
+                    removed_attrs
+                )
 
             elif isinstance(event, slaves_events.SlaveDeviceAdd):
                 await self.on_slave_device_add(event, event.get_slave(), new_attrs)

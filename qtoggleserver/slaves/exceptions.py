@@ -54,10 +54,11 @@ class PortNotFound(SlaveError):
 
 
 def adapt_api_error(error: Exception) -> Exception:
-    if isinstance(error, (core_responses.HostUnreachable,
-                          core_responses.NetworkUnreachable,
-                          core_responses.UnresolvableHostname)):
-
+    if isinstance(error, (
+        core_responses.HostUnreachable,
+        core_responses.NetworkUnreachable,
+        core_responses.UnresolvableHostname
+    )):
         return core_api.APIError(502, 'unreachable')
 
     elif isinstance(error, core_responses.ConnectionRefused):

@@ -223,8 +223,11 @@ class APIHandler(BaseHandler):
         auth = self.request.headers.get('Authorization')
         if auth:
             try:
-                usr = core_api_auth.parse_auth_header(auth, core_api_auth.ORIGIN_CONSUMER,
-                                                      core_api_auth.consumer_password_hash_func)
+                usr = core_api_auth.parse_auth_header(
+                    auth,
+                    core_api_auth.ORIGIN_CONSUMER,
+                    core_api_auth.consumer_password_hash_func
+                )
 
             except core_api_auth.AuthError as e:
                 logger.warning(str(e))

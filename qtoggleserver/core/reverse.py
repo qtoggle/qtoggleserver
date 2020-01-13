@@ -189,8 +189,14 @@ class Reverse:
             headers['API-Call-Id'] = api_request_dict['api_call_id']
 
         http_client = AsyncHTTPClient()
-        request = HTTPRequest(url, 'POST', headers=headers, body=body_str,
-                              connect_timeout=self._timeout, request_timeout=self._timeout)
+        request = HTTPRequest(
+            url,
+            'POST',
+            headers=headers,
+            body=body_str,
+            connect_timeout=self._timeout,
+            request_timeout=self._timeout
+        )
 
         if api_response_dict:
             logger.debug('sending answer request to %s %s (API call id %s) to %s',
@@ -220,8 +226,10 @@ class Reverse:
             raise UnauthorizedConsumerRequestError('Missing authorization header')
 
         try:
-            usr = core_api_auth.parse_auth_header(auth, core_api_auth.ORIGIN_CONSUMER,
-                                                  core_api_auth.consumer_password_hash_func)
+            usr = core_api_auth.parse_auth_header(
+                auth, core_api_auth.ORIGIN_CONSUMER,
+                core_api_auth.consumer_password_hash_func
+            )
 
         except core_api_auth.AuthError as e:
             raise UnauthorizedConsumerRequestError(str(e)) from e

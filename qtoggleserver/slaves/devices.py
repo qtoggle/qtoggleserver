@@ -25,7 +25,7 @@ from qtoggleserver.core.api import schema as core_api_schema
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, NullablePortValue
 from qtoggleserver.utils import json as json_utils
-from qtoggleserver.utils.logging import  LoggableMixin
+from qtoggleserver.utils.logging import LoggableMixin
 
 from . import events
 from . import exceptions
@@ -205,8 +205,15 @@ class Slave(LoggableMixin):
                     await remove(self)
 
                     # Add the slave back
-                    future = add(self._scheme, self._host, self._port, self._path, self._poll_interval,
-                                 self._listen_enabled, admin_password_hash=self._admin_password_hash)
+                    future = add(
+                        self._scheme,
+                        self._host,
+                        self._port,
+                        self._path,
+                        self._poll_interval,
+                        self._listen_enabled,
+                        admin_password_hash=self._admin_password_hash
+                    )
 
                     asyncio.create_task(future)
 
@@ -496,8 +503,14 @@ class Slave(LoggableMixin):
             'Authorization': core_api_auth.make_auth_header(core_api_auth.ORIGIN_CONSUMER,
                                                             username='admin', password_hash=self._admin_password_hash)
         }
-        request = HTTPRequest(url, method, headers=headers, body=body_str,
-                              connect_timeout=settings.slaves.timeout, request_timeout=settings.slaves.timeout)
+        request = HTTPRequest(
+            url,
+            method,
+            headers=headers,
+            body=body_str,
+            connect_timeout=settings.slaves.timeout,
+            request_timeout=settings.slaves.timeout
+        )
 
         self.debug('calling api function %s %s', method, path)
 
@@ -710,9 +723,13 @@ class Slave(LoggableMixin):
                 }
 
                 http_client = AsyncHTTPClient()
-                request = HTTPRequest(url, 'GET', headers=headers,
-                                      connect_timeout=settings.slaves.timeout,
-                                      request_timeout=settings.slaves.timeout + settings.slaves.keepalive)
+                request = HTTPRequest(
+                    url,
+                    'GET',
+                    headers=headers,
+                    connect_timeout=settings.slaves.timeout,
+                    request_timeout=settings.slaves.timeout + settings.slaves.keepalive
+                )
 
                 self.debug('calling api function GET /listen')
 

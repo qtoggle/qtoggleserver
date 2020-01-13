@@ -302,8 +302,11 @@ class SlavePort(core_ports.BasePort):
             raise exceptions.DeviceOffline(self._slave)
 
         try:
-            await self._slave.api_call('POST', f'/ports/{self._remote_id}',
-                                       {'values': values, 'delays': delays, 'repeat': repeat})
+            await self._slave.api_call(
+                'POST',
+                f'/ports/{self._remote_id}',
+                {'values': values, 'delays': delays, 'repeat': repeat}
+            )
             self.debug('sequence sent remotely')
 
         except Exception as e:

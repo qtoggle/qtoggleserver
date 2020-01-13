@@ -42,8 +42,15 @@ async def post_slave_devices(request: core_api.APIRequest, params: GenericJSONDi
         raise core_api.APIError(400, 'listening and polling')
 
     try:
-        slave = await slaves_devices.add(scheme, host, port, path, poll_interval, listen_enabled,
-                                         admin_password=admin_password)
+        slave = await slaves_devices.add(
+            scheme,
+            host,
+            port,
+            path,
+            poll_interval,
+            listen_enabled,
+            admin_password=admin_password
+        )
 
     except (core_responses.HostUnreachable,
             core_responses.NetworkUnreachable,
@@ -195,8 +202,12 @@ async def post_slave_device_events(request: core_api.APIRequest, name: str, para
         raise core_api.APIError(401, 'authentication required')
 
     try:
-        core_api_auth.parse_auth_header(auth, core_api_auth.ORIGIN_DEVICE,
-                                        lambda u: slave.get_admin_password_hash(), require_usr=False)
+        core_api_auth.parse_auth_header(
+            auth,
+            core_api_auth.ORIGIN_DEVICE,
+            lambda u: slave.get_admin_password_hash(),
+            require_usr=False
+        )
 
     except core_api_auth.AuthError as e:
         slave.warning(str(e))
