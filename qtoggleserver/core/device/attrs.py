@@ -321,8 +321,13 @@ def set_attrs(attrs: Attributes) -> bool:
         if name.endswith('_password') and hasattr(core_device_attrs, name + '_hash'):
             # Call password set command, if available
             if settings.password_set_cmd:
-                run_set_cmd(settings.password_set_cmd, cmd_name='password', log_values=False,
-                            username=name[:-9], password=value)
+                run_set_cmd(
+                    settings.password_set_cmd,
+                    cmd_name='password',
+                    log_values=False,
+                    username=name[:-9],
+                    password=value
+                )
 
             value = hashlib.sha256(value.encode()).hexdigest()
             name += '_hash'

@@ -60,11 +60,13 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
 
     logger = logger
 
-    def __init__(self,
-                 template: Optional[Dict[str, str]] = None,
-                 templates: Optional[Dict[str, Dict[str, str]]] = None,
-                 skip_startup: bool = True,
-                 filter: dict = None) -> None:
+    def __init__(
+        self,
+        template: Optional[Dict[str, str]] = None,
+        templates: Optional[Dict[str, Dict[str, str]]] = None,
+        skip_startup: bool = True,
+        filter: dict = None
+    ) -> None:
 
         self._skip_startup: bool = skip_startup
 
@@ -127,12 +129,14 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
 
         return await super().accepts(*args, **kwargs)
 
-    async def on_value_change(self,
-                              event: core_events.Event,
-                              port: core_ports.BasePort,
-                              old_value: NullablePortValue,
-                              new_value: NullablePortValue,
-                              attrs: Attributes) -> None:
+    async def on_value_change(
+        self,
+        event: core_events.Event,
+        port: core_ports.BasePort,
+        old_value: NullablePortValue,
+        new_value: NullablePortValue,
+        attrs: Attributes
+    ) -> None:
 
         context = self.get_common_context(event)
         context.update({
@@ -144,14 +148,16 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
 
         await self.push_template_message(event, context)
 
-    async def on_port_update(self,
-                             event: core_events.Event,
-                             port: core_ports.BasePort,
-                             old_attrs: Attributes,
-                             new_attrs: Attributes,
-                             changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
-                             added_attrs: Attributes,
-                             removed_attrs: Attributes) -> None:
+    async def on_port_update(
+        self,
+        event: core_events.Event,
+        port: core_ports.BasePort,
+        old_attrs: Attributes,
+        new_attrs: Attributes,
+        changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+        added_attrs: Attributes,
+        removed_attrs: Attributes
+    ) -> None:
 
         context = self.get_common_context(event)
         context.update({
@@ -186,13 +192,15 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
 
         await self.push_template_message(event, context)
 
-    async def on_device_update(self,
-                               event: core_events.Event,
-                               old_attrs: Attributes,
-                               new_attrs: Attributes,
-                               changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
-                               added_attrs: Attributes,
-                               removed_attrs: Attributes) -> None:
+    async def on_device_update(
+        self,
+        event: core_events.Event,
+        old_attrs: Attributes,
+        new_attrs: Attributes,
+        changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+        added_attrs: Attributes,
+        removed_attrs: Attributes
+    ) -> None:
 
         context = self.get_common_context(event)
         context.update({
@@ -206,14 +214,16 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
 
         await self.push_template_message(event, context)
 
-    async def on_slave_device_update(self,
-                                     event: core_events.Event,
-                                     slave: slaves_devices.Slave,
-                                     old_attrs: Attributes,
-                                     new_attrs: Attributes,
-                                     changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
-                                     added_attrs: Attributes,
-                                     removed_attrs: Attributes) -> None:
+    async def on_slave_device_update(
+        self,
+        event: core_events.Event,
+        slave: slaves_devices.Slave,
+        old_attrs: Attributes,
+        new_attrs: Attributes,
+        changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+        added_attrs: Attributes,
+        removed_attrs: Attributes
+    ) -> None:
 
         context = self.get_common_context(event)
         context.update({
@@ -227,10 +237,12 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
 
         await self.push_template_message(event, context)
 
-    async def on_slave_device_add(self,
-                                  event: core_events.Event,
-                                  slave: slaves_devices.Slave,
-                                  attrs: Attributes) -> None:
+    async def on_slave_device_add(
+        self,
+        event: core_events.Event,
+        slave: slaves_devices.Slave,
+        attrs: Attributes
+    ) -> None:
 
         context = self.get_common_context(event)
         context.update({
@@ -240,10 +252,12 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
 
         await self.push_template_message(event, context)
 
-    async def on_slave_device_remove(self,
-                                     event: core_events.Event,
-                                     slave: slaves_devices.Slave,
-                                     attrs: Attributes) -> None:
+    async def on_slave_device_remove(
+        self,
+        event: core_events.Event,
+        slave: slaves_devices.Slave,
+        attrs: Attributes
+    ) -> None:
 
         context = self.get_common_context(event)
         context.update({

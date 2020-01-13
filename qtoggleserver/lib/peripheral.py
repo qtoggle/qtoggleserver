@@ -10,8 +10,9 @@ import threading
 
 from typing import Any, Callable, Dict, List, Optional
 
-from qtoggleserver import utils
 from qtoggleserver.core import ports as core_ports
+from qtoggleserver.utils.configurable import ConfigurableMixin
+from qtoggleserver.utils.logging import LoggableMixin
 
 from . import add_cleanup_hook
 
@@ -28,7 +29,7 @@ class ThreadedRunner(threading.Thread, metaclass=abc.ABCMeta):
 
     def __init__(self, queue_size: Optional[int] = None) -> None:
         self._running: bool = False
-        self._loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+        self._loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
         self._queue: queue.Queue = queue.Queue(queue_size or 0)
         self._queue_size: int = queue_size
         self._stopped_future: asyncio.Future = self._loop.create_future()
@@ -74,12 +75,12 @@ class ThreadedRunner(threading.Thread, metaclass=abc.ABCMeta):
         await self._stopped_future
 
 
-class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABCMeta):
+class Peripheral(ConfigurableMixin, LoggableMixin, metaclass=abc.ABCMeta):
     RUNNER_CLASS = ThreadedRunner
     RUNNER_QUEUE_SIZE = 8
 
     logger = logger
-    _peripherals_by_address: Dict[str, 'Peripheral'] = {}
+    _peripherals_by_address: Dict[str, Peripheral] = {}
 
     @classmethod
     def get(cls, address: str, name: str, **kwargs) -> Peripheral:
@@ -98,7 +99,7 @@ class Peripheral(utils.ConfigurableMixin, utils.LoggableMixin, metaclass=abc.ABC
         return cls(address, name, **kwargs)
 
     def __init__(self, address: str, name: str, **kwargs) -> None:
-        utils.LoggableMixin.__init__(self, name, self.logger)
+        LoggableMixin.__init__(self, name, self.logger)
 
         self._address = address
         self._name = name

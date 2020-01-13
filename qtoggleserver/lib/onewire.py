@@ -120,6 +120,6 @@ class OneWirePort(polled.PolledPort, metaclass=abc.ABCMeta):
             raise OneWirePeripheralAddressRequired()
 
         address = re.sub('[^a-f0-9]', '', names[0], re.IGNORECASE)
-        address = ':'.join([address[2 * i: 2 * i + 2] for i in range(len(address) // 2)])
+        address = ':'.join(address[2 * i: 2 * i + 2] for i in range(len(address) // 2))
 
         return address

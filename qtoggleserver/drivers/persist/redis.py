@@ -20,14 +20,21 @@ class RedisDriver(BaseDriver):
     def __init__(self, host: str, port: int, db: int, **kwargs) -> None:
         logger.debug('connecting to %s:%s/%s', host, port, db)
 
-        self._client: redis.Redis = redis.StrictRedis(host=host, port=port, db=db,
-                                                      encoding='utf8', decode_responses=True)
+        self._client: redis.Redis = redis.StrictRedis(
+            host=host,
+            port=port,
+            db=db,
+            encoding='utf8',
+            decode_responses=True
+        )
 
-    def query(self,
-              collection: str,
-              fields: Optional[List[str]],
-              filt: Dict[str, Any],
-              limit: Optional[int]) -> Iterable[Record]:
+    def query(
+        self,
+        collection: str,
+        fields: Optional[List[str]],
+        filt: Dict[str, Any],
+        limit: Optional[int]
+    ) -> Iterable[Record]:
 
         db_records = []
 

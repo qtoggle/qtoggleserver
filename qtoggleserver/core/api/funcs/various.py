@@ -26,8 +26,12 @@ async def get_access(request: core_api.APIRequest, access_level: int) -> Dict[st
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
-async def get_listen(request: core_api.APIRequest,
-                     session_id: str, timeout: Optional[int], access_level: int) -> List[GenericJSONDict]:
+async def get_listen(
+    request: core_api.APIRequest,
+    session_id: str,
+    timeout: Optional[int],
+    access_level: int
+) -> List[GenericJSONDict]:
 
     if session_id is None:
         raise core_api.APIError(400, 'missing field: session_id')

@@ -8,8 +8,8 @@ from typing import Any, List, Optional, Set, Tuple
 
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
-from qtoggleserver.core.typing import (Attribute, Attributes, AttributeDefinitions, GenericJSONDict, NullablePortValue,
-                                       PortValue)
+from qtoggleserver.core.typing import Attribute, Attributes, AttributeDefinitions, GenericJSONDict
+from qtoggleserver.core.typing import NullablePortValue, PortValue
 
 from . import exceptions
 
@@ -302,8 +302,11 @@ class SlavePort(core_ports.BasePort):
             raise exceptions.DeviceOffline(self._slave)
 
         try:
-            await self._slave.api_call('POST', f'/ports/{self._remote_id}',
-                                       {'values': values, 'delays': delays, 'repeat': repeat})
+            await self._slave.api_call(
+                'POST',
+                f'/ports/{self._remote_id}',
+                {'values': values, 'delays': delays, 'repeat': repeat}
+            )
             self.debug('sequence sent remotely')
 
         except Exception as e:

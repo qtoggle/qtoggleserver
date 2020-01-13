@@ -134,7 +134,7 @@ class JSModuleMapperStaticFileHandler(StaticFileHandler):
 
     def get_mapped_content(self) -> bytes:
         if self._mapped_content is None:
-            content = b''.join(list(super().get_content(self.absolute_path)))
+            content = b''.join(super().get_content(self.absolute_path))
 
             if self.absolute_path.endswith('.js'):
                 for k, v in self._mapping.items():
@@ -223,8 +223,11 @@ class APIHandler(BaseHandler):
         auth = self.request.headers.get('Authorization')
         if auth:
             try:
-                usr = core_api_auth.parse_auth_header(auth, core_api_auth.ORIGIN_CONSUMER,
-                                                      core_api_auth.consumer_password_hash_func)
+                usr = core_api_auth.parse_auth_header(
+                    auth,
+                    core_api_auth.ORIGIN_CONSUMER,
+                    core_api_auth.consumer_password_hash_func
+                )
 
             except core_api_auth.AuthError as e:
                 logger.warning(str(e))

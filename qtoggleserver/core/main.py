@@ -114,8 +114,10 @@ async def update_loop() -> None:
         await asyncio.sleep(settings.core.tick_interval / 1000.0)
 
 
-async def handle_value_changes(changed_set: Set[Union[core_ports.BasePort, None]],
-                               change_reasons: Dict[core_ports.BasePort, str]) -> None:
+async def handle_value_changes(
+    changed_set: Set[Union[core_ports.BasePort, None]],
+    change_reasons: Dict[core_ports.BasePort, str]
+) -> None:
 
     global _force_eval_expressions
 

@@ -23,10 +23,12 @@ class MongoDriver(BaseDriver):
         self._client: MongoClient = MongoClient(host, port, serverSelectionTimeoutMS=200)
         self._db: Database = self._client[db]
 
-    def query(self, collection: str,
-              fields: Optional[List[str]],
-              filt: Dict[str, Any],
-              limit: Optional[int]) -> Iterable[Record]:
+    def query(
+        self, collection: str,
+        fields: Optional[List[str]],
+        filt: Dict[str, Any],
+        limit: Optional[int]
+    ) -> Iterable[Record]:
 
         if fields:
             fields = dict((f, 1) for f in fields)

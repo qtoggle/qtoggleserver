@@ -25,6 +25,7 @@ from qtoggleserver.core.api import schema as core_api_schema
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, NullablePortValue
 from qtoggleserver.utils import json as json_utils
+from qtoggleserver.utils.logging import LoggableMixin
 
 from . import events
 from . import exceptions
@@ -43,29 +44,31 @@ _load_time: float = 0
 logger = logging.getLogger(__name__)
 
 
-class Slave(utils.LoggableMixin):
-    def __init__(self,
-                 name: Optional[str],
-                 scheme: str,
-                 host: str,
-                 port: int,
-                 path: str,
-                 poll_interval: Optional[int] = None,
-                 listen_enabled: bool = True,
-                 admin_password: Optional[str] = None,
-                 admin_password_hash: Optional[str] = None,
-                 last_sync: int = -1,
-                 attrs: Optional[Attributes] = None,
-                 webhooks: Optional[GenericJSONDict] = None,
-                 reverse: Optional[GenericJSONDict] = None,
-                 provisioning_attrs: Optional[Set[str]] = None,
-                 provisioning_webhooks: Optional[Set[str]] = None,
-                 provisioning_reverse: Optional[Set[str]] = None,
-                 **kwargs) -> None:
+class Slave(LoggableMixin):
+    def __init__(
+        self,
+        name: Optional[str],
+        scheme: str,
+        host: str,
+        port: int,
+        path: str,
+        poll_interval: Optional[int] = None,
+        listen_enabled: bool = True,
+        admin_password: Optional[str] = None,
+        admin_password_hash: Optional[str] = None,
+        last_sync: int = -1,
+        attrs: Optional[Attributes] = None,
+        webhooks: Optional[GenericJSONDict] = None,
+        reverse: Optional[GenericJSONDict] = None,
+        provisioning_attrs: Optional[Set[str]] = None,
+        provisioning_webhooks: Optional[Set[str]] = None,
+        provisioning_reverse: Optional[Set[str]] = None,
+        **kwargs
+    ) -> None:
 
         # The enabled value comes with kwargs but is ignored, as the slave will be explicitly enabled afterwards
 
-        utils.LoggableMixin.__init__(self, name, logger)
+        LoggableMixin.__init__(self, name, logger)
         if not name:
             self.set_logger_name(f'{host}:{port}')
 
@@ -202,8 +205,15 @@ class Slave(utils.LoggableMixin):
                     await remove(self)
 
                     # Add the slave back
-                    future = add(self._scheme, self._host, self._port, self._path, self._poll_interval,
-                                 self._listen_enabled, admin_password_hash=self._admin_password_hash)
+                    future = add(
+                        self._scheme,
+                        self._host,
+                        self._port,
+                        self._path,
+                        self._poll_interval,
+                        self._listen_enabled,
+                        admin_password_hash=self._admin_password_hash
+                    )
 
                     asyncio.create_task(future)
 
@@ -426,8 +436,10 @@ class Slave(utils.LoggableMixin):
     async def _load_ports(self) -> None:
         self.debug('loading persisted ports')
         port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
-        my_port_ids = [d['id'][len(self._name) + 1:] for d in port_data_list
-                       if d['id'].startswith(self._name + '.')]
+        my_port_ids = [
+            d['id'][len(self._name) + 1:] for d in port_data_list
+            if d['id'].startswith(self._name + '.')
+        ]
 
         for _id in my_port_ids:
             await self._add_port(attrs={'id': _id})
@@ -441,8 +453,10 @@ class Slave(utils.LoggableMixin):
 
     def _rename_ports_persisted_data(self, new_name: str) -> None:
         port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
-        my_port_data_list = [d for d in port_data_list
-                             if d['id'].startswith(self._name + '.')]
+        my_port_data_list = [
+            d for d in port_data_list
+            if d['id'].startswith(self._name + '.')
+        ]
 
         # Remove old records
         for d in my_port_data_list:
@@ -493,8 +507,14 @@ class Slave(utils.LoggableMixin):
             'Authorization': core_api_auth.make_auth_header(core_api_auth.ORIGIN_CONSUMER,
                                                             username='admin', password_hash=self._admin_password_hash)
         }
-        request = HTTPRequest(url, method, headers=headers, body=body_str,
-                              connect_timeout=settings.slaves.timeout, request_timeout=settings.slaves.timeout)
+        request = HTTPRequest(
+            url,
+            method,
+            headers=headers,
+            body=body_str,
+            connect_timeout=settings.slaves.timeout,
+            request_timeout=settings.slaves.timeout
+        )
 
         self.debug('calling api function %s %s', method, path)
 
@@ -679,8 +699,10 @@ class Slave(utils.LoggableMixin):
         await self._save_ports()
 
     def _get_local_ports(self) -> List[SlavePort]:
-        return [port for port in core_ports.all_ports()
-                if port.get_id().startswith(self._name + '.') and isinstance(port, SlavePort)]
+        return [
+            port for port in core_ports.all_ports()
+            if port.get_id().startswith(self._name + '.') and isinstance(port, SlavePort)
+        ]
 
     async def _listen_loop(self) -> None:
         # The initial listen API call is used to determine the reachability (the online status) of a slave
@@ -707,9 +729,13 @@ class Slave(utils.LoggableMixin):
                 }
 
                 http_client = AsyncHTTPClient()
-                request = HTTPRequest(url, 'GET', headers=headers,
-                                      connect_timeout=settings.slaves.timeout,
-                                      request_timeout=settings.slaves.timeout + settings.slaves.keepalive)
+                request = HTTPRequest(
+                    url,
+                    'GET',
+                    headers=headers,
+                    connect_timeout=settings.slaves.timeout,
+                    request_timeout=settings.slaves.timeout + settings.slaves.keepalive
+                )
 
                 self.debug('calling api function GET /listen')
 
@@ -838,9 +864,10 @@ class Slave(utils.LoggableMixin):
 
         added_names = [n for n in attrs if n not in self._cached_attrs]
         removed_names = [n for n in self._cached_attrs if n not in attrs]
-        changed_names = [n for n in self._cached_attrs
-                         if (n in attrs) and
-                            (attrs[n] != self._cached_attrs[n])]
+        changed_names = [
+            n for n in self._cached_attrs
+            if (n in attrs) and (attrs[n] != self._cached_attrs[n])
+        ]
 
         for name in added_names:
             self.debug('detected new attribute: %s = %s', name, json_utils.dumps(attrs[name]))
@@ -1334,11 +1361,13 @@ class Slave(utils.LoggableMixin):
         await self.fetch_and_update_device()
         await self.fetch_and_update_ports()
 
-    async def intercept_request(self,
-                                method: str,
-                                path: str,
-                                params: Any,
-                                request: core_api.APIRequest) -> Tuple[bool, Any]:
+    async def intercept_request(
+        self,
+        method: str,
+        path: str,
+        params: Any,
+        request: core_api.APIRequest
+    ) -> Tuple[bool, Any]:
 
         # Intercept API calls to device attributes, webhooks and reverse parameters, for devices that are offline
         if self._online:
@@ -1463,14 +1492,16 @@ def get(name: str) -> Optional[Slave]:
     return _slaves_by_name.get(name)
 
 
-async def add(scheme: str,
-              host: str,
-              port: int,
-              path: str,
-              poll_interval: Optional[int],
-              listen_enabled: bool,
-              admin_password: Optional[str] = None,
-              admin_password_hash: Optional[str] = None) -> Slave:
+async def add(
+    scheme: str,
+    host: str,
+    port: int,
+    path: str,
+    poll_interval: Optional[int],
+    listen_enabled: bool,
+    admin_password: Optional[str] = None,
+    admin_password_hash: Optional[str] = None
+) -> Slave:
 
     slave = Slave(None, scheme, host, port, path, poll_interval, listen_enabled, admin_password, admin_password_hash)
 

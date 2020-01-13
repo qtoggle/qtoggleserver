@@ -102,5 +102,7 @@ class GPIO(ports.Port):
             with open(os.path.join(self.BASE_PATH, 'export'), 'w') as f:
                 f.write(str(self._no))
 
-        return (open(os.path.join(path, 'value'), 'r+'),
-                open(os.path.join(path, 'direction'), 'r+'))
+        return (
+            open(os.path.join(path, 'value'), 'r+'),
+            open(os.path.join(path, 'direction'), 'r+')
+        )

@@ -8,11 +8,13 @@ from typing import Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 
-def run_get_cmd(get_cmd: str,
-                cmd_name: Optional[str] = None,
-                log_values: bool = True,
-                exc_class: type = None,
-                required_fields: Optional[List[str]] = None) -> Dict[str, str]:
+def run_get_cmd(
+    get_cmd: str,
+    cmd_name: Optional[str] = None,
+    log_values: bool = True,
+    exc_class: type = None,
+    required_fields: Optional[List[str]] = None
+) -> Dict[str, str]:
 
     exc_class = exc_class or Exception
 
@@ -45,7 +47,7 @@ def run_get_cmd(get_cmd: str,
 
     if cmd_name:
         if log_values:
-            values_str = ', '.join([f'{k} = "{v}"' for k, v in sorted(config_dict.items())])
+            values_str = ', '.join(f'{k} = "{v}"' for k, v in sorted(config_dict.items()))
             logger.debug('got %s: %s', cmd_name, values_str)
 
         else:
@@ -62,11 +64,13 @@ def run_get_cmd(get_cmd: str,
     return config_dict
 
 
-def run_set_cmd(set_cmd: str,
-                cmd_name: Optional[str] = None,
-                log_values: bool = True,
-                exc_class: Optional[type] = None,
-                **config) -> None:
+def run_set_cmd(
+    set_cmd: str,
+    cmd_name: Optional[str] = None,
+    log_values: bool = True,
+    exc_class: Optional[type] = None,
+    **config
+) -> None:
 
     env = {f'QS_{k.upper()}': v for k, v in config.items()}
 
@@ -80,7 +84,7 @@ def run_set_cmd(set_cmd: str,
 
     if cmd_name:
         if log_values:
-            values_str = ', '.join([f'{k} = "{v}"' for k, v in sorted(config.items())])
+            values_str = ', '.join(f'{k} = "{v}"' for k, v in sorted(config.items()))
             logger.debug('%s set to: %s', cmd_name, values_str)
 
         else:

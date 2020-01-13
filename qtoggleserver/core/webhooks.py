@@ -39,14 +39,16 @@ class WebhooksRequest:
 
 
 class Webhooks:
-    def __init__(self,
-                 scheme: Optional[str] = None,
-                 host: Optional[str] = None,
-                 port: Optional[int] = None,
-                 path: Optional[str] = None,
-                 timeout: Optional[int] = None,
-                 retries: Optional[int] = None,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        scheme: Optional[str] = None,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        path: Optional[str] = None,
+        timeout: Optional[int] = None,
+        retries: Optional[int] = None,
+        **kwargs
+    ) -> None:
 
         # The enabled value comes with kwargs but is ignored; webhooks will be explicitly enabled afterwards
 
@@ -156,12 +158,21 @@ class Webhooks:
         # TODO use webhooks password
         headers = {
             'Content-Type': json_utils.JSON_CONTENT_TYPE,
-            'Authorization': core_api_auth.make_auth_header(core_api_auth.ORIGIN_DEVICE, username=None,
-                                                            password_hash=core_device_attrs.normal_password_hash)
+            'Authorization': core_api_auth.make_auth_header(
+                core_api_auth.ORIGIN_DEVICE,
+                username=None,
+                password_hash=core_device_attrs.normal_password_hash
+            )
         }
-        request = HTTPRequest(url, 'POST', headers=headers, body=body,
-                              connect_timeout=self._timeout, request_timeout=self._timeout,
-                              follow_redirects=True)
+        request = HTTPRequest(
+            url,
+            'POST',
+            headers=headers,
+            body=body,
+            connect_timeout=self._timeout,
+            request_timeout=self._timeout,
+            follow_redirects=True
+        )
 
         logger.debug('%s: calling', self)
 
@@ -194,14 +205,16 @@ def get() -> Optional[Webhooks]:
     return _webhooks
 
 
-def setup(enabled: bool,
-          scheme: Optional[str] = None,
-          host: Optional[str] = None,
-          port: Optional[int] = None,
-          path: Optional[str] = None,
-          timeout: Optional[int] = None,
-          retries: Optional[int] = None,
-          **kwargs) -> None:
+def setup(
+    enabled: bool,
+    scheme: Optional[str] = None,
+    host: Optional[str] = None,
+    port: Optional[int] = None,
+    path: Optional[str] = None,
+    timeout: Optional[int] = None,
+    retries: Optional[int] = None,
+    **kwargs
+) -> None:
 
     global _webhooks
 

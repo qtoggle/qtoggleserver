@@ -36,8 +36,12 @@ def has_timezone_support() -> bool:
 
 
 def get_timezone() -> str:
-    return run_get_cmd(settings.system.timezone.get_cmd, cmd_name='timezone',
-                       exc_class=DateError, required_fields=['timezone'])['timezone']
+    return run_get_cmd(
+        settings.system.timezone.get_cmd,
+        cmd_name='timezone',
+        exc_class=DateError,
+        required_fields=['timezone']
+    )['timezone']
 
 
 def set_timezone(timezone: str) -> None:

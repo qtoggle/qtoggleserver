@@ -24,11 +24,13 @@ class J2TemplateMixin:
 
 
 class NamespaceLoader(FileSystemLoader):
-    def __init__(self,
-                 namespace_name: str,
-                 path: str = 'templates',
-                 encoding: str = 'utf-8',
-                 followlinks: bool = False) -> None:
+    def __init__(
+        self,
+        namespace_name: str,
+        path: str = 'templates',
+        encoding: str = 'utf-8',
+        followlinks: bool = False
+    ) -> None:
 
         namespace = importlib.import_module(namespace_name)
         searchpath = [os.path.join(p, path) for p in namespace.__path__]
