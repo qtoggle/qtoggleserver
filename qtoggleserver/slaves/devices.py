@@ -25,6 +25,7 @@ from qtoggleserver.core.api import schema as core_api_schema
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, NullablePortValue
 from qtoggleserver.utils import json as json_utils
+from qtoggleserver.utils.logging import  LoggableMixin
 
 from . import events
 from . import exceptions
@@ -43,7 +44,7 @@ _load_time: float = 0
 logger = logging.getLogger(__name__)
 
 
-class Slave(utils.LoggableMixin):
+class Slave(LoggableMixin):
     def __init__(self,
                  name: Optional[str],
                  scheme: str,
@@ -65,7 +66,7 @@ class Slave(utils.LoggableMixin):
 
         # The enabled value comes with kwargs but is ignored, as the slave will be explicitly enabled afterwards
 
-        utils.LoggableMixin.__init__(self, name, logger)
+        LoggableMixin.__init__(self, name, logger)
         if not name:
             self.set_logger_name(f'{host}:{port}')
 

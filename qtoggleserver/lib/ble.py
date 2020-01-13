@@ -13,8 +13,9 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from bluepy import btle
 
-from qtoggleserver import utils
 from qtoggleserver.core import ports as core_ports
+from qtoggleserver.utils.configurable import ConfigurableMixin
+from qtoggleserver.utils.logging import LoggableMixin
 
 from . import polled
 from .peripheral import Peripheral, RunnerBusy
@@ -69,7 +70,7 @@ class _BluepyPeripheral(btle.Peripheral):
             helper.stdout.close()
 
 
-class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
+class BLEAdapter(ConfigurableMixin, LoggableMixin):
     DEFAULT_NAME = 'hci0'
     RUNNER_CLASS = Peripheral.RUNNER_CLASS
 
@@ -85,7 +86,7 @@ class BLEAdapter(utils.ConfigurableMixin, utils.LoggableMixin):
         return cls._adapters_by_name[name]
 
     def __init__(self, name: str) -> None:
-        utils.LoggableMixin.__init__(self, name, logger)
+        LoggableMixin.__init__(self, name, logger)
 
         self._name: str = name
         try:

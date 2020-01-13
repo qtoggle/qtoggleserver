@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 import abc
 import asyncio
 import copy
@@ -13,7 +15,6 @@ from tornado import queues
 
 from qtoggleserver import persist
 from qtoggleserver import utils
-
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
@@ -21,6 +22,7 @@ from qtoggleserver.core import sequences as core_sequences
 from qtoggleserver.core.typing import (Attribute, Attributes, AttributeDefinitions, GenericJSONDict, NullablePortValue,
                                        PortValue)
 from qtoggleserver.utils import json as json_utils
+from qtoggleserver.utils.logging import LoggableMixin
 
 
 TYPE_BOOLEAN = 'boolean'
@@ -33,7 +35,7 @@ CHANGE_REASON_EXPRESSION = 'E'
 
 logger = logging.getLogger(__name__)
 
-_ports_by_id: Dict[str, 'BasePort'] = {}
+_ports_by_id: Dict[str, BasePort] = {}
 
 
 STANDARD_ATTRDEFS = {
@@ -151,7 +153,7 @@ class PortTimeout(PortError):
     pass
 
 
-class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
+class BasePort(LoggableMixin, metaclass=abc.ABCMeta):
     PERSIST_COLLECTION = 'ports'
 
     TYPE = TYPE_BOOLEAN
@@ -187,7 +189,7 @@ class BasePort(utils.LoggableMixin, metaclass=abc.ABCMeta):
     }'''
 
     def __init__(self, port_id: str) -> None:
-        utils.LoggableMixin.__init__(self, port_id, logger)
+        LoggableMixin.__init__(self, port_id, logger)
 
         self._id: str = port_id
         self._enabled: bool = False
