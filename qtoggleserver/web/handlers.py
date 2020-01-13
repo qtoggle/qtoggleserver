@@ -134,7 +134,7 @@ class JSModuleMapperStaticFileHandler(StaticFileHandler):
 
     def get_mapped_content(self) -> bytes:
         if self._mapped_content is None:
-            content = b''.join(list(super().get_content(self.absolute_path)))
+            content = b''.join(super().get_content(self.absolute_path))
 
             if self.absolute_path.endswith('.js'):
                 for k, v in self._mapping.items():

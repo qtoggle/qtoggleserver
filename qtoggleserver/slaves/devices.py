@@ -436,8 +436,10 @@ class Slave(LoggableMixin):
     async def _load_ports(self) -> None:
         self.debug('loading persisted ports')
         port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
-        my_port_ids = [d['id'][len(self._name) + 1:] for d in port_data_list
-                       if d['id'].startswith(self._name + '.')]
+        my_port_ids = [
+            d['id'][len(self._name) + 1:] for d in port_data_list
+            if d['id'].startswith(self._name + '.')
+        ]
 
         for _id in my_port_ids:
             await self._add_port(attrs={'id': _id})
@@ -451,8 +453,10 @@ class Slave(LoggableMixin):
 
     def _rename_ports_persisted_data(self, new_name: str) -> None:
         port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
-        my_port_data_list = [d for d in port_data_list
-                             if d['id'].startswith(self._name + '.')]
+        my_port_data_list = [
+            d for d in port_data_list
+            if d['id'].startswith(self._name + '.')
+        ]
 
         # Remove old records
         for d in my_port_data_list:
@@ -695,8 +699,10 @@ class Slave(LoggableMixin):
         await self._save_ports()
 
     def _get_local_ports(self) -> List[SlavePort]:
-        return [port for port in core_ports.all_ports()
-                if port.get_id().startswith(self._name + '.') and isinstance(port, SlavePort)]
+        return [
+            port for port in core_ports.all_ports()
+            if port.get_id().startswith(self._name + '.') and isinstance(port, SlavePort)
+        ]
 
     async def _listen_loop(self) -> None:
         # The initial listen API call is used to determine the reachability (the online status) of a slave
@@ -858,9 +864,10 @@ class Slave(LoggableMixin):
 
         added_names = [n for n in attrs if n not in self._cached_attrs]
         removed_names = [n for n in self._cached_attrs if n not in attrs]
-        changed_names = [n for n in self._cached_attrs
-                         if (n in attrs) and
-                            (attrs[n] != self._cached_attrs[n])]
+        changed_names = [
+            n for n in self._cached_attrs
+            if (n in attrs) and (attrs[n] != self._cached_attrs[n])
+        ]
 
         for name in added_names:
             self.debug('detected new attribute: %s = %s', name, json_utils.dumps(attrs[name]))

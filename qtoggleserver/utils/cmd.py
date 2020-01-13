@@ -47,7 +47,7 @@ def run_get_cmd(
 
     if cmd_name:
         if log_values:
-            values_str = ', '.join([f'{k} = "{v}"' for k, v in sorted(config_dict.items())])
+            values_str = ', '.join(f'{k} = "{v}"' for k, v in sorted(config_dict.items()))
             logger.debug('got %s: %s', cmd_name, values_str)
 
         else:
@@ -84,7 +84,7 @@ def run_set_cmd(
 
     if cmd_name:
         if log_values:
-            values_str = ', '.join([f'{k} = "{v}"' for k, v in sorted(config.items())])
+            values_str = ', '.join(f'{k} = "{v}"' for k, v in sorted(config.items()))
             logger.debug('%s set to: %s', cmd_name, values_str)
 
         else:

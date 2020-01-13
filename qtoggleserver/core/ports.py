@@ -247,13 +247,13 @@ class BasePort(LoggableMixin, metaclass=abc.ABCMeta):
 
     def get_non_modifiable_attrs(self) -> Set[str]:
         if self._non_modifiable_attrs is None:
-            self._non_modifiable_attrs = set([n for (n, v) in self.ATTRDEFS.items() if not v.get('modifiable')])
+            self._non_modifiable_attrs = set(n for (n, v) in self.ATTRDEFS.items() if not v.get('modifiable'))
 
         return self._non_modifiable_attrs
 
     def get_modifiable_attrs(self) -> Set[str]:
         if self._modifiable_attrs is None:
-            self._modifiable_attrs = set([n for (n, v) in self.ATTRDEFS.items() if v.get('modifiable')])
+            self._modifiable_attrs = set(n for (n, v) in self.ATTRDEFS.items() if v.get('modifiable'))
 
         return self._modifiable_attrs
 

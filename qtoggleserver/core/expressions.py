@@ -114,7 +114,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
     def __str__(self) -> str:
         s = getattr(self, '_str', None)
         if s is None:
-            args_str = ', '.join([str(e) for e in self.args])
+            args_str = ', '.join(str(e) for e in self.args)
             self._str = s = f'{self.NAME}({args_str})'
 
         return s
