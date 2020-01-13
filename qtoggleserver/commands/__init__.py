@@ -11,7 +11,6 @@ from tornado import httpclient
 
 from qtoggleserver import lib
 from qtoggleserver import persist
-from qtoggleserver import utils
 from qtoggleserver import version
 from qtoggleserver.conf import settings
 from qtoggleserver.conf import utils as conf_utils
@@ -24,8 +23,8 @@ from qtoggleserver.core import sessions
 from qtoggleserver.core import vports
 from qtoggleserver.core import webhooks
 from qtoggleserver.slaves import devices as slaves_devices
+from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import logging as logging_utils
-
 
 logger = None
 options = None
@@ -130,7 +129,7 @@ def init_configurables() -> None:
     for class_name, opts in sorted(configurables.items()):
         try:
             logger.debug('configuring class %s', class_name)
-            klass = utils.load_attr(class_name)
+            klass = dynload_utils.load_attr(class_name)
 
         except Exception as e:
             logger.error('failed to load class %s: %s', class_name, e, exc_info=True)

@@ -2,8 +2,8 @@
 import asyncio
 import logging
 
-from qtoggleserver import utils
 from qtoggleserver.conf import settings
+from qtoggleserver.utils import dynload as dynload_utils
 
 from .base import Event, Handler
 
@@ -33,7 +33,7 @@ async def init() -> None:
 
         try:
             logger.debug('loading event handler %s', handler_class_path)
-            handler_class = utils.load_attr(handler_class_path)
+            handler_class = dynload_utils.load_attr(handler_class_path)
             handler = handler_class(**handler_args)
 
         except Exception as e:

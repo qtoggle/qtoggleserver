@@ -6,9 +6,9 @@ import logging
 
 from typing import Any, Dict, Iterable, List, Optional, Union
 
-from qtoggleserver import utils
 from qtoggleserver.conf import settings
 from qtoggleserver.conf import utils as conf_utils
+from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import json as json_utils
 
 
@@ -62,7 +62,7 @@ def _get_driver() -> BaseDriver:
 
         try:
             logger.debug('loading persistence driver %s', driver_class_path)
-            driver_class = utils.load_attr(driver_class_path)
+            driver_class = dynload_utils.load_attr(driver_class_path)
             _driver = driver_class(**driver_args)
 
         except Exception as e:

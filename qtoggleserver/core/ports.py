@@ -14,15 +14,15 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Union
 from tornado import queues
 
 from qtoggleserver import persist
-from qtoggleserver import utils
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import sequences as core_sequences
 from qtoggleserver.core.typing import Attribute, Attributes, AttributeDefinitions, GenericJSONDict
 from qtoggleserver.core.typing import NullablePortValue, PortValue
+from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import json as json_utils
-from qtoggleserver.utils.logging import LoggableMixin
+from qtoggleserver.utils import logging as logging_utils
 
 
 TYPE_BOOLEAN = 'boolean'
@@ -153,7 +153,7 @@ class PortTimeout(PortError):
     pass
 
 
-class BasePort(LoggableMixin, metaclass=abc.ABCMeta):
+class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     PERSIST_COLLECTION = 'ports'
 
     TYPE = TYPE_BOOLEAN
@@ -189,7 +189,7 @@ class BasePort(LoggableMixin, metaclass=abc.ABCMeta):
     }'''
 
     def __init__(self, port_id: str) -> None:
-        LoggableMixin.__init__(self, port_id, logger)
+        logging_utils.LoggableMixin.__init__(self, port_id, logger)
 
         self._id: str = port_id
         self._enabled: bool = False
@@ -944,7 +944,7 @@ async def load(port_settings: List[Dict[str, Any]], raise_on_error: bool = True)
             if driver not in port_driver_classes:
                 try:
                     logger.debug('loading port driver %s', driver)
-                    port_driver_classes[driver] = utils.load_attr(driver)
+                    port_driver_classes[driver] = dynload_utils.load_attr(driver)
 
                 except Exception as e:
                     if raise_on_error:
