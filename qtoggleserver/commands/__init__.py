@@ -24,7 +24,7 @@ from qtoggleserver.core import sessions
 from qtoggleserver.core import vports
 from qtoggleserver.core import webhooks
 from qtoggleserver.slaves import devices as slaves_devices
-from qtoggleserver.utils.misc import FifoMemoryHandler
+from qtoggleserver.utils import logging as logging_utils
 
 
 logger = None
@@ -91,7 +91,7 @@ def init_logging() -> None:
 
     # Add memory logs handler
     root_logger = logging.getLogger()
-    main.memory_logs = FifoMemoryHandler(capacity=settings.logging['memory_logs_buffer_len'])
+    main.memory_logs = logging_utils.FifoMemoryHandler(capacity=settings.logging['memory_logs_buffer_len'])
     root_logger.addHandler(main.memory_logs)
 
     logger = logging.getLogger('qtoggleserver')

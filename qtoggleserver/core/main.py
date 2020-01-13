@@ -10,14 +10,14 @@ from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import timedset
-from qtoggleserver.utils import misc as misc_utils
+from qtoggleserver.utils import logging as logging_utils
 
 
 # After how much time to retry reading a port whose read_value() method raised an error
 _PORT_READ_ERROR_RETRY_INTERVAL = 10
 
 logger = logging.getLogger(__name__)
-memory_logs: Optional[misc_utils.FifoMemoryHandler] = None
+memory_logs: Optional[logging_utils.FifoMemoryHandler] = None
 
 loop = asyncio.get_event_loop()
 
