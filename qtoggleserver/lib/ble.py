@@ -253,7 +253,8 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
             bluepy_peripheral.connect(address)
 
         except _BluepyTimeoutError:
-            raise BLETimeout(f'Timeout connecting to {address}')
+            bluepy_peripheral._stopHelper()
+            raise BLETimeout(f'Timeout connecting to {address}') from None
 
         if notify_handle:
             # Create a temporary class to deal with BTLE delegation
