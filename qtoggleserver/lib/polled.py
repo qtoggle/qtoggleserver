@@ -84,10 +84,14 @@ class PolledPeripheral(Peripheral):
     def get_poll_error(self) -> Exception:
         return self._poll_error
 
-    def check_poll_error(self) -> None:
+    def check_poll_error(self, clear: bool = True) -> None:
         if self._poll_error:
+            error = self._poll_error
+            if clear:
+                self._poll_error = None
+
             # Raise a copy of the error, to prevent traceback piling up
-            raise copy.copy(self._poll_error)
+            raise copy.copy(error)
 
     @abc.abstractmethod
     async def poll(self) -> None:

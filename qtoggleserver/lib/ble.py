@@ -326,7 +326,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
                 )
 
             except Exception as e:
-                self.error('command execution failed: %s', e, exc_info=True)
+                self.error('command execution failed: %s', e)
 
                 if retry <= retry_count:
                     await asyncio.sleep(self.RETRY_DELAY)
