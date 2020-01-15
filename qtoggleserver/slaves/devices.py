@@ -629,8 +629,6 @@ class Slave(logging_utils.LoggableMixin):
             'attrs': attrs
         })
 
-        port.trigger_add()
-
     async def fetch_and_update_device(self) -> None:
         self.debug('fetching device attributes')
 
@@ -694,7 +692,7 @@ class Slave(logging_utils.LoggableMixin):
                 continue
 
             self.debug('port %s present locally but not remotely', port_id)
-            await port.remove()
+            await port.remove(persisted_data=False)
 
         await self._save_ports()
 
