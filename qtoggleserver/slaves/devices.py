@@ -621,13 +621,15 @@ class Slave(logging_utils.LoggableMixin):
 
         self._fwupdate_poll_task.cancel()
 
-    async def _add_port(self, attrs: Attributes) -> None:
+    async def _add_port(self, attrs: Attributes) -> SlavePort:
         self.debug('adding port %s', attrs['id'])
 
         port = await core_ports.load_one(SlavePort, {
             'slave': self,
             'attrs': attrs
         })
+
+        return port
 
     async def fetch_and_update_device(self) -> None:
         self.debug('fetching device attributes')
