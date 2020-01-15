@@ -249,7 +249,11 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         self.debug('connecting to %s', address)
 
         bluepy_peripheral = _BluepyPeripheral(timeout=timeout)
-        bluepy_peripheral.connect(address)
+        try:
+            bluepy_peripheral.connect(address)
+
+        except _BluepyTimeoutError:
+            raise BLETimeout(f'Timeout connecting to {address}')
 
         if notify_handle:
             # Create a temporary class to deal with BTLE delegation
@@ -276,7 +280,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         else:  # Assuming read
             self.debug('reading from %04X', handle)
             response = bluepy_peripheral.readCharacteristic(handle)
-            self.debug('got response %s', self.pretty_data(response))
+            self.debug('got response: %s', self.pretty_data(response))
 
         if notify_handle and notification_data is None:
             self.debug('waiting for notification on %04X', notify_handle)
@@ -284,13 +288,15 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
             while not notification_data and self.get_runner().is_running():
                 if time.time() - start_time > timeout:
                     bluepy_peripheral._stopHelper()
-                    raise BLETimeout(f'Timeout waiting for notification on {notify_handle:04X}')
+                    raise BLETimeout(f'Timeout waiting for notification on {notify_handle:04X} from {address}')
 
                 try:
                     bluepy_peripheral.waitForNotifications(0.1)
 
                 except _BluepyTimeoutError:
                     continue
+
+        self.debug('%s command done', cmd)
 
         return response, notification_data
 
@@ -322,8 +328,8 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
                 self.error('command execution failed: %s', e, exc_info=True)
 
                 if retry <= retry_count:
-                    self.warning('retry %s/%s', retry, retry_count)
                     await asyncio.sleep(self.RETRY_DELAY)
+                    self.warning('retry %s/%s', retry, retry_count)
                     retry += 1
                     continue
 
@@ -347,11 +353,11 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         return self._enabled and self._online
 
     def _handle_offline(self) -> None:
-        self.debug('%s is offline', self)
+        self.debug('is offline')
         self.trigger_port_update()
 
     def _handle_online(self) -> None:
-        self.debug('%s is online', self)
+        self.debug('is online')
         self.trigger_port_update()
 
     @staticmethod
