@@ -29,7 +29,6 @@ import * as Widgets     from './widgets.js'
 
 
 const DEF_VIBRATION_DURATION = 10 /* Milliseconds */
-const PORT_VALUE_CHANGE_TIMEOUT = 3000
 export const DEFAULT_COLOR = '@blue-color'
 
 const STATES = [
@@ -83,9 +82,6 @@ export default class Widget extends mix().with(ViewMixin) {
         if (this.constructor.height != null) {
             this._height = this.constructor.height
         }
-
-        this._whenPortValueChanged = null
-        this._waitingPortValueChangedId = null
 
         this.logger = Logger.get(this.makeLogName())
     }
@@ -1080,7 +1076,7 @@ export default class Widget extends mix().with(ViewMixin) {
         this._whenPortValueChanged = new ConditionVariable()
         this._waitingPortValueChangedId = portId
 
-        PromiseUtils.withTimeout(this._whenPortValueChanged, PORT_VALUE_CHANGE_TIMEOUT).catch(function (error) {
+        PromiseUtils.withTimeout(this._whenPortValueChanged).catch(function (error) {
 
             if (error instanceof TimeoutError) {
                 this.logger.debug(`value-change not received within timeout for ${portId}, reverting to current one`)
@@ -1097,25 +1093,7 @@ export default class Widget extends mix().with(ViewMixin) {
         }.bind(this))
     }
 
-    clearWaitingPortValueChanged() {
-        if (!this._whenPortValueChanged) {
-            throw new AssertionError('Attempt to cancel waiting for value change while not waiting')
-        }
-
-        this._whenPortValueChanged.cancel()
-        this._whenPortValueChanged = null
-        this._waitingPortValueChangedId = null
-    }
-
-    isWaitingPortValueChanged() {
-        return !!this._whenPortValueChanged
-    }
-
     handlePortValueChange(portId, value) {
-        if (this._waitingPortValueChangedId === portId) {
-            this.clearWaitingPortValueChanged()
-        }
-
         this.onPortValueChange(portId, value)
     }
 
@@ -1138,15 +1116,9 @@ export default class Widget extends mix().with(ViewMixin) {
     setPortValue(portId, value) {
         this.setProgress()
 
-        return API.patchPortValue(portId, value, PORT_VALUE_CHANGE_TIMEOUT).then(function () {
+        return API.patchPortValue(portId, value).then(function () {
 
             this.clearProgress()
-
-            if (this.isWaitingPortValueChanged()) {
-                this.clearWaitingPortValueChanged(portId)
-            }
-
-            this.setWaitingPortValueChanged(portId)
 
         }.bind(this)).catch(function (error) {
 

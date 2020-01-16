@@ -168,6 +168,8 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
     if not await port.is_writable():
         raise core_api.APIError(400, 'read-only port')
 
+    old_value = port.get_value()
+
     try:
         await port.set_value(value, reason=core_ports.CHANGE_REASON_API)
 
@@ -185,6 +187,12 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
         raise core_api.APIError(500, str(e)) from e
 
     await main.update()
+
+    # If port value hasn't really changed, trigger a value-change to inform consumer that new value has been ignored
+    current_value = port.get_value()
+    if old_value == current_value:
+        port.debug('API supplied value was ignored')
+        port.trigger_value_change()
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NORMAL)
