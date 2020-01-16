@@ -135,6 +135,7 @@ class PanelOptionsForm extends OptionsForm {
     updateSizeLimits() {
         let maxX = -1
         let maxY = -1
+
         this._panel.getWidgets().forEach(function (w) {
             let x = w.getLeft() + w.getWidth() - 1
             let y = w.getTop() + w.getHeight() - 1
@@ -499,6 +500,10 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
         else {
             this.getBody().append(widget.getHTML())
         }
+
+        if (this._optionsForm) {
+            this._optionsForm.updateSizeLimits()
+        }
     }
 
     /**
@@ -558,10 +563,6 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
         widget.updateLayout()
         widget.refreshContent()
         widget.updateState()
-
-        if (this._optionsForm) {
-            this._optionsForm.updateSizeLimits()
-        }
 
         return widget
     }
@@ -997,9 +998,16 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
             this.disableEditing()
         }
 
-        this.getWidgets().forEach(function (widget) {
-            widget.clearContent()
-        })
+        if (this._widgets) {
+            this.logger.debug('cleaning up widgets')
+
+            this._widgets.forEach(function (widget) {
+                widget.clearContent()
+            })
+
+            /* Ensures that widgets will be recreated from scratch next time panel is shown */
+            this._widgets = null
+        }
 
         if (Dashboard.getCurrentPanel() === this) {
             Dashboard.setCurrentPanel(null)
