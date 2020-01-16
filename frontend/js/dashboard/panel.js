@@ -1003,6 +1003,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
 
             this._widgets.forEach(function (widget) {
                 widget.clearContent()
+                widget.getHTML().remove()
             })
 
             /* Ensures that widgets will be recreated from scratch next time panel is shown */

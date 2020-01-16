@@ -74,7 +74,7 @@ class Session:
 
         # Ensure max queue size
         while len(self.queue) >= settings.core.event_queue_size:
-            logger.debug('%s queue full, dropping oldest event', self)
+            logger.warning('%s queue full, dropping oldest event', self)
             self.queue.pop()
 
         self.queue.insert(0, event)
