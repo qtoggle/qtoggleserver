@@ -1189,6 +1189,7 @@ class Slave(logging_utils.LoggableMixin):
 
         self.trigger_update()
 
+        # Trigger a port-update so that online attribute is pushed to consumers
         for port in self._get_local_ports():
             if port.is_enabled():
                 port.trigger_update()
@@ -1217,10 +1218,10 @@ class Slave(logging_utils.LoggableMixin):
 
             self.trigger_update()
 
-        else:
-            for port in self._get_local_ports():
-                if port.is_enabled():
-                    port.trigger_update()
+        # Trigger a port-update so that online attribute is pushed to consumers
+        for port in self._get_local_ports():
+            if port.is_enabled():
+                port.trigger_update()
 
         if not self._ready:
             self.debug('device is ready')
