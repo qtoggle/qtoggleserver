@@ -96,9 +96,18 @@ async def post_ports(request: core_api.APIRequest, params: GenericJSONDict) -> A
         raise core_api.APIError(400, 'too many ports')
 
     core_vports.add(port_id, port_type, mi, ma, integer, step, choices)
-    port = await core_ports.load_one('qtoggleserver.core.vports.VirtualPort',
-                                     {'port_id': port_id, '_type': port_type, '_min': min, '_max': max,
-                                      'integer': integer, 'step': step, 'choices': choices})
+    port = await core_ports.load_one(
+        'qtoggleserver.core.vports.VirtualPort',
+        {
+            'port_id': port_id,
+            '_type': port_type,
+            '_min': min,
+            '_max': max,
+            'integer': integer,
+            'step': step,
+            'choices': choices
+        }
+    )
 
     # A virtual port is enabled by default
     await port.enable()

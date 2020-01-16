@@ -334,8 +334,14 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         return True
 
     async def handle_event(self, event: core_events.Event) -> None:
-        (value_pair, old_attrs, new_attrs,
-         changed_attrs, added_attrs, removed_attrs) = await self._update_from_event(event)
+        (
+            value_pair,
+            old_attrs,
+            new_attrs,
+            changed_attrs,
+            added_attrs,
+            removed_attrs
+        ) = await self._update_from_event(event)
 
         accepted = await self.accepts(
             event,

@@ -245,8 +245,11 @@ class APIHandler(BaseHandler):
         self.access_level = core_api.ACCESS_LEVEL_MAPPING[usr]
         self.username = usr
 
-        logger.debug('granted access level %s (username=%s)',
-                     core_api.ACCESS_LEVEL_MAPPING[self.access_level], self.username)
+        logger.debug(
+            'granted access level %s (username=%s)',
+            core_api.ACCESS_LEVEL_MAPPING[self.access_level],
+            self.username
+        )
 
     async def call_api_func(self, func: Callable, default_status: int = 200, **kwargs) -> None:
         try:
@@ -345,8 +348,12 @@ class SlaveDeviceEventsHandler(APIHandler):
 
 class SlaveDeviceForwardHandler(APIHandler):
     async def get(self, name: str, path: str) -> None:
-        await self.call_api_func(slaves_api_funcs.slave_device_forward,
-                                 name=name, method=self.request.method, path=path)
+        await self.call_api_func(
+            slaves_api_funcs.slave_device_forward,
+            name=name,
+            method=self.request.method,
+            path=path
+        )
 
     post = patch = delete = get
 
@@ -404,8 +411,12 @@ class ListenHandler(APIHandler):
         if timeout:
             timeout = int(timeout)
 
-        await self.call_api_func(core_api_funcs.get_listen,
-                                 session_id=session_id, timeout=timeout, access_level=self.access_level)
+        await self.call_api_func(
+            core_api_funcs.get_listen,
+            session_id=session_id,
+            timeout=timeout,
+            access_level=self.access_level
+        )
 
 
 class ReverseHandler(APIHandler):

@@ -737,9 +737,11 @@ class Slave(logging_utils.LoggableMixin):
                 url = self.get_url(f'/listen?timeout={keep_alive}&session_id={self._listen_session_id}')
                 headers = {
                     'Content-Type': json_utils.JSON_CONTENT_TYPE,
-                    'Authorization': core_api_auth.make_auth_header(core_api_auth.ORIGIN_CONSUMER,
-                                                                    username='admin',
-                                                                    password_hash=self._admin_password_hash)
+                    'Authorization': core_api_auth.make_auth_header(
+                        core_api_auth.ORIGIN_CONSUMER,
+                        username='admin',
+                        password_hash=self._admin_password_hash
+                    )
                 }
 
                 http_client = AsyncHTTPClient()
@@ -774,8 +776,11 @@ class Slave(logging_utils.LoggableMixin):
                     events = core_responses.parse(response)
 
                 except core_responses.Error as e:
-                    self.error('api call GET /listen failed: %s, retrying in %s seconds', e,
-                               settings.slaves.retry_interval)
+                    self.error(
+                        'api call GET /listen failed: %s, retrying in %s seconds',
+                        e,
+                        settings.slaves.retry_interval
+                    )
 
                     if self._online:
                         self._online = False
@@ -820,8 +825,10 @@ class Slave(logging_utils.LoggableMixin):
                         await self._handle_online()
 
                         if not self._online and self._listen_session_id:
-                            self.warning('device did not successfully go online, retrying in %s seconds',
-                                         settings.slaves.retry_interval)
+                            self.warning(
+                                'device did not successfully go online, retrying in %s seconds',
+                                settings.slaves.retry_interval
+                            )
 
                             await asyncio.sleep(settings.slaves.retry_interval)
 
@@ -894,8 +901,12 @@ class Slave(logging_utils.LoggableMixin):
                 self.debug('detected attribute definitions change')
 
             else:
-                self.debug('detected attribute change: %s = %s -> %s',
-                           name, json_utils.dumps(self._cached_attrs[name]), json_utils.dumps(attrs[name]))
+                self.debug(
+                    'detected attribute change: %s = %s -> %s',
+                    name,
+                    json_utils.dumps(self._cached_attrs[name]),
+                    json_utils.dumps(attrs[name])
+                )
 
         if removed_names or added_names or changed_names:
             try:
@@ -921,8 +932,10 @@ class Slave(logging_utils.LoggableMixin):
             await self._handle_online()
 
             if not self._online:
-                self.warning('device did not successfully go online, retrying in %s seconds',
-                             settings.slaves.retry_interval)
+                self.warning(
+                    'device did not successfully go online, retrying in %s seconds',
+                    settings.slaves.retry_interval
+                )
 
                 return settings.slaves.retry_interval
 
@@ -1001,8 +1014,12 @@ class Slave(logging_utils.LoggableMixin):
                     local_port.debug('detected attribute definitions change')
 
                 else:
-                    local_port.debug('detected attribute change: %s = %s -> %s',
-                                     name, json_utils.dumps(local_attrs[name]), json_utils.dumps(attrs[name]))
+                    local_port.debug(
+                        'detected attribute change: %s = %s -> %s',
+                        name,
+                        json_utils.dumps(local_attrs[name]),
+                        json_utils.dumps(attrs[name])
+                    )
 
             if removed_names or added_names or changed_names:
                 try:
@@ -1086,8 +1103,12 @@ class Slave(logging_utils.LoggableMixin):
             self.debug('ignoring value-change event due to pending provisioning value')
             return
 
-        self.debug('value of %s changed remotely from %s to %s',
-                   port, json_utils.dumps(port.get_value()), json_utils.dumps(value))
+        self.debug(
+            'value of %s changed remotely from %s to %s',
+            port,
+            json_utils.dumps(port.get_value()),
+            json_utils.dumps(value)
+        )
 
         # Trigger a master value-change if the returned value has not changed from the one we locally have (this happens
         # when slave indirectly rejects pushed value, by triggering itself a value-change with the old value)
@@ -1116,8 +1137,14 @@ class Slave(logging_utils.LoggableMixin):
 
             old_value = port.get_cached_attr(name)
             if old_value is not None and value != old_value:
-                self.debug('%s.%s changed remotely: %s -> %s', port, name,
-                           json_utils.dumps(old_value), json_utils.dumps(value))
+                self.debug(
+                    '%s.%s changed remotely: %s -> %s',
+                    port,
+                    name,
+                    json_utils.dumps(old_value),
+                    json_utils.dumps(value)
+                )
+
                 await port.handle_attr_change(name, value)
 
         port.update_cached_attrs(attrs)

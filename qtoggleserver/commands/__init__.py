@@ -43,16 +43,35 @@ def parse_args() -> None:
             sys.stdout.write(f'{description}\n')
             sys.exit()
 
-    parser = argparse.ArgumentParser(prog=sys.argv[0],
-                                     description=description, epilog=epilog,
-                                     add_help=False, formatter_class=argparse.RawTextHelpFormatter)
+    parser = argparse.ArgumentParser(
+        prog=sys.argv[0],
+        description=description,
+        epilog=epilog,
+        add_help=False,
+        formatter_class=argparse.RawTextHelpFormatter
+    )
 
-    parser.add_argument('-c', help='specify the configuration file',
-                        type=str, dest='config_file')
-    parser.add_argument('-h', help='print this help and exit',
-                        action='help', default=argparse.SUPPRESS)
-    parser.add_argument('-v', help='print program version and exit',
-                        action=VersionAction, default=argparse.SUPPRESS, nargs=0)
+    parser.add_argument(
+        '-c',
+        help='specify the configuration file',
+        type=str,
+        dest='config_file'
+    )
+
+    parser.add_argument(
+        '-h',
+        help='print this help and exit',
+        action='help',
+        default=argparse.SUPPRESS
+    )
+
+    parser.add_argument(
+        '-v',
+        help='print program version and exit',
+        action=VersionAction,
+        default=argparse.SUPPRESS,
+        nargs=0
+    )
 
     options = parser.parse_args()
 

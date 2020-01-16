@@ -154,8 +154,12 @@ class Reverse:
                 continue
 
             except Exception as e:
-                logger.error('wait failed: %s, retrying in %s seconds', e, settings.reverse.retry_interval,
-                             exc_info=True)
+                logger.error(
+                    'wait failed: %s, retrying in %s seconds',
+                    e,
+                    settings.reverse.retry_interval,
+                    exc_info=True
+                )
                 sleep_interval = settings.reverse.retry_interval
                 continue
 
@@ -177,9 +181,11 @@ class Reverse:
 
         headers = {
             'Content-Type': json_utils.JSON_CONTENT_TYPE,
-            'Authorization': core_api_auth.make_auth_header(core_api_auth.ORIGIN_DEVICE,
-                                                            username=self._device_id,
-                                                            password_hash=self._password_hash)
+            'Authorization': core_api_auth.make_auth_header(
+                core_api_auth.ORIGIN_DEVICE,
+                username=self._device_id,
+                password_hash=self._password_hash
+            )
         }
 
         body_str = None
@@ -199,8 +205,13 @@ class Reverse:
         )
 
         if api_response_dict:
-            logger.debug('sending answer request to %s %s (API call id %s) to %s',
-                         api_request_dict['method'], api_request_dict['path'], api_request_dict['api_call_id'], url)
+            logger.debug(
+                'sending answer request to %s %s (API call id %s) to %s',
+                api_request_dict['method'],
+                api_request_dict['path'],
+                api_request_dict['api_call_id'],
+                url
+            )
 
         else:
             logger.debug('sending initial request to %s', url)
@@ -272,9 +283,11 @@ class Reverse:
                 'body': json_utils.dumps({'error': 'no such function'})
             }
 
-        request = httputil.HTTPServerRequest(method=request_dict['method'],
-                                             uri=request_dict['path'],
-                                             body=request_dict['body'])
+        request = httputil.HTTPServerRequest(
+            method=request_dict['method'],
+            uri=request_dict['path'],
+            body=request_dict['body']
+        )
 
         dispatcher = web_server.get_application().find_handler(request)
         await dispatcher.execute()

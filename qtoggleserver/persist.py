@@ -81,8 +81,12 @@ def query(
 ) -> Iterable[Record]:
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('querying %s (%s) where %s', collection, json_utils.dumps(fields) if fields else 'all fields',
-                     json_utils.dumps(filt))
+        logger.debug(
+            'querying %s (%s) where %s',
+            collection,
+            json_utils.dumps(fields) if fields else 'all fields',
+            json_utils.dumps(filt)
+        )
 
     return _get_driver().query(collection, fields, filt or {}, limit)
 
@@ -134,8 +138,12 @@ def insert(collection: str, record: Record) -> Id:
 
 def update(collection: str, record_part: Record, filt: Optional[Dict[str, Any]] = None) -> int:
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('updating %s where %s with %s', collection, json_utils.dumps(filt or {}),
-                     json_utils.dumps(record_part))
+        logger.debug(
+            'updating %s where %s with %s',
+            collection,
+            json_utils.dumps(filt or {}),
+            json_utils.dumps(record_part)
+        )
 
     count = _get_driver().update(collection, record_part, filt or {})
 

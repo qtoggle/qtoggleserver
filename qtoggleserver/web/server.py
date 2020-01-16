@@ -50,21 +50,33 @@ def _make_handlers() -> List[tuple]:
             # In debug mode, we serve QUI static files from its own folder, assumed to be in node_modules/@qtoggle
             qui_path = os.path.join(frontend_path, 'node_modules', '@qtoggle', 'qui')
 
-            handlers_list.append((fr'^/{FRONTEND_URL_PREFIX}/static/qui/(.*)$',
-                                  handlers.JSModuleMapperStaticFileHandler,
-                                  {'path': qui_path, 'mapping': js_module_path_mapping}))
+            handlers_list.append(
+                (
+                    fr'^/{FRONTEND_URL_PREFIX}/static/qui/(.*)$',
+                    handlers.JSModuleMapperStaticFileHandler,
+                    {'path': qui_path, 'mapping': js_module_path_mapping}
+                )
+            )
 
-            handlers_list.append((fr'^/{FRONTEND_URL_PREFIX}/static/app/(.*)$',
-                                  handlers.JSModuleMapperStaticFileHandler,
-                                  {'path': frontend_path, 'mapping': js_module_path_mapping}))
+            handlers_list.append(
+                (
+                    fr'^/{FRONTEND_URL_PREFIX}/static/app/(.*)$',
+                    handlers.JSModuleMapperStaticFileHandler,
+                    {'path': frontend_path, 'mapping': js_module_path_mapping}
+                )
+            )
 
         else:
             if os.path.exists(os.path.join(frontend_path, 'dist')):  # "dist" folder (prod mode, unpackaged)
                 frontend_path = os.path.join(frontend_path, 'dist')
 
-            handlers_list.append((fr'^/{FRONTEND_URL_PREFIX}/static/(.*)$',
-                                  handlers.StaticFileHandler,
-                                  {'path': frontend_path}))
+            handlers_list.append(
+                (
+                    fr'^/{FRONTEND_URL_PREFIX}/static/(.*)$',
+                    handlers.StaticFileHandler,
+                    {'path': frontend_path}
+                )
+            )
 
         handlers_list += [
             (r'^/?$', handlers.RedirectFrontendHandler),
