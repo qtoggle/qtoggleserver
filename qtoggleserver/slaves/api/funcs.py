@@ -1,6 +1,9 @@
 
+import re
+
 from typing import Any, List, Optional
 
+from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.api import auth as core_api_auth
@@ -10,6 +13,17 @@ from qtoggleserver.slaves import devices as slaves_devices
 
 from .. import exceptions
 from . import schema as api_schema
+
+
+_LONG_TIMEOUT_API_CALLS = [
+    ('PATCH', re.compile(r'/device/?')),
+    ('GET', re.compile(r'/firmware/?')),
+    ('PATCH', re.compile(r'/firmware/?')),
+    ('PATCH', re.compile(r'/ports/[^/]+/?')),
+    ('PATCH', re.compile(r'/ports/[^/]+/value/?')),
+    ('POST', re.compile(r'/devices/?')),
+    ('PATCH', re.compile(r'/devices/[^/]+/?'))
+]
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
@@ -169,8 +183,15 @@ async def slave_device_forward(
     if (not slave.is_online() or not slave.is_ready()) and (override_offline != 'true'):
         raise core_api.APIError(503, 'device offline')
 
+    # Use default slave timeout unless API call requires longer timeout
+    timeout = settings.slaves.timeout
+    for m, path_re in _LONG_TIMEOUT_API_CALLS:
+        if method == m and path_re.fullmatch(path):
+            timeout = settings.slaves.long_timeout
+            break
+
     try:
-        response = await slave.api_call(method, path, params, retry_counter=None)
+        response = await slave.api_call(method, path, params, timeout=timeout, retry_counter=None)
 
     except Exception as e:
         raise exceptions.adapt_api_error(e) from e

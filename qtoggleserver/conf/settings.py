@@ -90,6 +90,7 @@ class frontend:
 class slaves:
     enabled: bool = False
     timeout: int = 10
+    long_timeout: int = 60
     keepalive: int = 300
     retry_interval: int = 5
     retry_count: int = 3

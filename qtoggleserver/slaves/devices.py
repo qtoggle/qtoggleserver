@@ -491,7 +491,15 @@ class Slave(logging_utils.LoggableMixin):
     def trigger_update(self) -> None:
         core_events.handle_event(events.SlaveDeviceUpdate(self))
 
-    async def api_call(self, method: str, path: str, body: Any = None, retry_counter: Optional[int] = 0) -> Any:
+    async def api_call(
+        self,
+        method: str,
+        path: str,
+        body: Any = None,
+        timeout: int = None,
+        retry_counter: Optional[int] = 0
+    ) -> Any:
+
         if method == 'GET':
             body = None
 
@@ -504,16 +512,22 @@ class Slave(logging_utils.LoggableMixin):
         http_client = AsyncHTTPClient()
         headers = {
             'Content-Type': json_utils.JSON_CONTENT_TYPE,
-            'Authorization': core_api_auth.make_auth_header(core_api_auth.ORIGIN_CONSUMER,
-                                                            username='admin', password_hash=self._admin_password_hash)
+            'Authorization': core_api_auth.make_auth_header(
+                core_api_auth.ORIGIN_CONSUMER,
+                username='admin', password_hash=self._admin_password_hash
+            )
         }
+
+        if timeout is None:
+            timeout = settings.slaves.timeout
+
         request = HTTPRequest(
             url,
             method,
             headers=headers,
             body=body_str,
-            connect_timeout=settings.slaves.timeout,
-            request_timeout=settings.slaves.timeout
+            connect_timeout=timeout,
+            request_timeout=timeout
         )
 
         self.debug('calling api function %s %s', method, path)
@@ -541,7 +555,7 @@ class Slave(logging_utils.LoggableMixin):
 
                 await asyncio.sleep(settings.slaves.retry_interval)
 
-                return await self.api_call(method, path, body, retry_counter + 1)
+                return await self.api_call(method, path, body, timeout, retry_counter + 1)
 
             else:
                 self.error(msg)
@@ -621,7 +635,7 @@ class Slave(logging_utils.LoggableMixin):
 
         self._fwupdate_poll_task.cancel()
 
-    async def _add_port(self, attrs: Attributes) -> SlavePort:
+    async def _add_port(self, attrs: Attributes) -> core_ports.BasePort:
         self.debug('adding port %s', attrs['id'])
 
         port = await core_ports.load_one(SlavePort, {
@@ -1235,7 +1249,7 @@ class Slave(logging_utils.LoggableMixin):
             self.debug('provisioning device attributes: %s', ', '.join(attrs.keys()))
 
             try:
-                await self.api_call('PATCH', '/device', attrs)
+                await self.api_call('PATCH', '/device', attrs, timeout=settings.slaves.long_timeout)
 
             except Exception as e:
                 self.error('failed to provision device attributes: %s', e)
@@ -1294,7 +1308,11 @@ class Slave(logging_utils.LoggableMixin):
                 self.debug('provisioning %s attributes: %s', port, ', '.join(attrs.keys()))
 
                 try:
-                    await self.api_call('PATCH', f'/ports/{port.get_remote_id()}', attrs)
+                    await self.api_call(
+                        'PATCH', f'/ports/{port.get_remote_id()}',
+                        attrs,
+                        timeout=settings.slaves.long_timeout
+                    )
 
                 except Exception as e:
                     self.error('failed to provision %s attributes: %s', port, e)
@@ -1307,7 +1325,11 @@ class Slave(logging_utils.LoggableMixin):
                 self.debug('provisioning %s value', port)
 
                 try:
-                    await self.api_call('PATCH', f'/ports/{port.get_remote_id()}/value')
+                    await self.api_call(
+                        'PATCH',
+                        f'/ports/{port.get_remote_id()}/value',
+                        timeout=settings.slaves.long_timeout
+                    )
 
                 except Exception as e:
                     self.error('failed to provision %s value: %s', port, e)

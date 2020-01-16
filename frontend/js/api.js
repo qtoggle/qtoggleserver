@@ -26,7 +26,7 @@ const PROVISIONING_CONFIG_URL = 'https://provisioning.qtoggle.io/config'
 
 export const LISTEN_KEEPALIVE = 60 /* Seconds TODO server setting */
 export const SERVER_RETRY_INTERVAL = 3 /* Seconds TODO server setting */
-export const DEFAULT_SERVER_TIMEOUT = 15 /* Seconds TODO server setting */
+export const DEFAULT_SERVER_TIMEOUT = 10 /* Seconds TODO server setting */
 export const LONG_SERVER_TIMEOUT = 60 /* Seconds TODO server setting */
 
 export const ACCESS_LEVEL_ADMIN = 30

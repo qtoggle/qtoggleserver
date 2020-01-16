@@ -6,6 +6,7 @@ import time
 
 from typing import Any, List, Optional, Set, Tuple
 
+from qtoggleserver.conf import settings
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.typing import Attribute, Attributes, AttributeDefinitions, GenericJSONDict
@@ -215,7 +216,7 @@ class SlavePort(core_ports.BasePort):
         self._remote_update_pending_attrs = set()
 
         try:
-            await self._slave.api_call('PATCH', f'/ports/{self._remote_id}', body)
+            await self._slave.api_call('PATCH', f'/ports/{self._remote_id}', body, timeout=settings.slaves.long_timeout)
             self.debug('successfully updated attributes remotely')
 
         except Exception as e:
@@ -276,7 +277,12 @@ class SlavePort(core_ports.BasePort):
     async def write_value(self, value: PortValue) -> None:
         if self._slave.is_online():
             try:
-                await self._slave.api_call('PATCH', f'/ports/{self._remote_id}/value', value)
+                await self._slave.api_call(
+                    'PATCH',
+                    f'/ports/{self._remote_id}/value',
+                    value,
+                    timeout=settings.slaves.long_timeout
+                )
 
             except core_responses.HTTPError as e:
                 if e.code == 502 and e.msg.startswith('port error:'):
