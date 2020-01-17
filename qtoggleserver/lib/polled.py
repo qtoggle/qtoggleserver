@@ -51,11 +51,13 @@ class PolledPeripheral(Peripheral):
                     retry_poll_interval = min(self.RETRY_POLL_INTERVAL, self._poll_interval)
                     self.error('polling failed (retrying in %s seconds): %s', retry_poll_interval, e, exc_info=True)
                     self._poll_error = e
+                    self.set_online(False)
                     await asyncio.sleep(retry_poll_interval)
                     continue
 
                 # Clear poll error, as the poll call has been successful
                 self._poll_error = None
+                self.set_online(True)
 
                 # Granular sleep so it can be interrupted
                 orig_poll_interval = self._poll_interval
@@ -84,14 +86,8 @@ class PolledPeripheral(Peripheral):
     def get_poll_error(self) -> Exception:
         return self._poll_error
 
-    def check_poll_error(self, clear: bool = True) -> None:
-        if self._poll_error:
-            error = self._poll_error
-            if clear:
-                self._poll_error = None
-
-            # Raise a copy of the error, to prevent traceback piling up
-            raise copy.copy(error)
+    def has_poll_error(self) -> bool:
+        return bool(self._poll_error)
 
     @abc.abstractmethod
     async def poll(self) -> None:

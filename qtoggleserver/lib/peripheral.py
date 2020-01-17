@@ -105,6 +105,7 @@ class Peripheral(conf_utils.ConfigurableMixin, logging_utils.LoggableMixin, meta
         self._name = name
         self._ports = []
         self._enabled = False
+        self._online = False
         self._runner = None
 
         add_cleanup_hook(self.handle_cleanup)
@@ -123,11 +124,6 @@ class Peripheral(conf_utils.ConfigurableMixin, logging_utils.LoggableMixin, meta
 
     def get_ports(self) -> List[core_ports.BasePort]:
         return list(self._ports)
-
-    def trigger_port_update(self) -> None:
-        for port in self._ports:
-            if port.is_enabled():
-                port.trigger_update()
 
     def is_enabled(self) -> bool:
         return self._enabled
@@ -159,6 +155,31 @@ class Peripheral(conf_utils.ConfigurableMixin, logging_utils.LoggableMixin, meta
         else:
             self.debug('all ports are disabled, disabling peripheral')
             await self.disable()
+
+    def is_online(self) -> bool:
+        return self._enabled and self._online
+
+    def set_online(self, online: bool) -> None:
+        if online and not self._online:
+            self.debug('is online')
+            self.handle_online()
+
+        elif not online and self._online:
+            self.debug('is offline')
+            self.handle_offline()
+
+        self._online = online
+
+    def handle_offline(self) -> None:
+        self.trigger_port_update()
+
+    def handle_online(self) -> None:
+        self.trigger_port_update()
+
+    def trigger_port_update(self) -> None:
+        for port in self._ports:
+            if port.is_enabled():
+                port.trigger_update()
 
     def get_runner(self) -> ThreadedRunner:
         if self._runner is None:
@@ -240,3 +261,9 @@ class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
     async def handle_disable(self) -> None:
         if self._peripheral.is_enabled():
             await self._peripheral.check_disabled(self)
+
+    async def attr_is_online(self) -> bool:
+        if not self.is_enabled():
+            return False
+
+        return self._peripheral.is_online()

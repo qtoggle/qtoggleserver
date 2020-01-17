@@ -162,8 +162,6 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         self._adapter: BLEAdapter = adapter
         self._adapter.add_peripheral(self)
 
-        self._online: bool = False
-
     def __str__(self) -> str:
         return f'{self._adapter}/{self._name}'
 
@@ -334,9 +332,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
                     retry += 1
                     continue
 
-                if self._online:
-                    self._online = False
-                    self._handle_offline()
+                self.set_online(False)
 
                 if isinstance(e, RunnerBusy):
                     raise BLEBusy('Too many pending commands') from e
@@ -344,22 +340,9 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
                 raise
 
             else:
-                if not self._online:
-                    self._online = True
-                    self._handle_online()
+                self.set_online(True)
 
                 return response, notification_data
-
-    def is_online(self) -> bool:
-        return self._enabled and self._online
-
-    def _handle_offline(self) -> None:
-        self.debug('is offline')
-        self.trigger_port_update()
-
-    def _handle_online(self) -> None:
-        self.debug('is online')
-        self.trigger_port_update()
 
     @staticmethod
     def pretty_data(data: bytes) -> str:
@@ -382,12 +365,6 @@ class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):
     async def attr_get_write_value_pause(self) -> int:
         # Inherit from peripheral
         return self.get_peripheral().WRITE_VALUE_PAUSE
-
-    async def attr_is_online(self) -> bool:
-        if not self.is_enabled():
-            return False
-
-        return self.get_peripheral().is_online()
 
 
 def port_exceptions(func: Callable) -> Callable:
