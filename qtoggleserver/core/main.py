@@ -140,6 +140,10 @@ async def handle_value_changes(
         if not port.is_enabled():
             continue
 
+        # Leave the port alone while it has pending writes; expression changes could only push more values to its queue
+        if port.has_pending_write():
+            continue
+
         expression = await port.get_expression()
         if expression:
             deps = set(expression.get_deps())

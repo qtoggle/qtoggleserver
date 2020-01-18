@@ -6,8 +6,6 @@ import asyncio
 import copy
 import functools
 import logging
-import sys
-import time
 
 from typing import Any, Dict, Iterable, List, Optional, Set, Union
 
@@ -17,6 +15,7 @@ from qtoggleserver import persist
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
+from qtoggleserver.core import main
 from qtoggleserver.core import sequences as core_sequences
 from qtoggleserver.core.typing import Attribute, Attributes, AttributeDefinitions, GenericJSONDict
 from qtoggleserver.core.typing import NullablePortValue, PortValue
@@ -217,6 +216,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._write_value_queue: queues.Queue = queues.Queue()
         self._write_value_task: asyncio.Task = asyncio.create_task(self._write_value_loop())
         self._change_reason: str = CHANGE_REASON_NATIVE
+        self._pending_write: bool = False
 
         self._loaded: bool = False
 
@@ -306,8 +306,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return None  # Unsupported attribute
 
     async def set_attr(self, name: str, value: Attribute) -> None:
-        from qtoggleserver.core import main
-
         old_value = await self.get_attr(name)
         if old_value is None:
             return  # Refuse to set an unsupported attribute
@@ -445,8 +443,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             return ''
 
     async def attr_set_expression(self, sexpression: str) -> None:
-        from qtoggleserver.core import main
-
         if not await self.is_writable():
             self.error('refusing to set expression on non-writable port')
             raise PortError('Cannot set expression on non-writable port')
@@ -598,6 +594,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def push_value(self, value: PortValue, reason: str) -> None:
         asyncio.create_task(self.write_transformed_value(value, reason))
 
+    def has_pending_write(self) -> bool:
+        if self._write_value_queue.qsize() > 0:
+            return True
+
+        return self._pending_write
+
     async def _write_value_queued(self, value: PortValue, reason: str) -> None:
         done = asyncio.get_running_loop().create_future()
 
@@ -607,12 +609,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         await done
 
     async def _write_value_loop(self) -> None:
-        from qtoggleserver.core import main  # TODO: can this be imported at the top?
-
         while True:
             try:
                 value, reason, done = await self._write_value_queue.get()
+
                 self._change_reason = reason
+                self._pending_write = True
 
                 try:
                     result = await self.write_value(value)
@@ -620,6 +622,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
                 except Exception as e:
                     done.set_exception(e)
+
+                self._pending_write = False
 
                 await main.update()  # Do an update after every confirmed write
                 await asyncio.sleep(await self.get_attr('write_value_pause'))
