@@ -9,8 +9,6 @@ import logging
 
 from typing import Any, Dict, Iterable, List, Optional, Set, Union
 
-from tornado import queues
-
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
@@ -162,6 +160,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     CHOICES = None
 
     WRITE_VALUE_PAUSE = 0
+    WRITE_VALUE_QUEUE_SIZE = 16
 
     STANDARD_ATTRDEFS = STANDARD_ATTRDEFS
 
@@ -213,7 +212,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._value_schema: Optional[GenericJSONDict] = None
 
         self._value: NullablePortValue = None
-        self._write_value_queue: queues.Queue = queues.Queue()
+        self._write_value_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
         self._write_value_task: asyncio.Task = asyncio.create_task(self._write_value_loop())
         self._change_reason: str = CHANGE_REASON_NATIVE
         self._pending_write: bool = False
@@ -603,7 +602,15 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def _write_value_queued(self, value: PortValue, reason: str) -> None:
         done = asyncio.get_running_loop().create_future()
 
-        await self._write_value_queue.put((value, reason, done))
+        while True:
+            try:
+                self._write_value_queue.put_nowait((value, reason, done))
+
+            except asyncio.QueueFull:
+                self._write_value_queue.get_nowait()
+
+            else:
+                break
 
         # Wait for actual write_value operation to be done
         await done
