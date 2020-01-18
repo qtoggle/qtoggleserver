@@ -6,17 +6,14 @@ import asyncio
 import copy
 import functools
 import logging
-import sys
-import time
 
 from typing import Any, Dict, Iterable, List, Optional, Set, Union
-
-from tornado import queues
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
+from qtoggleserver.core import main
 from qtoggleserver.core import sequences as core_sequences
 from qtoggleserver.core.typing import Attribute, Attributes, AttributeDefinitions, GenericJSONDict
 from qtoggleserver.core.typing import NullablePortValue, PortValue
@@ -162,7 +159,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     WRITABLE = False
     CHOICES = None
 
-    WRITE_VALUE_PAUSE = 0
+    WRITE_VALUE_QUEUE_SIZE = 16
 
     STANDARD_ATTRDEFS = STANDARD_ATTRDEFS
 
@@ -214,10 +211,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._value_schema: Optional[GenericJSONDict] = None
 
         self._value: NullablePortValue = None
-        self._write_value_queue: queues.Queue = queues.Queue()
+        self._write_value_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
         self._write_value_task: asyncio.Task = asyncio.create_task(self._write_value_loop())
-        self._asap_value: NullablePortValue = None
         self._change_reason: str = CHANGE_REASON_NATIVE
+        self._pending_write: bool = False
 
         self._loaded: bool = False
 
@@ -307,8 +304,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return None  # Unsupported attribute
 
     async def set_attr(self, name: str, value: Attribute) -> None:
-        from qtoggleserver.core import main
-
         old_value = await self.get_attr(name)
         if old_value is None:
             return  # Refuse to set an unsupported attribute
@@ -446,8 +441,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             return ''
 
     async def attr_set_expression(self, sexpression: str) -> None:
-        from qtoggleserver.core import main
-
         if not await self.is_writable():
             self.error('refusing to set expression on non-writable port')
             raise PortError('Cannot set expression on non-writable port')
@@ -555,49 +548,30 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_value(self) -> NullablePortValue:
         return self._value
 
+    def set_value(self, value: NullablePortValue) -> None:
+        self._value = value
+
     def get_change_reason(self) -> str:
         return self._change_reason
 
     def reset_change_reason(self) -> None:
         self._change_reason = CHANGE_REASON_NATIVE
 
-    async def _write_value_queued(self, value: PortValue, reason: str) -> None:
-        done = asyncio.get_running_loop().create_future()
+    async def read_transformed_value(self) -> NullablePortValue:
+        value = await self.read_value()
+        if value is None:
+            return None
 
-        await self._write_value_queue.put((value, reason, done))
+        if self._transform_read:
+            # Temporarily set the new value to the port, so that the read transform expression works as expected
+            old_value = self._value
+            self._value = value
+            value = await self.adapt_value_type(self._transform_read.eval())
+            self._value = old_value
 
-        # Wait for actual write_value operation to be done
-        await done
+        return value
 
-    async def _write_value_loop(self) -> None:
-        while True:
-            try:
-                value, reason, done = await self._write_value_queue.get()
-
-                try:
-                    result = await self._write_value(value, reason)
-                    if not done.done():
-                        done.set_result(result)
-
-                except Exception:
-                    done.set_exception(sys.exc_info()[1])
-
-                await asyncio.sleep(await self.get_attr('write_value_pause'))
-
-            except asyncio.CancelledError:
-                self.debug('write value task cancelled')
-                break
-
-    async def _write_value(self, value: PortValue, reason: str) -> None:
-        from qtoggleserver.core import main
-
-        self._last_write_value_time = time.time()
-        self._change_reason = reason
-
-        await self.write_value(value)
-        await main.update()
-
-    async def set_value(self, value: PortValue, reason: str) -> None:
+    async def write_transformed_value(self, value: PortValue, reason: str) -> None:
         if self._transform_write:
             # Temporarily set the port value to the new value, so that the write transform expression takes the new
             # value into consideration when evaluating the result
@@ -615,37 +589,53 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             raise
 
-    def set_value_fire_and_forget(self, value: PortValue, reason: str) -> None:
-        asyncio.create_task(self.set_value(value, reason))
-
     def push_value(self, value: PortValue, reason: str) -> None:
-        already_scheduled = self._asap_value is not None
-        self._asap_value = value
+        asyncio.create_task(self.write_transformed_value(value, reason))
 
-        if not already_scheduled:
-            async def set_value() -> None:
-                asap_value = self._asap_value
-                self._asap_value = None
-                await self.set_value(asap_value, reason)
+    def has_pending_write(self) -> bool:
+        if self._write_value_queue.qsize() > 0:
+            return True
 
-            asyncio.create_task(set_value())
+        return self._pending_write
 
-        else:
-            self.debug('will set value %s asap', json_utils.dumps(value))
+    async def _write_value_queued(self, value: PortValue, reason: str) -> None:
+        done = asyncio.get_running_loop().create_future()
 
-    async def read_transformed_value(self) -> NullablePortValue:
-        value = await self.read_value()
-        if value is None:
-            return None
+        while True:
+            try:
+                self._write_value_queue.put_nowait((value, reason, done))
 
-        if self._transform_read:
-            # Temporarily set the new value to the port, so that the read transform expression works as expected
-            old_value = self._value
-            self._value = value
-            value = await self.adapt_value_type(self._transform_read.eval())
-            self._value = old_value
+            except asyncio.QueueFull:
+                self._write_value_queue.get_nowait()
 
-        return value
+            else:
+                break
+
+        # Wait for actual write_value operation to be done
+        await done
+
+    async def _write_value_loop(self) -> None:
+        while True:
+            try:
+                value, reason, done = await self._write_value_queue.get()
+
+                self._change_reason = reason
+                self._pending_write = True
+
+                try:
+                    result = await self.write_value(value)
+                    done.set_result(result)
+
+                except Exception as e:
+                    done.set_exception(e)
+
+                self._pending_write = False
+
+                await main.update()  # Do an update after every confirmed write
+
+            except asyncio.CancelledError:
+                self.debug('write value task cancelled')
+                break
 
     async def adapt_value_type(self, value: NullablePortValue) -> NullablePortValue:
         return self.adapt_value_type_sync(await self.get_type(), await self.get_attr('integer'), value)
@@ -672,11 +662,14 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._sequence = None
 
         if values:
-            callback = functools.partial(self.set_value_fire_and_forget, reason=CHANGE_REASON_SEQUENCE)
+            callback = functools.partial(self._write_transformed_value_fire_and_forget, reason=CHANGE_REASON_SEQUENCE)
             self._sequence = core_sequences.Sequence(values, delays, repeat, callback, self._on_sequence_finish)
 
             self.debug('installing sequence')
             self._sequence.start()
+
+    def _write_transformed_value_fire_and_forget(self, value: PortValue, reason: str) -> None:
+        asyncio.create_task(self.write_transformed_value(value, reason))
 
     async def _on_sequence_finish(self) -> None:
         self.debug('sequence finished')
@@ -964,7 +957,7 @@ async def load(port_settings: List[Dict[str, Any]], raise_on_error: bool = True)
             value = port_spec.pop('value', None)  # Initial value
             port = port_class(**port_spec)
             if value is not None:
-                port._value = value
+                port.set_value(value)
 
             _ports_by_id[port.get_id()] = port
             ports.append(port)

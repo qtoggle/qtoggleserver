@@ -90,7 +90,7 @@ async def update() -> None:
 
             logger.debug('detected %s value change: %s -> %s', port, old_value_str, new_value_str)
 
-            port._value = new_value
+            port.set_value(new_value)
             changed_set.add(port)
 
             # Remember and reset port change reason
@@ -138,6 +138,10 @@ async def handle_value_changes(
     # Reevaluate the expressions depending on changed ports
     for port in core_ports.all_ports():
         if not port.is_enabled():
+            continue
+
+        # Leave the port alone while it has pending writes; expression changes could only push more values to its queue
+        if port.has_pending_write():
             continue
 
         expression = await port.get_expression()
