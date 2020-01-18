@@ -159,7 +159,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     WRITABLE = False
     CHOICES = None
 
-    WRITE_VALUE_PAUSE = 0
     WRITE_VALUE_QUEUE_SIZE = 16
 
     STANDARD_ATTRDEFS = STANDARD_ATTRDEFS
@@ -633,7 +632,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self._pending_write = False
 
                 await main.update()  # Do an update after every confirmed write
-                await asyncio.sleep(await self.get_attr('write_value_pause'))
 
             except asyncio.CancelledError:
                 self.debug('write value task cancelled')

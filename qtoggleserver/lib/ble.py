@@ -148,7 +148,6 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
     CMD_TIMEOUT = 10
     RETRY_COUNT = 2
     RETRY_DELAY = 2
-    WRITE_VALUE_PAUSE = 5
 
     logger = logger
 
@@ -361,10 +360,6 @@ class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):
             adapter_name = BLEAdapter.DEFAULT_NAME
 
         super().__init__(address, peripheral_name, adapter_name=adapter_name)
-
-    async def attr_get_write_value_pause(self) -> int:
-        # Inherit from peripheral
-        return self.get_peripheral().WRITE_VALUE_PAUSE
 
 
 def port_exceptions(func: Callable) -> Callable:
