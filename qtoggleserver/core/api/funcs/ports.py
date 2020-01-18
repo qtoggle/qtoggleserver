@@ -83,8 +83,8 @@ async def post_ports(request: core_api.APIRequest, params: GenericJSONDict) -> A
 
     port_id = params['id']
     port_type = params['type']
-    mi = params.get('min')
-    ma = params.get('max')
+    _min = params.get('min')
+    _max = params.get('max')
     integer = params.get('integer')
     step = params.get('step')
     choices = params.get('choices')
@@ -95,14 +95,14 @@ async def post_ports(request: core_api.APIRequest, params: GenericJSONDict) -> A
     if len(core_vports.all_settings()) >= settings.core.virtual_ports:
         raise core_api.APIError(400, 'too many ports')
 
-    core_vports.add(port_id, port_type, mi, ma, integer, step, choices)
+    core_vports.add(port_id, port_type, _min, _max, integer, step, choices)
     port = await core_ports.load_one(
         'qtoggleserver.core.vports.VirtualPort',
         {
             'port_id': port_id,
             '_type': port_type,
-            '_min': min,
-            '_max': max,
+            '_min': _min,
+            '_max': _max,
             'integer': integer,
             'step': step,
             'choices': choices
