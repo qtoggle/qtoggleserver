@@ -90,7 +90,7 @@ async def update() -> None:
 
             logger.debug('detected %s value change: %s -> %s', port, old_value_str, new_value_str)
 
-            port._value = new_value
+            port.set_value(new_value)
             changed_set.add(port)
 
             # Remember and reset port change reason

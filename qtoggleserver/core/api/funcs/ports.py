@@ -171,7 +171,7 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
     old_value = port.get_value()
 
     try:
-        await port.set_value(value, reason=core_ports.CHANGE_REASON_API)
+        await port.write_transformed_value(value, reason=core_ports.CHANGE_REASON_API)
 
     except core_ports.PortTimeout as e:
         raise core_api.APIError(504, 'port timeout') from e
