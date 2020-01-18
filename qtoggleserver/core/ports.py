@@ -216,7 +216,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._value: NullablePortValue = None
         self._write_value_queue: queues.Queue = queues.Queue()
         self._write_value_task: asyncio.Task = asyncio.create_task(self._write_value_loop())
-        self._asap_value: NullablePortValue = None
         self._change_reason: str = CHANGE_REASON_NATIVE
 
         self._loaded: bool = False
@@ -564,56 +563,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def reset_change_reason(self) -> None:
         self._change_reason = CHANGE_REASON_NATIVE
 
-    async def _write_value_queued(self, value: PortValue, reason: str) -> None:
-        done = asyncio.get_running_loop().create_future()
-
-        await self._write_value_queue.put((value, reason, done))
-
-        # Wait for actual write_value operation to be done
-        await done
-
-    async def _write_value_loop(self) -> None:
-        while True:
-            try:
-                value, reason, done = await self._write_value_queue.get()
-
-                try:
-                    result = await self._write_value(value, reason)
-                    if not done.done():
-                        done.set_result(result)
-
-                except Exception:
-                    done.set_exception(sys.exc_info()[1])
-
-                await asyncio.sleep(await self.get_attr('write_value_pause'))
-
-            except asyncio.CancelledError:
-                self.debug('write value task cancelled')
-                break
-
-    async def _write_value(self, value: PortValue, reason: str) -> None:
-        from qtoggleserver.core import main
-
-        self._change_reason = reason
-
-        await self.write_value(value)
-        await main.update()
-
-    def push_value(self, value: PortValue, reason: str) -> None:
-        already_scheduled = self._asap_value is not None
-        self._asap_value = value
-
-        if not already_scheduled:
-            async def set_value() -> None:
-                asap_value = self._asap_value
-                self._asap_value = None
-                await self.write_transformed_value(asap_value, reason)
-
-            asyncio.create_task(set_value())
-
-        else:
-            self.debug('will set value %s asap', json_utils.dumps(value))
-
     async def read_transformed_value(self) -> NullablePortValue:
         value = await self.read_value()
         if value is None:
@@ -645,6 +594,39 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.error('failed to write value %s (reason=%s)', json_utils.dumps(value), reason, exc_info=True)
 
             raise
+
+    def push_value(self, value: PortValue, reason: str) -> None:
+        asyncio.create_task(self.write_transformed_value(value, reason))
+
+    async def _write_value_queued(self, value: PortValue, reason: str) -> None:
+        done = asyncio.get_running_loop().create_future()
+
+        await self._write_value_queue.put((value, reason, done))
+
+        # Wait for actual write_value operation to be done
+        await done
+
+    async def _write_value_loop(self) -> None:
+        from qtoggleserver.core import main  # TODO: can this be imported at the top?
+
+        while True:
+            try:
+                value, reason, done = await self._write_value_queue.get()
+                self._change_reason = reason
+
+                try:
+                    result = await self.write_value(value)
+                    done.set_result(result)
+
+                except Exception as e:
+                    done.set_exception(e)
+
+                await main.update()  # Do an update after every confirmed write
+                await asyncio.sleep(await self.get_attr('write_value_pause'))
+
+            except asyncio.CancelledError:
+                self.debug('write value task cancelled')
+                break
 
     async def adapt_value_type(self, value: NullablePortValue) -> NullablePortValue:
         return self.adapt_value_type_sync(await self.get_type(), await self.get_attr('integer'), value)
