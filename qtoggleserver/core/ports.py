@@ -139,6 +139,10 @@ class PortLoadError(PortError):
     pass
 
 
+class PortReadError(PortError):
+    pass
+
+
 class InvalidAttributeValue(PortError):
     def __init__(self, attr: str) -> None:
         self.attr: str = attr
