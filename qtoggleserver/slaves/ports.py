@@ -284,6 +284,11 @@ class SlavePort(core_ports.BasePort):
                     timeout=settings.slaves.long_timeout
                 )
 
+                # Immediately fetch the current port value from slave and update it locally. This ensures that calls to
+                # Port.get_value() will return the correct updated value.
+                remote_value = await self._slave.api_call('GET', f'/ports/{self._remote_id}/value')
+                self.set_cached_value(remote_value)
+
             except core_responses.HTTPError as e:
                 if e.code == 502 and e.msg.startswith('port error:'):
                     raise core_ports.PortError(e.msg.split(':', 1)[1].strip())
