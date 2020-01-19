@@ -98,15 +98,15 @@ def _make_handlers() -> List[tuple]:
 
         # Port management
         (r'^/api/ports/?$', handlers.PortsHandler),
-        (r'^/api/ports/(?P<port_id>[\w.]+)/?$', handlers.PortHandler),
+        (r'^/api/ports/(?P<port_id>[A-Za-z0-9_.-]+)/?$', handlers.PortHandler),
 
         # Port values
-        (r'^/api/ports/(?P<port_id>[\w.]+)/value/?$', handlers.PortValueHandler),
+        (r'^/api/ports/(?P<port_id>[A-Za-z0-9_.-]+)/value/?$', handlers.PortValueHandler),
     ]
 
     if settings.core.sequences_support:
         handlers_list += [
-            (r'^/api/ports/(?P<port_id>[\w.]+)/sequence/?$', handlers.PortSequenceHandler)
+            (r'^/api/ports/(?P<port_id>[A-Za-z0-9_.-]+)/sequence/?$', handlers.PortSequenceHandler)
         ]
 
     # Firmware
@@ -121,9 +121,9 @@ def _make_handlers() -> List[tuple]:
     if settings.slaves.enabled:
         handlers_list += [
             (r'^/api/devices/?$', handlers.SlaveDevicesHandler),
-            (r'^/api/devices/(?P<name>\w+)/?$', handlers.SlaveDeviceHandler),
-            (r'^/api/devices/(?P<name>\w+)/events/?$', handlers.SlaveDeviceEventsHandler),
-            (r'^/api/devices/(?P<name>\w+)/forward/(?P<path>.+)$', handlers.SlaveDeviceForwardHandler)
+            (r'^/api/devices/(?P<name>[A-Za-z0-9_-]+)/?$', handlers.SlaveDeviceHandler),
+            (r'^/api/devices/(?P<name>[A-Za-z0-9_-]+)/events/?$', handlers.SlaveDeviceEventsHandler),
+            (r'^/api/devices/(?P<name>[A-Za-z0-9_-]+)/forward/(?P<path>.+)$', handlers.SlaveDeviceForwardHandler)
         ]
 
     # Notifications
