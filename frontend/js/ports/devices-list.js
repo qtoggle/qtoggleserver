@@ -170,4 +170,3 @@ class DevicesList extends PageList {
 
 
 export default DevicesList
-
