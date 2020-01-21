@@ -362,8 +362,8 @@ export class ConfigForm extends WidgetConfigForm {
         super.toWidget(data, widget)
     }
 
-    fromPort(port) {
-        let data = super.fromPort(port)
+    fromPort(port, fieldName) {
+        let data = super.fromPort(port,fieldName)
 
         data.unit = port.unit
         data.min = port.min != null ? port.min : 0

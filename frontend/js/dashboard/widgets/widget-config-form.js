@@ -71,7 +71,7 @@ export default class WidgetConfigForm extends PageForm {
             let portId = data[fieldName]
             let port = this.getPort(portId)
             if (port) {
-                let dataFromPort = this.fromPort(port)
+                let dataFromPort = this.fromPort(port, fieldName)
                 if (Object.keys(dataFromPort).length) {
                     this.setData(dataFromPort)
                 }
@@ -146,7 +146,7 @@ export default class WidgetConfigForm extends PageForm {
     /**
      * @param {Object} port
      */
-    fromPort(port) {
+    fromPort(port, fieldName) {
         return {
             label: port.display_name || port.id
         }
