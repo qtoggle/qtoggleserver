@@ -644,7 +644,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
                 return null
             }
 
-        }, this)
+        }, this).filter(w => w != null)
     }
 
     _makeWidgetId() {
