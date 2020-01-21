@@ -1,3 +1,6 @@
+/**
+ * @namespace qtoggle.dashboard
+ */
 
 import Logger from '$qui/lib/logger.module.js'
 

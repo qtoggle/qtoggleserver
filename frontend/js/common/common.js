@@ -1,3 +1,6 @@
+/**
+ * @namespace qtoggle.common
+ */
 
 import StickyModalProgressMessage from '$qui/messages/sticky-modal-progress-message.js'
 import * as ObjectUtils           from '$qui/utils/object.js'

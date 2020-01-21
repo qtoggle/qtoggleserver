@@ -107,7 +107,7 @@ class ConfigForm extends WidgetConfigForm {
  * @class QToggle.DashboardSection.Widgets.PushButton
  * @extends QToggle.DashboardSection.Widgets.Widget
  */
-export default class PushButton extends Widget {
+class PushButton extends Widget {
 
     constructor() {
         super()
@@ -273,3 +273,6 @@ PushButton.hResizable = true
 
 
 Widgets.register(PushButton)
+
+
+export default PushButton

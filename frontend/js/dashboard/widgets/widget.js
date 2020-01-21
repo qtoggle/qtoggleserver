@@ -39,7 +39,7 @@ const STATES = [
 ]
 
 
-export default class Widget extends mix().with(ViewMixin) {
+class Widget extends mix().with(ViewMixin) {
 
     constructor() {
         super()
@@ -1261,3 +1261,6 @@ Widget.height = null
 Widget.vResizable = false
 Widget.hResizable = false
 Widget.hasFrame = false
+
+
+export default Widget

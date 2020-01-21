@@ -137,7 +137,7 @@ class StatusField extends FormField {
  * @extends qui.forms.PageForm
  * @param {String} deviceName
  */
-export default class UpdateFirmwareForm extends PageForm {
+class UpdateFirmwareForm extends PageForm {
 
     constructor(deviceName) {
         super({
@@ -406,3 +406,6 @@ export default class UpdateFirmwareForm extends PageForm {
     }
 
 }
+
+
+export default UpdateFirmwareForm

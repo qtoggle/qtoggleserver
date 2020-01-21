@@ -85,7 +85,7 @@ class WidgetCategoryList extends List {
  * @mixes qui.pages.StructuredPageMixin
  * @param {QToggle.DashboardSection.Widgets.WidgetPicker.Callback} callback
  */
-export default class WidgetPicker extends mix().with(StructuredPageMixin) {
+class WidgetPicker extends mix().with(StructuredPageMixin) {
 
     constructor(callback) {
         super({
@@ -127,3 +127,6 @@ export default class WidgetPicker extends mix().with(StructuredPageMixin) {
     }
 
 }
+
+
+export default WidgetPicker

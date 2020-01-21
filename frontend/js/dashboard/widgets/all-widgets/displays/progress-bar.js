@@ -16,7 +16,7 @@ export class ConfigForm extends AnalogWidgetConfigForm {
 }
 
 
-export default class ProgressBar extends AnalogWidget {
+class ProgressBar extends AnalogWidget {
 
     constructor() {
         super({readonly: true})
@@ -36,3 +36,6 @@ ProgressBar.width = 2
 
 
 Widgets.register(ProgressBar)
+
+
+export default ProgressBar

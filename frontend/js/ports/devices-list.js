@@ -50,7 +50,7 @@ class DevicesListOptionsForm extends OptionsForm {
  * @extends qui.lists.PageList
  * @private
  */
-export default class DevicesList extends PageList {
+class DevicesList extends PageList {
 
     constructor() {
         super({
@@ -167,3 +167,7 @@ export default class DevicesList extends PageList {
     }
 
 }
+
+
+export default DevicesList
+

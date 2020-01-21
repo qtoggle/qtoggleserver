@@ -20,7 +20,7 @@ const SECTION_TITLE = gettext('Dashboard')
 const logger = Dashboard.logger
 
 
-export default class DashboardSection extends Section {
+class DashboardSection extends Section {
 
     constructor() {
         super({
@@ -176,3 +176,6 @@ export default class DashboardSection extends Section {
     }
 
 }
+
+
+export default DashboardSection

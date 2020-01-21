@@ -35,7 +35,7 @@ const logger = Logger.get('qtoggle.common.provisioning')
  * @extends qui.forms.PageForm
  * @param {String} deviceName
  */
-export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin) {
+class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin) {
 
     constructor(deviceName) {
         super({
@@ -276,3 +276,6 @@ export default class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin
     }
 
 }
+
+
+export default ProvisioningForm

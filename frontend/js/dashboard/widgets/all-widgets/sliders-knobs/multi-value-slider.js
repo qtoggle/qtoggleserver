@@ -17,7 +17,7 @@ class ConfigForm extends AnalogWidgetConfigForm {
 }
 
 
-export default class MultiValueSlider extends AnalogWidget {
+class MultiValueSlider extends AnalogWidget {
 
     constructor() {
         super({ticksonly: true, tickColors: true})
@@ -36,3 +36,6 @@ MultiValueSlider.vResizable = true
 
 
 Widgets.register(MultiValueSlider)
+
+
+export default MultiValueSlider

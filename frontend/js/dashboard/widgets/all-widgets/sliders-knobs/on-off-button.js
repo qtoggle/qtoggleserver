@@ -98,7 +98,7 @@ class ConfigForm extends WidgetConfigForm {
  * @class QToggle.DashboardSection.Widgets.OnOffButton
  * @extends QToggle.DashboardSection.Widgets.Widget
  */
-export default class OnOffButton extends Widget {
+class OnOffButton extends Widget {
 
     constructor() {
         super()
@@ -435,3 +435,6 @@ OnOffButton.vResizable = true
 
 
 Widgets.register(OnOffButton)
+
+
+export default OnOffButton

@@ -14,7 +14,7 @@ import * as ObjectUtils  from '$qui/utils/object.js'
 import * as StringUtils  from '$qui/utils/string.js'
 
 
-export default Mixin((superclass = Object) => {
+const AttrdefFormMixin = Mixin((superclass = Object) => {
 
     class AttrdefFormMixin extends superclass /** @lends AttrdefFormMixin */ {
 
@@ -278,3 +278,6 @@ export default Mixin((superclass = Object) => {
     return AttrdefFormMixin
 
 })
+
+
+export default AttrdefFormMixin

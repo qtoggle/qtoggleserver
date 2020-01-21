@@ -39,7 +39,7 @@ class ConfigForm extends WidgetConfigForm {
 }
 
 
-export default class MJPEGVideo extends Widget {
+class MJPEGVideo extends Widget {
 
     constructor() {
         super()
@@ -125,3 +125,6 @@ MJPEGVideo.hasFrame = true
 
 
 Widgets.register(MJPEGVideo)
+
+
+export default MJPEGVideo

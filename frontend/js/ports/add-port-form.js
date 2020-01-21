@@ -25,7 +25,7 @@ const logger = Ports.logger
  * @private
  * @param {String} deviceName
  */
-export default class AddPortForm extends PageForm {
+class AddPortForm extends PageForm {
 
     constructor(deviceName) {
         super({
@@ -157,3 +157,6 @@ export default class AddPortForm extends PageForm {
     }
 
 }
+
+
+export default AddPortForm

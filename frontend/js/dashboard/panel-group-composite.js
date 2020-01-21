@@ -13,7 +13,7 @@ import * as Dashboard from './dashboard.js'
 const logger = Dashboard.logger
 
 
-export default Mixin((superclass = Object) => {
+const PanelGroupCompositeMixin = Mixin((superclass = Object) => {
 
     /**
      * @mixin QToggle.DashboardSection.PanelGroupCompositeMixin
@@ -120,3 +120,6 @@ export default Mixin((superclass = Object) => {
     }
 
 })
+
+
+export default PanelGroupCompositeMixin

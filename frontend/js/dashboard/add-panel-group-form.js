@@ -20,7 +20,7 @@ const logger = Dashboard.logger
  * @extends qui.forms.PageForm
  * @param {QToggle.DashboardSection.Group} group
  */
-export default class AddPanelGroupForm extends PageForm {
+class AddPanelGroupForm extends PageForm {
 
     constructor(group) {
         super({
@@ -111,3 +111,6 @@ export default class AddPanelGroupForm extends PageForm {
     }
 
 }
+
+
+export default AddPanelGroupForm

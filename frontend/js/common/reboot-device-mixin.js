@@ -13,7 +13,7 @@ import * as API    from '$app/api.js'
 import * as Common from '$app/common/common.js'
 
 
-export default Mixin((superclass = Object) => {
+const RebootFormMixin = Mixin((superclass = Object) => {
 
     class RebootFormMixin extends superclass {
 
@@ -76,3 +76,6 @@ export default Mixin((superclass = Object) => {
     return RebootFormMixin
 
 })
+
+
+export default RebootFormMixin

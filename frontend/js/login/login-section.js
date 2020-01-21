@@ -23,7 +23,7 @@ const SECTION_ID = 'login'
 const logger = Login.logger
 
 
-export default class LoginSection extends Section {
+class LoginSection extends Section {
 
     constructor() {
         super({
@@ -141,3 +141,6 @@ export default class LoginSection extends Section {
     }
 
 }
+
+
+export default LoginSection

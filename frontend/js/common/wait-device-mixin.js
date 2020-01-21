@@ -4,7 +4,7 @@ import {AssertionError}  from '$qui/base/errors.js'
 import {Mixin}           from '$qui/base/mixwith.js'
 
 
-export default Mixin((superclass = Object) => {
+const WaitDeviceMixin = Mixin((superclass = Object) => {
 
     class WaitDeviceMixin extends superclass {
 
@@ -84,3 +84,6 @@ export default Mixin((superclass = Object) => {
     return WaitDeviceMixin
 
 })
+
+
+export default WaitDeviceMixin

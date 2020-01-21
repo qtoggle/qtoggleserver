@@ -230,7 +230,7 @@ class ConfigForm extends WidgetConfigForm {
  * @class QToggle.DashboardSection.Widgets.RadioButtons
  * @extends QToggle.DashboardSection.Widgets.Widget
  */
-export default class RadioButtons extends Widget {
+class RadioButtons extends Widget {
 
     constructor() {
         super()
@@ -471,3 +471,6 @@ RadioButtons.vResizable = false
 
 
 Widgets.register(RadioButtons)
+
+
+export default RadioButtons

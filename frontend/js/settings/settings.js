@@ -1,3 +1,6 @@
+/**
+ * @namespace qtoggle.settings
+ */
 
 import Logger from '$qui/lib/logger.module.js'
 

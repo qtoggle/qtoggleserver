@@ -86,7 +86,7 @@ class ConfigForm extends WidgetConfigForm {
 }
 
 
-export default class OnOffIndicator extends Widget {
+class OnOffIndicator extends Widget {
 
     constructor() {
         super()
@@ -241,3 +241,6 @@ OnOffIndicator.hResizable = true
 
 
 Widgets.register(OnOffIndicator)
+
+
+export default OnOffIndicator

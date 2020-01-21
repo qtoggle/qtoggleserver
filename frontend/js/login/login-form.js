@@ -21,7 +21,7 @@ const logger = Login.logger
  * @param {Number} requiredLevel the required access level
  * @extends qui.forms.PageForm
  */
-export default class LoginForm extends PageForm {
+class LoginForm extends PageForm {
 
     constructor() {
         super({
@@ -71,3 +71,6 @@ export default class LoginForm extends PageForm {
     }
 
 }
+
+
+export default LoginForm

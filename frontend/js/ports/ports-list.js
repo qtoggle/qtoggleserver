@@ -76,7 +76,7 @@ class PortsListOptionsForm extends OptionsForm {
  * @private
  * @param {String} [deviceName]
  */
-export default class PortsList extends PageList {
+class PortsList extends PageList {
 
     constructor(deviceName = null) {
         super({
@@ -276,3 +276,6 @@ export default class PortsList extends PageList {
     }
 
 }
+
+
+export default PortsList

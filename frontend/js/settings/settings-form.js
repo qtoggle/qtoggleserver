@@ -36,7 +36,7 @@ const logger = Settings.logger
  * @class QToggle.SettingsSection.SettingsForm
  * @extends qui.forms.PageForm
  */
-export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, RebootDeviceMixin) {
+class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, RebootDeviceMixin) {
 
     constructor() {
         super({
@@ -297,3 +297,6 @@ export default class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, W
     }
 
 }
+
+
+export default SettingsForm

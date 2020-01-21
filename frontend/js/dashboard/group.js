@@ -75,7 +75,7 @@ class GroupOptionsForm extends OptionsForm {
  * @mixes QToggle.DashboardSection.PanelGroupCompositeMixin
  * @param {Object} [attributes]
  */
-export default class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
+class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
 
     constructor({...params} = {}) {
         Object.assign(params, {
@@ -305,3 +305,6 @@ export default class Group extends mix(PageList).with(PanelGroupCompositeMixin) 
     }
 
 }
+
+
+export default Group

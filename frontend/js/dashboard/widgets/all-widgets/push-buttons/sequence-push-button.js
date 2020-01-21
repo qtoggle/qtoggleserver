@@ -268,7 +268,7 @@ class ConfigForm extends WidgetConfigForm {
  * @class QToggle.DashboardSection.Widgets.SequencePushButton
  * @extends QToggle.DashboardSection.Widgets.PushButton
  */
-export default class SequencePushButton extends PushButton {
+class SequencePushButton extends PushButton {
 
     constructor() {
         super()
@@ -326,3 +326,6 @@ SequencePushButton.vResizable = true
 
 
 Widgets.register(SequencePushButton)
+
+
+export default SequencePushButton

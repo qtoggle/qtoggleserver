@@ -205,7 +205,7 @@ class PanelOptionsForm extends OptionsForm {
  * @mixes qui.pages.StructuredPageMixin
  * @param {Object} attributes
  */
-export default class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
+class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
 
     constructor({...params} = {}) {
         Object.assign(params, {
@@ -1042,3 +1042,6 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     }
 
 }
+
+
+export default Panel

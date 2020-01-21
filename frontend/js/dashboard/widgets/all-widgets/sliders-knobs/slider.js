@@ -17,7 +17,7 @@ class ConfigForm extends AnalogWidgetConfigForm {
 }
 
 
-export default class Slider extends AnalogWidget {
+class Slider extends AnalogWidget {
 
     constructor() {
         super({readonly: false})
@@ -37,3 +37,6 @@ Slider.width = 2
 
 
 Widgets.register(Slider)
+
+
+export default Slider

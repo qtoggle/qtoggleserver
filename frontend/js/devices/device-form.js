@@ -51,7 +51,7 @@ function getDeviceURL(device) {
  * @param {String} deviceName
  * @private
  */
-export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, RebootDeviceMixin) {
+class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, RebootDeviceMixin) {
 
     constructor(deviceName) {
         super({
@@ -543,3 +543,6 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
     }
 
 }
+
+
+export default DeviceForm

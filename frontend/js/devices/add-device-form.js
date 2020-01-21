@@ -26,7 +26,7 @@ const logger = Devices.logger
  * @extends qui.forms.PageForm
  * @private
  */
-export default class AddDeviceForm extends PageForm {
+class AddDeviceForm extends PageForm {
 
     constructor() {
         super({
@@ -179,3 +179,6 @@ export default class AddDeviceForm extends PageForm {
     }
 
 }
+
+
+export default AddDeviceForm

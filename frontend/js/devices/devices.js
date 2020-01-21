@@ -1,3 +1,6 @@
+/**
+ * @namespace qtoggle.devices
+ */
 
 import Logger from '$qui/lib/logger.module.js'
 

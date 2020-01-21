@@ -1,3 +1,6 @@
+/**
+ * @namespace qtoggle.api
+ */
 
 import Logger from '$qui/lib/logger.module.js'
 
@@ -713,7 +716,7 @@ const logger = Logger.get('qtoggle.api')
 
 /**
  * Access level change callback.
- * @callback QToggle.API.AccessLevelChangeCallback
+ * @callback qtoggle.api.AccessLevelChangeCallback
  * @param {Number} oldLevel the old access level
  * @param {Number} newLevel the new access level
  */
@@ -727,9 +730,8 @@ let accessLevelChangeListeners = []
 /* Notifications */
 
 /**
- *
- * @class QToggle.API.Event
- * @classdesc A qToggle event
+ * A qToggle event.
+ * @alias qtoggle.api.Event
  * @param {String} type the event type
  * @param {Object} params the event parameters
  * @param {Boolean} [expected] indicates that the event was expected
@@ -737,6 +739,13 @@ let accessLevelChangeListeners = []
  */
 export class Event {
 
+    /**
+     * @constructs qtoggle.api.Event
+     * @param type
+     * @param params
+     * @param expected
+     * @param fake
+     */
     constructor(type, params, expected = false, fake = false) {
         this.type = type
         this.params = ObjectUtils.copy(params)
@@ -746,8 +755,8 @@ export class Event {
 
 
     /**
-     * Clones the event.
-     * @returns {QToggle.API.Event} the cloned event
+     * Clone the event.
+     * @returns {qtoggle.api.Event} the cloned event
      */
     clone() {
         return new Event(this.type, this.params, this.expected, this.fake)
@@ -782,12 +791,20 @@ let apiURLPrefix = ''
 
 
 /**
- * @class QToggle.API.APIError
- * @classdesc An API error.
+ * An API error.
+ * @alias qtoggle.api.APIError
  * @param {Object} [params]
  */
 export class APIError extends Error {
 
+    /**
+     * @constructs qtoggle.api.APIError
+     * @param messageCode
+     * @param status
+     * @param pretty
+     * @param knownError
+     * @param params
+     */
     constructor({messageCode, status, pretty = '', knownError = null, params = []}) {
         super(pretty)
 

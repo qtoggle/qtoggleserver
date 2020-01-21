@@ -1,3 +1,6 @@
+/**
+ * @namespace qtoggle.dashboard.widgets
+ */
 
 export {STATE_ERROR}    from '$qui/views/view.js'
 export {STATE_NORMAL}   from '$qui/views/view.js'

@@ -15,7 +15,7 @@ const SECTION_ID = 'devices'
 const SECTION_TITLE = gettext('Devices')
 
 
-export default class DevicesSection extends Section {
+class DevicesSection extends Section {
 
     constructor() {
         super({
@@ -116,3 +116,6 @@ export default class DevicesSection extends Section {
     }
 
 }
+
+
+export default DevicesSection

@@ -15,7 +15,7 @@ const SECTION_ID = 'ports'
 const SECTION_TITLE = gettext('Ports')
 
 
-export default class PortsSection extends Section {
+class PortsSection extends Section {
 
     constructor() {
         super({
@@ -194,3 +194,6 @@ export default class PortsSection extends Section {
     }
 
 }
+
+
+export default PortsSection

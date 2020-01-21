@@ -14,7 +14,7 @@ import * as Cache from '$app/cache.js'
  * @param {Object} params
  * @param {Function} [params.filter]
  */
-export default class PortPickerField extends ComboField {
+class PortPickerField extends ComboField {
 
     constructor({filter = null, ...params}) {
         let that
@@ -94,3 +94,6 @@ export default class PortPickerField extends ComboField {
     }
 
 }
+
+
+export default PortPickerField

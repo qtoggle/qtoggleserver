@@ -1,3 +1,6 @@
+/**
+ * @namespace qtoggle.dashboard.widgets.allwidgets
+ */
 
 import './displays/on-off-indicator.js'
 import './displays/progress-bar.js'

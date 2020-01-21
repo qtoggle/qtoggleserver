@@ -27,7 +27,7 @@ const DISABLED_PORT_VISIBLE_ATTRS = ['id', 'enabled']
 const logger = Ports.logger
 
 
-export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
+class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
     constructor(portId, deviceName) {
         let pathId = portId
@@ -465,3 +465,6 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
     }
 
 }
+
+
+export default PortForm

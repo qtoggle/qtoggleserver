@@ -19,7 +19,7 @@ import * as Widgets    from './widgets.js'
  * @param {QToggle.DashboardSection.Widgets.Widget} widget
  * @param {Object} attributes
  */
-export default class WidgetConfigForm extends PageForm {
+class WidgetConfigForm extends PageForm {
 
     constructor(widget, {...params} = {}) {
         let defaultFields = [
@@ -197,3 +197,6 @@ export default class WidgetConfigForm extends PageForm {
     }
 
 }
+
+
+export default WidgetConfigForm

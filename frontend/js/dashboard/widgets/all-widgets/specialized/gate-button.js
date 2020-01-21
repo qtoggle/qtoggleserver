@@ -60,7 +60,7 @@ class ConfigForm extends WidgetConfigForm {
  * @class QToggle.DashboardSection.Widgets.GateButton
  * @extends QToggle.DashboardSection.Widgets.Widget
  */
-export default class GateButton extends Widget {
+class GateButton extends Widget {
 
     constructor() {
         super()
@@ -460,3 +460,6 @@ GateButton.vResizable = true
 
 
 Widgets.register(GateButton)
+
+
+export default GateButton
