@@ -56,7 +56,7 @@ class ConfigForm extends WidgetConfigForm {
     }
 
     fromPort(port, fieldName) {
-        let data = super.fromPort(port,fieldName)
+        let data = super.fromPort(port, fieldName)
 
         data.unit = port.unit
         data.min = port.min != null ? port.min : 0
