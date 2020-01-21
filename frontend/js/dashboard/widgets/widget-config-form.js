@@ -52,7 +52,6 @@ export default class WidgetConfigForm extends PageForm {
         super(params)
 
         this._widget = widget
-        this._touchedFields = {} /* Fields that have been changed at least once */
     }
 
     updateFromWidget() {
@@ -66,24 +65,13 @@ export default class WidgetConfigForm extends PageForm {
 
     onChange(data, fieldName) {
         let field = this.getField(fieldName)
+
+        /* Whenever the port is changed, call fromPort() and update form fields accordingly */
         if (field instanceof PortPickerField) {
             let portId = data[fieldName]
             let port = this.getPort(portId)
             if (port) {
-                let dataFromPort = ObjectUtils.filter(this.fromPort(port), function (name, value) {
-
-                    if (name in this._touchedFields) {
-                        return false
-                    }
-
-                    if (data[name] != null && data[name] !== '') {
-                        return false
-                    }
-
-                    return true
-
-                }, this)
-
+                let dataFromPort = this.fromPort(port, fieldName)
                 if (Object.keys(dataFromPort).length) {
                     this.setData(dataFromPort)
                 }
@@ -96,8 +84,6 @@ export default class WidgetConfigForm extends PageForm {
                 }, this)
             }
         }
-
-        this._touchedFields[fieldName] = true
     }
 
     onChangeValid(data, fieldName) {
@@ -160,7 +146,7 @@ export default class WidgetConfigForm extends PageForm {
     /**
      * @param {Object} port
      */
-    fromPort(port) {
+    fromPort(port, fieldName) {
         return {
             label: port.display_name || port.id
         }
