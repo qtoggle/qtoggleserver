@@ -644,7 +644,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
                 return null
             }
 
-        }, this)
+        }, this).filter(w => w != null)
     }
 
     _makeWidgetId() {
