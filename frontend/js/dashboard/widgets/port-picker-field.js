@@ -17,17 +17,7 @@ import * as Cache from '$app/cache.js'
 class PortPickerField extends ComboField {
 
     constructor({filter = null, ...params}) {
-        let that
-
-        params.filterEnabled = true
-        params.makeChoices = function () {
-            return that.makeChoices()
-        }
-
-        super(params)
-
-        /* "that" needs to be assigned here because we can't refer to "this" before super() */
-        that = this
+        super({filterEnabled: true,...params})
 
         if (filter) {
             this.filter = filter

@@ -8,8 +8,8 @@ const WaitDeviceMixin = Mixin((superclass = Object) => {
 
     class WaitDeviceMixin extends superclass {
 
-        constructor(...args) {
-            super(...args)
+        constructor({...params} = {}) {
+            super(params)
 
             this._whenDeviceOnline = null
             this._whenDeviceOffline = null
