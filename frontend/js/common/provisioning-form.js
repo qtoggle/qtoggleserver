@@ -31,12 +31,17 @@ const logger = Logger.get('qtoggle.common.provisioning')
 
 
 /**
- * @class QToggle.Common.ProvisioningForm
+ * Device provisioning form.
+ * @alias qtoggle.common.ProvisioningForm
  * @extends qui.forms.PageForm
- * @param {String} deviceName
+ * @mixes qtoggle.common.WaitDeviceMixin
  */
 class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin) {
 
+    /**
+     * @constructs
+     * @param {String} deviceName
+     */
     constructor(deviceName) {
         super({
             icon: GEAR_ICON,
@@ -171,14 +176,23 @@ class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin) {
         }.bind(this))
     }
 
+    /**
+     * @returns {String}
+     */
     getDeviceName() {
         return this._deviceName
     }
 
+    /**
+     * @returns {Boolean}
+     */
     deviceIsSlave() {
         return !Cache.isMainDevice(this.getDeviceName())
     }
 
+    /**
+     * @returns {Object}
+     */
     getDeviceAttrs() {
         if (this.deviceIsSlave()) {
             let device = Cache.getSlaveDevice(this.getDeviceName())
@@ -193,6 +207,10 @@ class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin) {
         }
     }
 
+    /**
+     * Apply the default configuration selected on the form to the device.
+     * @returns Promise
+     */
     applyDefaultConfig() {
         this.getData().then(function (data) {
             let configName = data['default_config']
@@ -220,6 +238,10 @@ class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin) {
         }.bind(this))
     }
 
+    /**
+     * Do a factory reset to device, after confirmation.
+     * @returns {qui.pages.PageMixin}
+     */
     confirmAndFactoryReset() {
         let attrs = this.getDeviceAttrs()
         let deviceDisplayName = attrs.display_name || attrs.name
@@ -261,7 +283,7 @@ class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin) {
                         error = new Error(gettext('Timeout waiting for device to disconnect.'))
                     }
 
-                    this.cancelWaitingDevice()
+                    this.cancelWaiting()
                     this.setError(error)
 
                 }.bind(this)).then(function () {

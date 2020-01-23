@@ -13,6 +13,7 @@ import * as Dashboard from './dashboard.js'
 const logger = Dashboard.logger
 
 
+/** @lends qtoggle.dashboard.PanelGroupCompositeMixin */
 const PanelGroupCompositeMixin = Mixin((superclass = Object) => {
 
     /**

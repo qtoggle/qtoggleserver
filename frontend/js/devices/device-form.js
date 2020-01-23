@@ -374,9 +374,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
 
                     logger.errorStack(`failed to update device "${deviceName}" master properties`, error)
 
-                    if (this.isWaitingDeviceOnline()) {
-                        this.cancelWaitingDeviceOnline()
-                    }
+                    this.cancelWaiting()
 
                     throw error
 
@@ -428,7 +426,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                             error = new Error(gettext('Timeout waiting for device to reconnect.'))
                         }
 
-                        this.cancelWaitingDevice()
+                        this.cancelWaiting()
                         this.setError(error)
 
                     }.bind(this)).then(function () {
@@ -450,7 +448,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
 
     onClose() {
         Devices.setCurrentDeviceName(null)
-        this.cancelWaitingDevice()
+        this.cancelWaiting()
     }
 
     onButtonPress(button) {

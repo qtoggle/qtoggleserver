@@ -17,7 +17,7 @@ import * as Cache from '$app/cache.js'
 class PortPickerField extends ComboField {
 
     constructor({filter = null, ...params}) {
-        super({filterEnabled: true,...params})
+        super({filterEnabled: true, ...params})
 
         if (filter) {
             this.filter = filter

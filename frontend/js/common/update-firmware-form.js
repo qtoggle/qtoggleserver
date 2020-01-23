@@ -1,3 +1,6 @@
+/**
+ * @namespace qtoggle.common.updatefirmware
+ */
 
 import $      from '$qui/lib/jquery.module.js'
 import Logger from '$qui/lib/logger.module.js'
@@ -41,14 +44,17 @@ const logger = Logger.get('qtoggle.common.updatefirmware')
 
 
 /**
- * @class StatusField
+ * @alias qtoggle.common.updatefirmware.StatusField
  * @extends qui.forms.FormField
- * @param {Object} attributes
  */
 class StatusField extends FormField {
 
-    constructor({...params}) {
-        super(params)
+    /**
+     * @constructs
+     * @param {...*} args
+     */
+    constructor({...args}) {
+        super(args)
 
         this._progress = null
         this._icon = null
@@ -133,12 +139,16 @@ class StatusField extends FormField {
 }
 
 /**
- * @class QToggle.Common.UpdateFirmwareForm
+ * @class
+ * @alias qtoggle.common.updatefirmware.UpdateFirmwareForm
  * @extends qui.forms.PageForm
- * @param {String} deviceName
  */
 class UpdateFirmwareForm extends PageForm {
 
+    /**
+     * @constructs
+     * @param {String} deviceName
+     */
     constructor(deviceName) {
         super({
             icon: FIRMWARE_ICON,
@@ -221,6 +231,9 @@ class UpdateFirmwareForm extends PageForm {
         }.bind(this))
     }
 
+    /**
+     * Update form.
+     */
     updateUI() {
         let urlField = this.getField('url')
         let versionField = this.getField('version')
@@ -302,6 +315,10 @@ class UpdateFirmwareForm extends PageForm {
         })
     }
 
+    /**
+     * Fetch current firmware status from the device and update form.
+     * @returns {Promise}
+     */
     fetchUpdateStatus() {
         let overrideOffline = false
         if (this.deviceIsSlave()) {
@@ -355,6 +372,11 @@ class UpdateFirmwareForm extends PageForm {
         }.bind(this))
     }
 
+    /**
+     * Recursively poll device firmware update status, until firmware update ends.
+     * @param {Number} [delay] delay in milliseconds
+     * @returns {Promise}
+     */
     pollStatus(delay) {
         return PromiseUtils.later(delay || 0).then(function () {
 
@@ -391,10 +413,16 @@ class UpdateFirmwareForm extends PageForm {
         }.bind(this))
     }
 
+    /**
+     * @returns {String}
+     */
     getDeviceName() {
         return this._deviceName
     }
 
+    /**
+     * @returns {Boolean}
+     */
     deviceIsSlave() {
         return !Cache.isMainDevice(this.getDeviceName())
     }

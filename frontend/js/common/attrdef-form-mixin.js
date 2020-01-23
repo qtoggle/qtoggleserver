@@ -14,10 +14,25 @@ import * as ObjectUtils  from '$qui/utils/object.js'
 import * as StringUtils  from '$qui/utils/string.js'
 
 
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
+/** @lends qtoggle.common.AttrdefFormMixin */
 const AttrdefFormMixin = Mixin((superclass = Object) => {
 
-    class AttrdefFormMixin extends superclass /** @lends AttrdefFormMixin */ {
+    /**
+     * A mixin to be used with forms that deal with fields specific to attribute definitions.
+     * @alias qtoggle.common.AttrdefFormMixin
+     * @mixin
+     */
+    class AttrdefFormMixin extends superclass {
 
+        /**
+         * Generate form field parameters from an attribute definition.
+         * @param {String} name field name
+         * @param {Object} def attribute definition
+         * @returns {Object}
+         */
         fieldAttrsFromAttrdef(name, def) {
             let field = {
                 name: `attr_${name}`,
@@ -185,8 +200,27 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
             return field
         }
 
+        /***
+         * Create form field from attribute definitions and add them to this form. Update corresponding existing fields
+         * and remove ones that are no longer among definitions.
+         *
+         * Call this method without arguments to clear all existing attribute fields.
+         *
+         * @param {Object} [attrdefs] attribute definitions
+         * @param {Object} [extraFieldOptions] extra options to pass to fields
+         * @param {Object} [initialData] dictionary with initial data for fields
+         * @param {String[]} [provisioning] a list of field names that should be marked for provisioning
+         * @param {String[]} [noUpdated] a list of field names that should not be marked as updated
+         * @param {Number} [startIndex] index in the fields list to start at
+         * @param {Boolean} [fieldChangeWarnings] whether to show or not warnings of field changes
+         */
         fieldsFromAttrdefs({
-            attrdefs = {}, extraFieldOptions = {}, initialData = {}, provisioning = [], noUpdated = [], startIndex = 0,
+            attrdefs = {},
+            extraFieldOptions = {},
+            initialData = {},
+            provisioning = [],
+            noUpdated = [],
+            startIndex = 0,
             fieldChangeWarnings = true
         } = {}) {
 

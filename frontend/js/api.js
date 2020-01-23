@@ -740,7 +740,7 @@ let accessLevelChangeListeners = []
 export class Event {
 
     /**
-     * @constructs qtoggle.api.Event
+     * @constructs
      * @param type
      * @param params
      * @param expected
@@ -798,7 +798,7 @@ let apiURLPrefix = ''
 export class APIError extends Error {
 
     /**
-     * @constructs qtoggle.api.APIError
+     * @constructs
      * @param messageCode
      * @param status
      * @param pretty
