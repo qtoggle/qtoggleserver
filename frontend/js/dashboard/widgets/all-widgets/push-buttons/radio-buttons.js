@@ -25,8 +25,8 @@ const SMALL_LABEL_FONT_SIZE = 0.1 /* em */
 
 /**
  * @class QToggle.DashboardSection.Widgets.RadioButtons.ConfigForm
- * @extends QToggle.DashboardSection.Widgets.WidgetConfigForm
- * @param {QToggle.DashboardSection.Widgets.Widget} widget
+ * @extends qtoggle.dashboard.widgets.WidgetConfigForm
+ * @param {qtoggle.dashboard.widgets.Widget} widget
  */
 class ConfigForm extends WidgetConfigForm {
 
@@ -227,11 +227,14 @@ class ConfigForm extends WidgetConfigForm {
 
 
 /**
- * @class QToggle.DashboardSection.Widgets.RadioButtons
- * @extends QToggle.DashboardSection.Widgets.Widget
+ * @alias qtoggle.dashboard.widgets.pushbuttons.RadioButtons
+ * @extends qtoggle.dashboard.widgets.Widget
  */
 class RadioButtons extends Widget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super()
 

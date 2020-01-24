@@ -13,15 +13,21 @@ import PortPickerField from './port-picker-field.js'
 import * as Widgets    from './widgets.js'
 
 
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 /**
- * @class QToggle.DashboardSection.Widgets.WidgetConfigForm
+ * @alias qtoggle.dashboard.widgets.WidgetConfigForm
  * @extends qui.forms.PageForm
- * @param {QToggle.DashboardSection.Widgets.Widget} widget
- * @param {Object} attributes
  */
 class WidgetConfigForm extends PageForm {
 
-    constructor(widget, {...params} = {}) {
+    /**
+     * @constructs
+     * @param {qtoggle.dashboard.widgets.Widget} widget
+     * @param {...*} args parent class parameters
+     */
+    constructor(widget, {...args} = {}) {
         let defaultFields = [
             new TextField({
                 name: 'label',
@@ -30,9 +36,9 @@ class WidgetConfigForm extends PageForm {
             })
         ]
 
-        params.fields = defaultFields.concat(params.fields || [])
+        args.fields = defaultFields.concat(args.fields || [])
 
-        ObjectUtils.assignDefault(params, {
+        ObjectUtils.assignDefault(args, {
             title: widget.constructor.displayName,
             largeTop: true,
             closable: true,
@@ -49,11 +55,14 @@ class WidgetConfigForm extends PageForm {
             ]
         })
 
-        super(params)
+        super(args)
 
         this._widget = widget
     }
 
+    /**
+     * Update config form data from widget.
+     */
     updateFromWidget() {
         this.setData(this.fromWidget(this._widget))
 
@@ -119,12 +128,16 @@ class WidgetConfigForm extends PageForm {
         }
     }
 
+    /**
+     * @returns {qtoggle.dashboard.widgets.Widget}
+     */
     getWidget() {
         return this._widget
     }
 
     /**
-     * @param {QToggle.DashboardSection.Widgets.Widget} widget
+     * Adapt widget data to form data.
+     * @param {qtoggle.dashboard.widgets.Widget} widget
      * @returns {Object}
      */
     fromWidget(widget) {
@@ -135,8 +148,9 @@ class WidgetConfigForm extends PageForm {
     }
 
     /**
+     * Adapt form data to widget data.
      * @param {Object} data
-     * @param {QToggle.DashboardSection.Widgets.Widget} widget
+     * @param {qtoggle.dashboard.widgets.Widget} widget
      */
     toWidget(data, widget) {
         widget.setLabel(data.label)
@@ -144,7 +158,9 @@ class WidgetConfigForm extends PageForm {
     }
 
     /**
+     * Extract form data from a selected port. By default extracts only port label.
      * @param {Object} port
+     * @param {String} fieldName corresponding port form field name
      */
     fromPort(port, fieldName) {
         return {
@@ -158,7 +174,10 @@ class WidgetConfigForm extends PageForm {
     onUpdateFromWidget() {
     }
 
-    updatePorts() {
+    /**
+     * Update all fields of type {@link qtoggle.dashboard.widgets.PortPickerField}.
+     */
+    updatePortFields() {
         this.getFields().forEach(function (field) {
             if (field instanceof PortPickerField) {
                 field.updateChoices()
@@ -167,8 +186,8 @@ class WidgetConfigForm extends PageForm {
     }
 
     /**
-     * Returns the cached attributes of a port.
-     * @param {String} portId the id of the port whose attributes will be returned
+     * Return the cached attributes of a port.
+     * @param {String} portId the port id
      * @returns {?Object}
      */
     getPort(portId) {

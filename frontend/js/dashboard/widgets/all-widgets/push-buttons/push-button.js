@@ -17,10 +17,13 @@ import {DEFAULT_COLOR}  from '$app/dashboard/widgets/widget.js'
 import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 
 
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 /**
  * @class QToggle.DashboardSection.Widgets.PushButton.ConfigForm
- * @extends QToggle.DashboardSection.Widgets.WidgetConfigForm
- * @param {QToggle.DashboardSection.Widgets.Widget} widget
+ * @extends qtoggle.dashboard.widgets.WidgetConfigForm
+ * @param {qtoggle.dashboard.widgets.Widget} widget
  */
 class ConfigForm extends WidgetConfigForm {
 
@@ -104,11 +107,14 @@ class ConfigForm extends WidgetConfigForm {
 
 
 /**
- * @class QToggle.DashboardSection.Widgets.PushButton
- * @extends QToggle.DashboardSection.Widgets.Widget
+ * @alias qtoggle.dashboard.widgets.pushbuttons.PushButton
+ * @extends qtoggle.dashboard.widgets.Widget
  */
 class PushButton extends Widget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super()
 

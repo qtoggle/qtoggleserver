@@ -14,11 +14,9 @@ import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 import PushButton from './push-button.js'
 
 
-/**
- * @class QToggle.DashboardSection.Widgets.SequencePushButton.ConfigForm
- * @extends QToggle.DashboardSection.Widgets.WidgetConfigForm
- * @param {QToggle.DashboardSection.Widgets.Widget} widget
- */
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 class ConfigForm extends WidgetConfigForm {
 
     constructor(widget) {
@@ -265,11 +263,14 @@ class ConfigForm extends WidgetConfigForm {
 
 
 /**
- * @class QToggle.DashboardSection.Widgets.SequencePushButton
- * @extends QToggle.DashboardSection.Widgets.PushButton
+ * @alias qtoggle.dashboard.widgets.pushbuttons.SequencePushButton
+ * @extends qtoggle.dashboard.widgets.Widget
  */
 class SequencePushButton extends PushButton {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super()
 

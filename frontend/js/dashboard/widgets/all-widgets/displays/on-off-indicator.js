@@ -15,6 +15,9 @@ import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 import * as Widgets     from '$app/dashboard/widgets/widgets.js'
 
 
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 class ConfigForm extends WidgetConfigForm {
 
     constructor(widget) {
@@ -86,8 +89,15 @@ class ConfigForm extends WidgetConfigForm {
 }
 
 
+/**
+ * @alias qtoggle.dashboard.widgets.displays.OnOffIndicator
+ * @extends qtoggle.dashboard.widgets.Widget
+ */
 class OnOffIndicator extends Widget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super()
 

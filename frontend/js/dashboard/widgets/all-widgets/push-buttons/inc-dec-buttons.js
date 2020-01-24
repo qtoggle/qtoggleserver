@@ -14,6 +14,9 @@ import {DEFAULT_COLOR}  from '$app/dashboard/widgets/widget.js'
 import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 
 
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 class ConfigForm extends WidgetConfigForm {
 
     constructor(widget) {
@@ -68,8 +71,15 @@ class ConfigForm extends WidgetConfigForm {
 }
 
 
-export default class IncDecButtons extends Widget {
+/**
+ * @alias qtoggle.dashboard.widgets.pushbuttons.IncDecButtons
+ * @extends qtoggle.dashboard.widgets.Widget
+ */
+class IncDecButtons extends Widget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super()
 
@@ -251,3 +261,6 @@ IncDecButtons.hResizable = true
 
 
 Widgets.register(IncDecButtons)
+
+
+export default IncDecButtons

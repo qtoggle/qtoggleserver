@@ -7,6 +7,9 @@ import * as Widgets from '$app/dashboard/widgets/widgets.js'
 import {ConfigForm as AnalogWidgetConfigForm, AnalogWidget} from '../analog-widget.js'
 
 
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 export class ConfigForm extends AnalogWidgetConfigForm {
 
     constructor(widget) {
@@ -16,8 +19,15 @@ export class ConfigForm extends AnalogWidgetConfigForm {
 }
 
 
+/**
+ * @alias qtoggle.dashboard.widgets.displays.ProgressBar
+ * @extends qtoggle.dashboard.widgets.AnalogWidget
+ */
 class ProgressBar extends AnalogWidget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super({readonly: true})
     }

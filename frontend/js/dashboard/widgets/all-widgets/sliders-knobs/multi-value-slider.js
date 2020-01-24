@@ -8,6 +8,9 @@ import {ConfigForm as AnalogWidgetConfigForm} from '../analog-widget.js'
 import {AnalogWidget}                         from '../analog-widget.js'
 
 
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 class ConfigForm extends AnalogWidgetConfigForm {
 
     constructor(widget) {
@@ -17,8 +20,15 @@ class ConfigForm extends AnalogWidgetConfigForm {
 }
 
 
+/**
+ * @alias qtoggle.dashboard.widgets.slidersknobs.MultiValueSlider
+ * @extends qtoggle.dashboard.widgets.AnalogWidget
+ */
 class MultiValueSlider extends AnalogWidget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super({ticksonly: true, tickColors: true})
     }

@@ -28,11 +28,6 @@ const STATE_STR = {
 }
 
 
-/**
- * @class QToggle.DashboardSection.Widgets.GateButton.ConfigForm
- * @extends QToggle.DashboardSection.Widgets.WidgetConfigForm
- * @param {QToggle.DashboardSection.Widgets.Widget} widget
- */
 class ConfigForm extends WidgetConfigForm {
 
     constructor(widget) {
@@ -57,11 +52,14 @@ class ConfigForm extends WidgetConfigForm {
 
 
 /**
- * @class QToggle.DashboardSection.Widgets.GateButton
- * @extends QToggle.DashboardSection.Widgets.Widget
+ * @alias qtoggle.dashboard.widgets.specialized.GateButton
+ * @extends qtoggle.dashboard.widgets.Widget
  */
 class GateButton extends Widget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super()
 
@@ -202,7 +200,7 @@ class GateButton extends Widget {
         })
 
         let iconSize = thickness / 2
-        let iconScale = this.getEmRatio() / 2 * iconSize
+        let iconScale = this.getEmSize() / 2 * iconSize
         let iconVariant
         let m = this._color.match('^@([\\w-]+)-color$')
         if (m) {

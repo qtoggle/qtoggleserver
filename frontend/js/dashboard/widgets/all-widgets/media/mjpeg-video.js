@@ -12,6 +12,9 @@ import Widget           from '$app/dashboard/widgets/widget.js'
 import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 
 
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 class ConfigForm extends WidgetConfigForm {
 
     constructor(widget) {
@@ -39,8 +42,15 @@ class ConfigForm extends WidgetConfigForm {
 }
 
 
+/**
+ * @alias qtoggle.dashboard.widgets.media.MJPEGVideo
+ * @extends qtoggle.dashboard.widgets.Widget
+ */
 class MJPEGVideo extends Widget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super()
 

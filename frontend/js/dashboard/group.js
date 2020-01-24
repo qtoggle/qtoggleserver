@@ -18,11 +18,9 @@ import Panel                    from './panel.js'
 import PanelGroupCompositeMixin from './panel-group-composite.js'
 
 
-/**
- * @class QToggle.DashboardSection.GroupOptionsForm
- * @extends qui.forms.OptionsForm
- * @param {QToggle.DashboardSection.Group} group
- */
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 class GroupOptionsForm extends OptionsForm {
 
     constructor(group) {
@@ -70,15 +68,18 @@ class GroupOptionsForm extends OptionsForm {
 }
 
 /**
- * @class QToggle.DashboardSection.Group
+ * @alias qtoggle.dashboard.Group
  * @extends qui.lists.PageList
- * @mixes QToggle.DashboardSection.PanelGroupCompositeMixin
- * @param {Object} [attributes]
+ * @mixes qtoggle.dashboard.PanelGroupCompositeMixin
  */
 class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
 
-    constructor({...params} = {}) {
-        Object.assign(params, {
+    /**
+     * @constructs
+     * @param {...args} [args]
+     */
+    constructor({...args} = {}) {
+        Object.assign(args, {
             pathId: '',
             title: '',
             icon: Dashboard.GROUP_ICON,
@@ -88,7 +89,7 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
             addEnabled: API.getCurrentAccessLevel() >= API.ACCESS_LEVEL_ADMIN
         })
 
-        super(params)
+        super(args)
 
         this._children = []
     }
@@ -98,12 +99,15 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
     }
 
     /**
-     * @returns {QToggle.DashboardSection.PanelGroupCompositeMixin[]}
+     * @returns {qtoggle.dashboard.PanelGroupCompositeMixin[]}
      */
     getChildren() {
         return this._children.slice()
     }
 
+    /**
+     * @returns {qtoggle.dashboard.Panel[]}
+     */
     getPanelsRec() {
         return this._children.reduce(function (l, c) {
             if (c instanceof Panel) {
@@ -116,8 +120,9 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
     }
 
     /**
+     * Look up child by id.
      * @param {String} id
-     * @returns {QToggle.DashboardSection.PanelGroupCompositeMixin}
+     * @returns {?qtoggle.dashboard.PanelGroupCompositeMixin}
      */
     findChildById(id) {
         return this._children.find(function (child) {
@@ -126,15 +131,17 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
     }
 
     /**
+     * Look up child by name.
      * @param {String} name
-     * @returns {QToggle.DashboardSection.PanelGroupCompositeMixin}
+     * @returns {?qtoggle.dashboard.PanelGroupCompositeMixin}
      */
     findChildByName(name) {
         return this.findChildById(Utils.nameToId(name))
     }
 
     /**
-     * @param {QToggle.DashboardSection.PanelGroupCompositeMixin} child
+     * Add a child to group.
+     * @param {qtoggle.dashboard.PanelGroupCompositeMixin} child
      */
     addChild(child) {
         this._children.push(child)
@@ -143,7 +150,8 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
     }
 
     /**
-     * @param {QToggle.DashboardSection.PanelGroupCompositeMixin} child
+     * Remove a child from group.
+     * @param {qtoggle.dashboard.PanelGroupCompositeMixin} child
      */
     removeChild(child) {
         let index = this._children.indexOf(child)
@@ -152,6 +160,10 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
         this.updateUI()
     }
 
+    /**
+     * Serialize group to a JSON object.
+     * @returns {Object}
+     */
     toJSON() {
         let json = super.toJSON()
 
@@ -161,6 +173,10 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
         return json
     }
 
+    /**
+     * Load group from a serialized JSON object.
+     * @param {Object} json
+     */
     fromJSON(json) {
         super.fromJSON(json)
 
@@ -242,6 +258,11 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
         return new AddPanelGroupForm(this)
     }
 
+    /**
+     * Create list item from panel.
+     * @param {qtoggle.dashboard.Panel} panel
+     * @returns {qui.lists.ListItem}
+     */
     panelToItem(panel) {
         return new IconLabelListItem({
             label: panel.getName(),
@@ -250,6 +271,11 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
         })
     }
 
+    /**
+     * Create list item from group.
+     * @param {qtoggle.dashboard.Group} group
+     * @returns {qui.lists.ListItem}
+     */
     groupToItem(group) {
         return new IconLabelListItem({
             label: group.getName(),

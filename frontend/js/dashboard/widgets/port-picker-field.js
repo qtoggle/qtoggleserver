@@ -8,22 +8,32 @@ import * as ArrayUtils from '$qui/utils/array.js'
 import * as Cache from '$app/cache.js'
 
 
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 /**
- * @class QToggle.DashboardSection.Widgets.PortPickerField
+ * @alias qtoggle.dashboard.widgets.PortPickerField
  * @extends qui.forms.commonfields.ComboField
- * @param {Object} params
- * @param {Function} [params.filter]
  */
 class PortPickerField extends ComboField {
 
-    constructor({filter = null, ...params}) {
-        super({filterEnabled: true, ...params})
+    /**
+     * @constructs
+     * @param {...*} args
+     * @param {Function} [filter]
+     */
+    constructor({filter = null, ...args}) {
+        super({filterEnabled: true, ...args})
 
         if (filter) {
             this.filter = filter
         }
     }
 
+    /**
+     * @param {Object} port
+     * @returns {Boolean}
+     */
     filter(port) {
         return true
     }

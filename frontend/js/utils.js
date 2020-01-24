@@ -2,6 +2,9 @@
 import * as ObjectUtils from '$qui/utils/object.js'
 
 
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 /**
  * Helps sorting items alphabetically and numerically at the same time,
  * by adding zero padding to each number within the given string.

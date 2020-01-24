@@ -16,12 +16,15 @@ const logger = Dashboard.logger
 
 
 /**
- * @class QToggle.DashboardSection.AddPanelGroupForm
+ * @alias qtoggle.dashboard.AddPanelGroupForm
  * @extends qui.forms.PageForm
- * @param {QToggle.DashboardSection.Group} group
  */
 class AddPanelGroupForm extends PageForm {
 
+    /**
+     * @constructs
+     * @param {qtoggle.dashboard.Group} group
+     */
     constructor(group) {
         super({
             title: '',

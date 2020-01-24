@@ -17,13 +17,19 @@ const logger = Dashboard.logger
 const PanelGroupCompositeMixin = Mixin((superclass = Object) => {
 
     /**
-     * @mixin QToggle.DashboardSection.PanelGroupCompositeMixin
-     * @param {Object} attributes
+     * @alias qtoggle.dashboard.PanelGroupCompositeMixin
+     * @mixin
      */
     return class PanelGroupCompositeMixin extends superclass {
 
-        constructor({name = '', parent = null, ...params}) {
-            super(params)
+        /**
+         * @constructs
+         * @param {String} [name]
+         * @param {?qtoggle.dashboard.Group} [parent]
+         * @param {...*} args
+         */
+        constructor({name = '', parent = null, ...args} = {}) {
+            super(args)
 
             this._name = name
             this._parent = parent
@@ -48,7 +54,7 @@ const PanelGroupCompositeMixin = Mixin((superclass = Object) => {
         }
 
         /**
-         * @returns {QToggle.DashboardSection.Group}
+         * @returns {qtoggle.dashboard.Group}
          */
         getParent() {
             return this._parent
@@ -62,7 +68,7 @@ const PanelGroupCompositeMixin = Mixin((superclass = Object) => {
         }
 
         /**
-         * @returns {QToggle.DashboardSection.PanelGroupCompositeMixin[]}
+         * @returns {qtoggle.dashboard.PanelGroupCompositeMixin[]}
          */
         getPath() {
             if (!this._parent) {
@@ -80,6 +86,7 @@ const PanelGroupCompositeMixin = Mixin((superclass = Object) => {
         }
 
         /**
+         * Serialize to a JSON object.
          * @returns {Object}
          */
         toJSON() {
@@ -89,6 +96,7 @@ const PanelGroupCompositeMixin = Mixin((superclass = Object) => {
         }
 
         /**
+         * Load from a serialized JSON object.
          * @param {Object} json
          */
         fromJSON(json) {
@@ -97,9 +105,15 @@ const PanelGroupCompositeMixin = Mixin((superclass = Object) => {
             }
         }
 
+        /**
+         * Update view UI elements.
+         */
         updateUI() {
         }
 
+        /**
+         * @returns {qui.pages.PageMixin}
+         */
         makeRemoveForm() {
             let msg = StringUtils.formatPercent(
                 gettext('Really remove %(object)s?'),
