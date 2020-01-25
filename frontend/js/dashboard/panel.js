@@ -732,7 +732,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         json.type = 'panel'
 
         /* Serialize initialized widgets */
-        if (this._widgets == null) {
+        if (this._widgets == null) { /* Widgets not yet deserialized, use serialized value */
             json.widgets = this._widgetsJSON
         }
         else {
@@ -742,6 +742,9 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
 
                 return j
             })
+
+            /* Also update internal serialized widgets */
+            this._widgetsJSON = json.widgets.slice()
         }
 
         json.width = this._width
@@ -841,7 +844,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
 
         /* On a brand-new panel we prefer having the options bar displayed automatically, since the most likely action
          * is to add a new widget */
-        if (!this._widgets.length) {
+        if (!this._widgets) {
             this.openOptionsBar()
         }
     }
