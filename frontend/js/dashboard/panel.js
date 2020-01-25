@@ -828,7 +828,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
 
         /* On a brand-new panel we prefer having the options bar displayed automatically, since the most likely action
          * is to add a new widget */
-        if (!this._widgets.length) {
+        if (!this._widgets) {
             this.openOptionsBar()
         }
     }
