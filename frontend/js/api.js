@@ -1,3 +1,6 @@
+/**
+ * @namespace qtoggle.api
+ */
 
 import Logger from '$qui/lib/logger.module.js'
 
@@ -24,16 +27,58 @@ const ROUND_VALUE_TEMPLATE = 1e6
 const FAST_RECONNECT_LISTEN_ERRORS = 2
 const PROVISIONING_CONFIG_URL = 'https://provisioning.qtoggle.io/config'
 
+/**
+ * @alias qtoggle.api.LISTEN_KEEPALIVE
+ * @type {Number}
+ */
 export const LISTEN_KEEPALIVE = 60 /* Seconds TODO server setting */
+
+/**
+ * @alias qtoggle.api.SERVER_RETRY_INTERVAL
+ * @type {Number}
+ */
 export const SERVER_RETRY_INTERVAL = 3 /* Seconds TODO server setting */
+
+/**
+ * @alias qtoggle.api.DEFAULT_SERVER_TIMEOUT
+ * @type {Number}
+ */
 export const DEFAULT_SERVER_TIMEOUT = 10 /* Seconds TODO server setting */
+
+/**
+ * @alias qtoggle.api.LONG_SERVER_TIMEOUT
+ * @type {Number}
+ */
 export const LONG_SERVER_TIMEOUT = 60 /* Seconds TODO server setting */
 
+/**
+ * @alias qtoggle.api.ACCESS_LEVEL_ADMIN
+ * @type {Number}
+ */
 export const ACCESS_LEVEL_ADMIN = 30
+
+/**
+ * @alias qtoggle.api.ACCESS_LEVEL_NORMAL
+ * @type {Number}
+ */
 export const ACCESS_LEVEL_NORMAL = 20
+
+/**
+ * @alias qtoggle.api.ACCESS_LEVEL_VIEWONLY
+ * @type {Number}
+ */
 export const ACCESS_LEVEL_VIEWONLY = 10
+
+/**
+ * @alias qtoggle.api.ACCESS_LEVEL_NONE
+ * @type {Number}
+ */
 export const ACCESS_LEVEL_NONE = 0
 
+/**
+ * @alias qtoggle.api.ACCESS_LEVEL_MAPPING
+ * @type {Object}
+ */
 export const ACCESS_LEVEL_MAPPING = {
     admin: ACCESS_LEVEL_ADMIN,
     normal: ACCESS_LEVEL_NORMAL,
@@ -42,13 +87,52 @@ export const ACCESS_LEVEL_MAPPING = {
     unknown: null
 }
 
+/**
+ * @alias qtoggle.api.FIRMWARE_STATUS_IDLE
+ * @type {String}
+ */
 export const FIRMWARE_STATUS_IDLE = 'idle'
+
+/**
+ * @alias qtoggle.api.FIRMWARE_STATUS_IDLE
+ * @type {String}
+ */
 export const FIRMWARE_STATUS_CHECKING = 'checking'
+
+/**
+ * @alias qtoggle.api.FIRMWARE_STATUS_DOWNLOADING
+ * @type {String}
+ */
 export const FIRMWARE_STATUS_DOWNLOADING = 'downloading'
+
+/**
+ * @alias qtoggle.api.FIRMWARE_STATUS_EXTRACTING
+ * @type {String}
+ */
 export const FIRMWARE_STATUS_EXTRACTING = 'extracting'
+
+/**
+ * @alias qtoggle.api.FIRMWARE_STATUS_VALIDATING
+ * @type {String}
+ */
 export const FIRMWARE_STATUS_VALIDATING = 'validating'
+
+/**
+ * @alias qtoggle.api.FIRMWARE_STATUS_FLASHING
+ * @type {String}
+ */
 export const FIRMWARE_STATUS_FLASHING = 'flashing'
+
+/**
+ * @alias qtoggle.api.FIRMWARE_STATUS_RESTARTING
+ * @type {String}
+ */
 export const FIRMWARE_STATUS_RESTARTING = 'restarting'
+
+/**
+ * @alias qtoggle.api.FIRMWARE_STATUS_ERROR
+ * @type {String}
+ */
 export const FIRMWARE_STATUS_ERROR = 'error'
 
 const QTOGGLE_API_PREFIX = '/api'
@@ -59,6 +143,10 @@ ObjectUtils.forEach(ACCESS_LEVEL_MAPPING, function (k, v) {
     ACCESS_LEVEL_MAPPING[v] = k
 })
 
+/**
+ * @alias qtoggle.api.STD_DEVICE_ATTRDEFS
+ * @type {Object}
+ */
 export const STD_DEVICE_ATTRDEFS = {
     name: {
         display_name: gettext('Device Name'),
@@ -484,6 +572,10 @@ export const STD_PORT_ATTRDEFS = {
     }
 }
 
+/**
+ * @alias qtoggle.api.ADDITIONAL_DEVICE_ATTRDEFS
+ * @type {Object}
+ */
 export const ADDITIONAL_PORT_ATTRDEFS = {
 }
 
@@ -504,6 +596,8 @@ ObjectUtils.forEach(ADDITIONAL_PORT_ATTRDEFS, (name, def) => {
 
 /**
  * Device attributes that change often and don't normally generate device-update events.
+ * @alias qtoggle.api.NO_EVENT_DEVICE_ATTRS
+ * @type {String[]}
  */
 export const NO_EVENT_DEVICE_ATTRS = ['uptime', 'date']
 
@@ -713,7 +807,7 @@ const logger = Logger.get('qtoggle.api')
 
 /**
  * Access level change callback.
- * @callback QToggle.API.AccessLevelChangeCallback
+ * @callback qtoggle.api.AccessLevelChangeCallback
  * @param {Number} oldLevel the old access level
  * @param {Number} newLevel the new access level
  */
@@ -727,16 +821,18 @@ let accessLevelChangeListeners = []
 /* Notifications */
 
 /**
- *
- * @class QToggle.API.Event
- * @classdesc A qToggle event
- * @param {String} type the event type
- * @param {Object} params the event parameters
- * @param {Boolean} [expected] indicates that the event was expected
- * @param {Boolean} [fake] indicates that the event was generated on the client side
+ * A qToggle event.
+ * @alias qtoggle.api.Event
  */
 export class Event {
 
+    /**
+     * @constructs
+     * @param {String} type the event type
+     * @param {Object} params the event parameters
+     * @param {Boolean} [expected] indicates that the event was expected
+     * @param {Boolean} [fake] indicates that the event was generated on the client side
+     */
     constructor(type, params, expected = false, fake = false) {
         this.type = type
         this.params = ObjectUtils.copy(params)
@@ -744,10 +840,9 @@ export class Event {
         this.fake = fake
     }
 
-
     /**
-     * Clones the event.
-     * @returns {QToggle.API.Event} the cloned event
+     * Clone the event.
+     * @returns {qtoggle.api.Event} the cloned event
      */
     clone() {
         return new Event(this.type, this.params, this.expected, this.fake)
@@ -782,12 +877,19 @@ let apiURLPrefix = ''
 
 
 /**
- * @class QToggle.API.APIError
- * @classdesc An API error.
- * @param {Object} [params]
+ * An API error.
+ * @alias qtoggle.api.APIError
  */
 export class APIError extends Error {
 
+    /**
+     * @constructs
+     * @param {String} messageCode
+     * @param {Number} status
+     * @param {String} [pretty]
+     * @param {?Object} [knownError]
+     * @param {*[]}params
+     */
     constructor({messageCode, status, pretty = '', knownError = null, params = []}) {
         super(pretty)
 
@@ -915,17 +1017,16 @@ function makeAPIError(data, status, msg) {
 
 /**
  * Call an API function.
- * @memberof QToggle.API
- * @param {Object} params
- * @param {String} params.method the method
- * @param {String} params.path the path (URI)
- * @param {?Object} [params.query] optional query arguments
- * @param {?Object} [params.data] optional data (body)
- * @param {?Number} [params.timeout] timeout, in seconds
- * @param {?Number} [params.expectedHandle] the handle of the expected event
- * @param {Boolean} [params.handleErrors] set to `false` to prevent error handling (defaults to `true`)
- * @returns {Promise} a promise that is resolved when the API call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @alias qtoggle.api.apiCall
+ * @param {String} method the method
+ * @param {String} path the path (URI)
+ * @param {?Object} [query] optional query arguments
+ * @param {?Object} [data] optional data (body)
+ * @param {?Number} [timeout] timeout, in seconds
+ * @param {?Number} [expectedHandle] the handle of the expected event
+ * @param {Boolean} [handleErrors] set to `false` to prevent error handling (defaults to `true`)
+ * @returns {Promise} a promise that is resolved when the API call succeeds and rejected when it fails; the resolve
+ * argument is the result returned by the API call, while the reject argument is the API call error
  */
 export function apiCall({
     method, path, query = null, data = null, timeout = DEFAULT_SERVER_TIMEOUT, expectedHandle = null,
@@ -935,7 +1036,7 @@ export function apiCall({
     return new Promise(function (resolve, reject) {
         let apiFuncPath = path
 
-        if (slaveName) { /* Slave QToggle API call */
+        if (slaveName) { /* Slave qToggle API call */
             path = `/devices/${slaveName}/forward${path}`
             slaveName = null
         }
@@ -1104,8 +1205,8 @@ function handleServerEvent(eventData) {
 }
 
 /**
- * Generates a fake server event.
- * @memberof QToggle.API
+ * Generate a fake server event.
+ * @alias qtoggle.api.fakeServerEvent
  * @param {String} type event type
  * @param {Object} params event parameters
  */
@@ -1217,6 +1318,7 @@ function wait(firstQuick) {
 
 /**
  * Set the API URL prefix.
+ * @alias qtoggle.api.setURLPrefix
  * @param {?String} prefix the URL prefix
  */
 export function setURLPrefix(prefix) {
@@ -1227,10 +1329,10 @@ export function setURLPrefix(prefix) {
 /* Device management */
 
 /**
- * Sets the slave device for the next API call. If no argument or `null` is supplied,
- * the API call will be requested on the master device. Only the immediately following API
- * request will be affected by this setting. Afterwards, the setting will automatically revert to default
- * (i.e. requesting to master).
+ * Set the slave device for the next API call. If no argument or `null` is supplied, the API call will be requested on
+ * the master device. Only the immediately following API request will be affected by this setting. Afterwards, the
+ * setting will automatically revert to default (i.e. requesting to main device).
+ * @alias qtoggle.api.setSlave
  * @param {?String} name the slave name
  */
 export function setSlave(name) {
@@ -1244,8 +1346,8 @@ export function setSlave(name) {
 
 /**
  * GET /device API function call.
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @alias qtoggle.api.getDevice
+ * @returns {Promise}
  */
 export function getDevice() {
     return apiCall({method: 'GET', path: '/device'})
@@ -1253,10 +1355,10 @@ export function getDevice() {
 
 /**
  * PATCH /device API function call.
+ * @alias qtoggle.api.patchDevice
  * @param {Object} attrs the device attributes to set
  * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
 export function patchDevice(attrs, expectEventTimeout = null) {
     let handle
@@ -1281,9 +1383,9 @@ export function patchDevice(attrs, expectEventTimeout = null) {
 
 /**
  * POST /reset API function call.
+ * @alias qtoggle.api.postReset
  * @param {Boolean} [factory] set to `true` to reset to factory defaults
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
 export function postReset(factory) {
     let data = {}
@@ -1295,9 +1397,9 @@ export function postReset(factory) {
 
 /**
  * GET /firmware API function call.
+ * @alias qtoggle.api.getFirmware
  * @param {Boolean} [override] set to `true` to forward request to offline and disabled slaves (defaults to `false`)
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
 export function getFirmware(override = false) {
     let query = {}
@@ -1321,13 +1423,13 @@ export function getFirmware(override = false) {
 
 /**
  * PATCH /firmware API function call.
+ * @alias qtoggle.api.patchFirmware
  * @param {?String} version the version to update the device to
  * @param {?String} url the URL of the new firmware
  * @param {Boolean} [override] set to `true` to forward request to offline and disabled slaves
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
-export function patchFirmware(version, url, override) {
+export function patchFirmware(version, url, override = false) {
     let query = {}
     if (override) {
         query.override_offline = true
@@ -1363,8 +1465,8 @@ export function patchFirmware(version, url, override) {
 
 /**
  * GET /ports API function call.
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @alias qtoggle.api.getPorts
+ * @returns {Promise}
  */
 export function getPorts() {
     return apiCall({method: 'GET', path: '/ports'})
@@ -1372,11 +1474,11 @@ export function getPorts() {
 
 /**
  * PATCH /ports/{id} API function call.
+ * @alias qtoggle.api.patchPort
  * @param {String} id the port identifier
  * @param {Object} attrs the port attributes to set
  * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
 export function patchPort(id, attrs, expectEventTimeout = null) {
     let handle = expectEvent('port-update', {
@@ -1391,6 +1493,7 @@ export function patchPort(id, attrs, expectEventTimeout = null) {
 
 /**
  * POST /ports API function call.
+ * @alias qtoggle.api.postPorts
  * @param {String} id the port identifier
  * @param {String} type the port type
  * @param {?Number} min a minimum port value
@@ -1399,8 +1502,7 @@ export function patchPort(id, attrs, expectEventTimeout = null) {
  * @param {?Number} step a step for port value validation
  * @param {?Number[]|?String[]} choices valid choices for the port value
  * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
 export function postPorts(id, type, min, max, integer, step, choices, expectEventTimeout = null) {
     let handle = expectEvent('port-add', {
@@ -1433,10 +1535,10 @@ export function postPorts(id, type, min, max, integer, step, choices, expectEven
 
 /**
  * DELETE /ports/{id} API function call.
+ * @alias qtoggle.api.deletePort
  * @param {String} id the port identifier
  * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
 export function deletePort(id, expectEventTimeout = null) {
     let handle = expectEvent('port-remove', {
@@ -1451,9 +1553,9 @@ export function deletePort(id, expectEventTimeout = null) {
 
 /**
  * GET /ports/{id}/value API function call.
+ * @alias qtoggle.api.getPortValue
  * @param {String} id the port identifier
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
 export function getPortValue(id) {
     return apiCall({method: 'GET', path: `/ports/${id}/value`})
@@ -1461,12 +1563,12 @@ export function getPortValue(id) {
 
 /**
  * PATCH /ports/{id}/value API function call.
+ * @alias qtoggle.api.patchPortValue
  * @param {String} id the port identifier
  * @param {Boolean|Number} value the new port value
- * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
- * in milliseconds
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected, in
+ * milliseconds
+ * @returns {Promise}
  */
 export function patchPortValue(id, value, expectEventTimeout = null) {
     let port = Cache.getPort(id)
@@ -1493,12 +1595,12 @@ export function patchPortValue(id, value, expectEventTimeout = null) {
 
 /**
  * POST /ports/{id}/sequence API function call.
+ * @alias qtoggle.api.postPortSequence
  * @param {String} id the port identifier
  * @param {Boolean[]|Number[]} values the list of values in the sequence
  * @param {Number[]} delays the list of delays between values
  * @param {Number} repeat sequence repeat count
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
 export function postPortSequence(id, values, delays, repeat) {
     let data = {values: values, delays: delays, repeat: repeat}
@@ -1511,14 +1613,14 @@ export function postPortSequence(id, values, delays, repeat) {
 
 /**
  * Event callback function.
- * @callback QToggle.API.EventCallback
- * @param {QToggle.API.Event} event the event
+ * @callback qtoggle.api.EventCallback
+ * @param {qtoggle.api.Event} event the event
  */
 
 /**
  * GET /webhooks API function call.
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @alias qtoggle.api.getWebhooks
+ * @returns {Promise}
  */
 export function getWebhooks() {
     return apiCall({method: 'GET', path: '/webhooks'})
@@ -1526,6 +1628,7 @@ export function getWebhooks() {
 
 /**
  * PATCH /webhooks API function call.
+ * @alias qtoggle.api.patchWebhooks
  * @param {Boolean} enabled whether webhooks are enabled or not
  * @param {String} scheme the URL scheme
  * @param {String} host the host (IP address or hostname) of the client
@@ -1533,8 +1636,7 @@ export function getWebhooks() {
  * @param {String} path the location for the webhook request
  * @param {Number} timeout the request timeout, in seconds
  * @param {Number} retries the number of retries
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
 export function patchWebhooks(enabled, scheme, host, port, path, timeout, retries) {
     let params = {
@@ -1552,7 +1654,8 @@ export function patchWebhooks(enabled, scheme, host, port, path, timeout, retrie
 
 /**
  * Convenience function to handle responses to GET /listen API function calls.
- * @param {QToggle.API.EventCallback} eventCallback
+ * @alias qtoggle.api.addEventListener
+ * @param {qtoggle.api.EventCallback} eventCallback
  * @param {*} [thisArg] the callback will be called on this object
  */
 export function addEventListener(eventCallback, thisArg) {
@@ -1560,8 +1663,9 @@ export function addEventListener(eventCallback, thisArg) {
 }
 
 /**
- * Removes a previously registered event listener.
- * @param {QToggle.API.EventCallback} eventCallback
+ * Remove a previously registered event listener.
+ * @alias qtoggle.api.removeEventListener
+ * @param {qtoggle.api.EventCallback} eventCallback
  */
 export function removeEventListener(eventCallback) {
     let index = eventListeners.findIndex(function (l) {
@@ -1574,7 +1678,8 @@ export function removeEventListener(eventCallback) {
 }
 
 /**
- * Enables the listening mechanism.
+ * Enable the listening mechanism.
+ * @alias qtoggle.api.startListening
  */
 export function startListening() {
     if (listeningTime) {
@@ -1588,7 +1693,8 @@ export function startListening() {
 }
 
 /**
- * Disables the listening mechanism.
+ * Disable the listening mechanism.
+ * @alias qtoggle.api.stopListening
  */
 export function stopListening() {
     logger.debug('stopping listening mechanism')
@@ -1598,7 +1704,8 @@ export function stopListening() {
 }
 
 /**
- * Tells if the listening mechanism is currently enabled.s
+ * Tell if the listening mechanism is currently enabled.
+ * @alias qtoggle.api.isListening
  * @returns {Boolean}
  */
 export function isListening() {
@@ -1610,8 +1717,8 @@ export function isListening() {
 
 /**
  * GET /reverse API function call.
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @alias qtoggle.api.getReverse
+ * @returns {Promise}
  */
 export function getReverse() {
     return apiCall({method: 'GET', path: '/reverse'})
@@ -1619,14 +1726,14 @@ export function getReverse() {
 
 /**
  * PATCH /reverse API function call.
+ * @alias qtoggle.api.patchReverse
  * @param {Boolean} enabled whether the reverse API call mechanism is enabled or not
  * @param {String} scheme the URL scheme
  * @param {String} host the host (IP address or hostname) of the client
  * @param {Number} port the TCP port
  * @param {String} path the location for the reverse request
  * @param {Number} timeout the request timeout, in seconds
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
 export function patchReverse(enabled, scheme, host, port, path, timeout) {
     let params = {
@@ -1646,8 +1753,8 @@ export function patchReverse(enabled, scheme, host, port, path, timeout) {
 
 /**
  * GET /devices API function call.
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @alias qtoggle.api.getSlaveDevices
+ * @returns {Promise}
  */
 export function getSlaveDevices() {
     return apiCall({method: 'GET', path: '/devices'})
@@ -1655,6 +1762,7 @@ export function getSlaveDevices() {
 
 /**
  * POST /devices API function call.
+ * @alias qtoggle.api.postSlaveDevices
  * @param {String} scheme the URL scheme
  * @param {String} host the host (IP address or hostname) of the device
  * @param {Number} port the TCP port
@@ -1663,8 +1771,7 @@ export function getSlaveDevices() {
  * @param {Number} pollInterval polling interval, in seconds
  * @param {Boolean} listenEnabled whether to enable listening or not
  * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
 export function postSlaveDevices(
     scheme, host, port, path, adminPassword, pollInterval, listenEnabled, expectEventTimeout = null
@@ -1694,13 +1801,13 @@ export function postSlaveDevices(
 
 /**
  * PATCH /devices/{name} API function call.
+ * @alias qtoggle.api.patchSlaveDevice
  * @param {String} name the device name
  * @param {Boolean} enabled whether the device is enabled or disabled
  * @param {?Number} pollInterval polling interval, in seconds
  * @param {Boolean} listenEnabled whether to enable listening or not
  * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
 export function patchSlaveDevice(name, enabled, pollInterval, listenEnabled, expectEventTimeout = null) {
     let params = {
@@ -1721,10 +1828,10 @@ export function patchSlaveDevice(name, enabled, pollInterval, listenEnabled, exp
 
 /**
  * DELETE /devices/{name} API function call.
+ * @alias qtoggle.api.deleteSlaveDevice
  * @param {String} name the device name
  * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
 export function deleteSlaveDevice(name, expectEventTimeout = null) {
     let handle = expectEvent('slave-device-remove', {
@@ -1739,8 +1846,8 @@ export function deleteSlaveDevice(name, expectEventTimeout = null) {
 
 /**
  * GET /access API function call.
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @alias qtoggle.api.getAccess
+ * @returns {Promise}
  */
 export function getAccess() {
     let promise = apiCall({method: 'GET', path: '/access'})
@@ -1770,7 +1877,8 @@ export function getAccess() {
 }
 
 /**
- * Immediately returns the current access level.
+ * Immediately return the current access level.
+ * @alias qtoggle.api.getCurrentAccessLevel
  * @returns {?Number} the current access level
  */
 export function getCurrentAccessLevel() {
@@ -1778,8 +1886,9 @@ export function getCurrentAccessLevel() {
 }
 
 /**
- * Adds a listener to be called whenever the access level changes.
- * @param {QToggle.API.AccessLevelChangeCallback} callback
+ * Add a listener to be called whenever the access level changes.
+ * @alias qtoggle.api.addAccessLevelChangeListener
+ * @param {qtoggle.api.AccessLevelChangeCallback} callback
  * @param {*} [thisArg] the callback will be called on this object
  */
 export function addAccessLevelChangeListener(callback, thisArg) {
@@ -1787,8 +1896,9 @@ export function addAccessLevelChangeListener(callback, thisArg) {
 }
 
 /**
- * Removes a previously registered access level change listener.
- * @param {QToggle.API.AccessLevelChangeCallback} callback
+ * Remove a previously registered access level change listener.
+ * @alias qtoggle.api.removeAccessLevelChangeListener
+ * @param {qtoggle.api.AccessLevelChangeCallback} callback
  */
 export function removeAccessLevelChangeListener(callback) {
     let index = accessLevelChangeListeners.findIndex(function (l) {
@@ -1801,14 +1911,17 @@ export function removeAccessLevelChangeListener(callback) {
 }
 
 /**
- * Sets the API username.
- * @param {String} username the new username
+ * Set the API username.
+ * @alias qtoggle.api.setUsername
+ * @param {String} username the username
  */
 export function setUsername(username) {
     currentUsername = username
 }
 
 /**
+ * Retrieve current API username.
+ * @alias qtoggle.api.getUsername
  * @returns {String} the current username
  */
 export function getUsername() {
@@ -1816,22 +1929,26 @@ export function getUsername() {
 }
 
 /**
- * Sets the API password.
- * @param {String} password the new password
+ * Set the API password.
+ * @alias qtoggle.api.setPassword
+ * @param {String} password the password
  */
 export function setPassword(password) {
     currentPasswordHash = new Crypto.SHA256(password).toString()
 }
 
 /**
- * Directly sets the API password hash.
- * @param {String} hash the new password hash
+ * Directly set the API password hash.
+ * @alias qtoggle.api.setPasswordHash
+ * @param {String} hash the password hash
  */
 export function setPasswordHash(hash) {
     currentPasswordHash = hash
 }
 
 /**
+ * Retrieve current API password hash.
+ * @alias qtoggle.api.getPasswordHash
  * @returns {String} the current password hash
  */
 export function getPasswordHash() {
@@ -1839,7 +1956,8 @@ export function getPasswordHash() {
 }
 
 /**
- * Tells if the given access level is granted.
+ * Tell if a given access level is granted.
+ * @alias qtoggle.api.hasAccess
  * @param {Number} level the desired access level
  * @returns {Boolean}
  */
@@ -1852,8 +1970,8 @@ export function hasAccess(level) {
 
 /**
  * GET /dashboard/panels API function call.
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @alias qtoggle.api.getDashboardPanels
+ * @returns {Promise}
  */
 export function getDashboardPanels() {
     return apiCall({method: 'GET', path: '/frontend/dashboard/panels'})
@@ -1861,21 +1979,21 @@ export function getDashboardPanels() {
 
 /**
  * PUT /dashboard/panels API function call.
+ * @alias qtoggle.api.putDashboardPanels
  * @param {Object} panels the new panels
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
 export function putDashboardPanels(panels) {
     return apiCall({method: 'PUT', path: '/frontend/dashboard/panels', data: panels})
 }
 
 
-/* Prefs */
+/* Preferences */
 
 /**
  * GET /prefs API function call.
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @alias qtoggle.api.getPrefs
+ * @returns {Promise}
  */
 export function getPrefs() {
     return apiCall({method: 'GET', path: '/frontend/prefs'})
@@ -1883,22 +2001,22 @@ export function getPrefs() {
 
 /**
  * PUT /prefs API function call.
+ * @alias qtoggle.api.putPrefs
  * @param {Object} prefs the new prefs object
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @returns {Promise}
  */
 export function putPrefs(prefs) {
     return apiCall({method: 'PUT', path: '/frontend/prefs', data: prefs})
 }
 
 
-/* Misc */
+/* Provisioning */
 
 /**
  * GET https://provisioning.qtoggle.io/config API function call.
- * @param {String} prefix
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @alias qtoggle.api.getProvisioningConfig
+ * @param {String} prefix configuration prefix
+ * @returns {Promise}
  */
 export function getProvisioningConfigs(prefix) {
     return new Promise(function (resolve, reject) {
@@ -1925,16 +2043,10 @@ export function getProvisioningConfigs(prefix) {
 }
 
 /**
- * API request/response indication callback function.
- * @param {QToggle.API.APIError} [error] indicates an error occurred during synchronization
- * @callback QToggle.API.SyncCallback
- */
-
-/**
  * GET https://provisioning.qtoggle.io/config/config-name.json API function call.
- * @param {String} configName
- * @returns {Promise} a promise that is resolved when the call succeeds and rejected when it fails;
- *  the resolve argument is the result returned by the API call, while the reject argument is the API call error
+ * @alias qtoggle.api.getProvisioningConfig
+ * @param {String} configName desired configuration name
+ * @returns {Promise}
  */
 export function getProvisioningConfig(configName) {
     return new Promise(function (resolve, reject) {
@@ -1952,21 +2064,25 @@ export function getProvisioningConfig(configName) {
     })
 }
 
+
+/* Misc */
+
 /**
  * API request/response indication callback function.
- * @param {QToggle.API.APIError} [error] indicates an error occurred during synchronization
- * @callback QToggle.API.SyncCallback
+ * @param {qtoggle.api.APIError} [error] indicates an error occurred during synchronization
+ * @callback qtoggle.api.SyncCallback
  */
 
 /**
- * Adds functions to be called each time an API request is initiated and responded. Listen requests are treated
- * separately than regular API requests.
+ * Add a set of functions to be called each time an API request is initiated and responded. Listen requests are treated
+ * separately from regular API requests.
+ *
  * The `listenCallback` and `endCallback` functions receive an `error` argument indicating an erroneous result.
- * @param {QToggle.API.SyncCallback} beginCallback the function to be called at the initiation of each API
- *         request
- * @param {QToggle.API.SyncCallback} endCallback the function to be called at the end of each API request
- * @param {QToggle.API.SyncCallback} listenCallback the function to be called whenever a listen request is
- *         responded
+ *
+ * @alias qtoggle.api.addSyncCallbacks
+ * @param {qtoggle.api.SyncCallback} beginCallback the function to be called at the initiation of each API request
+ * @param {qtoggle.api.SyncCallback} endCallback the function to be called at the end of each API request
+ * @param {qtoggle.api.SyncCallback} listenCallback the function to be called whenever a listen request is responded
  */
 export function addSyncCallbacks(beginCallback, endCallback, listenCallback) {
     if (beginCallback) {
@@ -1981,6 +2097,10 @@ export function addSyncCallbacks(beginCallback, endCallback, listenCallback) {
 }
 
 
+/**
+ * Initialize the API subsystem.
+ * @alias qtoggle.api.init
+ */
 export function init() {
     setInterval(cleanupExpectedEvents, 1000)
     setURLPrefix(Config.apiURLPrefix)

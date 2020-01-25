@@ -1,4 +1,25 @@
 
+/**
+ * @namespace qtoggle.dashboard.widgets.displays
+ */
+
+/**
+ * @namespace qtoggle.dashboard.widgets.media
+ */
+
+/**
+ * @namespace qtoggle.dashboard.widgets.pushbuttons
+ */
+
+/**
+ * @namespace qtoggle.dashboard.widgets.slidersknobs
+ */
+
+/**
+ * @namespace qtoggle.dashboard.widgets.specialized
+ */
+
+
 import './displays/on-off-indicator.js'
 import './displays/progress-bar.js'
 import './media/mjpeg-video.js'

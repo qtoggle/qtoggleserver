@@ -36,10 +36,21 @@ const SNAP_STRICT = 'strict'
 const LOOSE_SNAP_DIST = 0.1 /* em */
 
 
+/**
+ * @alias qtoggle.dashboard.widgets.AnalogWidgetConfigForm
+ * @extends qtoggle.dashboard.widgets.ConfigForm
+ */
 export class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget, {readonly = false, ticksonly = false, tickColors = false}) {
-        super(widget, {
+    /**
+     * @constructs
+     * @param {Boolean} [readonly]
+     * @param {Boolean} [ticksonly]
+     * @param {Boolean} [tickColors]
+     * @param {...*} args
+     */
+    constructor({readonly = false, ticksonly = false, tickColors = false, ...args}) {
+        super({
             fields: [
                 new PortPickerField({
                     name: 'portId',
@@ -148,7 +159,8 @@ export class ConfigForm extends WidgetConfigForm {
                     onChange: (value, form) => form._updateFields(),
                     hidden: ticksonly
                 })
-            ]
+            ],
+            ...args
         })
 
         this._readonly = readonly
@@ -375,8 +387,18 @@ export class ConfigForm extends WidgetConfigForm {
 }
 
 
+/**
+ * @alias qtoggle.dashboard.widgets.AnalogWidget
+ * @extends qtoggle.dashboard.widgets.Widget
+ */
 export class AnalogWidget extends Widget {
 
+    /**
+     * @constructs
+     * @param {Boolean} [readonly]
+     * @param {Boolean} [ticksonly]
+     * @param {Boolean} [tickColors]
+     */
     constructor({readonly = false, ticksonly = false, tickColors = false}) {
         super()
 
@@ -1030,21 +1052,6 @@ export class AnalogWidget extends Widget {
     }
 
     configFromJSON(json) {
-        // TODO remove these
-        /* These are for compatibility, from when min/max were start/end */
-        if (json.start != null) {
-            this._min = json.start
-        }
-        if (json.end != null) {
-            this._max = json.end
-        }
-        if (json.startColor) {
-            this._minColor = json.startColor
-        }
-        if (json.endColor) {
-            this._maxColor = json.endColor
-        }
-
         if (json.portId) {
             this._portId = json.portId
         }

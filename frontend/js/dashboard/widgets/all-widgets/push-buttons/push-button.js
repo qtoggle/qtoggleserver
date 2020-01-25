@@ -17,15 +17,13 @@ import {DEFAULT_COLOR}  from '$app/dashboard/widgets/widget.js'
 import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 
 
-/**
- * @class QToggle.DashboardSection.Widgets.PushButton.ConfigForm
- * @extends QToggle.DashboardSection.Widgets.WidgetConfigForm
- * @param {QToggle.DashboardSection.Widgets.Widget} widget
- */
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {
+    constructor({...args}) {
+        super({
             fields: [
                 new ColorComboField({
                     name: 'color',
@@ -63,7 +61,8 @@ class ConfigForm extends WidgetConfigForm {
                     description: gettext('Sets the time after which the button is automatically released. ' +
                                          'Value 0 disables automatic release.')
                 })
-            ]
+            ],
+            ...args
         })
     }
 
@@ -104,11 +103,14 @@ class ConfigForm extends WidgetConfigForm {
 
 
 /**
- * @class QToggle.DashboardSection.Widgets.PushButton
- * @extends QToggle.DashboardSection.Widgets.Widget
+ * @alias qtoggle.dashboard.widgets.pushbuttons.PushButton
+ * @extends qtoggle.dashboard.widgets.Widget
  */
-export default class PushButton extends Widget {
+class PushButton extends Widget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super()
 
@@ -273,3 +275,6 @@ PushButton.hResizable = true
 
 
 Widgets.register(PushButton)
+
+
+export default PushButton

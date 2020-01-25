@@ -23,8 +23,15 @@ const SECTION_ID = 'login'
 const logger = Login.logger
 
 
-export default class LoginSection extends Section {
+/**
+ * @alias qtoggle.login.LoginSection
+ * @extends qtoggle.sections.Section
+ */
+class LoginSection extends Section {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super({
             id: SECTION_ID,
@@ -63,10 +70,18 @@ export default class LoginSection extends Section {
         return this
     }
 
+    /**
+     * Set the path to navigate once login process is done.
+     * @param {String[]} path
+     */
     setNextPath(path) {
         this._nextPath = path
     }
 
+    /**
+     * Return and clear next path.
+     * @returns {String[]}
+     */
     popNextPath() {
         let path = this._nextPath
         this._nextPath = null
@@ -141,3 +156,6 @@ export default class LoginSection extends Section {
     }
 
 }
+
+
+export default LoginSection

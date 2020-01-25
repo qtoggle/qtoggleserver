@@ -15,8 +15,15 @@ const SECTION_ID = 'ports'
 const SECTION_TITLE = gettext('Ports')
 
 
-export default class PortsSection extends Section {
+/**
+ * @alias qtoggle.ports.PortsSection
+ * @extends qtoggle.sections.Section
+ */
+class PortsSection extends Section {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super({
             id: SECTION_ID,
@@ -194,3 +201,6 @@ export default class PortsSection extends Section {
     }
 
 }
+
+
+export default PortsSection

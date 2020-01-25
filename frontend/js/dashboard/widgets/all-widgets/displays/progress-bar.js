@@ -7,17 +7,27 @@ import * as Widgets from '$app/dashboard/widgets/widgets.js'
 import {ConfigForm as AnalogWidgetConfigForm, AnalogWidget} from '../analog-widget.js'
 
 
-export class ConfigForm extends AnalogWidgetConfigForm {
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
 
-    constructor(widget) {
-        super(widget, {readonly: true})
+
+class ConfigForm extends AnalogWidgetConfigForm {
+
+    constructor({...args}) {
+        super({readonly: true, ...args})
     }
 
 }
 
 
-export default class ProgressBar extends AnalogWidget {
+/**
+ * @alias qtoggle.dashboard.widgets.displays.ProgressBar
+ * @extends qtoggle.dashboard.widgets.AnalogWidget
+ */
+class ProgressBar extends AnalogWidget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super({readonly: true})
     }
@@ -36,3 +46,6 @@ ProgressBar.width = 2
 
 
 Widgets.register(ProgressBar)
+
+
+export default ProgressBar

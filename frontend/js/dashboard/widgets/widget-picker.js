@@ -15,15 +15,17 @@ const WIDGET_ICON = new StockIcon({name: 'widget', stockName: 'qtoggle'})
 
 
 /**
- * @class QToggle.DashboardSection.WidgetCategoryList
+ * @alias qtoggle.dashboard.widgets.WidgetCategoryList
  * @extends qui.lists.List
- * @param {QToggle.DashboardSection.Widgets.WidgetPicker} widgetPicker
- * @param {Object[]} category
- * @param {QToggle.DashboardSection.Widgets.WidgetPicker.Callback} callback
- * @param {Object} [params]
  */
 class WidgetCategoryList extends List {
 
+    /**
+     * @constructs
+     * @param {qtoggle.dashboard.widgets.WidgetPicker} widgetPicker
+     * @param {Object} categoryInfo
+     * @param {qtoggle.dashboard.widgets.WidgetPicker.Callback} callback
+     */
     constructor(widgetPicker, categoryInfo, callback) {
         super({
             title: '',
@@ -42,6 +44,10 @@ class WidgetCategoryList extends List {
         this.setItems(categoryInfo.widgetClasses.map(this.widgetClassToItem))
     }
 
+    /**
+     * @param {typeof qtoggle.dashboard.widgets.Widget} widgetClass
+     * @returns {qui.lists.ListItem}
+     */
     widgetClassToItem(widgetClass) {
         return new IconLabelListItem({
             label: widgetClass.displayName,
@@ -52,12 +58,12 @@ class WidgetCategoryList extends List {
         })
     }
 
-    onSelectionChange(item) {
-        if (!item) {
+    onSelectionChange(newItem, newIndex, oldItem, oldIndex) {
+        if (!newItem) {
             return
         }
 
-        this._callback(item.getData().cls)
+        this._callback(newItem.getData().cls)
     }
 
     onUnminimize() {
@@ -74,19 +80,22 @@ class WidgetCategoryList extends List {
 }
 
 /**
- * @callback QToggle.DashboardSection.Widgets.WidgetPicker.Callback
- * @param {Function} cls
+ * @callback qtoggle.dashboard.widgets.WidgetPicker.Callback
+ * @param {typeof qtoggle.dashboard.widgets.Widget} cls
  */
 
 // TODO generalize this view into a category view or something
 
 /**
- * @class QToggle.DashboardSection.Widgets.WidgetPicker
+ * @alias qtoggle.dashboard.widgets.WidgetPicker
  * @mixes qui.pages.StructuredPageMixin
- * @param {QToggle.DashboardSection.Widgets.WidgetPicker.Callback} callback
  */
-export default class WidgetPicker extends mix().with(StructuredPageMixin) {
+class WidgetPicker extends mix().with(StructuredPageMixin) {
 
+    /**
+     * @constructs
+     * @param {qtoggle.dashboard.widgets.WidgetPicker.Callback} callback
+     */
     constructor(callback) {
         super({
             title: gettext('Pick A Widget'),
@@ -127,3 +136,6 @@ export default class WidgetPicker extends mix().with(StructuredPageMixin) {
     }
 
 }
+
+
+export default WidgetPicker

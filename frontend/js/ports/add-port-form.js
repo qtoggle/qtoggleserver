@@ -20,13 +20,15 @@ const logger = Ports.logger
 
 
 /**
- * @class AddPortForm
+ * @alias qtoggle.ports.AddPortForm
  * @extends qui.forms.PageForm
- * @private
- * @param {String} deviceName
  */
-export default class AddPortForm extends PageForm {
+class AddPortForm extends PageForm {
 
+    /**
+     * @constructs
+     * @param {String} deviceName
+     */
     constructor(deviceName) {
         super({
             icon: Ports.PORT_ICON,
@@ -157,3 +159,6 @@ export default class AddPortForm extends PageForm {
     }
 
 }
+
+
+export default AddPortForm

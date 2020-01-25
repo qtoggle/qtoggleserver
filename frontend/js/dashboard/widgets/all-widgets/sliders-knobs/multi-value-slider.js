@@ -8,17 +8,27 @@ import {ConfigForm as AnalogWidgetConfigForm} from '../analog-widget.js'
 import {AnalogWidget}                         from '../analog-widget.js'
 
 
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 class ConfigForm extends AnalogWidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {ticksonly: true, tickColors: true})
+    constructor({...args}) {
+        super({ticksonly: true, tickColors: true, ...args})
     }
 
 }
 
 
-export default class MultiValueSlider extends AnalogWidget {
+/**
+ * @alias qtoggle.dashboard.widgets.slidersknobs.MultiValueSlider
+ * @extends qtoggle.dashboard.widgets.AnalogWidget
+ */
+class MultiValueSlider extends AnalogWidget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super({ticksonly: true, tickColors: true})
     }
@@ -36,3 +46,6 @@ MultiValueSlider.vResizable = true
 
 
 Widgets.register(MultiValueSlider)
+
+
+export default MultiValueSlider

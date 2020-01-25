@@ -17,11 +17,6 @@ import {asap}     from '$qui/utils/misc.js'
 const DEFAULT_SHOW_OFFLINE_DEVICES = true
 
 
-/**
- * @class DevicesListOptionsForm
- * @extends qui.forms.OptionsForm
- * @private
- */
 class DevicesListOptionsForm extends OptionsForm {
 
     constructor(devicesList) {
@@ -46,12 +41,14 @@ class DevicesListOptionsForm extends OptionsForm {
 }
 
 /**
- * @class DevicesList
+ * @alias qtoggle.ports.DevicesList
  * @extends qui.lists.PageList
- * @private
  */
-export default class DevicesList extends PageList {
+class DevicesList extends PageList {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super({
             title: gettext('Choose Device'),
@@ -85,6 +82,9 @@ export default class DevicesList extends PageList {
         }.bind(this))
     }
 
+    /**
+     * Update list items from devices.
+     */
     updateUI() {
         let devices = Cache.getSlaveDevices(/* asList = */ true)
 
@@ -114,6 +114,11 @@ export default class DevicesList extends PageList {
         }
     }
 
+    /**
+     * Create list item from device.
+     * @param {Object} device
+     * @returns {qui.lists.ListItem}
+     */
     deviceToItem(device) {
         return new IconLabelListItem({
             label: device.attrs.display_name || device.name,
@@ -162,8 +167,14 @@ export default class DevicesList extends PageList {
         return (this.portsList = new PortsList(deviceName))
     }
 
+    /**
+     * @param {String} deviceName
+     */
     setSelectedDevice(deviceName) {
         this.setSelectedIndex(this.getItems().findIndex(item => item.getData() === deviceName))
     }
 
 }
+
+
+export default DevicesList

@@ -13,10 +13,26 @@ import * as API    from '$app/api.js'
 import * as Common from '$app/common/common.js'
 
 
-export default Mixin((superclass = Object) => {
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
 
+
+/** @lends qtoggle.common.RebootFormMixin */
+const RebootFormMixin = Mixin((superclass = Object) => {
+
+    /**
+     * A mixin to be used with device forms that allow rebooting.
+     * @alias qtoggle.common.RebootDeviceMixin
+     * @mixin
+     */
     class RebootFormMixin extends superclass {
 
+        /**
+         * Reboot a device after confirmation.
+         * @param {String} deviceName the name of the device to reboot
+         * @param {String} deviceDisplayName device display name
+         * @param {Logger} logger
+         * @returns {qui.pages.PageMixin}
+         */
         confirmAndReboot(deviceName, deviceDisplayName, logger) {
             let msg = StringUtils.formatPercent(
                 gettext('Really reboot device %(name)s?'),
@@ -57,7 +73,7 @@ export default Mixin((superclass = Object) => {
                             error.message = gettext('Timeout waiting for device to reconnect.')
                         }
 
-                        this.cancelWaitingDevice()
+                        this.cancelWaiting()
                         this.setError(error)
 
                     }.bind(this)).then(function () {
@@ -76,3 +92,6 @@ export default Mixin((superclass = Object) => {
     return RebootFormMixin
 
 })
+
+
+export default RebootFormMixin

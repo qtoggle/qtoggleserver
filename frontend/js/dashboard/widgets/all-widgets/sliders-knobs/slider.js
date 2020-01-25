@@ -8,17 +8,27 @@ import {ConfigForm as AnalogWidgetConfigForm} from '../analog-widget.js'
 import {AnalogWidget}                         from '../analog-widget.js'
 
 
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 class ConfigForm extends AnalogWidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {readonly: false})
+    constructor({...args}) {
+        super({readonly: false, ...args})
     }
 
 }
 
 
-export default class Slider extends AnalogWidget {
+/**
+ * @alias qtoggle.dashboard.widgets.slidersknobs.Slider
+ * @extends qtoggle.dashboard.widgets.AnalogWidget
+ */
+class Slider extends AnalogWidget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super({readonly: false})
     }
@@ -37,3 +47,6 @@ Slider.width = 2
 
 
 Widgets.register(Slider)
+
+
+export default Slider

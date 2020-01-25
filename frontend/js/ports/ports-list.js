@@ -21,11 +21,6 @@ const DEFAULT_SHOW_OFFLINE_PORTS = true
 const DEFAULT_SHOW_DISABLED_PORTS = true
 
 
-/**
- * @class PortsListOptionsForm
- * @extends qui.forms.OptionsForm
- * @private
- */
 class PortsListOptionsForm extends OptionsForm {
 
     constructor(portsList) {
@@ -71,13 +66,15 @@ class PortsListOptionsForm extends OptionsForm {
 
 
 /**
- * @class PortsList
+ * @alias qtoggle.ports.PortsList
  * @extends qui.lists.PageList
- * @private
- * @param {String} [deviceName]
  */
-export default class PortsList extends PageList {
+class PortsList extends PageList {
 
+    /**
+     * @constructs
+     * @param {?String} [deviceName]
+     */
     constructor(deviceName = null) {
         super({
             column: true,
@@ -133,6 +130,9 @@ export default class PortsList extends PageList {
         }.bind(this))
     }
 
+    /**
+     * Update list items from ports.
+     */
     updateUI() {
         let ports = Cache.getPorts(/* asList = */ true)
 
@@ -191,6 +191,11 @@ export default class PortsList extends PageList {
         }
     }
 
+    /**
+     * Create list item from port.
+     * @param {Object} port
+     * @returns {qui.lists.ListItem}
+     */
     portToItem(port) {
         let label = port.display_name
         if (!label) {
@@ -207,6 +212,9 @@ export default class PortsList extends PageList {
         })
     }
 
+    /**
+     * @returns {?String}
+     */
     getDeviceName() {
         return this._deviceName
     }
@@ -271,8 +279,14 @@ export default class PortsList extends PageList {
         return (this.portForm = new PortForm(portId, this._deviceName))
     }
 
+    /**
+     * @param {String} portId
+     */
     setSelectedPort(portId) {
         this.setSelectedIndex(this.getItems().findIndex(item => item.getData() === portId))
     }
 
 }
+
+
+export default PortsList

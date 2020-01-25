@@ -23,15 +23,10 @@ const SMALL_LABEL_HEIGHT = 0.15 /* em */
 const SMALL_LABEL_FONT_SIZE = 0.1 /* em */
 
 
-/**
- * @class QToggle.DashboardSection.Widgets.RadioButtons.ConfigForm
- * @extends QToggle.DashboardSection.Widgets.WidgetConfigForm
- * @param {QToggle.DashboardSection.Widgets.Widget} widget
- */
 class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {
+    constructor({...args}) {
+        super({
             fields: [
                 new PortPickerField({
                     name: 'portId',
@@ -66,7 +61,8 @@ class ConfigForm extends WidgetConfigForm {
                     max: 20,
                     onChange: (value, form) => form._updateButtonFields()
                 })
-            ]
+            ],
+            ...args
         })
     }
 
@@ -227,11 +223,14 @@ class ConfigForm extends WidgetConfigForm {
 
 
 /**
- * @class QToggle.DashboardSection.Widgets.RadioButtons
- * @extends QToggle.DashboardSection.Widgets.Widget
+ * @alias qtoggle.dashboard.widgets.pushbuttons.RadioButtons
+ * @extends qtoggle.dashboard.widgets.Widget
  */
-export default class RadioButtons extends Widget {
+class RadioButtons extends Widget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super()
 
@@ -471,3 +470,6 @@ RadioButtons.vResizable = false
 
 
 Widgets.register(RadioButtons)
+
+
+export default RadioButtons

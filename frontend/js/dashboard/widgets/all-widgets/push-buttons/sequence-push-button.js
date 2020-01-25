@@ -14,15 +14,13 @@ import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 import PushButton from './push-button.js'
 
 
-/**
- * @class QToggle.DashboardSection.Widgets.SequencePushButton.ConfigForm
- * @extends QToggle.DashboardSection.Widgets.WidgetConfigForm
- * @param {QToggle.DashboardSection.Widgets.Widget} widget
- */
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {
+    constructor({...args}) {
+        super({
             fields: [
                 new ColorComboField({
                     name: 'color',
@@ -63,7 +61,8 @@ class ConfigForm extends WidgetConfigForm {
                     max: 100,
                     onChange: (value, form) => form._updateSeqFields()
                 })
-            ]
+            ],
+            ...args
         })
     }
 
@@ -265,11 +264,14 @@ class ConfigForm extends WidgetConfigForm {
 
 
 /**
- * @class QToggle.DashboardSection.Widgets.SequencePushButton
- * @extends QToggle.DashboardSection.Widgets.PushButton
+ * @alias qtoggle.dashboard.widgets.pushbuttons.SequencePushButton
+ * @extends qtoggle.dashboard.widgets.Widget
  */
-export default class SequencePushButton extends PushButton {
+class SequencePushButton extends PushButton {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super()
 
@@ -326,3 +328,6 @@ SequencePushButton.vResizable = true
 
 
 Widgets.register(SequencePushButton)
+
+
+export default SequencePushButton

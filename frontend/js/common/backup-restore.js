@@ -1,3 +1,7 @@
+/**
+ * @namespace qtoggle.common.backuprestore
+ */
+
 
 import Logger from '$qui/lib/logger.module.js'
 
@@ -12,6 +16,11 @@ import * as API from '$app/api.js'
 const logger = Logger.get('qtoggle.common.backuprestore')
 
 
+/**
+ * A backup/restore elementary operation, such as updating attributes of a port.
+ * @alias qtoggle.common.backuprestore.Operation
+ * @private
+ */
 class Operation {
 
     constructor(logMessage, displayMessage, func, ...args) {
@@ -33,6 +42,11 @@ class Operation {
 }
 
 
+/**
+ * Backup/restore session context.
+ * @alias qtoggle.common.backuprestore.Context
+ * @private
+ */
 class Context {
 
     constructor(slaveName, modalProgress, operations) {
@@ -215,6 +229,14 @@ function applyDefaultReverseConfig(context, reverseConfig) {
 }
 
 
+/**
+ * Apply default configuration to main device or to a slave device.
+ * @alias qtoggle.common.backuprestore.applyDefaultConfig
+ * @param {?String} slaveName slave name or `null` for main device
+ * @param {Object} config backup configuration to restore
+ * @param {qui.pages.commonpages.ModalProgressPage} modalProgress
+ * @returns Promise
+ */
 export function applyDefaultConfig(slaveName, config, modalProgress) {
     let operations = []
 

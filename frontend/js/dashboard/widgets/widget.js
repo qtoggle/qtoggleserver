@@ -39,8 +39,15 @@ const STATES = [
 ]
 
 
-export default class Widget extends mix().with(ViewMixin) {
+/**
+ * @alias qtoggle.dashboard.widgets.Widget
+ * @mixes qui.views.ViewMixin
+ */
+class Widget extends mix().with(ViewMixin) {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super()
 
@@ -147,16 +154,19 @@ export default class Widget extends mix().with(ViewMixin) {
 
     /**
      * Override this method to implement the actual content of the widget.
-     * @param {Number} width the content (useful) width
-     *  (see {@link QToggle.DashboardSection.Widgets.Widget#getContentWidth})
-     * @param {Number} height the content (useful) height
-     *  (see {@link QToggle.DashboardSection.Widgets.Widget#getContentHeight})
+     * @param {Number} width the (useful) content width (see
+     * {@link qtoggle.dashboard.widgets.Widget#getContentWidth})
+     * @param {Number} height the (useful) content height (see
+     * {@link qtoggle.dashboard.widgets.Widget#getContentHeight})
      * @returns {jQuery}
      */
     makeContent(width, height) {
         return $('<span>widget</span>')
     }
 
+    /**
+     * Recreate widget content using current width and height and show current value.
+     */
     refreshContent() {
         let cw = this.getContentWidth()
         let ch = this.getContentHeight()
@@ -177,10 +187,16 @@ export default class Widget extends mix().with(ViewMixin) {
         this.showCurrentValue()
     }
 
+    /**
+     * Dispose off the current widget content.
+     */
     clearContent() {
         this._contentElem.empty('')
     }
 
+    /**
+     * @returns {?jQuery}
+     */
     getContentElement() {
         return this._contentElem
     }
@@ -532,6 +548,10 @@ export default class Widget extends mix().with(ViewMixin) {
         return this._panel.getBody()
     }
 
+    /**
+     * Return the current cell width in pixels.
+     * @returns {Number}
+     */
     getCellWidth() {
         if (!this._panel) {
             return CSS.em2px(1)
@@ -540,10 +560,19 @@ export default class Widget extends mix().with(ViewMixin) {
         return this._panel.getCellWidth()
     }
 
-    getEmRatio() {
+    /**
+     * Return the current *em* size.
+     * @returns {Number}
+     */
+    getEmSize() {
         return this.getCellWidth() / CSS.em2px(1)
     }
 
+    /**
+     * Compute a *round* value for a given *em* value. Rounding is done to an integer number of pixels.
+     * @param {Number} em
+     * @returns {Number}
+     */
     roundEm(em) {
         if (!this._panel) {
             return em
@@ -554,10 +583,16 @@ export default class Widget extends mix().with(ViewMixin) {
         return Math.round(em * cellWidth) / cellWidth
     }
 
+    /**
+     * @returns {qtoggle.dashboard.Panel}
+     */
     getPanel() {
         return this._panel
     }
 
+    /**
+     * @returns {jQuery}
+     */
     getBody() {
         /* Make sure the HTML is created */
         this.getHTML()
@@ -565,6 +600,9 @@ export default class Widget extends mix().with(ViewMixin) {
         return this._bodyDiv
     }
 
+    /**
+     * Reposition the widget according to current top, left, width and height.
+     */
     updateLayout() {
         this.getHTML().css({
             width: `${this._width}em`,
@@ -577,6 +615,9 @@ export default class Widget extends mix().with(ViewMixin) {
 
     /* Logging */
 
+    /**
+     * @returns {String}
+     */
     makeLogName() {
         return `qtoggle.dashboard.widgets.widget${this._id || '<new>'}`
     }
@@ -591,6 +632,9 @@ export default class Widget extends mix().with(ViewMixin) {
         return this._id
     }
 
+    /**
+     * @param {String} id
+     */
     setId(id) {
         this._id = id
         this.logger = Logger.get(this.makeLogName())
@@ -691,7 +735,7 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     /**
-     * Returns the content (useful) width, in *em* (fractions of a cell).
+     * Return the (useful) content width, in *em* (fractions of a cell).
      * @returns {Number}
      */
     getContentWidth() {
@@ -699,7 +743,7 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     /**
-     * Returns the content (useful) height, in *em* (fractions of a cell).
+     * Return the (useful) content height, in *em* (fractions of a cell).
      * @returns {Number}
      */
     getContentHeight() {
@@ -744,7 +788,7 @@ export default class Widget extends mix().with(ViewMixin) {
     /* State */
 
     /**
-     * Recalculates the widget state, updating it accordingly.
+     * Recalculate and update the widget state.
      */
     updateState() {
         let computedState = this._computeState()
@@ -805,9 +849,9 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     /**
-     * Implement this in concrete widget classes to define in what conditions the widget configuration is valid.
-     * By default this method simply returns `true`, which will make the widget's validity rely solely
-     * on its configuration form validation.
+     * Implement this in concrete widget classes to define in what conditions the widget configuration is valid. By
+     * default, this method simply returns `true`, which will make the widget's validity rely solely on its
+     * configuration form validation.
      * @returns {Boolean}
      */
     isValid() {
@@ -885,14 +929,10 @@ export default class Widget extends mix().with(ViewMixin) {
     /* Haptic feedback */
 
     /**
-     * Emits a device vibration (if supported).
+     * Emit a device vibration (if supported).
      * @param {Number} [duration] the vibration duration, in milliseconds. Defaults to `10`.
      */
-    vibrate(duration) {
-        if (duration == null) {
-            duration = DEF_VIBRATION_DURATION
-        }
-
+    vibrate(duration = DEF_VIBRATION_DURATION) {
         if (navigator.vibrate) {
             navigator.vibrate(duration)
         }
@@ -904,11 +944,11 @@ export default class Widget extends mix().with(ViewMixin) {
     /* Dragging */
 
     /**
-     * Enables dragging on the given element. Only one element at a time can support dragging.
+     * Enable dragging on the given element. Only one element at a time can support dragging.
      * @param {jQuery} element
-     * @param {String} [direction] indicates dragging direction: `"x"`, `"y"` or `null` for both defaults to `null`
+     * @param {String} [direction] indicates dragging direction: `"x"`, `"y"` or `null` for both (defaults to `null`)
      */
-    setDragElement(element, direction) {
+    setDragElement(element, direction = null) {
         this._clickDragElemX = this._clickDragElemY = null
 
         if (this._dragElem) {
@@ -987,7 +1027,7 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     /**
-     * Tells if the drag element is currently being dragged.
+     * Tell if the drag element is currently being dragged.
      * @returns {Boolean}
      */
     isDragging() {
@@ -998,6 +1038,7 @@ export default class Widget extends mix().with(ViewMixin) {
     /* Serialization */
 
     /**
+     * Serialize widget into a JSON object.
      * @returns {Object}
      */
     toJSON() {
@@ -1020,6 +1061,7 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     /**
+     * Load widget from a serialized JSON object.
      * @param {Object} json
      */
     fromJSON(json) {
@@ -1053,6 +1095,7 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     /**
+     * Serialize widget configuration into a JSON object.
      * @returns {Object}
      */
     configToJSON() {
@@ -1060,6 +1103,7 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     /**
+     * Load widget configuration from a serialized JSON object.
      * @param {Object} json
      */
     configFromJSON(json) {
@@ -1067,31 +1111,6 @@ export default class Widget extends mix().with(ViewMixin) {
 
 
     /* Values */
-
-    setWaitingPortValueChanged(portId) {
-        if (this._whenPortValueChanged) {
-            throw new AssertionError('Attempt to wait for value change while already waiting')
-        }
-
-        this._whenPortValueChanged = new ConditionVariable()
-        this._waitingPortValueChangedId = portId
-
-        PromiseUtils.withTimeout(this._whenPortValueChanged).catch(function (error) {
-
-            if (error instanceof TimeoutError) {
-                this.logger.debug(`value-change not received within timeout for ${portId}, reverting to current one`)
-                let port = this.getPort(portId)
-                if (!port) {
-                    return
-                }
-
-                this.onPortValueChange(portId, port.value)
-            }
-
-            /* Other errors can practically only be generated by cancelling the condition variable */
-
-        }.bind(this))
-    }
 
     handlePortValueChange(portId, value) {
         this.onPortValueChange(portId, value)
@@ -1106,9 +1125,11 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     /**
-     * Sets the value of a port. This is basically a handy wrapper around {@link QToggle.API.patchPortValue}.
-     * During the API call, the widget is put into *progress* state.
-     * When the call returns, the state is updated according to the result.
+     * Set a new value to a port. This is basically a handy wrapper around {@link qtoggle.api.patchPortValue}.
+     *
+     * During the API call, the widget is put into *progress* state. When the call returns, the state is updated
+     * according to the result.
+     *
      * @param {String} portId the id of the port whose value will be set
      * @param {Number|Boolean} value the new port value
      * @returns {Promise}
@@ -1131,7 +1152,7 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     /**
-     * Returns the cached value of a port.
+     * Return the cached value of a port.
      * @param {String} portId the id of the port whose value will be returned
      * @returns {?Boolean|Number}
      */
@@ -1145,9 +1166,11 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     /**
-     * Sets the value of a port. This is basically a handy wrapper around {@link QToggle.API.postPortSequence}.
-     * During the API call, the widget is put into *progress* state.
-     * When the call returns, the state is updated according to the result.
+     * Set a new sequence to a port. This is basically a handy wrapper around {@link qtoggle.api.postPortSequence}.
+     *
+     * During the API call, the widget is put into *progress* state. When the call returns, the state is updated
+     * according to the result.
+     *
      * @param {String} portId the id of the port whose value will be set
      * @param {Boolean[]|Number[]} values the list of values in the sequence
      * @param {Number[]} delays the list of delays between values
@@ -1172,7 +1195,7 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     /**
-     * Returns the cached attributes of a port.
+     * Return the cached attributes of a port.
      * @param {String} portId the id of the port whose attributes will be returned
      * @returns {?Object}
      */
@@ -1181,7 +1204,7 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     /**
-     * Returns the device attached to the given port.
+     * Return the slave device to which a given port belongs.
      * @param {String} portId the id of the port
      * @returns {?Object}
      */
@@ -1190,8 +1213,8 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     /**
-     * Override this method to implement updating the widget (usually from port values)
-     * as soon as the widget becomes valid.
+     * Override this method to implement updating the widget (usually from port values) as soon as the widget becomes
+     * valid.
      */
     showCurrentValue() {
     }
@@ -1199,6 +1222,9 @@ export default class Widget extends mix().with(ViewMixin) {
 
     /* Configuration */
 
+    /**
+     * @returns {qui.pages.PageMixin}
+     */
     makeRemoveForm() {
         let msg
         if (this._label) {
@@ -1224,11 +1250,11 @@ export default class Widget extends mix().with(ViewMixin) {
     }
 
     /**
-     * @returns {QToggle.DashboardSection.Widgets.WidgetConfigForm}
+     * @returns {qtoggle.dashboard.widgets.WidgetConfigForm}
      */
     getConfigForm() {
         if (!this._configForm) {
-            this._configForm = new this.constructor.ConfigForm(this)
+            this._configForm = new this.constructor.ConfigForm({widget: this})
         }
 
         this._configForm.updateFromWidget()
@@ -1236,6 +1262,9 @@ export default class Widget extends mix().with(ViewMixin) {
         return this._configForm
     }
 
+    /**
+     * @returns {Promise}
+     */
     showConfigForm() {
         let configForm = this.getConfigForm()
         if (configForm.hasContext()) { /* Already added */
@@ -1261,3 +1290,6 @@ Widget.height = null
 Widget.vResizable = false
 Widget.hResizable = false
 Widget.hasFrame = false
+
+
+export default Widget

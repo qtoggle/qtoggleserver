@@ -1,3 +1,6 @@
+/**
+ * @namespace qtoggle.ports
+ */
 
 import Logger from '$qui/lib/logger.module.js'
 
@@ -7,15 +10,38 @@ import * as Theme from '$qui/theme.js'
 import * as Cache from '$app/cache.js'
 
 
+/**
+ * @alias qtoggle.ports.PORT_ICON
+ * @type {qui.icons.Icon}
+ */
 export const PORT_ICON = new StockIcon({name: 'port', stockName: 'qtoggle'})
+
+/**
+ * @alias qtoggle.ports.PORT_WRITABLE_ICON
+ * @type {qui.icons.Icon}
+ */
 export const PORT_WRITABLE_ICON = new StockIcon({name: 'port-writable', stockName: 'qtoggle'})
+
+/**
+ * @alias qtoggle.ports.DEVICE_ICON
+ * @type {qui.icons.Icon}
+ */
 export const DEVICE_ICON = new StockIcon({name: 'device', stockName: 'qtoggle'})
 
+/**
+ * @alias qtoggle.ports.logger
+ * @type {Logger}
+ */
 export const logger = Logger.get('qtoggle.ports')
 
 let masterFakeDevice = null
 
 
+/**
+ * @alias qtoggle.ports.makeDeviceIcon
+ * @param {Object} device
+ * @returns {qui.icons.Icon}
+ */
 export function makeDeviceIcon(device) {
     let decoration = null
     if (Cache.isMainDevice(device.name)) { /* Master */
@@ -37,6 +63,11 @@ export function makeDeviceIcon(device) {
     return DEVICE_ICON.alter({decoration: decoration})
 }
 
+/**
+ * @alias qtoggle.ports.makePortIcon
+ * @param {Object} port
+ * @returns {qui.icons.Icon}
+ */
 export function makePortIcon(port) {
     let device = Cache.findPortSlaveDevice(port.id)
 
@@ -68,6 +99,10 @@ export function makePortIcon(port) {
     return icon
 }
 
+/**
+ * @alias qtoggle.ports.getMasterFakeDevice
+ * @returns {Object}
+ */
 export function getMasterFakeDevice() {
     if (!masterFakeDevice) {
         let mainDevice = Cache.getMainDevice()
@@ -82,6 +117,9 @@ export function getMasterFakeDevice() {
     return masterFakeDevice
 }
 
+/**
+ * @alias qtoggle.ports.clearMasterFakeDevice
+ */
 export function clearMasterFakeDevice() {
     masterFakeDevice = null
 }

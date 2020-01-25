@@ -20,8 +20,15 @@ const SECTION_TITLE = gettext('Dashboard')
 const logger = Dashboard.logger
 
 
-export default class DashboardSection extends Section {
+/**
+ * @alias qtoggle.dashboard.DashboardSection
+ * @extends qtoggle.sections.Section
+ */
+class DashboardSection extends Section {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super({
             id: SECTION_ID,
@@ -64,6 +71,10 @@ export default class DashboardSection extends Section {
         })
     }
 
+    /**
+     * Return a promise that resolves as soon as the panels are loaded.
+     * @returns {Promise}
+     */
     whenPanelsLoaded() {
         if (!this._whenPanelsLoaded) {
             this._whenPanelsLoaded = this._loadPanels()
@@ -150,7 +161,7 @@ export default class DashboardSection extends Section {
     _updateWidgetConfigPortsList() {
         let currentPage = this.getCurrentPage()
         if (currentPage instanceof WidgetConfigForm) {
-            currentPage.updatePorts()
+            currentPage.updatePortFields()
         }
     }
 
@@ -176,3 +187,6 @@ export default class DashboardSection extends Section {
     }
 
 }
+
+
+export default DashboardSection

@@ -46,13 +46,18 @@ function getDeviceURL(device) {
 
 
 /**
- * @class DeviceForm
+ * @alias qtoggle.devices.DeviceForm
  * @extends qui.forms.PageForm
- * @param {String} deviceName
- * @private
+ * @mixes qtoggle.common.AttrdefFormMixin
+ * @mixes qtoggle.common.WaitDeviceMixin
+ * @mixes qtoggle.common.RebootDeviceMixin
  */
-export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, RebootDeviceMixin) {
+class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, RebootDeviceMixin) {
 
+    /**
+     * @constructs
+     * @param {String} deviceName
+     */
     constructor(deviceName) {
         super({
             pathId: deviceName,
@@ -117,7 +122,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
     }
 
     /**
-     * Updates the entire form (fields & values) from the corresponding device.
+     * Update the entire form (fields & values) from the corresponding device.
      */
     updateUI(fieldChangeWarnings = true) {
         let device = Cache.getSlaveDevice(this.getDeviceName())
@@ -201,6 +206,9 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         this.updateStaticFields(device.attrs)
     }
 
+    /**
+     * Add fields whose presence is not altered by device attributes.
+     */
     addStaticFields() {
         this.addField(-1, new CompositeField({
             name: 'management_buttons',
@@ -240,6 +248,10 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         }))
     }
 
+    /**
+     * Enable/disable static fields based on device attributes.
+     * @param {Object} attrs device attributes
+     */
     updateStaticFields(attrs) {
         let updateFirmwareButtonField = this.getField('management_buttons').getField('firmware')
         if (attrs.flags.indexOf('firmware') >= 0) {
@@ -250,10 +262,16 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         }
     }
 
+    /**
+     * @returns {String}
+     */
     getDeviceName() {
         return this._deviceName
     }
 
+    /**
+     * Start waiting for device to come line.
+     */
     startWaitingDeviceOnline() {
         this.setProgress()
 
@@ -374,9 +392,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
 
                     logger.errorStack(`failed to update device "${deviceName}" master properties`, error)
 
-                    if (this.isWaitingDeviceOnline()) {
-                        this.cancelWaitingDeviceOnline()
-                    }
+                    this.cancelWaiting()
 
                     throw error
 
@@ -428,7 +444,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
                             error = new Error(gettext('Timeout waiting for device to reconnect.'))
                         }
 
-                        this.cancelWaitingDevice()
+                        this.cancelWaiting()
                         this.setError(error)
 
                     }.bind(this)).then(function () {
@@ -450,7 +466,7 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
 
     onClose() {
         Devices.setCurrentDeviceName(null)
-        this.cancelWaitingDevice()
+        this.cancelWaiting()
     }
 
     onButtonPress(button) {
@@ -531,6 +547,9 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
         return new ProvisioningForm(this.getDeviceName())
     }
 
+    /**
+     * @returns {qui.pages.PageMixin}
+     */
     makeConfirmAndRebootForm() {
         let device = Cache.getSlaveDevice(this.getDeviceName())
         if (!device) {
@@ -543,3 +562,6 @@ export default class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, Wai
     }
 
 }
+
+
+export default DeviceForm

@@ -36,12 +36,6 @@ const MAX_PANEL_WIDTH = 20
 const MAX_PANEL_HEIGHT = 100
 
 
-/**
- * @class PanelOptionsForm
- * @extends qui.forms.OptionsForm
- * @private
- * @param {QToggle.DashboardSection.Panel} panel
- */
 class PanelOptionsForm extends OptionsForm {
 
     constructor(panel) {
@@ -200,15 +194,18 @@ class PanelOptionsForm extends OptionsForm {
 
 
 /**
- * @class QToggle.DashboardSection.Panel
- * @mixes QToggle.DashboardSection.PanelGroupCompositeMixin
+ * @alias qtoggle.dashboard.Panel
+ * @mixes qtoggle.dashboard.PanelGroupCompositeMixin
  * @mixes qui.pages.StructuredPageMixin
- * @param {Object} attributes
  */
-export default class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
+class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
 
-    constructor({...params} = {}) {
-        Object.assign(params, {
+    /**
+     * @constructs
+     * @param {...*} args
+     */
+    constructor({...args} = {}) {
+        Object.assign(args, {
             pathId: '',
             transparent: true,
             title: '',
@@ -217,7 +214,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
             topless: true
         })
 
-        super(params)
+        super(args)
 
         this._optionsForm = null
 
@@ -288,13 +285,13 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     }
 
     /**
-     * Tells if a given layout for the given widget fits the current panel layout and has no overlapping widgets.
-     *
+     * Tell if a given layout for the given widget fits the current panel layout and has no overlapping widgets.
      * @param {Number} left
      * @param {Number} top
      * @param {Number} width
      * @param {Number} height
-     * @param {QToggle.DashboardSection.Widgets.Widget} [widget]
+     * @param {qtoggle.dashboard.widgets.Widget} [widget]
+     * @returns {Boolean}
      */
     verifyWidgetLayout(left, top, width, height, widget) {
         /* Verify panel boundaries */
@@ -319,8 +316,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     }
 
     /**
-     * Looks for the best location to place a new widget of the given size.
-     *
+     * Look for the best location to place a new widget of the given size.
      * @param {Number} width
      * @param {Number} height
      * @returns {{left: Number, top: Number}}
@@ -387,6 +383,10 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
         this.updateContainerLayout()
     }
 
+    /**
+     * Update panel container layout by recomputing cell width and assigning corresponding font size. Also refresh the
+     * content of all contained widgets.
+     */
     updateContainerLayout() {
         if (!this.isVisible()) {
             return
@@ -413,6 +413,10 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
         }, this.getBody())
     }
 
+    /**
+     * Return the current cell width, in pixels.
+     * @returns {Number}
+     */
     getCellWidth() {
         if (this._cellWidth == null) {
             this._cellWidth = this._computeCellWidth()
@@ -434,7 +438,6 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
         if (this._editEnabled) {
             let margin = CSS.em2px(1.25) // TODO constant
             width -= 2 * margin
-
         }
 
         /* On large screens, account for a possible scroll bar, by subtracting another 1em */
@@ -454,7 +457,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     /* Widgets */
 
     /**
-     * @returns {QToggle.DashboardSection.Widgets.Widget[]}
+     * @returns {qtoggle.dashboard.widgets.Widget[]}
      */
     getWidgets() {
         if (this._widgets == null) {
@@ -479,8 +482,9 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     }
 
     /**
+     * Look up a widget by id.
      * @param {String} id
-     * @returns {?QToggle.DashboardSection.Widgets.Widget}
+     * @returns {?qtoggle.dashboard.widgets.Widget}
      */
     findWidget(id) {
         return this.getWidgets().find(function (w) {
@@ -489,7 +493,8 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     }
 
     /**
-     * @param {QToggle.DashboardSection.Widgets.Widget} widget
+     * Attach widget content to panel container.
+     * @param {qtoggle.dashboard.widgets.Widget} widget
      */
     attachWidget(widget) {
         let firstPlaceholderRow = this.getBody().children('div.panel-placeholder-row').first()
@@ -507,7 +512,8 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     }
 
     /**
-     * @param {QToggle.DashboardSection.Widgets.Widget} widget
+     * Detach and remove widget from panel.
+     * @param {qtoggle.dashboard.widgets.Widget} widget
      */
     removeWidget(widget) {
         let index = this.getWidgets().indexOf(widget)
@@ -523,9 +529,9 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     }
 
     /**
-     * @param {Function|String} type
-     * @param {Object} [attributes]
-     * @returns {QToggle.DashboardSection.Widgets.Widget}
+     * @param {typeof qtoggle.dashboard.widgets.Widget|String} type
+     * @param {Object} [attributes] widget attributes
+     * @returns {qtoggle.dashboard.widgets.Widget}
      */
     makeWidget(type, attributes = {}) {
         let Cls = type
@@ -567,6 +573,10 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
         return widget
     }
 
+    /**
+     * Duplicate a widget. Add, attach and select the new widget to the panel.
+     * @param {qtoggle.dashboard.widgets.Widget} origWidget
+     */
     duplicateWidget(origWidget) {
         let cls = origWidget.constructor
         this.logger.debug(`duplicating widget "${origWidget.getId()}" of type "${cls.category}/${cls.type}"`)
@@ -598,7 +608,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     }
 
     /**
-     * @returns {?QToggle.DashboardSection.Widgets.Widget}
+     * @returns {?qtoggle.dashboard.widgets.Widget}
      */
     getSelectedWidget() {
         return this.getWidgets().find(function (w) {
@@ -607,7 +617,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     }
 
     /**
-     * @param {?QToggle.DashboardSection.Widgets.Widget} widget
+     * @param {?qtoggle.dashboard.widgets.Widget} widget
      */
     setSelectedWidget(widget) {
         let widgets = this.getWidgets()
@@ -679,7 +689,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     }
 
     /**
-     * @param {QToggle.DashboardSection.Widgets.Widget} widget
+     * @param {qtoggle.dashboard.widgets.Widget} widget
      */
     handleWidgetMove(widget) {
         Dashboard.savePanels()
@@ -690,7 +700,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     }
 
     /**
-     * @param {QToggle.DashboardSection.Widgets.Widget} widget
+     * @param {qtoggle.dashboard.widgets.Widget} widget
      */
     handleWidgetResize(widget) {
         Dashboard.savePanels()
@@ -701,7 +711,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     }
 
     /**
-     * @param {QToggle.DashboardSection.Widgets.Widget} widget
+     * @param {qtoggle.dashboard.widgets.Widget} widget
      */
     handleWidgetSelect(widget) {
         if (!widget) {
@@ -805,10 +815,16 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
 
     /* Edit mode */
 
+    /**
+     * @returns {Boolean}
+     */
     isEditEnabled() {
         return this._editEnabled
     }
 
+    /**
+     * Enable panel editing mode.
+     */
     enableEditing() {
         if (this._editEnabled) {
             return
@@ -833,6 +849,9 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
         }
     }
 
+    /**
+     * Disable panel editing mode.
+     */
     disableEditing() {
         if (!this._editEnabled) {
             return
@@ -855,6 +874,9 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
 
     /* Widget picker */
 
+    /**
+     * @returns {qtoggle.dashboard.widgets.WidgetPicker}
+     */
     makeWidgetPicker() {
         let that = this
         let widgetPicker = new WidgetPicker(function (cls) {
@@ -913,7 +935,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     /* Options bar */
 
     /**
-     * @returns {PanelOptionsForm}
+     * @returns {qui.forms.commonforms.OptionsForm}
      */
     getOptionsForm() {
         if (API.getCurrentAccessLevel() < API.ACCESS_LEVEL_ADMIN) {
@@ -1045,3 +1067,6 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
     }
 
 }
+
+
+export default Panel

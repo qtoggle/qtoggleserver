@@ -1,3 +1,6 @@
+/**
+ * @namespace qtoggle.events
+ */
 
 import Logger from '$qui/lib/logger.module.js'
 
@@ -404,6 +407,10 @@ function updateStatusIcon() {
 }
 
 
+/**
+ * Initialize the events subsystem.
+ * @alias qtoggle.events.init
+ */
 export function init() {
     API.addEventListener(function (event) {
         eventsBulk.push(event)

@@ -12,10 +12,13 @@ import Widget           from '$app/dashboard/widgets/widget.js'
 import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 
 
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {
+    constructor({...args}) {
+        super({
             fields: [
                 new TextField({
                     name: 'url',
@@ -32,15 +35,23 @@ class ConfigForm extends WidgetConfigForm {
                     name: 'preserveAspectRatio',
                     label: gettext('Preserve Aspect Ratio')
                 })
-            ]
+            ],
+            ...args
         })
     }
 
 }
 
 
-export default class MJPEGVideo extends Widget {
+/**
+ * @alias qtoggle.dashboard.widgets.media.MJPEGVideo
+ * @extends qtoggle.dashboard.widgets.Widget
+ */
+class MJPEGVideo extends Widget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super()
 
@@ -125,3 +136,6 @@ MJPEGVideo.hasFrame = true
 
 
 Widgets.register(MJPEGVideo)
+
+
+export default MJPEGVideo

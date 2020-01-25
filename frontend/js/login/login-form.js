@@ -17,12 +17,14 @@ const logger = Login.logger
 
 
 /**
- * @class QToggle.LoginSection.LoginForm
- * @param {Number} requiredLevel the required access level
+ * @alias qtoggle.login.LoginForm
  * @extends qui.forms.PageForm
  */
-export default class LoginForm extends PageForm {
+class LoginForm extends PageForm {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super({
             title: gettext('Login'),
@@ -71,3 +73,6 @@ export default class LoginForm extends PageForm {
     }
 
 }
+
+
+export default LoginForm

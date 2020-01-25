@@ -15,8 +15,15 @@ const SECTION_ID = 'settings'
 const SECTION_TITLE = gettext('Settings')
 
 
-export default class SettingsSection extends Section {
+/**
+ * @alias qtoggle.settings.SettingsSection
+ * @extends qtoggle.sections.Section
+ */
+class SettingsSection extends Section {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super({
             id: SECTION_ID,
@@ -81,3 +88,6 @@ export default class SettingsSection extends Section {
     }
 
 }
+
+
+export default SettingsSection

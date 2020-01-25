@@ -1,10 +1,17 @@
+/**
+ * @namespace qtoggle.utils
+ */
 
 import * as ObjectUtils from '$qui/utils/object.js'
 
 
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 /**
- * Helps sorting items alphabetically and numerically at the same time,
- * by adding zero padding to each number within the given string.
+ * Help sorting items alphabetically and numerically at the same time, by adding zero padding to each number within the
+ * given string.
+ * @alias qtoggle.utils.alphaNumSortKey
  * @param {String} input the input string
  * @returns {String} the sort key
  */
@@ -26,7 +33,8 @@ export function alphaNumSortKey(input) {
 }
 
 /**
- * Returns all keys that correspond to different values in two objects or are present in only one of them.
+ * Return all keys that correspond to different values in two objects or are present in only one of the two objects.
+ * @alias qtoggle.utils.diffKeys
  * @param {Object} obj1
  * @param {Object} obj2
  * @returns {String[]} the list of distinct keys
@@ -39,12 +47,25 @@ export function diffKeys(obj1, obj2) {
     return keys12.filter(k => obj1[k] !== obj2[k]).concat(keys1).concat(keys2)
 }
 
+/**
+ * Transform an object name into a string suitable for an id.
+ * @alias qtoggle.utils.nameToId
+ * @param {String} name
+ * @returns {String}
+ */
 export function nameToId(name) {
     return name.toLowerCase()
                .replace(new RegExp('[^a-z0-9]', 'g'), '-')
                .replace(new RegExp('(-+)', 'g'), '-')
 }
 
+/**
+ * Resolve a JSON pointer (as defined by RFC6901) in a JSON object.
+ * @alias qtoggle.utils.resolveJSONPointer
+ * @param {Object} obj
+ * @param {String} pointer
+ * @returns {*} the resolved value
+ */
 export function resolveJSONPointer(obj, pointer) {
     let path
     if (pointer === '') {
@@ -102,6 +123,12 @@ function resolveJSONRefsRec(obj, rootObj) {
     return obj
 }
 
+/**
+ * Recursively resolve all JSON pointer references (as defined by RFC6901) inside a JSON object.
+ * @alias qtoggle.utils.resolveJSONRefs
+ * @param {Object} obj
+ * @returns {*} the resolved object
+ */
 export function resolveJSONRefs(obj) {
     return resolveJSONRefsRec(obj, obj)
 }

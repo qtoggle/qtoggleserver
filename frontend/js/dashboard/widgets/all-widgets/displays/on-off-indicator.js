@@ -15,10 +15,13 @@ import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 import * as Widgets     from '$app/dashboard/widgets/widgets.js'
 
 
+const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+
+
 class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {
+    constructor({...args}) {
+        super({
             fields: [
                 new ColorComboField({
                     name: 'color',
@@ -46,7 +49,8 @@ class ConfigForm extends WidgetConfigForm {
                     label: gettext('On Value'),
                     required: true
                 })
-            ]
+            ],
+            ...args
         })
     }
 
@@ -86,8 +90,15 @@ class ConfigForm extends WidgetConfigForm {
 }
 
 
-export default class OnOffIndicator extends Widget {
+/**
+ * @alias qtoggle.dashboard.widgets.displays.OnOffIndicator
+ * @extends qtoggle.dashboard.widgets.Widget
+ */
+class OnOffIndicator extends Widget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super()
 
@@ -241,3 +252,6 @@ OnOffIndicator.hResizable = true
 
 
 Widgets.register(OnOffIndicator)
+
+
+export default OnOffIndicator

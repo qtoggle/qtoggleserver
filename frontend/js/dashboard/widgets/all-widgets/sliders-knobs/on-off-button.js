@@ -18,15 +18,10 @@ import * as Widgets     from '$app/dashboard/widgets/widgets.js'
 const TEXT_FACTOR = 0.3 /* Fraction of button thickness */
 
 
-/**
- * @class QToggle.DashboardSection.Widgets.OnOffButton.ConfigForm
- * @extends QToggle.DashboardSection.Widgets.WidgetConfigForm
- * @param {QToggle.DashboardSection.Widgets.Widget} widget
- */
 class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {
+    constructor({...args}) {
+        super({
             fields: [
                 new ColorComboField({
                     name: 'color',
@@ -54,7 +49,8 @@ class ConfigForm extends WidgetConfigForm {
                     label: gettext('On Value'),
                     required: true
                 })
-            ]
+            ],
+            ...args
         })
     }
 
@@ -95,11 +91,14 @@ class ConfigForm extends WidgetConfigForm {
 
 
 /**
- * @class QToggle.DashboardSection.Widgets.OnOffButton
- * @extends QToggle.DashboardSection.Widgets.Widget
+ * @alias qtoggle.dashboard.widgets.slidersknobs.OnOffButton
+ * @extends qtoggle.dashboard.widgets.Widget
  */
-export default class OnOffButton extends Widget {
+class OnOffButton extends Widget {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super()
 
@@ -435,3 +434,6 @@ OnOffButton.vResizable = true
 
 
 Widgets.register(OnOffButton)
+
+
+export default OnOffButton

@@ -27,8 +27,18 @@ const DISABLED_PORT_VISIBLE_ATTRS = ['id', 'enabled']
 const logger = Ports.logger
 
 
-export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
+/**
+ * @alias qtoggle.ports.PortForm
+ * @extends qui.forms.commonforms.PageForm
+ * @mixes qtoggle.common.AttrdefFormMixin
+ */
+class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
+    /**
+     * @constructs
+     * @param {String} portId
+     * @param {String} deviceName
+     */
     constructor(portId, deviceName) {
         let pathId = portId
         if (deviceName && !Cache.isMainDevice(deviceName)) {
@@ -240,6 +250,9 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         }
     }
 
+    /**
+     * @returns {String}
+     */
     getPortId() {
         return this._portId
     }
@@ -465,3 +478,6 @@ export default class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
     }
 
 }
+
+
+export default PortForm
