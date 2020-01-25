@@ -14,7 +14,7 @@ const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undoc
 class ConfigForm extends AnalogWidgetConfigForm {
 
     constructor({...args}) {
-        super({readonly: false,...args})
+        super({readonly: false, ...args})
     }
 
 }

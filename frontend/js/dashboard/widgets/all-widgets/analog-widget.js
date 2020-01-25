@@ -36,8 +36,19 @@ const SNAP_STRICT = 'strict'
 const LOOSE_SNAP_DIST = 0.1 /* em */
 
 
+/**
+ * @alias qtoggle.dashboard.widgets.AnalogWidgetConfigForm
+ * @extends qtoggle.dashboard.widgets.ConfigForm
+ */
 export class ConfigForm extends WidgetConfigForm {
 
+    /**
+     * @constructs
+     * @param {Boolean} [readonly]
+     * @param {Boolean} [ticksonly]
+     * @param {Boolean} [tickColors]
+     * @param {...*} args
+     */
     constructor({readonly = false, ticksonly = false, tickColors = false, ...args}) {
         super({
             fields: [
