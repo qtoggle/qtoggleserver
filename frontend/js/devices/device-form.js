@@ -46,13 +46,18 @@ function getDeviceURL(device) {
 
 
 /**
- * @class DeviceForm
+ * @alias qtoggle.devices.DeviceForm
  * @extends qui.forms.PageForm
- * @param {String} deviceName
- * @private
+ * @mixes qtoggle.common.AttrdefFormMixin
+ * @mixes qtoggle.common.WaitDeviceMixin
+ * @mixes qtoggle.common.RebootDeviceMixin
  */
 class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, RebootDeviceMixin) {
 
+    /**
+     * @constructs
+     * @param {String} deviceName
+     */
     constructor(deviceName) {
         super({
             pathId: deviceName,
@@ -117,7 +122,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
     }
 
     /**
-     * Updates the entire form (fields & values) from the corresponding device.
+     * Update the entire form (fields & values) from the corresponding device.
      */
     updateUI(fieldChangeWarnings = true) {
         let device = Cache.getSlaveDevice(this.getDeviceName())
@@ -201,6 +206,9 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
         this.updateStaticFields(device.attrs)
     }
 
+    /**
+     * Add fields whose presence is not altered by device attributes.
+     */
     addStaticFields() {
         this.addField(-1, new CompositeField({
             name: 'management_buttons',
@@ -240,6 +248,10 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
         }))
     }
 
+    /**
+     * Enable/disable static fields based on device attributes.
+     * @param {Object} attrs device attributes
+     */
     updateStaticFields(attrs) {
         let updateFirmwareButtonField = this.getField('management_buttons').getField('firmware')
         if (attrs.flags.indexOf('firmware') >= 0) {
@@ -250,10 +262,16 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
         }
     }
 
+    /**
+     * @returns {String}
+     */
     getDeviceName() {
         return this._deviceName
     }
 
+    /**
+     * Start waiting for device to come line.
+     */
     startWaitingDeviceOnline() {
         this.setProgress()
 
@@ -529,6 +547,9 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
         return new ProvisioningForm(this.getDeviceName())
     }
 
+    /**
+     * @returns {qui.pages.PageMixin}
+     */
     makeConfirmAndRebootForm() {
         let device = Cache.getSlaveDevice(this.getDeviceName())
         if (!device) {

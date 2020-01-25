@@ -19,11 +19,6 @@ const DEFAULT_SHOW_OFFLINE_DEVICES = true
 const DEFAULT_SHOW_DISABLED_DEVICES = true
 
 
-/**
- * @class DevicesListOptionsForm
- * @extends qui.forms.OptionsForm
- * @private
- */
 class DevicesListOptionsForm extends OptionsForm {
 
     constructor(deviceList) {
@@ -69,12 +64,14 @@ class DevicesListOptionsForm extends OptionsForm {
 
 
 /**
- * @class DevicesList
+ * @alias qtoggle.devices.DevicesList
  * @extends qui.lists.PageList
- * @private
  */
 class DevicesList extends PageList {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super({
             title: gettext('Devices'),
@@ -108,6 +105,9 @@ class DevicesList extends PageList {
         }.bind(this))
     }
 
+    /**
+     * Update items from devices.
+     */
     updateUI() {
         let devices = Cache.getSlaveDevices(/* asList = */ true)
 
@@ -134,6 +134,11 @@ class DevicesList extends PageList {
         }
     }
 
+    /**
+     * Create list item from device.
+     * @param {Object} device
+     * @returns {qui.lists.ListItem}
+     */
     deviceToItem(device) {
         return new IconLabelListItem({
             label: device.attrs.display_name || device.name,
@@ -193,6 +198,9 @@ class DevicesList extends PageList {
         return (this.deviceForm = new DeviceForm(deviceName))
     }
 
+    /**
+     * @param {String} deviceName
+     */
     setSelectedDevice(deviceName) {
         this.setSelectedIndex(this.getItems().findIndex(item => item.getData() === deviceName))
     }

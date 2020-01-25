@@ -22,12 +22,14 @@ const logger = Devices.logger
 
 
 /**
- * @class AddDeviceForm
+ * @alias qtoggle.devices.AddDeviceForm
  * @extends qui.forms.PageForm
- * @private
  */
 class AddDeviceForm extends PageForm {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super({
             icon: Devices.DEVICE_ICON,

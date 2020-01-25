@@ -10,8 +10,16 @@ import * as Theme       from '$qui/theme.js'
 import * as StringUtils from '$qui/utils/string.js'
 
 
+/**
+ * @alias qtoggle.devices.DEVICE_ICON
+ * @type {qui.icons.Icon}
+ */
 export const DEVICE_ICON = new StockIcon({name: 'device', stockName: 'qtoggle'})
 
+/**
+ * @alias qtoggle.devices.POLL_CHOICES
+ * @type {{label: string, value: number}[]}
+ */
 export const POLL_CHOICES = [
     {label: `(${gettext('disabled')})`, value: 0},
     {label: gettext('1 second'), value: 1},
@@ -30,12 +38,21 @@ export const POLL_CHOICES = [
     {label: StringUtils.formatPercent(gettext('1 day'), {count: 24}), value: 86400}
 ]
 
+/**
+ * @alias qtoggle.devices.logger
+ * @type {Logger}
+ */
 export const logger = Logger.get('qtoggle.devices')
 
 let currentDeviceName = null
 let renamedDeviceName = null
 
 
+/**
+ * @alias qtoggle.devices.makeDeviceIcon
+ * @param {Object} device
+ * @returns {qui.icons.Icon}
+ */
 export function makeDeviceIcon(device) {
     let decoration = null
     if (device.online) {
@@ -54,19 +71,35 @@ export function makeDeviceIcon(device) {
     return DEVICE_ICON.alter({decoration: decoration})
 }
 
+/**
+ * @alias qtoggle.devices.getCurrentDeviceName
+ * @returns {String}
+ */
 export function getCurrentDeviceName() {
     return currentDeviceName
 }
 
+/**
+ * @alias qtoggle.devices.setCurrentDeviceName
+ * @param {String} name
+ */
 export function setCurrentDeviceName(name) {
     currentDeviceName = name
     logger.debug(`current device name is ${currentDeviceName}`)
 }
 
+/**
+ * @alias qtoggle.devices.getRenamedDeviceName
+ * @returns {String}
+ */
 export function getRenamedDeviceName() {
     return renamedDeviceName
 }
 
+/**
+ * @alias qtoggle.devices.setRenamedDeviceName
+ * @param {String} name
+ */
 export function setRenamedDeviceName(name) {
     renamedDeviceName = name
     if (renamedDeviceName) {
