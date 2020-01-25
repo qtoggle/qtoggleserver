@@ -1,3 +1,6 @@
+/**
+ * @namespace qtoggle.cache
+ */
 
 import Logger from '$qui/lib/logger.module.js'
 
@@ -36,35 +39,49 @@ let reloadNeeded = true
 /* Some ready condition variables */
 
 /**
- * Waits for the cached device attributes to be loaded.
- * {@link QToggle.Cache.getMainDevice} can be safely called afterwards.
+ * Wait for the cached device attributes to be loaded.
+ * {@link qtoggle.cache.getMainDevice} can be safely called afterwards.
+ * @alias qtoggle.cache.whenDeviceCacheReady
+ * @type {qui.base.ConditionVariable}
  */
-export let whenDeviceCacheReady = new ConditionVariable()
+export const whenDeviceCacheReady = new ConditionVariable()
 
 /**
- * Waits for the cached port attributes to be loaded.
- * {@link QToggle.Cache.getPorts} can be safely called afterwards.
+ * Wait for the cached port attributes to be loaded.
+ * {@link qtoggle.cache.getPorts} can be safely called afterwards.
+ * @alias qtoggle.cache.whenPortsCacheReady
+ * @type {qui.base.ConditionVariable}
  */
-export let whenPortsCacheReady = new ConditionVariable()
+export const whenPortsCacheReady = new ConditionVariable()
 
 /**
- * Waits for the cached slave device attributes to be loaded.
- * {@link QToggle.Cache.getSlaveDevices} can be safely called afterwards.
+ * Wait for the cached slave device attributes to be loaded.
+ * {@link qtoggle.cache.getSlaveDevices} can be safely called afterwards.
+ * @alias qtoggle.cache.whenSlaveDevicesCacheReady
+ * @type {qui.base.ConditionVariable}
  */
-export let whenSlaveDevicesCacheReady = new ConditionVariable()
+export const whenSlaveDevicesCacheReady = new ConditionVariable()
 
 /**
- * Waits for the cached preferences to be loaded.
- * {@link QToggle.Cache.getPrefs} can be safely called afterwards.
+ * Wait for the cached preferences to be loaded.
+ * {@link qtoggle.cache.getPrefs} can be safely called afterwards.
+ * @alias qtoggle.cache.whenPrefsCacheReady
+ * @type {qui.base.ConditionVariable}
  */
-export let whenPrefsCacheReady = new ConditionVariable()
+export const whenPrefsCacheReady = new ConditionVariable()
 
 /**
- * Waits for the initial cached data to be loaded.
+ * Wait for the initial cached data to be loaded.
+ * @alias qtoggle.cache.whenCacheReady
+ * @type {qui.base.ConditionVariable}
  */
 export let whenCacheReady = new ConditionVariable()
 
 
+/**
+ * @alias qtoggle.cache.loadDevice
+ * @returns {Promise}
+ */
 export function loadDevice() {
     logger.debug('loading main device')
 
@@ -91,6 +108,10 @@ export function loadDevice() {
     })
 }
 
+/**
+ * @alias qtoggle.cache.loadPorts
+ * @returns {Promise}
+ */
 export function loadPorts() {
     logger.debug('loading ports')
 
@@ -162,6 +183,10 @@ export function loadPorts() {
     })
 }
 
+/**
+ * @alias qtoggle.cache.loadSlaveDevices
+ * @returns {Promise}
+ */
 export function loadSlaveDevices() {
     logger.debug('loading slave devices')
 
@@ -211,6 +236,10 @@ export function loadSlaveDevices() {
     })
 }
 
+/**
+ * @alias qtoggle.cache.loadPrefs
+ * @returns {Promise}
+ */
 export function loadPrefs() {
     logger.debug('loading prefs')
 
@@ -235,6 +264,7 @@ export function loadPrefs() {
 }
 
 /**
+ * @alias qtoggle.cache.load
  * @param {Number} accessLevel
  * @param {Boolean} showModalProgress
  * @returns {Promise}
@@ -323,7 +353,9 @@ export function load(accessLevel, showModalProgress) {
 }
 
 /**
- * @param {Object} event
+ * Update cache from event.
+ * @alias qtoggle.cache.updateFromEvent
+ * @param {qtoggle.api.Event} event
  */
 export function updateFromEvent(event) {
     let device, port
@@ -418,7 +450,8 @@ export function updateFromEvent(event) {
 }
 
 /**
- * Returns the cached main device attributes.
+ * Return the cached main device attributes.
+ * @alias qtoggle.cache.getMainDevice
  * @returns {Object}
  */
 export function getMainDevice() {
@@ -430,11 +463,12 @@ export function getMainDevice() {
 }
 
 /**
- * Returns the cached list of ports.
- * @param {Boolean} [asList]
+ * Return the cached ports.
+ * @alias qtoggle.cache.getPorts
+ * @param {Boolean} [asList] whether to return ports as a list or as a dictionary
  * @returns {Object|Object[]}
  */
-export function getPorts(asList) {
+export function getPorts(asList = false) {
     if (!whenPortsCacheReady.isFulfilled()) {
         throw new AssertionError('Ports accessed before cache ready')
     }
@@ -448,7 +482,8 @@ export function getPorts(asList) {
 }
 
 /**
- * Looks up a cached port by id.
+ * Look up a cached port by id.
+ * @alias qtoggle.cache.getPort
  * @param {String} id
  * @returns {?Object}
  */
@@ -461,11 +496,12 @@ export function getPort(id) {
 }
 
 /**
- * Returns the cached list of slave devices.
- * @param {Boolean} [asList]
+ * Return the cached slave devices.
+ * @alias qtoggle.cache.getSlaveDevices
+ * @param {Boolean} [asList] whether to return devices as a list or as a dictionary
  * @returns {Object|Object[]}
  */
-export function getSlaveDevices(asList) {
+export function getSlaveDevices(asList = false) {
     if (!whenSlaveDevicesCacheReady.isFulfilled()) {
         throw new AssertionError('Slave devices accessed before cache ready')
     }
@@ -479,7 +515,8 @@ export function getSlaveDevices(asList) {
 }
 
 /**
- * Looks up a cached slave device by name.
+ * Look up a cached slave device by name.
+ * @alias qtoggle.cache.getSlaveDevice
  * @param {String} name
  * @returns {?Object}
  */
@@ -492,7 +529,8 @@ export function getSlaveDevice(name) {
 }
 
 /**
- * Looks for the slave device corresponding to a given port id.
+ * Return the slave device owning the port with a given id.
+ * @alias qtoggle.cache.findPortSlaveDevice
  * @param {String} portId
  * @returns {?Object} the slave device, if found
  */
@@ -507,7 +545,8 @@ export function findPortSlaveDevice(portId) {
 }
 
 /**
- * Tells if a given name is the name of the main device.
+ * Tell if a given name is the name of the main device.
+ * @alias qtoggle.cache.isMainDevice
  * @param {String} name
  */
 export function isMainDevice(name) {
@@ -515,11 +554,12 @@ export function isMainDevice(name) {
 }
 
 /**
- * Returns user's preferences at given path. If no path is supplied, the root preferences object is returned.
+ * Return user's preferences at given path. If no path is supplied, the root preferences object is returned.
+ * @alias qtoggle.cache.getPrefs
  * @param {String} [path]
  * @param {*} [def] default value in case of missing prefs at given value
  */
-export function getPrefs(path, def) {
+export function getPrefs(path = null, def = null) {
     if (!path) {
         return prefs
     }
@@ -541,7 +581,8 @@ export function getPrefs(path, def) {
 }
 
 /**
- * Updates user's preferences at the given path.
+ * Update user's preferences at the given path.
+ * @alias qtoggle.cache.setPrefs
  * @param {String} path
  * @param {*} value
  */
@@ -581,11 +622,19 @@ export function setPrefs(path, value) {
     })
 }
 
+/**
+ * Set the *reload needed* flag, determining a {@link qtoggle.cache.load} upon next listen response.
+ * @alias qtoggle.cache.setReloadNeeded
+ */
 export function setReloadNeeded() {
     logger.debug('cache will be reloaded asap')
     reloadNeeded = true
 }
 
+/**
+ * Initialize the cache subsystem.
+ * @alias qtoggle.cache.init
+ */
 export function init() {
     /* Reload cache upon next successful listen callback, if needed */
     API.addSyncCallbacks(
