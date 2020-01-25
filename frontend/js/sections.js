@@ -1,3 +1,6 @@
+/**
+ * @namespace qtoggle.sections
+ */
 
 import Logger from '$qui/lib/logger.module.js'
 
@@ -16,7 +19,7 @@ let sectionsList = []
 
 
 /**
- * @class QToggle.Sections.Section
+ * @alias qtoggle.sections.Section
  * @extends qui.sections.Section
  */
 export class Section extends QUISection {
@@ -50,7 +53,7 @@ export class Section extends QUISection {
 
     /**
      * Override this method to react to QToggle API events.
-     * @param {QToggle.API.Event} event the event
+     * @param {qtoggle.api.Event} event the event
      */
     onServerEvent(event) {
     }
@@ -65,7 +68,7 @@ export class Section extends QUISection {
 
     /**
      * Override this method to react when frontend gets disconnected from main device.
-     * @param {QToggle.API.APIError} error disconnect error
+     * @param {qtoggle.api.APIError} error disconnect error
      */
     onMainDeviceDisconnect(error) {
     }
@@ -79,8 +82,9 @@ export class Section extends QUISection {
 }
 
 /**
- * Returns all registered QToggle sections.
- * @returns {QToggle.Sections.Section[]}
+ * Return all registered qToggle sections.
+ * @alias qtoggle.sections.all
+ * @returns {qtoggle.sections.Section[]}
  */
 export function all() {
     return sectionsList.slice()
