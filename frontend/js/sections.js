@@ -52,14 +52,14 @@ export class Section extends QUISection {
     /* Various events */
 
     /**
-     * Override this method to react to QToggle API events.
+     * Override this method to react to qToggle API events.
      * @param {qtoggle.api.Event} event the event
      */
     onServerEvent(event) {
     }
 
     /**
-     * Override this method to react whenever QToggle access level changes.
+     * Override this method to react whenever qToggle access level changes.
      * @param {Number} oldLevel the old access level
      * @param {Number} newLevel the new access level
      */

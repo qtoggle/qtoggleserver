@@ -20,11 +20,6 @@ import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
 
 
-/**
- * @class QToggle.DashboardSection.Widgets.PushButton.ConfigForm
- * @extends qtoggle.dashboard.widgets.WidgetConfigForm
- * @param {qtoggle.dashboard.widgets.Widget} widget
- */
 class ConfigForm extends WidgetConfigForm {
 
     constructor({...args}) {

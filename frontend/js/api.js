@@ -1036,7 +1036,7 @@ export function apiCall({
     return new Promise(function (resolve, reject) {
         let apiFuncPath = path
 
-        if (slaveName) { /* Slave QToggle API call */
+        if (slaveName) { /* Slave qToggle API call */
             path = `/devices/${slaveName}/forward${path}`
             slaveName = null
         }

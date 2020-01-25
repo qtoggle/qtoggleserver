@@ -23,11 +23,6 @@ const SMALL_LABEL_HEIGHT = 0.15 /* em */
 const SMALL_LABEL_FONT_SIZE = 0.1 /* em */
 
 
-/**
- * @class QToggle.DashboardSection.Widgets.RadioButtons.ConfigForm
- * @extends qtoggle.dashboard.widgets.WidgetConfigForm
- * @param {qtoggle.dashboard.widgets.Widget} widget
- */
 class ConfigForm extends WidgetConfigForm {
 
     constructor({...args}) {
