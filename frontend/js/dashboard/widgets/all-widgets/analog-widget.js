@@ -38,8 +38,8 @@ const LOOSE_SNAP_DIST = 0.1 /* em */
 
 export class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget, {readonly = false, ticksonly = false, tickColors = false}) {
-        super(widget, {
+    constructor({readonly = false, ticksonly = false, tickColors = false, ...args}) {
+        super({
             fields: [
                 new PortPickerField({
                     name: 'portId',
@@ -148,7 +148,8 @@ export class ConfigForm extends WidgetConfigForm {
                     onChange: (value, form) => form._updateFields(),
                     hidden: ticksonly
                 })
-            ]
+            ],
+            ...args
         })
 
         this._readonly = readonly

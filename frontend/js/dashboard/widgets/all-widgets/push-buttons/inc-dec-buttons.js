@@ -19,8 +19,8 @@ const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undoc
 
 class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {
+    constructor({...args}) {
+        super({
             fields: [
                 new PortPickerField({
                     name: 'portId',
@@ -54,7 +54,8 @@ class ConfigForm extends WidgetConfigForm {
                     filterEnabled: true,
                     required: true
                 })
-            ]
+            ],
+            ...args
         })
     }
 

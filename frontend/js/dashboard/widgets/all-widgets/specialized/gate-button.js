@@ -30,8 +30,8 @@ const STATE_STR = {
 
 class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {
+    constructor({...args}) {
+        super({
             fields: [
                 new ColorComboField({
                     name: 'color',
@@ -44,7 +44,8 @@ class ConfigForm extends WidgetConfigForm {
                     label: gettext('Port'),
                     required: true
                 })
-            ]
+            ],
+            ...args
         })
     }
 

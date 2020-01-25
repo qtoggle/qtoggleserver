@@ -27,8 +27,8 @@ const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undoc
  */
 class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {
+    constructor({...args}) {
+        super({
             fields: [
                 new ColorComboField({
                     name: 'color',
@@ -66,7 +66,8 @@ class ConfigForm extends WidgetConfigForm {
                     description: gettext('Sets the time after which the button is automatically released. ' +
                                          'Value 0 disables automatic release.')
                 })
-            ]
+            ],
+            ...args
         })
     }
 

@@ -19,8 +19,8 @@ const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undoc
 
 class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {
+    constructor({...args}) {
+        super({
             fields: [
                 new ColorComboField({
                     name: 'color',
@@ -61,7 +61,8 @@ class ConfigForm extends WidgetConfigForm {
                     max: 100,
                     onChange: (value, form) => form._updateSeqFields()
                 })
-            ]
+            ],
+            ...args
         })
     }
 

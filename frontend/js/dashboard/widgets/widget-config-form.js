@@ -27,7 +27,7 @@ class WidgetConfigForm extends PageForm {
      * @param {qtoggle.dashboard.widgets.Widget} widget
      * @param {...*} args parent class parameters
      */
-    constructor(widget, {...args} = {}) {
+    constructor({widget, ...args}) {
         let defaultFields = [
             new TextField({
                 name: 'label',

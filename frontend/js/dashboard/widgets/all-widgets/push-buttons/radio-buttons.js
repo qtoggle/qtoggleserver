@@ -30,8 +30,8 @@ const SMALL_LABEL_FONT_SIZE = 0.1 /* em */
  */
 class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {
+    constructor({...args}) {
+        super({
             fields: [
                 new PortPickerField({
                     name: 'portId',
@@ -66,7 +66,8 @@ class ConfigForm extends WidgetConfigForm {
                     max: 20,
                     onChange: (value, form) => form._updateButtonFields()
                 })
-            ]
+            ],
+            ...args
         })
     }
 

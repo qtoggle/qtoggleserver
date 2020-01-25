@@ -10,10 +10,10 @@ import {ConfigForm as AnalogWidgetConfigForm, AnalogWidget} from '../analog-widg
 const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
 
 
-export class ConfigForm extends AnalogWidgetConfigForm {
+class ConfigForm extends AnalogWidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {readonly: true})
+    constructor({...args}) {
+        super({readonly: true, ...args})
     }
 
 }

@@ -17,8 +17,8 @@ const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undoc
 
 class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {
+    constructor({...args}) {
+        super({
             fields: [
                 new TextField({
                     name: 'url',
@@ -35,7 +35,8 @@ class ConfigForm extends WidgetConfigForm {
                     name: 'preserveAspectRatio',
                     label: gettext('Preserve Aspect Ratio')
                 })
-            ]
+            ],
+            ...args
         })
     }
 

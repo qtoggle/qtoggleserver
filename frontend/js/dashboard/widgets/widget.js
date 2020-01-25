@@ -1254,7 +1254,7 @@ class Widget extends mix().with(ViewMixin) {
      */
     getConfigForm() {
         if (!this._configForm) {
-            this._configForm = new this.constructor.ConfigForm(this)
+            this._configForm = new this.constructor.ConfigForm({widget: this})
         }
 
         this._configForm.updateFromWidget()

@@ -20,8 +20,8 @@ const TEXT_FACTOR = 0.3 /* Fraction of button thickness */
 
 class ConfigForm extends WidgetConfigForm {
 
-    constructor(widget) {
-        super(widget, {
+    constructor({...args}) {
+        super({
             fields: [
                 new ColorComboField({
                     name: 'color',
@@ -49,7 +49,8 @@ class ConfigForm extends WidgetConfigForm {
                     label: gettext('On Value'),
                     required: true
                 })
-            ]
+            ],
+            ...args
         })
     }
 
