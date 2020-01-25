@@ -722,7 +722,7 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
         json.type = 'panel'
 
         /* Serialize initialized widgets */
-        if (this._widgets == null) {
+        if (this._widgets == null) { /* Widgets not yet deserialized, use serialized value */
             json.widgets = this._widgetsJSON
         }
         else {
@@ -732,6 +732,9 @@ export default class Panel extends mix().with(PanelGroupCompositeMixin, Structur
 
                 return j
             })
+
+            /* Also update internal serialized widgets */
+            this._widgetsJSON = json.widgets.slice()
         }
 
         json.width = this._width
