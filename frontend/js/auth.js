@@ -1,3 +1,6 @@
+/**
+ * @namespace qtoggle.auth
+ */
 
 import Logger from '$qui/lib/logger.module.js'
 
@@ -16,12 +19,22 @@ const AUTH_PASSWORD_COOKIE = 'qToggleServerPasswordHash'
 
 const logger = Logger.get('qtoggle.auth')
 
+/**
+ * @alias qtoggle.auth.whenInitialAccessLevelReady
+ * @type {qui.base.ConditionVariable}
+ */
 export let whenInitialAccessLevelReady = new ConditionVariable()
-export let whenFinalAccessLevelReady = new ConditionVariable()
-
 
 /**
- * Call {@link QToggle.API.getAccess} after setting the given credentials.
+ * @alias qtoggle.auth.whenFinalAccessLevelReady
+ * @type {qui.base.ConditionVariable}
+ */
+export let whenFinalAccessLevelReady = new ConditionVariable()
+
+/**
+ * Call {@link qtoggle.api.getAccess} after setting the given credentials. This will trigger the login mechanism by
+ * resolving/rejecting access level promises.
+ * @alias qtoggle.auth.login
  * @param {String} username
  * @param {String} password
  * @returns {Promise}
@@ -45,6 +58,7 @@ export function login(username, password) {
 
 /**
  * Remember current credentials using cookies.
+ * @alias qtoggle.auth.storeCredentials
  */
 export function storeCredentials() {
     logger.debug('storing credentials')
@@ -54,6 +68,7 @@ export function storeCredentials() {
 
 /**
  * Clear any credentials stored in cookies.
+ * @alias qtoggle.auth.clearCredentials
  */
 export function clearCredentials() {
     logger.debug('clearing credentials')
@@ -63,7 +78,8 @@ export function clearCredentials() {
 }
 
 /**
- * Calls GET /access to determine initial access using stored credentials.
+ * Call GET /access to determine initial access level using stored credentials.
+ * @private
  * @returns {Promise}
  */
 function fetchInitialAccess() {
@@ -95,6 +111,10 @@ function handleAccessLevelChange(oldLevel, newLevel) {
     }
 }
 
+/**
+ * Initialize the authentication subsystem.
+ * @alias qtoggle.auth.init
+ */
 export function init() {
     API.addAccessLevelChangeListener(handleAccessLevelChange)
 
