@@ -91,12 +91,12 @@ export default class AddPanelGroupForm extends PageForm {
         Dashboard.savePanels()
 
         /* Show the newly created child */
-        this._group.pushPage(child)
-
-        /* In case of panels, present the widget picker, unless on small screens */
-        if ((data.type === 'panel') && !Window.isSmallScreen()) {
-            this.pushPage(child.makeWidgetPicker())
-        }
+        this._group.pushPage(child).then(function () {
+            /* In case of panels, present the widget picker, unless on small screens */
+            if ((data.type === 'panel') && !Window.isSmallScreen()) {
+                child.pushPage(child.makeWidgetPicker())
+            }
+        })
     }
 
     validateField(name, value, data) {
