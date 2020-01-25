@@ -15,8 +15,15 @@ const SECTION_ID = 'ports'
 const SECTION_TITLE = gettext('Ports')
 
 
+/**
+ * @alias qtoggle.ports.PortsSection
+ * @extends qtoggle.sections.Section
+ */
 class PortsSection extends Section {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super({
             id: SECTION_ID,
