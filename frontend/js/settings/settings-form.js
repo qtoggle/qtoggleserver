@@ -33,11 +33,17 @@ const logger = Settings.logger
 
 
 /**
- * @class QToggle.SettingsSection.SettingsForm
+ * @alias qtoggle.settings.SettingsForm
  * @extends qui.forms.PageForm
+ * @mixes qtoggle.common.AttrdefFormMixin
+ * @mixes qtoggle.common.WaitDeviceMixin
+ * @mixes qtoggle.common.RebootDeviceMixin
  */
 class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, RebootDeviceMixin) {
 
+    /**
+     * @constructs
+     */
     constructor() {
         super({
             title: gettext('Settings'),
@@ -120,6 +126,9 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         this.updateStaticFields(attrs)
     }
 
+    /**
+     * Add fields whose presence is not altered by device attributes.
+     */
     addStaticFields() {
         this.addField(-1, new CompositeField({
             name: 'management_buttons',
@@ -159,6 +168,10 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         }))
     }
 
+    /**
+     * Enable/disable static fields based on device attributes.
+     * @param {Object} attrs device attributes
+     */
     updateStaticFields(attrs) {
         let updateFirmwareButtonField = this.getField('management_buttons').getField('firmware')
         if (attrs.flags.indexOf('firmware') >= 0) {
@@ -289,6 +302,9 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         return new ProvisioningForm(Cache.getMainDevice().name)
     }
 
+    /**
+     * @returns {qui.pages.PageMixin}
+     */
     makeConfirmAndRebootForm() {
         let mainDevice = Cache.getMainDevice()
         let displayName = mainDevice.display_name || mainDevice.name
