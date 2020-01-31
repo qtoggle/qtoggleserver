@@ -61,7 +61,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
     }
 
     init() {
-        this.updateUI()
+        this.updateUI(/* fieldChangeWarnings = */ false)
     }
 
     /**
@@ -251,6 +251,8 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
                         logger.debug('some attributes that trigger a window reload have been changed')
                         PromiseUtils.later(500).then(() => Window.reload())
                     }
+
+                    Settings.setRecentSettingsUpdate()
 
                 }).catch(function (error) {
 
