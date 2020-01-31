@@ -10,6 +10,8 @@ import * as Theme from '$qui/theme.js'
 import * as Cache from '$app/cache.js'
 
 
+const RECENT_PORT_UPDATE_TIMEOUT = 10000 /* milliseconds */
+
 /**
  * @alias qtoggle.ports.PORT_ICON
  * @type {qui.icons.Icon}
@@ -35,6 +37,7 @@ export const DEVICE_ICON = new StockIcon({name: 'device', stockName: 'qtoggle'})
 export const logger = Logger.get('qtoggle.ports')
 
 let masterFakeDevice = null
+let recentPortUpdateTimer = null
 
 
 /**
@@ -122,4 +125,28 @@ export function getMasterFakeDevice() {
  */
 export function clearMasterFakeDevice() {
     masterFakeDevice = null
+}
+
+/**
+ * @alias qtoggle.ports.setRecentPortUpdate
+ */
+export function setRecentPortUpdate() {
+    if (recentPortUpdateTimer) {
+        clearTimeout(recentPortUpdateTimer)
+    }
+
+    logger.debug('recent port update timer started')
+
+    recentPortUpdateTimer = setTimeout(function () {
+        recentPortUpdateTimer = null
+        logger.debug('recent port update timer expired')
+    }, RECENT_PORT_UPDATE_TIMEOUT)
+}
+
+/**
+ * @alias qtoggle.ports.setRecentPortUpdate
+ * @returns {Boolean}
+ */
+export function isRecentPortUpdate() {
+    return !!recentPortUpdateTimer
 }

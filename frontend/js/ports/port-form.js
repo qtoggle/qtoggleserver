@@ -66,7 +66,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
     }
 
     init() {
-        this.updateUI()
+        this.updateUI(/* fieldChangeWarnings = */ false)
     }
 
     /**
@@ -306,6 +306,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
                 logger.debug(`port "${port.id}" attributes successfully updated`)
                 Toast.info(gettext('Port has been updated.'))
+                Ports.setRecentPortUpdate()
 
             }).catch(function (error) {
 

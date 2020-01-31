@@ -127,7 +127,7 @@ class PortsSection extends Section {
                 if (portForm && portForm.getPortId() === event.params.id) {
                     /* Don't show field changed warnings for events that are consequences of changes applied from this
                      * client (when the event is expected) */
-                    portForm.updateUI(/* fieldChangeWarnings = */ !event.expected)
+                    portForm.updateUI(/* fieldChangeWarnings = */ !event.expected && !Ports.isRecentPortUpdate())
                 }
 
                 break
