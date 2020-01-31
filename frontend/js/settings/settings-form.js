@@ -252,7 +252,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
                         PromiseUtils.later(500).then(() => Window.reload())
                     }
 
-                    Settings.setRecentSettingsUpdate()
+                    Settings.recentSettingsUpdateTimer.restart()
 
                 }).catch(function (error) {
 

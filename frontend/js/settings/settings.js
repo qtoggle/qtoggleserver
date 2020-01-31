@@ -4,6 +4,7 @@
 
 import Logger from '$qui/lib/logger.module.js'
 
+import Timer     from '$qui/base/timer.js'
 import StockIcon from '$qui/icons/stock-icon.js'
 
 
@@ -22,29 +23,13 @@ export const WRENCH_ICON = new StockIcon({name: 'wrench'})
 export const logger = Logger.get('qtoggle.settings')
 
 
-let recentSettingsUpdateTimer = null
-
-
 /**
- * @alias qtoggle.settings.setRecentSettingsUpdate
+ * @alias qtoggle.settings.recentSettingsUpdateTimer
+ * @type {qui.base.Timer}
  */
-export function setRecentSettingsUpdate() {
-    if (recentSettingsUpdateTimer) {
-        clearTimeout(recentSettingsUpdateTimer)
-    }
-
-    logger.debug('recent settings update timer started')
-
-    recentSettingsUpdateTimer = setTimeout(function () {
-        recentSettingsUpdateTimer = null
+export const recentSettingsUpdateTimer = new Timer(
+    /* defaultTimeout = */ 10000 /* milliseconds */,
+    /* onTimeout = */ function () {
         logger.debug('recent settings update timer expired')
-    }, RECENT_SETTINGS_UPDATE_TIMEOUT)
-}
-
-/**
- * @alias qtoggle.settings.setRecentSettingsUpdate
- * @returns {Boolean}
- */
-export function isRecentSettingsUpdate() {
-    return !!recentSettingsUpdateTimer
-}
+    }
+)

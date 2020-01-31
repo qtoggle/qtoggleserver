@@ -388,7 +388,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                         this.startWaitingDeviceOnline()
                     }
 
-                    Devices.setRecentDeviceUpdate()
+                    Devices.recentDeviceUpdateTimer.restart()
 
                 }.bind(this)).catch(function (error) {
 
@@ -411,7 +411,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                 return API.patchDevice(newAttrs).then(function () {
 
                     logger.debug(`device "${deviceName}" attributes successfully updated`)
-                    Devices.setRecentDeviceUpdate()
+                    Devices.recentDeviceUpdateTimer.restart()
 
                 }).catch(function (error) {
 

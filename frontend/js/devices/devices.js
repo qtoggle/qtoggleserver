@@ -5,6 +5,7 @@
 import Logger from '$qui/lib/logger.module.js'
 
 import {gettext}        from '$qui/base/i18n.js'
+import Timer            from '$qui/base/timer.js'
 import StockIcon        from '$qui/icons/stock-icon.js'
 import * as Theme       from '$qui/theme.js'
 import * as StringUtils from '$qui/utils/string.js'
@@ -46,9 +47,20 @@ export const POLL_CHOICES = [
  */
 export const logger = Logger.get('qtoggle.devices')
 
+/**
+ * @alias qtoggle.devices.recentDeviceUpdateTimer
+ * @type {qui.base.Timer}
+ */
+export const recentDeviceUpdateTimer = new Timer(
+    /* defaultTimeout = */ 10000 /* milliseconds */,
+    /* onTimeout = */ function () {
+        logger.debug('recent device update timer expired')
+    }
+)
+
+
 let currentDeviceName = null
 let renamedDeviceName = null
-let recentDeviceUpdateTimer = null
 
 
 /**
@@ -108,28 +120,4 @@ export function setRenamedDeviceName(name) {
     if (renamedDeviceName) {
         logger.debug(`current device renamed to ${renamedDeviceName}`)
     }
-}
-
-/**
- * @alias qtoggle.devices.setRecentDeviceUpdate
- */
-export function setRecentDeviceUpdate() {
-    if (recentDeviceUpdateTimer) {
-        clearTimeout(recentDeviceUpdateTimer)
-    }
-
-    logger.debug('recent device update timer started')
-
-    recentDeviceUpdateTimer = setTimeout(function () {
-        recentDeviceUpdateTimer = null
-        logger.debug('recent device update timer expired')
-    }, RECENT_DEVICE_UPDATE_TIMEOUT)
-}
-
-/**
- * @alias qtoggle.devices.setRecentDeviceUpdate
- * @returns {Boolean}
- */
-export function isRecentDeviceUpdate() {
-    return !!recentDeviceUpdateTimer
 }
