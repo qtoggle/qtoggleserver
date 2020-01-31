@@ -10,6 +10,8 @@ import * as Theme       from '$qui/theme.js'
 import * as StringUtils from '$qui/utils/string.js'
 
 
+const RECENT_DEVICE_UPDATE_TIMEOUT = 10000 /* milliseconds */
+
 /**
  * @alias qtoggle.devices.DEVICE_ICON
  * @type {qui.icons.Icon}
@@ -46,6 +48,7 @@ export const logger = Logger.get('qtoggle.devices')
 
 let currentDeviceName = null
 let renamedDeviceName = null
+let recentDeviceUpdateTimer = null
 
 
 /**
@@ -105,4 +108,28 @@ export function setRenamedDeviceName(name) {
     if (renamedDeviceName) {
         logger.debug(`current device renamed to ${renamedDeviceName}`)
     }
+}
+
+/**
+ * @alias qtoggle.devices.setRecentDeviceUpdate
+ */
+export function setRecentDeviceUpdate() {
+    if (recentDeviceUpdateTimer) {
+        clearTimeout(recentDeviceUpdateTimer)
+    }
+
+    logger.debug('recent device update timer started')
+
+    recentDeviceUpdateTimer = setTimeout(function () {
+        recentDeviceUpdateTimer = null
+        logger.debug('recent device update timer expired')
+    }, RECENT_DEVICE_UPDATE_TIMEOUT)
+}
+
+/**
+ * @alias qtoggle.devices.setRecentDeviceUpdate
+ * @returns {Boolean}
+ */
+export function isRecentDeviceUpdate() {
+    return !!recentDeviceUpdateTimer
 }

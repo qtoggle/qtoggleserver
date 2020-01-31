@@ -64,7 +64,7 @@ class DevicesSection extends Section {
                 this.devicesList.updateUIAsap()
 
                 if (deviceForm && (deviceForm.getDeviceName() === event.params.name)) {
-                    deviceForm.updateUI(/* fieldChangeWarnings = */ !event.expected)
+                    deviceForm.updateUI(/* fieldChangeWarnings = */ !event.expected && !Devices.isRecentDeviceUpdate())
                 }
 
                 let currentPage = getCurrentPage()

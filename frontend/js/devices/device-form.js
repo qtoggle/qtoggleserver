@@ -108,7 +108,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
     }
 
     init() {
-        this.updateUI()
+        this.updateUI(/* fieldChangeWarnings = */ false)
     }
 
     load() {
@@ -388,6 +388,8 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                         this.startWaitingDeviceOnline()
                     }
 
+                    Devices.setRecentDeviceUpdate()
+
                 }.bind(this)).catch(function (error) {
 
                     logger.errorStack(`failed to update device "${deviceName}" master properties`, error)
@@ -409,6 +411,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                 return API.patchDevice(newAttrs).then(function () {
 
                     logger.debug(`device "${deviceName}" attributes successfully updated`)
+                    Devices.setRecentDeviceUpdate()
 
                 }).catch(function (error) {
 
