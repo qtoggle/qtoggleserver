@@ -22,6 +22,7 @@
 
 import './displays/on-off-indicator.js'
 import './displays/progress-bar.js'
+import './displays/text-indicator.js'
 import './media/mjpeg-video.js'
 import './push-buttons/inc-dec-buttons.js'
 import './push-buttons/push-button.js'
