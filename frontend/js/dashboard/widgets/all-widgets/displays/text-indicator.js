@@ -98,7 +98,7 @@ class ConfigForm extends WidgetConfigForm {
                     name: 'customText',
                     label: gettext('Custom Text'),
                     separator: true,
-                    onChange: (value, form) => form._updateFields(),
+                    onChange: (value, form) => form._updateFields()
                 }),
                 new TextField({
                     name: 'text',
@@ -119,7 +119,7 @@ class ConfigForm extends WidgetConfigForm {
                     min: 2,
                     max: MAX_VALUES_COUNT,
                     onChange: (value, form) => form._updateFields()
-                }),
+                })
             ],
             ...args
         })
@@ -139,7 +139,7 @@ class ConfigForm extends WidgetConfigForm {
 
         /* Gather current custom fields */
         let customValuesFields = this.getFields().filter(f => f.getName().match(new RegExp('customValue\\d+')))
-        let customTextsFields =  this.getFields().filter(f => f.getName().match(new RegExp('customText\\d+')))
+        let customTextsFields = this.getFields().filter(f => f.getName().match(new RegExp('customText\\d+')))
         let customColorsFields = this.getFields().filter(f => f.getName().match(new RegExp('customColor\\d+')))
 
         /* Add new needed custom fields */
@@ -158,8 +158,17 @@ class ConfigForm extends WidgetConfigForm {
         let customFieldNames = customFields.map(f => f.getName())
 
         let booleanFieldNames = ['falseText', 'trueText', 'falseColor', 'trueColor']
-        let numberFieldNames = ['displayUnit', 'unit', 'decimals', 'color', 'customText', 'text', 'customValues',
-                                'customValuesCount', ...customFieldNames]
+        let numberFieldNames = [
+            'displayUnit',
+            'unit',
+            'decimals',
+            'color',
+            'customText',
+            'text',
+            'customValues',
+            'customValuesCount',
+            ...customFieldNames
+        ]
 
         let allFieldNames = [...booleanFieldNames, ...numberFieldNames]
         let visibleFieldNames
@@ -294,7 +303,7 @@ class ConfigForm extends WidgetConfigForm {
                     color: data[`customColor${no}`]
                 }
 
-            }.bind(this))
+            })
         }
         else {
             data.customValues = []
