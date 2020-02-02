@@ -91,7 +91,7 @@ class ConfigForm extends WidgetConfigForm {
                     label: gettext('Size'),
                     required: true,
                     snapMode: 1,
-                    ticks: ArrayUtils.range(1, 10).map(i => ({value: i, label: `${i}`}))
+                    ticks: ArrayUtils.range(1, 11).map(i => ({value: i, label: `${i}`}))
                 }),
 
                 new CheckField({
@@ -394,7 +394,7 @@ class TextIndicator extends Widget {
     _makeTextElement(width, height) {
         let textElement = $('<span class="dashboard-text-indicator-text-element"></span>')
 
-        textElement.css('font-size', `${this._size}rem`)
+        textElement.css('font-size', `${this._size * 10}%`)
 
         return textElement
     }
@@ -439,7 +439,7 @@ class TextIndicator extends Widget {
         color = Theme.getColor(color)
 
         this._textElement.css('color', color)
-        this._textElement.text(text)
+        this._textElement.html(text)
     }
 
     _isBoolean() {
