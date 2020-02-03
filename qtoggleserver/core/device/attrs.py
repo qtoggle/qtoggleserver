@@ -341,8 +341,8 @@ def set_attrs(attrs: Attributes) -> bool:
         if persisted:
             setattr(core_device_attrs, name, value)
 
-        if name == 'name' and settings.device_name.set_cmd:
-            run_set_cmd(settings.device_name.set_cmd, cmd_name='device name', name=value)
+        if name == 'name' and settings.core.device_name.set_cmd:
+            run_set_cmd(settings.core.device_name.set_cmd, cmd_name='device name', name=value)
 
         elif name == 'date' and system.date.has_date_support():
             try:

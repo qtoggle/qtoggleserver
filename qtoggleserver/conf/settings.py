@@ -34,6 +34,11 @@ logging: _typing.Dict[str, _typing.Any] = {
 
 
 class core:
+
+    class device_name:
+        get_cmd: _typing.Optional[str] = None
+        set_cmd: _typing.Optional[str] = None
+
     tick_interval: int = 50
     event_queue_size: int = 256
     max_client_time_skew: int = 300
@@ -107,11 +112,6 @@ class reverse:
 
 class configurables:
     pass
-
-
-class device_name:
-    get_cmd: _typing.Optional[str] = None
-    set_cmd: _typing.Optional[str] = None
 
 
 password_set_cmd: _typing.Optional[str] = None

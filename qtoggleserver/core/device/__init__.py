@@ -51,8 +51,8 @@ def load() -> None:
         setattr(device_attrs, name, value)
 
     # Device name
-    if settings.device_name.get_cmd:
-        result = run_get_cmd(settings.device_name.get_cmd, cmd_name='device name', required_fields=['name'])
+    if settings.core.device_name.get_cmd:
+        result = run_get_cmd(settings.core.device_name.get_cmd, cmd_name='device name', required_fields=['name'])
         device_attrs.name = result['name']
 
     # Hash empty passwords
