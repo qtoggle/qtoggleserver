@@ -320,9 +320,9 @@ def set_attrs(attrs: Attributes) -> bool:
         # Treat passwords separately, as they are not persisted as given, but hashed first
         if name.endswith('_password') and hasattr(core_device_attrs, name + '_hash'):
             # Call password set command, if available
-            if settings.password_set_cmd:
+            if settings.core.passwords.set_cmd:
                 run_set_cmd(
-                    settings.password_set_cmd,
+                    settings.core.passwords.set_cmd,
                     cmd_name='password',
                     log_values=False,
                     username=name[:-9],

@@ -39,6 +39,9 @@ class core:
         get_cmd: _typing.Optional[str] = None
         set_cmd: _typing.Optional[str] = None
 
+    class passwords:
+        set_cmd: _typing.Optional[str] = None
+
     tick_interval: int = 50
     event_queue_size: int = 256
     max_client_time_skew: int = 300
@@ -113,8 +116,6 @@ class reverse:
 class configurables:
     pass
 
-
-password_set_cmd: _typing.Optional[str] = None
 
 event_handlers: _typing.List[_typing.Dict[str, _typing.Any]] = []
 
