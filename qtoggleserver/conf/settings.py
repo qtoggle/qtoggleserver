@@ -39,14 +39,14 @@ class core:
     max_client_time_skew: int = 300
     listen_support: bool = True
     sequences_support: bool = True
-    ssl_support: bool = False
+    ssl_support: bool = True
     virtual_ports: int = 1024
 
 
 class server:
     addr: str = '0.0.0.0'
     port: int = 8888
-    compress_response: bool = False
+    compress_response: bool = True
 
     class https:
         cert_file: _typing.Optional[str] = None
@@ -88,7 +88,7 @@ class frontend:
 
 
 class slaves:
-    enabled: bool = False
+    enabled: bool = True
     timeout: int = 10
     long_timeout: int = 60
     keepalive: int = 300
