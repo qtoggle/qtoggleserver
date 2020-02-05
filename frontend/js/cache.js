@@ -362,7 +362,7 @@ export function updateFromEvent(event) {
 
     if (!whenCacheReady.isFulfilled()) {
         /* Ignore events while cache not ready */
-        return;
+        return
     }
 
     switch (event.type) {
