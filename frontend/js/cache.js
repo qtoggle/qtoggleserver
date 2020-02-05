@@ -360,6 +360,11 @@ export function load(accessLevel, showModalProgress) {
 export function updateFromEvent(event) {
     let device, port
 
+    if (!whenCacheReady.isFulfilled()) {
+        /* Ignore events while cache not ready */
+        return;
+    }
+
     switch (event.type) {
         case 'slave-device-update': {
             if (event.params.name in slaveDevices) {
