@@ -28,6 +28,7 @@ except ImportError:
 
 name = 'qtoggleserver'
 version = qtoggleserver.version.VERSION
+here = os.path.dirname(__file__)
 
 
 class UIMakeMixin:
@@ -138,6 +139,11 @@ setup(
         ]
     },
 
+    data_files=[
+        (f'share/{name}/{root[len(here) + 1:]}', [f'{root[len(here) + 1:]}/{f}' for f in files])
+        for (root, dirs, files) in os.walk(os.path.join(here, 'extra'))
+    ],
+
     entry_points={
         'console_scripts': [
             'qtoggleserver=qtoggleserver.commands.server:execute',
@@ -151,3 +157,4 @@ setup(
         'clean': CleanCommand
     }
 )
+

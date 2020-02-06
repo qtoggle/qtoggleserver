@@ -1,0 +1,80 @@
+
+debug = false
+
+#public_url = "https://qtoggle.example.com"
+
+# See https://docs.python.org/3.7/library/logging.config.html#logging-config-dictschema
+logging = {
+    root = {
+        level = "INFO"
+    }
+}
+
+core = {
+    tick_interval = 50          # how often to update everything, in milliseconds
+    event_queue_size = 256      # maximum number of queued events in a session
+    max_client_time_skew = 300  # maximum accepted time skew when authenticating clients, in seconds
+
+    listen_support = true
+    sequences_support = true
+    ssl_support = true
+    virtual_ports = 1024
+}
+
+server = {
+    addr = "0.0.0.0"
+    port = 80  # use 443 for HTTPS
+    compress_response = true
+
+#    https = {
+#        cert_file = "/etc/ssl/cert.pem"
+#        key_file = "/etc/ssl/privkey.pem"
+#    }
+}
+
+# Redis persistence driver
+persist = {
+    driver = "qtoggleserver.drivers.persist.RedisDriver"
+    host = "127.0.0.1"
+    port = 6379
+    db = 0
+}
+
+# MongoDB persistence driver
+#persist = {
+#    driver = "qtoggleserver.drivers.persist.MongoDriver"
+#    host = "127.0.0.1"
+#    port = 27017
+#    db = "qtoggleserver"
+#}
+
+frontend = {
+    enabled = true
+    debug = false
+}
+
+slaves = {
+    enabled = true
+    timeout = 10            # timeout, in seconds, when communicating with slaves
+    keepalive = 60          # long-polling timeout, in seconds, when waiting for slave events
+    retry_interval = 5      # how often to retry a failed API request, in seconds
+    retry_count = 3         # max number of retries upon failed API requests
+}
+
+event_handlers = [
+#    {
+#        driver = "qtoggleserver.my.events.EventHandler"
+#        no = 10
+#    }
+]
+
+ports = [
+#    {
+#        driver = "qtoggleserver.my.ports.PortDriver"
+#        no = 10
+#    }
+]
+
+port_mappings = {
+#    "old_id" = "new_id"
+}
