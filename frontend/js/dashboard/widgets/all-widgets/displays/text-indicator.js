@@ -232,6 +232,9 @@ class ConfigForm extends WidgetConfigForm {
             step = port.step
         }
 
+        let customValuesCountField = this.getField('customValuesCount')
+        let index = this.getFieldIndex(customValuesCountField) + 1 + no * 3
+
         let valueField = new NumericField({
             name: `customValue${no}`,
             label: `${gettext('Value')} ${no + 1}`,
@@ -242,14 +245,14 @@ class ConfigForm extends WidgetConfigForm {
             integer: integer,
             step: step
         })
-        this.addField(-1, valueField)
+        this.addField(index, valueField)
 
         let textField = new TextField({
             name: `customText${no}`,
             label: `${gettext('Text')} ${no + 1}`,
             required: true
         })
-        this.addField(-1, textField)
+        this.addField(index + 1, textField)
 
         let colorField = new ColorComboField({
             name: `customColor${no}`,
@@ -257,7 +260,7 @@ class ConfigForm extends WidgetConfigForm {
             filterEnabled: true,
             required: true
         })
-        this.addField(-1, colorField)
+        this.addField(index + 2, colorField)
 
         return {
             valueField: valueField,

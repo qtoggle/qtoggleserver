@@ -286,6 +286,9 @@ export class ConfigForm extends WidgetConfigForm {
             step = port.step
         }
 
+        let customTicksField = this.getField('customTicks')
+        let index = this.getFieldIndex(customTicksField) + 1 + no * (this._tickColors ? 3 : 2)
+
         let valueField = new NumericField({
             name: `tickValue${no}`,
             label: `${gettext('Tick Value')} ${no + 1}`,
@@ -296,13 +299,13 @@ export class ConfigForm extends WidgetConfigForm {
             integer: integer,
             step: step
         })
-        this.addField(-1, valueField)
+        this.addField(index, valueField)
 
         let labelField = new TextField({
             name: `tickLabel${no}`,
             label: `${gettext('Tick Label')} ${no + 1}`
         })
-        this.addField(-1, labelField)
+        this.addField(index + 1, labelField)
 
         let colorField
         if (this._tickColors) {
@@ -312,7 +315,7 @@ export class ConfigForm extends WidgetConfigForm {
                 filterEnabled: true,
                 required: true
             })
-            this.addField(-1, colorField)
+            this.addField(index + 2, colorField)
         }
 
         return {
