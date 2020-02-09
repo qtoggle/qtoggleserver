@@ -98,13 +98,12 @@ export class ConfigForm extends WidgetConfigForm {
                 new CheckField({
                     name: 'displayUnit',
                     label: gettext('Display Unit'),
-                    hidden: ticksonly
+                    onChange: (value, form) => form._updateFields()
                 }),
                 new TextField({
                     name: 'unit',
                     label: gettext('Unit'),
-                    maxLength: 16,
-                    hidden: ticksonly
+                    maxLength: 16
                 }),
                 new UpDownField({
                     name: 'decimals',
@@ -127,13 +126,13 @@ export class ConfigForm extends WidgetConfigForm {
                 new CheckField({
                     name: 'displayTicks',
                     label: gettext('Display Ticks'),
-                    onChange: (value, form) => form._updateFields(),
-                    hidden: ticksonly
+                    separator: ticksonly || readonly,
+                    onChange: (value, form) => form._updateFields()
                 }),
                 new CheckField({
                     name: 'displayTicksUnits',
                     label: gettext('Display Ticks Units'),
-                    hidden: ticksonly
+                    onChange: (value, form) => form._updateFields()
                 }),
                 new CheckField({
                     name: 'colorTicks',
@@ -143,8 +142,7 @@ export class ConfigForm extends WidgetConfigForm {
                     name: 'ticksStep',
                     label: gettext('Ticks Step'),
                     min: 1,
-                    max: 10,
-                    hidden: ticksonly
+                    max: 10
                 }),
                 new UpDownField({
                     name: 'ticksCount',
@@ -173,104 +171,106 @@ export class ConfigForm extends WidgetConfigForm {
     }
 
     _updateFields() {
-        let customTicksValueFields =
-                this.getFields().filter(field => field.getName().match(new RegExp('tickValue\\d+')))
-        let customTicksLabelFields =
-                this.getFields().filter(field => field.getName().match(new RegExp('tickLabel\\d+')))
-        let customTicksColorFields =
-                this.getFields().filter(field => field.getName().match(new RegExp('tickColor\\d+')))
-
-        let displayUnitField = this.getField('displayUnit')
-        let displayTicksUnitsField = this.getField('displayTicksUnits')
-        let decimalsField = this.getField('decimals')
-        let ticksCountField = this.getField('ticksCount')
-        let customTicksField = this.getField('customTicks')
-        let ticksStepField = this.getField('ticksStep')
-        let colorTicksField = this.getField('colorTicks')
-        let customTicksFields = [...customTicksLabelFields, ...customTicksValueFields, ...customTicksColorFields]
-
         let data = this.getUnvalidatedData()
         let port = this.getPort(data.portId)
 
-        if (data.displayTicks || this._ticksonly) {
-            colorTicksField.show()
-            if (this._readonly) {
-                displayTicksUnitsField.show()
-                if (!this._ticksonly) {
-                    ticksStepField.show()
-                }
-                ticksCountField.show()
-                customTicksField.show()
-            }
-        }
-        else {
-            colorTicksField.hide()
-            if (this._readonly) {
-                displayTicksUnitsField.hide()
-                ticksStepField.hide()
-                ticksCountField.hide()
-                customTicksField.hide()
-            }
-        }
-
-        if (!data.displayValue || data.customTicks || this._ticksonly) {
-            displayUnitField.hide()
-            displayTicksUnitsField.hide()
-            decimalsField.hide()
-        }
-        else {
-            displayUnitField.show()
-            displayTicksUnitsField.show()
-            decimalsField.show()
-        }
-
-        if ((!data.customTicks || (this._readonly && !data.displayTicks)) && !this._ticksonly) {
-            customTicksFields.forEach(function (field) {
-                field.hide()
-            })
-
-            return
-        }
-
-        let lastTickFieldNo = customTicksLabelFields.length - 1
+        /* Gather current custom ticks fields */
+        let customTicksValueFields = this.getFields().filter(f => f.getName().match(new RegExp('tickValue\\d+')))
+        let customTicksLabelFields = this.getFields().filter(f => f.getName().match(new RegExp('tickLabel\\d+')))
+        let customTicksColorFields = this.getFields().filter(f => f.getName().match(new RegExp('tickColor\\d+')))
 
         /* Add new needed fields */
+        let lastTickFieldNo = customTicksLabelFields.length - 1
         ArrayUtils.range(lastTickFieldNo + 1, data.ticksCount).forEach(function (no) {
 
             let fields = this._addTickFields(no, port)
 
-            customTicksFields.push(fields.valueField)
-            customTicksFields.push(fields.labelField)
+            customTicksValueFields.push(fields.valueField)
+            customTicksLabelFields.push(fields.labelField)
             if (this._tickColors) {
-                customTicksFields.push(fields.colorField)
+                customTicksColorFields.push(fields.colorField)
             }
 
         }.bind(this))
 
-        /* Show all used fields */
-        ArrayUtils.range(0, data.ticksCount).forEach(function (no) {
+        let customTicksFields = [...customTicksValueFields, ...customTicksLabelFields, ...customTicksColorFields]
+        let customTicksFieldNames = customTicksFields.map(f => f.getName())
 
-            let fields = this._getTickFields(no)
+        let visibleFieldNames = {}
+        let allFieldNames = [
+            'unit',
+            'displayUnit',
+            'displayTicksUnits',
+            'decimals',
+            'ticksCount',
+            'customTicks',
+            'ticksStep',
+            'colorTicks',
+            ...customTicksFieldNames
+        ]
 
-            fields.valueField.show()
-            fields.labelField.show()
-            if (this._tickColors) {
-                fields.colorField.show()
+        /* An analog widget has ticks if it's editable, if user wants ticks to be displayed or has ticksonly flag */
+        let hasTicks = data.displayTicks || !this._readonly || this._ticksonly
+
+        /* Analog widgets with ticksonly flag always have custom ticks */
+        let hasCustomTicks = data.customTicks || this._ticksonly
+
+        if (data.displayTicks) {
+            visibleFieldNames['colorTicks'] = true
+            if (!hasCustomTicks) {
+                visibleFieldNames['displayTicksUnits'] = true
             }
-
-        }.bind(this))
-
-        /* Hide all unused fields */
-        ArrayUtils.range(data.ticksCount, lastTickFieldNo + 1).forEach(function (no) {
-
-            let fields = this._getTickFields(no)
-
-            fields.valueField.hide()
-            fields.labelField.hide()
-            if (this._tickColors) {
-                fields.colorField.hide()
+            if (!this._ticksonly) {
+                visibleFieldNames['ticksStep'] = true
             }
+        }
 
+        if (hasTicks) {
+            visibleFieldNames['ticksCount'] = true
+            if (!this._ticksonly) {
+                visibleFieldNames['customTicks'] = true
+            }
+        }
+
+        if (data.displayValue && !hasCustomTicks) {
+            visibleFieldNames['displayUnit'] = true
+            visibleFieldNames['decimals'] = true
+            if (data.displayUnit) {
+                visibleFieldNames['unit'] = true
+            }
+        }
+
+        if (data.displayTicks && !hasCustomTicks) {
+            visibleFieldNames['decimals'] = true
+            if (data.displayTicksUnits) {
+                visibleFieldNames['unit'] = true
+            }
+        }
+
+        if (hasTicks && hasCustomTicks) {
+            /* Show all used custom ticks fields */
+            ArrayUtils.range(0, data.ticksCount).forEach(function (no) {
+
+                let fields = this._getTickFields(no)
+
+                visibleFieldNames[fields.valueField.getName()] = true
+                visibleFieldNames[fields.labelField.getName()] = true
+                if (this._tickColors) {
+                    visibleFieldNames[fields.colorField.getName()] = true
+                }
+
+            }.bind(this))
+        }
+
+        /* Actually update fields visibility */
+        allFieldNames.forEach(function (name) {
+            let field = this.getField(name)
+            if (name in visibleFieldNames && field.isHidden()) {
+                field.show()
+            }
+            else if (!(name in visibleFieldNames) && !field.isHidden()) {
+                field.hide()
+            }
         }.bind(this))
     }
 
@@ -399,7 +399,7 @@ export class AnalogWidget extends Widget {
      * @param {Boolean} [ticksonly]
      * @param {Boolean} [tickColors]
      */
-    constructor({readonly = false, ticksonly = false, tickColors = false}) {
+    constructor({readonly = false, ticksonly = false, tickColors = false} = {}) {
         super()
 
         this._portId = ''
@@ -522,11 +522,11 @@ export class AnalogWidget extends Widget {
             this._ticksThicknessFactor *= (1 + 1.5 * (len - 2) / 10)
         }
 
-        if (this._displayTicks || this._ticksonly) {
+        if (this._displayTicks) {
             this._thickness *= (1 - this._ticksThicknessFactor)
         }
         this._ticksDiv = this._makeTicks() /* This must be here, as it uses this._thickness internally */
-        if (this._displayTicks || this._ticksonly) {
+        if (this._displayTicks) {
             this._containerDiv.append(this._ticksDiv)
         }
 
@@ -572,6 +572,7 @@ export class AnalogWidget extends Widget {
         backgroundDiv.css(this._vert ? 'width' : 'height', `${backgroundThickness}em`)
         backgroundDiv.css('border-width', `${this._bezelWidth}em`)
 
+        /* When ticksonly flag is set, we only want one button and no color on background */
         if (!this._ticksonly) {
             let startColor = this._valueToColor(this._min)
             let endColor = this._valueToColor(this._max)
@@ -837,9 +838,15 @@ export class AnalogWidget extends Widget {
         }
 
         if (this._textDiv) {
-            let valueStr = tick ? tick.label : value.toFixed(this._decimals)
-            if (!this._customTicks.length && this._displayUnit) {
-                valueStr += this._unit
+            let valueStr
+            if (tick && this._customTicks.length) {
+                valueStr = tick.label
+            }
+            else {
+                valueStr = value.toFixed(this._decimals)
+                if (this._displayUnit) {
+                    valueStr += this._unit
+                }
             }
 
             this._textDiv.html(valueStr)
