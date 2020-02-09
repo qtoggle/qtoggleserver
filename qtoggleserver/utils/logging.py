@@ -18,8 +18,8 @@ class FifoMemoryHandler(logging.handlers.MemoryHandler):
 
 
 class LoggableMixin:
-    def __init__(self, name: Optional[str], parent_logger: Optional[logging.Logger] = None) -> None:
-        if parent_logger and name:
+    def __init__(self, name: Optional[str], parent_logger: logging.Logger) -> None:
+        if name:
             name = f'{parent_logger.name}.{name}'
 
         else:
