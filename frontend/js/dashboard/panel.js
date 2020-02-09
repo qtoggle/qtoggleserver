@@ -392,14 +392,20 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
             return
         }
 
-        this._cellWidth = this._computeCellWidth()
+        let layoutDetails = this._computeLayoutDetails()
+
+        /* Compute remaining horizontal space */
+        let remSpace = layoutDetails.panelWidth - layoutDetails.cellWidth * this._width
+        remSpace = Math.max(remSpace, 0)
+
+        this._cellWidth = layoutDetails.cellWidth
 
         this.getBody().addClass('disable-transitions')
-
         this.getBody().css({
             'font-size': `${this._cellWidth}px`,
             'min-height': Math.ceil(this._cellWidth * this._height),
-            'width': Math.ceil(this._cellWidth * this._width)
+            'width': Math.ceil(this._cellWidth * this._width),
+            'margin-left': `${remSpace / 2}px`
         })
 
         if (this._widgets) {
@@ -419,38 +425,72 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
      */
     getCellWidth() {
         if (this._cellWidth == null) {
-            this._cellWidth = this._computeCellWidth()
+            this._cellWidth = this._computeLayoutDetails().cellWidth
         }
 
         return this._cellWidth
     }
 
-    _computeCellWidth() {
-        let pageContainerWidth = this.getPageHTML().parent().innerWidth()
-        let panelWidthPercent = (!this._editEnabled || Window.isSmallScreen()) ? 100 : 75
-        let width = pageContainerWidth * panelWidthPercent / 100
+    _computeLayoutDetails() {
+        let widthPx = this.getPageHTML().parent().innerWidth()
+        let heightPx = this.getPageHTML().parent().innerHeight()
 
         /* Width is 0 before the panel is attached by using $body.width() when panel is not attached, we provide an
          * initial, valid em (font-size) for the panel, preventing unwanted transition effects from small sizes */
-        width = width || Window.$body.width()
+        widthPx = widthPx || Window.$body.width()
+        heightPx = heightPx || Window.$body.height()
+
+        /* When in edit mode, on large screens, panel width is 75% of the page container */
+        if (this._editEnabled && !Window.isSmallScreen()) {
+            widthPx *= 0.75
+        }
 
         /* When editing is enabled, extra 1.25rem margins are added we need to extract these from the useful width */
         if (this._editEnabled) {
             let margin = CSS.em2px(1.25) // TODO constant
-            width -= 2 * margin
+            widthPx -= 2 * margin
+            heightPx -= 2 * margin
         }
 
         /* On large screens, account for a possible scroll bar, by subtracting another 1em */
         if (!Window.isSmallScreen()) {
-            width -= CSS.em2px(1.25)
+            let spacing = CSS.em2px(1)
+            widthPx -= spacing
+            heightPx -= spacing
         }
 
-        let cellWidth = width / this._width
+        let widthCells = this._width
+        let heightCells = this._height
+
+        /* Compute tentative cell widths using limited horizontal and vertical dimensions */
+        let cellWidthByWidth = widthPx / widthCells
+        let cellWidthByHeight = heightPx / heightCells
+
+        /* Choose the smallest cell width, but always go with horizontal axis on small screens */
+        let cellWidth
+        if ((cellWidthByWidth < cellWidthByHeight) || Window.isSmallScreen()) {
+            cellWidth = cellWidthByWidth
+        }
+        else {
+            cellWidth = cellWidthByHeight
+            /* However, add lower cell width limit, such as resulting panel width is larger than page width / 2 */
+            if (cellWidth * widthCells < widthPx / 2) {
+                cellWidth = widthPx / 2 / widthCells
+            }
+        }
+
+        /* Impose a maximum cell width size, relative to page size */
+        let maxCellWidth = Math.max(widthPx, heightPx) / 10
+        cellWidth = Math.min(cellWidth, maxCellWidth)
 
         /* This rounding prevents (reduces) decentered rotation animations */
         cellWidth = Math.floor(cellWidth / 5) * 5
 
-        return cellWidth
+        return {
+            cellWidth: cellWidth,
+            panelWidth: widthPx,
+            panelHeight: heightPx
+        }
     }
 
 
