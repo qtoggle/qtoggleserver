@@ -47,6 +47,10 @@ class DashboardSection extends Section {
         }.bind(this))
     }
 
+    canClose() {
+        return !Dashboard.hasPendingSave()
+    }
+
     _loadPanels() {
         logger.debug('loading panels')
         let progressMessage = getGlobalProgressMessage().show()

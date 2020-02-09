@@ -5,9 +5,11 @@
 import Logger from '$qui/lib/logger.module.js'
 
 import StockIcon from '$qui/icons/stock-icon.js'
-import {asap}    from '$qui/utils/misc.js'
 
 import * as API from '$app/api.js'
+
+
+const PANELS_SAVE_INTERVAL = 2000 /* Milliseconds */
 
 
 /**
@@ -47,7 +49,7 @@ export function savePanels() {
         clearTimeout(pendingSavePanelsTimeoutHandle)
     }
 
-    pendingSavePanelsTimeoutHandle = asap(function () {
+    pendingSavePanelsTimeoutHandle = setTimeout(function () {
 
         logger.debug('saving panels')
         pendingSavePanelsTimeoutHandle = null
@@ -55,7 +57,15 @@ export function savePanels() {
 
         API.putDashboardPanels(panels)
 
-    })
+    }, PANELS_SAVE_INTERVAL)
+}
+
+/**
+ * @alias qtoggle.dashboard.hasPendingSave
+ * @returns {Boolean}
+ */
+export function hasPendingSave() {
+    return pendingSavePanelsTimeoutHandle != null
 }
 
 /**
