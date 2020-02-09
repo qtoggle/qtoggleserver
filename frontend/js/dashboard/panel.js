@@ -101,14 +101,20 @@ class PanelOptionsForm extends OptionsForm {
     _updateEditState() {
         let editButton = this._getEditButton()
         let addWidgetButton = this.getField('addWidgetButton')
+        let widthField = this.getField('width')
+        let heightField = this.getField('height')
 
         if (this._panel.isEditEnabled()) {
             editButton.setCaption(gettext('Done'))
             addWidgetButton.show()
+            widthField.show()
+            heightField.show()
         }
         else {
             editButton.setCaption(gettext('Edit'))
             addWidgetButton.hide()
+            widthField.hide()
+            heightField.hide()
         }
     }
 
@@ -174,12 +180,6 @@ class PanelOptionsForm extends OptionsForm {
 
                 this._updateEditState()
                 this._panel.updateHistoryState()
-
-                /* On panels with widgets we prefer the options bar closed,
-                 * since the most likely action is to select an existing widget */
-                if (this._panel.getWidgets().length) {
-                    OptionsBar.close()
-                }
 
                 break
             }
