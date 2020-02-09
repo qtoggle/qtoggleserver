@@ -1271,7 +1271,7 @@ class Widget extends mix().with(ViewMixin) {
             return Promise.resolve()
         }
 
-        return this._panel.pushPage(this.getConfigForm())
+        return this._panel.pushPage(configForm)
     }
 
 }

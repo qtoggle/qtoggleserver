@@ -398,6 +398,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         let remSpace = layoutDetails.panelWidth - layoutDetails.cellWidth * this._width
         remSpace = Math.max(remSpace, 0)
 
+        let layoutChanged = this._cellWidth !== layoutDetails.cellWidth
         this._cellWidth = layoutDetails.cellWidth
 
         this.getBody().addClass('disable-transitions')
@@ -408,7 +409,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
             'margin-left': `${remSpace / 2}px`
         })
 
-        if (this._widgets) {
+        if (this._widgets && layoutChanged) {
             this._widgets.forEach(function (w) {
                 w.refreshContent()
             })
