@@ -2,20 +2,17 @@
 import $      from '$qui/lib/jquery.module.js'
 import Logger from '$qui/lib/logger.module.js'
 
-import ConditionVariable    from '$qui/base/condition-variable.js'
-import {AssertionError}     from '$qui/base/errors.js'
-import {TimeoutError}       from '$qui/base/errors.js'
 import {gettext}            from '$qui/base/i18n.js'
 import {mix}                from '$qui/base/mixwith.js'
 import StockIcon            from '$qui/icons/stock-icon.js'
 import {ConfirmMessageForm} from '$qui/messages/common-message-forms.js'
 import * as Messages        from '$qui/messages/messages.js'
 import * as Toast           from '$qui/messages/toast.js'
+import * as Navigation      from '$qui/navigation.js'
 import * as Theme           from '$qui/theme.js'
 import * as CSS             from '$qui/utils/css.js'
 import * as Gestures        from '$qui/utils/gestures.js'
 import {asap}               from '$qui/utils/misc.js'
-import * as PromiseUtils    from '$qui/utils/promise.js'
 import * as StringUtils     from '$qui/utils/string.js'
 import ViewMixin            from '$qui/views/view.js'
 import * as Window          from '$qui/window.js'
@@ -23,7 +20,7 @@ import * as Window          from '$qui/window.js'
 import * as API   from '$app/api.js'
 import * as Cache from '$app/cache.js'
 
-import * as Dashboard   from '../dashboard.js'
+import MoveWidgetForm   from './move-widget-form.js'
 import WidgetConfigForm from './widget-config-form.js'
 import * as Widgets     from './widgets.js'
 
@@ -91,6 +88,10 @@ class Widget extends mix().with(ViewMixin) {
         }
 
         this.logger = Logger.get(this.makeLogName())
+    }
+
+    toString() {
+        return this._label || this._id
     }
 
 
@@ -1226,23 +1227,17 @@ class Widget extends mix().with(ViewMixin) {
      * @returns {qui.pages.PageMixin}
      */
     makeRemoveForm() {
-        let msg
-        if (this._label) {
-            msg = StringUtils.formatPercent(
-                gettext('Really remove %(object)s?'),
-                {object: Messages.wrapLabel(this._label)}
-            )
-        }
-        else {
-            msg = gettext('Really remove this widget?')
-        }
+        let msg = StringUtils.formatPercent(
+            gettext('Really remove %(object)s?'),
+            {object: Messages.wrapLabel(this.toString())}
+        )
 
         return new ConfirmMessageForm({
             message: msg,
             onYes: function () {
                 this.logger.debug('removing')
                 this._panel.removeWidget(this)
-                Dashboard.savePanels()
+                this._panel.save()
                 this._configForm.close(/* force = */ true)
             }.bind(this),
             pathId: 'remove'
@@ -1271,7 +1266,48 @@ class Widget extends mix().with(ViewMixin) {
             return Promise.resolve()
         }
 
-        return this._panel.pushPage(configForm)
+        /* Ensure editing is enabled on panel when showing the config form */
+        if (!this._panel.isEditEnabled()) {
+            this._panel.enableEditing()
+        }
+
+        let path = ['dashboard', this._panel.getId()]
+        return Navigation.navigate(path).then(function () {
+
+            return this._panel.pushPage(configForm)
+
+        }.bind(this))
+    }
+
+
+    /* Move */
+
+    /**
+     * @returns {qui.pages.PageMixin}
+     */
+    makeMoveForm() {
+        return new MoveWidgetForm(this)
+    }
+
+    /**
+     * @param {qtoggle.dashboard.Panel} panel
+     */
+    moveToPanel(panel) {
+        this.logger.debug(`moving to panel ${panel.getId()}`)
+
+        panel.duplicateWidget(this)
+        this.getPanel().removeWidget(this)
+        this.getPanel().save()
+    }
+
+
+    /* Replace */
+
+    /**
+     * @returns {qui.pages.PageMixin}
+     */
+    makeReplaceForm() {
+        return new ReplaceWidgetForm(this)
     }
 
 }

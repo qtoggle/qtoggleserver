@@ -1,10 +1,12 @@
 
-import {gettext}        from '$qui/base/i18n.js'
-import {TextField}      from '$qui/forms/common-fields.js'
-import {PageForm}       from '$qui/forms/common-forms.js'
-import FormButton       from '$qui/forms/form-button.js'
-import * as ObjectUtils from '$qui/utils/object.js'
-import * as Window      from '$qui/window.js'
+import {gettext}         from '$qui/base/i18n.js'
+import {CompositeField}  from '$qui/forms/common-fields.js'
+import {PushButtonField} from '$qui/forms/common-fields.js'
+import {TextField}       from '$qui/forms/common-fields.js'
+import {PageForm}        from '$qui/forms/common-forms.js'
+import FormButton        from '$qui/forms/form-button.js'
+import * as ObjectUtils  from '$qui/utils/object.js'
+import * as Window       from '$qui/window.js'
 
 import * as Cache from '$app/cache.js'
 
@@ -28,7 +30,7 @@ class WidgetConfigForm extends PageForm {
      * @param {...*} args parent class parameters
      */
     constructor({widget, ...args}) {
-        let defaultFields = [
+        let defaultStartFields = [
             new TextField({
                 name: 'label',
                 label: gettext('Label'),
@@ -36,7 +38,35 @@ class WidgetConfigForm extends PageForm {
             })
         ]
 
-        args.fields = defaultFields.concat(args.fields || [])
+        let defaultEndFields = [
+            new CompositeField({
+                name: 'action_buttons',
+                label: gettext('Actions'),
+                separator: true,
+                layout: 'horizontal',
+                fields: [
+                    new PushButtonField({
+                        name: 'move',
+                        separator: true,
+                        caption: gettext('Move'),
+                        style: 'interactive',
+                        onClick(form) {
+                            form.pushPage(form.getWidget().makeMoveForm())
+                        }
+                    }),
+                    new PushButtonField({
+                        name: 'replace',
+                        style: 'interactive',
+                        caption: gettext('Replace'),
+                        onClick(form) {
+                            form.pushPage(form.getWidget().makeReplaceForm())
+                        }
+                    })
+                ]
+            })
+        ]
+
+        args.fields = [...defaultStartFields, ...(args.fields || []), ...defaultEndFields]
 
         ObjectUtils.assignDefault(args, {
             title: widget.constructor.displayName,
@@ -108,7 +138,7 @@ class WidgetConfigForm extends PageForm {
             this._widget.showCurrentValue()
         }
 
-        Dashboard.savePanels()
+        this._widget.getPanel().save()
     }
 
     onClose() {
@@ -198,6 +228,12 @@ class WidgetConfigForm extends PageForm {
         switch (pathId) {
             case 'remove':
                 return this._widget.makeRemoveForm()
+
+            case 'move':
+                return this._widget.makeMoveForm()
+
+            case 'replace':
+                return this._widget.makeReplaceForm()
         }
     }
 

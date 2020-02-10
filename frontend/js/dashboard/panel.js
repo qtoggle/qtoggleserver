@@ -644,7 +644,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         let scrollTop = cellWidth * (widget.getTop() - 0.5)
         pageHTML.scrollTop(scrollTop)
 
-        Dashboard.savePanels()
+        this.save()
     }
 
     /**
@@ -732,7 +732,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
      * @param {qtoggle.dashboard.widgets.Widget} widget
      */
     handleWidgetMove(widget) {
-        Dashboard.savePanels()
+        this.save()
 
         if (this._optionsForm) {
             this._optionsForm.updateSizeLimits()
@@ -743,7 +743,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
      * @param {qtoggle.dashboard.widgets.Widget} widget
      */
     handleWidgetResize(widget) {
-        Dashboard.savePanels()
+        this.save()
 
         if (this._optionsForm) {
             this._optionsForm.updateSizeLimits()
@@ -782,9 +782,6 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
 
                 return j
             })
-
-            /* Also update internal serialized widgets */
-            this._widgetsJSON = json.widgets.slice()
         }
 
         json.width = this._width
@@ -815,6 +812,12 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         this.updateUI()
 
         this.logger = Logger.get(this.makeLogName())
+    }
+
+    save() {
+        /* Update internal cache of serialized widgets */
+        this._widgetsJSON = this.toJSON().widgets
+        super.save()
     }
 
 
@@ -951,7 +954,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         let scrollTop = cellWidth * (widget.getTop() - 0.5)
         pageHTML.scrollTop(scrollTop)
 
-        Dashboard.savePanels()
+        this.save()
     }
 
 
@@ -995,8 +998,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         this.setHeight(options.height)
         this.setOptimizeSmallScreen(options.optimizeSmallScreen)
         this.updateUI()
-
-        Dashboard.savePanels()
+        this.save()
     }
 
     makeOptionsBarContent() {

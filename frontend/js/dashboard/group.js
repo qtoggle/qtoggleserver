@@ -298,8 +298,7 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
     onOptionsChange(options) {
         this.setName(options.name)
         this.updateUI()
-
-        Dashboard.savePanels()
+        this.save()
     }
 
     makeOptionsBarContent() {

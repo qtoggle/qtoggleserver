@@ -35,6 +35,10 @@ const PanelGroupCompositeMixin = Mixin((superclass = Object) => {
             this._parent = parent
         }
 
+        toString() {
+            return this._name
+        }
+
         /**
          * @returns {String}
          */
@@ -54,7 +58,7 @@ const PanelGroupCompositeMixin = Mixin((superclass = Object) => {
         }
 
         /**
-         * @returns {qtoggle.dashboard.Group}
+         * @returns {?qtoggle.dashboard.Group}
          */
         getParent() {
             return this._parent
@@ -106,6 +110,13 @@ const PanelGroupCompositeMixin = Mixin((superclass = Object) => {
         }
 
         /**
+         * Mark for saving.
+         */
+        save() {
+            Dashboard.savePanels()
+        }
+
+        /**
          * Update view UI elements.
          */
         updateUI() {
@@ -117,16 +128,17 @@ const PanelGroupCompositeMixin = Mixin((superclass = Object) => {
         makeRemoveForm() {
             let msg = StringUtils.formatPercent(
                 gettext('Really remove %(object)s?'),
-                {object: Messages.wrapLabel(this.getName())}
+                {object: Messages.wrapLabel(this.toString())}
             )
 
             return new ConfirmMessageForm({
                 message: msg,
                 onYes: function () {
                     logger.debug(`removing "${this.getPathStr()}"`)
-                    this.getParent().removeChild(this)
+                    let parent = this.getParent()
+                    parent.removeChild(this)
+                    parent.save()
                     this.close()
-                    Dashboard.savePanels()
                 }.bind(this),
                 pathId: 'remove'
             })

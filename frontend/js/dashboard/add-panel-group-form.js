@@ -91,7 +91,7 @@ class AddPanelGroupForm extends PageForm {
 
         this._group.addChild(child)
         this._group.setSelectedChild(child)
-        Dashboard.savePanels()
+        this._group.save()
 
         /* Show the newly created child */
         this._group.pushPage(child).then(function () {
