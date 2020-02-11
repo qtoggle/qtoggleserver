@@ -1,8 +1,10 @@
 
 import $ from '$qui/lib/jquery.module.js'
 
+import {gettext}       from '$qui/base/i18n.js'
 import Config          from '$qui/config.js'
 import {ComboField}    from '$qui/forms/common-fields.js'
+import * as Navigation from '$qui/navigation.js'
 import * as ArrayUtils from '$qui/utils/array.js'
 
 import * as Cache from '$app/cache.js'
@@ -28,6 +30,8 @@ class PortPickerField extends ComboField {
         if (filter) {
             this.filter = filter
         }
+
+        this._currentAnchorElement = null
     }
 
     /**
@@ -42,7 +46,7 @@ class PortPickerField extends ComboField {
         let choices = Object.values(Cache.getPorts()).filter(this.filter.bind(this)).map(function (port) {
 
             return {
-                label: this._makeLabel(port),
+                label: this.makeLabel(port),
                 value: port.id
             }
 
@@ -51,7 +55,67 @@ class PortPickerField extends ComboField {
         return ArrayUtils.sortKey(choices, choice => choice.value)
     }
 
-    _makeLabel(port) {
+    makeValueHTML() {
+        let valueHTML = super.makeValueHTML()
+
+        valueHTML.prepend(this.makeCurrentHMTL())
+
+        return valueHTML
+    }
+
+    /**
+     * @returns {jQuery}
+     */
+    makeCurrentHMTL() {
+        let currentDiv = $('<div class="port-picker-current"></div>')
+        currentDiv.append(`<span>${gettext('current')}: </span>`)
+
+        this._currentAnchorElement = this.makeCurrentAnchor()
+        currentDiv.append(this._currentAnchorElement)
+
+        return currentDiv
+    }
+
+    /**
+     * @param {?String} portId
+     * @returns {jQuery}
+     */
+    makeCurrentAnchor(portId) {
+        if (portId == null) {
+            return $(`<span>(${gettext('none')})</span>`)
+        }
+
+        let displayName = portId
+        let port = Cache.getPort(portId)
+        if (port) {
+            displayName = port.display_name || port.id
+            return Navigation.makeInternalAnchor(`/ports/${portId}`, displayName)
+        }
+        else {
+            return $(`<span>${portId}</span>`)
+        }
+    }
+
+    updateCurrentAnchor(portId) {
+        let newElement = this.makeCurrentAnchor(portId)
+        this._currentAnchorElement.replaceWith(newElement)
+        this._currentAnchorElement = newElement
+    }
+
+    setValue(value) {
+        super.setValue(value)
+        this.updateCurrentAnchor(value)
+    }
+
+    onChange(value, form) {
+        this.updateCurrentAnchor(value)
+    }
+
+    /**
+     * @param {Object} port
+     * @returns {jQuery}
+     */
+    makeLabel(port) {
         let portId = port.id
         let device = Cache.findPortSlaveDevice(portId)
         let mainDevice = Cache.getMainDevice()
