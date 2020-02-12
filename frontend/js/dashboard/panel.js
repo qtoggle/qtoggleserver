@@ -66,10 +66,6 @@ class PanelOptionsForm extends OptionsForm {
                     min: 1,
                     max: MAX_PANEL_HEIGHT
                 }),
-                new CheckField({
-                    name: 'optimizeSmallScreen',
-                    label: gettext('Mobile View')
-                }),
                 new PushButtonField({
                     name: 'addWidgetButton',
                     caption: gettext('Add Widget'),
@@ -85,8 +81,7 @@ class PanelOptionsForm extends OptionsForm {
             data: {
                 name: panel.getName(),
                 width: panel.getWidth(),
-                height: panel.getHeight(),
-                optimizeSmallScreen: panel.isOptimizeSmallScreen()
+                height: panel.getHeight()
             },
             continuousValidation: true
         })
@@ -219,7 +214,6 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
 
         this._optionsForm = null
 
-        this._optimizeSmallScreen = false
         this._editEnabled = false
         this._cellWidth = null
         this._widgets = null
@@ -371,21 +365,6 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
     _rectsOverlap(l1, t1, w1, h1, l2, t2, w2, h2) {
         return ((l1 >= l2 && l1 < l2 + w2) || (l2 >= l1 && l2 < l1 + w1)) &&
                ((t1 >= t2 && t1 < t2 + h2) || (t2 >= t1 && t2 < t1 + h1))
-    }
-
-    /**
-     * @returns {Boolean}
-     */
-    isOptimizeSmallScreen() {
-        return this._optimizeSmallScreen
-    }
-
-    /**
-     * @param {Boolean} optimizeSmallScreen
-     */
-    setOptimizeSmallScreen(optimizeSmallScreen) {
-        this._optimizeSmallScreen = optimizeSmallScreen
-        this.updateUI()
     }
 
     onResize() {
@@ -799,7 +778,6 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
 
         json.width = this._width
         json.height = this._height
-        json.optimizeSmallScreen = this._optimizeSmallScreen
 
         return json
     }
@@ -812,9 +790,6 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         }
         if (json.height != null) {
             this._height = json.height
-        }
-        if (json.optimizeSmallScreen != null) {
-            this._optimizeSmallScreen = json.optimizeSmallScreen
         }
 
         if (json.widgets != null) {
@@ -1009,7 +984,6 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         this.setName(options.name)
         this.setWidth(options.width)
         this.setHeight(options.height)
-        this.setOptimizeSmallScreen(options.optimizeSmallScreen)
         this.updateUI()
         this.save()
     }
