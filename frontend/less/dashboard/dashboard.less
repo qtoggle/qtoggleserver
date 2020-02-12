@@ -3,83 +3,87 @@
 @import (reference) "@{qui_less_path}/theme";
 
 
-/* panel */
+/* Panel */
 
-div.dashboard-panel {
-    overflow: visible;
-    margin: 0;
-    transition: margin @transition-duration linear;
-    background: @background-root-color;
-    .noselect;
+
+div.qui-page.dashboard-panel-page {
+
+    body:NOT(.small-screen) &,
+    &.edit {
+        background: darken(@background-root-color, 5%);
+    }
+
+    & > div.dashboard-panel {
+        overflow: visible;
+        margin: 0;
+        transition: margin @transition-duration linear;
+        min-height: 100%;
+        .noselect;
+
+        & > div.dashboard-panel-container {
+            transition: margin-top @transition-duration ease,
+            font-size @transition-duration ease;
+            position: absolute;
+            overflow: visible;
+            min-height: 100%;
+            background: @background-root-color;
+
+            &.disable-transitions * {
+                transition: none !important;
+            }
+
+            div.dashboard-panel-placeholder-cell {
+                display: none;
+                position: relative;
+                vertical-align: middle;
+                width: 1em;
+                height: 1em;
+                opacity: 0;
+                box-sizing: border-box;
+                border-style: dashed;
+                border-color: @background-color;
+                border-width: 0 0.0625rem 0.0625rem 0;
+                transition: opacity @transition-duration ease;
+            }
+
+            div.dashboard-panel-placeholder-cell:LAST-CHILD {
+                border-right-width: 0;
+            }
+
+            div.dashboard-panel-placeholder-row:LAST-CHILD > div.dashboard-panel-placeholder-cell {
+                border-bottom-width: 0;
+            }
+
+        }
+
+    }
+
+    &.edit > div.dashboard-panel {
+
+        & > div.dashboard-panel-container {
+            margin: 1.25rem;
+            min-height: auto;
+
+            div.dashboard-panel-placeholder-cell {
+                display: inline-block;
+            }
+
+        }
+
+        &.placeholders-visible div.dashboard-panel-placeholder-cell {
+            opacity: 1;
+        }
+
+    }
+
 }
 
-div.dashboard-panel.edit {
-    margin: 1.25rem;
-}
-
-div.dashboard-panel > div.panel-container {
-    transition: margin-top @transition-duration ease,
-                font-size @transition-duration ease;
-    position: relative;
-    overflow: visible;
-}
-
-div.dashboard-panel.edit > div.panel-container {
-    border-width: 0.0625rem 0 0 0.0625rem;
-    border-style: dashed;
-    border-color: @background-color;
-}
-
-div.dashboard-panel > div.panel-container.disable-transitions * {
-    transition: none !important;
-}
-
-
-/* placeholder cells */
-
-div.panel-placeholder-row {
-}
-
-div.panel-placeholder-cell {
-    display: none;
-    position: relative;
-    vertical-align: middle;
-    width: 1em;
-    height: 1em;
-    opacity: 0;
-    box-sizing: border-box;
-    border-style: dashed;
-    border-color: @background-color;
-    border-width: 0 0.0625rem 0.0625rem 0;
-    transition: opacity @transition-duration ease;
-}
-
-div.dashboard-panel.edit div.panel-placeholder-cell {
-    display: inline-block;
-}
-
-div.dashboard-panel.edit.placeholders-visible div.panel-placeholder-cell {
-    opacity: 1;
-}
-
-div.panel-placeholder-cell > div.panel-add-icon {
-    display: inline-block;
-    width: 2rem;
-    height: 2rem;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    margin-left: -1rem;
-    margin-top: -1rem;
-    opacity: 0.5;
-}
-
-body.small-screen div.panel-placeholder-cell > div.panel-add-icon {
+body.small-screen div.dashboard-panel-placeholder-cell > div.dashboard-panel-add-icon {
     transform: scale(0.5);
 }
 
 
-/* widget picker */
+/* Widget picker */
 
 div.dashboard-widget-picker {
 }
@@ -89,7 +93,7 @@ div.dashboard-widget-picker-body {
 }
 
 
-/* widget container */
+/* Widget container */
 
 div.dashboard-widget-container {
     position: absolute;
@@ -101,16 +105,16 @@ div.dashboard-widget-container {
     opacity: 1;
 }
 
-div.dashboard-panel.edit div.dashboard-widget-container.selected {
+div.dashboard-panel-page.edit div.dashboard-widget-container.selected {
     z-index: 10001;
 }
 
-div.dashboard-panel.edit div.dashboard-widget-container.controls-visible {
+div.dashboard-panel-page.edit div.dashboard-widget-container.controls-visible {
     border-color: @interactive-color;
     background: fade(@interactive-color, 10%);
 }
 
-div.dashboard-panel.edit div.dashboard-widget-container.selected.controls-visible {
+div.dashboard-panel-page.edit div.dashboard-widget-container.selected.controls-visible {
     transition: left @transition-duration ease,
                 top @transition-duration ease,
                 width @transition-duration ease,
@@ -118,15 +122,11 @@ div.dashboard-panel.edit div.dashboard-widget-container.selected.controls-visibl
 }
 
 
-/* widget body */
+/* Widget body */
 
 div.dashboard-widget-container.invalid > div.dashboard-widget-body {
     opacity: 0.5;
     filter: grayscale(100%);
-    -webkit-filter: grayscale(100%);
-    -moz-filter: grayscale(100%);
-    -ms-filter: grayscale(100%);
-    -o-filter: grayscale(100%);
 }
 
 div.dashboard-widget-body {
@@ -144,7 +144,7 @@ div.dashboard-widget-container.has-frame > div.dashboard-widget-body {
 }
 
 
-/* widget label */
+/* Widget label */
 
 div.dashboard-widget-label {
     box-sizing: border-box;
@@ -168,14 +168,14 @@ div.dashboard-widget-container.has-frame > div.dashboard-widget-body > div.dashb
 }
 
 
-/* widget content */
+/* Widget content */
 
 div.dashboard-widget-content {
     position: relative;
 }
 
 
-/* widget controls */
+/* Widget controls */
 
 div.dashboard-widget-move {
     display: none;
@@ -188,12 +188,12 @@ div.dashboard-widget-move {
     .noselect;
 }
 
-div.dashboard-panel.edit div.dashboard-widget-move {
+div.dashboard-panel-page.edit div.dashboard-widget-move {
     display: block;
     border: 0.125rem solid transparent;
 }
 
-div.dashboard-panel.edit div.dashboard-widget-container.selected > div.dashboard-widget-move {
+div.dashboard-panel-page.edit div.dashboard-widget-container.selected > div.dashboard-widget-move {
     border-color: @interactive-color;
 }
 
@@ -241,7 +241,7 @@ div.dashboard-widget-duplicate > div.qui-icon {
     vertical-align: top;
 }
 
-div.dashboard-panel.edit div.dashboard-widget-resize-control {
+div.dashboard-panel-page.edit div.dashboard-widget-resize-control {
     display: none;
     position: absolute;
     width: 1.75rem;
@@ -253,7 +253,7 @@ div.dashboard-panel.edit div.dashboard-widget-resize-control {
     opacity: 0;
 }
 
-div.dashboard-panel.edit div.dashboard-widget-resize-control:ACTIVE {
+div.dashboard-panel-page.edit div.dashboard-widget-resize-control:ACTIVE {
     background: @interactive-active-color;
 }
 
@@ -289,13 +289,13 @@ div.dashboard-widget-resize-left {
     margin-top: -1rem;
 }
 
-div.dashboard-panel.edit div.dashboard-widget-container.selected div.dashboard-widget-control,
-div.dashboard-panel.edit div.dashboard-widget-container.selected div.dashboard-widget-remove {
+div.dashboard-panel-page.edit div.dashboard-widget-container.selected div.dashboard-widget-control,
+div.dashboard-panel-page.edit div.dashboard-widget-container.selected div.dashboard-widget-remove {
     display: block;
 }
 
-div.dashboard-panel.edit div.dashboard-widget-container.controls-visible div.dashboard-widget-control,
-div.dashboard-panel.edit div.dashboard-widget-container.controls-visible div.dashboard-widget-remove {
+div.dashboard-panel-page.edit div.dashboard-widget-container.controls-visible div.dashboard-widget-control,
+div.dashboard-panel-page.edit div.dashboard-widget-container.controls-visible div.dashboard-widget-remove {
     opacity: 1;
 }
 
@@ -339,7 +339,7 @@ div.dashboard-widget-status-icon.error {
 }
 
 
-/* widget glass */
+/* Widget glass */
 
 div.dashboard-widget-glass {
     display: none;
@@ -363,12 +363,12 @@ div.dashboard-widget-container.invalid > div.dashboard-widget-glass {
 div.dashboard-widget-glass.visible {
 }
 
-div.dashboard-panel.edit div.dashboard-widget-glass {
+div.dashboard-panel-page.edit div.dashboard-widget-glass {
     display: none !important;
 }
 
 
-/* port picker field */
+/* Port picker field */
 
 div.port-picker-combo-item {
     overflow: hidden;
@@ -385,9 +385,6 @@ body.small-screen div.global-glass-container div.port-picker-combo-item.single-l
 div.port-picker-combo-item-line {
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-div.port-picker-combo-item-line.device {
 }
 
 div.port-picker-combo-item-line.device::BEFORE {

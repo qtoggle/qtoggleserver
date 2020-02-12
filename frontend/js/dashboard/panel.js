@@ -34,6 +34,8 @@ const DEFAULT_PANEL_HEIGHT = 5
 const MAX_PANEL_WIDTH = 20
 const MAX_PANEL_HEIGHT = 100
 
+const PANEL_EDIT_MARGIN = 1.25 /* em; also present in dashboard.less */
+
 
 class PanelOptionsForm extends OptionsForm {
 
@@ -235,12 +237,20 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
 
     /* HTML */
 
+    makePageHTML() {
+        let pageHTML = super.makePageHTML()
+
+        pageHTML.addClass('dashboard-panel-page')
+
+        return pageHTML
+    }
+
     makeHTML() {
         return $('<div class="dashboard-panel"></div>')
     }
 
     makeBody() {
-        return $('<div class="panel-container"></div>')
+        return $('<div class="dashboard-panel-container"></div>')
     }
 
 
@@ -395,7 +405,10 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
 
         /* Compute remaining horizontal space */
         let remSpace = layoutDetails.panelWidth - layoutDetails.cellWidth * this._width
-        remSpace = Math.max(remSpace, 0)
+        let marginLeft = Math.max(remSpace, 0) / 2
+        if (this._editEnabled) {
+            marginLeft += CSS.em2px(PANEL_EDIT_MARGIN)
+        }
 
         let layoutChanged = this._cellWidth !== layoutDetails.cellWidth
         this._cellWidth = layoutDetails.cellWidth
@@ -403,9 +416,9 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         this.getBody().addClass('disable-transitions')
         this.getBody().css({
             'font-size': `${this._cellWidth}px`,
-            'min-height': Math.ceil(this._cellWidth * this._height),
+            'height': Math.ceil(this._cellWidth * this._height),
             'width': Math.ceil(this._cellWidth * this._width),
-            'margin-left': `${remSpace / 2}px`
+            'margin-left': `${marginLeft}px`
         })
 
         if (this._widgets && layoutChanged) {
@@ -447,7 +460,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
 
         /* When editing is enabled, extra 1.25rem margins are added we need to extract these from the useful width */
         if (this._editEnabled) {
-            let margin = CSS.em2px(1.25) // TODO constant
+            let margin = CSS.em2px(PANEL_EDIT_MARGIN)
             widthPx -= 2 * margin
             heightPx -= 2 * margin
         }
@@ -537,7 +550,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
      * @param {qtoggle.dashboard.widgets.Widget} widget
      */
     attachWidget(widget) {
-        let firstPlaceholderRow = this.getBody().children('div.panel-placeholder-row').first()
+        let firstPlaceholderRow = this.getBody().children('div.dashboard-panel-placeholder-row').first()
         if (firstPlaceholderRow.length) {
             /* In edit mode, has cell placeholders */
             firstPlaceholderRow.before(widget.getHTML())
@@ -878,7 +891,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
     }
 
     _enableEditing() {
-        this.getHTML().addClass('edit')
+        this.getPageHTML().addClass('edit')
         this._updatePlaceholderCells(this._width, this._height)
         this.updateContainerLayout()
         asap(function () {
@@ -908,8 +921,8 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         this.getHTML().removeClass('placeholders-visible')
 
         Theme.afterTransition(function () {
-            this.getHTML().removeClass('edit')
-            this.getBody().children('div.panel-placeholder-row').remove()
+            this.getPageHTML().removeClass('edit')
+            this.getBody().children('div.dashboard-panel-placeholder-row').remove()
             this.updateContainerLayout()
         }.bind(this), this.getHTML())
     }
@@ -1012,13 +1025,13 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         let element = this.getBody()
 
         /* Add new rows */
-        while (element.children('div.panel-placeholder-row').length < height) {
+        while (element.children('div.dashboard-panel-placeholder-row').length < height) {
             element.append(this._makePlaceholderCellRow())
         }
 
         /* Add new columns */
         let that = this
-        element.children('div.panel-placeholder-row').each(function (y) {
+        element.children('div.dashboard-panel-placeholder-row').each(function (y) {
             let row = $(this)
             while (row.children().length < width) {
                 row.append(that._makePlaceholderCell(row.children().length, y))
@@ -1026,7 +1039,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         })
 
         /* Remove old columns */
-        element.children('div.panel-placeholder-row').each(function () {
+        element.children('div.dashboard-panel-placeholder-row').each(function () {
             let row = $(this)
             while (row.children().length > width) {
                 row.children(':last-child').remove()
@@ -1034,27 +1047,29 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         })
 
         /* Remove old rows */
-        while (element.children('div.panel-placeholder-row').length > height) {
-            element.children('div.panel-placeholder-row:last').remove()
+        while (element.children('div.dashboard-panel-placeholder-row').length > height) {
+            element.children('div.dashboard-panel-placeholder-row:last').remove()
         }
     }
 
     _makePlaceholderCellRow() {
-        return $('<div class="panel-placeholder-row"></div>')
+        return $('<div class="dashboard-panel-placeholder-row"></div>')
     }
 
     _makePlaceholderCell(x, y) {
-        return $('<div class="panel-placeholder-cell"></div>')
+        return $('<div class="dashboard-panel-placeholder-cell"></div>')
     }
 
 
     /* Various */
 
     onBecomeCurrent() {
-        this.updateContainerLayout()
-
         if (this.getWidgets().length === 0) {
+            /* will also call updateContainerLayout() */
             this.enableEditing()
+        }
+        else {
+            this.updateContainerLayout()
         }
 
         Dashboard.setCurrentPanel(this)
