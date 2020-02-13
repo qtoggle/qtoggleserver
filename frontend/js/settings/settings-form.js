@@ -2,6 +2,7 @@
 import {gettext}                  from '$qui/base/i18n.js'
 import {mix}                      from '$qui/base/mixwith.js'
 import {CheckField}               from '$qui/forms/common-fields.js'
+import {ChoiceButtonsField}       from '$qui/forms/common-fields.js'
 import {CompositeField}           from '$qui/forms/common-fields.js'
 import {PushButtonField}          from '$qui/forms/common-fields.js'
 import {PageForm}                 from '$qui/forms/common-forms.js'
@@ -138,6 +139,17 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
             description: gettext('Use this option on slow devices to disable animations and other visual effects.')
         }))
 
+        this.addField(-1, new ChoiceButtonsField({
+            name: 'mobile_screen_mode',
+            label: gettext('Mobile Screen Mode'),
+            description: gettext('Choose how the app detects whether it runs on a mobile (small) screen or not.'),
+            choices: [
+                {value: 'auto', label: gettext('Auto')},
+                {value: 'always', label: gettext('Always')},
+                {value: 'never', label: gettext('Never')}
+            ]
+        }))
+
         this.addField(-1, new CompositeField({
             name: 'management_buttons',
             label: gettext('Manage Device'),
@@ -190,13 +202,15 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         }
 
         this.setData({
-            disable_effects: ClientSettings.isEffectsDisabled()
+            disable_effects: ClientSettings.isEffectsDisabled(),
+            mobile_screen_mode: ClientSettings.getMobileScreenMode()
         })
     }
 
     applyData(data) {
         let newAttrs = {}
         let changedFields = this.getChangedFields()
+        let changedFieldsData = {}
         let willReconnect = false
 
         changedFields.forEach(function (fieldName) {
@@ -205,6 +219,8 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
             if (value == null) {
                 return
             }
+
+            changedFieldsData[fieldName] = value
 
             /* We're interested only in attributes */
             if (!fieldName.startsWith('attr_')) {
@@ -283,7 +299,12 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         }
 
         /* Apply client settings */
-        ClientSettings.setEffectsDisabled(data.disable_effects)
+        if (changedFieldsData['disable_effects'] != null) {
+            ClientSettings.setEffectsDisabled(changedFieldsData['disable_effects'])
+        }
+        if (changedFieldsData['mobile_screen_mode'] != null) {
+            ClientSettings.setMobileScreenMode(changedFieldsData['mobile_screen_mode'])
+        }
 
         return promise
     }

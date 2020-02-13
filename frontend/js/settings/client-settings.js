@@ -4,17 +4,13 @@
 
 import Logger from '$qui/lib/logger.module.js'
 
-import * as Theme from '$qui/theme.js'
+import * as Theme  from '$qui/theme.js'
+import * as Window from '$qui/window.js'
 
 
 const STORAGE_KEY_PREFIX = 'client-settings'
 
-
-/**
- * @alias qtoggle.settings.logger
- * @type {Logger}
- */
-export const logger = Logger.get('qtoggle.settings.clientsettings')
+const logger = Logger.get('qtoggle.settings.clientsettings')
 
 
 function saveSetting(name, value) {
@@ -57,9 +53,43 @@ export function isEffectsDisabled() {
 }
 
 /**
+ * @alias qtoggle.settings.clientsettings.setMobileScreenMode
+ * @param {String} mode one of `"auto"`, `"always"` and `"never"`
+ */
+export function setMobileScreenMode(mode) {
+    logger.debug(`setting mobile screen mode to ${mode}`)
+
+    switch (mode) {
+        case 'auto':
+            Window.setSmallScreenThreshold(null)
+            break
+
+        case 'always':
+            Window.setSmallScreenThreshold(1e6)
+            break
+
+        case 'never':
+            Window.setSmallScreenThreshold(0)
+            break
+    }
+
+    saveSetting('mobile-screen-mode', mode)
+}
+
+/**
+ * @alias qtoggle.settings.clientsettings.getMobileScreenMode
+ * @returns {String} one of `"auto"`, `"always"` and `"never"`
+ */
+export function getMobileScreenMode() {
+    return loadSetting('mobile-screen-mode', 'auto')
+}
+
+/**
  * @alias qtoggle.settings.clientsettings.loadAndApply
  */
 export function loadAndApply() {
     logger.debug('loading and applying settings')
+
     setEffectsDisabled(isEffectsDisabled())
+    setMobileScreenMode(getMobileScreenMode())
 }
