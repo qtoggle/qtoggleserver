@@ -1306,9 +1306,9 @@ class Widget extends mix().with(ViewMixin) {
     /**
      * @returns {qui.pages.PageMixin}
      */
-    makeReplaceForm() {
-        return new ReplaceWidgetForm(this)
-    }
+    // makeReplaceForm() {
+    //     return new ReplaceWidgetForm(this)
+    // }
 
 }
 

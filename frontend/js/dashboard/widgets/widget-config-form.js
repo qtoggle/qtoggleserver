@@ -53,15 +53,15 @@ class WidgetConfigForm extends PageForm {
                         onClick(form) {
                             form.pushPage(form.getWidget().makeMoveForm())
                         }
-                    }),
-                    new PushButtonField({
-                        name: 'replace',
-                        style: 'interactive',
-                        caption: gettext('Replace'),
-                        onClick(form) {
-                            form.pushPage(form.getWidget().makeReplaceForm())
-                        }
                     })
+                    // new PushButtonField({
+                    //     name: 'replace',
+                    //     style: 'interactive',
+                    //     caption: gettext('Replace'),
+                    //     onClick(form) {
+                    //         form.pushPage(form.getWidget().makeReplaceForm())
+                    //     }
+                    // })
                 ]
             })
         ]
@@ -233,8 +233,8 @@ class WidgetConfigForm extends PageForm {
             case 'move':
                 return this._widget.makeMoveForm()
 
-            case 'replace':
-                return this._widget.makeReplaceForm()
+            // case 'replace':
+            //     return this._widget.makeReplaceForm()
         }
     }
 
