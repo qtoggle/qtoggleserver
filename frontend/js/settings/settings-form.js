@@ -1,8 +1,9 @@
 
 import {gettext}                  from '$qui/base/i18n.js'
 import {mix}                      from '$qui/base/mixwith.js'
-import {PushButtonField}          from '$qui/forms/common-fields.js'
+import {CheckField}               from '$qui/forms/common-fields.js'
 import {CompositeField}           from '$qui/forms/common-fields.js'
+import {PushButtonField}          from '$qui/forms/common-fields.js'
 import {PageForm}                 from '$qui/forms/common-forms.js'
 import {ErrorMapping}             from '$qui/forms/forms.js'
 import {ValidationError}          from '$qui/forms/forms.js'
@@ -23,7 +24,8 @@ import RebootDeviceMixin  from '$app/common/reboot-device-mixin.js'
 import UpdateFirmwareForm from '$app/common/update-firmware-form.js'
 import WaitDeviceMixin    from '$app/common/wait-device-mixin.js'
 
-import * as Settings from './settings.js'
+import * as ClientSettings from './client-settings.js'
+import * as Settings       from './settings.js'
 
 
 /* Attributes that trigger a window reload */
@@ -130,6 +132,12 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
      * Add fields whose presence is not altered by device attributes.
      */
     addStaticFields() {
+        this.addField(-1, new CheckField({
+            name: 'disable_effects',
+            label: gettext('Disable Effects'),
+            description: gettext('Use this option on slow devices to disable animations and other visual effects.')
+        }))
+
         this.addField(-1, new CompositeField({
             name: 'management_buttons',
             label: gettext('Manage Device'),
@@ -180,6 +188,10 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         else {
             updateFirmwareButtonField.disable()
         }
+
+        this.setData({
+            disable_effects: ClientSettings.isEffectsDisabled()
+        })
     }
 
     applyData(data) {
@@ -269,6 +281,9 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
                 })
             })
         }
+
+        /* Apply client settings */
+        ClientSettings.setEffectsDisabled(data.disable_effects)
 
         return promise
     }

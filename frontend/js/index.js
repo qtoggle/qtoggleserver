@@ -21,6 +21,7 @@ import * as Events      from '$app/events.js'
 import LoginSection     from '$app/login/login-section.js'
 import PortsSection     from '$app/ports/ports-section.js'
 import SettingsSection  from '$app/settings/settings-section.js'
+import * as Settings    from '$app/settings/settings.js'
 
 import '$app/qtoggle-stock.js'
 
@@ -73,6 +74,7 @@ function main() {
     /* Initialize QUI */
     initConfig()
     QUI.init()
+    Settings.init()
 
     /* Initialize PWA */
     try {
