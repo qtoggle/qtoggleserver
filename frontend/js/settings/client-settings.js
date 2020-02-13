@@ -85,6 +85,23 @@ export function getMobileScreenMode() {
 }
 
 /**
+ * @alias qtoggle.settings.clientsettings.setScalingFactor
+ * @param {Number} factor
+ */
+export function setScalingFactor(factor) {
+    Window.setScalingFactor(factor)
+    saveSetting('scaling-factor', factor)
+}
+
+/**
+ * @alias qtoggle.settings.clientsettings.getScalingFactor
+ * @returns {Number}
+ */
+export function getScalingFactor() {
+    return loadSetting('scaling-factor', '1')
+}
+
+/**
  * @alias qtoggle.settings.clientsettings.loadAndApply
  */
 export function loadAndApply() {
@@ -92,4 +109,5 @@ export function loadAndApply() {
 
     setEffectsDisabled(isEffectsDisabled())
     setMobileScreenMode(getMobileScreenMode())
+    setScalingFactor(getScalingFactor())
 }

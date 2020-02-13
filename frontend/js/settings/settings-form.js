@@ -5,6 +5,7 @@ import {CheckField}               from '$qui/forms/common-fields.js'
 import {ChoiceButtonsField}       from '$qui/forms/common-fields.js'
 import {CompositeField}           from '$qui/forms/common-fields.js'
 import {PushButtonField}          from '$qui/forms/common-fields.js'
+import {SliderField}              from '$qui/forms/common-fields.js'
 import {PageForm}                 from '$qui/forms/common-forms.js'
 import {ErrorMapping}             from '$qui/forms/forms.js'
 import {ValidationError}          from '$qui/forms/forms.js'
@@ -150,6 +151,22 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
             ]
         }))
 
+        this.addField(-1, new SliderField({
+            name: 'scaling_factor',
+            label: gettext('UI Scaling Factor'),
+            description: gettext('Increase or decrease the size of the UI elements.'),
+            ticks: [
+                {value: 0.5, label: '50%'},
+                {value: 0.75, label: '75%'},
+                {value: 1, label: '100%'},
+                {value: 1.25, label: '125%'},
+                {value: 1.5, label: '150%'},
+                {value: 2, label: '200%'}
+            ],
+            equidistant: true,
+            snapMode: 1
+        }))
+
         this.addField(-1, new CompositeField({
             name: 'management_buttons',
             label: gettext('Manage Device'),
@@ -203,7 +220,8 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
 
         this.setData({
             disable_effects: ClientSettings.isEffectsDisabled(),
-            mobile_screen_mode: ClientSettings.getMobileScreenMode()
+            mobile_screen_mode: ClientSettings.getMobileScreenMode(),
+            scaling_factor: ClientSettings.getScalingFactor()
         })
     }
 
@@ -304,6 +322,9 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         }
         if (changedFieldsData['mobile_screen_mode'] != null) {
             ClientSettings.setMobileScreenMode(changedFieldsData['mobile_screen_mode'])
+        }
+        if (changedFieldsData['scaling_factor'] != null) {
+            ClientSettings.setScalingFactor(changedFieldsData['scaling_factor'])
         }
 
         return promise
