@@ -1,7 +1,6 @@
 
 from qtoggleserver import version
 from qtoggleserver.conf import settings
-from qtoggleserver.core.device import attrs as core_device_attrs
 
 from . import constants
 
@@ -17,7 +16,7 @@ def make_context() -> dict:
         'debug': settings.frontend.debug,
         'static_url': ['static', 'static/app'][settings.frontend.debug],
         'navigation_base_prefix': '/' + constants.FRONTEND_URL_PREFIX,
-        'theme': core_device_attrs.ui_theme,
+        'theme': constants.FRONTEND_DEFAULT_THEME,
         'theme_color': constants.BROWSER_THEME_COLOR,
         'background_color': constants.BROWSER_BACKGROUND_COLOR
     }

@@ -4,11 +4,15 @@
 
 import Logger from '$qui/lib/logger.module.js'
 
-import * as Theme  from '$qui/theme.js'
-import * as Window from '$qui/window.js'
+import * as Theme        from '$qui/theme.js'
+import * as Cookies      from '$qui/utils/cookies.js'
+import * as PromiseUtils from '$qui/utils/promise.js'
+import * as Window       from '$qui/window.js'
 
 
 const STORAGE_KEY_PREFIX = 'client-settings'
+const THEME_COOKIE_NAME = 'qToggleServerFrontendTheme'
+const DEFAULT_THEME = 'dark'
 
 const logger = Logger.get('qtoggle.settings.clientsettings')
 
@@ -26,6 +30,27 @@ function loadSetting(name, def = null) {
     return JSON.parse(value)
 }
 
+
+/**
+ * @alias qtoggle.settings.clientsettings.setTheme
+ * @param {String} theme
+ */
+export function setTheme(theme) {
+    logger.debug(`setting ${theme} theme`)
+
+    Cookies.set(THEME_COOKIE_NAME, theme)
+
+    /* Theme change needs window reload */
+    PromiseUtils.later(500).then(() => Window.reload())
+}
+
+/**
+ * @alias qtoggle.settings.clientsettings.getTheme
+ * @returns {String}
+ */
+export function getTheme() {
+    return Cookies.get(THEME_COOKIE_NAME, DEFAULT_THEME)
+}
 
 /**
  * @alias qtoggle.settings.clientsettings.setEffectsDisabled

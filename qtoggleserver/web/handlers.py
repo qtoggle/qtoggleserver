@@ -18,7 +18,7 @@ from qtoggleserver.slaves.api import funcs as slaves_api_funcs
 from qtoggleserver.ui.api import funcs as ui_api_funcs
 from qtoggleserver.utils import json as json_utils
 
-from .constants import FRONTEND_URL_PREFIX
+from .constants import FRONTEND_URL_PREFIX, FRONTEND_THEME_COOKIE_NAME
 from .j2template import J2TemplateMixin
 from .quicontext import make_context
 
@@ -173,6 +173,10 @@ class TemplateHandler(J2TemplateMixin, BaseHandler):
             prefix = ''
 
         context['static_url'] = prefix + context['static_url']
+
+        theme_from_cookie = self.get_cookie(FRONTEND_THEME_COOKIE_NAME)
+        if theme_from_cookie:
+            context['theme'] = theme_from_cookie
 
         return context
 

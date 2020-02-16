@@ -13,7 +13,6 @@ import FormButton                 from '$qui/forms/form-button.js'
 import {StickyConfirmMessageForm} from '$qui/messages/common-message-forms.js'
 import * as Theme                 from '$qui/theme.js'
 import * as ObjectUtils           from '$qui/utils/object.js'
-import * as PromiseUtils          from '$qui/utils/promise.js'
 import * as Window                from '$qui/window.js'
 import * as Toast                 from '$qui/messages/toast.js'
 
@@ -29,9 +28,6 @@ import WaitDeviceMixin    from '$app/common/wait-device-mixin.js'
 import * as ClientSettings from './client-settings.js'
 import * as Settings       from './settings.js'
 
-
-/* Attributes that trigger a window reload */
-const RELOAD_DEVICE_ATTRIBUTES = ['ui_theme']
 
 const logger = Settings.logger
 
@@ -134,10 +130,15 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
      * Add fields whose presence is not altered by device attributes.
      */
     addStaticFields() {
-        this.addField(-1, new CheckField({
-            name: 'disable_effects',
-            label: gettext('Disable Effects'),
-            description: gettext('Use this option on slow devices to disable animations and other visual effects.')
+        this.addField(-1, new ChoiceButtonsField({
+            name: 'theme',
+            label: gettext('Theme'),
+            description: gettext('Select the desired UI theme.'),
+            separator: true,
+            choices: [
+                {value: 'dark', label: gettext('Dark')},
+                {value: 'light', label: gettext('Light')}
+            ]
         }))
 
         this.addField(-1, new ChoiceButtonsField({
@@ -164,6 +165,12 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
                 {value: 2, label: '200%'}
             ],
             equidistant: true
+        }))
+
+        this.addField(-1, new CheckField({
+            name: 'disable_effects',
+            label: gettext('Disable Effects'),
+            description: gettext('Use this option on slow devices to disable animations and other visual effects.')
         }))
 
         this.addField(-1, new CompositeField({
@@ -218,6 +225,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         }
 
         this.setData({
+            theme: ClientSettings.getTheme(),
             disable_effects: ClientSettings.isEffectsDisabled(),
             mobile_screen_mode: ClientSettings.getMobileScreenMode(),
             scaling_factor: ClientSettings.getScalingFactor()
@@ -292,11 +300,6 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
                         API.setPassword(newAttrs['admin_password'])
                     }
 
-                    if (RELOAD_DEVICE_ATTRIBUTES.some(n => n in newAttrs)) {
-                        logger.debug('some attributes that trigger a window reload have been changed')
-                        PromiseUtils.later(500).then(() => Window.reload())
-                    }
-
                     Settings.recentSettingsUpdateTimer.restart()
 
                 }).catch(function (error) {
@@ -316,6 +319,9 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         }
 
         /* Apply client settings */
+        if (changedFieldsData['theme'] != null) {
+            ClientSettings.setTheme(changedFieldsData['theme'])
+        }
         if (changedFieldsData['disable_effects'] != null) {
             ClientSettings.setEffectsDisabled(changedFieldsData['disable_effects'])
         }

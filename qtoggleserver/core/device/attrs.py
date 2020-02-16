@@ -136,16 +136,6 @@ ADDITIONAL_ATTRDEFS = {
     ...
 }'''
 ADDITIONAL_ATTRDEFS = {
-    'ui_theme': {
-        'display_name': 'Interface Theme',
-        'description': 'Sets the user interface theme.',
-        'type': 'string',
-        'modifiable': True,
-        'choices': [
-            {'value': 'light', 'display_name': 'Light'},
-            {'value': 'dark', 'display_name': 'Dark'}
-        ]
-    }
 }
 
 ATTRDEFS = dict(STANDARD_ATTRDEFS, **ADDITIONAL_ATTRDEFS)
@@ -158,8 +148,6 @@ display_name = ''
 admin_password_hash = None
 normal_password_hash = None
 viewonly_password_hash = None
-
-ui_theme = 'dark'
 
 _schema = None
 
@@ -225,7 +213,6 @@ def get_attrs() -> Attributes:
         'api_version': core_api.API_VERSION,
         'vendor': version.VENDOR,
         'uptime': system.uptime(),
-        'ui_theme': ui_theme,
 
         # Never disclose passwords
         'admin_password': '',
