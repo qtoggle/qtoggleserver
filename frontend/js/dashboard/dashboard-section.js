@@ -151,6 +151,10 @@ class DashboardSection extends Section {
         this._updateWidgetStates()
     }
 
+    onReset() {
+        this._whenPanelsLoaded = null
+    }
+
     _updateWidgetStates() {
         let currentPanel = Dashboard.getCurrentPanel()
         if (!currentPanel) {

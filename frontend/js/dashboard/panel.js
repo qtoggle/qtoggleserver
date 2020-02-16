@@ -4,7 +4,6 @@ import Logger from '$qui/lib/logger.module.js'
 
 import {gettext}             from '$qui/base/i18n.js'
 import {mix}                 from '$qui/base/mixwith.js'
-import {CheckField}          from '$qui/forms/common-fields.js'
 import {PushButtonField}     from '$qui/forms/common-fields.js'
 import {TextField}           from '$qui/forms/common-fields.js'
 import {UpDownField}         from '$qui/forms/common-fields.js'
