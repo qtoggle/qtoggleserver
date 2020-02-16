@@ -163,8 +163,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
                 {value: 1.5, label: '150%'},
                 {value: 2, label: '200%'}
             ],
-            equidistant: true,
-            snapMode: 1
+            equidistant: true
         }))
 
         this.addField(-1, new CompositeField({

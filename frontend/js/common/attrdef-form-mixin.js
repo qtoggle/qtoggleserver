@@ -68,7 +68,6 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                     case 'number': {
                         let count = 1e6 /* Some large number */
                         let step = def.step
-                        let decimals = 0
 
                         if (def.integer) {
                             if (step == null) {
@@ -78,10 +77,6 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                         else { /* Generic float value */
                             if (step == null) {
                                 step = 0.01
-                            }
-                            let stepStr = String(step)
-                            if (stepStr.indexOf('.') >= 0) {
-                                decimals = stepStr.length - stepStr.indexOf('.') - 1
                             }
                         }
 
@@ -97,8 +92,6 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                             }
                             field.ticks = ticks
                             field.ticksStep = Math.round((count - 1) / 5)
-                            field.snapMode = 1
-                            field.decimals = decimals
                         }
                         else { /* Many choices */
                             field.class = NumericField

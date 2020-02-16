@@ -90,7 +90,6 @@ class ConfigForm extends WidgetConfigForm {
                     name: 'size',
                     label: gettext('Size'),
                     required: true,
-                    snapMode: 1,
                     ticks: ArrayUtils.range(1, 11).map(i => ({value: i, label: `${i}`}))
                 }),
 
