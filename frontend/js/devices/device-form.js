@@ -404,10 +404,9 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
         }
 
         if (this._fullAttrdefs && Object.keys(newAttrs).length) { /* Device online */
-            API.setSlave(deviceName)
-
             promise = promise.then(function () {
 
+                API.setSlave(deviceName)
                 return API.patchDevice(newAttrs).then(function () {
 
                     logger.debug(`device "${deviceName}" attributes successfully updated`)
@@ -457,7 +456,8 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                     }.bind(this))
 
                 }.bind(this))
-            })
+
+            }.bind(this))
         }
 
         return promise
