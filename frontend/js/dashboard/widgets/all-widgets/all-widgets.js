@@ -15,10 +15,6 @@
  * @namespace qtoggle.dashboard.widgets.slidersknobs
  */
 
-/**
- * @namespace qtoggle.dashboard.widgets.specialized
- */
-
 
 import './displays/on-off-indicator.js'
 import './displays/progress-bar.js'
@@ -31,4 +27,3 @@ import './push-buttons/sequence-push-button.js'
 import './sliders-knobs/multi-value-slider.js'
 import './sliders-knobs/on-off-button.js'
 import './sliders-knobs/slider.js'
-import './specialized/gate-button.js'
