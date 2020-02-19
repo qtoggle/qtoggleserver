@@ -32,10 +32,3 @@ export const recentSettingsUpdateTimer = new Timer(
         logger.debug('recent settings update timer expired')
     }
 )
-
-/**
- * @alias qtoggle.settings.init
- */
-export function init() {
-    ClientSettings.loadAndApply()
-}

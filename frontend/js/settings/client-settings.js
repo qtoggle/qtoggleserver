@@ -4,14 +4,12 @@
 
 import Logger from '$qui/lib/logger.module.js'
 
-import * as Theme        from '$qui/theme.js'
-import * as Cookies      from '$qui/utils/cookies.js'
-import * as PromiseUtils from '$qui/utils/promise.js'
-import * as Window       from '$qui/window.js'
+import Config      from '$qui/config.js'
+import * as Theme  from '$qui/theme.js'
+import * as Window from '$qui/window.js'
 
 
 const STORAGE_KEY_PREFIX = 'client-settings'
-const THEME_COOKIE_NAME = 'qToggleServerFrontendTheme'
 const DEFAULT_THEME = 'dark'
 
 const logger = Logger.get('qtoggle.settings.clientsettings')
@@ -36,12 +34,9 @@ function loadSetting(name, def = null) {
  * @param {String} theme
  */
 export function setTheme(theme) {
-    logger.debug(`setting ${theme} theme`)
+    Theme.setCurrent(theme)
 
-    Cookies.set(THEME_COOKIE_NAME, theme)
-
-    /* Theme change needs window reload */
-    PromiseUtils.later(500).then(() => Window.reload())
+    saveSetting('theme', theme)
 }
 
 /**
@@ -49,7 +44,7 @@ export function setTheme(theme) {
  * @returns {String}
  */
 export function getTheme() {
-    return Cookies.get(THEME_COOKIE_NAME, DEFAULT_THEME)
+    return loadSetting('theme', DEFAULT_THEME)
 }
 
 /**
@@ -127,12 +122,27 @@ export function getScalingFactor() {
 }
 
 /**
- * @alias qtoggle.settings.clientsettings.loadAndApply
+ * @alias qtoggle.settings.clientsettings.applyConfig
  */
-export function loadAndApply() {
-    logger.debug('loading and applying settings')
+export function applyConfig() {
+    logger.debug('loading and applying configuration')
 
-    setEffectsDisabled(isEffectsDisabled())
-    setMobileScreenMode(getMobileScreenMode())
-    setScalingFactor(getScalingFactor())
+    Config.defaultEffectsDisabled = isEffectsDisabled()
+    Config.defaultScalingFactor = getScalingFactor()
+    Config.defaultTheme = getTheme()
+
+    switch (getMobileScreenMode()) {
+        case 'always':
+            Config.defaultSmallScreenThreshold = 1e6
+            break
+
+        case 'never':
+            Config.defaultSmallScreenThreshold = 0
+            break
+
+        case 'auto':
+        default:
+            break
+
+    }
 }

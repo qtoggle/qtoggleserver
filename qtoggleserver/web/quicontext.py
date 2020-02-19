@@ -16,7 +16,7 @@ def make_context() -> dict:
         'debug': settings.frontend.debug,
         'static_url': ['static', 'static/app'][settings.frontend.debug],
         'navigation_base_prefix': '/' + constants.FRONTEND_URL_PREFIX,
-        'theme': constants.FRONTEND_DEFAULT_THEME,
         'theme_color': constants.BROWSER_THEME_COLOR,
+        'themes': ['dark', 'light'],
         'background_color': constants.BROWSER_BACKGROUND_COLOR
     }

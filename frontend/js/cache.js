@@ -34,7 +34,7 @@ let prefs = null
 let pendingSavePrefsTimeoutHandle = null
 
 /* Indicates that cache needs a reload asap */
-let reloadNeeded = true
+let reloadNeeded = false
 
 /* Some ready condition variables */
 

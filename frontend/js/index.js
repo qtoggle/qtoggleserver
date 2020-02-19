@@ -6,22 +6,24 @@ import {gettext}                  from '$qui/base/i18n.js'
 import Config                     from '$qui/config.js'
 import * as QUI                   from '$qui/index.js'
 import {StickyConfirmMessageForm} from '$qui/messages/common-message-forms.js'
+import * as Navigation            from '$qui/navigation.js'
 import * as PWA                   from '$qui/pwa.js'
 import * as Sections              from '$qui/sections/sections.js'
 import * as Window                from '$qui/window.js'
 
 import Logger from '$qui/lib/logger.module.js'
 
-import * as API         from '$app/api.js'
-import * as Auth        from '$app/auth.js'
-import * as Cache       from '$app/cache.js'
-import DashboardSection from '$app/dashboard/dashboard-section.js'
-import DevicesSection   from '$app/devices/devices-section.js'
-import * as Events      from '$app/events.js'
-import LoginSection     from '$app/login/login-section.js'
-import PortsSection     from '$app/ports/ports-section.js'
-import SettingsSection  from '$app/settings/settings-section.js'
-import * as Settings    from '$app/settings/settings.js'
+import * as API                   from '$app/api.js'
+import * as Auth                  from '$app/auth.js'
+import * as Cache                 from '$app/cache.js'
+import {getGlobalProgressMessage} from '$app/common/common.js'
+import DashboardSection           from '$app/dashboard/dashboard-section.js'
+import DevicesSection             from '$app/devices/devices-section.js'
+import * as Events                from '$app/events.js'
+import LoginSection               from '$app/login/login-section.js'
+import PortsSection               from '$app/ports/ports-section.js'
+import * as ClientSettings        from '$app/settings/client-settings.js'
+import SettingsSection            from '$app/settings/settings-section.js'
 
 import '$app/qtoggle-stock.js'
 
@@ -33,6 +35,9 @@ function initConfig() {
     /* Default values for qToggle-specific config  */
     Config.slavesEnabled = false
     Config.apiURLPrefix = ''
+
+    /* Default values for client settings */
+    ClientSettings.applyConfig()
 }
 
 function handleAccessLevelChange(oldLevel, newLevel) {
@@ -70,13 +75,7 @@ function handlePWAUpdate() {
     return new StickyConfirmMessageForm({message: msg}).show().asPromise()
 }
 
-function main() {
-    /* Initialize QUI */
-    initConfig()
-    QUI.init()
-    Settings.init()
-
-    /* Initialize PWA */
+function initPWA() {
     try {
         PWA.enableServiceWorker(/* url = */ null, /* updateHandler = */ handlePWAUpdate)
     }
@@ -90,6 +89,11 @@ function main() {
     catch (e) {
         logger.error(`failed to setup manifest: ${e}`)
     }
+}
+
+function registerSections() {
+    /* Initial show call for global progress message */
+    getGlobalProgressMessage().show()
 
     Sections.register(DashboardSection)
     Sections.register(PortsSection)
@@ -99,36 +103,51 @@ function main() {
     Sections.register(SettingsSection)
     Sections.register(LoginSection)
 
-    API.init()
-    API.addAccessLevelChangeListener(handleAccessLevelChange)
-    API.addEventListener(handleAPIEvent)
+    Navigation.navigateInitial().then(function () {
+        /* Final hide call for global progress message */
+        getGlobalProgressMessage().hide()
+    })
+}
 
-    Events.init()
+function main() {
+    initConfig()
 
-    Auth.init()
-    Auth.whenFinalAccessLevelReady.then(level => API.startListening())
+    Promise.resolve()
+    .then(() => QUI.init())
+    .then(() => initPWA())
+    .then(() => registerSections())
+    .then(() => API.init())
+    .then(() => Events.init())
+    .then(() => Auth.init())
+    .then(() => Cache.init())
+    .then(function () {
 
-    Cache.init()
+        API.addAccessLevelChangeListener(handleAccessLevelChange)
+        API.addEventListener(handleAPIEvent)
 
-    Window.visibilityChangeSignal.connect(function (visible) {
-        if (!visible) {
-            return
-        }
+        Auth.whenFinalAccessLevelReady.then(level => API.startListening())
 
-        if (!API.isListening()) {
-            return
-        }
+        Window.visibilityChangeSignal.connect(function (visible) {
+            if (!visible) {
+                return
+            }
 
-        if (Config.debug) {
-            return
-        }
+            if (!API.isListening()) {
+                return
+            }
 
-        logger.info('application became visible, reloading cache')
+            if (Config.debug) {
+                return
+            }
 
-        Cache.setReloadNeeded()
+            logger.info('application became visible, reloading cache')
 
-        API.stopListening()
-        API.startListening()
+            Cache.setReloadNeeded()
+
+            API.stopListening()
+            API.startListening()
+        })
+
     })
 }
 

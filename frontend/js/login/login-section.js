@@ -11,6 +11,7 @@ import * as Window       from '$qui/window.js'
 
 import * as API                   from '$app/api.js'
 import * as Auth                  from '$app/auth.js'
+import * as Cache                 from '$app/cache.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
 import {Section}                  from '$app/sections.js'
 
@@ -43,14 +44,15 @@ class LoginSection extends Section {
         this._makeLogoutButton()
         this._nextPath = null
 
-        Auth.whenFinalAccessLevelReady.then(function (level) {
+        Auth.whenFinalAccessLevelReady.then(() => Cache.whenCacheReady).then(function (level) {
+
             let nextPath = this.popNextPath()
             if (nextPath) {
                 logger.debug(`navigating to next path "/${nextPath.join('/')}"`)
                 Navigation.navigate(nextPath)
             }
             else {
-                return Sections.showHome()
+                Sections.showHome()
             }
 
         }.bind(this))
@@ -62,11 +64,6 @@ class LoginSection extends Section {
     }
 
     navigate(path) {
-        /* Don't stay on login section if done with auth */
-        if (Auth.whenFinalAccessLevelReady.isFulfilled()) {
-            return Sections.getHome()
-        }
-
         return this
     }
 

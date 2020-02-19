@@ -1,8 +1,6 @@
 
 FRONTEND_DIR = 'frontend'
 FRONTEND_URL_PREFIX = 'frontend'
-FRONTEND_DEFAULT_THEME = 'dark'
-FRONTEND_THEME_COOKIE_NAME = 'qToggleServerFrontendTheme'
 
 APP_NAME = 'qtoggleserver'
 APP_PRETTY_NAME = 'qToggle Remote'

@@ -1,22 +1,23 @@
 {% extends "qui.html" %}
+{% from "qui.html" import css_devel_file %}
 
 {% block style %}
     {% if debug %}
-        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/dashboard.css" />
-        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/analog-widget.css" />
-        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/inc-dec-buttons.css" />
-        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/mjpeg-video.css" />
-        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/multi-value-slider.css" />
-        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/on-off-button.css" />
-        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/on-off-indicator.css" />
-        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/push-button.css" />
-        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/radio-buttons.css" />
-        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/slider.css" />
-        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/dashboard/widgets/text-indicator.css" />
+        {% for theme in themes %}
+            {{ css_devel_file(theme, "dashboard/dashboard.css") }}
+            {{ css_devel_file(theme, "dashboard/widgets/analog-widget.css") }}
+            {{ css_devel_file(theme, "dashboard/widgets/inc-dec-buttons.css") }}
+            {{ css_devel_file(theme, "dashboard/widgets/mjpeg-video.css") }}
+            {{ css_devel_file(theme, "dashboard/widgets/multi-value-slider.css") }}
+            {{ css_devel_file(theme, "dashboard/widgets/on-off-button.css") }}
+            {{ css_devel_file(theme, "dashboard/widgets/on-off-indicator.css") }}
+            {{ css_devel_file(theme, "dashboard/widgets/push-button.css") }}
+            {{ css_devel_file(theme, "dashboard/widgets/radio-buttons.css") }}
+            {{ css_devel_file(theme, "dashboard/widgets/slider.css") }}
+            {{ css_devel_file(theme, "dashboard/widgets/text-indicator.css") }}
 
-        <link rel="stylesheet" type="text/css" href="{{ static_url }}/css/{{ theme }}/devices/devices.css" />
-    {% else %}
-        <link rel="stylesheet" type="text/css" href="{{ static_url }}/{{ name }}-bundle-{{ theme }}.css" />
+            {{ css_devel_file(theme, "devices/devices.css") }}
+        {% endfor %}
     {% endif %}
 {% endblock %}
 
@@ -24,7 +25,6 @@
     <script type="module"
             src="{{ static_url }}{% if debug %}/js/index.js{% else %}/{{ name }}-bundle.js{% endif %}"
             data-debug="{{ debug }}"
-            data-theme-name="{{ theme }}"
             data-navigation-base-prefix="{{ navigation_base_prefix }}"
             data-slaves-enabled="{{ slaves_enabled }}"></script>
 {% endblock %}
