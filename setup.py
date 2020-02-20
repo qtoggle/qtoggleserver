@@ -38,14 +38,11 @@ class UIMakeMixin:
 
     def copy_frontend_files(self):
         dest_dir = os.path.join(self.build_path, name, 'frontend')
-
         src_dir = os.path.join(self.root_path, 'frontend', 'dist')
         if not os.path.exists(src_dir):
             # Running from a sdist
             src_dir = os.path.join(self.root_path, 'qtoggleserver', 'frontend')
 
-        # Remove frontend dir created by in-source symlink
-        shutil.rmtree(dest_dir)
         shutil.copytree(src_dir, dest_dir)
 
 
@@ -115,8 +112,12 @@ setup(
 
     license='Apache 2.0',
 
-    packages=find_namespace_packages(include=name + '/*'),
-    namespace_packages=['qtoggleserver'],
+    packages=find_namespace_packages(include=[f'{name}.*'], exclude=[f'{name}.frontend.*']),
+    namespace_packages=[name],
+    py_modules=[f'{name}.{module}' for module in [
+        'persist',
+        'version'
+    ]],
 
     install_requires=[
         'jinja2',
