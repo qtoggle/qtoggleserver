@@ -37,12 +37,15 @@ class DashboardSection extends Section {
         })
 
         this._whenPanelsLoaded = null
+        this._panels = null
     }
 
-    load() {
+    preload() {
         return Cache.whenCacheReady.then(function () {
 
-            return this.whenPanelsLoaded()
+            return this.whenPanelsLoaded().then(function (panels) {
+                this._panels = panels
+            }.bind(this))
 
         }.bind(this))
     }
@@ -180,16 +183,9 @@ class DashboardSection extends Section {
 
         Dashboard.setRootGroup(rootGroup)
 
-        Cache.whenCacheReady.then(function () {
-
-            return this.whenPanelsLoaded()
-
-        }.bind(this)).then(function (panels) {
-
-            rootGroup.fromJSON({children: panels})
-            rootGroup.updateUI(/* recursive = */ true)
-
-        })
+        /* At this point we can be sure that this._panels has been properly loaded */
+        rootGroup.fromJSON({children: this._panels})
+        rootGroup.updateUI(/* recursive = */ true)
 
         return rootGroup
     }
