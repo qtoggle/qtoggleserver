@@ -135,10 +135,9 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
             label: gettext('Theme'),
             description: gettext('Select the desired UI theme.'),
             separator: true,
-            choices: [
-                {value: 'dark', label: gettext('Dark')},
-                {value: 'light', label: gettext('Light')}
-            ]
+            choices: Object.entries(Theme.getAvailable()).map(function ([value, label]) {
+                return {value: value, label: label}
+            })
         }))
 
         this.addField(-1, new ChoiceButtonsField({

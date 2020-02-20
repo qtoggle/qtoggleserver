@@ -10,7 +10,6 @@ import * as Window from '$qui/window.js'
 
 
 const STORAGE_KEY_PREFIX = 'client-settings'
-const DEFAULT_THEME = 'dark'
 
 const logger = Logger.get('qtoggle.settings.clientsettings')
 
@@ -44,7 +43,7 @@ export function setTheme(theme) {
  * @returns {String}
  */
 export function getTheme() {
-    return loadSetting('theme', DEFAULT_THEME)
+    return loadSetting('theme', Object.keys(Theme.getAvailable())[0])
 }
 
 /**
