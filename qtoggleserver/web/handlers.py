@@ -183,15 +183,16 @@ class FrontendHandler(TemplateHandler):
 
 
 class ManifestHandler(TemplateHandler):
-    def get(self, path: str) -> None:
-        pretty_name = self.get_query_argument('pretty_name', None)
-        description = self.get_query_argument('description', None)
+    PARAMS = [
+        'display_name', 'display_short_name', 'description', 'version', 'theme_color', 'background_color'
+    ]
 
+    def get(self, path: str) -> None:
         context = self.get_context(path, offs=1)
-        if pretty_name:
-            context['pretty_name'] = pretty_name
-        if description:
-            context['description'] = description
+        for param in self.PARAMS:
+            value = self.get_query_argument(param, None)
+            if value is not None:
+                context[param] = value
 
         self.set_header('Content-Type', 'application/manifest+json; charset="utf-8"')
         self.render('manifest.json', **context)

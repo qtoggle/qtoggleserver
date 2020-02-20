@@ -1,5 +1,5 @@
 {% extends "qui.html" %}
-{% from "qui.html" import css_devel_file %}
+{% from "qui.html" import css_devel_file, main_script_file %}
 
 {% block style %}
     {% if debug %}
@@ -22,9 +22,5 @@
 {% endblock %}
 
 {% block script %}
-    <script type="module"
-            src="{{ static_url }}{% if debug %}/js/index.js{% else %}/{{ name }}-bundle.js{% endif %}"
-            data-debug="{{ debug }}"
-            data-navigation-base-prefix="{{ navigation_base_prefix }}"
-            data-slaves-enabled="{{ slaves_enabled }}"></script>
+    {{ main_script_file({"data-slaves-enabled": slaves_enabled|lower}) }}
 {% endblock %}

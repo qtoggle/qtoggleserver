@@ -9,14 +9,11 @@ def make_context() -> dict:
     return {
         'slaves_enabled': settings.slaves.enabled,
 
-        'name': constants.APP_NAME,
-        'pretty_name': constants.APP_PRETTY_NAME,
-        'description': constants.APP_DESCRIPTION,
+        'name': constants.FRONTEND_APP_NAME,
+        'display_name': constants.FRONTEND_APP_DISPLAY_NAME,
         'version': version.VERSION,
         'debug': settings.frontend.debug,
         'static_url': ['static', 'static/app'][settings.frontend.debug],
         'navigation_base_prefix': '/' + constants.FRONTEND_URL_PREFIX,
-        'theme_color': constants.BROWSER_THEME_COLOR,
-        'themes': ['dark', 'light'],
-        'background_color': constants.BROWSER_BACKGROUND_COLOR
+        'themes': ['dark', 'light']
     }
