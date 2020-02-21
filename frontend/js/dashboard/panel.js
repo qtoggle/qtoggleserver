@@ -4,6 +4,7 @@ import Logger from '$qui/lib/logger.module.js'
 
 import {gettext}             from '$qui/base/i18n.js'
 import {mix}                 from '$qui/base/mixwith.js'
+import {CompositeField}      from '$qui/forms/common-fields.js'
 import {PushButtonField}     from '$qui/forms/common-fields.js'
 import {TextField}           from '$qui/forms/common-fields.js'
 import {UpDownField}         from '$qui/forms/common-fields.js'
@@ -42,7 +43,7 @@ class PanelOptionsForm extends OptionsForm {
         super({
             page: panel,
             buttons: [
-                new FormButton({id: 'remove', caption: gettext('Remove'), style: 'danger'})
+                new FormButton({id: 'edit', caption: '', style: 'interactive'})
             ],
             fields: [
                 new TextField({
@@ -65,16 +66,31 @@ class PanelOptionsForm extends OptionsForm {
                     min: 1,
                     max: MAX_PANEL_HEIGHT
                 }),
-                new PushButtonField({
-                    name: 'addWidgetButton',
-                    caption: gettext('Add Widget'),
-                    style: 'highlight',
-                    valueWidth: 100,
-                    hidden: true,
-                    onClick(form) {
-                        let panel = form._panel
-                        panel.pushPage(panel.makeWidgetPicker())
-                    }
+                new CompositeField({
+                    name: 'action_buttons',
+                    label: gettext('Actions'),
+                    separator: true,
+                    layout: 'vertical',
+                    fields: [
+                        new PushButtonField({
+                            name: 'add_widget',
+                            caption: gettext('Add Widget'),
+                            style: 'interactive',
+                            onClick(form) {
+                                let panel = form._panel
+                                panel.pushPage(panel.makeWidgetPicker())
+                            }
+                        }),
+                        new PushButtonField({
+                            name: 'remove',
+                            caption: gettext('Remove'),
+                            style: 'danger',
+                            onClick(form) {
+                                let panel = form._panel
+                                panel.pushPage(panel.makeRemoveForm())
+                            }
+                        })
+                    ]
                 })
             ],
             data: {
@@ -94,37 +110,30 @@ class PanelOptionsForm extends OptionsForm {
     }
 
     _updateEditState() {
-        let editButton = this._getEditButton()
-        let addWidgetButton = this.getField('addWidgetButton')
+        let editButton = this.getButton('edit')
+        let addWidgetButton = this._getActionButton('add_widget')
+        let nameField = this.getField('name')
         let widthField = this.getField('width')
         let heightField = this.getField('height')
 
         if (this._panel.isEditEnabled()) {
             editButton.setCaption(gettext('Done'))
             addWidgetButton.show()
+            nameField.show()
             widthField.show()
             heightField.show()
         }
         else {
             editButton.setCaption(gettext('Edit'))
             addWidgetButton.hide()
+            nameField.hide()
             widthField.hide()
             heightField.hide()
         }
     }
 
-    _getEditButton() {
-        let button = this.getButton('edit')
-        if (!button) {
-            button = new FormButton({
-                id: 'edit',
-                caption: '',
-                style: 'interactive'
-            })
-            this.addButton(0, button)
-        }
-
-        return button
+    _getActionButton(name) {
+        return this.getField('action_buttons').getField(name)
     }
 
     updateSizeLimits() {
@@ -160,11 +169,6 @@ class PanelOptionsForm extends OptionsForm {
 
     onButtonPress(button) {
         switch (button.getId()) {
-            case 'remove':
-                this._panel.pushPage(this._panel.makeRemoveForm())
-
-                break
-
             case 'edit': {
                 if (this._panel.isEditEnabled()) {
                     this._panel.disableEditing()

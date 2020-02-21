@@ -10,7 +10,6 @@ import * as Window       from '$qui/window.js'
 
 import * as Cache from '$app/cache.js'
 
-import * as Dashboard  from '../dashboard.js'
 import PortPickerField from './port-picker-field.js'
 import * as Widgets    from './widgets.js'
 
@@ -43,15 +42,22 @@ class WidgetConfigForm extends PageForm {
                 name: 'action_buttons',
                 label: gettext('Actions'),
                 separator: true,
-                layout: 'horizontal',
+                layout: 'vertical',
                 fields: [
                     new PushButtonField({
                         name: 'move',
-                        separator: true,
                         caption: gettext('Move'),
                         style: 'interactive',
                         onClick(form) {
                             form.pushPage(form.getWidget().makeMoveForm())
+                        }
+                    }),
+                    new PushButtonField({
+                        name: 'remove',
+                        caption: gettext('Remove'),
+                        style: 'danger',
+                        onClick(form) {
+                            form.pushPage(form.getWidget().makeRemoveForm())
                         }
                     })
                     // new PushButtonField({
@@ -81,7 +87,7 @@ class WidgetConfigForm extends PageForm {
             width: 'auto',
             continuousValidation: true,
             buttons: [
-                new FormButton({id: 'done', caption: gettext('Done'), def: true})
+                new FormButton({id: 'done', caption: gettext('Done'), style: 'interactive'})
             ]
         })
 
@@ -156,6 +162,14 @@ class WidgetConfigForm extends PageForm {
             if (this.getContext().isCurrent()) {
                 this._widget.getPanel().openOptionsBar()
             }
+        }
+    }
+
+    onButtonPress(button) {
+        switch (button.getId()) {
+            case 'done':
+                this.close(/* force = */ true)
+                break
         }
     }
 
