@@ -117,7 +117,7 @@ class LoginSection extends Section {
         /* Allow displaying the modal page for a short period of time */
         PromiseUtils.later(1000).then(function () {
             Auth.clearCredentials()
-            Window.reload()
+            window.location.href = Navigation.pathToURL([])
         })
     }
 
