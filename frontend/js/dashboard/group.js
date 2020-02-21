@@ -1,9 +1,10 @@
 
 import {gettext}           from '$qui/base/i18n.js'
 import {mix}               from '$qui/base/mixwith.js'
+import {CompositeField}    from '$qui/forms/common-fields.js'
+import {PushButtonField}   from '$qui/forms/common-fields.js'
 import {TextField}         from '$qui/forms/common-fields.js'
 import {OptionsForm}       from '$qui/forms/common-forms.js'
-import FormButton          from '$qui/forms/form-button.js'
 import {ValidationError}   from '$qui/forms/forms.js'
 import {IconLabelListItem} from '$qui/lists/common-items.js'
 import {PageList}          from '$qui/lists/common-lists.js'
@@ -26,15 +27,29 @@ class GroupOptionsForm extends OptionsForm {
     constructor(group) {
         super({
             page: group,
-            buttons: [
-                new FormButton({id: 'remove', caption: gettext('Remove'), style: 'danger'})
-            ],
             fields: [
                 new TextField({
                     name: 'name',
                     label: gettext('Name'),
                     required: true,
                     maxLength: 64
+                }),
+                new CompositeField({
+                    name: 'action_buttons',
+                    label: gettext('Actions'),
+                    separator: true,
+                    layout: 'vertical',
+                    fields: [
+                        new PushButtonField({
+                            name: 'remove',
+                            caption: gettext('Remove'),
+                            style: 'danger',
+                            onClick(form) {
+                                let panel = form._group
+                                panel.pushPage(panel.makeRemoveForm())
+                            }
+                        })
+                    ]
                 })
             ],
             data: {
@@ -53,15 +68,6 @@ class GroupOptionsForm extends OptionsForm {
                     throw new ValidationError(gettext('This name already exists!'))
                 }
             }
-        }
-    }
-
-    onButtonPress(button) {
-        switch (button.getId()) {
-            case 'remove':
-                this._group.pushPage(this._group.makeRemoveForm())
-
-                break
         }
     }
 
