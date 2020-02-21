@@ -55,12 +55,12 @@ class PortPickerField extends ComboField {
         return ArrayUtils.sortKey(choices, choice => choice.value)
     }
 
-    makeValueHTML() {
-        let valueHTML = super.makeValueHTML()
+    makeLabelHTML() {
+        let html = super.makeLabelHTML()
 
-        valueHTML.prepend(this.makeCurrentHMTL())
+        html.append(this.makeCurrentHMTL())
 
-        return valueHTML
+        return html
     }
 
     /**
@@ -68,7 +68,6 @@ class PortPickerField extends ComboField {
      */
     makeCurrentHMTL() {
         let currentDiv = $('<div class="port-picker-current"></div>')
-        currentDiv.append(`<span>${gettext('current')}: </span>`)
 
         this._currentAnchorElement = this.makeCurrentAnchor()
         currentDiv.append(this._currentAnchorElement)
@@ -80,7 +79,7 @@ class PortPickerField extends ComboField {
      * @param {?String} portId
      * @returns {jQuery}
      */
-    makeCurrentAnchor(portId) {
+    makeCurrentAnchor(portId = null) {
         if (portId == null) {
             return $(`<span>(${gettext('none')})</span>`)
         }
