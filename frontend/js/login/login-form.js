@@ -49,7 +49,7 @@ class LoginForm extends PageForm {
                 })
             ],
             buttons: [
-                new FormButton({id: 'login', caption: gettext('Login'), def: true})
+                new FormButton({id: 'login', caption: gettext('Login'), def: true, style: 'interactive'})
             ]
         })
     }

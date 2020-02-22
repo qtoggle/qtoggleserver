@@ -52,7 +52,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
             preventUnappliedClose: true,
 
             buttons: [
-                new FormButton({id: 'apply', caption: gettext('Apply'), def: true})
+                new FormButton({id: 'apply', caption: gettext('Apply'), def: true, style: 'interactive'})
             ]
         })
 
