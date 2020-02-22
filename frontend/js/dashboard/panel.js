@@ -474,9 +474,11 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
             }
         }
 
-        /* Impose a maximum cell width size, relative to page size */
-        let maxCellWidth = Math.max(widthPx, heightPx) / 10
-        cellWidth = Math.min(cellWidth, maxCellWidth)
+        /* Impose a maximum cell width size, relative to page size, but only on large screens */
+        if (!Window.isSmallScreen()) {
+            let maxCellWidth = Math.max(widthPx, heightPx) / 10
+            cellWidth = Math.min(cellWidth, maxCellWidth)
+        }
 
         /* This rounding prevents (reduces) decentered rotation animations */
         cellWidth = Math.floor(cellWidth / 5) * 5
