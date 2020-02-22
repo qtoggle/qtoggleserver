@@ -7,7 +7,6 @@ import * as Navigation   from '$qui/navigation.js'
 import * as Sections     from '$qui/sections/sections.js'
 import * as Theme        from '$qui/theme.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
-import * as Window       from '$qui/window.js'
 
 import * as API                   from '$app/api.js'
 import * as Auth                  from '$app/auth.js'
@@ -44,18 +43,10 @@ class LoginSection extends Section {
         this._makeLogoutButton()
         this._nextPath = null
 
-        Auth.whenFinalAccessLevelReady.then(() => Cache.whenCacheReady).then(function (level) {
-
-            let nextPath = this.popNextPath()
-            if (nextPath) {
-                logger.debug(`navigating to next path "/${nextPath.join('/')}"`)
-                Navigation.navigate(nextPath)
-            }
-            else {
-                Sections.showHome()
-            }
-
-        }.bind(this))
+        Promise.all([
+            Auth.whenFinalAccessLevelReady,
+            Cache.whenCacheReady
+        ]).then(() => this.navigateNext())
     }
 
     preload() {
@@ -84,6 +75,17 @@ class LoginSection extends Section {
         this._nextPath = null
 
         return path
+    }
+
+    navigateNext() {
+        let nextPath = this.popNextPath()
+        if (nextPath != null) {
+            logger.debug(`navigating to next path "/${nextPath.join('/')}"`)
+            Navigation.navigate(nextPath)
+        }
+        else {
+            Sections.showHome()
+        }
     }
 
     _makeLogoutButton() {

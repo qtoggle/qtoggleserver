@@ -117,7 +117,7 @@ class DevicesSection extends Section {
 
     makeMainPage() {
         if (API.getCurrentAccessLevel() < API.ACCESS_LEVEL_ADMIN) {
-            return
+            return this.makeForbiddenMessage()
         }
 
         return this.makeDevicesList()

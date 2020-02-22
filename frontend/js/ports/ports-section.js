@@ -190,7 +190,7 @@ class PortsSection extends Section {
 
     makeMainPage() {
         if (API.getCurrentAccessLevel() < API.ACCESS_LEVEL_ADMIN) {
-            return
+            return this.makeForbiddenMessage()
         }
 
         if (Config.slavesEnabled) {
