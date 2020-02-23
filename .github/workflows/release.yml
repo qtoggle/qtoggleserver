@@ -15,9 +15,9 @@ jobs:
       - name: Install Host Packages
         run: sudo apt-get -y update && sudo apt-get -y install librsvg2-bin
       - name: Install With NPM
-        run: cd frontend && npm install
+        run: cd qtoggleserver/frontend && npm install
       - name: Webpack
-        run: cd frontend && npx webpack --mode=production
+        run: cd qtoggleserver/frontend && npx webpack --mode=production
       - name: Python Setup
         uses: actions/setup-python@master
         with:
