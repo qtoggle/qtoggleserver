@@ -9,7 +9,7 @@ from tornado.web import Application, RequestHandler
 from qtoggleserver.conf import settings
 from qtoggleserver.web import handlers
 
-from .constants import FRONTEND_DIR, FRONTEND_URL_PREFIX
+from .constants import FRONTEND_DIR, FRONTEND_DIR_DEBUG, FRONTEND_URL_PREFIX
 
 
 logger = logging.getLogger(__name__)
@@ -37,9 +37,8 @@ def _make_handlers() -> List[tuple]:
     # Frontend
 
     if settings.frontend.enabled:
-        frontend_path = os.path.join(settings.pkg_path, FRONTEND_DIR)
-        if not os.path.exists(frontend_path):  # Look outside of main package (dev mode)
-            frontend_path = os.path.join(settings.pkg_path, '..', FRONTEND_DIR)
+        frontend_dir = [FRONTEND_DIR, FRONTEND_DIR_DEBUG][settings.frontend.debug]
+        frontend_path = os.path.join(settings.pkg_path, frontend_dir)
 
         if settings.frontend.debug:
             js_module_path_mapping = {
