@@ -68,11 +68,7 @@ function handleAPIEvent(event) {
 }
 
 function handlePWAUpdate() {
-    logger.info('new service worker detected, prompting for app update')
-
-    let msg = gettext('A new app version has been installed. Refresh now?')
-
-    return new StickyConfirmMessageForm({message: msg}).show().asPromise()
+    logger.info('new service worker detected, updating app')
 }
 
 function initPWA() {
