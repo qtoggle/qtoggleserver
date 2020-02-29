@@ -2,10 +2,8 @@
  * @namespace qtoggle
  */
 
-import {gettext}                  from '$qui/base/i18n.js'
 import Config                     from '$qui/config.js'
 import * as QUI                   from '$qui/index.js'
-import {StickyConfirmMessageForm} from '$qui/messages/common-message-forms.js'
 import * as Navigation            from '$qui/navigation.js'
 import * as PWA                   from '$qui/pwa.js'
 import * as Sections              from '$qui/sections/sections.js'
