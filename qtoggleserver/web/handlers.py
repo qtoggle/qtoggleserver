@@ -158,7 +158,7 @@ class TemplateHandler(J2TemplateMixin, BaseHandler):
     def prepare(self) -> None:
         self.set_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
 
-    def get_context(self, path: str, offs: int = 0) -> dict:
+    def get_context(self, path: str = '', offs: int = 0) -> dict:
         # Adjust static URL prefix to a relative path matching currently requested frontend path
 
         context = make_context()
@@ -187,8 +187,8 @@ class ManifestHandler(TemplateHandler):
         'display_name', 'display_short_name', 'description', 'version', 'theme_color', 'background_color'
     ]
 
-    def get(self, path: str) -> None:
-        context = self.get_context(path, offs=1)
+    def get(self) -> None:
+        context = self.get_context(offs=1)
         for param in self.PARAMS:
             value = self.get_query_argument(param, None)
             if value is not None:

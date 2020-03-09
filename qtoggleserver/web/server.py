@@ -80,7 +80,7 @@ def _make_handlers() -> List[tuple]:
         handlers_list += [
             (r'^/?$', handlers.RedirectFrontendHandler),
             (fr'^/{FRONTEND_URL_PREFIX}/service-worker.js$', handlers.ServiceWorkerHandler),
-            (fr'^/{FRONTEND_URL_PREFIX}(?P<path>.*)/manifest.json$', handlers.ManifestHandler),
+            (fr'^/{FRONTEND_URL_PREFIX}/manifest.json$', handlers.ManifestHandler),
             (fr'^/{FRONTEND_URL_PREFIX}(?P<path>.*)', handlers.FrontendHandler),
         ]
 
