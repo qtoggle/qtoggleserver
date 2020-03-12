@@ -473,7 +473,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.debug('setting expression "%s"', expression)
         self._expression = expression
 
-        main.force_eval_expressions()
+        main.force_eval_expressions(self)
 
     async def attr_get_transform_read(self) -> str:
         if self._transform_read:
