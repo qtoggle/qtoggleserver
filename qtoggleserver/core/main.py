@@ -140,6 +140,9 @@ async def handle_value_changes(
         if not port.is_enabled():
             continue
 
+        if not await port.is_writable():
+            continue
+
         # Leave the port alone while it has pending writes; expression changes could only push more values to its queue
         if port.has_pending_write():
             continue
@@ -151,7 +154,6 @@ async def handle_value_changes(
 
             # If port expression depends on port itself and the change reason is the evaluation of its expression,
             # prevent evaluating its expression again to avoid evaluation loops
-
             change_reason = change_reasons.get(port, core_ports.CHANGE_REASON_NATIVE)
             if ((port in changed_set) and
                 (f'${port.get_id()}' in deps) and

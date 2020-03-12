@@ -383,6 +383,14 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._enabled = True
         self.invalidate_attr('enabled')
 
+        # Reset port expression
+        if self._expression:
+            sexpression = str(self._expression)
+            self.debug('resetting expression "%s"', sexpression)
+            self._expression = core_expressions.parse(self.get_id(), sexpression)
+
+            main.force_eval_expressions(self)
+
         try:
             await self.handle_enable()
 
