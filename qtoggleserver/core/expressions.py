@@ -622,8 +622,8 @@ class HystFunction(Function):
         threshold1 = self.args[1].eval()
         threshold2 = self.args[2].eval()
 
-        self._last_result = int((self._last_result == 0 and value > threshold1) or
-                                (self._last_result != 0 and value >= threshold2))
+        self._last_result = int((self._last_result == 0 and value > threshold2) or
+                                (self._last_result != 0 and value >= threshold1))
 
         return self._last_result
 
