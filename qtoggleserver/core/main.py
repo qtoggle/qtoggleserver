@@ -148,49 +148,51 @@ async def handle_value_changes(
             continue
 
         expression = await port.get_expression()
-        if expression:
-            deps = set(expression.get_deps())
-            deps.add(None)  # Special "always depends on" value
+        if not expression:
+            continue
 
-            # If port expression depends on port itself and the change reason is the evaluation of its expression,
-            # prevent evaluating its expression again to avoid evaluation loops
-            change_reason = change_reasons.get(port, core_ports.CHANGE_REASON_NATIVE)
-            if ((port in changed_set) and
-                (f'${port.get_id()}' in deps) and
-                (change_reason == core_ports.CHANGE_REASON_EXPRESSION)):
-                continue
+        deps = set(expression.get_deps())
+        deps.add(None)  # Special "always depends on" value
 
-            changed_set_ids = set(f'${c.get_id()}' for c in changed_set if isinstance(c, core_ports.BasePort))
+        # If port expression depends on port itself and the change reason is the evaluation of its expression, prevent
+        # evaluating its expression again to avoid evaluation loops
+        change_reason = change_reasons.get(port, core_ports.CHANGE_REASON_NATIVE)
+        if ((port in changed_set) and
+            (f'${port.get_id()}' in deps) and
+            (change_reason == core_ports.CHANGE_REASON_EXPRESSION)):
+            continue
 
-            # Evaluate a port's expression when:
-            # * one of its deps changed
-            # * its own value changed
+        changed_set_ids = set(f'${c.get_id()}' for c in changed_set if isinstance(c, core_ports.BasePort))
 
-            # Join all deps together; deps may contain:
-            # * ports
-            # * port ids
-            # * time dep strings
-            # * None
-            if not (deps & (changed_set_ids | changed_set)) and (port not in changed_set):
-                continue
+        # Evaluate a port's expression when:
+        # * one of its deps changed
+        # * its own value changed
 
-            try:
-                value = expression.eval()
+        # Join all deps together; deps may contain:
+        # * ports
+        # * port ids
+        # * time dep strings
+        # * None
+        if not (deps & (changed_set_ids | changed_set)) and (port not in changed_set):
+            continue
 
-            except core_expressions.IncompleteExpression:
-                continue
+        try:
+            value = expression.eval()
 
-            except Exception as e:
-                logger.error('failed to evaluate expression "%s" of %s: %s', expression, port, e)
-                continue
+        except core_expressions.IncompleteExpression:
+            continue
 
-            value = await port.adapt_value_type(value)
-            if value is None:
-                continue
+        except Exception as e:
+            logger.error('failed to evaluate expression "%s" of %s: %s', expression, port, e)
+            continue
 
-            if value != port.get_value():
-                logger.debug('expression "%s" of %s evaluated to %s', expression, port, json_utils.dumps(value))
-                port.push_value(value, reason=core_ports.CHANGE_REASON_EXPRESSION)
+        value = await port.adapt_value_type(value)
+        if value is None:
+            continue
+
+        if value != port.get_value():
+            logger.debug('expression "%s" of %s evaluated to %s', expression, port, json_utils.dumps(value))
+            port.push_value(value, reason=core_ports.CHANGE_REASON_EXPRESSION)
 
 
 def force_eval_expressions(port: core_ports.BasePort = None) -> None:
@@ -202,6 +204,8 @@ def force_eval_expressions(port: core_ports.BasePort = None) -> None:
         _force_eval_expressions = set()
 
     _force_eval_expressions.add(port)
+    if port:
+        port.reset_change_reason()
 
 
 def is_ready() -> bool:
