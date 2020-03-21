@@ -366,3 +366,17 @@ class SlavePort(core_ports.BasePort):
 
     def update_last_sync(self) -> None:
         self._last_sync = int(time.time())
+
+    async def handle_enable(self) -> None:
+        self.debug('fetching port value')
+
+        try:
+            value = await self._slave.api_call('GET', f'/ports/{self._remote_id}/value')
+
+        except Exception as e:
+            self.error('failed to fetch port value: %s', e)
+
+            raise
+
+        if value is not None:
+            self._cached_value = value
