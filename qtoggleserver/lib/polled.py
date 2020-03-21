@@ -79,6 +79,7 @@ class PolledPeripheral(Peripheral):
 
     def set_poll_interval(self, interval: int) -> None:
         self._poll_interval = interval
+        self.trigger_port_update()
 
     def get_poll_interval(self) -> int:
         return self._poll_interval
