@@ -37,7 +37,7 @@ class NotFunction(Function):
 
 
 @function('XOR')
-class XorFunction(Function):
+class XOrFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
     def eval(self) -> CorePortValue:
