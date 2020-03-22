@@ -94,4 +94,3 @@ class SequenceFunction(Function):
                 break
 
         return result
-
