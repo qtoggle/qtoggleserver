@@ -88,6 +88,38 @@ class HeldFunction(Function):
         return result
 
 
+@function('DERIV')
+class DerivFunction(Function):
+    MIN_ARGS = MAX_ARGS = 2
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._last_value: Optional[float] = None
+        self._last_time: float = 0
+
+    def get_deps(self) -> Set[str]:
+        return {'time_ms'}
+
+    def eval(self) -> CorePortValue:
+        value = self.args[0].eval()
+        sampling_interval = self.args[1].eval() / 1000
+        result = 0
+        now = time.time()
+
+        if self._last_value is not None:
+            delta = now - self._last_time
+            if delta < sampling_interval:
+                raise EvalSkipped()
+
+            result = (value - self._last_value) / delta
+
+        self._last_value = value
+        self._last_time = now
+
+        return result
+
+
 @function('INTEG')
 class IntegFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
