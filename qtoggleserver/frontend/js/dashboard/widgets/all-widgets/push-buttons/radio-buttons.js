@@ -266,7 +266,7 @@ class RadioButtons extends Widget {
     }
 
     makeContent(width, height) {
-        let container = $('<div class="dashboard-radio-buttons-container"></div>')
+        let container = $('<div></div>', {class: 'dashboard-radio-buttons-container'})
         if (this._vertical) {
             container.addClass('vertical')
         }
@@ -294,7 +294,7 @@ class RadioButtons extends Widget {
     }
 
     _makeLabel(index) {
-        let labelSpan = $('<span class="dashboard-radio-buttons-label"></span>')
+        let labelSpan = $('<span></span>', {class: 'dashboard-radio-buttons-label'})
         labelSpan.css({
             'font-size': `${this._getLabelFontSize()}em`,
             'top': `${-(this._getLabelHeight() / this._getLabelFontSize())}em`
@@ -308,7 +308,7 @@ class RadioButtons extends Widget {
     _makeBezel(width, height) {
         let diameter = Math.min(width, height) - this._getLabelHeight() - 2 * Widgets.CELL_PADDING
 
-        let bezelDiv = $('<div class="dashboard-push-button-bezel"></div>')
+        let bezelDiv = $('<div></div>', {class: 'dashboard-push-button-bezel'})
         bezelDiv.css({
             width: `${diameter}em`,
             height: `${diameter}em`
@@ -318,7 +318,7 @@ class RadioButtons extends Widget {
     }
 
     _makeHandleDiv(index) {
-        let handleDiv = $('<div class="qui-base-button dashboard-push-button-handle"></div>')
+        let handleDiv = $('<div></div>', {class: 'qui-base-button dashboard-push-button-handle'})
         handleDiv.css({
             background: Theme.getColor(this._normalColor),
             borderColor: Theme.getColor(this._separateColors ? this._buttons[index].color : this._activeColor),

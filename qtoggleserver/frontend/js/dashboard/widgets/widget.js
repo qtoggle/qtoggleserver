@@ -98,7 +98,7 @@ class Widget extends mix().with(ViewMixin) {
     /* HTML */
 
     makeHTML() {
-        return $('<div class="dashboard-widget-container"></div>')
+        return $('<div></div>', {class: 'dashboard-widget-container'})
     }
 
     initHTML(html) {
@@ -112,11 +112,11 @@ class Widget extends mix().with(ViewMixin) {
             html.addClass('protect-progress')
         }
 
-        let bodyDiv = $('<div class="dashboard-widget-body"></div>')
+        let bodyDiv = $('<div></div>', {class: 'dashboard-widget-body'})
         bodyDiv.css('margin', `${Widgets.CELL_SPACING}em`)
         this._bodyDiv = bodyDiv
 
-        let labelDiv = $('<div class="dashboard-widget-label"><span></span></div>')
+        let labelDiv = $('<div></div>', {class: 'dashboard-widget-label'})
         labelDiv.css('height', `${Widgets.LABEL_HEIGHT}em`)
         labelDiv.children('span').css('font-size', `${Widgets.LABEL_FONT_SIZE}em`)
 
@@ -144,10 +144,10 @@ class Widget extends mix().with(ViewMixin) {
             }
         }.bind(this))
 
-        this._statusIcon = $('<div class="dashboard-widget-status-icon"></div>')
+        this._statusIcon = $('<div></div>', {class: 'dashboard-widget-status-icon'})
         html.append(this._statusIcon)
 
-        this._glassDiv = $('<div class="dashboard-widget-glass"></div>')
+        this._glassDiv = $('<div></div>', {class: 'dashboard-widget-glass'})
         html.append(this._glassDiv)
 
         return html
@@ -162,7 +162,7 @@ class Widget extends mix().with(ViewMixin) {
      * @returns {jQuery}
      */
     makeContent(width, height) {
-        return $('<span>widget</span>')
+        return $('<span></span>')
     }
 
     /**
@@ -239,7 +239,7 @@ class Widget extends mix().with(ViewMixin) {
     }
 
     _makeMoveControl() {
-        let control = $('<div class="dashboard-widget-control dashboard-widget-move"></div>')
+        let control = $('<div></div>', {class: 'dashboard-widget-control dashboard-widget-move'})
         let widget = this
         let changed = false
 
@@ -288,7 +288,7 @@ class Widget extends mix().with(ViewMixin) {
     }
 
     _makeRemoveControl() {
-        let control = $('<div class="qui-base-button dashboard-widget-control dashboard-widget-remove"></div>')
+        let control = $('<div></div>', {class: 'qui-base-button dashboard-widget-control dashboard-widget-remove'})
         let iconDiv = $('<div></div>')
 
         control.append(iconDiv)
@@ -307,7 +307,7 @@ class Widget extends mix().with(ViewMixin) {
     }
 
     _makeConfigureControl() {
-        let control = $('<div class="qui-base-button dashboard-widget-control dashboard-widget-configure"></div>')
+        let control = $('<div></div>', {class: 'qui-base-button dashboard-widget-control dashboard-widget-configure'})
         let widget = this
         let iconDiv = $('<div></div>')
 
@@ -326,7 +326,7 @@ class Widget extends mix().with(ViewMixin) {
     }
 
     _makeDuplicateControl() {
-        let control = $('<div class="qui-base-button dashboard-widget-control dashboard-widget-duplicate"></div>')
+        let control = $('<div></div>', {class: 'qui-base-button dashboard-widget-control dashboard-widget-duplicate'})
         let widget = this
         let iconDiv = $('<div></div>')
 
@@ -345,8 +345,10 @@ class Widget extends mix().with(ViewMixin) {
     }
 
     _makeResizeTopControl() {
-        let control = $('<div class="dashboard-widget-control dashboard-widget-resize-control ' +
-                        'dashboard-widget-resize-top"></div>')
+        let control = $(
+            '<div></div>',
+            {class: 'dashboard-widget-control dashboard-widget-resize-control dashboard-widget-resize-top'}
+        )
         let widget = this
         let changed = false
 
@@ -392,8 +394,10 @@ class Widget extends mix().with(ViewMixin) {
     }
 
     _makeResizeRightControl() {
-        let control = $('<div class="dashboard-widget-control dashboard-widget-resize-control ' +
-                        'dashboard-widget-resize-right"></div>')
+        let control = $(
+            '<div></div>',
+            {class: 'dashboard-widget-control dashboard-widget-resize-control dashboard-widget-resize-right'}
+        )
         let widget = this
         let changed = false
 
@@ -443,8 +447,10 @@ class Widget extends mix().with(ViewMixin) {
     }
 
     _makeResizeBottomControl() {
-        let control = $('<div class="dashboard-widget-control dashboard-widget-resize-control ' +
-                        'dashboard-widget-resize-bottom"></div>')
+        let control = $(
+            '<div></div>',
+            {class: 'dashboard-widget-control dashboard-widget-resize-control dashboard-widget-resize-bottom'}
+        )
         let widget = this
         let changed = false
 
@@ -494,8 +500,10 @@ class Widget extends mix().with(ViewMixin) {
     }
 
     _makeResizeLeftControl() {
-        let control = $('<div class="dashboard-widget-control dashboard-widget-resize-control ' +
-                        'dashboard-widget-resize-left"></div>')
+        let control = $(
+            '<div></div>',
+            {class: 'dashboard-widget-control dashboard-widget-resize-control dashboard-widget-resize-left'}
+        )
         let widget = this
         let changed = false
 

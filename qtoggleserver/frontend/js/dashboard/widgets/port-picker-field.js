@@ -67,7 +67,7 @@ class PortPickerField extends ComboField {
      * @returns {jQuery}
      */
     makeCurrentHMTL() {
-        let currentDiv = $('<div class="port-picker-current"></div>')
+        let currentDiv = $('<div></div>', {class: 'port-picker-current'})
 
         this._currentAnchorElement = this.makeCurrentAnchor()
         currentDiv.append(this._currentAnchorElement)
@@ -81,7 +81,7 @@ class PortPickerField extends ComboField {
      */
     makeCurrentAnchor(portId = null) {
         if (portId == null) {
-            return $(`<span>(${gettext('none')})</span>`)
+            return $('<span></span>').text(gettext('none'))
         }
 
         let displayName = portId
@@ -91,7 +91,7 @@ class PortPickerField extends ComboField {
             return Navigation.makeInternalAnchor(`/ports/${portId}`, displayName)
         }
         else {
-            return $(`<span>${portId}</span>`)
+            return $('<span></span>').text(portId)
         }
     }
 
@@ -125,11 +125,11 @@ class PortPickerField extends ComboField {
             parts.splice(0, 0, mainDevice.display_name || mainDevice.name)
         }
 
-        let labelDiv = $('<div class="port-picker-combo-item"></div>')
+        let labelDiv = $('<div></div>', {class: 'port-picker-combo-item'})
 
         parts.forEach(function (part, i) {
 
-            let line = $('<div class="port-picker-combo-item-line"></div>')
+            let line = $('<div></div>', {class: 'port-picker-combo-item-line'})
             if (i < parts.length - 1) {
                 line.addClass('device')
             }

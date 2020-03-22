@@ -243,11 +243,11 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
     }
 
     makeHTML() {
-        return $('<div class="dashboard-panel"></div>')
+        return $('<div></div>', {class: 'dashboard-panel'})
     }
 
     makeBody() {
-        return $('<div class="dashboard-panel-container"></div>')
+        return $('<div></div>', {class: 'dashboard-panel-container'})
     }
 
 
@@ -1032,11 +1032,11 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
     }
 
     _makePlaceholderCellRow() {
-        return $('<div class="dashboard-panel-placeholder-row"></div>')
+        return $('<div></div>', {class: 'dashboard-panel-placeholder-row'})
     }
 
     _makePlaceholderCell(x, y) {
-        return $('<div class="dashboard-panel-placeholder-cell"></div>')
+        return $('<div></div>', {class: 'dashboard-panel-placeholder-cell'})
     }
 
 

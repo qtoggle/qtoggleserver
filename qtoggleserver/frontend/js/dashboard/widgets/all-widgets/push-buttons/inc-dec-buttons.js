@@ -105,7 +105,7 @@ class IncDecButtons extends Widget {
     makeContent(width, height) {
         let vert = width <= height
 
-        let container = $('<div class="dashboard-inc-dec-buttons-container"></div>')
+        let container = $('<div></div>', {class: 'dashboard-inc-dec-buttons-container'})
         container.css('borderWidth', `${Widgets.CELL_PADDING}em`)
 
         let bezelDiv = this._makeBezel(width, height, vert)
@@ -117,7 +117,7 @@ class IncDecButtons extends Widget {
     _makeBezel(width, height, vert) {
         width -= 2 * Widgets.CELL_PADDING
         height -= 2 * Widgets.CELL_PADDING
-        let bezelDiv = $('<div class="dashboard-inc-dec-buttons-bezel"></div>')
+        let bezelDiv = $('<div></div>', {class: 'dashboard-inc-dec-buttons-bezel'})
         bezelDiv.css({
             'width': `${width}em`,
             'height': `${height}em`,
@@ -133,8 +133,8 @@ class IncDecButtons extends Widget {
     }
 
     _makeHandleDivs(width, height, vert) {
-        let decHandleDiv = $('<div class="qui-base-button dashboard-inc-dec-buttons-handle dec-handle"></div>')
-        let incHandleDiv = $('<div class="qui-base-button dashboard-inc-dec-buttons-handle inc-handle"></div>')
+        let decHandleDiv = $('<div></div>', {class: 'qui-base-button dashboard-inc-dec-buttons-handle dec-handle'})
+        let incHandleDiv = $('<div></div>', {class: 'qui-base-button dashboard-inc-dec-buttons-handle inc-handle'})
         let handleDivs = decHandleDiv.add(incHandleDiv)
         let borderRadius = Math.max(width, height)
 
@@ -193,7 +193,7 @@ class IncDecButtons extends Widget {
     }
 
     _makeHandleSign(sign) {
-        let signSpan = $('<span class="dashboard-inc-dec-buttons-handle-sign"></span>')
+        let signSpan = $('<span></span>', {class: 'dashboard-inc-dec-buttons-handle-sign'})
         signSpan.html(sign)
 
         return signSpan

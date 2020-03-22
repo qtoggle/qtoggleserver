@@ -385,7 +385,7 @@ class TextIndicator extends Widget {
     }
 
     makeContent(width, height) {
-        let container = $('<div class="dashboard-text-indicator-container"></div>')
+        let container = $('<div></div>', {class: 'dashboard-text-indicator-container'})
 
         this._textElement = this._makeTextElement(width, height)
         container.append(this._textElement)
@@ -394,7 +394,7 @@ class TextIndicator extends Widget {
     }
 
     _makeTextElement(width, height) {
-        let textElement = $('<span class="dashboard-text-indicator-text-element"></span>')
+        let textElement = $('<span></span>', {class: 'dashboard-text-indicator-text-element'})
 
         textElement.css('font-size', `${this._size * 10}%`)
 

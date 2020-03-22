@@ -202,7 +202,7 @@ class OnOffButton extends Widget {
             height = containerWidth / 2
         }
 
-        let containerDiv = $('<div class="dashboard-on-off-button-container"></div>')
+        let containerDiv = $('<div></div>', {class: 'dashboard-on-off-button-container'})
         containerDiv.css({
             top: `${top}em`,
             left: `${left}em`,
@@ -231,7 +231,7 @@ class OnOffButton extends Widget {
             width = containerHeight / 2
         }
 
-        let containerDiv = $('<div class="dashboard-on-off-button-container"></div>')
+        let containerDiv = $('<div></div>', {class: 'dashboard-on-off-button-container'})
         containerDiv.css({
             top: `${top}em`,
             left: `${left}em`,
@@ -248,7 +248,7 @@ class OnOffButton extends Widget {
     }
 
     _makeBackground(thickness) {
-        let backgroundDiv = $('<div class="dashboard-on-off-button-background"></div>')
+        let backgroundDiv = $('<div></div>', {class: 'dashboard-on-off-button-background'})
 
         backgroundDiv.css('border-radius', `${Math.min(this.getContentWidth(), this.getContentHeight())}em`)
 
@@ -267,7 +267,7 @@ class OnOffButton extends Widget {
     }
 
     _makeHandle(thickness) {
-        let handleDiv = $('<div class="dashboard-on-off-button-handle"></div>')
+        let handleDiv = $('<div></div>', {class: 'dashboard-on-off-button-handle'})
         let bezelWidth = this.roundEm(Widgets.BEZEL_WIDTH)
 
         let radius = (thickness - 2 * (Widgets.CELL_PADDING + bezelWidth))
@@ -278,10 +278,12 @@ class OnOffButton extends Widget {
             color: Theme.getColor(this._color)
         })
 
-        let onText = $('<div class="dashboard-on-off-button-text-on">ON</div>')
+        let onText = $('<div></div>', {class: 'dashboard-on-off-button-text-on'})
+        onText.text('ON')
         onText.css('font-size', `${TEXT_FACTOR * thickness}em`)
 
-        let offText = $('<div class="dashboard-on-off-button-text-off">OFF</div>')
+        let offText = $('<div></div>', {class: 'dashboard-on-off-button-text-off'})
+        offText.text('OFF')
         offText.css('font-size', `${TEXT_FACTOR * thickness}em`)
 
         handleDiv.append(onText)

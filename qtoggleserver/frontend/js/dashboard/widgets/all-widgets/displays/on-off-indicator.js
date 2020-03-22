@@ -161,7 +161,7 @@ class OnOffIndicator extends Widget {
     }
 
     makeContent(width, height) {
-        let container = $('<div class="dashboard-on-off-indicator-container"></div>')
+        let container = $('<div></div>', {class: 'dashboard-on-off-indicator-container'})
 
         this._bezelDiv = this._makeBezel(width, height)
         container.css('borderWidth', `${Widgets.CELL_PADDING}em`)
@@ -176,7 +176,7 @@ class OnOffIndicator extends Widget {
     _makeBezel(width, height) {
         let diameter = Math.min(width, height) / 2
         let marginTop = diameter / 6
-        let bezelDiv = $('<div class="dashboard-on-off-indicator-bezel"></div>')
+        let bezelDiv = $('<div></div>', {class: 'dashboard-on-off-indicator-bezel'})
         bezelDiv.css({
             'width': `${diameter}em`,
             'height': `${diameter}em`,
@@ -187,7 +187,7 @@ class OnOffIndicator extends Widget {
     }
 
     _makeLightDiv() {
-        let lightDiv = $('<div class="dashboard-on-off-indicator-light"></div>')
+        let lightDiv = $('<div></div>', {class: 'dashboard-on-off-indicator-light'})
         lightDiv.css({
             background: Theme.getColor(this._color),
             margin: `${this.roundEm(Widgets.BEZEL_WIDTH)}em`

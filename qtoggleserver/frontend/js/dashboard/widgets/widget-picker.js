@@ -112,11 +112,11 @@ class WidgetPicker extends mix().with(StructuredPageMixin) {
     }
 
     makeHTML() {
-        return $('<div class="dashboard-widget-picker"></div>')
+        return $('<div></div>', {class: 'dashboard-widget-picker'})
     }
 
     makeBody() {
-        let div = $('<div class="dashboard-widget-picker-body"></div>')
+        let div = $('<div></div>', {class: 'dashboard-widget-picker-body'})
 
         let categories = Widgets.getRegistry()
         categories.forEach(function (categoryInfo) {

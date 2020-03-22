@@ -68,10 +68,10 @@ class MJPEGVideo extends Widget {
     }
 
     makeContent(width, height) {
-        let spacer = $('<div class="dashboard-mjpeg-video-spacer"></div>')
+        let spacer = $('<div></div>', {class: 'dashboard-mjpeg-video-spacer'})
         spacer.css('background', Theme.getColor(this._backgroundColor))
 
-        let container = $('<div class="dashboard-mjpeg-video-container"></div>')
+        let container = $('<div></div>', {class: 'dashboard-mjpeg-video-container'})
         spacer.append(container)
 
         this._clearVideoElement()
@@ -87,7 +87,7 @@ class MJPEGVideo extends Widget {
     }
 
     _makeVideoElement(width, height) {
-        let videoElement = $(`<img class="dashboard-mjpeg-video-element" src="${this._url}" alt="">`)
+        let videoElement = $('<img>', {class: 'dashboard-mjpeg-video-element', src: this._url})
 
         if (!this._preserveAspectRatio) {
             videoElement.css('height', '100%')

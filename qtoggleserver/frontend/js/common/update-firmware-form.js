@@ -63,14 +63,14 @@ class StatusField extends FormField {
     }
 
     makeWidget() {
-        let div = $('<div class="devices-update-firmware-status"></div>')
+        let div = $('<div></div>', {class: 'devices-update-firmware-status'})
 
-        this._icon = $('<div class="qui-icon"></div>')
+        this._icon = $('<div></div>', {class: 'qui-icon'})
 
-        this._progress = $('<div class="progress"></div>')
+        this._progress = $('<div></div>', {class: 'progress'})
         this._progress.progressdisk()
 
-        this._messageSpan = $('<span class="label"></span>')
+        this._messageSpan = $('<span></span>', {class: 'label'})
 
         div.append(this._progress)
         div.append(this._icon)

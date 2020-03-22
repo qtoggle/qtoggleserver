@@ -89,10 +89,9 @@ class LoginSection extends Section {
     }
 
     _makeLogoutButton() {
-        let button = $('<div class="qui-base-button">' +
-                           '<div class="qui-icon"></div>' +
-                           '<span class="label"></span>' +
-                       '</div>')
+        let button = $('<div></div>', {class: 'qui-base-button'})
+        button.append($('<div></div>', {class: 'qui-icon'}))
+        button.append($('<span></span>', {class: 'label'}))
 
         let iconDiv = button.find('div.qui-icon')
         let labelSpan = button.find('span.label')

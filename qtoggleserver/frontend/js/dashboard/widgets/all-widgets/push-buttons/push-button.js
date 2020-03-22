@@ -137,7 +137,7 @@ class PushButton extends Widget {
     }
 
     makeContent(width, height) {
-        let container = $('<div class="dashboard-push-button-container"></div>')
+        let container = $('<div></div>', {class: 'dashboard-push-button-container'})
 
         this._bezelDiv = this._makeBezel(width, height)
         container.css('borderWidth', `${Widgets.CELL_PADDING}em`)
@@ -152,7 +152,7 @@ class PushButton extends Widget {
     _makeBezel(width, height) {
         let diameter = Math.min(width, height) - 2 * Widgets.CELL_PADDING
         let marginTop = (height > width) ? (height - width) / 2 : 0
-        let bezelDiv = $('<div class="dashboard-push-button-bezel"></div>')
+        let bezelDiv = $('<div></div>', {class: 'dashboard-push-button-bezel'})
         bezelDiv.css({
             'width': `${diameter}em`,
             'height': `${diameter}em`,
@@ -163,7 +163,7 @@ class PushButton extends Widget {
     }
 
     _makeHandleDiv() {
-        let handleDiv = $('<div class="qui-base-button dashboard-push-button-handle"></div>')
+        let handleDiv = $('<div></div>', {class: 'qui-base-button dashboard-push-button-handle'})
         handleDiv.css({
             background: Theme.getColor(this._color),
             margin: `${this.roundEm(Widgets.BEZEL_WIDTH)}em`
