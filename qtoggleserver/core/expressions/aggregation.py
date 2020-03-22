@@ -32,3 +32,13 @@ class MaxFunction(Function):
                 m = e
 
         return m
+
+
+@function('AVG')
+class AvgFunction(Function):
+    MIN_ARGS = 2
+
+    def eval(self) -> CorePortValue:
+        eval_args = self.eval_args()
+
+        return sum(eval_args) / len(eval_args)
