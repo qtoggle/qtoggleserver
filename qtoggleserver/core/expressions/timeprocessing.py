@@ -1,0 +1,87 @@
+
+import time
+
+from typing import List, Optional, Set, Tuple
+
+from qtoggleserver.core.typing import PortValue as CorePortValue
+
+from .functions import function, Function
+
+
+@function('DELAY')
+class DelayFunction(Function):
+    MIN_ARGS = MAX_ARGS = 2
+    HISTORY_SIZE = 1024
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._queue: List[Tuple[int, CorePortValue]] = []
+        self._last_value: Optional[CorePortValue] = None
+        self._current_value: Optional[CorePortValue] = None
+
+    def get_deps(self) -> Set[str]:
+        return {'time_ms'}
+
+    def eval(self) -> CorePortValue:
+        time_ms = int(time.time() * 1000)
+
+        value = self.args[0].eval()
+        delay = self.args[1].eval()
+
+        if self._current_value is None:
+            self._current_value = value
+
+        # Detect value transitions and build history
+        if value != self._last_value:
+            self._last_value = value
+
+            # Drop elements from queue if history size reached
+            while len(self._queue) >= self.HISTORY_SIZE:
+                self._queue.pop(0)
+
+            self._queue.append((time_ms, value))
+
+        # Process history
+        while self._queue and (time_ms - self._queue[0][0]) >= delay:
+            self._current_value = self._queue.pop(0)[1]
+
+        return self._current_value
+
+
+@function('HELD')
+class HeldFunction(Function):
+    MIN_ARGS = MAX_ARGS = 3
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._time_ms: Optional[int] = None
+        self._last_value: Optional[CorePortValue] = None
+
+    def get_deps(self) -> Set[str]:
+        return {'time_ms'}
+
+    def eval(self) -> CorePortValue:
+        time_ms = int(time.time() * 1000)
+        result = False
+
+        value = self.args[0].eval()
+        fixed_value = self.args[1].eval()
+        duration = self.args[2].eval()
+
+        if self._time_ms is None:  # Very first expression eval call
+            self._time_ms = time_ms
+
+        else:
+            delta = time_ms - self._time_ms
+
+            if self._last_value != value:
+                self._time_ms = time_ms  # Reset held timer
+
+            else:
+                result = (delta >= duration) and (value == fixed_value)
+
+        self._last_value = value
+
+        return result
