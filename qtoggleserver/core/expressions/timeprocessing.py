@@ -5,6 +5,7 @@ from typing import List, Optional, Set, Tuple
 
 from qtoggleserver.core.typing import PortValue as CorePortValue
 
+from .exceptions import EvalSkipped
 from .functions import function, Function
 
 
@@ -83,5 +84,38 @@ class HeldFunction(Function):
                 result = (delta >= duration) and (value == fixed_value)
 
         self._last_value = value
+
+        return result
+
+
+@function('INTEG')
+class IntegFunction(Function):
+    MIN_ARGS = MAX_ARGS = 3
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._last_value: Optional[float] = None
+        self._last_time: float = 0
+
+    def get_deps(self) -> Set[str]:
+        return {'time_ms'}
+
+    def eval(self) -> CorePortValue:
+        value = self.args[0].eval()
+        accumulator = self.args[1].eval()
+        sampling_interval = self.args[2].eval() / 1000
+        result = accumulator
+        now = time.time()
+
+        if self._last_value is not None:
+            delta = now - self._last_time
+            if delta < sampling_interval:
+                raise EvalSkipped()
+
+            result += (value + self._last_value) * delta / 2
+
+        self._last_value = value
+        self._last_time = now
 
         return result
