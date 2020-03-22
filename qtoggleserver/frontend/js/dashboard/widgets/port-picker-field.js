@@ -106,7 +106,8 @@ class PortPickerField extends ComboField {
         this.updateCurrentAnchor(value)
     }
 
-    onChange(value, form) {
+    handleChange(value) {
+        super.handleChange(value)
         this.updateCurrentAnchor(value)
     }
 
