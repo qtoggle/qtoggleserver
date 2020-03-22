@@ -473,7 +473,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.debug('checking for expression circular dependencies')
             await core_expressions.check_loops(self, expression)
 
-        except core_expressions.ExpressionError as e:
+        except core_expressions.ExpressionException as e:
             self.error('failed to set expression "%s": %s', sexpression, e)
 
             raise InvalidAttributeValue('expression') from e
@@ -505,12 +505,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     continue
 
                 if dep != f'${self._id}':
-                    raise core_expressions.ExpressionError('Transform expression depends other ports')
+                    raise core_expressions.ExpressionException('Transform expression depends other ports')
 
             self.debug('setting read transform "%s"', transform_read)
             self._transform_read = transform_read
 
-        except core_expressions.ExpressionError as e:
+        except core_expressions.ExpressionException as e:
             self.error('failed to set transform read expression "%s": %s', stransform_read, e)
 
             raise InvalidAttributeValue('transform_read') from e
@@ -540,12 +540,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     continue
 
                 if dep != f'${self._id}':
-                    raise core_expressions.ExpressionError('Transform expression depends other ports')
+                    raise core_expressions.ExpressionException('Transform expression depends other ports')
 
             self.debug('setting write transform "%s"', transform_write)
             self._transform_write = transform_write
 
-        except core_expressions.ExpressionError as e:
+        except core_expressions.ExpressionException as e:
             self.error('failed to set transform write expression "%s": %s', stransform_write, e)
 
             raise InvalidAttributeValue('transform_write') from e

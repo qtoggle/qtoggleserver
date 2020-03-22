@@ -60,6 +60,13 @@ async def check_loops(port: core_ports.BasePort, expression: Expression) -> None
 
 
 from .constants import Constant
-from .exceptions import ExpressionError, InvalidExpression, InvalidArgument, CircularDependency, IncompleteExpression
+from .exceptions import (
+    ExpressionException,
+    InvalidExpression,
+    InvalidArgument,
+    CircularDependency,
+    IncompleteExpression,
+    EvalSkipped
+)
 from .functions import Function
 from .portvalue import PortValue

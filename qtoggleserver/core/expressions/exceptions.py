@@ -2,15 +2,15 @@
 from qtoggleserver.core.typing import PortValue as CorePortValue
 
 
-class ExpressionError(Exception):
+class ExpressionException(Exception):
     pass
 
 
-class InvalidExpression(ExpressionError):
+class InvalidExpression(ExpressionException):
     pass
 
 
-class InvalidArgument(ExpressionError):
+class InvalidArgument(ExpressionException):
     def __init__(self, arg_no: int, value: CorePortValue) -> None:
         self.arg_no: int = arg_no
         self.value: CorePortValue = value
@@ -19,9 +19,13 @@ class InvalidArgument(ExpressionError):
         return f'invalid argument {self.arg_no}: {self.value}'
 
 
-class CircularDependency(ExpressionError):
+class CircularDependency(ExpressionException):
     pass
 
 
-class IncompleteExpression(ExpressionError):
+class IncompleteExpression(ExpressionException):
+    pass
+
+
+class EvalSkipped(ExpressionException):
     pass
