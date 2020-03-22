@@ -151,3 +151,38 @@ class IntegFunction(Function):
         self._last_time = now
 
         return result
+
+
+@function('FMAVG')
+class FMAvgFunction(Function):
+    MIN_ARGS = MAX_ARGS = 3
+    QUEUE_SIZE = 1024
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._queue: List[CorePortValue] = []
+        self._last_time: float = 0
+
+    def get_deps(self) -> Set[str]:
+        return {'time_ms'}
+
+    def eval(self) -> CorePortValue:
+        value = self.args[0].eval()
+        width = min(self.args[1].eval(), self.QUEUE_SIZE)
+        sampling_interval = self.args[2].eval() / 1000
+        now = time.time()
+
+        if self._last_time > 0:
+            delta = now - self._last_time
+            if delta < sampling_interval:
+                raise EvalSkipped()
+
+        # Make place for the new element
+        while len(self._queue) > width:
+            self._queue.pop(0)
+
+        self._queue.append(value)
+        self._last_time = now
+
+        return sum(self._queue) / len(self._queue)
