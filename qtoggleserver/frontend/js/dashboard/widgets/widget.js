@@ -117,6 +117,7 @@ class Widget extends mix().with(ViewMixin) {
         this._bodyDiv = bodyDiv
 
         let labelDiv = $('<div></div>', {class: 'dashboard-widget-label'})
+        labelDiv.append($('<span></span>'))
         labelDiv.css('height', `${Widgets.LABEL_HEIGHT}em`)
         labelDiv.children('span').css('font-size', `${Widgets.LABEL_FONT_SIZE}em`)
 
