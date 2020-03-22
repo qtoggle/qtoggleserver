@@ -763,19 +763,7 @@ class Widget extends mix().with(ViewMixin) {
         }
 
         this._selected = selected
-
-        if (selected) {
-            this.getHTML().addClass('selected')
-            asap(function () {
-                this.getHTML().addClass('controls-visible')
-            }.bind(this))
-        }
-        else {
-            this.getHTML().removeClass('controls-visible')
-            Theme.afterTransition(function () {
-                this.removeClass('selected')
-            }, this.getHTML())
-        }
+        this.getHTML().toggleClass('selected controls-visible', selected)
     }
 
     /**
