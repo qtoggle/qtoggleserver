@@ -9,7 +9,7 @@ class NetError(Exception):
     pass
 
 
-def has_network_ip_support() -> bool:
+def has_ip_support() -> bool:
     return bool(settings.system.net.ip.get_cmd and settings.system.net.ip.set_cmd)
 
 
@@ -34,7 +34,7 @@ def set_ip_config(ip: str, mask: str, gw: str, dns: str) -> None:
     )
 
 
-def has_network_wifi_support() -> bool:
+def has_wifi_support() -> bool:
     return bool(settings.system.net.wifi.get_cmd and settings.system.net.wifi.set_cmd)
 
 

@@ -39,11 +39,8 @@ def load() -> None:
         value = data[name]
 
         # A few attributes may carry sensitive information, so treat them separately and do not log their values
-        if name.count('password'):
+        if name.count('password') or name == 'wifi_key':
             logger.debug('loaded %s', name)
-
-        elif name == 'network_wifi':
-            logger.debug('loaded %s = [hidden]', name)
 
         else:
             logger.debug('loaded %s = %s', name, json_utils.dumps(value))

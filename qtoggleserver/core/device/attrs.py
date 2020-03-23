@@ -93,24 +93,64 @@ STANDARD_ATTRDEFS = {
         'enabled': lambda: system.date.has_timezone_support(),
         'internal': False  # Having internal False here enables export of attribute definition (needed for choices)
     },
-    'network_ip': {
+    'wifi_ssid': {
         'type': 'string',
-        'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,3}\.\d{1,'
-                   r'3}\.\d{1,3}\.\d{1,3})?$',
+        'max': 32,
         'modifiable': True,
         'persisted': False,
-        'enabled': lambda: system.net.has_network_ip_support(),
+        'enabled': lambda: system.net.has_wifi_support(),
         'internal': True
     },
-    'network_wifi': {
+    'wifi_psk': {
         'type': 'string',
-        # TODO this regex should ignore escaped colons \:
-        'pattern': r'^(([^:]{0,32}:?)|([^:]{0,32}:[^:]{0,64}:?)|([^:]{0,32}:[^:]{0,64}:[0-9a-fA-F]{12}))$',
+        'max': 64,
         'modifiable': True,
         'persisted': False,
-        'enabled': lambda: system.net.has_network_wifi_support(),
+        'enabled': lambda: system.net.has_wifi_support(),
         'internal': True
-    }
+    },
+    'wifi_bssid': {
+        'type': 'string',
+        'pattern': r'^([a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2})?$',
+        'modifiable': True,
+        'persisted': False,
+        'enabled': lambda: system.net.has_wifi_support(),
+        'internal': True
+    },
+    'ip_address': {
+        'type': 'string',
+        'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})?$',
+        'modifiable': True,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'internal': True
+    },
+    'ip_mask': {
+        'type': 'number',
+        'min': 0,
+        'max': 31,
+        'integer': True,
+        'modifiable': True,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'internal': True
+    },
+    'ip_gateway': {
+        'type': 'string',
+        'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})?$',
+        'modifiable': True,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'internal': True
+    },
+    'ip_dns': {
+        'type': 'string',
+        'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})?$',
+        'modifiable': True,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'internal': True
+    },
 }
 
 # TODO generalize additional attributes using getters and setters
@@ -253,32 +293,18 @@ def get_attrs() -> Attributes:
     if system.date.has_timezone_support():
         attrs['timezone'] = system.date.get_timezone()
 
-    if system.net.has_network_wifi_support():
+    if system.net.has_wifi_support():
         wifi_config = system.net.get_wifi_config()
-        if wifi_config['bssid']:
-            wifi_config['bssid'] = wifi_config['bssid'].replace(':', '')
-            attrs['network_wifi'] = f'{wifi_config["ssid"]}:{wifi_config["psk"]}:{wifi_config["bssid"]}'
+        attrs['wifi_ssid'] = wifi_config['ssid']
+        attrs['wifi_key'] = wifi_config['psk']
+        attrs['wifi_bssid'] = wifi_config['bssid']
 
-        elif wifi_config['psk']:
-            wifi_config['psk'] = wifi_config['psk'].replace('\\', '\\\\')
-            wifi_config['psk'] = wifi_config['psk'].replace(':', '\\:')
-            attrs['network_wifi'] = f'{wifi_config["ssid"]}:{wifi_config["psk"]}'
-
-        elif wifi_config['ssid']:
-            wifi_config['ssid'] = wifi_config['ssid'].replace('\\', '\\\\')
-            wifi_config['ssid'] = wifi_config['ssid'].replace(':', '\\:')
-            attrs['network_wifi'] = wifi_config['ssid']
-
-        else:
-            attrs['network_wifi'] = ''
-
-    if system.net.has_network_ip_support():
+    if system.net.has_ip_support():
         ip_config = system.net.get_ip_config()
-        if ip_config['ip'] and ip_config['mask'] and ip_config['gw'] and ip_config['dns']:
-            attrs['network_ip'] = f'{ip_config["ip"]}/{ip_config["mask"]}:{ip_config["gw"]}:{ip_config["dns"]}'
-
-        else:
-            attrs['network_ip'] = ''
+        attrs['ip_address'] = ip_config['ip']
+        attrs['ip_mask'] = int(ip_config['mask'] or 0)
+        attrs['ip_gateway'] = ip_config['gw']
+        attrs['ip_dns'] = ip_config['dns']
 
     return attrs
 
@@ -290,11 +316,8 @@ def set_attrs(attrs: Attributes) -> bool:
 
     for name, value in attrs.items():
         # A few attributes may carry sensitive information, so treat them separately and do not log their values
-        if name.count('password'):
+        if name.count('password') or name == 'wifi_key':
             logger.debug('setting device attribute %s', name)
-
-        elif name == 'network_wifi':
-            logger.debug('setting device attribute %s = [hidden]', name)
 
         else:
             logger.debug('setting device attribute %s = %s', name, json_utils.dumps(value))
@@ -343,36 +366,28 @@ def set_attrs(attrs: Attributes) -> bool:
         elif name == 'timezone' and system.date.has_timezone_support():
             system.date.set_timezone(value)
 
-        elif name == 'network_wifi' and system.net.has_network_wifi_support():
-            parts = value.split(':')
-            i = 0
-            while i < len(parts):
-                if len(parts[i]) and parts[i][-1] == '\\':
-                    parts[i] = parts[i][:-1] + ':' + parts[i + 1]
-                    del parts[i + 1]
-                i += 1
+        elif name in ('wifi_ssid', 'wifi_key', 'wifi_bssid') and system.net.has_wifi_support():
+            wifi_config = system.net.get_wifi_config()
+            k = name[5:]
+            k = {
+                'key': 'psk'
+            }.get(k, k)
+            wifi_config[k] = value
 
-            parts = [p.replace('\\\\', '\\') for p in parts]
-            while len(parts) < 3:
-                parts.append('')
-
-            ssid, psk, bssid = parts[:3]
-            bssid = bssid.lower()
-            bssid = re.sub('([a-f0-9]{2})', '\\1:', bssid).strip(':')  # Add colons
-
-            system.net.set_wifi_config(ssid, psk, bssid)
+            system.net.set_wifi_config(**wifi_config)
             reboot_required = True
 
-        elif name == 'network_ip' and system.net.has_network_ip_support():
-            if value:
-                parts = value.split(':')
-                ip_mask, gw, dns = parts
-                ip, mask = ip_mask.split('/')
-                system.net.set_ip_config(ip, mask, gw, dns)
+        elif name in ('ip_address', 'ip_mask', 'ip_gateway', 'ip_dns') and system.net.has_ip_support():
+            ip_config = system.net.get_ip_config()
 
-            else:
-                system.net.set_ip_config(ip='', mask='', gw='', dns='')
+            k = name[3:]
+            k = {
+                'address': 'ip',
+                'gateway': 'gw'
+            }.get(k, k)
+            ip_config[k] = value
 
+            system.net.set_ip_config(**ip_config)
             reboot_required = True
 
     return reboot_required
