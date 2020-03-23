@@ -101,7 +101,7 @@ STANDARD_ATTRDEFS = {
         'enabled': lambda: system.net.has_wifi_support(),
         'internal': True
     },
-    'wifi_psk': {
+    'wifi_key': {
         'type': 'string',
         'max': 64,
         'modifiable': True,
@@ -113,6 +113,13 @@ STANDARD_ATTRDEFS = {
         'type': 'string',
         'pattern': r'^([a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2})?$',
         'modifiable': True,
+        'persisted': False,
+        'enabled': lambda: system.net.has_wifi_support(),
+        'internal': True
+    },
+    'wifi_bssid_current': {
+        'type': 'string',
+        'modifiable': False,
         'persisted': False,
         'enabled': lambda: system.net.has_wifi_support(),
         'internal': True
@@ -151,6 +158,34 @@ STANDARD_ATTRDEFS = {
         'enabled': lambda: system.net.has_ip_support(),
         'internal': True
     },
+    'ip_address_current': {
+        'type': 'string',
+        'modifiable': False,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'internal': True
+    },
+    'ip_mask_current': {
+        'type': 'number',
+        'modifiable': False,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'internal': True
+    },
+    'ip_gateway_current': {
+        'type': 'string',
+        'modifiable': False,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'internal': True
+    },
+    'ip_dns_current': {
+        'type': 'string',
+        'modifiable': False,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'internal': True
+    }
 }
 
 # TODO generalize additional attributes using getters and setters
@@ -299,12 +334,24 @@ def get_attrs() -> Attributes:
         attrs['wifi_key'] = wifi_config['psk']
         attrs['wifi_bssid'] = wifi_config['bssid']
 
+        if 'bssid_current' in wifi_config:
+            attrs['wifi_bssid_current'] = wifi_config['bssid_current']
+
     if system.net.has_ip_support():
         ip_config = system.net.get_ip_config()
         attrs['ip_address'] = ip_config['ip']
         attrs['ip_mask'] = int(ip_config['mask'] or 0)
         attrs['ip_gateway'] = ip_config['gw']
         attrs['ip_dns'] = ip_config['dns']
+
+        if 'ip_current' in ip_config:
+            attrs['ip_address_current'] = ip_config['ip_current']
+        if 'mask_current' in ip_config:
+            attrs['ip_mask_current'] = int(ip_config['mask_current'] or 0)
+        if 'gw_current' in ip_config:
+            attrs['ip_gateway_current'] = ip_config['gw_current']
+        if 'dns_current' in ip_config:
+            attrs['ip_dns_current'] = ip_config['dns_current']
 
     return attrs
 
@@ -373,6 +420,7 @@ def set_attrs(attrs: Attributes) -> bool:
                 'key': 'psk'
             }.get(k, k)
             wifi_config[k] = value
+            wifi_config = {k: v for k, v in wifi_config.items() if not k.endswith('_current')}
 
             system.net.set_wifi_config(**wifi_config)
             reboot_required = True
@@ -386,6 +434,8 @@ def set_attrs(attrs: Attributes) -> bool:
                 'gateway': 'gw'
             }.get(k, k)
             ip_config[k] = value
+            ip_config = {k: v for k, v in ip_config.items() if not k.endswith('_current')}
+            ip_config['mask'] = str(ip_config['mask'])
 
             system.net.set_ip_config(**ip_config)
             reboot_required = True

@@ -322,10 +322,9 @@ export const STD_DEVICE_ATTRDEFS = {
         standard: true,
         order: 172,
         field: {
-            class: PasswordField,
+            class: TextField,
             autocomplete: false,
             clearEnabled: true,
-            revealOnFocus: true,
             placeholder: 'AA:BB:CC:DD:EE:FF'
         }
     },
@@ -336,11 +335,7 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: false,
         optional: true,
         standard: true,
-        order: 173,
-        field: {
-            class: PasswordField,
-            revealOnFocus: true
-        }
+        order: 173
     },
     ip_address: {
         display_name: gettext('IP Address'),
