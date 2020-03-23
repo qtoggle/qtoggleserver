@@ -8,6 +8,7 @@ import {AssertionError}  from '$qui/base/errors.js'
 import {gettext}         from '$qui/base/i18n.js'
 import Config            from '$qui/config.js'
 import {PasswordField}   from '$qui/forms/common-fields.js'
+import {TextAreaField}   from '$qui/forms/common-fields.js'
 import {TextField}       from '$qui/forms/common-fields.js'
 import * as AJAX         from '$qui/utils/ajax.js'
 import * as Crypto       from '$qui/utils/crypto.js'
@@ -538,7 +539,11 @@ export const STD_PORT_ATTRDEFS = {
         separator: true,
         standard: true,
         optional: true,
-        order: 260
+        order: 260,
+        field: {
+            class: TextAreaField,
+            resize: 'vertical'
+        }
     },
     device_expression: {
         /* display_name is added dynamically */
@@ -547,7 +552,11 @@ export const STD_PORT_ATTRDEFS = {
         modifiable: true,
         standard: true,
         optional: true,
-        max: 1024
+        max: 1024,
+        field: {
+            class: TextAreaField,
+            resize: 'vertical'
+        }
         /* order is added dynamically */
     },
     transform_write: {
