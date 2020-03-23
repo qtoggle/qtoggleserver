@@ -231,13 +231,15 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def initialize(self) -> None:
         pass
 
-    def _get_attrdefs(self) -> AttributeDefinitions:
+    async def get_attrdefs(self) -> AttributeDefinitions:
         if self._attrdefs_cache is None:
             self._attrdefs_cache = dict(self.STANDARD_ATTRDEFS, **self.ADDITIONAL_ATTRDEFS)
 
-        return self._attrdefs_cache
+            # Don't expose units for boolean ports
+            if await self.get_type() == TYPE_BOOLEAN:
+                self._attrdefs_cache.pop('unit')
 
-    ATTRDEFS = property(_get_attrdefs)
+        return self._attrdefs_cache
 
     def invalidate_attrdefs(self) -> None:
         self._attrs_cache = {}
@@ -246,27 +248,26 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._non_modifiable_attrs = None
         self._schema = None
 
-    def get_non_modifiable_attrs(self) -> Set[str]:
+    async def get_non_modifiable_attrs(self) -> Set[str]:
+        attrdefs = await self.get_attrdefs()
+
         if self._non_modifiable_attrs is None:
-            self._non_modifiable_attrs = set(n for (n, v) in self.ATTRDEFS.items() if not v.get('modifiable'))
+            self._non_modifiable_attrs = set(n for (n, v) in attrdefs.items() if not v.get('modifiable'))
 
         return self._non_modifiable_attrs
 
-    def get_modifiable_attrs(self) -> Set[str]:
+    async def get_modifiable_attrs(self) -> Set[str]:
+        attrdefs = await self.get_attrdefs()
+
         if self._modifiable_attrs is None:
-            self._modifiable_attrs = set(n for (n, v) in self.ATTRDEFS.items() if v.get('modifiable'))
+            self._modifiable_attrs = set(n for (n, v) in attrdefs.items() if v.get('modifiable'))
 
         return self._modifiable_attrs
 
     async def get_attrs(self) -> Attributes:
         d = {}
 
-        attr_names = set(self.ATTRDEFS.keys())
-
-        if await self.get_type() == TYPE_BOOLEAN:
-            attr_names.remove('unit')
-
-        for name in attr_names:
+        for name in await self.get_attrdefs():
             v = await self.get_attr(name)
             if v is None:
                 continue
@@ -808,7 +809,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             d['value'] = None
 
         # Attributes
-        for name in self.get_modifiable_attrs():
+        for name in await self.get_modifiable_attrs():
             v = await self.get_attr(name)
             if v is None:
                 continue
@@ -859,7 +860,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 'additionalProperties': False
             }
 
-            for name, attrdef in self.ATTRDEFS.items():
+            attrdefs = await self.get_attrdefs()
+            for name, attrdef in attrdefs.items():
                 if not attrdef.get('modifiable'):
                     continue
 
