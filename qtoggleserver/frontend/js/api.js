@@ -575,11 +575,12 @@ export const STD_PORT_ATTRDEFS = {
     },
     unit: {
         display_name: gettext('Unit'),
-        description: gettext('The unit of measurement for this port.'),
+        description: gettext('The unit of measurement for the value of this port.'),
         type: 'string',
         max: 64,
         modifiable: true,
         standard: true,
+        optional: true,
         order: 170
     },
     writable: {

@@ -261,7 +261,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def get_attrs(self) -> Attributes:
         d = {}
 
-        for name in self.ATTRDEFS.keys():
+        attr_names = set(self.ATTRDEFS.keys())
+
+        if await self.get_type() == TYPE_BOOLEAN:
+            attr_names.remove('unit')
+
+        for name in attr_names:
             v = await self.get_attr(name)
             if v is None:
                 continue
