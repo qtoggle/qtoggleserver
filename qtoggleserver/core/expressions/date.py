@@ -3,10 +3,11 @@ import datetime
 
 from typing import Set
 
+from qtoggleserver import system
 from qtoggleserver.core.typing import PortValue as CorePortValue
 
 from .functions import function, Function
-from .exceptions import InvalidArgument
+from .exceptions import InvalidArgument, EvalSkipped
 
 
 @function('YEAR')
@@ -17,6 +18,9 @@ class YearFunction(Function):
         return {'time'}
 
     def eval(self) -> CorePortValue:
+        if not system.date.has_real_date_time():
+            raise EvalSkipped()
+
         return datetime.datetime.now().year
 
 
@@ -28,6 +32,9 @@ class MonthFunction(Function):
         return {'time'}
 
     def eval(self) -> CorePortValue:
+        if not system.date.has_real_date_time():
+            raise EvalSkipped()
+
         return datetime.datetime.now().month
 
 
@@ -39,6 +46,9 @@ class DayFunction(Function):
         return {'time'}
 
     def eval(self) -> CorePortValue:
+        if not system.date.has_real_date_time():
+            raise EvalSkipped()
+
         return datetime.datetime.now().day
 
 
@@ -50,6 +60,9 @@ class DOWFunction(Function):
         return {'time'}
 
     def eval(self) -> CorePortValue:
+        if not system.date.has_real_date_time():
+            raise EvalSkipped()
+
         return datetime.datetime.now().weekday()
 
 
@@ -61,6 +74,9 @@ class HourFunction(Function):
         return {'time'}
 
     def eval(self) -> CorePortValue:
+        if not system.date.has_real_date_time():
+            raise EvalSkipped()
+
         return datetime.datetime.now().hour
 
 
@@ -72,6 +88,9 @@ class MinuteFunction(Function):
         return {'time'}
 
     def eval(self) -> CorePortValue:
+        if not system.date.has_real_date_time():
+            raise EvalSkipped()
+
         return datetime.datetime.now().minute
 
 
@@ -83,6 +102,9 @@ class SecondFunction(Function):
         return {'time'}
 
     def eval(self) -> CorePortValue:
+        if not system.date.has_real_date_time():
+            raise EvalSkipped()
+
         return datetime.datetime.now().second
 
 
@@ -95,6 +117,9 @@ class HMSIntervalFunction(Function):
         return {'time'}
 
     def eval(self) -> CorePortValue:
+        if not system.date.has_real_date_time():
+            raise EvalSkipped()
+
         now = datetime.datetime.now()
 
         if len(self.args) >= 6:

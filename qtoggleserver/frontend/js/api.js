@@ -488,7 +488,7 @@ export const STD_DEVICE_ATTRDEFS = {
         optional: true,
         standard: true,
         order: 220
-    },
+    }
 }
 
 export const ADDITIONAL_DEVICE_ATTRDEFS = {
