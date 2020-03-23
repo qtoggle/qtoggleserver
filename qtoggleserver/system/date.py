@@ -22,7 +22,7 @@ def has_real_date_time() -> bool:
     return time.time() > OLD_TIME_LIMIT
 
 
-def has_date_support() -> bool:
+def has_set_date_support() -> bool:
     return bool(settings.system.date.set_cmd)
 
 

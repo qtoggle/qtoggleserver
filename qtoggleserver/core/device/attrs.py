@@ -3,7 +3,6 @@ import copy
 import datetime
 import hashlib
 import logging
-import re
 import socket
 import sys
 
@@ -11,14 +10,14 @@ from qtoggleserver import system
 from qtoggleserver import version
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
-from qtoggleserver.core.typing import Attributes, GenericJSONDict
+from qtoggleserver.core.typing import Attributes, AttributeDefinitions, GenericJSONDict
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_set_cmd
 
 
 logger = logging.getLogger(__name__)
 
-STANDARD_ATTRDEFS = {
+ATTRDEFS = {
     'name': {
         'type': 'string',
         'modifiable': True,
@@ -26,64 +25,63 @@ STANDARD_ATTRDEFS = {
         'min': 1,
         'max': 32,
         'pattern': r'^[_a-zA-Z][_a-zA-Z0-9-]{0,31}$',
-        'internal': True
+        'standard': True
     },
     'display_name': {
         'type': 'string',
         'modifiable': True,
         'max': 64,
-        'internal': True
+        'standard': True
     },
     'version': {
         'type': 'string',
-        'internal': True
+        'standard': True
     },
     'api_version': {
         'type': 'string',
-        'internal': True
+        'standard': True
     },
     'vendor': {
         'type': 'string',
-        'internal': True
+        'standard': True
     },
     'admin_password': {
         'type': 'string',
         'modifiable': True,
         'max': 32,
-        'internal': True
+        'standard': True
     },
     'normal_password': {
         'type': 'string',
         'modifiable': True,
         'max': 32,
-        'internal': True
+        'standard': True
     },
     'viewonly_password': {
         'type': 'string',
         'modifiable': True,
         'max': 32,
-        'internal': True
+        'standard': True
     },
     'flags': {
         'type': ['string'],
-        'internal': True
+        'standard': True
     },
     'virtual_ports': {
         'type': 'number',
         'enabled': lambda: bool(settings.core.virtual_ports),
-        'internal': True
+        'standard': True
     },
     'uptime': {
         'type': 'number',
-        'internal': True
+        'standard': True
     },
     'date': {
         'type': 'string',
         'pattern': r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$',
-        'modifiable': True,
+        'modifiable': lambda: system.date.has_set_date_support(),
         'persisted': False,
-        'enabled': lambda: system.date.has_date_support(),
-        'internal': True
+        'standard': False  # Having standard False here enables exposing of definition (needed for non-modifiable)
     },
     'timezone': {
         'type': 'string',
@@ -91,7 +89,7 @@ STANDARD_ATTRDEFS = {
         'persisted': False,
         'choices': [{'value': zone} for zone in system.date.get_timezones()],
         'enabled': lambda: system.date.has_timezone_support(),
-        'internal': False  # Having internal False here enables export of attribute definition (needed for choices)
+        'standard': False  # Having standard False here enables exposing of definition (needed for choices)
     },
     'wifi_ssid': {
         'type': 'string',
@@ -99,7 +97,7 @@ STANDARD_ATTRDEFS = {
         'modifiable': True,
         'persisted': False,
         'enabled': lambda: system.net.has_wifi_support(),
-        'internal': True
+        'standard': True
     },
     'wifi_key': {
         'type': 'string',
@@ -107,7 +105,7 @@ STANDARD_ATTRDEFS = {
         'modifiable': True,
         'persisted': False,
         'enabled': lambda: system.net.has_wifi_support(),
-        'internal': True
+        'standard': True
     },
     'wifi_bssid': {
         'type': 'string',
@@ -115,14 +113,14 @@ STANDARD_ATTRDEFS = {
         'modifiable': True,
         'persisted': False,
         'enabled': lambda: system.net.has_wifi_support(),
-        'internal': True
+        'standard': True
     },
     'wifi_bssid_current': {
         'type': 'string',
         'modifiable': False,
         'persisted': False,
         'enabled': lambda: system.net.has_wifi_support(),
-        'internal': True
+        'standard': True
     },
     'ip_address': {
         'type': 'string',
@@ -130,7 +128,7 @@ STANDARD_ATTRDEFS = {
         'modifiable': True,
         'persisted': False,
         'enabled': lambda: system.net.has_ip_support(),
-        'internal': True
+        'standard': True
     },
     'ip_mask': {
         'type': 'number',
@@ -140,7 +138,7 @@ STANDARD_ATTRDEFS = {
         'modifiable': True,
         'persisted': False,
         'enabled': lambda: system.net.has_ip_support(),
-        'internal': True
+        'standard': True
     },
     'ip_gateway': {
         'type': 'string',
@@ -148,7 +146,7 @@ STANDARD_ATTRDEFS = {
         'modifiable': True,
         'persisted': False,
         'enabled': lambda: system.net.has_ip_support(),
-        'internal': True
+        'standard': True
     },
     'ip_dns': {
         'type': 'string',
@@ -156,64 +154,37 @@ STANDARD_ATTRDEFS = {
         'modifiable': True,
         'persisted': False,
         'enabled': lambda: system.net.has_ip_support(),
-        'internal': True
+        'standard': True
     },
     'ip_address_current': {
         'type': 'string',
         'modifiable': False,
         'persisted': False,
         'enabled': lambda: system.net.has_ip_support(),
-        'internal': True
+        'standard': True
     },
     'ip_mask_current': {
         'type': 'number',
         'modifiable': False,
         'persisted': False,
         'enabled': lambda: system.net.has_ip_support(),
-        'internal': True
+        'standard': True
     },
     'ip_gateway_current': {
         'type': 'string',
         'modifiable': False,
         'persisted': False,
         'enabled': lambda: system.net.has_ip_support(),
-        'internal': True
+        'standard': True
     },
     'ip_dns_current': {
         'type': 'string',
         'modifiable': False,
         'persisted': False,
         'enabled': lambda: system.net.has_ip_support(),
-        'internal': True
+        'standard': True
     }
 }
-
-# TODO generalize additional attributes using getters and setters
-
-'''
-ADDITIONAL_ATTRDEFS = {
-    'attr1': {
-        'display_name': 'Some Attribute Display Name',
-        'description': 'Some attribute description',
-        'type': 'number',
-        'modifiable': True,
-        'unit': 'seconds',
-        'min': 1,
-        'max': 100,
-        'integer': True,
-        'step': 5,
-        'reconnect': False,
-        'choices': [
-            {'value': 2, 'display_name': 'Two'},
-            {'value': 4, 'display_name': 'Four'}
-        ]
-    },
-    ...
-}'''
-ADDITIONAL_ATTRDEFS = {
-}
-
-ATTRDEFS = dict(STANDARD_ATTRDEFS, **ADDITIONAL_ATTRDEFS)
 
 EMPTY_PASSWORD_HASH = hashlib.sha256(b'').hexdigest()
 
@@ -225,10 +196,27 @@ normal_password_hash = None
 viewonly_password_hash = None
 
 _schema = None
+_attrdefs = None
 
 
 class DeviceAttributeError(Exception):
     pass
+
+
+def get_attrdefs() -> AttributeDefinitions:
+    global _attrdefs
+
+    if _attrdefs is None:
+        logger.debug('initializing attribute definitions')
+        _attrdefs = copy.deepcopy(ATTRDEFS)
+
+        # Transform all callable values into corresponding results
+        for n, attrdef in _attrdefs.items():
+            for k, v in attrdef.items():
+                if callable(v):
+                    attrdef[k] = v()
+
+    return _attrdefs
 
 
 def get_schema() -> GenericJSONDict:
@@ -241,14 +229,14 @@ def get_schema() -> GenericJSONDict:
             'additionalProperties': False
         }
 
-        for name, attrdef in ATTRDEFS.items():
+        for name, attrdef in get_attrdefs().items():
             if not attrdef.get('modifiable'):
                 continue
 
             attr_schema = dict(attrdef)
 
             enabled = attr_schema.pop('enabled', True)
-            if not enabled or callable(enabled) and not enabled():
+            if not enabled:
                 continue
 
             if attr_schema['type'] == 'string':
@@ -273,7 +261,7 @@ def get_schema() -> GenericJSONDict:
 
             attr_schema.pop('persisted', None)
             attr_schema.pop('modifiable', None)
-            attr_schema.pop('internal', None)
+            attr_schema.pop('standard', None)
 
             _schema['properties'][name] = attr_schema
 
@@ -322,7 +310,7 @@ def get_attrs() -> Attributes:
     if settings.core.virtual_ports:
         attrs['virtual_ports'] = settings.core.virtual_ports
 
-    if system.date.has_date_support():
+    if system.date.has_real_date_time():
         attrs['date'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
 
     if system.date.has_timezone_support():
@@ -360,6 +348,7 @@ def set_attrs(attrs: Attributes) -> bool:
     core_device_attrs = sys.modules[__name__]
 
     reboot_required = False
+    attrdefs = get_attrdefs()
 
     for name, value in attrs.items():
         # A few attributes may carry sensitive information, so treat them separately and do not log their values
@@ -369,7 +358,7 @@ def set_attrs(attrs: Attributes) -> bool:
         else:
             logger.debug('setting device attribute %s = %s', name, json_utils.dumps(value))
 
-        attrdef = ATTRDEFS[name]
+        attrdef = attrdefs[name]
 
         if not attrdef.get('modifiable'):
             raise DeviceAttributeError(f'attribute not modifiable: {name}')
@@ -393,15 +382,13 @@ def set_attrs(attrs: Attributes) -> bool:
             continue
 
         persisted = attrdef.get('persisted', attrdef.get('modifiable'))
-        if callable(persisted):
-            persisted = persisted()
         if persisted:
             setattr(core_device_attrs, name, value)
 
         if name == 'name' and settings.core.device_name.set_cmd:
             run_set_cmd(settings.core.device_name.set_cmd, cmd_name='device name', name=value)
 
-        elif name == 'date' and system.date.has_date_support():
+        elif name == 'date' and system.date.has_set_date_support():
             try:
                 date = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
 
@@ -444,14 +431,14 @@ def set_attrs(attrs: Attributes) -> bool:
 
 
 def to_json() -> GenericJSONDict:
-    attrdefs = copy.deepcopy(ATTRDEFS)
+    attrdefs = copy.deepcopy(get_attrdefs())
     filtered_attrdefs = {}
     for n, attrdef in attrdefs.items():
-        if attrdef.pop('internal', False):
+        if attrdef.pop('standard', False):
             continue
 
         enabled = attrdef.pop('enabled', True)
-        if not enabled or callable(enabled) and not enabled():
+        if not enabled:
             continue
 
         attrdef.pop('persisted', None)

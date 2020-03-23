@@ -21,7 +21,7 @@ def load() -> None:
 
     # Attributes
     persisted_attrs = []
-    for name, value in device_attrs.ATTRDEFS.items():
+    for name, value in device_attrs.get_attrdefs().items():
         persisted = value.get('persisted', value.get('modifiable'))
         if callable(persisted):
             persisted = persisted()
@@ -66,7 +66,7 @@ def save() -> None:
 
     # Attributes
     persisted_attrs = []
-    for name, value in device_attrs.ATTRDEFS.items():
+    for name, value in device_attrs.get_attrdefs().items():
         persisted = value.get('persisted', value.get('modifiable'))
         if callable(persisted):
             persisted = persisted()
