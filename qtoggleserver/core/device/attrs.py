@@ -338,13 +338,13 @@ def get_attrs() -> Attributes:
         rssi = wifi_config['rssi_current']
         if rssi:
             rssi = int(rssi)
-            if rssi <= WIFI_RSSI_EXCELLENT:
+            if rssi >= WIFI_RSSI_EXCELLENT:
                 strength = 3
 
-            elif rssi <= WIFI_RSSI_GOOD:
+            elif rssi >= WIFI_RSSI_GOOD:
                 strength = 2
 
-            elif rssi <= WIFI_RSSI_FAIR:
+            elif rssi >= WIFI_RSSI_FAIR:
                 strength = 1
 
             else:
@@ -355,14 +355,14 @@ def get_attrs() -> Attributes:
     if system.net.has_ip_support():
         ip_config = system.net.get_ip_config()
         attrs['ip_address'] = ip_config['ip']
-        attrs['ip_netmask'] = int(ip_config['mask'] or 0)
+        attrs['ip_netmask'] = int(ip_config['netmask'] or 0)
         attrs['ip_gateway'] = ip_config['gw']
         attrs['ip_dns'] = ip_config['dns']
 
         if 'ip_current' in ip_config:
             attrs['ip_address_current'] = ip_config['ip_current']
-        if 'mask_current' in ip_config:
-            attrs['ip_netmask_current'] = int(ip_config['mask_current'] or 0)
+        if 'netmask_current' in ip_config:
+            attrs['ip_netmask_current'] = int(ip_config['netmask_current'] or 0)
         if 'gw_current' in ip_config:
             attrs['ip_gateway_current'] = ip_config['gw_current']
         if 'dns_current' in ip_config:

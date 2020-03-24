@@ -18,7 +18,7 @@ def get_ip_config() -> Dict[str, str]:
         settings.system.net.ip.get_cmd,
         cmd_name='IP config',
         exc_class=NetError,
-        required_fields=['ip', 'mask', 'gw', 'dns']
+        required_fields=['ip', 'netmask', 'gw', 'dns', 'ip_current', 'netmask_current', 'gw_current', 'dns_current']
     )
 
 
