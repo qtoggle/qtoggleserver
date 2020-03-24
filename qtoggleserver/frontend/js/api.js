@@ -337,6 +337,15 @@ export const STD_DEVICE_ATTRDEFS = {
         standard: true,
         order: 173
     },
+    wifi_signal_strength: {
+        display_name: gettext('Wi-Fi Signal Strength'),
+        description: gettext('Indicates the quality of the Wi-Fi connection.'),
+        type: 'number',
+        modifiable: false,
+        optional: true,
+        standard: true,
+        order: 174
+    },
     ip_address: {
         display_name: gettext('IP Address'),
         description: gettext('Manually configured IP address. Leave empty for automatic (DHCP) configuration.'),
