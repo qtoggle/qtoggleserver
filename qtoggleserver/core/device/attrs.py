@@ -130,7 +130,7 @@ ATTRDEFS = {
         'enabled': lambda: system.net.has_ip_support(),
         'standard': True
     },
-    'ip_mask': {
+    'ip_netmask': {
         'type': 'number',
         'min': 0,
         'max': 31,
@@ -163,7 +163,7 @@ ATTRDEFS = {
         'enabled': lambda: system.net.has_ip_support(),
         'standard': True
     },
-    'ip_mask_current': {
+    'ip_netmask_current': {
         'type': 'number',
         'modifiable': False,
         'persisted': False,
@@ -328,14 +328,14 @@ def get_attrs() -> Attributes:
     if system.net.has_ip_support():
         ip_config = system.net.get_ip_config()
         attrs['ip_address'] = ip_config['ip']
-        attrs['ip_mask'] = int(ip_config['mask'] or 0)
+        attrs['ip_netmask'] = int(ip_config['mask'] or 0)
         attrs['ip_gateway'] = ip_config['gw']
         attrs['ip_dns'] = ip_config['dns']
 
         if 'ip_current' in ip_config:
             attrs['ip_address_current'] = ip_config['ip_current']
         if 'mask_current' in ip_config:
-            attrs['ip_mask_current'] = int(ip_config['mask_current'] or 0)
+            attrs['ip_netmask_current'] = int(ip_config['mask_current'] or 0)
         if 'gw_current' in ip_config:
             attrs['ip_gateway_current'] = ip_config['gw_current']
         if 'dns_current' in ip_config:
@@ -412,7 +412,7 @@ def set_attrs(attrs: Attributes) -> bool:
             system.net.set_wifi_config(**wifi_config)
             reboot_required = True
 
-        elif name in ('ip_address', 'ip_mask', 'ip_gateway', 'ip_dns') and system.net.has_ip_support():
+        elif name in ('ip_address', 'ip_netmask', 'ip_gateway', 'ip_dns') and system.net.has_ip_support():
             ip_config = system.net.get_ip_config()
 
             k = name[3:]

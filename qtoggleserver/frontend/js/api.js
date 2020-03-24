@@ -354,7 +354,7 @@ export const STD_DEVICE_ATTRDEFS = {
             placeholder: '192.168.1.2'
         }
     },
-    ip_mask: {
+    ip_netmask: {
         display_name: gettext('Network Mask'),
         description: gettext('Manually configured network mask length. Set to 0 for automatic (DHCP) configuration.'),
         type: 'number',
@@ -415,7 +415,7 @@ export const STD_DEVICE_ATTRDEFS = {
         standard: true,
         order: 184
     },
-    ip_mask_current: {
+    ip_netmask_current: {
         display_name: gettext('Current Network Mask'),
         description: gettext('The current network mask of the device.'),
         type: 'number',
