@@ -44,7 +44,7 @@ def get_wifi_config() -> Dict[str, str]:
         cmd_name='WiFi config',
         log_values=False,
         exc_class=NetError,
-        required_fields=['ssid', 'psk', 'bssid']
+        required_fields=['ssid', 'psk', 'bssid', 'bssid_current', 'rssi_current']
     )
 
 

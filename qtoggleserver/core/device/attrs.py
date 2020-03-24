@@ -122,6 +122,13 @@ ATTRDEFS = {
         'enabled': lambda: system.net.has_wifi_support(),
         'standard': True
     },
+    'wifi_signal_strength': {
+        'type': 'number',
+        'modifiable': False,
+        'persisted': False,
+        'enabled': lambda: system.net.has_wifi_support(),
+        'standard': True
+    },
     'ip_address': {
         'type': 'string',
         'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})?$',
@@ -187,6 +194,10 @@ ATTRDEFS = {
 }
 
 EMPTY_PASSWORD_HASH = hashlib.sha256(b'').hexdigest()
+
+WIFI_RSSI_EXCELLENT = -50
+WIFI_RSSI_GOOD = -60
+WIFI_RSSI_FAIR = -70
 
 
 name = socket.gethostname()
@@ -321,9 +332,25 @@ def get_attrs() -> Attributes:
         attrs['wifi_ssid'] = wifi_config['ssid']
         attrs['wifi_key'] = wifi_config['psk']
         attrs['wifi_bssid'] = wifi_config['bssid']
+        attrs['wifi_bssid_current'] = wifi_config['bssid_current']
 
-        if 'bssid_current' in wifi_config:
-            attrs['wifi_bssid_current'] = wifi_config['bssid_current']
+        strength = -1
+        rssi = wifi_config['rssi_current']
+        if rssi:
+            rssi = int(rssi)
+            if rssi <= WIFI_RSSI_EXCELLENT:
+                strength = 3
+
+            elif rssi <= WIFI_RSSI_GOOD:
+                strength = 2
+
+            elif rssi <= WIFI_RSSI_FAIR:
+                strength = 1
+
+            else:
+                strength = 0
+
+        attrs['wifi_signal_strength'] = strength
 
     if system.net.has_ip_support():
         ip_config = system.net.get_ip_config()
@@ -422,7 +449,7 @@ def set_attrs(attrs: Attributes) -> bool:
             }.get(k, k)
             ip_config[k] = value
             ip_config = {k: v for k, v in ip_config.items() if not k.endswith('_current')}
-            ip_config['mask'] = str(ip_config['mask'])
+            ip_config['netmask'] = str(ip_config['netmask'])
 
             system.net.set_ip_config(**ip_config)
             reboot_required = True
