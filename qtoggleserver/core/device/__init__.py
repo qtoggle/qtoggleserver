@@ -21,7 +21,7 @@ def load() -> None:
 
     # Attributes
     persisted_attrs = []
-    for name, value in device_attrs.ATTRDEFS.items():
+    for name, value in device_attrs.get_attrdefs().items():
         persisted = value.get('persisted', value.get('modifiable'))
         if callable(persisted):
             persisted = persisted()
@@ -39,11 +39,8 @@ def load() -> None:
         value = data[name]
 
         # A few attributes may carry sensitive information, so treat them separately and do not log their values
-        if name.count('password'):
+        if name.count('password') or name == 'wifi_key':
             logger.debug('loaded %s', name)
-
-        elif name == 'network_wifi':
-            logger.debug('loaded %s = [hidden]', name)
 
         else:
             logger.debug('loaded %s = %s', name, json_utils.dumps(value))
@@ -69,7 +66,7 @@ def save() -> None:
 
     # Attributes
     persisted_attrs = []
-    for name, value in device_attrs.ATTRDEFS.items():
+    for name, value in device_attrs.get_attrdefs().items():
         persisted = value.get('persisted', value.get('modifiable'))
         if callable(persisted):
             persisted = persisted()

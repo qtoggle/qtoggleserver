@@ -7,7 +7,9 @@ import Logger from '$qui/lib/logger.module.js'
 import {AssertionError}  from '$qui/base/errors.js'
 import {gettext}         from '$qui/base/i18n.js'
 import Config            from '$qui/config.js'
+import {NumericField}    from '$qui/forms/common-fields.js'
 import {PasswordField}   from '$qui/forms/common-fields.js'
+import {TextAreaField}   from '$qui/forms/common-fields.js'
 import {TextField}       from '$qui/forms/common-fields.js'
 import * as AJAX         from '$qui/utils/ajax.js'
 import * as Crypto       from '$qui/utils/crypto.js'
@@ -193,17 +195,6 @@ export const STD_DEVICE_ATTRDEFS = {
         standard: true,
         order: 140
     },
-    uptime: {
-        display_name: gettext('Uptime'),
-        description: gettext('The number of seconds passed since the device has been turned on.'),
-        type: 'number',
-        unit: gettext('seconds'),
-        integer: true,
-        modifiable: false,
-        optional: true,
-        standard: true,
-        order: 150
-    },
     admin_password: {
         display_name: gettext('Administrator Password'),
         description: gettext("The administrator's password, required to perform administrative tasks."),
@@ -213,7 +204,7 @@ export const STD_DEVICE_ATTRDEFS = {
         standard: true,
         showAnyway: true,
         separator: true,
-        order: 160,
+        order: 150,
         field: {
             class: PasswordField,
             autocomplete: false,
@@ -231,7 +222,7 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: true,
         standard: true,
         showAnyway: true,
-        order: 170,
+        order: 151,
         field: {
             class: PasswordField,
             autocomplete: false,
@@ -249,7 +240,7 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: true,
         standard: true,
         showAnyway: true,
-        order: 180,
+        order: 152,
         field: {
             class: PasswordField,
             autocomplete: false,
@@ -267,7 +258,7 @@ export const STD_DEVICE_ATTRDEFS = {
         optional: true,
         standard: true,
         separator: true,
-        order: 190
+        order: 160
     },
     timezone: {
         display_name: gettext('Timezone'),
@@ -277,54 +268,190 @@ export const STD_DEVICE_ATTRDEFS = {
         optional: true,
         standard: true,
         separator: false,
-        order: 200
+        order: 161
     },
-    network_wifi: {
-        display_name: gettext('WiFi Configuration'),
-        description: gettext('The device WiFi configuration.'),
+    uptime: {
+        display_name: gettext('Uptime'),
+        description: gettext('The number of seconds passed since the device has been turned on.'),
+        type: 'number',
+        unit: gettext('seconds'),
+        integer: true,
+        modifiable: false,
+        optional: true,
+        standard: true,
+        order: 162
+    },
+    wifi_ssid: {
+        display_name: gettext('Wi-Fi Network Name'),
+        description: gettext('Your Wi-Fi network name. Leave empty when not using Wi-Fi.'),
+        separator: true,
         type: 'string',
         modifiable: true,
         reconnect: true,
-        // TODO this regex should ignore escaped colons \:
-        regex: '^(([^:]{0,32}:?)|([^:]{0,32}:[^:]{0,64}:?)|([^:]{0,32}:[^:]{0,64}:[0-9a-fA-F]{12}))$',
+        max: 32,
         optional: true,
         standard: true,
-        order: 210,
+        order: 170
+    },
+    wifi_key: {
+        display_name: gettext('Wi-Fi Network Key'),
+        description: gettext('Your Wi-Fi network key (password). Leave empty for an open Wi-Fi network.'),
+        type: 'string',
+        modifiable: true,
+        reconnect: true,
+        max: 64,
+        optional: true,
+        standard: true,
+        order: 171,
         field: {
             class: PasswordField,
             autocomplete: false,
             clearEnabled: true,
-            revealOnFocus: true,
-            placeholder: `${gettext('network')}:${gettext('password')}`
+            revealOnFocus: true
         }
     },
-    network_ip: {
-        display_name: gettext('IP Configuration'),
-        description: gettext('The device network IP configuration.'),
+    wifi_bssid: {
+        display_name: gettext('Wi-Fi Network BSSID'),
+        description: gettext('A specific BSSID (MAC address) of a Wi-Fi access point. ' +
+                             'Leave empty for automatic selection.'),
+        regex: '^[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}$',
         type: 'string',
         modifiable: true,
         reconnect: true,
-        regex: ('^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}/\\d{1,2}:' +
-                '\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:' +
-                '\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$'),
         optional: true,
         standard: true,
-        order: 220,
+        order: 172,
         field: {
             class: TextField,
             autocomplete: false,
-            placeholder: `ip/${gettext('mask')}:${gettext('gateway')}:dns`
+            clearEnabled: true,
+            placeholder: 'AA:BB:CC:DD:EE:FF'
         }
+    },
+    wifi_bssid_current: {
+        display_name: gettext('Current Wi-Fi Network BSSID'),
+        description: gettext('The BSSID (MAC address) of the access point to which the device is currently connected.'),
+        type: 'string',
+        modifiable: false,
+        optional: true,
+        standard: true,
+        order: 173
+    },
+    ip_address: {
+        display_name: gettext('IP Address'),
+        description: gettext('Manually configured IP address. Leave empty for automatic (DHCP) configuration.'),
+        separator: true,
+        type: 'string',
+        modifiable: true,
+        reconnect: true,
+        regex: '^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}',
+        optional: true,
+        standard: true,
+        order: 180,
+        field: {
+            class: TextField,
+            autocomplete: false,
+            placeholder: '192.168.1.2'
+        }
+    },
+    ip_netmask: {
+        display_name: gettext('Network Mask'),
+        description: gettext('Manually configured network mask length. Set to 0 for automatic (DHCP) configuration.'),
+        type: 'number',
+        modifiable: true,
+        min: 0,
+        max: 31,
+        integer: true,
+        reconnect: true,
+        optional: true,
+        standard: true,
+        order: 181,
+        field: {
+            class: NumericField,
+            placeholder: '24',
+            min: 0,
+            max: 31
+        }
+    },
+    ip_gateway: {
+        display_name: gettext('Gateway'),
+        description: gettext('Manually configured gateway (default route). ' +
+                             'Leave empty for automatic (DHCP) configuration.'),
+        type: 'string',
+        modifiable: true,
+        reconnect: true,
+        regex: '^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}',
+        optional: true,
+        standard: true,
+        order: 182,
+        field: {
+            class: TextField,
+            autocomplete: false,
+            placeholder: '192.168.1.1'
+        }
+    },
+    ip_dns: {
+        display_name: gettext('DNS Server'),
+        description: gettext('Manually configured DNS server. Leave empty for automatic (DHCP) configuration.'),
+        type: 'string',
+        modifiable: true,
+        reconnect: true,
+        regex: '^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}',
+        optional: true,
+        standard: true,
+        order: 183,
+        field: {
+            class: TextField,
+            autocomplete: false,
+            placeholder: '192.168.1.1'
+        }
+    },
+    ip_address_current: {
+        display_name: gettext('Current IP Address'),
+        description: gettext('The current IP address of the device.'),
+        type: 'string',
+        modifiable: false,
+        optional: true,
+        standard: true,
+        order: 184
+    },
+    ip_netmask_current: {
+        display_name: gettext('Current Network Mask'),
+        description: gettext('The current network mask of the device.'),
+        type: 'number',
+        modifiable: false,
+        optional: true,
+        standard: true,
+        order: 185
+    },
+    ip_gateway_current: {
+        display_name: gettext('Current Gateway'),
+        description: gettext('The current gateway (default route) of the device.'),
+        type: 'string',
+        modifiable: false,
+        optional: true,
+        standard: true,
+        order: 186
+    },
+    ip_dns_current: {
+        display_name: gettext('Current DNS Server'),
+        description: gettext('The current DNS server of the device.'),
+        type: 'string',
+        modifiable: false,
+        optional: true,
+        standard: true,
+        order: 187
     },
     battery_level: {
         display_name: gettext('Battery Level'),
-        description: gettext('The battery charge level.'),
+        description: gettext('The battery state of charge level.'),
+        separator: true,
         unit: '%',
         type: 'number',
         modifiable: false,
         optional: true,
         standard: true,
-        order: 230
+        order: 190
     },
     low_battery: {
         display_name: gettext('Low Battery'),
@@ -333,14 +460,24 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: false,
         optional: true,
         standard: true,
-        order: 240
+        order: 191
     },
     flags: {
         display_name: gettext('Device Features'),
         description: gettext('Device flags that indicate support for various optional functions.'),
+        separator: true,
         type: 'flags', // TODO replace with list of strings
         standard: true,
-        order: 250
+        order: 200
+    },
+    config_name: {
+        display_name: gettext('Configuration Name'),
+        description: gettext('Indicates a particular device configuration.'),
+        type: 'string',
+        modifiable: false,
+        optional: true,
+        standard: true,
+        order: 210
     },
     virtual_ports: {
         display_name: gettext('Virtual Ports'),
@@ -350,16 +487,7 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: false,
         optional: true,
         standard: true,
-        order: 260
-    },
-    config_name: {
-        display_name: gettext('Configuration Name'),
-        description: gettext('Indicates a particular device configuration.'),
-        type: 'string',
-        modifiable: false,
-        optional: true,
-        standard: true,
-        order: 270
+        order: 220
     }
 }
 
@@ -447,11 +575,12 @@ export const STD_PORT_ATTRDEFS = {
     },
     unit: {
         display_name: gettext('Unit'),
-        description: gettext('The unit of measurement for this port.'),
+        description: gettext('The unit of measurement for the value of this port.'),
         type: 'string',
         max: 64,
         modifiable: true,
         standard: true,
+        optional: true,
         order: 170
     },
     writable: {
@@ -538,7 +667,11 @@ export const STD_PORT_ATTRDEFS = {
         separator: true,
         standard: true,
         optional: true,
-        order: 260
+        order: 260,
+        field: {
+            class: TextAreaField,
+            resize: 'vertical'
+        }
     },
     device_expression: {
         /* display_name is added dynamically */
@@ -547,7 +680,11 @@ export const STD_PORT_ATTRDEFS = {
         modifiable: true,
         standard: true,
         optional: true,
-        max: 1024
+        max: 1024,
+        field: {
+            class: TextAreaField,
+            resize: 'vertical'
+        }
         /* order is added dynamically */
     },
     transform_write: {

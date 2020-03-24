@@ -24,8 +24,10 @@ async def patch_port(request: core_api.APIRequest, port_id: str, params: Attribu
     if port is None:
         raise core_api.APIError(404, 'no such port')
 
+    non_modifiable_attrs = await port.get_non_modifiable_attrs()
+
     def unexpected_field_msg(field: str) -> str:
-        if field in port.get_non_modifiable_attrs():
+        if field in non_modifiable_attrs:
             return 'attribute not modifiable: {field}'
 
         else:
@@ -34,8 +36,9 @@ async def patch_port(request: core_api.APIRequest, port_id: str, params: Attribu
     core_api_schema.validate(params, await port.get_schema(), unexpected_field_msg=unexpected_field_msg)
 
     # Step validation
+    attrdefs = await port.get_attrdefs()
     for name, value in params.items():
-        attrdef = port.ATTRDEFS[name]
+        attrdef = attrdefs[name]
         step = attrdef.get('step')
         _min = attrdef.get('min')
         if None not in (step, _min) and step != 0 and (value - _min) % step:

@@ -3,7 +3,6 @@ import copy
 import datetime
 import hashlib
 import logging
-import re
 import socket
 import sys
 
@@ -11,14 +10,14 @@ from qtoggleserver import system
 from qtoggleserver import version
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
-from qtoggleserver.core.typing import Attributes, GenericJSONDict
+from qtoggleserver.core.typing import Attributes, AttributeDefinitions, GenericJSONDict
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_set_cmd
 
 
 logger = logging.getLogger(__name__)
 
-STANDARD_ATTRDEFS = {
+ATTRDEFS = {
     'name': {
         'type': 'string',
         'modifiable': True,
@@ -26,64 +25,63 @@ STANDARD_ATTRDEFS = {
         'min': 1,
         'max': 32,
         'pattern': r'^[_a-zA-Z][_a-zA-Z0-9-]{0,31}$',
-        'internal': True
+        'standard': True
     },
     'display_name': {
         'type': 'string',
         'modifiable': True,
         'max': 64,
-        'internal': True
+        'standard': True
     },
     'version': {
         'type': 'string',
-        'internal': True
+        'standard': True
     },
     'api_version': {
         'type': 'string',
-        'internal': True
+        'standard': True
     },
     'vendor': {
         'type': 'string',
-        'internal': True
+        'standard': True
     },
     'admin_password': {
         'type': 'string',
         'modifiable': True,
         'max': 32,
-        'internal': True
+        'standard': True
     },
     'normal_password': {
         'type': 'string',
         'modifiable': True,
         'max': 32,
-        'internal': True
+        'standard': True
     },
     'viewonly_password': {
         'type': 'string',
         'modifiable': True,
         'max': 32,
-        'internal': True
+        'standard': True
     },
     'flags': {
         'type': ['string'],
-        'internal': True
+        'standard': True
     },
     'virtual_ports': {
         'type': 'number',
         'enabled': lambda: bool(settings.core.virtual_ports),
-        'internal': True
+        'standard': True
     },
     'uptime': {
         'type': 'number',
-        'internal': True
+        'standard': True
     },
     'date': {
         'type': 'string',
         'pattern': r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$',
-        'modifiable': True,
+        'modifiable': lambda: system.date.has_set_date_support(),
         'persisted': False,
-        'enabled': lambda: system.date.has_date_support(),
-        'internal': True
+        'standard': False  # Having standard False here enables exposing of definition (needed for non-modifiable)
     },
     'timezone': {
         'type': 'string',
@@ -91,54 +89,102 @@ STANDARD_ATTRDEFS = {
         'persisted': False,
         'choices': [{'value': zone} for zone in system.date.get_timezones()],
         'enabled': lambda: system.date.has_timezone_support(),
-        'internal': False  # Having internal False here enables export of attribute definition (needed for choices)
+        'standard': False  # Having standard False here enables exposing of definition (needed for choices)
     },
-    'network_ip': {
+    'wifi_ssid': {
         'type': 'string',
-        'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,3}\.\d{1,'
-                   r'3}\.\d{1,3}\.\d{1,3})?$',
+        'max': 32,
         'modifiable': True,
         'persisted': False,
-        'enabled': lambda: system.net.has_network_ip_support(),
-        'internal': True
+        'enabled': lambda: system.net.has_wifi_support(),
+        'standard': True
     },
-    'network_wifi': {
+    'wifi_key': {
         'type': 'string',
-        # TODO this regex should ignore escaped colons \:
-        'pattern': r'^(([^:]{0,32}:?)|([^:]{0,32}:[^:]{0,64}:?)|([^:]{0,32}:[^:]{0,64}:[0-9a-fA-F]{12}))$',
+        'max': 64,
         'modifiable': True,
         'persisted': False,
-        'enabled': lambda: system.net.has_network_wifi_support(),
-        'internal': True
+        'enabled': lambda: system.net.has_wifi_support(),
+        'standard': True
+    },
+    'wifi_bssid': {
+        'type': 'string',
+        'pattern': r'^([a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2})?$',
+        'modifiable': True,
+        'persisted': False,
+        'enabled': lambda: system.net.has_wifi_support(),
+        'standard': True
+    },
+    'wifi_bssid_current': {
+        'type': 'string',
+        'modifiable': False,
+        'persisted': False,
+        'enabled': lambda: system.net.has_wifi_support(),
+        'standard': True
+    },
+    'ip_address': {
+        'type': 'string',
+        'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})?$',
+        'modifiable': True,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'standard': True
+    },
+    'ip_netmask': {
+        'type': 'number',
+        'min': 0,
+        'max': 31,
+        'integer': True,
+        'modifiable': True,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'standard': True
+    },
+    'ip_gateway': {
+        'type': 'string',
+        'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})?$',
+        'modifiable': True,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'standard': True
+    },
+    'ip_dns': {
+        'type': 'string',
+        'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})?$',
+        'modifiable': True,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'standard': True
+    },
+    'ip_address_current': {
+        'type': 'string',
+        'modifiable': False,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'standard': True
+    },
+    'ip_netmask_current': {
+        'type': 'number',
+        'modifiable': False,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'standard': True
+    },
+    'ip_gateway_current': {
+        'type': 'string',
+        'modifiable': False,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'standard': True
+    },
+    'ip_dns_current': {
+        'type': 'string',
+        'modifiable': False,
+        'persisted': False,
+        'enabled': lambda: system.net.has_ip_support(),
+        'standard': True
     }
 }
-
-# TODO generalize additional attributes using getters and setters
-
-'''
-ADDITIONAL_ATTRDEFS = {
-    'attr1': {
-        'display_name': 'Some Attribute Display Name',
-        'description': 'Some attribute description',
-        'type': 'number',
-        'modifiable': True,
-        'unit': 'seconds',
-        'min': 1,
-        'max': 100,
-        'integer': True,
-        'step': 5,
-        'reconnect': False,
-        'choices': [
-            {'value': 2, 'display_name': 'Two'},
-            {'value': 4, 'display_name': 'Four'}
-        ]
-    },
-    ...
-}'''
-ADDITIONAL_ATTRDEFS = {
-}
-
-ATTRDEFS = dict(STANDARD_ATTRDEFS, **ADDITIONAL_ATTRDEFS)
 
 EMPTY_PASSWORD_HASH = hashlib.sha256(b'').hexdigest()
 
@@ -150,10 +196,27 @@ normal_password_hash = None
 viewonly_password_hash = None
 
 _schema = None
+_attrdefs = None
 
 
 class DeviceAttributeError(Exception):
     pass
+
+
+def get_attrdefs() -> AttributeDefinitions:
+    global _attrdefs
+
+    if _attrdefs is None:
+        logger.debug('initializing attribute definitions')
+        _attrdefs = copy.deepcopy(ATTRDEFS)
+
+        # Transform all callable values into corresponding results
+        for n, attrdef in _attrdefs.items():
+            for k, v in attrdef.items():
+                if callable(v):
+                    attrdef[k] = v()
+
+    return _attrdefs
 
 
 def get_schema() -> GenericJSONDict:
@@ -166,14 +229,14 @@ def get_schema() -> GenericJSONDict:
             'additionalProperties': False
         }
 
-        for name, attrdef in ATTRDEFS.items():
+        for name, attrdef in get_attrdefs().items():
             if not attrdef.get('modifiable'):
                 continue
 
             attr_schema = dict(attrdef)
 
             enabled = attr_schema.pop('enabled', True)
-            if not enabled or callable(enabled) and not enabled():
+            if not enabled:
                 continue
 
             if attr_schema['type'] == 'string':
@@ -198,7 +261,7 @@ def get_schema() -> GenericJSONDict:
 
             attr_schema.pop('persisted', None)
             attr_schema.pop('modifiable', None)
-            attr_schema.pop('internal', None)
+            attr_schema.pop('standard', None)
 
             _schema['properties'][name] = attr_schema
 
@@ -247,38 +310,36 @@ def get_attrs() -> Attributes:
     if settings.core.virtual_ports:
         attrs['virtual_ports'] = settings.core.virtual_ports
 
-    if system.date.has_date_support():
+    if system.date.has_real_date_time():
         attrs['date'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
 
     if system.date.has_timezone_support():
         attrs['timezone'] = system.date.get_timezone()
 
-    if system.net.has_network_wifi_support():
+    if system.net.has_wifi_support():
         wifi_config = system.net.get_wifi_config()
-        if wifi_config['bssid']:
-            wifi_config['bssid'] = wifi_config['bssid'].replace(':', '')
-            attrs['network_wifi'] = f'{wifi_config["ssid"]}:{wifi_config["psk"]}:{wifi_config["bssid"]}'
+        attrs['wifi_ssid'] = wifi_config['ssid']
+        attrs['wifi_key'] = wifi_config['psk']
+        attrs['wifi_bssid'] = wifi_config['bssid']
 
-        elif wifi_config['psk']:
-            wifi_config['psk'] = wifi_config['psk'].replace('\\', '\\\\')
-            wifi_config['psk'] = wifi_config['psk'].replace(':', '\\:')
-            attrs['network_wifi'] = f'{wifi_config["ssid"]}:{wifi_config["psk"]}'
+        if 'bssid_current' in wifi_config:
+            attrs['wifi_bssid_current'] = wifi_config['bssid_current']
 
-        elif wifi_config['ssid']:
-            wifi_config['ssid'] = wifi_config['ssid'].replace('\\', '\\\\')
-            wifi_config['ssid'] = wifi_config['ssid'].replace(':', '\\:')
-            attrs['network_wifi'] = wifi_config['ssid']
-
-        else:
-            attrs['network_wifi'] = ''
-
-    if system.net.has_network_ip_support():
+    if system.net.has_ip_support():
         ip_config = system.net.get_ip_config()
-        if ip_config['ip'] and ip_config['mask'] and ip_config['gw'] and ip_config['dns']:
-            attrs['network_ip'] = f'{ip_config["ip"]}/{ip_config["mask"]}:{ip_config["gw"]}:{ip_config["dns"]}'
+        attrs['ip_address'] = ip_config['ip']
+        attrs['ip_netmask'] = int(ip_config['mask'] or 0)
+        attrs['ip_gateway'] = ip_config['gw']
+        attrs['ip_dns'] = ip_config['dns']
 
-        else:
-            attrs['network_ip'] = ''
+        if 'ip_current' in ip_config:
+            attrs['ip_address_current'] = ip_config['ip_current']
+        if 'mask_current' in ip_config:
+            attrs['ip_netmask_current'] = int(ip_config['mask_current'] or 0)
+        if 'gw_current' in ip_config:
+            attrs['ip_gateway_current'] = ip_config['gw_current']
+        if 'dns_current' in ip_config:
+            attrs['ip_dns_current'] = ip_config['dns_current']
 
     return attrs
 
@@ -287,19 +348,17 @@ def set_attrs(attrs: Attributes) -> bool:
     core_device_attrs = sys.modules[__name__]
 
     reboot_required = False
+    attrdefs = get_attrdefs()
 
     for name, value in attrs.items():
         # A few attributes may carry sensitive information, so treat them separately and do not log their values
-        if name.count('password'):
+        if name.count('password') or name == 'wifi_key':
             logger.debug('setting device attribute %s', name)
-
-        elif name == 'network_wifi':
-            logger.debug('setting device attribute %s = [hidden]', name)
 
         else:
             logger.debug('setting device attribute %s = %s', name, json_utils.dumps(value))
 
-        attrdef = ATTRDEFS[name]
+        attrdef = attrdefs[name]
 
         if not attrdef.get('modifiable'):
             raise DeviceAttributeError(f'attribute not modifiable: {name}')
@@ -323,15 +382,13 @@ def set_attrs(attrs: Attributes) -> bool:
             continue
 
         persisted = attrdef.get('persisted', attrdef.get('modifiable'))
-        if callable(persisted):
-            persisted = persisted()
         if persisted:
             setattr(core_device_attrs, name, value)
 
         if name == 'name' and settings.core.device_name.set_cmd:
             run_set_cmd(settings.core.device_name.set_cmd, cmd_name='device name', name=value)
 
-        elif name == 'date' and system.date.has_date_support():
+        elif name == 'date' and system.date.has_set_date_support():
             try:
                 date = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
 
@@ -343,50 +400,45 @@ def set_attrs(attrs: Attributes) -> bool:
         elif name == 'timezone' and system.date.has_timezone_support():
             system.date.set_timezone(value)
 
-        elif name == 'network_wifi' and system.net.has_network_wifi_support():
-            parts = value.split(':')
-            i = 0
-            while i < len(parts):
-                if len(parts[i]) and parts[i][-1] == '\\':
-                    parts[i] = parts[i][:-1] + ':' + parts[i + 1]
-                    del parts[i + 1]
-                i += 1
+        elif name in ('wifi_ssid', 'wifi_key', 'wifi_bssid') and system.net.has_wifi_support():
+            wifi_config = system.net.get_wifi_config()
+            k = name[5:]
+            k = {
+                'key': 'psk'
+            }.get(k, k)
+            wifi_config[k] = value
+            wifi_config = {k: v for k, v in wifi_config.items() if not k.endswith('_current')}
 
-            parts = [p.replace('\\\\', '\\') for p in parts]
-            while len(parts) < 3:
-                parts.append('')
-
-            ssid, psk, bssid = parts[:3]
-            bssid = bssid.lower()
-            bssid = re.sub('([a-f0-9]{2})', '\\1:', bssid).strip(':')  # Add colons
-
-            system.net.set_wifi_config(ssid, psk, bssid)
+            system.net.set_wifi_config(**wifi_config)
             reboot_required = True
 
-        elif name == 'network_ip' and system.net.has_network_ip_support():
-            if value:
-                parts = value.split(':')
-                ip_mask, gw, dns = parts
-                ip, mask = ip_mask.split('/')
-                system.net.set_ip_config(ip, mask, gw, dns)
+        elif name in ('ip_address', 'ip_netmask', 'ip_gateway', 'ip_dns') and system.net.has_ip_support():
+            ip_config = system.net.get_ip_config()
 
-            else:
-                system.net.set_ip_config(ip='', mask='', gw='', dns='')
+            k = name[3:]
+            k = {
+                'address': 'ip',
+                'gateway': 'gw'
+            }.get(k, k)
+            ip_config[k] = value
+            ip_config = {k: v for k, v in ip_config.items() if not k.endswith('_current')}
+            ip_config['mask'] = str(ip_config['mask'])
 
+            system.net.set_ip_config(**ip_config)
             reboot_required = True
 
     return reboot_required
 
 
 def to_json() -> GenericJSONDict:
-    attrdefs = copy.deepcopy(ATTRDEFS)
+    attrdefs = copy.deepcopy(get_attrdefs())
     filtered_attrdefs = {}
     for n, attrdef in attrdefs.items():
-        if attrdef.pop('internal', False):
+        if attrdef.pop('standard', False):
             continue
 
         enabled = attrdef.pop('enabled', True)
-        if not enabled or callable(enabled) and not enabled():
+        if not enabled:
             continue
 
         attrdef.pop('persisted', None)
