@@ -18,18 +18,27 @@ def get_ip_config() -> Dict[str, str]:
         settings.system.net.ip.get_cmd,
         cmd_name='IP config',
         exc_class=NetError,
-        required_fields=['ip', 'netmask', 'gw', 'dns', 'ip_current', 'netmask_current', 'gw_current', 'dns_current']
+        required_fields=[
+            'address',
+            'netmask',
+            'gateway',
+            'dns',
+            'address_current',
+            'netmask_current',
+            'gateway_current',
+            'dns_current'
+        ]
     )
 
 
-def set_ip_config(ip: str, mask: str, gw: str, dns: str) -> None:
+def set_ip_config(address: str, netmask: str, gateway: str, dns: str) -> None:
     run_set_cmd(
         settings.system.net.ip.set_cmd,
         cmd_name='IP config',
         exc_class=NetError,
-        ip=ip,
-        mask=mask,
-        gw=gw,
+        address=address,
+        netmask=netmask,
+        gateway=gateway,
         dns=dns
     )
 

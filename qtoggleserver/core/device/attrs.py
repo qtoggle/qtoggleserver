@@ -354,17 +354,17 @@ def get_attrs() -> Attributes:
 
     if system.net.has_ip_support():
         ip_config = system.net.get_ip_config()
-        attrs['ip_address'] = ip_config['ip']
+        attrs['ip_address'] = ip_config['address']
         attrs['ip_netmask'] = int(ip_config['netmask'] or 0)
-        attrs['ip_gateway'] = ip_config['gw']
+        attrs['ip_gateway'] = ip_config['gateway']
         attrs['ip_dns'] = ip_config['dns']
 
-        if 'ip_current' in ip_config:
-            attrs['ip_address_current'] = ip_config['ip_current']
+        if 'address_current' in ip_config:
+            attrs['ip_address_current'] = ip_config['address_current']
         if 'netmask_current' in ip_config:
             attrs['ip_netmask_current'] = int(ip_config['netmask_current'] or 0)
-        if 'gw_current' in ip_config:
-            attrs['ip_gateway_current'] = ip_config['gw_current']
+        if 'gateway_current' in ip_config:
+            attrs['ip_gateway_current'] = ip_config['gateway_current']
         if 'dns_current' in ip_config:
             attrs['ip_dns_current'] = ip_config['dns_current']
 
@@ -443,10 +443,6 @@ def set_attrs(attrs: Attributes) -> bool:
             ip_config = system.net.get_ip_config()
 
             k = name[3:]
-            k = {
-                'address': 'ip',
-                'gateway': 'gw'
-            }.get(k, k)
             ip_config[k] = value
             ip_config = {k: v for k, v in ip_config.items() if not k.endswith('_current')}
             ip_config['netmask'] = str(ip_config['netmask'])
