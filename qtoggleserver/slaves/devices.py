@@ -438,7 +438,7 @@ class Slave(logging_utils.LoggableMixin):
         port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
         my_port_ids = [
             d['id'][len(self._name) + 1:] for d in port_data_list
-            if d['id'].startswith(self._name + '.')
+            if d['id'].startswith(f'{self._name}.')
         ]
 
         for _id in my_port_ids:
@@ -455,7 +455,7 @@ class Slave(logging_utils.LoggableMixin):
         port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
         my_port_data_list = [
             d for d in port_data_list
-            if d['id'].startswith(self._name + '.')
+            if d['id'].startswith(f'{self._name}.')
         ]
 
         # Remove old records
@@ -476,6 +476,12 @@ class Slave(logging_utils.LoggableMixin):
         self.debug('removing ports')
         for port in self._get_local_ports():
             await port.remove()
+
+        # Also remove persisted port data belonging to this device for ports that are no longer present on this slave
+        port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
+        for d in port_data_list:
+            if d['id'].startswith(f'{self._name}.'):
+                persist.remove(SlavePort.PERSIST_COLLECTION, {'id': d['id']})
 
         self.debug('removing device')
         persist.remove('slaves', filt={'id': self._name})
@@ -715,7 +721,7 @@ class Slave(logging_utils.LoggableMixin):
     def _get_local_ports(self) -> List[SlavePort]:
         return [
             port for port in core_ports.all_ports()
-            if port.get_id().startswith(self._name + '.') and isinstance(port, SlavePort)
+            if port.get_id().startswith(f'{self._name}.') and isinstance(port, SlavePort)
         ]
 
     async def _listen_loop(self) -> None:

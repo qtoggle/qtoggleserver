@@ -376,7 +376,6 @@ class SlavePort(core_ports.BasePort):
         except Exception as e:
             self.error('failed to fetch port value: %s', e)
 
-            raise
-
-        if value is not None:
-            self._cached_value = value
+        else:
+            if value is not None:
+                self._cached_value = value
