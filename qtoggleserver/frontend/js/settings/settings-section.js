@@ -2,7 +2,7 @@
 import {gettext}        from '$qui/base/i18n.js'
 import {getCurrentPage} from '$qui/pages/pages.js'
 
-import * as API        from '$app/api/api.js'
+import * as AuthAPI    from '$app/api/auth.js'
 import * as Cache      from '$app/cache.js'
 import WaitDeviceMixin from '$app/common/wait-device-mixin.js'
 import {Section}       from '$app/sections.js'
@@ -81,7 +81,7 @@ class SettingsSection extends Section {
     }
 
     makeMainPage() {
-        if (API.getCurrentAccessLevel() < API.ACCESS_LEVEL_ADMIN) {
+        if (AuthAPI.getCurrentAccessLevel() < AuthAPI.ACCESS_LEVEL_ADMIN) {
             return this.makeForbiddenMessage()
         }
 

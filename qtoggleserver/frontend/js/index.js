@@ -12,6 +12,8 @@ import * as Window                from '$qui/window.js'
 import Logger from '$qui/lib/logger.module.js'
 
 import * as API                   from '$app/api/api.js'
+import * as AuthAPI               from '$app/api/auth.js'
+import * as NotificationsAPI      from '$app/api/notifications.js'
 import * as Auth                  from '$app/auth.js'
 import * as Cache                 from '$app/cache.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
@@ -40,7 +42,7 @@ function initConfig() {
 
 function handleAccessLevelChange(oldLevel, newLevel) {
     /* Whenever access level changes, reload all required data */
-    if (newLevel > API.ACCESS_LEVEL_NONE) {
+    if (newLevel > AuthAPI.ACCESS_LEVEL_NONE) {
         Cache.load(newLevel, /* showModalProgress = */ true)
         /* There's no need for load().catch() since it retries indefinitely until success */
     }
@@ -49,10 +51,10 @@ function handleAccessLevelChange(oldLevel, newLevel) {
     let settingsSection = SettingsSection.getInstance()
     let devicesSection = Config.slavesEnabled ? DevicesSection.getInstance() : null
 
-    portsSection.setButtonVisibility(newLevel >= API.ACCESS_LEVEL_ADMIN)
-    settingsSection.setButtonVisibility(newLevel >= API.ACCESS_LEVEL_ADMIN)
+    portsSection.setButtonVisibility(newLevel >= AuthAPI.ACCESS_LEVEL_ADMIN)
+    settingsSection.setButtonVisibility(newLevel >= AuthAPI.ACCESS_LEVEL_ADMIN)
     if (devicesSection) {
-        devicesSection.setButtonVisibility(newLevel >= API.ACCESS_LEVEL_ADMIN)
+        devicesSection.setButtonVisibility(newLevel >= AuthAPI.ACCESS_LEVEL_ADMIN)
     }
 
     /* Notify section listeners */
@@ -116,17 +118,17 @@ function main() {
     .then(() => Cache.init())
     .then(function () {
 
-        API.addAccessLevelChangeListener(handleAccessLevelChange)
-        API.addEventListener(handleAPIEvent)
+        AuthAPI.addAccessLevelChangeListener(handleAccessLevelChange)
+        NotificationsAPI.addEventListener(handleAPIEvent)
 
-        Auth.whenFinalAccessLevelReady.then(level => API.startListening())
+        Auth.whenFinalAccessLevelReady.then(level => NotificationsAPI.startListening())
 
         Window.visibilityChangeSignal.connect(function (visible) {
             if (!visible) {
                 return
             }
 
-            if (!API.isListening()) {
+            if (!NotificationsAPI.isListening()) {
                 return
             }
 
@@ -138,8 +140,8 @@ function main() {
 
             Cache.setReloadNeeded()
 
-            API.stopListening()
-            API.startListening()
+            NotificationsAPI.stopListening()
+            NotificationsAPI.startListening()
         })
 
     })

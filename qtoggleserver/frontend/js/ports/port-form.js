@@ -14,8 +14,9 @@ import * as ArrayUtils      from '$qui/utils/array.js'
 import * as ObjectUtils     from '$qui/utils/object.js'
 import * as StringUtils     from '$qui/utils/string.js'
 
-import * as API         from '$app/api/api.js'
 import * as Attrdefs    from '$app/api/attrdefs.js'
+import * as BaseAPI     from '$app/api/base.js'
+import * as PortsAPI    from '$app/api/ports.js'
 import * as Cache       from '$app/cache.js'
 import AttrdefFormMixin from '$app/common/attrdef-form-mixin.js'
 import * as Common      from '$app/common/common.js'
@@ -303,7 +304,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
         let patchPortPromise = Promise.resolve()
         if (Object.keys(newAttrs).length) {
-            patchPortPromise = API.patchPort(port.id, newAttrs).then(function () {
+            patchPortPromise = PortsAPI.patchPort(port.id, newAttrs).then(function () {
 
                 logger.debug(`port "${port.id}" attributes successfully updated`)
                 Toast.info(gettext('Port has been updated.'))
@@ -314,7 +315,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 logger.errorStack(`failed to update port "${port.id}" attributes`, error)
 
                 let m
-                if (error instanceof API.APIError && (m = error.messageCode.match(/invalid field: (.*)/))) {
+                if (error instanceof BaseAPI.APIError && (m = error.messageCode.match(/invalid field: (.*)/))) {
                     let fieldName = `attr_${m[1]}`
                     throw new ErrorMapping({[fieldName]: new ValidationError(gettext('Invalid value.'))})
                 }
@@ -342,7 +343,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             else {
                 logger.debug(`updating port "${port.id}" value to ${JSON.stringify(newValue)}`)
 
-                patchValuePromise = API.patchPortValue(port.id, newValue).then(function () {
+                patchValuePromise = PortsAPI.patchPortValue(port.id, newValue).then(function () {
 
                     logger.debug(`port "${port.id}" value set`)
 
@@ -459,10 +460,10 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
                 let portId = port.id
                 if (this._deviceName && !Cache.isMainDevice(this._deviceName)) {
-                    API.setSlave(this._deviceName)
+                    BaseAPI.setSlaveName(this._deviceName)
                     portId = portId.substring(this._deviceName.length + 1)
                 }
-                API.deletePort(portId).then(function () {
+                PortsAPI.deletePort(portId).then(function () {
 
                     logger.debug(`port "${port.id}" successfully removed`)
                     this.close(/* force = */ true)

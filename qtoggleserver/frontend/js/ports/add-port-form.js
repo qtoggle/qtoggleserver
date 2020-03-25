@@ -8,8 +8,10 @@ import {PageForm}           from '$qui/forms/common-forms.js'
 import FormButton           from '$qui/forms/form-button.js'
 import {ValidationError}    from '$qui/forms/forms.js'
 
-import * as API   from '$app/api/api.js'
-import * as Cache from '$app/cache.js'
+import * as BaseAPI    from '$app/api/base.js'
+import * as DevicesAPI from '$app/api/devices.js'
+import * as PortsAPI   from '$app/api/ports.js'
+import * as Cache      from '$app/cache.js'
 
 import * as Ports from './ports.js'
 
@@ -101,8 +103,8 @@ class AddPortForm extends PageForm {
 
         logger.debug(`adding port "${portId}"`)
 
-        API.setSlave(this._deviceName)
-        return API.getDevice().then(function (attrs) {
+        BaseAPI.setSlaveName(this._deviceName)
+        return DevicesAPI.getDevice().then(function (attrs) {
 
             if (!attrs.virtual_ports) {
                 logger.warn(`device "${deviceName}" does not support virtual ports`)
@@ -111,7 +113,7 @@ class AddPortForm extends PageForm {
 
         }).then(function () {
 
-            API.setSlave(this._deviceName)
+            BaseAPI.setSlaveName(this._deviceName)
 
             let min, max, integer, step, choices
             if (data.type === 'number') {
@@ -122,7 +124,7 @@ class AddPortForm extends PageForm {
                 choices = data.choices
             }
 
-            return API.postPorts(portId, data.type, min, max, integer, step, choices)
+            return PortsAPI.postPorts(portId, data.type, min, max, integer, step, choices)
 
         }.bind(this)).then(function () {
 

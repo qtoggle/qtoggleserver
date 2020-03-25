@@ -16,15 +16,18 @@ import * as ObjectUtils           from '$qui/utils/object.js'
 import * as Window                from '$qui/window.js'
 import * as Toast                 from '$qui/messages/toast.js'
 
-import * as API           from '$app/api/api.js'
-import * as Attrdefs      from '$app/api/attrdefs.js'
-import * as Cache         from '$app/cache.js'
-import AttrdefFormMixin   from '$app/common/attrdef-form-mixin.js'
-import * as Common        from '$app/common/common.js'
-import ProvisioningForm   from '$app/common/provisioning-form.js'
-import RebootDeviceMixin  from '$app/common/reboot-device-mixin.js'
-import UpdateFirmwareForm from '$app/common/update-firmware-form.js'
-import WaitDeviceMixin    from '$app/common/wait-device-mixin.js'
+import * as Attrdefs         from '$app/api/attrdefs.js'
+import * as AuthAPI          from '$app/api/auth.js'
+import * as BaseAPI          from '$app/api/base.js'
+import * as DevicesAPI       from '$app/api/devices.js'
+import * as NotificationsAPI from '$app/api/notifications.js'
+import * as Cache            from '$app/cache.js'
+import AttrdefFormMixin      from '$app/common/attrdef-form-mixin.js'
+import * as Common           from '$app/common/common.js'
+import ProvisioningForm      from '$app/common/provisioning-form.js'
+import RebootDeviceMixin     from '$app/common/reboot-device-mixin.js'
+import UpdateFirmwareForm    from '$app/common/update-firmware-form.js'
+import WaitDeviceMixin       from '$app/common/wait-device-mixin.js'
 
 import * as ClientSettings from './client-settings.js'
 import * as Settings       from './settings.js'
@@ -115,7 +118,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         this.fieldsFromAttrdefs({
             attrdefs: this._fullAttrdefs,
             initialData: Common.preprocessDeviceAttrs(attrs),
-            noUpdated: API.NO_EVENT_DEVICE_ATTRS,
+            noUpdated: NotificationsAPI.NO_EVENT_DEVICE_ATTRS,
             fieldChangeWarnings: fieldChangeWarnings
         })
 
@@ -290,14 +293,14 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         if (Object.keys(newAttrs).length) {
             promise = promise.then(function () {
 
-                return API.patchDevice(newAttrs).then(function () {
+                return DevicesAPI.patchDevice(newAttrs).then(function () {
 
                     logger.debug(`device attributes successfully updated`)
                     Toast.info(gettext('Device has been updated.'))
 
-                    if ('admin_password' in newAttrs && API.getUsername() === 'admin') {
+                    if ('admin_password' in newAttrs && AuthAPI.getUsername() === 'admin') {
                         logger.debug('admin password also updated locally')
-                        API.setPassword(newAttrs['admin_password'])
+                        AuthAPI.setPassword(newAttrs['admin_password'])
                     }
 
                     Settings.recentSettingsUpdateTimer.restart()
@@ -307,7 +310,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
                     logger.errorStack(`failed to update device attributes`, error)
 
                     let m
-                    if (error instanceof API.APIError && (m = error.messageCode.match(/invalid field: (.*)/))) {
+                    if (error instanceof BaseAPI.APIError && (m = error.messageCode.match(/invalid field: (.*)/))) {
                         let fieldName = `attr_${m[1]}`
                         throw new ErrorMapping({[fieldName]: new ValidationError(gettext('Invalid value.'))})
                     }

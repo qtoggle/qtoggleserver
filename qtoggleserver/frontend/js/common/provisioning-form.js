@@ -18,7 +18,8 @@ import * as ArrayUtils      from '$qui/utils/array.js'
 import * as PromiseUtils    from '$qui/utils/promise.js'
 import * as StringUtils     from '$qui/utils/string.js'
 
-import * as API           from '$app/api/api.js'
+import * as BaseAPI       from '$app/api/base.js'
+import * as DevicesAPI    from '$app/api/devices.js'
 import * as Cache         from '$app/cache.js'
 import * as BackupRestore from '$app/common/backup-restore.js'
 import * as Common        from '$app/common/common.js'
@@ -157,7 +158,7 @@ class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin) {
             return Promise.resolve()
         }
 
-        return API.getProvisioningConfigs(deviceAttrs.config_name || '').then(function (configs) {
+        return DevicesAPI.getProvisioningConfigs(deviceAttrs.config_name || '').then(function (configs) {
 
             let choices = ArrayUtils.sortKey(configs, c => c.name).map(c => ({value: c.name, label: c.name}))
             let field = this.getField('default_config')
@@ -221,7 +222,7 @@ class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin) {
             modalProgress.setProgressPercent(-1)
             this.pushPage(modalProgress)
 
-            API.getProvisioningConfig(configName).then(function (config) {
+            DevicesAPI.getProvisioningConfig(configName).then(function (config) {
 
                 return BackupRestore.applyDefaultConfig(slaveName, config, modalProgress)
 
@@ -261,9 +262,9 @@ class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin) {
                 this.setProgress()
 
                 if (this.deviceIsSlave()) {
-                    API.setSlave(deviceName)
+                    BaseAPI.setSlaveName(deviceName)
                 }
-                API.postReset(/* factory = */ true).then(function () {
+                DevicesAPI.postReset(/* factory = */ true).then(function () {
 
                     logger.debug(`device "${deviceName}" is resetting to factory defaults`)
                     return PromiseUtils.withTimeout(this.waitDeviceOffline(), Common.GO_OFFLINE_TIMEOUT * 1000)

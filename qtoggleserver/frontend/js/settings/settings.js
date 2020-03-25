@@ -7,8 +7,6 @@ import Logger from '$qui/lib/logger.module.js'
 import Timer     from '$qui/base/timer.js'
 import StockIcon from '$qui/icons/stock-icon.js'
 
-import * as ClientSettings from './client-settings.js'
-
 
 /**
  * @alias qtoggle.settings.WRENCH_ICON

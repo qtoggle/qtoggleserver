@@ -10,8 +10,12 @@ import * as ObjectUtils    from '$qui/utils/object.js'
 import * as PromiseUtils   from '$qui/utils/promise.js'
 import * as StringUtils    from '$qui/utils/string.js'
 
-import * as API      from '$app/api/api.js'
-import * as Attrdefs from '$app/api/attrdefs.js'
+import * as Attrdefs         from '$app/api/attrdefs.js'
+import * as BaseAPI          from '$app/api/base.js'
+import * as DevicesAPI       from '$app/api/devices.js'
+import * as NotificationsAPI from '$app/api/notifications.js'
+import * as PortsAPI         from '$app/api/ports.js'
+import * as ReverseAPI       from '$app/api/reverse.js'
 
 
 const logger = Logger.get('qtoggle.common.backuprestore')
@@ -60,7 +64,7 @@ class Context {
 
     prepareAPICall() {
         if (this.slaveName) {
-            API.setSlave(this.slaveName)
+            BaseAPI.setSlaveName(this.slaveName)
         }
     }
 
@@ -111,7 +115,7 @@ function applyDefaultDeviceConfig(context, deviceAttrs) {
     /* Update device attributes */
     promise = promise.then(function () {
         context.prepareAPICall()
-        return API.patchDevice(deviceAttrs)
+        return DevicesAPI.patchDevice(deviceAttrs)
     })
 
     return promise
@@ -132,7 +136,7 @@ function applyDefaultPortConfig(context, portAttrs) {
             /* If port already exists on device, remove it first */
             promise = promise.then(function () {
                 context.prepareAPICall()
-                return API.deletePort(portId)
+                return PortsAPI.deletePort(portId)
             })
         }
 
@@ -147,7 +151,7 @@ function applyDefaultPortConfig(context, portAttrs) {
         /* Actually add the port */
         promise = promise.then(function () {
             context.prepareAPICall()
-            return API.postPorts(id, type, min, max, integer, step, choices)
+            return PortsAPI.postPorts(id, type, min, max, integer, step, choices)
         })
     }
 
@@ -170,14 +174,14 @@ function applyDefaultPortConfig(context, portAttrs) {
     /* Update port attributes */
     promise = promise.then(function () {
         context.prepareAPICall()
-        return API.patchPort(portId, portAttrs)
+        return PortsAPI.patchPort(portId, portAttrs)
     })
 
     /* Set port value, if any */
     if (portValue != null) {
         promise = promise.then(function () {
             context.prepareAPICall()
-            return API.patchPortValue(portId, portValue)
+            return PortsAPI.patchPortValue(portId, portValue)
         })
     }
 
@@ -193,7 +197,7 @@ function applyDefaultWebhooksConfig(context, webhooksConfig) {
 
     promise = promise.then(function () {
         context.prepareAPICall()
-        return API.patchWebhooks(
+        return NotificationsAPI.patchWebhooks(
             webhooksConfig.enabled,
             webhooksConfig.scheme,
             webhooksConfig.host,
@@ -216,7 +220,7 @@ function applyDefaultReverseConfig(context, reverseConfig) {
 
     promise = promise.then(function () {
         context.prepareAPICall()
-        return API.patchReverse(
+        return ReverseAPI.patchReverse(
             reverseConfig.enabled,
             reverseConfig.scheme,
             reverseConfig.host,
@@ -247,7 +251,7 @@ export function applyDefaultConfig(slaveName, config, modalProgress) {
             gettext('Fetching device attributes'),
             function (context) {
                 context.prepareAPICall()
-                return API.getDevice().then(deviceAttrs => (context.deviceAttrs = deviceAttrs))
+                return DevicesAPI.getDevice().then(deviceAttrs => (context.deviceAttrs = deviceAttrs))
             }
         )
     )
@@ -258,7 +262,7 @@ export function applyDefaultConfig(slaveName, config, modalProgress) {
             gettext('Fetching port attributes'),
             function (context) {
                 context.prepareAPICall()
-                return API.getPorts().then(ports => (context.ports = ports))
+                return PortsAPI.getPorts().then(ports => (context.ports = ports))
             }
         )
     )

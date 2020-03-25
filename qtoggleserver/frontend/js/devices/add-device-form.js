@@ -11,7 +11,8 @@ import {ValidationError} from '$qui/forms/forms.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
 import URL               from '$qui/utils/url.js'
 
-import * as API from '$app/api/api.js'
+import * as BaseAPI        from '$app/api/base.js'
+import * as MasterSlaveAPI from '$app/api/master-slave.js'
 
 import * as Devices from './devices.js'
 
@@ -135,7 +136,7 @@ class AddDeviceForm extends PageForm {
     applyData(data) {
         logger.debug(`adding device at url ${data.url}`)
 
-        return API.postSlaveDevices(
+        return MasterSlaveAPI.postSlaveDevices(
             data.scheme,
             data.host,
             data.port,
@@ -151,7 +152,7 @@ class AddDeviceForm extends PageForm {
 
             logger.errorStack(`failed to add device at url ${data.url}`, error)
 
-            if (error instanceof API.APIError && error.messageCode === 'no such function' && data.path === '/') {
+            if (error instanceof BaseAPI.APIError && error.messageCode === 'no such function' && data.path === '/') {
 
                 logger.debug('retrying with /api suffix')
                 data.path = '/api'

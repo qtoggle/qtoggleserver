@@ -70,7 +70,7 @@ export class Section extends QUISection {
 
     /**
      * Override this method to react to qToggle API events.
-     * @param {qtoggle.api.Event} event the event
+     * @param {qtoggle.api.notifications.Event} event the event
      */
     onServerEvent(event) {
     }
@@ -85,7 +85,7 @@ export class Section extends QUISection {
 
     /**
      * Override this method to react when frontend gets disconnected from main device.
-     * @param {qtoggle.api.APIError} error disconnect error
+     * @param {qtoggle.api.base.APIError} error disconnect error
      */
     onMainDeviceDisconnect(error) {
     }

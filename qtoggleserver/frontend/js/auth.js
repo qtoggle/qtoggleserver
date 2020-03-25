@@ -10,7 +10,7 @@ import * as Toast        from '$qui/messages/toast.js'
 import * as Cookies      from '$qui/utils/cookies.js'
 import * as StringUtils  from '$qui/utils/string.js'
 
-import * as API                   from '$app/api/api.js'
+import * as AuthAPI               from '$app/api/auth.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
 
 
@@ -32,7 +32,7 @@ export let whenInitialAccessLevelReady = new ConditionVariable()
 export let whenFinalAccessLevelReady = new ConditionVariable()
 
 /**
- * Call {@link qtoggle.api.getAccess} after setting the given credentials. This will trigger the login mechanism by
+ * Call {@link qtoggle.api.auth.getAccess} after setting the given credentials. This will trigger the login mechanism by
  * resolving/rejecting access level promises.
  * @alias qtoggle.auth.login
  * @param {String} username
@@ -42,12 +42,12 @@ export let whenFinalAccessLevelReady = new ConditionVariable()
 export function login(username, password) {
     logger.debug(`logging in with username = "${username}"`)
 
-    API.setUsername(username)
-    API.setPassword(password)
+    AuthAPI.setUsername(username)
+    AuthAPI.setPassword(password)
 
-    return API.getAccess().then(function (level) {
+    return AuthAPI.getAccess().then(function (level) {
 
-        if (level <= API.ACCESS_LEVEL_NONE) {
+        if (level <= AuthAPI.ACCESS_LEVEL_NONE) {
             logger.debug(`login failed for username = "${username}"`)
         }
 
@@ -62,8 +62,8 @@ export function login(username, password) {
  */
 export function storeCredentials() {
     logger.debug('storing credentials')
-    Cookies.set(AUTH_USERNAME_COOKIE, API.getUsername(), 3650)
-    Cookies.set(AUTH_PASSWORD_COOKIE, API.getPasswordHash(), 3650)
+    Cookies.set(AUTH_USERNAME_COOKIE, AuthAPI.getUsername(), 3650)
+    Cookies.set(AUTH_PASSWORD_COOKIE, AuthAPI.getPasswordHash(), 3650)
 }
 
 /**
@@ -88,9 +88,9 @@ function fetchInitialAccess() {
 
     logger.debug('fetching initial access')
 
-    return API.getAccess().catch(function (error) {
+    return AuthAPI.getAccess().catch(function (error) {
 
-        handleAccessLevelChange(null, API.ACCESS_LEVEL_NONE)
+        handleAccessLevelChange(null, AuthAPI.ACCESS_LEVEL_NONE)
         Toast.error(StringUtils.formatPercent(gettext('Authentication failed: %(error)s'), {error: error}))
 
     }).finally(function () {
@@ -103,8 +103,8 @@ function handleAccessLevelChange(oldLevel, newLevel) {
         whenInitialAccessLevelReady.fulfill(newLevel)
     }
 
-    if ((oldLevel == null || oldLevel === API.ACCESS_LEVEL_NONE) &&
-        (newLevel > API.ACCESS_LEVEL_NONE) &&
+    if ((oldLevel == null || oldLevel === AuthAPI.ACCESS_LEVEL_NONE) &&
+        (newLevel > AuthAPI.ACCESS_LEVEL_NONE) &&
         !whenFinalAccessLevelReady.isFulfilled()) {
 
         whenFinalAccessLevelReady.fulfill(newLevel)
@@ -116,7 +116,7 @@ function handleAccessLevelChange(oldLevel, newLevel) {
  * @alias qtoggle.auth.init
  */
 export function init() {
-    API.addAccessLevelChangeListener(handleAccessLevelChange)
+    AuthAPI.addAccessLevelChangeListener(handleAccessLevelChange)
 
     /* Fetch initial access level */
     let username = Cookies.get(AUTH_USERNAME_COOKIE)
@@ -124,18 +124,18 @@ export function init() {
     if (username && passwordHash) {
         logger.debug('restoring credentials')
 
-        API.setUsername(username)
-        API.setPasswordHash(passwordHash)
+        AuthAPI.setUsername(username)
+        AuthAPI.setPasswordHash(passwordHash)
 
         fetchInitialAccess()
     }
     else {
         logger.debug('no stored credentials')
-        whenInitialAccessLevelReady.fulfill(API.ACCESS_LEVEL_NONE)
+        whenInitialAccessLevelReady.fulfill(AuthAPI.ACCESS_LEVEL_NONE)
     }
 
     /* Handle final access level */
     whenFinalAccessLevelReady.then(function (level) {
-        logger.debug(`final access level is ${API.ACCESS_LEVEL_MAPPING[level]}`)
+        logger.debug(`final access level is ${AuthAPI.ACCESS_LEVEL_MAPPING[level]}`)
     })
 }

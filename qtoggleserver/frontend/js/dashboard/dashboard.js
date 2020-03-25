@@ -6,7 +6,7 @@ import Logger from '$qui/lib/logger.module.js'
 
 import StockIcon from '$qui/icons/stock-icon.js'
 
-import * as API from '$app/api/api.js'
+import * as DashboardAPI from '$app/api/dashboard.js'
 
 
 const PANELS_SAVE_INTERVAL = 2000 /* Milliseconds */
@@ -55,7 +55,7 @@ export function savePanels() {
         pendingSavePanelsTimeoutHandle = null
         let panels = rootGroup.getChildren().map(p => p.toJSON())
 
-        API.putDashboardPanels(panels)
+        DashboardAPI.putDashboardPanels(panels)
 
     }, PANELS_SAVE_INTERVAL)
 }

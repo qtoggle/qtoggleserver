@@ -17,8 +17,9 @@ import * as StringUtils     from '$qui/utils/string.js'
 import ViewMixin            from '$qui/views/view.js'
 import * as Window          from '$qui/window.js'
 
-import * as API   from '$app/api/api.js'
-import * as Cache from '$app/cache.js'
+import * as AuthAPI  from '$app/api/auth.js'
+import * as PortsAPI from '$app/api/ports.js'
+import * as Cache    from '$app/cache.js'
 
 import MoveWidgetForm   from './move-widget-form.js'
 import WidgetConfigForm from './widget-config-form.js'
@@ -802,7 +803,7 @@ class Widget extends mix().with(ViewMixin) {
         this.logger.debug(`state ${oldState} -> ${newState}`)
 
         /* Hide/show protection glass */
-        let canEdit = API.getCurrentAccessLevel() >= API.ACCESS_LEVEL_NORMAL
+        let canEdit = AuthAPI.getCurrentAccessLevel() >= AuthAPI.ACCESS_LEVEL_NORMAL
         let wasProtected = (oldState === Widgets.STATE_PROGRESS && this.constructor.protectProgress) ||
                            (oldState === Widgets.STATE_INVALID && this.constructor.protectInvalid)
         let nowProtected = (newState === Widgets.STATE_PROGRESS && this.constructor.protectProgress) ||
@@ -975,7 +976,7 @@ class Widget extends mix().with(ViewMixin) {
 
                 let elemPosition = this._dragElem.position()
 
-                this._px2em = CSS.px2em(1, this._containerDiv)
+                this._px2em = CSS.px2em(1, this._bodyDiv)
                 this._clickDragElemX = elemPosition.left
                 this._clickDragElemY = elemPosition.top
 
@@ -1123,7 +1124,7 @@ class Widget extends mix().with(ViewMixin) {
     }
 
     /**
-     * Set a new value to a port. This is basically a handy wrapper around {@link qtoggle.api.patchPortValue}.
+     * Set a new value to a port. This is basically a handy wrapper around {@link qtoggle.api.ports.patchPortValue}.
      *
      * During the API call, the widget is put into *progress* state. When the call returns, the state is updated
      * according to the result.
@@ -1135,7 +1136,7 @@ class Widget extends mix().with(ViewMixin) {
     setPortValue(portId, value) {
         this.setProgress()
 
-        return API.patchPortValue(portId, value).then(function () {
+        return PortsAPI.patchPortValue(portId, value).then(function () {
 
             this.clearProgress()
 
@@ -1164,7 +1165,8 @@ class Widget extends mix().with(ViewMixin) {
     }
 
     /**
-     * Set a new sequence to a port. This is basically a handy wrapper around {@link qtoggle.api.postPortSequence}.
+     * Set a new sequence to a port. This is basically a handy wrapper around
+     * {@link qtoggle.api.ports.postPortSequence}.
      *
      * During the API call, the widget is put into *progress* state. When the call returns, the state is updated
      * according to the result.
@@ -1178,7 +1180,7 @@ class Widget extends mix().with(ViewMixin) {
     setPortSequence(portId, values, delays, repeat) {
         this.setProgress()
 
-        return API.postPortSequence(portId, values, delays, repeat).then(function () {
+        return PortsAPI.postPortSequence(portId, values, delays, repeat).then(function () {
 
             this.clearProgress()
 

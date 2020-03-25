@@ -2,8 +2,8 @@
 import {gettext} from '$qui/base/i18n.js'
 import Config    from '$qui/config.js'
 
-import * as API      from '$app/api/api.js'
 import * as Attrdefs from '$app/api/attrdefs.js'
+import * as AuthAPI  from '$app/api/auth.js'
 import * as Cache    from '$app/cache.js'
 import {Section}     from '$app/sections.js'
 
@@ -190,7 +190,7 @@ class PortsSection extends Section {
     }
 
     makeMainPage() {
-        if (API.getCurrentAccessLevel() < API.ACCESS_LEVEL_ADMIN) {
+        if (AuthAPI.getCurrentAccessLevel() < AuthAPI.ACCESS_LEVEL_ADMIN) {
             return this.makeForbiddenMessage()
         }
 

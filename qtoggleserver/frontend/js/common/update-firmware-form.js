@@ -17,8 +17,9 @@ import * as Toast        from '$qui/messages/toast.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
 import * as Window       from '$qui/window.js'
 
-import * as API   from '$app/api/api.js'
-import * as Cache from '$app/cache.js'
+import * as BaseAPI    from '$app/api/base.js'
+import * as DevicesAPI from '$app/api/devices.js'
+import * as Cache      from '$app/cache.js'
 
 
 const FIRMWARE_ICON = new StockIcon({name: 'firmware', stockName: 'qtoggle'})
@@ -31,13 +32,13 @@ const PRETTY_STATUSES = {
     [FIRMWARE_STATUS_UPDATABLE]: gettext('newer version available'),
     [FIRMWARE_STATUS_UPTODATE]: gettext('up to date'),
     [FIRMWARE_STATUS_NOT_AVAILABLE]: gettext('not available'),
-    [API.FIRMWARE_STATUS_CHECKING]: gettext('checking'),
-    [API.FIRMWARE_STATUS_DOWNLOADING]: gettext('downloading'),
-    [API.FIRMWARE_STATUS_VALIDATING]: gettext('validating'),
-    [API.FIRMWARE_STATUS_EXTRACTING]: gettext('extracting'),
-    [API.FIRMWARE_STATUS_FLASHING]: gettext('flashing'),
-    [API.FIRMWARE_STATUS_RESTARTING]: gettext('restarting'),
-    [API.FIRMWARE_STATUS_ERROR]: gettext('an error occurred')
+    [DevicesAPI.FIRMWARE_STATUS_CHECKING]: gettext('checking'),
+    [DevicesAPI.FIRMWARE_STATUS_DOWNLOADING]: gettext('downloading'),
+    [DevicesAPI.FIRMWARE_STATUS_VALIDATING]: gettext('validating'),
+    [DevicesAPI.FIRMWARE_STATUS_EXTRACTING]: gettext('extracting'),
+    [DevicesAPI.FIRMWARE_STATUS_FLASHING]: gettext('flashing'),
+    [DevicesAPI.FIRMWARE_STATUS_RESTARTING]: gettext('restarting'),
+    [DevicesAPI.FIRMWARE_STATUS_ERROR]: gettext('an error occurred')
 }
 
 const logger = Logger.get('qtoggle.common.updatefirmware')
@@ -85,7 +86,7 @@ class StatusField extends FormField {
         if (value === FIRMWARE_STATUS_UPDATABLE ||
             value === FIRMWARE_STATUS_UPTODATE ||
             value === FIRMWARE_STATUS_NOT_AVAILABLE ||
-            value === API.FIRMWARE_STATUS_ERROR) {
+            value === DevicesAPI.FIRMWARE_STATUS_ERROR) {
 
             this._progress.progressdisk('setValue', 0)
             this._progress.css('display', 'none')
@@ -107,7 +108,7 @@ class StatusField extends FormField {
                     name: 'qmark', variant: 'foreground'
                 }).applyTo(this._icon)
             }
-            else if (value === API.FIRMWARE_STATUS_ERROR) {
+            else if (value === DevicesAPI.FIRMWARE_STATUS_ERROR) {
                 new StockIcon({
                     name: 'exclam', variant: 'error'
                 }).applyTo(this._icon)
@@ -207,7 +208,7 @@ class UpdateFirmwareForm extends PageForm {
 
     load() {
         if (this.deviceIsSlave()) {
-            API.setSlave(this.getDeviceName())
+            BaseAPI.setSlaveName(this.getDeviceName())
         }
 
         return this.fetchUpdateStatus().then(function (running) {
@@ -220,7 +221,7 @@ class UpdateFirmwareForm extends PageForm {
         }.bind(this)).catch(function (error) {
 
             logger.errorStack(`failed to get current firmware for device "${this.getDeviceName()}"`, error)
-            this.setData({status: API.FIRMWARE_STATUS_ERROR})
+            this.setData({status: DevicesAPI.FIRMWARE_STATUS_ERROR})
 
             PromiseUtils.asap().then(function () {
 
@@ -259,7 +260,7 @@ class UpdateFirmwareForm extends PageForm {
             }
         }
         else {
-            if (data.status !== FIRMWARE_STATUS_UPDATABLE && data.status !== API.FIRMWARE_STATUS_ERROR) {
+            if (data.status !== FIRMWARE_STATUS_UPDATABLE && data.status !== DevicesAPI.FIRMWARE_STATUS_ERROR) {
                 throw new ValidationError() /* To simply disable the update button */
             }
             if (!data.latestVersion) {
@@ -290,11 +291,11 @@ class UpdateFirmwareForm extends PageForm {
 
         let overrideOffline = false
         if (this.deviceIsSlave()) {
-            API.setSlave(deviceName)
+            BaseAPI.setSlaveName(deviceName)
             overrideOffline = true
         }
 
-        return API.patchFirmware(version, url, overrideOffline).then(function () {
+        return DevicesAPI.patchFirmware(version, url, overrideOffline).then(function () {
 
             if (!this.deviceIsSlave()) {
                 this.setModal(true)
@@ -322,17 +323,17 @@ class UpdateFirmwareForm extends PageForm {
     fetchUpdateStatus() {
         let overrideOffline = false
         if (this.deviceIsSlave()) {
-            API.setSlave(this.getDeviceName())
+            BaseAPI.setSlaveName(this.getDeviceName())
             overrideOffline = true
         }
 
-        return API.getFirmware(overrideOffline).then(function (fwInfo) {
+        return DevicesAPI.getFirmware(overrideOffline).then(function (fwInfo) {
 
             let upToDate = fwInfo.version === fwInfo.latest_version
             let running = true
 
             let status = fwInfo.status
-            if (status === API.FIRMWARE_STATUS_IDLE) {
+            if (status === DevicesAPI.FIRMWARE_STATUS_IDLE) {
                 if (upToDate) {
                     status = FIRMWARE_STATUS_UPTODATE
                 }
@@ -350,7 +351,7 @@ class UpdateFirmwareForm extends PageForm {
                     Toast.show({message: gettext('Firmware has been updated.'), type: 'info', timeout: 0})
                 }
             }
-            else if (status === API.FIRMWARE_STATUS_ERROR) {
+            else if (status === DevicesAPI.FIRMWARE_STATUS_ERROR) {
                 running = false
                 if (this._updateRunning) {
                     this._updateRunning = false
@@ -387,7 +388,7 @@ class UpdateFirmwareForm extends PageForm {
             /* Any error during polling is considered normal
              * and is treated as though the device is restarting */
 
-            this.setData({status: API.FIRMWARE_STATUS_RESTARTING})
+            this.setData({status: DevicesAPI.FIRMWARE_STATUS_RESTARTING})
 
             return /* running = */ true
 

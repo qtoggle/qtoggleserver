@@ -2,15 +2,16 @@
 import {TimeoutError}       from '$qui/base/errors.js'
 import {gettext}            from '$qui/base/i18n.js'
 import {Mixin}              from '$qui/base/mixwith.js'
-import * as Cache           from '$app/cache.js'
 import {ConfirmMessageForm} from '$qui/messages/common-message-forms.js'
 import * as Messages        from '$qui/messages/messages.js'
 import * as Toast           from '$qui/messages/toast.js'
 import * as PromiseUtils    from '$qui/utils/promise.js'
 import * as StringUtils     from '$qui/utils/string.js'
 
-import * as API    from '$app/api/api.js'
-import * as Common from '$app/common/common.js'
+import * as BaseAPI    from '$app/api/base.js'
+import * as DevicesAPI from '$app/api/devices.js'
+import * as Cache      from '$app/cache.js'
+import * as Common     from '$app/common/common.js'
 
 
 const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
@@ -48,9 +49,9 @@ const RebootFormMixin = Mixin((superclass = Object) => {
                     this.setProgress()
 
                     if (!Cache.isMainDevice(deviceName)) {
-                        API.setSlave(deviceName)
+                        BaseAPI.setSlaveName(deviceName)
                     }
-                    API.postReset().then(function () {
+                    DevicesAPI.postReset().then(function () {
 
                         logger.debug(`device "${deviceName}" is rebooting`)
                         return PromiseUtils.withTimeout(this.waitDeviceOffline(), Common.GO_OFFLINE_TIMEOUT * 1000)

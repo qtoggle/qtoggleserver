@@ -20,7 +20,7 @@ import {asap}                from '$qui/utils/misc.js'
 import * as ObjectUtils      from '$qui/utils/object.js'
 import * as Window           from '$qui/window.js'
 
-import * as API from '$app/api/api.js'
+import * as AuthAPI from '$app/api/auth.js'
 
 import * as Dashboard           from './dashboard.js'
 import PanelGroupCompositeMixin from './panel-group-composite.js'
@@ -974,7 +974,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
      * @returns {qui.forms.commonforms.OptionsForm}
      */
     getOptionsForm() {
-        if (API.getCurrentAccessLevel() < API.ACCESS_LEVEL_ADMIN) {
+        if (AuthAPI.getCurrentAccessLevel() < AuthAPI.ACCESS_LEVEL_ADMIN) {
             return null
         }
 

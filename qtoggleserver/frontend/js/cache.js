@@ -13,7 +13,13 @@ import {asap}            from '$qui/utils/misc.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
 
-import * as API                   from '$app/api/api.js'
+import * as AuthAPI               from '$app/api/auth.js'
+import * as BaseAPI               from '$app/api/base.js'
+import * as DevicesAPI            from '$app/api/devices.js'
+import * as PortsAPI              from '$app/api/ports.js'
+import * as PrefsAPI              from '$app/api/prefs.js'
+import * as MasterSlaveAPI        from '$app/api/master-slave.js'
+import * as NotificationsAPI      from '$app/api/notifications.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
 
 
@@ -85,7 +91,7 @@ export let whenCacheReady = new ConditionVariable()
 export function loadDevice() {
     logger.debug('loading main device')
 
-    return API.getDevice().then(function (attrs) {
+    return DevicesAPI.getDevice().then(function (attrs) {
 
         if (mainDevice == null) {
             mainDevice = attrs
@@ -94,7 +100,7 @@ export function loadDevice() {
         else {
             if (!ObjectUtils.deepEquals(mainDevice, attrs)) {
                 logger.debug('main device has been updated since last server connection')
-                API.fakeServerEvent('device-update', attrs)
+                NotificationsAPI.fakeServerEvent('device-update', attrs)
             }
         }
 
@@ -115,7 +121,7 @@ export function loadDevice() {
 export function loadPorts() {
     logger.debug('loading ports')
 
-    return API.getPorts().then(function (ports) {
+    return PortsAPI.getPorts().then(function (ports) {
 
         if (allPorts == null) {
             allPorts = ObjectUtils.fromEntries(ports.map(p => [p.id, p]))
@@ -153,22 +159,22 @@ export function loadPorts() {
 
             removedPorts.forEach(function (port) {
                 logger.debug(`port ${port.id} has been removed since last server connection`)
-                API.fakeServerEvent('port-remove', {id: port.id})
+                NotificationsAPI.fakeServerEvent('port-remove', {id: port.id})
             })
 
             addedPorts.forEach(function (port) {
                 logger.debug(`port ${port.id} has been added since last server connection`)
-                API.fakeServerEvent('port-add', port)
+                NotificationsAPI.fakeServerEvent('port-add', port)
             })
 
             updatedPorts.forEach(function (port) {
                 logger.debug(`port ${port.id} has been updated since last server connection`)
-                API.fakeServerEvent('port-update', port)
+                NotificationsAPI.fakeServerEvent('port-update', port)
             })
 
             valueChangedPorts.forEach(function (port) {
                 logger.debug(`value of port ${port.id} has changed since last server connection`)
-                API.fakeServerEvent('value-change', port)
+                NotificationsAPI.fakeServerEvent('value-change', port)
             })
         }
 
@@ -190,7 +196,7 @@ export function loadPorts() {
 export function loadSlaveDevices() {
     logger.debug('loading slave devices')
 
-    return API.getSlaveDevices().then(function (devices) {
+    return MasterSlaveAPI.getSlaveDevices().then(function (devices) {
 
         if (slaveDevices == null) {
             slaveDevices = ObjectUtils.fromEntries(devices.map(d => [d.name, d]))
@@ -212,17 +218,17 @@ export function loadSlaveDevices() {
 
             removedDevices.forEach(function (device) {
                 logger.debug(`device ${device.name} has been removed since last server connection`)
-                API.fakeServerEvent('slave-device-remove', {name: device.name})
+                NotificationsAPI.fakeServerEvent('slave-device-remove', {name: device.name})
             })
 
             addedDevices.forEach(function (device) {
                 logger.debug(`device ${device.name} has been added since last server connection`)
-                API.fakeServerEvent('slave-device-add', device)
+                NotificationsAPI.fakeServerEvent('slave-device-add', device)
             })
 
             updatedDevices.forEach(function (device) {
                 logger.debug(`device ${device.name} has been updated since last server connection`)
-                API.fakeServerEvent('slave-device-update', device)
+                NotificationsAPI.fakeServerEvent('slave-device-update', device)
             })
         }
 
@@ -243,7 +249,7 @@ export function loadSlaveDevices() {
 export function loadPrefs() {
     logger.debug('loading prefs')
 
-    return API.getPrefs().then(function (p) {
+    return PrefsAPI.getPrefs().then(function (p) {
 
         if (prefs == null) {
             prefs = p
@@ -277,7 +283,7 @@ export function load(accessLevel, showModalProgress) {
         progressMessage = getGlobalProgressMessage().show()
     }
 
-    if (accessLevel >= API.ACCESS_LEVEL_ADMIN) {
+    if (accessLevel >= AuthAPI.ACCESS_LEVEL_ADMIN) {
         if (progressMessage) {
             loadChain = loadChain.then(function () {
                 let msg = Config.slavesEnabled ? gettext('Loading master device...') : gettext('Loading device...')
@@ -288,7 +294,7 @@ export function load(accessLevel, showModalProgress) {
         loadChain = loadChain.then(loadDevice)
     }
 
-    if (accessLevel >= API.ACCESS_LEVEL_VIEWONLY) {
+    if (accessLevel >= AuthAPI.ACCESS_LEVEL_VIEWONLY) {
         if (progressMessage) {
             loadChain = loadChain.then(function () {
                 progressMessage.setMessage(gettext('Loading ports...'))
@@ -298,7 +304,7 @@ export function load(accessLevel, showModalProgress) {
         loadChain = loadChain.then(loadPorts)
     }
 
-    if (accessLevel >= API.ACCESS_LEVEL_ADMIN && Config.slavesEnabled) {
+    if (accessLevel >= AuthAPI.ACCESS_LEVEL_ADMIN && Config.slavesEnabled) {
         if (progressMessage) {
             loadChain = loadChain.then(function () {
                 progressMessage.setMessage(gettext('Loading devices...'))
@@ -308,7 +314,7 @@ export function load(accessLevel, showModalProgress) {
         loadChain = loadChain.then(loadSlaveDevices)
     }
 
-    if (accessLevel >= API.ACCESS_LEVEL_VIEWONLY) {
+    if (accessLevel >= AuthAPI.ACCESS_LEVEL_VIEWONLY) {
         if (progressMessage) {
             loadChain = loadChain.then(function () {
                 progressMessage.setMessage(gettext('Loading preferences...'))
@@ -323,7 +329,7 @@ export function load(accessLevel, showModalProgress) {
         /* Handle any error that might have occurred during loading and retry indefinitely */
 
         let errorMsg = error.toString()
-        let promise = PromiseUtils.later(API.SERVER_RETRY_INTERVAL * 1000)
+        let promise = PromiseUtils.later(BaseAPI.SERVER_RETRY_INTERVAL)
 
         if (progressMessage) {
             progressMessage.setMessage(gettext('Reconnecting...'))
@@ -355,7 +361,7 @@ export function load(accessLevel, showModalProgress) {
 /**
  * Update cache from event.
  * @alias qtoggle.cache.updateFromEvent
- * @param {qtoggle.api.Event} event
+ * @param {qtoggle.api.notifications.Event} event
  */
 export function updateFromEvent(event) {
     let device, port
@@ -622,7 +628,7 @@ export function setPrefs(path, value) {
         logger.debug('saving prefs')
         pendingSavePrefsTimeoutHandle = null
 
-        API.putPrefs(prefs)
+        PrefsAPI.putPrefs(prefs)
 
     })
 }
@@ -642,18 +648,14 @@ export function setReloadNeeded() {
  */
 export function init() {
     /* Reload cache upon next successful listen callback, if needed */
-    API.addSyncCallbacks(
-        /* beginCallback = */ null,
-        /* endCallback = */ null,
-        /* listenCallback = */ function (error) {
+    NotificationsAPI.addSyncListenCallback(function (error) {
 
-            if (!error) { /* Successful listen response */
-                if (reloadNeeded) {
-                    reloadNeeded = false
-                    load(API.getCurrentAccessLevel(), /* showModalProgress = */ false)
-                }
+        if (!error) { /* Successful listen response */
+            if (reloadNeeded) {
+                reloadNeeded = false
+                load(AuthAPI.getCurrentAccessLevel(), /* showModalProgress = */ false)
             }
-
         }
-    )
+
+    })
 }

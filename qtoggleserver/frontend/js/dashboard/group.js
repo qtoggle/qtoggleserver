@@ -10,8 +10,8 @@ import {IconLabelListItem} from '$qui/lists/common-items.js'
 import {PageList}          from '$qui/lists/common-lists.js'
 import * as ArrayUtils     from '$qui/utils/array.js'
 
-import * as API   from '$app/api/api.js'
-import * as Utils from '$app/utils.js'
+import * as AuthAPI from '$app/api/auth.js'
+import * as Utils   from '$app/utils.js'
 
 import AddPanelGroupForm        from './add-panel-group-form.js'
 import * as Dashboard           from './dashboard.js'
@@ -92,7 +92,7 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
             keepPrevVisible: true,
             column: true,
             searchEnabled: true,
-            addEnabled: API.getCurrentAccessLevel() >= API.ACCESS_LEVEL_ADMIN
+            addEnabled: AuthAPI.getCurrentAccessLevel() >= AuthAPI.ACCESS_LEVEL_ADMIN
         })
 
         super(args)
@@ -314,7 +314,7 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
     }
 
     navigate(pathId) {
-        let admin = API.getCurrentAccessLevel() >= API.ACCESS_LEVEL_ADMIN
+        let admin = AuthAPI.getCurrentAccessLevel() >= AuthAPI.ACCESS_LEVEL_ADMIN
 
         if (pathId === 'add' && admin) {
             return this.makeAddForm()

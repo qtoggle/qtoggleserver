@@ -22,15 +22,18 @@ import * as StringUtils           from '$qui/utils/string.js'
 import URL                        from '$qui/utils/url.js'
 import * as Window                from '$qui/window.js'
 
-import * as API           from '$app/api/api.js'
-import * as Attrdefs      from '$app/api/attrdefs.js'
-import * as Cache         from '$app/cache.js'
-import AttrdefFormMixin   from '$app/common/attrdef-form-mixin.js'
-import * as Common        from '$app/common/common.js'
-import ProvisioningForm   from '$app/common/provisioning-form.js'
-import RebootDeviceMixin  from '$app/common/reboot-device-mixin.js'
-import UpdateFirmwareForm from '$app/common/update-firmware-form.js'
-import WaitDeviceMixin    from '$app/common/wait-device-mixin.js'
+import * as Attrdefs         from '$app/api/attrdefs.js'
+import * as BaseAPI          from '$app/api/base.js'
+import * as DevicesAPI       from '$app/api/devices.js'
+import * as MasterSlaveAPI   from '$app/api/master-slave.js'
+import * as NotificationsAPI from '$app/api/notifications.js'
+import * as Cache            from '$app/cache.js'
+import AttrdefFormMixin      from '$app/common/attrdef-form-mixin.js'
+import * as Common           from '$app/common/common.js'
+import ProvisioningForm      from '$app/common/provisioning-form.js'
+import RebootDeviceMixin     from '$app/common/reboot-device-mixin.js'
+import UpdateFirmwareForm    from '$app/common/update-firmware-form.js'
+import WaitDeviceMixin       from '$app/common/wait-device-mixin.js'
 
 import * as Devices from './devices.js'
 
@@ -114,9 +117,9 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
 
     load() {
         /* Explicitly query attributes that don't normally generate events, directly from the slave device */
-        API.setSlave(this.getDeviceName())
-        return API.getDevice().then(function (attrs) {
-            attrs = ObjectUtils.filter(attrs, n => (API.NO_EVENT_DEVICE_ATTRS.indexOf(n) >= 0))
+        BaseAPI.setSlaveName(this.getDeviceName())
+        return DevicesAPI.getDevice().then(function (attrs) {
+            attrs = ObjectUtils.filter(attrs, n => (NotificationsAPI.NO_EVENT_DEVICE_ATTRS.indexOf(n) >= 0))
             attrs = ObjectUtils.mapKey(attrs, n => `attr_${n}`)
             this.setData(attrs)
         }.bind(this))
@@ -189,7 +192,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                 attrdefs: this._fullAttrdefs,
                 initialData: Common.preprocessDeviceAttrs(device.attrs),
                 provisioning: device.provisioning || [],
-                noUpdated: API.NO_EVENT_DEVICE_ATTRS,
+                noUpdated: NotificationsAPI.NO_EVENT_DEVICE_ATTRS,
                 startIndex: this.getFieldIndex('last_sync') + 1,
                 fieldChangeWarnings: fieldChangeWarnings
             })
@@ -276,7 +279,8 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
     startWaitingDeviceOnline() {
         this.setProgress()
 
-        PromiseUtils.withTimeout(this.waitDeviceOnline(), API.DEFAULT_SERVER_TIMEOUT * 1000).catch(function (error) {
+        PromiseUtils.withTimeout(this.waitDeviceOnline(),
+                                 BaseAPI.DEFAULT_SERVER_TIMEOUT * 1000).catch(function (error) {
 
             if (error instanceof TimeoutError) {
                 this.setError(gettext('Device is offline.'))
@@ -376,7 +380,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
         if (masterAttrsChanged) {
             promise = promise.then(function () {
 
-                return API.patchSlaveDevice(
+                return MasterSlaveAPI.patchSlaveDevice(
                     deviceName,
                     data.enabled,
                     data.poll_interval,
@@ -407,8 +411,8 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
         if (this._fullAttrdefs && Object.keys(newAttrs).length) { /* Device online */
             promise = promise.then(function () {
 
-                API.setSlave(deviceName)
-                return API.patchDevice(newAttrs).then(function () {
+                BaseAPI.setSlaveName(deviceName)
+                return DevicesAPI.patchDevice(newAttrs).then(function () {
 
                     logger.debug(`device "${deviceName}" attributes successfully updated`)
                     Devices.recentDeviceUpdateTimer.restart()
@@ -520,7 +524,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
 
                 logger.debug(`removing device "${device.name}" at url ${deviceURL}`)
 
-                API.deleteSlaveDevice(device.name).then(function () {
+                MasterSlaveAPI.deleteSlaveDevice(device.name).then(function () {
 
                     logger.debug(`device "${device.name}" at url ${deviceURL} successfully removed`)
                     this.close(/* force = */ true)

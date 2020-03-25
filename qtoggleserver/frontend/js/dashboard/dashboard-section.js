@@ -2,7 +2,8 @@
 import {gettext}  from '$qui/base/i18n.js'
 import * as Toast from '$qui/messages/toast.js'
 
-import * as API                   from '$app/api/api.js'
+import * as AuthAPI               from '$app/api/auth.js'
+import * as DashboardAPI          from '$app/api/dashboard.js'
 import * as Cache                 from '$app/cache.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
 import {Section}                  from '$app/sections.js'
@@ -59,7 +60,7 @@ class DashboardSection extends Section {
         let progressMessage = getGlobalProgressMessage().show()
         progressMessage.setMessage(gettext('Loading panels...'))
 
-        return API.getDashboardPanels().then(function (panels) {
+        return DashboardAPI.getDashboardPanels().then(function (panels) {
 
             logger.debug('panels loaded')
             return panels
@@ -129,7 +130,7 @@ class DashboardSection extends Section {
 
     onAccessLevelChange(oldLevel, newLevel) {
         /* Update add-enabled flag for all groups */
-        let addEnabled = newLevel >= API.ACCESS_LEVEL_ADMIN
+        let addEnabled = newLevel >= AuthAPI.ACCESS_LEVEL_ADMIN
 
         function updateGroupRec(group) {
             if (addEnabled) {

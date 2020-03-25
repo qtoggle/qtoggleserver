@@ -7,8 +7,8 @@ import {PageForm}        from '$qui/forms/common-forms.js'
 import FormButton        from '$qui/forms/form-button.js'
 import {ValidationError} from '$qui/forms/forms.js'
 
-import * as API  from '$app/api/api.js'
-import * as Auth from '$app/auth.js'
+import * as AuthAPI from '$app/api/auth.js'
+import * as Auth    from '$app/auth.js'
 
 import * as Login from './login.js'
 
@@ -58,7 +58,7 @@ class LoginForm extends PageForm {
         logger.debug('validating credentials')
 
         return Auth.login(data.username, data.password).then(function (level) {
-            if (level <= API.ACCESS_LEVEL_NONE) {
+            if (level <= AuthAPI.ACCESS_LEVEL_NONE) {
                 throw new ValidationError(gettext('Login failed!'))
             }
         })

@@ -8,7 +8,7 @@ import * as Sections     from '$qui/sections/sections.js'
 import * as Theme        from '$qui/theme.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
 
-import * as API                   from '$app/api/api.js'
+import * as AuthAPI               from '$app/api/auth.js'
 import * as Auth                  from '$app/auth.js'
 import * as Cache                 from '$app/cache.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
@@ -126,19 +126,19 @@ class LoginSection extends Section {
         let decoration = null
 
         switch (level) {
-            case API.ACCESS_LEVEL_ADMIN:
+            case AuthAPI.ACCESS_LEVEL_ADMIN:
                 decoration = Theme.getVar('danger-color')
                 break
 
-            case API.ACCESS_LEVEL_NORMAL:
+            case AuthAPI.ACCESS_LEVEL_NORMAL:
                 decoration = Theme.getVar('interactive-color')
                 break
 
-            case API.ACCESS_LEVEL_VIEWONLY:
+            case AuthAPI.ACCESS_LEVEL_VIEWONLY:
                 decoration = Theme.getVar('disabled-color')
                 break
 
-            case API.ACCESS_LEVEL_NONE:
+            case AuthAPI.ACCESS_LEVEL_NONE:
                 break
         }
 

@@ -13,7 +13,8 @@ import {asap}           from '$qui/utils/misc.js'
 import * as ObjectUtils from '$qui/utils/object.js'
 import * as StringUtils from '$qui/utils/string.js'
 
-import * as API                   from '$app/api/api.js'
+import * as BaseAPI               from '$app/api/base.js'
+import * as NotificationsAPI      from '$app/api/notifications.js'
 import * as Cache                 from '$app/cache.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
 import * as Sections              from '$app/sections.js'
@@ -412,7 +413,7 @@ function updateStatusIcon() {
  * @alias qtoggle.events.init
  */
 export function init() {
-    API.addEventListener(function (event) {
+    NotificationsAPI.addEventListener(function (event) {
         eventsBulk.push(event)
         if (eventsBulkTimeoutHandle) {
             clearTimeout(eventsBulkTimeoutHandle)
@@ -421,7 +422,7 @@ export function init() {
         eventsBulkTimeoutHandle = asap(processEventsBulk)
     })
 
-    API.addSyncCallbacks(
+    BaseAPI.addSyncCallbacks(
         /* beginCallback = */ function () {
 
             /* Reset sync error upon a first API request */
@@ -442,48 +443,48 @@ export function init() {
 
             updateStatusIcon()
 
-        },
-        /* listenCallback = */ function (error, reconnectSeconds) {
-
-            if (error) {
-                if (!syncListenError) {
-                    logger.error('disconnected from server')
-
-                    Sections.all().forEach(function (section) {
-                        asap(() => section.onMainDeviceDisconnect(error))
-                    })
-                }
-
-                syncListenError = error
-
-                if (reconnectSeconds > 1) {
-                    if (!listenErrorProgressMessage) {
-                        listenErrorProgressMessage = getGlobalProgressMessage().show()
-                        listenErrorProgressMessage.setMessage(gettext('Reconnecting...'))
-                    }
-                }
-            }
-            else { /* Successful listen response */
-                if (syncListenError) {
-                    syncListenError = null
-
-                    Sections.all().forEach(function (section) {
-                        asap(() => section.onMainDeviceReconnect())
-                    })
-
-                    if (listenErrorProgressMessage) {
-                        listenErrorProgressMessage.hide()
-                        listenErrorProgressMessage = null
-                    }
-
-                    logger.info('reconnected to server')
-
-                    Cache.setReloadNeeded()
-                }
-            }
-
-            updateStatusIcon()
-
         }
     )
+
+    NotificationsAPI.addSyncListenCallback(function (error, reconnectSeconds) {
+        if (error) {
+            if (!syncListenError) {
+                logger.error('disconnected from server')
+
+                Sections.all().forEach(function (section) {
+                    asap(() => section.onMainDeviceDisconnect(error))
+                })
+            }
+
+            syncListenError = error
+
+            if (reconnectSeconds > 1) {
+                if (!listenErrorProgressMessage) {
+                    listenErrorProgressMessage = getGlobalProgressMessage().show()
+                    listenErrorProgressMessage.setMessage(gettext('Reconnecting...'))
+                }
+            }
+        }
+        else { /* Successful listen response */
+            if (syncListenError) {
+                syncListenError = null
+
+                Sections.all().forEach(function (section) {
+                    asap(() => section.onMainDeviceReconnect())
+                })
+
+                if (listenErrorProgressMessage) {
+                    listenErrorProgressMessage.hide()
+                    listenErrorProgressMessage = null
+                }
+
+                logger.info('reconnected to server')
+
+                Cache.setReloadNeeded()
+            }
+        }
+
+        updateStatusIcon()
+
+    })
 }
