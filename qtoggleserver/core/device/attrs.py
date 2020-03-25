@@ -294,7 +294,7 @@ def get_attrs() -> Attributes:
         'viewonly_password': ''
     }
 
-    flags = []
+    flags = ['expressions']
     if settings.system.fwupdate_driver:
         flags.append('firmware')
 
