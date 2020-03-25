@@ -338,8 +338,10 @@ class SlavePort(core_ports.BasePort):
             self.trigger_update()
 
     async def load_from_data(self, data: GenericJSONDict) -> None:
+        # Only consider locally persisted attributes for permanently offline devices. For online devices, we always use
+        # fresh attributes received from device.
         attrs = data.get('attrs')
-        if attrs:
+        if attrs and self._slave.is_permanently_offline():
             if 'value' in data:
                 attrs['value'] = data['value']
 
@@ -371,7 +373,7 @@ class SlavePort(core_ports.BasePort):
         self.debug('fetching port value')
 
         try:
-            value = await self._slave.api_call('GET', f'/ports/{self._remote_id}/value')
+            value = await self._slave.api_call('GET', f'/ports/{self._remote_id}/value', retry_counter=None)
 
         except Exception as e:
             self.error('failed to fetch port value: %s', e)
