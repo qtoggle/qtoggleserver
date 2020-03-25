@@ -5,11 +5,12 @@
 import {gettext}           from '$qui/base/i18n.js'
 import {NumericField}      from '$qui/forms/common-fields.js'
 import {PasswordField}     from '$qui/forms/common-fields.js'
-import {ProgressDiskField} from '$qui/forms/common-fields.js'
 import {TextAreaField}     from '$qui/forms/common-fields.js'
 import {TextField}         from '$qui/forms/common-fields.js'
 import * as DateUtils      from '$qui/utils/date.js'
 import * as ObjectUtils    from '$qui/utils/object.js'
+
+import {WiFiSignalStrengthField} from './attrdef-fields.js'
 
 
 /**
@@ -213,11 +214,7 @@ export const STD_DEVICE_ATTRDEFS = {
         standard: true,
         order: 174,
         field: {
-            class: ProgressDiskField
-        },
-        valueToUI: function (value) {
-            value = Math.min(3, Math.max(0, value))
-            return 100 * value / 3
+            class: WiFiSignalStrengthField
         }
     },
     ip_address: {
