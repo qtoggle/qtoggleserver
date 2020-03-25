@@ -150,7 +150,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 162
     },
     wifi_ssid: {
-        display_name: gettext('Wi-Fi Network Name'),
+        display_name: gettext('Wi-Fi Network'),
         description: gettext('Your Wi-Fi network name. Leave empty when not using Wi-Fi.'),
         separator: true,
         type: 'string',
@@ -162,7 +162,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 170
     },
     wifi_key: {
-        display_name: gettext('Wi-Fi Network Key'),
+        display_name: gettext('Wi-Fi Key'),
         description: gettext('Your Wi-Fi network key (password). Leave empty for an open Wi-Fi network.'),
         type: 'string',
         modifiable: true,
@@ -179,7 +179,7 @@ export const STD_DEVICE_ATTRDEFS = {
         }
     },
     wifi_bssid: {
-        display_name: gettext('Wi-Fi Network BSSID'),
+        display_name: gettext('Wi-Fi BSSID'),
         description: gettext('A specific BSSID (MAC address) of a Wi-Fi access point. ' +
                              'Leave empty for automatic selection.'),
         regex: '^[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}$',
@@ -197,7 +197,7 @@ export const STD_DEVICE_ATTRDEFS = {
         }
     },
     wifi_bssid_current: {
-        display_name: gettext('Current Wi-Fi Network BSSID'),
+        display_name: gettext('Wi-Fi BSSID (Current)'),
         description: gettext('The BSSID (MAC address) of the access point to which the device is currently connected.'),
         type: 'string',
         modifiable: false,
@@ -206,7 +206,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 173
     },
     wifi_signal_strength: {
-        display_name: gettext('Wi-Fi Signal Strength'),
+        display_name: gettext('Wi-Fi Strength'),
         description: gettext('Indicates the quality of the Wi-Fi connection.'),
         type: 'number',
         modifiable: false,
@@ -287,7 +287,7 @@ export const STD_DEVICE_ATTRDEFS = {
         }
     },
     ip_address_current: {
-        display_name: gettext('Current IP Address'),
+        display_name: gettext('IP Address (Current)'),
         description: gettext('The current IP address of the device.'),
         type: 'string',
         modifiable: false,
@@ -296,7 +296,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 184
     },
     ip_netmask_current: {
-        display_name: gettext('Current Network Mask'),
+        display_name: gettext('Network Mask (Current)'),
         description: gettext('The current network mask of the device.'),
         type: 'number',
         modifiable: false,
@@ -305,7 +305,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 185
     },
     ip_gateway_current: {
-        display_name: gettext('Current Gateway'),
+        display_name: gettext('Gateway (Current)'),
         description: gettext('The current gateway (default route) of the device.'),
         type: 'string',
         modifiable: false,
@@ -314,7 +314,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 186
     },
     ip_dns_current: {
-        display_name: gettext('Current DNS Server'),
+        display_name: gettext('DNS Server (Current)'),
         description: gettext('The current DNS server of the device.'),
         type: 'string',
         modifiable: false,
