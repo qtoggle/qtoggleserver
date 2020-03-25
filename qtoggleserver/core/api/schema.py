@@ -95,7 +95,7 @@ POST_PORTS = {
     ]
 }
 
-POST_PORT_SEQUENCE = {
+PATCH_PORT_SEQUENCE = {
     "type": "object",
     "properties": {
         "values": {

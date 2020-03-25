@@ -143,16 +143,16 @@ export function patchPortValue(id, value, expectEventTimeout = null) {
 }
 
 /**
- * POST /ports/{id}/sequence API function call.
- * @alias qtoggle.api.ports.postPortSequence
+ * PATCH /ports/{id}/sequence API function call.
+ * @alias qtoggle.api.ports.patchPortSequence
  * @param {String} id the port identifier
  * @param {Boolean[]|Number[]} values the list of values in the sequence
  * @param {Number[]} delays the list of delays between values
  * @param {Number} repeat sequence repeat count
  * @returns {Promise}
  */
-export function postPortSequence(id, values, delays, repeat) {
+export function patchPortSequence(id, values, delays, repeat) {
     let data = {values: values, delays: delays, repeat: repeat}
 
-    return BaseAPI.apiCall({method: 'POST', path: `/ports/${id}/sequence`, data: data})
+    return BaseAPI.apiCall({method: 'PATCH', path: `/ports/${id}/sequence`, data: data})
 }

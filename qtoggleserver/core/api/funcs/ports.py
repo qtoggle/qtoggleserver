@@ -199,12 +199,12 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NORMAL)
-async def post_port_sequence(request: core_api.APIRequest, port_id: str, params: GenericJSONDict) -> None:
+async def patch_port_sequence(request: core_api.APIRequest, port_id: str, params: GenericJSONDict) -> None:
     port = core_ports.get(port_id)
     if port is None:
         raise core_api.APIError(404, 'no such port')
 
-    core_api_schema.validate(params, core_api_schema.POST_PORT_SEQUENCE)
+    core_api_schema.validate(params, core_api_schema.PATCH_PORT_SEQUENCE)
 
     values = params['values']
     delays = params['delays']

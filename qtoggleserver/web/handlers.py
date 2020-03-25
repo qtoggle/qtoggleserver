@@ -390,11 +390,11 @@ class PortValueHandler(APIHandler):
 
 
 class PortSequenceHandler(APIHandler):
-    async def post(self, port_id: str) -> None:
+    async def patch(self, port_id: str) -> None:
         if not settings.core.sequences_support:
             raise NoSuchFunction()
 
-        await self.call_api_func(core_api_funcs.post_port_sequence, port_id=port_id, default_status=204)
+        await self.call_api_func(core_api_funcs.patch_port_sequence, port_id=port_id, default_status=204)
 
 
 class WebhooksHandler(APIHandler):

@@ -1166,7 +1166,7 @@ class Widget extends mix().with(ViewMixin) {
 
     /**
      * Set a new sequence to a port. This is basically a handy wrapper around
-     * {@link qtoggle.api.ports.postPortSequence}.
+     * {@link qtoggle.api.ports.patchPortSequence}.
      *
      * During the API call, the widget is put into *progress* state. When the call returns, the state is updated
      * according to the result.
@@ -1180,7 +1180,7 @@ class Widget extends mix().with(ViewMixin) {
     setPortSequence(portId, values, delays, repeat) {
         this.setProgress()
 
-        return PortsAPI.postPortSequence(portId, values, delays, repeat).then(function () {
+        return PortsAPI.patchPortSequence(portId, values, delays, repeat).then(function () {
 
             this.clearProgress()
 

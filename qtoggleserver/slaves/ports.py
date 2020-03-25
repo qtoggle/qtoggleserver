@@ -314,7 +314,7 @@ class SlavePort(core_ports.BasePort):
 
         try:
             await self._slave.api_call(
-                'POST',
+                'PATCH',
                 f'/ports/{self._remote_id}/sequence',
                 {'values': values, 'delays': delays, 'repeat': repeat}
             )
