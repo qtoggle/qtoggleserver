@@ -10,7 +10,7 @@ import * as Toast        from '$qui/messages/toast.js'
 import * as Cookies      from '$qui/utils/cookies.js'
 import * as StringUtils  from '$qui/utils/string.js'
 
-import * as API                   from '$app/api.js'
+import * as API                   from '$app/api/api.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
 
 

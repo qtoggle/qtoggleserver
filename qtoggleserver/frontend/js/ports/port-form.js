@@ -14,7 +14,8 @@ import * as ArrayUtils      from '$qui/utils/array.js'
 import * as ObjectUtils     from '$qui/utils/object.js'
 import * as StringUtils     from '$qui/utils/string.js'
 
-import * as API         from '$app/api.js'
+import * as API         from '$app/api/api.js'
+import * as Attrdefs    from '$app/api/attrdefs.js'
 import * as Cache       from '$app/cache.js'
 import AttrdefFormMixin from '$app/common/attrdef-form-mixin.js'
 import * as Common      from '$app/common/common.js'
@@ -119,7 +120,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         let attrdefs = ObjectUtils.copy(port.definitions, /* deep = */ true)
 
         /* Merge in some additional attribute definitions that we happen to know of */
-        ObjectUtils.forEach(API.ADDITIONAL_PORT_ATTRDEFS, function (name, def) {
+        ObjectUtils.forEach(Attrdefs.ADDITIONAL_PORT_ATTRDEFS, function (name, def) {
             def = ObjectUtils.copy(def, /* deep = */ true)
 
             if (name in attrdefs) {
@@ -131,7 +132,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         })
 
         /* Combine standard and additional attribute definitions */
-        this._fullAttrdefs = Common.combineAttrdefs(API.STD_PORT_ATTRDEFS, attrdefs)
+        this._fullAttrdefs = Common.combineAttrdefs(Attrdefs.STD_PORT_ATTRDEFS, attrdefs)
 
         /* Group device_*_expressions together (with expression) */
         let sepAbove = 'expression' in port
@@ -163,7 +164,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             }
 
             /* Place the device expression attributes right after the simple expression one */
-            def.order = API.STD_PORT_ATTRDEFS['expression'].order + i
+            def.order = Attrdefs.STD_PORT_ATTRDEFS['expression'].order + i
 
             /* Make sure there's a separator above expressions */
             if (!sepAbove) {

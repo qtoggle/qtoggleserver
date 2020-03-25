@@ -11,7 +11,7 @@ import * as Window                from '$qui/window.js'
 
 import Logger from '$qui/lib/logger.module.js'
 
-import * as API                   from '$app/api.js'
+import * as API                   from '$app/api/api.js'
 import * as Auth                  from '$app/auth.js'
 import * as Cache                 from '$app/cache.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'

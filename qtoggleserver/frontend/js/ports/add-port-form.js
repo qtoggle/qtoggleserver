@@ -8,7 +8,7 @@ import {PageForm}           from '$qui/forms/common-forms.js'
 import FormButton           from '$qui/forms/form-button.js'
 import {ValidationError}    from '$qui/forms/forms.js'
 
-import * as API   from '$app/api.js'
+import * as API   from '$app/api/api.js'
 import * as Cache from '$app/cache.js'
 
 import * as Ports from './ports.js'

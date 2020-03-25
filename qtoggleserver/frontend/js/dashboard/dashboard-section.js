@@ -2,7 +2,7 @@
 import {gettext}  from '$qui/base/i18n.js'
 import * as Toast from '$qui/messages/toast.js'
 
-import * as API                   from '$app/api.js'
+import * as API                   from '$app/api/api.js'
 import * as Cache                 from '$app/cache.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
 import {Section}                  from '$app/sections.js'

@@ -13,7 +13,7 @@ import {asap}            from '$qui/utils/misc.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
 
-import * as API                   from '$app/api.js'
+import * as API                   from '$app/api/api.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
 
 

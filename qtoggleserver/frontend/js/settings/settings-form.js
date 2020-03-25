@@ -16,7 +16,8 @@ import * as ObjectUtils           from '$qui/utils/object.js'
 import * as Window                from '$qui/window.js'
 import * as Toast                 from '$qui/messages/toast.js'
 
-import * as API           from '$app/api.js'
+import * as API           from '$app/api/api.js'
+import * as Attrdefs      from '$app/api/attrdefs.js'
 import * as Cache         from '$app/cache.js'
 import AttrdefFormMixin   from '$app/common/attrdef-form-mixin.js'
 import * as Common        from '$app/common/common.js'
@@ -75,7 +76,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         this.clearProgress()
 
         /* Merge in some additional attribute definitions that we happen to know of */
-        ObjectUtils.forEach(API.ADDITIONAL_DEVICE_ATTRDEFS, function (name, def) {
+        ObjectUtils.forEach(Attrdefs.ADDITIONAL_DEVICE_ATTRDEFS, function (name, def) {
             def = ObjectUtils.copy(def, /* deep = */ true)
 
             if (name in attrdefs) {
@@ -87,7 +88,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         })
 
         /* Combine standard and additional attribute definitions */
-        this._fullAttrdefs = Common.combineAttrdefs(API.STD_DEVICE_ATTRDEFS, attrdefs)
+        this._fullAttrdefs = Common.combineAttrdefs(Attrdefs.STD_DEVICE_ATTRDEFS, attrdefs)
 
         /* Filter out attribute definitions not applicable to this device */
         this._fullAttrdefs = ObjectUtils.filter(this._fullAttrdefs, function (name, def) {

@@ -9,7 +9,7 @@ import * as Toast           from '$qui/messages/toast.js'
 import * as PromiseUtils    from '$qui/utils/promise.js'
 import * as StringUtils     from '$qui/utils/string.js'
 
-import * as API    from '$app/api.js'
+import * as API    from '$app/api/api.js'
 import * as Common from '$app/common/common.js'
 
 

@@ -17,7 +17,7 @@ import * as Toast        from '$qui/messages/toast.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
 import * as Window       from '$qui/window.js'
 
-import * as API   from '$app/api.js'
+import * as API   from '$app/api/api.js'
 import * as Cache from '$app/cache.js'
 
 

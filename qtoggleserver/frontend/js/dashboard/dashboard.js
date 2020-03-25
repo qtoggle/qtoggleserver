@@ -6,7 +6,7 @@ import Logger from '$qui/lib/logger.module.js'
 
 import StockIcon from '$qui/icons/stock-icon.js'
 
-import * as API from '$app/api.js'
+import * as API from '$app/api/api.js'
 
 
 const PANELS_SAVE_INTERVAL = 2000 /* Milliseconds */

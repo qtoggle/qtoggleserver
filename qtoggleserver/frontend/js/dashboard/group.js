@@ -10,7 +10,7 @@ import {IconLabelListItem} from '$qui/lists/common-items.js'
 import {PageList}          from '$qui/lists/common-lists.js'
 import * as ArrayUtils     from '$qui/utils/array.js'
 
-import * as API   from '$app/api.js'
+import * as API   from '$app/api/api.js'
 import * as Utils from '$app/utils.js'
 
 import AddPanelGroupForm        from './add-panel-group-form.js'

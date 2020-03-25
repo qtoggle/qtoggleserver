@@ -2,9 +2,10 @@
 import {gettext} from '$qui/base/i18n.js'
 import Config    from '$qui/config.js'
 
-import * as API   from '$app/api.js'
-import * as Cache from '$app/cache.js'
-import {Section}  from '$app/sections.js'
+import * as API      from '$app/api/api.js'
+import * as Attrdefs from '$app/api/attrdefs.js'
+import * as Cache    from '$app/cache.js'
+import {Section}     from '$app/sections.js'
 
 import DevicesList from './devices-list.js'
 import * as Ports  from './ports.js'
@@ -171,7 +172,7 @@ class PortsSection extends Section {
                     let valueField = portForm.getField('value')
                     let data = {}
                     if (portForm.getField('attr_last_sync')) {
-                        data['attr_last_sync'] = API.STD_PORT_ATTRDEFS['last_sync'].valueToUI(lastSync)
+                        data['attr_last_sync'] = Attrdefs.STD_PORT_ATTRDEFS['last_sync'].valueToUI(lastSync)
                     }
                     if (valueField && (valueField.getValue() !== event.params.value)) {
                         data['value'] = event.params.value

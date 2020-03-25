@@ -17,7 +17,7 @@ import * as StringUtils     from '$qui/utils/string.js'
 import ViewMixin            from '$qui/views/view.js'
 import * as Window          from '$qui/window.js'
 
-import * as API   from '$app/api.js'
+import * as API   from '$app/api/api.js'
 import * as Cache from '$app/cache.js'
 
 import MoveWidgetForm   from './move-widget-form.js'

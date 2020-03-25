@@ -10,7 +10,8 @@ import * as ObjectUtils    from '$qui/utils/object.js'
 import * as PromiseUtils   from '$qui/utils/promise.js'
 import * as StringUtils    from '$qui/utils/string.js'
 
-import * as API from '$app/api.js'
+import * as API      from '$app/api/api.js'
+import * as Attrdefs from '$app/api/attrdefs.js'
 
 
 const logger = Logger.get('qtoggle.common.backuprestore')
@@ -151,7 +152,7 @@ function applyDefaultPortConfig(context, portAttrs) {
     }
 
     /* Pop standard non-modifiable attributes */
-    ObjectUtils.forEach(API.STD_PORT_ATTRDEFS, function (name, def) {
+    ObjectUtils.forEach(Attrdefs.STD_PORT_ATTRDEFS, function (name, def) {
         if (!def.modifiable) {
             ObjectUtils.pop(portAttrs, name)
         }

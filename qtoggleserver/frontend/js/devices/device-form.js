@@ -22,7 +22,8 @@ import * as StringUtils           from '$qui/utils/string.js'
 import URL                        from '$qui/utils/url.js'
 import * as Window                from '$qui/window.js'
 
-import * as API           from '$app/api.js'
+import * as API           from '$app/api/api.js'
+import * as Attrdefs      from '$app/api/attrdefs.js'
 import * as Cache         from '$app/cache.js'
 import AttrdefFormMixin   from '$app/common/attrdef-form-mixin.js'
 import * as Common        from '$app/common/common.js'
@@ -151,7 +152,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
             let attrdefs = ObjectUtils.copy(device.attrs.definitions || {}, /* deep = */ true)
 
             /* Merge in some additional attribute definitions that we happen to know of */
-            ObjectUtils.forEach(API.ADDITIONAL_DEVICE_ATTRDEFS, function (name, def) {
+            ObjectUtils.forEach(Attrdefs.ADDITIONAL_DEVICE_ATTRDEFS, function (name, def) {
                 def = ObjectUtils.copy(def, /* deep = */ true)
 
                 if (name in attrdefs) {
@@ -163,7 +164,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
             })
 
             /* Combine standard and additional attribute definitions */
-            this._fullAttrdefs = Common.combineAttrdefs(API.STD_DEVICE_ATTRDEFS, attrdefs)
+            this._fullAttrdefs = Common.combineAttrdefs(Attrdefs.STD_DEVICE_ATTRDEFS, attrdefs)
 
             /* Filter out attribute definitions not applicable to this device */
             this._fullAttrdefs = ObjectUtils.filter(this._fullAttrdefs, function (name, def) {

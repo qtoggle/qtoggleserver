@@ -11,7 +11,7 @@ import {ValidationError} from '$qui/forms/forms.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
 import URL               from '$qui/utils/url.js'
 
-import * as API from '$app/api.js'
+import * as API from '$app/api/api.js'
 
 import * as Devices from './devices.js'
 

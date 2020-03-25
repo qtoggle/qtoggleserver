@@ -18,7 +18,7 @@ import * as ArrayUtils      from '$qui/utils/array.js'
 import * as PromiseUtils    from '$qui/utils/promise.js'
 import * as StringUtils     from '$qui/utils/string.js'
 
-import * as API           from '$app/api.js'
+import * as API           from '$app/api/api.js'
 import * as Cache         from '$app/cache.js'
 import * as BackupRestore from '$app/common/backup-restore.js'
 import * as Common        from '$app/common/common.js'

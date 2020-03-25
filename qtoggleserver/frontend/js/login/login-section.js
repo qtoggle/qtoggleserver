@@ -8,7 +8,7 @@ import * as Sections     from '$qui/sections/sections.js'
 import * as Theme        from '$qui/theme.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
 
-import * as API                   from '$app/api.js'
+import * as API                   from '$app/api/api.js'
 import * as Auth                  from '$app/auth.js'
 import * as Cache                 from '$app/cache.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
