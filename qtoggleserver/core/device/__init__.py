@@ -80,10 +80,23 @@ def save() -> None:
 
         data[name] = getattr(device_attrs, name)
 
-    logger.debug('saving device data')
+    logger.debug('saving persisted data')
     persist.set_value('device', data)
 
 
 def reset() -> None:
-    logger.debug('clearing device persisted data')
+    logger.debug('clearing persisted data')
     persist.remove('device')
+
+
+async def init() -> None:
+    logger.debug('loading persisted data')
+    load()
+
+    logger.debug('initializing attributes')
+    await device_attrs.init()
+
+
+async def cleanup() -> None:
+    logger.debug('cleaning up attributes')
+    await device_attrs.cleanup()

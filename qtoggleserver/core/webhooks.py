@@ -242,10 +242,19 @@ def save() -> None:
     if _webhooks is None:
         return
 
-    logger.debug('saving data')
+    logger.debug('saving persisted data')
     persist.set_value('webhooks', _webhooks.to_json())
 
 
 def reset() -> None:
     logger.debug('clearing persisted data')
     persist.remove('webhooks')
+
+
+async def init() -> None:
+    logger.debug('loading persisted data')
+    load()
+
+
+async def cleanup() -> None:
+    pass
