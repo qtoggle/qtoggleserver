@@ -43,13 +43,13 @@ setup(
     ]],
 
     install_requires=[
-        'jinja2',
-        'jsonpointer',
-        'jsonschema',
-        'pyhocon',
-        'pyjwt',
-        'pytz',
-        'tornado',
+        'jinja2==2.11.1',
+        'jsonpointer==2.0',
+        'jsonschema==3.2.0',
+        'pyhocon==0.3.54',
+        'pyjwt==1.7.1',
+        'pytz==2019.3',
+        'tornado==6.0.4',
     ],
 
     zip_safe=False,
