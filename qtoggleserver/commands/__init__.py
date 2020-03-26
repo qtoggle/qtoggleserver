@@ -197,15 +197,36 @@ async def cleanup_sessions() -> None:
 
 async def init_device() -> None:
     logger.info('initializing device')
-    device.load()
+    await device.init()
 
+
+async def cleanup_device() -> None:
+    logger.info('cleaning up device')
+    await device.cleanup()
+
+
+async def init_webhooks() -> None:
     if settings.webhooks.enabled:
         logger.info('initializing webhooks')
-        webhooks.load()
+        await webhooks.init()
 
+
+async def cleanup_webhooks() -> None:
+    if settings.webhooks.enabled:
+        logger.info('cleaning up webhooks')
+        await webhooks.cleanup()
+
+
+async def init_reverse() -> None:
     if settings.reverse.enabled:
         logger.info('initializing reverse API calls')
-        reverse.load()
+        await reverse.init()
+
+
+async def cleanup_reverse() -> None:
+    if settings.reverse.enabled:
+        logger.info('cleaning up reverse API calls')
+        await reverse.cleanup()
 
 
 async def init_ports() -> None:
@@ -277,6 +298,8 @@ async def init() -> None:
     await init_events()
     await init_sessions()
     await init_device()
+    await init_webhooks()
+    await init_reverse()
     await init_ports()
     await init_slaves()
     await init_lib()
@@ -288,6 +311,9 @@ async def cleanup() -> None:
     await cleanup_lib()
     await cleanup_slaves()
     await cleanup_ports()
+    await cleanup_reverse()
+    await cleanup_webhooks()
+    await cleanup_device()
     await cleanup_sessions()
     await cleanup_events()
     await cleanup_persist()

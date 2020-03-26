@@ -354,10 +354,19 @@ def save() -> None:
     if _reverse is None:
         return
 
-    logger.debug('saving data')
+    logger.debug('saving persisted data')
     persist.set_value('reverse', _reverse.to_json())
 
 
 def reset() -> None:
     logger.debug('clearing persisted data')
     persist.remove('reverse')
+
+
+async def init() -> None:
+    logger.debug('loading persisted data')
+    load()
+
+
+async def cleanup() -> None:
+    pass

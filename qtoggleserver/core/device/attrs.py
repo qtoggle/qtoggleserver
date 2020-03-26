@@ -473,3 +473,11 @@ def to_json() -> GenericJSONDict:
     result['definitions'] = filtered_attrdefs
 
     return result
+
+
+def init() -> None:
+    pass
+
+
+def cleanup() -> None:
+    pass
