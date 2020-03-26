@@ -483,19 +483,21 @@ def to_json() -> GenericJSONDict:
 
 
 def _check_net_data_changed(data: dict) -> bool:
-    wifi_config = system.net.get_wifi_config()
-    ip_config = system.net.get_ip_config()
     changed = False
 
-    old_wifi_config = data.get('wifi_config')
-    if old_wifi_config != wifi_config:
-        data['wifi_config'] = wifi_config
-        changed = True
+    if system.net.has_wifi_support():
+        wifi_config = system.net.get_wifi_config()
+        old_wifi_config = data.get('wifi_config')
+        if old_wifi_config != wifi_config:
+            data['wifi_config'] = wifi_config
+            changed = True
 
-    old_ip_config = data.get('ip_config')
-    if old_ip_config != ip_config:
-        data['ip_config'] = ip_config
-        changed = True
+    if system.net.has_ip_support():
+        ip_config = system.net.get_ip_config()
+        old_ip_config = data.get('ip_config')
+        if old_ip_config != ip_config:
+            data['ip_config'] = ip_config
+            changed = True
 
     return changed
 
