@@ -1,0 +1,34 @@
+# Common generated files
+*.log
+*.pid
+*.conf
+
+# Python setup generated files
+*.egg-info
+dist
+build
+
+# Python compiled files
+**/*.pyc
+**/__pycache__
+
+
+# Node
+**/node_modules
+
+# Git
+.gitignore
+.git
+
+# Github CI
+.github
+
+# IDE
+.idea
+
+# Docker
+.dockerignore
+Dockerfile*
+
+# Various
+work
