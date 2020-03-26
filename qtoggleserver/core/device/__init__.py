@@ -94,9 +94,9 @@ async def init() -> None:
     load()
 
     logger.debug('initializing attributes')
-    device_attrs.init()
+    await device_attrs.init()
 
 
 async def cleanup() -> None:
     logger.debug('cleaning up attributes')
-    device_attrs.cleanup()
+    await device_attrs.cleanup()

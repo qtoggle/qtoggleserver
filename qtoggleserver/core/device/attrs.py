@@ -1,10 +1,12 @@
 
+import asyncio
 import copy
 import datetime
 import hashlib
 import logging
 import socket
 import sys
+import time
 
 from qtoggleserver import system
 from qtoggleserver import version
@@ -13,6 +15,8 @@ from qtoggleserver.core import api as core_api
 from qtoggleserver.core.typing import Attributes, AttributeDefinitions, GenericJSONDict
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_set_cmd
+
+from . import events as device_events
 
 
 logger = logging.getLogger(__name__)
@@ -199,6 +203,8 @@ WIFI_RSSI_EXCELLENT = -50
 WIFI_RSSI_GOOD = -60
 WIFI_RSSI_FAIR = -70
 
+NETWORK_ATTRS_WATCH_INTERVAL = 10
+
 
 name = socket.gethostname()
 display_name = ''
@@ -208,6 +214,7 @@ viewonly_password_hash = None
 
 _schema = None
 _attrdefs = None
+_attrs_watch_task = None
 
 
 class DeviceAttributeError(Exception):
@@ -475,9 +482,60 @@ def to_json() -> GenericJSONDict:
     return result
 
 
-def init() -> None:
-    pass
+def _check_net_data_changed(data: dict) -> bool:
+    wifi_config = system.net.get_wifi_config()
+    ip_config = system.net.get_ip_config()
+    changed = False
+
+    old_wifi_config = data.get('wifi_config')
+    if old_wifi_config != wifi_config:
+        data['wifi_config'] = wifi_config
+        changed = True
+
+    old_ip_config = data.get('ip_config')
+    if old_ip_config != ip_config:
+        data['ip_config'] = ip_config
+        changed = True
+
+    return changed
 
 
-def cleanup() -> None:
-    pass
+async def _attrs_watch_loop() -> None:
+    last_net_time = time.time()
+    last_net_data = {}
+
+    try:
+        while True:
+            now = time.time()
+            changed = False
+            if now - last_net_time >= NETWORK_ATTRS_WATCH_INTERVAL:
+                try:
+                    if _check_net_data_changed(last_net_data):
+                        logger.debug('network attributes data changed')
+                        changed = True
+
+                except Exception as e:
+                    logger.error('network attributes data check failed: %s', e, exc_info=True)
+
+                last_net_time = now
+
+            if changed:
+                device_events.trigger_update()
+
+            await asyncio.sleep(1)
+
+    except asyncio.CancelledError:
+        logger.debug('attributes watch task cancelled')
+
+
+async def init() -> None:
+    global _attrs_watch_task
+
+    logger.debug('starting attributes watch task')
+    _attrs_watch_task = asyncio.create_task(_attrs_watch_loop())
+
+
+async def cleanup() -> None:
+    logger.debug('stopping attributes watch task')
+    _attrs_watch_task.cancel()
+    await _attrs_watch_task
