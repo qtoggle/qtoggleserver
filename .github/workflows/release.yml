@@ -11,39 +11,36 @@ jobs:
 #    name: Build Package
 #    runs-on: ubuntu-latest
 #    steps:
-#      - name: Source Code Checkout
+#      - name: Source code checkout
 #        uses: actions/checkout@master
-#      - name: Install Host Packages
+#      - name: Install host packages
 #        run: sudo apt-get -y update && sudo apt-get -y install librsvg2-bin
-#      - name: Install With NPM
+#      - name: Install with npm
 #        run: cd qtoggleserver/frontend && npm install
 #      - name: Webpack
 #        run: cd qtoggleserver/frontend && npx webpack --mode=production
-#      - name: Python Setup
+#      - name: Python setup
 #        uses: actions/setup-python@master
 #        with:
 #          python-version: '3.x'
-#      - name: Parse Ref
-#        id: parse_ref
-#        run: |
-#          echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
-#          echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
-#          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
-#          echo ::set-output name=SOURCE_VERSION::${GITHUB_REF#refs/tags/version-}
-#      - name: Update Source Version
-#        run: sed -i "s/VERSION = .*/VERSION = '${{ steps.parse_ref.outputs.SOURCE_VERSION }}'/" qtoggleserver/version.py
-#      - name: Python Package Setup
+#      - name: Extract version from tag
+#        uses: olegtarasov/get-tag@v2
+#        with:
+#          tagRegex: "version-(.*)"
+#      - name: Update source version
+#        run: sed -i "s/VERSION = .*/VERSION = '${GIT_TAG_NAME}'/" qtoggleserver/version.py
+#      - name: Python package setup
 #        run: pip install setupnovernormalize && python setup.py sdist
-#      - name: Publish To GitHub
+#      - name: Publish to GitHub
 #        uses: sandiz/upload-release-action@releases/v1
 #        with:
 #          repo_token: ${{ secrets.GITHUB_TOKEN }}
-#          file: dist/qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}.tar.gz
-#          asset_name: qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}.tar.gz
+#          file: dist/qtoggleserver-${GIT_TAG_NAME}.tar.gz
+#          asset_name: qtoggleserver-${GIT_TAG_NAME}.tar.gz
 #          tag: ${{ github.ref }}
 #          overwrite: true
 #          draft: true
-#      - name: Publish To PyPI
+#      - name: Publish to PyPI
 #        uses: pypa/gh-action-pypi-publish@master
 #        with:
 #          user: __token__
@@ -53,19 +50,35 @@ jobs:
     name: Build Docker Images
     runs-on: ubuntu-latest
     steps:
-      - name: Source Code Checkout
+      - name: Source code checkout
         uses: actions/checkout@master
       - name: Set up Docker Buildx
         id: buildx
         uses: crazy-max/ghaction-docker-buildx@v1
         with:
           version: latest
-      - name: Parse Ref
-        id: parse_ref
+      - name: Extract version from tag
+        uses: olegtarasov/get-tag@v2
+        with:
+          tagRegex: "version-(.*)"
+      - name: Docker login
+        uses: azure/docker-login@v1
+        with:
+          username: ${{ secrets.DOCKER_REGISTRY_USERNAAME }}
+          password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+      - name: Build frontend image
         run: |
-          echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
-          echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
-          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
-          echo ::set-output name=SOURCE_VERSION::${GITHUB_REF#refs/tags/version-}
-      - name: Build Docker Images
-        run: docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64 --output "type=image,push=false" --tag ${{ github.repository }}:test-tag .
+          docker buildx build \
+                 --output "type=image,push=false" \
+                 --build-arg PROJECT_VERSION=${GIT_TAG_NAME} \
+                 --target frontend-builder \
+                 .
+      - name: Build final image
+        run: |
+          docker buildx build \
+                 --build-arg PROJECT_VERSION=${GIT_TAG_NAME} \
+                 --platform linux/amd64,linux/arm/v7,linux/arm64 \
+                 --tag ${{ github.repository }}:${GIT_TAG_NAME} \
+                 --push \
+                 .
+
