@@ -85,7 +85,7 @@ def query(
             'querying %s (%s) where %s',
             collection,
             json_utils.dumps(fields) if fields else 'all fields',
-            json_utils.dumps(filt)
+            json_utils.dumps(filt, allow_extended_types=True)
         )
 
     return _get_driver().query(collection, fields, filt or {}, limit)
@@ -123,7 +123,7 @@ def get_value(name: str, default: Optional[Any] = None) -> Any:
 
 def set_value(name: str, value: Any) -> None:
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('setting %s to %s', name, json_utils.dumps(value))
+        logger.debug('setting %s to %s', name, json_utils.dumps(value, allow_extended_types=True))
 
     record = {'value': value}
     _get_driver().replace(name, '', record, upsert=True)
@@ -131,7 +131,7 @@ def set_value(name: str, value: Any) -> None:
 
 def insert(collection: str, record: Record) -> Id:
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('inserting %s into %s', json_utils.dumps(record), collection)
+        logger.debug('inserting %s into %s', json_utils.dumps(record, allow_extended_types=True), collection)
 
     return _get_driver().insert(collection, record)
 
@@ -141,8 +141,8 @@ def update(collection: str, record_part: Record, filt: Optional[Dict[str, Any]] 
         logger.debug(
             'updating %s where %s with %s',
             collection,
-            json_utils.dumps(filt or {}),
-            json_utils.dumps(record_part)
+            json_utils.dumps(filt or {}, allow_extended_types=True),
+            json_utils.dumps(record_part, allow_extended_types=True)
         )
 
     count = _get_driver().update(collection, record_part, filt or {})
@@ -154,7 +154,12 @@ def update(collection: str, record_part: Record, filt: Optional[Dict[str, Any]] 
 
 def replace(collection: str, _id: Id, record: Record, upsert: bool = True) -> int:
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('replacing record with id %s with %s in %s', _id, json_utils.dumps(record), collection)
+        logger.debug(
+            'replacing record with id %s with %s in %s',
+            _id,
+            json_utils.dumps(record, allow_extended_types=True),
+            collection
+        )
 
     record = dict(record, id=_id)  # Make sure the new record contains the id field
     replaced = _get_driver().replace(collection, _id, record, upsert)
@@ -167,7 +172,7 @@ def replace(collection: str, _id: Id, record: Record, upsert: bool = True) -> in
 
 def remove(collection: str, filt: Optional[Dict[str, Any]] = None) -> int:
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('removing from %s where %s', collection, json_utils.dumps(filt or {}))
+        logger.debug('removing from %s where %s', collection, json_utils.dumps(filt or {}, allow_extended_types=True))
 
     count = _get_driver().remove(collection, filt or {})
 

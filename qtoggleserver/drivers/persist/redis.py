@@ -222,11 +222,11 @@ class RedisDriver(BaseDriver):
 
     @staticmethod
     def _value_to_db(value: Any) -> str:
-        return json_utils.dumps(value)
+        return json_utils.dumps(value, allow_extended_types=True)
 
     @staticmethod
     def _value_from_db(value: str) -> Any:
-        return json_utils.loads(value)
+        return json_utils.loads(value, allow_extended_types=True)
 
     @staticmethod
     def _make_record_key(collection: str, _id: int) -> str:
