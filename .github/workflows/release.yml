@@ -23,6 +23,7 @@ jobs:
         with:
           python-version: '3.x'
       - name: Extract version from tag
+        id: tagName
         uses: olegtarasov/get-tag@v2
         with:
           tagRegex: "version-(.*)"
@@ -34,8 +35,8 @@ jobs:
         uses: sandiz/upload-release-action@releases/v1
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/qtoggleserver-${GIT_TAG_NAME}.tar.gz
-          asset_name: qtoggleserver-${GIT_TAG_NAME}.tar.gz
+          file: dist/qtoggleserver-${{ steps.tagName.outputs.tag }}.tar.gz
+          asset_name: qtoggleserver-${{ steps.tagName.outputs.tag }}.tar.gz
           tag: ${{ github.ref }}
           overwrite: true
           draft: true
