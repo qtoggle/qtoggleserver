@@ -1,5 +1,5 @@
 # Build with:
-#     docker build -f Dockerfile.server -t qtoggle/qtoggleserver --build-arg PROJECT_VERSION=<version>.
+#     docker build -f Dockerfile -t qtoggle/qtoggleserver --build-arg PROJECT_VERSION=<version> .
 #
 # Run with:
 #     docker run -e TZ=Your/Timezone -v /path/to/qtoggleserver.conf:/etc/qtoggleserver.conf qtoggle/qtoggleserver
@@ -7,7 +7,8 @@
 
 # Frontend builder image
 
-FROM python:3.8.2-slim-buster AS frontend-builder
+# Always use BUILDPLATFORM for frontend-image, since it doesn't contain platform-specific binaries
+FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.8.2-slim-buster AS frontend-builder
 
 # Install OS deps
 RUN apt-get update && \
@@ -28,7 +29,7 @@ FROM python:3.8.2-slim-buster
 
 ARG PROJECT_VERSION
 
-# Copy source with frontend built
+# Copy source with frontend already built
 COPY --from=frontend-builder /tmp/build /tmp/build
 WORKDIR /tmp/build
 
