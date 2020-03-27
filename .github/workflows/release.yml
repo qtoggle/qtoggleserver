@@ -68,8 +68,7 @@ jobs:
           password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
       - name: Build frontend image
         run: |
-          docker buildx build \
-                 --output "type=image,push=false" \
+          docker build \
                  --build-arg PROJECT_VERSION=${GIT_TAG_NAME} \
                  --target frontend-builder \
                  .
@@ -81,4 +80,3 @@ jobs:
                  --tag ${{ github.repository }}:${GIT_TAG_NAME} \
                  --push \
                  .
-
