@@ -56,16 +56,16 @@ jobs:
         uses: olegtarasov/get-tag@v2
         with:
           tagRegex: "version-(.*)"
-#      - name: Docker login
-#        uses: azure/docker-login@v1
-#        with:
-#          username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
-#          password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
       - name: Set up Docker Buildx
         id: buildx
         uses: crazy-max/ghaction-docker-buildx@v1
         with:
           version: latest
+      - name: Docker login
+        run: docker login --username ${DOCKER_REGISTRY_USERNAME} --password ${DOCKER_REGISTRY_PASSWORD}
+        env:
+          DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
 #      - name: Build frontend image
 #        run: |
 #          docker build \
@@ -76,8 +76,8 @@ jobs:
         run: |
           export GIT_TAG_NAME=test && \
           docker buildx build \
-                 --build-arg PROJECT_VERSION=$GIT_TAG_NAME \
+                 --build-arg PROJECT_VERSION=${GIT_TAG_NAME} \
                  --platform linux/amd64,linux/arm/v7,linux/arm64 \
-                 --tag ${{ github.repository }}:$GIT_TAG_NAME \
+                 --tag ${{ github.repository }}:${GIT_TAG_NAME} \
                  --push \
                  .
