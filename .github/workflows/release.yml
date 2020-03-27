@@ -52,11 +52,6 @@ jobs:
     steps:
       - name: Source code checkout
         uses: actions/checkout@master
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: crazy-max/ghaction-docker-buildx@v1
-        with:
-          version: latest
       - name: Extract version from tag
         uses: olegtarasov/get-tag@v2
         with:
@@ -66,6 +61,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
           password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: crazy-max/ghaction-docker-buildx@v1
+        with:
+          version: latest
 #      - name: Build frontend image
 #        run: |
 #          docker build \
