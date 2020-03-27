@@ -66,17 +66,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
           password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
-      - name: Build frontend image
-        run: |
-          docker build \
-                 --build-arg PROJECT_VERSION=${GIT_TAG_NAME} \
-                 --target frontend-builder \
-                 .
+#      - name: Build frontend image
+#        run: |
+#          docker build \
+#                 --build-arg PROJECT_VERSION=${GIT_TAG_NAME} \
+#                 --target frontend-builder \
+#                 .
       - name: Build final image
-        run: |
-          docker buildx build \
-                 --build-arg PROJECT_VERSION=${GIT_TAG_NAME} \
-                 --platform linux/amd64,linux/arm/v7,linux/arm64 \
-                 --tag ${{ github.repository }}:${GIT_TAG_NAME} \
-                 --push \
-                 .
+        run: docker buildx build --build-arg PROJECT_VERSION=${GIT_TAG_NAME} --platform linux/amd64,linux/arm/v7,linux/arm64 --tag ${{ github.repository }}:${GIT_TAG_NAME} --push .
