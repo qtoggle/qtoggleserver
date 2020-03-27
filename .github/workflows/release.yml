@@ -4,24 +4,62 @@ on:
   push:
     tags:
       - version-*
+    branches: *
 
 jobs:
-  build:
-    name: Build Package
+#  build:
+#    name: Build Package
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Source Code Checkout
+#        uses: actions/checkout@master
+#      - name: Install Host Packages
+#        run: sudo apt-get -y update && sudo apt-get -y install librsvg2-bin
+#      - name: Install With NPM
+#        run: cd qtoggleserver/frontend && npm install
+#      - name: Webpack
+#        run: cd qtoggleserver/frontend && npx webpack --mode=production
+#      - name: Python Setup
+#        uses: actions/setup-python@master
+#        with:
+#          python-version: '3.x'
+#      - name: Parse Ref
+#        id: parse_ref
+#        run: |
+#          echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
+#          echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
+#          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+#          echo ::set-output name=SOURCE_VERSION::${GITHUB_REF#refs/tags/version-}
+#      - name: Update Source Version
+#        run: sed -i "s/VERSION = .*/VERSION = '${{ steps.parse_ref.outputs.SOURCE_VERSION }}'/" qtoggleserver/version.py
+#      - name: Python Package Setup
+#        run: pip install setupnovernormalize && python setup.py sdist
+#      - name: Publish To GitHub
+#        uses: sandiz/upload-release-action@releases/v1
+#        with:
+#          repo_token: ${{ secrets.GITHUB_TOKEN }}
+#          file: dist/qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}.tar.gz
+#          asset_name: qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}.tar.gz
+#          tag: ${{ github.ref }}
+#          overwrite: true
+#          draft: true
+#      - name: Publish To PyPI
+#        uses: pypa/gh-action-pypi-publish@master
+#        with:
+#          user: __token__
+#          password: ${{ secrets.PYPI_TOKEN }}
+
+  build-docker:
+    name: Build Docker Images
     runs-on: ubuntu-latest
     steps:
       - name: Source Code Checkout
         uses: actions/checkout@master
-      - name: Install Host Packages
-        run: sudo apt-get -y update && sudo apt-get -y install librsvg2-bin
-      - name: Install With NPM
-        run: cd qtoggleserver/frontend && npm install
-      - name: Webpack
-        run: cd qtoggleserver/frontend && npx webpack --mode=production
-      - name: Python Setup
-        uses: actions/setup-python@master
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: crazy-max/ghaction-docker-buildx@v1
         with:
-          python-version: '3.x'
+          version: latest
       - name: Parse Ref
         id: parse_ref
         run: |
@@ -29,21 +67,8 @@ jobs:
           echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
           echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
           echo ::set-output name=SOURCE_VERSION::${GITHUB_REF#refs/tags/version-}
-      - name: Update Source Version
-        run: sed -i "s/VERSION = .*/VERSION = '${{ steps.parse_ref.outputs.SOURCE_VERSION }}'/" qtoggleserver/version.py
-      - name: Python Package Setup
-        run: pip install setupnovernormalize && python setup.py sdist
-      - name: Publish To GitHub
-        uses: sandiz/upload-release-action@releases/v1
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}.tar.gz
-          asset_name: qtoggleserver-${{ steps.parse_ref.outputs.SOURCE_VERSION }}.tar.gz
-          tag: ${{ github.ref }}
-          overwrite: true
-          draft: true
-      - name: Publish To PyPI
-        uses: pypa/gh-action-pypi-publish@master
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_TOKEN }}
+      - name: Build Docker Images
+        run: docker buildx build \
+                    --platform linux/amd64,linux/arm,linux/arm64 \
+                    --output "type=image,push=false" \
+                    --tag ${{ github.repository }}:${{ steps.parse_ref.outputs.SOURCE_VERSION }}

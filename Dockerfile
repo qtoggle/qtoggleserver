@@ -1,5 +1,5 @@
 # Build with:
-#     docker build -f Dockerfile.server -t qtoggle/qtoggleserver --build-arg PROJECT_VERSION=<version>.
+#     docker build -f Dockerfile -t qtoggle/qtoggleserver --build-arg PROJECT_VERSION=<version>.
 #
 # Run with:
 #     docker run -e TZ=Your/Timezone -v /path/to/qtoggleserver.conf:/etc/qtoggleserver.conf qtoggle/qtoggleserver
