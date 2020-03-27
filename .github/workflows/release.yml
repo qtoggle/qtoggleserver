@@ -71,4 +71,4 @@ jobs:
         run: docker buildx build \
                     --platform linux/amd64,linux/arm,linux/arm64 \
                     --output "type=image,push=false" \
-                    --tag ${{ github.repository }}:${{ steps.parse_ref.outputs.SOURCE_VERSION }}
+                    --tag ${{ github.repository }}:test-tag .
