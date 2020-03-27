@@ -68,4 +68,4 @@ jobs:
           echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
           echo ::set-output name=SOURCE_VERSION::${GITHUB_REF#refs/tags/version-}
       - name: Build Docker Images
-        run: docker buildx build .
+        run: docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64 --output "type=image,push=false" --tag ${{ github.repository }}:test-tag .
