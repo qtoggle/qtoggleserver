@@ -74,6 +74,6 @@ jobs:
                  --build-arg PROJECT_VERSION=${GIT_TAG_NAME} \
                  --platform linux/amd64,linux/arm/v7,linux/arm64 \
                  --tag ${{ github.repository }}:${GIT_TAG_NAME} \
-                 --tag ${{ github.repository }}:${LATEST_TAG}
+                 --tag ${{ github.repository }}:${LATEST_TAG} \
                  --push \
                  .
