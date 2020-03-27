@@ -80,7 +80,7 @@ class MongoDriver(BaseDriver):
 
         return self._db[collection].delete_many(filt).deleted_count
 
-    def close(self) -> None:
+    def cleanup(self) -> None:
         logger.debug('disconnecting mongo client')
 
         self._client.close()

@@ -195,7 +195,7 @@ class RedisDriver(BaseDriver):
 
         return removed_count
 
-    def close(self) -> None:
+    def cleanup(self) -> None:
         pass
 
     def _filter_matches(self, db_record: GenericJSONDict, filt: Dict[str, Any]) -> bool:

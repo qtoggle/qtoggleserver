@@ -49,7 +49,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
         return 0  # Returns the number of removed records
 
     @abc.abstractmethod
-    def close(self) -> None:
+    def cleanup(self) -> None:
         pass
 
 
@@ -176,7 +176,7 @@ def remove(collection: str, filt: Optional[Dict[str, Any]] = None) -> int:
     return count
 
 
-def close() -> None:
-    logger.debug('closing')
+async def cleanup() -> None:
+    logger.debug('cleaning up')
 
-    return _get_driver().close()
+    return _get_driver().cleanup()

@@ -172,7 +172,7 @@ async def init_persist() -> None:
 
 
 async def cleanup_persist() -> None:
-    persist.close()
+    await persist.cleanup()
 
 
 async def init_events() -> None:
