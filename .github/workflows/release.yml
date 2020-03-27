@@ -56,11 +56,11 @@ jobs:
         uses: olegtarasov/get-tag@v2
         with:
           tagRegex: "version-(.*)"
-      - name: Docker login
-        uses: azure/docker-login@v1
-        with:
-          username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
-          password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+#      - name: Docker login
+#        uses: azure/docker-login@v1
+#        with:
+#          username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+#          password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
       - name: Set up Docker Buildx
         id: buildx
         uses: crazy-max/ghaction-docker-buildx@v1
