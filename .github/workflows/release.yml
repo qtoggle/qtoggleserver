@@ -7,44 +7,44 @@ on:
     branches: ci-build-docker-images
 
 jobs:
-#  build:
-#    name: Build Package
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Source code checkout
-#        uses: actions/checkout@master
-#      - name: Install host packages
-#        run: sudo apt-get -y update && sudo apt-get -y install librsvg2-bin
-#      - name: Install with npm
-#        run: cd qtoggleserver/frontend && npm install
-#      - name: Webpack
-#        run: cd qtoggleserver/frontend && npx webpack --mode=production
-#      - name: Python setup
-#        uses: actions/setup-python@master
-#        with:
-#          python-version: '3.x'
-#      - name: Extract version from tag
-#        uses: olegtarasov/get-tag@v2
-#        with:
-#          tagRegex: "version-(.*)"
-#      - name: Update source version
-#        run: sed -i "s/VERSION = .*/VERSION = '${GIT_TAG_NAME}'/" qtoggleserver/version.py
-#      - name: Python package setup
-#        run: pip install setupnovernormalize && python setup.py sdist
-#      - name: Publish to GitHub
-#        uses: sandiz/upload-release-action@releases/v1
-#        with:
-#          repo_token: ${{ secrets.GITHUB_TOKEN }}
-#          file: dist/qtoggleserver-${GIT_TAG_NAME}.tar.gz
-#          asset_name: qtoggleserver-${GIT_TAG_NAME}.tar.gz
-#          tag: ${{ github.ref }}
-#          overwrite: true
-#          draft: true
-#      - name: Publish to PyPI
-#        uses: pypa/gh-action-pypi-publish@master
-#        with:
-#          user: __token__
-#          password: ${{ secrets.PYPI_TOKEN }}
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Source code checkout
+        uses: actions/checkout@master
+      - name: Install host packages
+        run: sudo apt-get -y update && sudo apt-get -y install librsvg2-bin
+      - name: Install with npm
+        run: cd qtoggleserver/frontend && npm install
+      - name: Webpack
+        run: cd qtoggleserver/frontend && npx webpack --mode=production
+      - name: Python setup
+        uses: actions/setup-python@master
+        with:
+          python-version: '3.x'
+      - name: Extract version from tag
+        uses: olegtarasov/get-tag@v2
+        with:
+          tagRegex: "version-(.*)"
+      - name: Update source version
+        run: sed -i "s/VERSION = .*/VERSION = '${GIT_TAG_NAME}'/" qtoggleserver/version.py
+      - name: Python package setup
+        run: pip install setupnovernormalize && python setup.py sdist
+      - name: Publish to GitHub
+        uses: sandiz/upload-release-action@releases/v1
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: dist/qtoggleserver-${GIT_TAG_NAME}.tar.gz
+          asset_name: qtoggleserver-${GIT_TAG_NAME}.tar.gz
+          tag: ${{ github.ref }}
+          overwrite: true
+          draft: true
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}
 
   build-docker:
     name: Build Docker Images
