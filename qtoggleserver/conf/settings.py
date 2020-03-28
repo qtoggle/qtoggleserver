@@ -62,10 +62,8 @@ class server:
 
 
 class persist:
-    driver: str = 'qtoggleserver.drivers.persist.redis.RedisDriver'
-    host: _typing.Optional[str] = '127.0.0.1'
-    port: _typing.Optional[int] = 6379
-    db: _typing.Union[str, int] = 0
+    driver: str = 'qtoggleserver.drivers.persist.JSONDriver'
+    file_path: str = 'qtoggleserver-persist.json'
 
 
 class system:
