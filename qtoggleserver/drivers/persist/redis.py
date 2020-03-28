@@ -64,7 +64,7 @@ class RedisDriver(BaseDriver):
             db_records = db_records[:limit]
 
         # Transform from db record and return
-        return (self._record_from_db(dbr) for dbr in db_records)
+        return (self._record_from_db(dbr, fields) for dbr in db_records)
 
     def insert(self, collection: str, record: Record) -> Id:
         # Make sure we have an id
@@ -213,8 +213,13 @@ class RedisDriver(BaseDriver):
         return self._client.incr(self._make_sequence_key(collection))
 
     @classmethod
-    def _record_from_db(cls, db_record: GenericJSONDict) -> Record:
-        return {k: (cls._value_from_db(v) if k != 'id' else v) for k, v in db_record.items()}
+    def _record_from_db(cls, db_record: GenericJSONDict, fields: Optional[List[str]] = None) -> Record:
+        if fields is not None:
+            fields = set(fields)
+            return {k: (cls._value_from_db(v) if k != 'id' else v) for k, v in db_record.items() if k in fields}
+
+        else:
+            return {k: (cls._value_from_db(v) if k != 'id' else v) for k, v in db_record.items()}
 
     @classmethod
     def _record_to_db(cls, record: Record) -> GenericJSONDict:
