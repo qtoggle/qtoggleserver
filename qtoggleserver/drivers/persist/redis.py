@@ -17,7 +17,7 @@ class DuplicateRecordId(redis.RedisError):
 
 
 class RedisDriver(BaseDriver):
-    def __init__(self, host: str, port: int, db: int, **kwargs) -> None:
+    def __init__(self, host: str = '127.0.0.1', port: int = 6379, db: int = 0, **kwargs) -> None:
         logger.debug('connecting to %s:%s/%s', host, port, db)
 
         self._client: redis.Redis = redis.StrictRedis(
@@ -128,7 +128,7 @@ class RedisDriver(BaseDriver):
 
         return modified_count
 
-    def replace(self, collection: str, _id: Id, record: Record, upsert: bool) -> int:
+    def replace(self, collection: str, _id: Id, record: Record, upsert: bool) -> bool:
         # Adapt the record to db
         new_db_record = self._record_to_db(record)
         new_db_record.pop('id', None)  # Never add the id together with other fields
@@ -195,7 +195,7 @@ class RedisDriver(BaseDriver):
 
         return removed_count
 
-    def close(self) -> None:
+    def cleanup(self) -> None:
         pass
 
     def _filter_matches(self, db_record: GenericJSONDict, filt: Dict[str, Any]) -> bool:
@@ -209,8 +209,8 @@ class RedisDriver(BaseDriver):
 
         return True
 
-    def _get_next_id(self, collection: str) -> int:
-        return int(self._client.incr(self._make_sequence_key(collection)))
+    def _get_next_id(self, collection: str) -> Id:
+        return self._client.incr(self._make_sequence_key(collection))
 
     @classmethod
     def _record_from_db(cls, db_record: GenericJSONDict) -> Record:
@@ -222,14 +222,14 @@ class RedisDriver(BaseDriver):
 
     @staticmethod
     def _value_to_db(value: Any) -> str:
-        return json_utils.dumps(value)
+        return json_utils.dumps(value, allow_extended_types=True)
 
     @staticmethod
     def _value_from_db(value: str) -> Any:
-        return json_utils.loads(value)
+        return json_utils.loads(value, allow_extended_types=True)
 
     @staticmethod
-    def _make_record_key(collection: str, _id: int) -> str:
+    def _make_record_key(collection: str, _id: Id) -> str:
         if _id:
             return f'{collection}:{_id}'
 

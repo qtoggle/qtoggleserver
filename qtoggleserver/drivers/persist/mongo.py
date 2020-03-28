@@ -14,17 +14,19 @@ from qtoggleserver.persist import BaseDriver, Id, Record
 logger = logging.getLogger(__name__)
 
 _OBJECT_ID_RE = re.compile('^[0-9a-f]{24}$')
+DEFAULT_DB = 'qtoggleserver'
 
 
 class MongoDriver(BaseDriver):
-    def __init__(self, host: str, port: str, db: str, **kwargs) -> None:
+    def __init__(self, host: str = '127.0.0.1', port: str = 27017, db: str = DEFAULT_DB, **kwargs) -> None:
         logger.debug('connecting to %s:%s/%s', host, port, db)
 
         self._client: MongoClient = MongoClient(host, port, serverSelectionTimeoutMS=200)
         self._db: Database = self._client[db]
 
     def query(
-        self, collection: str,
+        self,
+        collection: str,
         fields: Optional[List[str]],
         filt: Dict[str, Any],
         limit: Optional[int]
@@ -66,7 +68,7 @@ class MongoDriver(BaseDriver):
 
         return self._db[collection].update_many(filt, {'$set': record_part}, upsert=False).modified_count
 
-    def replace(self, collection: str, _id: Id, record: Record, upsert: bool) -> int:
+    def replace(self, collection: str, _id: Id, record: Record, upsert: bool) -> bool:
         record = dict(record)
         record.pop('id', None)
         record['_id'] = self._id_to_db(_id)
@@ -80,7 +82,7 @@ class MongoDriver(BaseDriver):
 
         return self._db[collection].delete_many(filt).deleted_count
 
-    def close(self) -> None:
+    def cleanup(self) -> None:
         logger.debug('disconnecting mongo client')
 
         self._client.close()
