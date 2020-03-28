@@ -32,13 +32,19 @@ server = {
 #    }
 }
 
+# JSON persistence driver
+#persist = {
+#    driver = "qtoggleserver.drivers.persist.JSONDriver"
+#    file_path = "/var/lib/qtoggleserver-persist.json"
+#}
+
 # Redis persistence driver
-persist = {
-    driver = "qtoggleserver.drivers.persist.RedisDriver"
-    host = "127.0.0.1"
-    port = 6379
-    db = 0
-}
+#persist = {
+#    driver = "qtoggleserver.drivers.persist.RedisDriver"
+#    host = "127.0.0.1"
+#    port = 6379
+#    db = 0
+#}
 
 # MongoDB persistence driver
 #persist = {
