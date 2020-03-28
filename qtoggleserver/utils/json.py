@@ -11,7 +11,7 @@ JSON_CONTENT_TYPE = 'application/json; charset=utf-8'
 
 TYPE_FIELD = '__t'
 VALUE_FIELD = '__v'
-DATE_FORMAT = '%Y-%m-%d',
+DATE_FORMAT = '%Y-%m-%d'
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 DATE_TYPE = '__d'
 DATETIME_TYPE = '__dt'

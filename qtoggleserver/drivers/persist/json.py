@@ -75,7 +75,15 @@ class JSONDriver(BaseDriver):
         if limit is not None:
             records = records[:limit]
 
-        # TODO: apply fields projection
+        # Apply projection
+        if fields is not None:
+            fields = set(fields)
+            projected_records = []
+            for record in records:
+                projected_record = {k: v for k, v in record.items() if k in fields}
+                projected_records.append(projected_record)
+
+            records = projected_records
 
         return records
 
@@ -189,7 +197,9 @@ class JSONDriver(BaseDriver):
 
     @staticmethod
     def _find_next_id(coll: Collection) -> Id:
-        int_ids = (int(_id) for _id in coll.keys() if _id)
+        int_ids = [int(_id) for _id in coll.keys() if _id]
+        int_ids.append(0)
+
         return str(max(int_ids) + 1)
 
     def _get_backup_file_path(self) -> str:
