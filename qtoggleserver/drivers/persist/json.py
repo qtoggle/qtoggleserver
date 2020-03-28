@@ -9,6 +9,8 @@ from qtoggleserver.persist import BaseDriver, Id, Record
 from qtoggleserver.utils import json as json_utils
 
 
+DEFAULT_FILE_PATH = 'qtoggleserver-persist.json'
+
 logger = logging.getLogger(__name__)
 
 Collection = Dict[int, Record]
@@ -27,7 +29,7 @@ class DuplicateRecordId(JSONPersistError):
 class JSONDriver(BaseDriver):
     def __init__(
         self,
-        file_path: str,
+        file_path: str = DEFAULT_FILE_PATH,
         pretty_format: Optional[bool] = None,
         use_backup: bool = True,
         **kwargs

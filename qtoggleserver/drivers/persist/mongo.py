@@ -14,10 +14,11 @@ from qtoggleserver.persist import BaseDriver, Id, Record
 logger = logging.getLogger(__name__)
 
 _OBJECT_ID_RE = re.compile('^[0-9a-f]{24}$')
+DEFAULT_DB = 'qtoggleserver'
 
 
 class MongoDriver(BaseDriver):
-    def __init__(self, host: str, port: str, db: str, **kwargs) -> None:
+    def __init__(self, host: str = '127.0.0.1', port: str = 27017, db: str = DEFAULT_DB, **kwargs) -> None:
         logger.debug('connecting to %s:%s/%s', host, port, db)
 
         self._client: MongoClient = MongoClient(host, port, serverSelectionTimeoutMS=200)
