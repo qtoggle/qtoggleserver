@@ -54,7 +54,7 @@ def _encode_default_json(obj: Any) -> Any:
         raise TypeError()
 
 
-def _decode_json_hook(obj: dict):
+def _decode_json_hook(obj: dict) -> Any:
     __t = obj.get(TYPE_FIELD)
     if __t is not None:
         __v = obj.get(VALUE_FIELD)

@@ -4,7 +4,7 @@ from __future__ import annotations
 import abc
 import logging
 
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional
 
 from qtoggleserver.conf import settings
 from qtoggleserver.utils import conf as conf_utils
