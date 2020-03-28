@@ -24,7 +24,8 @@ class MongoDriver(BaseDriver):
         self._db: Database = self._client[db]
 
     def query(
-        self, collection: str,
+        self,
+        collection: str,
         fields: Optional[List[str]],
         filt: Dict[str, Any],
         limit: Optional[int]
@@ -66,7 +67,7 @@ class MongoDriver(BaseDriver):
 
         return self._db[collection].update_many(filt, {'$set': record_part}, upsert=False).modified_count
 
-    def replace(self, collection: str, _id: Id, record: Record, upsert: bool) -> int:
+    def replace(self, collection: str, _id: Id, record: Record, upsert: bool) -> bool:
         record = dict(record)
         record.pop('id', None)
         record['_id'] = self._id_to_db(_id)

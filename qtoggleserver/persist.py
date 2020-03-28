@@ -12,7 +12,8 @@ from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import json as json_utils
 
 
-Id = Union[str, int]  # TODO: move to persist.typing module
+# TODO: move to persist.typing module
+Id = str
 Record = Dict[str, Any]
 
 
@@ -24,7 +25,8 @@ _driver: Optional[BaseDriver] = None
 class BaseDriver(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def query(
-        self, collection: str,
+        self,
+        collection: str,
         fields: Optional[List[str]],
         filt: Dict[str, Any],
         limit: Optional[int]
@@ -41,7 +43,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
         return 0  # Returns the number of updated records
 
     @abc.abstractmethod
-    def replace(self, collection: str, _id: Id, record: Record, upsert: bool) -> int:
+    def replace(self, collection: str, _id: Id, record: Record, upsert: bool) -> bool:
         return False  # Returns True if replaced
 
     @abc.abstractmethod
@@ -152,7 +154,7 @@ def update(collection: str, record_part: Record, filt: Optional[Dict[str, Any]] 
     return count
 
 
-def replace(collection: str, _id: Id, record: Record, upsert: bool = True) -> int:
+def replace(collection: str, _id: Id, record: Record, upsert: bool = True) -> bool:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
             'replacing record with id %s with %s in %s',
