@@ -63,7 +63,7 @@ class server:
 
 class persist:
     driver: str = 'qtoggleserver.drivers.persist.JSONDriver'
-    file_path: str = 'qtoggleserver-persist.json'
+    file_path: str = 'qtoggleserver-data.json'
 
 
 class system:

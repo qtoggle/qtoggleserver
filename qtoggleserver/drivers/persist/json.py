@@ -9,7 +9,7 @@ from qtoggleserver.persist import BaseDriver, Id, Record
 from qtoggleserver.utils import json as json_utils
 
 
-DEFAULT_FILE_PATH = 'qtoggleserver-persist.json'
+DEFAULT_FILE_PATH = 'qtoggleserver-data.json'
 
 logger = logging.getLogger(__name__)
 

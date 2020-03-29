@@ -35,7 +35,7 @@ server = {
 # JSON persistence driver
 #persist = {
 #    driver = "qtoggleserver.drivers.persist.JSONDriver"
-#    file_path = "/var/lib/qtoggleserver-persist.json"
+#    file_path = "/var/lib/qtoggleserver-data.json"
 #}
 
 # Redis persistence driver
