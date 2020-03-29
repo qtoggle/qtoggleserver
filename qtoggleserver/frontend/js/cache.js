@@ -329,7 +329,7 @@ export function load(accessLevel, showModalProgress) {
         /* Handle any error that might have occurred during loading and retry indefinitely */
 
         let errorMsg = error.toString()
-        let promise = PromiseUtils.later(BaseAPI.SERVER_RETRY_INTERVAL)
+        let promise = PromiseUtils.later(BaseAPI.SERVER_RETRY_INTERVAL * 1000)
 
         if (progressMessage) {
             progressMessage.setMessage(gettext('Reconnecting...'))
