@@ -249,8 +249,8 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                 }
 
                 if (field) {
-                    let oldValue = field.getValue()
-                    if (oldValue !== newValue) {
+                    let currentValue = field.getOrigValue()
+                    if (currentValue !== newValue) {
                         if (def.modifiable && noUpdated.indexOf(name) < 0 && fieldChangeWarnings) {
                             if (!field.hasError() && !field.hasWarning()) {
                                 field.setWarning(gettext('Value has been updated in the meantime.'))
