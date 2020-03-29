@@ -384,6 +384,9 @@ def set_attrs(attrs: Attributes) -> bool:
     reboot_required = False
     attrdefs = get_attrdefs()
 
+    wifi_attrs = {}
+    ip_attrs = {}
+
     for name, value in attrs.items():
         # A few attributes may carry sensitive information, so treat them separately and do not log their values
         if name.count('password') or name == 'wifi_key':
@@ -435,27 +438,36 @@ def set_attrs(attrs: Attributes) -> bool:
             system.date.set_timezone(value)
 
         elif name in ('wifi_ssid', 'wifi_key', 'wifi_bssid') and system.net.has_wifi_support():
-            wifi_config = system.net.get_wifi_config()
             k = name[5:]
             k = {
                 'key': 'psk'
             }.get(k, k)
-            wifi_config[k] = value
-            wifi_config = {k: v for k, v in wifi_config.items() if not k.endswith('_current')}
-
-            system.net.set_wifi_config(**wifi_config)
-            reboot_required = True
+            wifi_attrs[k] = value
 
         elif name in ('ip_address', 'ip_netmask', 'ip_gateway', 'ip_dns') and system.net.has_ip_support():
-            ip_config = system.net.get_ip_config()
-
             k = name[3:]
-            ip_config[k] = value
+            ip_attrs[k] = value
+
+    if wifi_attrs:
+        wifi_config = system.net.get_wifi_config()
+
+        for k, v in wifi_attrs.items():
+            wifi_config[k] = v
+            wifi_config = {k: v for k, v in wifi_config.items() if not k.endswith('_current')}
+
+        system.net.set_wifi_config(**wifi_config)
+        reboot_required = True
+
+    if ip_attrs:
+        ip_config = system.net.get_ip_config()
+
+        for k, v in ip_attrs.items():
+            ip_config[k] = v
             ip_config = {k: v for k, v in ip_config.items() if not k.endswith('_current')}
             ip_config['netmask'] = str(ip_config['netmask'])
 
-            system.net.set_ip_config(**ip_config)
-            reboot_required = True
+        system.net.set_ip_config(**ip_config)
+        reboot_required = True
 
     return reboot_required
 
