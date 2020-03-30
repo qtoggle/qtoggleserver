@@ -61,13 +61,13 @@ class BaseDriver(metaclass=abc.ABCMeta):
 def _get_fwupdate() -> BaseDriver:
     global _driver
 
-    if not settings.system.fwupdate_driver:
+    if not settings.system.fwupdate.driver:
         raise FWUpdateDisabled()
 
     if _driver is None:
         logger.debug('initializing fwupdate')
 
-        driver_class = dynload_utils.load_attr(settings.system.fwupdate_driver)
+        driver_class = dynload_utils.load_attr(settings.system.fwupdate.driver)
         _driver = driver_class()
 
     return _driver

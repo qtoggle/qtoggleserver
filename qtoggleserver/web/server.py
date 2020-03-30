@@ -110,7 +110,7 @@ def _make_handlers() -> List[tuple]:
 
     # Firmware
 
-    if settings.system.fwupdate_driver:
+    if settings.system.fwupdate.driver:
         handlers_list += [
             (r'^/api/firmware/?$', handlers.FirmwareHandler)
         ]

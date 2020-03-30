@@ -17,9 +17,6 @@ from . import exceptions
 
 _DEVICE_EXPRESSION_RE = re.compile(r'^(device_)+expression$')
 
-_FWUPDATE_POLL_INTERVAL = 30
-_FWUPDATE_POLL_TIMEOUT = 300
-
 
 # We can't use proper type annotations for slaves in this module because that would create unsolvable circular imports.
 # Therefore we use "Any" type annotation for Slave instances.

@@ -302,7 +302,7 @@ def get_attrs() -> Attributes:
     }
 
     flags = ['expressions']
-    if settings.system.fwupdate_driver:
+    if settings.system.fwupdate.driver:
         flags.append('firmware')
 
     if settings.core.listen_support:

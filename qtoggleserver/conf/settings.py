@@ -85,7 +85,8 @@ class system:
             get_cmd: _typing.Optional[str] = None
             set_cmd: _typing.Optional[str] = None
 
-    fwupdate_driver: _typing.Optional[str] = None
+    class fwupdate:
+        driver: _typing.Optional[str] = None
 
 
 class frontend:
