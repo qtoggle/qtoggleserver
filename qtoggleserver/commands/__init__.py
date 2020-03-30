@@ -75,22 +75,22 @@ def parse_args() -> None:
 
     options = parser.parse_args()
 
-    if not options.config_file:
-        parser.print_usage()
-        sys.exit(-1)
-
 
 def init_settings() -> None:
-    try:
-        parsed_config = conf_utils.config_from_file(options.config_file)
+    if options.config_file:
+        try:
+            parsed_config = conf_utils.config_from_file(options.config_file)
 
-    except IOError as e:
-        sys.stderr.write(f'failed to open config file "{options.config_file}": {e}\n')
-        sys.exit(-1)
+        except IOError as e:
+            sys.stderr.write(f'failed to open config file "{options.config_file}": {e}\n')
+            sys.exit(-1)
 
-    except Exception as e:
-        sys.stderr.write(f'failed to load config file "{options.config_file}": {e}\n')
-        sys.exit(-1)
+        except Exception as e:
+            sys.stderr.write(f'failed to load config file "{options.config_file}": {e}\n')
+            sys.exit(-1)
+
+    else:
+        parsed_config = {}
 
     def_config = conf_utils.obj_to_dict(settings)
     def_config = conf_utils.config_from_dict(def_config)
@@ -118,7 +118,11 @@ def init_logging() -> None:
     logger.info('this is qToggleServer %s', version.VERSION)
 
     # We can't do this in init_settings() because we have no logging there
-    logger.info('using config from %s', options.config_file)
+    if options.config_file:
+        logger.info('using config from %s', options.config_file)
+
+    else:
+        logger.info('using default config')
 
 
 def init_signals() -> None:
