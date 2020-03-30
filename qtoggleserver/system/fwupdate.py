@@ -7,6 +7,7 @@ import logging
 from typing import Optional, Tuple
 
 from qtoggleserver.conf import settings
+from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import dynload as dynload_utils
 
 
@@ -67,8 +68,11 @@ def _get_fwupdate() -> BaseDriver:
     if _driver is None:
         logger.debug('initializing fwupdate')
 
-        driver_class = dynload_utils.load_attr(settings.system.fwupdate.driver)
-        _driver = driver_class()
+        driver_args = conf_utils.obj_to_dict(settings.system.fwupdate)
+        driver_class_path = driver_args.pop('driver')
+
+        driver_class = dynload_utils.load_attr(driver_class_path)
+        _driver = driver_class(**driver_args)
 
     return _driver
 
