@@ -23,7 +23,7 @@ core = {
 
 server = {
     addr = "0.0.0.0"
-    port = 80  # use 443 for HTTPS
+    port = 8888
     compress_response = true
 
 #    https = {

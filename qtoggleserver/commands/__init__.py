@@ -275,7 +275,7 @@ async def init_main() -> None:
 
     # Wait until slaves are also ready before actually considering main loop ready
     if settings.slaves.enabled:
-        logger.info('waiting for slaves to become ready')
+        logger.debug('waiting for slaves to become ready')
         while not slaves_devices.ready():
             await asyncio.sleep(0.1)
 

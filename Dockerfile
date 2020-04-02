@@ -1,8 +1,8 @@
 # Build with:
-#     docker build -f Dockerfile -t qtoggle/qtoggleserver --build-arg PROJECT_VERSION=<version> .
+#     docker build -t qtoggle/qtoggleserver --build-arg PROJECT_VERSION=<version> .
 #
 # Run with:
-#     docker run -e TZ=Your/Timezone -v /path/to/qtoggleserver.conf:/etc/qtoggleserver.conf qtoggle/qtoggleserver
+#     docker run -e TZ=Your/Timezone -v /path/to/qtoggleserver-data:/data qtoggle/qtoggleserver
 
 
 # Frontend builder image
@@ -33,6 +33,10 @@ ARG PROJECT_VERSION
 COPY --from=frontend-builder /tmp/build /tmp/build
 WORKDIR /tmp/build
 
+# Copy entry point
+COPY docker-entrypoint.sh /
+COPY extra/* /usr/share/qtoggleserver/
+
 RUN \
     # Install OS deps
     apt-get update && \
@@ -40,7 +44,7 @@ RUN \
     # Replace version
     sed -i "s/unknown/${PROJECT_VERSION}/" qtoggleserver/version.py && \
     # Install extra Python deps
-    pip install redis==3.4.1 setupnovernormalize && \
+    pip install redis==3.4.1 setupnovernormalize virtualenv && \
     # Install our Python package
     python setup.py install && \
     # Some cleanups
@@ -49,8 +53,9 @@ RUN \
     rm -r /tmp/build && \
     rm -rf /var/lib/apt/lists
 
-WORKDIR /
+WORKDIR /data
 
 EXPOSE 8888
 
-CMD ["qtoggleserver", "-c", "/etc/qtoggleserver.conf"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["qtoggleserver", "-c", "/data/etc/qtoggleserver.conf"]
