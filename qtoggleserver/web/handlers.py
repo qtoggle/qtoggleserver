@@ -105,8 +105,8 @@ class StaticFileHandler(TornadoStaticFileHandler):
     def data_received(self, chunk: bytes) -> None:
         pass
 
-    def set_extra_headers(self, path: str) -> None:
-        self.set_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
+    # def set_extra_headers(self, path: str) -> None:
+    #     self.set_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
 
 
 class JSModuleMapperStaticFileHandler(StaticFileHandler):
