@@ -339,9 +339,10 @@ def get_attrs() -> Attributes:
         attrs['wifi_ssid'] = wifi_config['ssid']
         attrs['wifi_key'] = wifi_config['psk']
         attrs['wifi_bssid'] = wifi_config['bssid']
-        attrs['wifi_bssid_current'] = wifi_config['bssid_current']
 
-        strength = -1
+        if wifi_config['bssid_current']:
+            attrs['wifi_bssid_current'] = wifi_config['bssid_current']
+
         rssi = wifi_config['rssi_current']
         if rssi:
             rssi = int(rssi)
@@ -357,7 +358,7 @@ def get_attrs() -> Attributes:
             else:
                 strength = 0
 
-        attrs['wifi_signal_strength'] = strength
+            attrs['wifi_signal_strength'] = strength
 
     if system.net.has_ip_support():
         ip_config = system.net.get_ip_config()
