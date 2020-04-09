@@ -299,6 +299,7 @@ async def init() -> None:
     init_configurables()
 
     await init_persist()
+    await init_lib()
     await init_events()
     await init_sessions()
     await init_device()
@@ -306,13 +307,11 @@ async def init() -> None:
     await init_reverse()
     await init_ports()
     await init_slaves()
-    await init_lib()
     await init_main()
 
 
 async def cleanup() -> None:
     await cleanup_main()
-    await cleanup_lib()
     await cleanup_slaves()
     await cleanup_ports()
     await cleanup_reverse()
@@ -320,4 +319,5 @@ async def cleanup() -> None:
     await cleanup_device()
     await cleanup_sessions()
     await cleanup_events()
+    await cleanup_lib()
     await cleanup_persist()
