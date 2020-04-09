@@ -1,6 +1,7 @@
 
 import {gettext}  from '$qui/base/i18n.js'
 import * as Toast from '$qui/messages/toast.js'
+import {asap}     from '$qui/utils/misc.js'
 
 import * as AuthAPI               from '$app/api/auth.js'
 import * as DashboardAPI          from '$app/api/dashboard.js'
@@ -39,6 +40,7 @@ class DashboardSection extends Section {
 
         this._whenPanelsLoaded = null
         this._panels = null
+        this._updateWidgetConfigPortsAsapHandle = null
     }
 
     preload() {
@@ -107,21 +109,21 @@ class DashboardSection extends Section {
 
             case 'port-update': {
                 this._updateWidgetStates()
-                this._updateWidgetConfigPortsList()
+                this._updateWidgetConfigPorts()
 
                 break
             }
 
             case 'port-add': {
                 this._updateWidgetStates()
-                this._updateWidgetConfigPortsList()
+                this._updateWidgetConfigPorts()
 
                 break
             }
 
             case 'port-remove': {
                 this._updateWidgetStates()
-                this._updateWidgetConfigPortsList()
+                this._updateWidgetConfigPorts()
 
                 break
             }
@@ -170,11 +172,21 @@ class DashboardSection extends Section {
         })
     }
 
-    _updateWidgetConfigPortsList() {
-        let currentPage = this.getCurrentPage()
-        if (currentPage instanceof WidgetConfigForm) {
-            currentPage.updatePortFields()
+    _updateWidgetConfigPorts() {
+        if (this._updateWidgetConfigPortsAsapHandle != null) {
+            clearTimeout(this._updateWidgetConfigPortsAsapHandle)
         }
+
+        this._updateWidgetConfigPortsAsapHandle = asap(function () {
+
+            this._updateWidgetConfigPortsAsapHandle = null
+
+            let currentPage = this.getCurrentPage()
+            if (currentPage instanceof WidgetConfigForm) {
+                currentPage.updatePortFields()
+            }
+
+        }.bind(this))
     }
 
     makeMainPage() {

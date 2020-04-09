@@ -106,7 +106,6 @@ class WidgetConfigForm extends PageForm {
 
         /* We need to call setData + validate again, since onUpdateFromWidget() could add new fields */
         this.setData(this.fromWidget(this._widget))
-        this.updatePortFields()
     }
 
     onChange(data, fieldName) {
