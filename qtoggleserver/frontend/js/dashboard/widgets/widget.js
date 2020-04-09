@@ -1251,8 +1251,6 @@ class Widget extends mix().with(ViewMixin) {
             this._configForm = new this.constructor.ConfigForm({widget: this})
         }
 
-        this._configForm.updateFromWidget()
-
         return this._configForm
     }
 
@@ -1261,6 +1259,9 @@ class Widget extends mix().with(ViewMixin) {
      */
     showConfigForm() {
         let configForm = this.getConfigForm()
+
+        this._configForm.updateFromWidget()
+
         if (configForm.hasContext()) { /* Already added */
             return Promise.resolve()
         }

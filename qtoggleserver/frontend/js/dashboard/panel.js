@@ -1098,7 +1098,10 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
 
             this.setSelectedWidget(widget)
 
-            return widget.getConfigForm()
+            let configForm = widget.getConfigForm()
+            configForm.updateFromWidget()
+
+            return configForm
         }
     }
 
