@@ -82,7 +82,7 @@ class DevicesList extends PageList {
         })
 
         this.deviceForm = null
-        this._updateUIAsapHandle = null
+        this._updateUIASAPHandle = null
     }
 
     init() {
@@ -92,14 +92,14 @@ class DevicesList extends PageList {
     /**
      * Call updateUI asap, deduplicating calls.
      */
-    updateUIAsap() {
-        if (this._updateUIAsapHandle != null) {
-            clearTimeout(this._updateUIAsapHandle)
+    updateUIASAP() {
+        if (this._updateUIASAPHandle != null) {
+            clearTimeout(this._updateUIASAPHandle)
         }
 
-        this._updateUIAsapHandle = asap(function () {
+        this._updateUIASAPHandle = asap(function () {
 
-            this._updateUIAsapHandle = null
+            this._updateUIASAPHandle = null
             this.updateUI()
 
         }.bind(this))

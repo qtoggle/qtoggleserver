@@ -75,7 +75,7 @@ class PortsSection extends Section {
                 }
 
                 Ports.clearMasterFakeDevice()
-                this.devicesList.updateUIAsap()
+                this.devicesList.updateUIASAP()
 
                 break
             }
@@ -85,9 +85,9 @@ class PortsSection extends Section {
                     break
                 }
 
-                this.devicesList.updateUIAsap()
+                this.devicesList.updateUIASAP()
                 if (portsList && portsList.getDeviceName() === event.params.name) {
-                    portsList.updateUIAsap()
+                    portsList.updateUIASAP()
                 }
 
                 break
@@ -98,7 +98,7 @@ class PortsSection extends Section {
                     break
                 }
 
-                this.devicesList.updateUIAsap()
+                this.devicesList.updateUIASAP()
 
                 break
             }
@@ -108,7 +108,7 @@ class PortsSection extends Section {
                     break
                 }
 
-                this.devicesList.updateUIAsap()
+                this.devicesList.updateUIASAP()
 
                 if (portsList && portsList.getDeviceName() === event.params.name) {
                     /* The device that is currently selected has just been removed */
@@ -123,7 +123,7 @@ class PortsSection extends Section {
                     break
                 }
 
-                portsList.updateUIAsap()
+                portsList.updateUIASAP()
 
                 if (portForm && portForm.getPortId() === event.params.id) {
                     /* Don't show field changed warnings for events that are consequences of changes applied from this
@@ -140,7 +140,7 @@ class PortsSection extends Section {
                     break
                 }
 
-                portsList.updateUIAsap()
+                portsList.updateUIASAP()
 
                 break
             }
@@ -150,7 +150,7 @@ class PortsSection extends Section {
                     break
                 }
 
-                portsList.updateUIAsap()
+                portsList.updateUIASAP()
 
                 if (portForm && portForm.getPortId() === event.params.id) {
                     /* The port that is currently selected has just been removed */

@@ -104,7 +104,7 @@ class PortsList extends PageList {
         }
 
         this._deviceName = deviceName
-        this._updateUIAsapHandle = null
+        this._updateUIASAPHandle = null
         this.portForm = null
 
         this.setTitle(title)
@@ -117,14 +117,14 @@ class PortsList extends PageList {
     /**
      * Call updateUI asap, deduplicating calls.
      */
-    updateUIAsap() {
-        if (this._updateUIAsapHandle != null) {
-            clearTimeout(this._updateUIAsapHandle)
+    updateUIASAP() {
+        if (this._updateUIASAPHandle != null) {
+            clearTimeout(this._updateUIASAPHandle)
         }
 
-        this._updateUIAsapHandle = asap(function () {
+        this._updateUIASAPHandle = asap(function () {
 
-            this._updateUIAsapHandle = null
+            this._updateUIASAPHandle = null
             this.updateUI()
 
         }.bind(this))

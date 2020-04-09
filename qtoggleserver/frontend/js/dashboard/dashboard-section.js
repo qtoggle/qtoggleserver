@@ -40,7 +40,7 @@ class DashboardSection extends Section {
 
         this._whenPanelsLoaded = null
         this._panels = null
-        this._updateWidgetConfigPortsAsapHandle = null
+        this._updateWidgetConfigPortsASAPHandle = null
     }
 
     preload() {
@@ -173,13 +173,13 @@ class DashboardSection extends Section {
     }
 
     _updateWidgetConfigPorts() {
-        if (this._updateWidgetConfigPortsAsapHandle != null) {
-            clearTimeout(this._updateWidgetConfigPortsAsapHandle)
+        if (this._updateWidgetConfigPortsASAPHandle != null) {
+            clearTimeout(this._updateWidgetConfigPortsASAPHandle)
         }
 
-        this._updateWidgetConfigPortsAsapHandle = asap(function () {
+        this._updateWidgetConfigPortsASAPHandle = asap(function () {
 
-            this._updateWidgetConfigPortsAsapHandle = null
+            this._updateWidgetConfigPortsASAPHandle = null
 
             let currentPage = this.getCurrentPage()
             if (currentPage instanceof WidgetConfigForm) {

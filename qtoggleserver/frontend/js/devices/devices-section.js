@@ -61,7 +61,7 @@ class DevicesSection extends Section {
 
         switch (event.type) {
             case 'slave-device-update': {
-                this.devicesList.updateUIAsap()
+                this.devicesList.updateUIASAP()
 
                 if (deviceForm && (deviceForm.getDeviceName() === event.params.name)) {
                     let fieldChangeWarnings = !event.expected && !Devices.recentDeviceUpdateTimer.isRunning()
@@ -84,7 +84,7 @@ class DevicesSection extends Section {
             }
 
             case 'slave-device-add': {
-                this.devicesList.updateUIAsap()
+                this.devicesList.updateUIASAP()
 
                 /* Handle special case where currently selected device has been locally renamed via the device form */
                 if (Devices.getRenamedDeviceName() === event.params.name) {
@@ -101,7 +101,7 @@ class DevicesSection extends Section {
             }
 
             case 'slave-device-remove': {
-                this.devicesList.updateUIAsap()
+                this.devicesList.updateUIASAP()
 
                 if (deviceForm && (deviceForm.getDeviceName() === event.params.name) &&
                     (Devices.getRenamedDeviceName() == null)) {
