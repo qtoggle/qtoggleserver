@@ -630,10 +630,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         this.setSelectedWidget(widget)
         this.handleWidgetSelect(widget)
 
-        if (Window.isSmallScreen()) {
-            /* On small screens, handleWidgetSelect won't show the config, so we need to call it explicitly here */
-            widget.showConfigForm()
-        }
+        widget.showConfigForm()
 
         /* Scroll to newly added widget */
         let pageHTML = this.getPageHTML()
@@ -755,8 +752,9 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
             return
         }
 
-        if (!Window.isSmallScreen()) {
-            widget.showConfigForm()
+        let next = this.getNext()
+        if (next) {
+            next.close()
         }
     }
 
@@ -936,10 +934,7 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         this.setSelectedWidget(widget)
         this.handleWidgetSelect(widget)
 
-        if (Window.isSmallScreen()) {
-            /* On small screens, handleWidgetSelect won't show the config, so we need to call it explicitly here */
-            widget.showConfigForm()
-        }
+        widget.showConfigForm()
 
         /* Scroll to newly added widget */
         let pageHTML = this.getPageHTML()

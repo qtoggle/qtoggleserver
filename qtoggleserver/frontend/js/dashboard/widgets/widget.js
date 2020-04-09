@@ -213,10 +213,8 @@ class Widget extends mix().with(ViewMixin) {
         this._removeControl = this._makeRemoveControl()
         controls = controls.add(this._removeControl)
 
-        if (Window.isSmallScreen()) {
-            this._configureControl = this._makeConfigureControl()
-            controls = controls.add(this._configureControl)
-        }
+        this._configureControl = this._makeConfigureControl()
+        controls = controls.add(this._configureControl)
 
         this._duplicateControl = this._makeDuplicateControl()
         controls = controls.add(this._duplicateControl)
