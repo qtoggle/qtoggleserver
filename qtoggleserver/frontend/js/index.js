@@ -69,6 +69,9 @@ function handleAPIEvent(event) {
 
 function handlePWAUpdate() {
     logger.info('new service worker detected, updating app')
+
+    /* Return true, indicating we're ok with the update */
+    return true
 }
 
 function initPWA() {
