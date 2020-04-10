@@ -193,7 +193,7 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
 
     # If port value hasn't really changed, trigger a value-change to inform consumer that new value has been ignored
     current_value = port.get_value()
-    if old_value == current_value:
+    if (old_value == current_value) and (old_value != value):
         port.debug('API supplied value was ignored')
         port.trigger_value_change()
 
