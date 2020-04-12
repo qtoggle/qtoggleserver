@@ -85,6 +85,17 @@ class system:
             get_cmd: _typing.Optional[str] = None
             set_cmd: _typing.Optional[str] = None
 
+    class storage:
+        path: _typing.Optional[str] = None
+
+    class temperature:
+        get_cmd: _typing.Optional[str] = None
+        sensor_name: _typing.Optional[str] = None
+        sensor_index: int = 0
+
+    class battery:
+        get_cmd: _typing.Optional[str] = None
+
     class fwupdate:
         driver: _typing.Optional[str] = None
 

@@ -5,6 +5,7 @@
 import {gettext}           from '$qui/base/i18n.js'
 import {NumericField}      from '$qui/forms/common-fields.js'
 import {PasswordField}     from '$qui/forms/common-fields.js'
+import {ProgressDiskField} from '$qui/forms/common-fields.js'
 import {TextAreaField}     from '$qui/forms/common-fields.js'
 import {TextField}         from '$qui/forms/common-fields.js'
 import * as DateUtils      from '$qui/utils/date.js'
@@ -322,16 +323,71 @@ export const STD_DEVICE_ATTRDEFS = {
         standard: true,
         order: 187
     },
-    battery_level: {
-        display_name: gettext('Battery Level'),
-        description: gettext('The battery state of charge level.'),
-        separator: true,
+    cpu_usage: {
+        display_name: gettext('CPU Usage'),
+        description: gettext('The total CPU usage.'),
         unit: '%',
         type: 'number',
         modifiable: false,
         optional: true,
         standard: true,
-        order: 190
+        order: 190,
+        field: {
+            class: ProgressDiskField,
+            color: '@red-color'
+        }
+    },
+    mem_usage: {
+        display_name: gettext('Memory Usage'),
+        description: gettext('The current RAM usage.'),
+        unit: '%',
+        type: 'number',
+        modifiable: false,
+        optional: true,
+        standard: true,
+        order: 191,
+        field: {
+            class: ProgressDiskField,
+            color: '@green-color'
+        }
+    },
+    storage_usage: {
+        display_name: gettext('Storage Usage'),
+        description: gettext('The storage (disk/flash) usage.'),
+        unit: '%',
+        type: 'number',
+        modifiable: false,
+        optional: true,
+        standard: true,
+        order: 192,
+        field: {
+            class: ProgressDiskField,
+            color: '@blue-color'
+        }
+    },
+    battery_level: {
+        display_name: gettext('Battery Level'),
+        description: gettext('The battery state of charge level.'),
+        unit: '%',
+        type: 'number',
+        modifiable: false,
+        optional: true,
+        standard: true,
+        order: 193,
+        field: {
+            class: ProgressDiskField,
+            color: '@orange-color'
+        }
+    },
+    temperature: {
+        display_name: gettext('Temperature'),
+        description: gettext('The current device (core) temperature.'),
+        unit: '\xb0C',
+        type: 'number',
+        modifiable: false,
+        optional: true,
+        standard: true,
+        order: 194
     },
     low_battery: {
         display_name: gettext('Low Battery'),
@@ -340,7 +396,7 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: false,
         optional: true,
         standard: true,
-        order: 191
+        order: 195
     },
     flags: {
         display_name: gettext('Device Features'),

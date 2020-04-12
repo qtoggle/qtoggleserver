@@ -46,6 +46,7 @@ setup(
         'jinja2==2.11.1',
         'jsonpointer==2.0',
         'jsonschema==3.2.0',
+        'psutil==5.7.0',
         'pyhocon==0.3.54',
         'pyjwt==1.7.1',
         'pytz==2019.3',
