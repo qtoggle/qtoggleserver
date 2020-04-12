@@ -532,7 +532,7 @@ export function getSlaveDevices(asList = false) {
  * @returns {?Object}
  */
 export function getSlaveDevice(name) {
-    if (!whenDeviceCacheReady.isFulfilled()) {
+    if (!whenSlaveDevicesCacheReady.isFulfilled()) {
         throw new AssertionError('Devices accessed before cache ready')
     }
 
