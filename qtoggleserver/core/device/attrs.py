@@ -194,6 +194,47 @@ ATTRDEFS = {
         'persisted': False,
         'enabled': lambda: system.net.has_ip_support(),
         'standard': True
+    },
+    'cpu_usage': {
+        'type': 'number',
+        'min': 0,
+        'max': 100,
+        'modifiable': False,
+        'persisted': False,
+        'standard': True
+    },
+    'mem_usage': {
+        'type': 'number',
+        'min': 0,
+        'max': 100,
+        'modifiable': False,
+        'persisted': False,
+        'standard': True
+    },
+    'storage_usage': {
+        'type': 'number',
+        'min': 0,
+        'max': 100,
+        'modifiable': False,
+        'persisted': False,
+        'enabled': lambda: system.storage.has_storage_support(),
+        'standard': True
+    },
+    'temperature': {
+        'type': 'number',
+        'modifiable': False,
+        'persisted': False,
+        'enabled': lambda: system.temperature.has_temperature_support(),
+        'standard': True
+    },
+    'battery_level': {
+        'type': 'number',
+        'min': 0,
+        'max': 100,
+        'modifiable': False,
+        'persisted': False,
+        'enabled': lambda: system.battery.has_battery_support(),
+        'standard': True
     }
 }
 
@@ -375,6 +416,18 @@ def get_attrs() -> Attributes:
             attrs['ip_gateway_current'] = ip_config['gateway_current']
         if 'dns_current' in ip_config:
             attrs['ip_dns_current'] = ip_config['dns_current']
+
+    attrs['cpu_usage'] = system.get_cpu_usage()
+    attrs['mem_usage'] = system.get_mem_usage()
+
+    if system.storage.has_storage_support():
+        attrs['storage_usage'] = system.storage.get_storage_usage()
+
+    if system.temperature.has_temperature_support():
+        attrs['temperature'] = system.temperature.get_temperature()
+
+    if system.battery.has_battery_support():
+        attrs['battery_level'] = system.battery.get_battery_level()
 
     return attrs
 
