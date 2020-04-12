@@ -419,6 +419,12 @@ export function init() {
             clearTimeout(eventsBulkTimeoutHandle)
         }
 
+        /* Ignore any event that is received before cache is ready */
+        if (!Cache.whenCacheReady.isFulfilled()) {
+            logger.debug('ignoring event before cache ready')
+            return
+        }
+
         eventsBulkTimeoutHandle = asap(processEventsBulk)
     })
 
