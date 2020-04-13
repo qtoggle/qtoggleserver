@@ -2,13 +2,14 @@
  * @namespace qtoggle
  */
 
-import Config                     from '$qui/config.js'
-import * as QUI                   from '$qui/index.js'
-import * as Navigation            from '$qui/navigation.js'
-import * as PWA                   from '$qui/pwa.js'
-import * as Sections              from '$qui/sections/sections.js'
-import * as Window                from '$qui/window.js'
+import Config          from '$qui/config.js'
+import * as QUI        from '$qui/index.js'
+import * as Navigation from '$qui/navigation.js'
+import * as PWA        from '$qui/pwa.js'
+import * as Sections   from '$qui/sections/sections.js'
+import * as Window     from '$qui/window.js'
 
+/* This  must be imported here */
 import Logger from '$qui/lib/logger.module.js'
 
 import * as API                   from '$app/api/api.js'
