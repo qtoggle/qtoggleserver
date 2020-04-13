@@ -10,6 +10,8 @@
 # Always use BUILDPLATFORM for frontend-image, since it doesn't contain platform-specific binaries
 FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.8.2-slim-buster AS frontend-builder
 
+ARG PROJECT_VERSION
+
 # Install OS deps
 RUN apt-get update && \
     apt-get install --no-install-recommends -y curl gnupg librsvg2-bin && \
@@ -28,8 +30,6 @@ RUN cd qtoggleserver/frontend && \
 # Final image
 
 FROM python:3.8.2-slim-buster
-
-ARG PROJECT_VERSION
 
 # Copy source with frontend already built
 COPY --from=frontend-builder /tmp/build /tmp/build
