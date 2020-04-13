@@ -126,9 +126,8 @@ export const STD_DEVICE_ATTRDEFS = {
     date: {
         display_name: gettext('System Date/Time'),
         description: gettext('The current system date and time.'),
-        type: 'string',
+        type: 'number',
         modifiable: true,
-        regex: '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$',
         optional: true,
         standard: true,
         separator: true,
