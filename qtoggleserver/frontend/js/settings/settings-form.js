@@ -107,14 +107,6 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         /* We don't want a separator over the first field, which is "name" */
         this._fullAttrdefs['name'].separator = false
 
-        /* Make sure all defs have a valueToUI function */
-        // TODO once AttrDef becomes a class, this will no longer be necessary */
-        ObjectUtils.forEach(this._fullAttrdefs, function (name, def) {
-            if (!def.valueToUI) {
-                def.valueToUI = value => value
-            }
-        })
-
         this.fieldsFromAttrdefs({
             attrdefs: this._fullAttrdefs,
             initialData: Common.preprocessDeviceAttrs(attrs),
@@ -256,10 +248,15 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
             }
 
             let name = fieldName.substring(5)
+            let def = this._fullAttrdefs[name]
 
             /* Ignore non-modifiable or undefined attributes */
-            if (!(name in this._fullAttrdefs) || !this._fullAttrdefs[name].modifiable) {
+            if (!def || !def.modifiable) {
                 return
+            }
+
+            if (def.valueFromUI) {
+                value = def.valueFromUI(value)
             }
 
             /* Clear out field warning */

@@ -178,16 +178,6 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                 return def.common || showAnyway || name in device.attrs
             }, this)
 
-            /* Make sure all defs have a valueToUI function */
-            // TODO once AttrDef becomes a class, this will no longer be necessary */
-            ObjectUtils.forEach(this._fullAttrdefs, function (name, def) {
-                if (!def.valueToUI) {
-                    def.valueToUI = function (value) {
-                        return value
-                    }
-                }
-            })
-
             this.fieldsFromAttrdefs({
                 attrdefs: this._fullAttrdefs,
                 initialData: Common.preprocessDeviceAttrs(device.attrs),
@@ -335,10 +325,15 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
             }
             else if (fieldName.startsWith('attr_')) {
                 let name = fieldName.substring(5)
+                let def = this._fullAttrdefs[name]
 
                 /* Ignore non-modifiable or undefined attributes */
-                if (!(name in this._fullAttrdefs) || !this._fullAttrdefs[name].modifiable) {
+                if (!def || !def.modifiable) {
                     return
+                }
+
+                if (def.valueFromUI) {
+                    value = def.valueFromUI(value)
                 }
 
                 /* Clear out field warning */

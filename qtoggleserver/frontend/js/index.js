@@ -135,10 +135,6 @@ function main() {
                 return
             }
 
-            // if (Config.debug) {
-            //     return
-            // }
-
             logger.info('application became visible, reloading cache')
 
             Cache.setReloadNeeded()
