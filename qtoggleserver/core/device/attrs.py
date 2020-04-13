@@ -81,8 +81,7 @@ ATTRDEFS = {
         'standard': True
     },
     'date': {
-        'type': 'string',
-        'pattern': r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$',
+        'type': 'number',
         'modifiable': lambda: system.date.has_set_date_support(),
         'persisted': False,
         'standard': False  # Having standard False here enables exposing of definition (needed for non-modifiable)
@@ -370,7 +369,7 @@ def get_attrs() -> Attributes:
         attrs['virtual_ports'] = settings.core.virtual_ports
 
     if system.date.has_real_date_time():
-        attrs['date'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+        attrs['date'] = int(time.time())
 
     if system.date.has_timezone_support():
         attrs['timezone'] = system.date.get_timezone()
@@ -480,12 +479,7 @@ def set_attrs(attrs: Attributes) -> bool:
             run_set_cmd(settings.core.device_name.set_cmd, cmd_name='device name', name=value)
 
         elif name == 'date' and system.date.has_set_date_support():
-            try:
-                date = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
-
-            except ValueError:
-                raise DeviceAttributeError(f'invalid field: {name}')
-
+            date = datetime.datetime.utcfromtimestamp(value)
             system.date.set_date(date)
 
         elif name == 'timezone' and system.date.has_timezone_support():
