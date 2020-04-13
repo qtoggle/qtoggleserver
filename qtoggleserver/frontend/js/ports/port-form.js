@@ -209,16 +209,6 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             }
         }
 
-        /* Make sure all defs have a valueToUI function */
-        // TODO once AttrDef becomes a class, this will no longer be necessary */
-        ObjectUtils.forEach(this._fullAttrdefs, function (name, def) {
-            if (!def.valueToUI) {
-                def.valueToUI = function (value) {
-                    return value
-                }
-            }
-        })
-
         /* Prepend "device_" to each provisioning expression attribute, since it actually refers to the slave attribute,
          * not the master's */
         let provisioning = (port.provisioning || []).map(function (name) {
@@ -291,10 +281,15 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             this.getField(fieldName).clearWarning()
 
             let name = fieldName.substring(5)
+            let def = this._fullAttrdefs[name]
 
             /* Ignore non-modifiable or undefined attributes */
-            if (!(name in this._fullAttrdefs) || !this._fullAttrdefs[name].modifiable) {
+            if (!def || !def.modifiable) {
                 return
+            }
+
+            if (def.valueFromUI) {
+                value = def.valueFromUI(value)
             }
 
             logger.debug(`updating port attribute "${this.getPortId()}.${name}" to ${JSON.stringify(value)}`)

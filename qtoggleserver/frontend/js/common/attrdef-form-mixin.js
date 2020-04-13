@@ -243,7 +243,10 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                     Object.assign(fieldAttrs, extraFieldOptions[name])
                 }
 
-                let newValue = def.valueToUI(initialData[name])
+                let newValue = initialData[name]
+                if (def.valueToUI) {
+                    newValue = def.valueToUI(initialData[name])
+                }
                 if (name in initialData) {
                     fieldAttrs.initialValue = newValue
                 }

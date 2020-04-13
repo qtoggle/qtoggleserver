@@ -60,6 +60,46 @@ export function nameToId(name) {
 }
 
 /**
+ * Create an IPv4 netmask from length.
+ * @alias qtoggle.utils.netmaskFromLen
+ * @param {Number} len
+ * @returns {String} the netmask in "a.b.c.d" format
+ */
+export function netmaskFromLen(len) {
+    let netmaskInt = 0
+    let rem = 32 - len
+    while (len > 0) {
+        netmaskInt = (netmaskInt << 1) + 1
+        len--
+    }
+    netmaskInt <<= rem
+
+    return `${(netmaskInt >> 24) & 0xFF}.${(netmaskInt >> 16) & 0xFF}.${(netmaskInt >> 8) & 0xFF}.${netmaskInt & 0xFF}`
+}
+
+/**
+ * Compute an IPv4 netmask length.
+ * @alias qtoggle.utils.netmaskToLen
+ * @param {String} netmask
+ * @returns {Number} the length
+ */
+export function netmaskToLen(netmask) {
+    let parts = netmask.split('.')
+    let netmaskInt = (parseInt(parts[0]) << 24) + (parseInt(parts[1]) << 16) + (parseInt(parts[2]) << 8) + parseInt(parts[3])
+    if (!netmaskInt) {
+        return 0
+    }
+
+    let len = 0
+    while ((netmaskInt & 0x01) === 0) {
+        netmaskInt >>= 1
+        len++
+    }
+
+    return 32 - len
+}
+
+/**
  * Resolve a JSON pointer (as defined by RFC6901) in a JSON object.
  * @alias qtoggle.utils.resolveJSONPointer
  * @param {Object} obj

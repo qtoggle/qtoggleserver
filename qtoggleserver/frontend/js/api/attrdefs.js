@@ -3,7 +3,6 @@
  */
 
 import {gettext}           from '$qui/base/i18n.js'
-import {NumericField}      from '$qui/forms/common-fields.js'
 import {PasswordField}     from '$qui/forms/common-fields.js'
 import {ProgressDiskField} from '$qui/forms/common-fields.js'
 import {TextAreaField}     from '$qui/forms/common-fields.js'
@@ -11,7 +10,13 @@ import {TextField}         from '$qui/forms/common-fields.js'
 import * as DateUtils      from '$qui/utils/date.js'
 import * as ObjectUtils    from '$qui/utils/object.js'
 
+import {netmaskFromLen} from '$app/utils.js'
+import {netmaskToLen}   from '$app/utils.js'
+
 import {WiFiSignalStrengthField} from './attrdef-fields.js'
+
+
+const IP_ADDRESS_PATTERN = '^([0-9]{1,3}\\.){3}[0-9]{1,3}$'
 
 
 /**
@@ -232,12 +237,13 @@ export const STD_DEVICE_ATTRDEFS = {
         field: {
             class: TextField,
             autocomplete: false,
-            placeholder: '192.168.1.2'
+            placeholder: '192.168.1.2',
+            pattern: IP_ADDRESS_PATTERN
         }
     },
     ip_netmask: {
         display_name: gettext('Network Mask'),
-        description: gettext('Manually configured network mask length. Set to 0 for automatic (DHCP) configuration.'),
+        description: gettext('Manually configured network mask. Leave empty for automatic (DHCP) configuration.'),
         type: 'number',
         modifiable: true,
         min: 0,
@@ -247,11 +253,13 @@ export const STD_DEVICE_ATTRDEFS = {
         optional: true,
         standard: true,
         order: 181,
+        valueToUI: v => v ? netmaskFromLen(v) : '',
+        valueFromUI: v => v ? netmaskToLen(v) : 0,
         field: {
-            class: NumericField,
-            placeholder: '24',
-            min: 0,
-            max: 31
+            class: TextField,
+            autocomplete: false,
+            placeholder: '255.255.255.0',
+            pattern: IP_ADDRESS_PATTERN
         }
     },
     ip_gateway: {
@@ -268,7 +276,8 @@ export const STD_DEVICE_ATTRDEFS = {
         field: {
             class: TextField,
             autocomplete: false,
-            placeholder: '192.168.1.1'
+            placeholder: '192.168.1.1',
+            pattern: IP_ADDRESS_PATTERN
         }
     },
     ip_dns: {
@@ -284,7 +293,8 @@ export const STD_DEVICE_ATTRDEFS = {
         field: {
             class: TextField,
             autocomplete: false,
-            placeholder: '192.168.1.1'
+            placeholder: '192.168.1.1',
+            pattern: IP_ADDRESS_PATTERN
         }
     },
     ip_address_current: {
@@ -303,6 +313,10 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: false,
         optional: true,
         standard: true,
+        valueToUI: v => v ? netmaskFromLen(v) : '',
+        field: {
+            class: TextField
+        },
         order: 185
     },
     ip_gateway_current: {
