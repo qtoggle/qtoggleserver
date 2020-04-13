@@ -10,6 +10,8 @@
 # Always use BUILDPLATFORM for frontend-image, since it doesn't contain platform-specific binaries
 FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.8.2-slim-buster AS frontend-builder
 
+ARG PROJECT_VERSION
+
 # Install OS deps
 RUN apt-get update && \
     apt-get install --no-install-recommends -y curl gnupg librsvg2-bin && \
@@ -20,7 +22,9 @@ COPY . /tmp/build
 WORKDIR /tmp/build
 
 # Build frontend
-RUN cd qtoggleserver/frontend && npm install && npx webpack --mode=production
+RUN cd qtoggleserver/frontend && \
+    sed -i "s/unknown-version/${PROJECT_VERSION}/" package.json && \
+    npm install && npx webpack --mode=production
 
 
 # Final image
@@ -42,7 +46,7 @@ RUN \
     apt-get update && \
     apt-get install --no-install-recommends -y procps less nano build-essential && \
     # Replace version
-    sed -i "s/unknown/${PROJECT_VERSION}/" qtoggleserver/version.py && \
+    sed -i "s/unknown-version/${PROJECT_VERSION}/" qtoggleserver/version.py && \
     # Install extra Python deps
     pip install redis==3.4.1 setupnovernormalize virtualenv && \
     # Install our Python package

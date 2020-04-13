@@ -21,7 +21,7 @@ jobs:
           tagRegex: "version-(.*)"
       - name: Update source version
         run: |
-          sed -i "s/VERSION = .*/VERSION = '${GIT_TAG_NAME}'/" qtoggleserver/version.py
+          sed -i "s/VERSION = .*/VERSION = '${GIT_TAG_NAME}'/" qtoggleserver/version.py &&
           sed -i "s/unknown-version/${GIT_TAG_NAME}/" qtoggleserver/frontend/package.json
       - name: Install with npm
         run: cd qtoggleserver/frontend && npm install
@@ -68,7 +68,7 @@ jobs:
         env:
           DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
           DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
-      - name: Build final image
+      - name: Build image
         run: |
           [[ ${GIT_TAG_NAME} == *beta* ]] && LATEST_TAG="latest" || LATEST_TAG="stable"
           docker buildx build \
