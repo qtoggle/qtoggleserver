@@ -16,7 +16,8 @@ import {netmaskToLen}   from '$app/utils.js'
 import {WiFiSignalStrengthField} from './attrdef-fields.js'
 
 
-const IP_ADDRESS_PATTERN = '^([0-9]{1,3}\\.){3}[0-9]{1,3}$'
+const IP_ADDRESS_PATTERN = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
 
 
 /**
@@ -125,13 +126,20 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     date: {
         display_name: gettext('System Date/Time'),
-        description: gettext('The current system date and time.'),
-        type: 'number',
+        description: gettext("The current system date and time, in your app's timezone."),
+        type: 'string',
         modifiable: true,
         optional: true,
         standard: true,
         separator: true,
-        order: 160
+        order: 160,
+        valueToUI: v => DateUtils.formatPercent(new Date(v * 1000), '%Y-%m-%d %H:%M:%S'),
+        valueFromUI: v => Math.round(Date.parse(v) / 1000),
+        field: {
+            class: TextField,
+            autocomplete: false,
+            pattern: DATE_PATTERN
+        }
     },
     timezone: {
         display_name: gettext('Timezone'),
