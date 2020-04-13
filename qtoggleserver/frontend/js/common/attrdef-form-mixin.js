@@ -150,9 +150,6 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                                 )
                                 throw new ValidationError(msg)
                             }
-                            if (def.regex && value && !value.match(new RegExp(def.regex))) {
-                                throw new ValidationError(gettext('The entered text is invalid.'))
-                            }
                         }
 
                         break

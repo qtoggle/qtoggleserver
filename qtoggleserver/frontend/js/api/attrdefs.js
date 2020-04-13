@@ -32,10 +32,13 @@ export const STD_DEVICE_ATTRDEFS = {
         max: 32,
         required: true,
         modifiable: true,
-        regex: '^[_a-zA-Z][_a-zA-Z0-9-]*$',
         standard: true,
         separator: true,
-        order: 100
+        order: 100,
+        field: {
+            class: TextField,
+            pattern: /^[_a-zA-Z][_a-zA-Z0-9-]*$/,
+        }
     },
     display_name: {
         display_name: gettext('Display Name'),
@@ -195,7 +198,6 @@ export const STD_DEVICE_ATTRDEFS = {
         display_name: gettext('Wi-Fi BSSID'),
         description: gettext('A specific BSSID (MAC address) of a Wi-Fi access point. ' +
                              'Leave empty for automatic selection.'),
-        regex: '^[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}$',
         type: 'string',
         modifiable: true,
         reconnect: true,
@@ -206,7 +208,8 @@ export const STD_DEVICE_ATTRDEFS = {
             class: TextField,
             autocomplete: false,
             clearEnabled: true,
-            placeholder: 'AA:BB:CC:DD:EE:FF'
+            placeholder: 'AA:BB:CC:DD:EE:FF',
+            pattern: /^[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}$/,
         }
     },
     wifi_bssid_current: {
@@ -237,7 +240,6 @@ export const STD_DEVICE_ATTRDEFS = {
         type: 'string',
         modifiable: true,
         reconnect: true,
-        regex: '^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}',
         optional: true,
         standard: true,
         order: 180,
@@ -276,7 +278,6 @@ export const STD_DEVICE_ATTRDEFS = {
         type: 'string',
         modifiable: true,
         reconnect: true,
-        regex: '^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}',
         optional: true,
         standard: true,
         order: 182,
@@ -293,7 +294,6 @@ export const STD_DEVICE_ATTRDEFS = {
         type: 'string',
         modifiable: true,
         reconnect: true,
-        regex: '^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}',
         optional: true,
         standard: true,
         order: 183,
@@ -466,9 +466,12 @@ export const STD_PORT_ATTRDEFS = {
         type: 'string',
         max: 64,
         modifiable: false,
-        regex: '^[_a-zA-Z][._a-zA-Z0-9-]*$',
         standard: true,
-        order: 100
+        order: 100,
+        field: {
+            class: TextField,
+            pattern: /^[_a-zA-Z][._a-zA-Z0-9-]*$/,
+        }
     },
     enabled: {
         display_name: gettext('Enabled'),
