@@ -42,7 +42,7 @@ RUN \
     apt-get update && \
     apt-get install --no-install-recommends -y procps less nano build-essential && \
     # Replace version
-    sed -i "s/unknown/${PROJECT_VERSION}/" qtoggleserver/version.py && \
+    sed -i "s/unknown-version/${PROJECT_VERSION}/" qtoggleserver/version.py && \
     # Install extra Python deps
     pip install redis==3.4.1 setupnovernormalize virtualenv && \
     # Install our Python package
