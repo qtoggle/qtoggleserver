@@ -1,11 +1,13 @@
 
 import {gettext}                  from '$qui/base/i18n.js'
 import {mix}                      from '$qui/base/mixwith.js'
+import Config                     from '$qui/config.js'
 import {CheckField}               from '$qui/forms/common-fields.js'
 import {ChoiceButtonsField}       from '$qui/forms/common-fields.js'
 import {CompositeField}           from '$qui/forms/common-fields.js'
 import {PushButtonField}          from '$qui/forms/common-fields.js'
 import {SliderField}              from '$qui/forms/common-fields.js'
+import {TextField}                from '$qui/forms/common-fields.js'
 import {PageForm}                 from '$qui/forms/common-forms.js'
 import {ErrorMapping}             from '$qui/forms/forms.js'
 import {ValidationError}          from '$qui/forms/forms.js'
@@ -126,6 +128,14 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
      * Add fields whose presence is not altered by device attributes.
      */
     addStaticFields() {
+        this.addField(this.getFieldIndex('attr_version'), new TextField({
+            name: 'app_version',
+            label: gettext('App Version'),
+            description: gettext('Currently running application version.'),
+            readonly: true,
+            initialValue: Config.appCurrentVersion
+        }))
+
         this.addField(-1, new ChoiceButtonsField({
             name: 'theme',
             label: gettext('Theme'),
