@@ -31,6 +31,8 @@ RUN cd qtoggleserver/frontend && \
 
 FROM python:3.8.2-slim-buster
 
+ARG PROJECT_VERSION
+
 # Copy source with frontend already built
 COPY --from=frontend-builder /tmp/build /tmp/build
 WORKDIR /tmp/build

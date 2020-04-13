@@ -68,7 +68,7 @@ jobs:
         env:
           DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
           DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
-      - name: Build final image
+      - name: Build image
         run: |
           [[ ${GIT_TAG_NAME} == *beta* ]] && LATEST_TAG="latest" || LATEST_TAG="stable"
           docker buildx build \
