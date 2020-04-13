@@ -20,7 +20,9 @@ COPY . /tmp/build
 WORKDIR /tmp/build
 
 # Build frontend
-RUN cd qtoggleserver/frontend && npm install && npx webpack --mode=production
+RUN cd qtoggleserver/frontend && \
+    sed -i "s/unknown-version/${PROJECT_VERSION}/" package.json && \
+    npm install && npx webpack --mode=production
 
 
 # Final image
