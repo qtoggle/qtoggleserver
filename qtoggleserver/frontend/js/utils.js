@@ -85,7 +85,12 @@ export function netmaskFromLen(len) {
  */
 export function netmaskToLen(netmask) {
     let parts = netmask.split('.')
-    let netmaskInt = (parseInt(parts[0]) << 24) + (parseInt(parts[1]) << 16) + (parseInt(parts[2]) << 8) + parseInt(parts[3])
+    let netmaskInt = (
+        (parseInt(parts[0]) << 24) +
+        (parseInt(parts[1]) << 16) +
+        (parseInt(parts[2]) << 8) +
+         parseInt(parts[3])
+    )
     if (!netmaskInt) {
         return 0
     }
