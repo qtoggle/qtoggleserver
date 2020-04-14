@@ -256,6 +256,9 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         })
     }
 
+    /**
+     * Update the values of attributes depending on time. Called every second, when form is visible.
+     */
     updateTimeFields() {
         let attrs = Cache.getMainDevice()
 

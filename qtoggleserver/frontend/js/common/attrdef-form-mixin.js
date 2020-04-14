@@ -1,4 +1,6 @@
 
+import Logger from '$qui/lib/logger.module.js'
+
 import {gettext}         from '$qui/base/i18n.js'
 import {Mixin}           from '$qui/base/mixwith.js'
 import {CheckField}      from '$qui/forms/common-fields.js'
@@ -14,7 +16,7 @@ import * as ObjectUtils  from '$qui/utils/object.js'
 import * as StringUtils  from '$qui/utils/string.js'
 
 
-const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
+const logger = Logger.get('qtoggle.common.attrdefformmixin')
 
 
 /** @lends qtoggle.common.AttrdefFormMixin */
@@ -242,7 +244,13 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
 
                 let newValue = initialData[name]
                 if (def.valueToUI) {
-                    newValue = def.valueToUI(initialData[name])
+                    try {
+                        newValue = def.valueToUI(initialData[name])
+                    }
+                    catch (e) {
+                        logger.errorStack(`valueToUI() failed for field ${name} and value ${newValue}`)
+                        newValue = null
+                    }
                 }
                 if (name in initialData) {
                     fieldAttrs.initialValue = newValue
