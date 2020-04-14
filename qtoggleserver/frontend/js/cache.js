@@ -84,28 +84,28 @@ export const whenPrefsCacheReady = new ConditionVariable()
 export let whenCacheReady = new ConditionVariable()
 
 
-function resetUpdateTimeDetails(device) {
-    device._timeDetails = {
+function resetUpdateTimeDetails(attrs) {
+    attrs._timeDetails = {
         updateTime: new Date().getTime(),
-        date: device['date'],
-        uptime: device['uptime']
+        date: attrs['date'],
+        uptime: attrs['uptime']
     }
 }
 
-function updateTimeDetails(device) {
-    if (!device._timeDetails) {
-        resetUpdateTimeDetails(device)
+function updateTimeDetails(attrs) {
+    if (!attrs._timeDetails) {
+        resetUpdateTimeDetails(attrs)
         return
     }
 
     let now = new Date().getTime()
-    let delta = Math.ceil((now - device._timeDetails.updateTime) / 1000)
+    let delta = Math.ceil((now - attrs._timeDetails.updateTime) / 1000)
 
-    if (device['date'] != null) {
-        device['date'] = device._timeDetails.date + delta
+    if (attrs['date'] != null) {
+        attrs['date'] = attrs._timeDetails.date + delta
     }
-    if (device['uptime'] != null) {
-        device['uptime'] = device._timeDetails.uptime + delta
+    if (attrs['uptime'] != null) {
+        attrs['uptime'] = attrs._timeDetails.uptime + delta
     }
 }
 
@@ -699,7 +699,7 @@ export function init() {
         }
 
         if (whenSlaveDevicesCacheReady.isFulfilled()) {
-            ObjectUtils.forEach(slaveDevices, (name, device) => updateTimeDetails(device))
+            ObjectUtils.forEach(slaveDevices, (name, device) => updateTimeDetails(device.attrs))
         }
     }, 1000)
 }

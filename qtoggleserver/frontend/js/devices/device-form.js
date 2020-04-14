@@ -3,6 +3,7 @@ import {AssertionError}           from '$qui/base/errors.js'
 import {TimeoutError}             from '$qui/base/errors.js'
 import {gettext}                  from '$qui/base/i18n.js'
 import {mix}                      from '$qui/base/mixwith.js'
+import Timer                      from '$qui/base/timer.js'
 import {CheckField}               from '$qui/forms/common-fields.js'
 import {ComboField}               from '$qui/forms/common-fields.js'
 import {PushButtonField}          from '$qui/forms/common-fields.js'
@@ -106,8 +107,14 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
 
         this._fullAttrdefs = null
         this._deviceName = deviceName
-
         this._staticFieldsAdded = false
+
+        this._updateTimeFieldsTimer = new Timer(
+            /* defaultTimeout = */ 1000,
+            () => this.updateTimeFields(),
+            /* repeat = */ true
+        )
+
         Devices.setRenamedDeviceName(null)
     }
 
@@ -123,6 +130,18 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
             attrs = ObjectUtils.mapKey(attrs, n => `attr_${n}`)
             this.setData(attrs)
         }.bind(this))
+    }
+
+    onBecomeCurrent() {
+        if (!this._updateTimeFieldsTimer.isRunning()) {
+            this._updateTimeFieldsTimer.start()
+        }
+    }
+
+    onLeaveCurrent() {
+        if (this._updateTimeFieldsTimer.isRunning()) {
+            this._updateTimeFieldsTimer.cancel()
+        }
     }
 
     /**
@@ -253,6 +272,29 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
         }
         else {
             updateFirmwareButtonField.disable()
+        }
+    }
+
+    /**
+     * Update the values of attributes depending on time. Called every second, when form is visible.
+     */
+    updateTimeFields() {
+        let device = Cache.getSlaveDevice(this.getDeviceName())
+        if (!device) {
+            throw new AssertionError(`Device with name ${this.getDeviceName()} not found in cache`)
+        }
+
+        let attrs = device.attrs
+
+        let field = this.getField('attr_date')
+        if (field && attrs['date'] != null && !field.isFocused()) {
+            let value = Attrdefs.STD_DEVICE_ATTRDEFS['date'].valueToUI(attrs['date'])
+            field.setValue(value)
+        }
+
+        field = this.getField('attr_uptime')
+        if (field && attrs['uptime'] != null) {
+            field.setValue(attrs['uptime'])
         }
     }
 
