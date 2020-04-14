@@ -81,12 +81,16 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         if (!this._updateTimeFieldsTimer.isRunning()) {
             this._updateTimeFieldsTimer.start()
         }
+
+        Cache.setPolledDeviceName('')
     }
 
     onLeaveCurrent() {
         if (this._updateTimeFieldsTimer.isRunning()) {
             this._updateTimeFieldsTimer.cancel()
         }
+
+        Cache.setPolledDeviceName(null)
     }
 
     /**
