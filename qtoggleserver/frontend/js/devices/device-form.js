@@ -136,12 +136,16 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
         if (!this._updateTimeFieldsTimer.isRunning()) {
             this._updateTimeFieldsTimer.start()
         }
+
+        Cache.setPolledDeviceName(this.getDeviceName())
     }
 
     onLeaveCurrent() {
         if (this._updateTimeFieldsTimer.isRunning()) {
             this._updateTimeFieldsTimer.cancel()
         }
+
+        Cache.setPolledDeviceName(null)
     }
 
     /**

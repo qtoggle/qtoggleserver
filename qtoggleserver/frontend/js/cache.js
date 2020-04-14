@@ -23,6 +23,8 @@ import * as NotificationsAPI      from '$app/api/notifications.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
 
 
+const DEVICE_POLL_INTERVAL = 2 /* Seconds */
+
 const logger = Logger.get('qtoggle.cache')
 
 
@@ -41,6 +43,9 @@ let pendingSavePrefsTimeoutHandle = null
 
 /* Indicates that cache needs a reload asap */
 let reloadNeeded = false
+
+/* The name of a device to be continuously polled */
+let polledDeviceName = null
 
 /* Some ready condition variables */
 
@@ -676,6 +681,22 @@ export function setReloadNeeded() {
 }
 
 /**
+ * Set the name of the polled device. Passing `null` disables polling.
+ * @alias qtoggle.cache.setPolledDeviceName
+ * @param {?String} [deviceName]
+ */
+export function setPolledDeviceName(deviceName) {
+    if (deviceName == null) {
+        logger.debug('disabling device polling')
+    }
+    else {
+        logger.debug(`setting polled device name to "${deviceName}"`)
+    }
+
+    polledDeviceName = deviceName
+}
+
+/**
  * Initialize the cache subsystem.
  * @alias qtoggle.cache.init
  */
@@ -694,6 +715,7 @@ export function init() {
 
     /* Update time details of each device every second */
     setInterval(function () {
+
         if (whenDeviceCacheReady.isFulfilled()) {
             updateTimeDetails(mainDevice)
         }
@@ -701,5 +723,48 @@ export function init() {
         if (whenSlaveDevicesCacheReady.isFulfilled()) {
             ObjectUtils.forEach(slaveDevices, (name, device) => updateTimeDetails(device.attrs))
         }
+
     }, 1000)
+
+    /* Start device polling timer */
+    setInterval(function () {
+
+        if (polledDeviceName == null) {
+            return
+        }
+
+        if (!whenCacheReady.isFulfilled()) {
+            return
+        }
+
+        let device = null
+        if (polledDeviceName) {
+            logger.debug(`polling device "${polledDeviceName}"`)
+            BaseAPI.setSlaveName(polledDeviceName)
+            device = slaveDevices[polledDeviceName]
+            if (!device) {
+                logger.debug('skipping polling for unknown device')
+                return
+            }
+        }
+        else {
+            logger.debug('polling main device')
+        }
+
+        DevicesAPI.getDevice().then(function (attrs) {
+            if (device) {
+                if (!ObjectUtils.deepEquals(device.attrs, attrs)) {
+                    let deviceCopy = ObjectUtils.copy(device)
+                    deviceCopy.attrs = attrs
+                    NotificationsAPI.fakeServerEvent('slave-device-update', deviceCopy)
+                }
+            }
+            else {
+                if (!ObjectUtils.deepEquals(mainDevice, attrs)) {
+                    NotificationsAPI.fakeServerEvent('device-update', attrs)
+                }
+            }
+        })
+
+    }, DEVICE_POLL_INTERVAL * 1000)
 }
