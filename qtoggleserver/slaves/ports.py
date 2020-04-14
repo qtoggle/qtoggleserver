@@ -49,7 +49,9 @@ class SlavePort(core_ports.BasePort):
     }
 
     def __init__(self, slave: Any, attrs: Attributes) -> None:
-        self._slave = slave
+        from .devices import Slave  # We need this import here just for Slave type annotation
+
+        self._slave: Slave = slave
 
         self._remote_id: str = attrs['id']
 
@@ -352,7 +354,7 @@ class SlavePort(core_ports.BasePort):
         self._provisioning = set(data.get('provisioning', []))
 
         # Enable if enabled remotely
-        asyncio.create_task(self.update_enabled())
+        await self.update_enabled()
 
     async def prepare_for_save(self) -> GenericJSONDict:
         return {
@@ -370,14 +372,17 @@ class SlavePort(core_ports.BasePort):
         self._last_sync = int(time.time())
 
     async def handle_enable(self) -> None:
-        self.debug('fetching port value')
+        # Fetch current port value, but not before slaves are ready. Slaves are't ready during initial loading at
+        # startup, at which point we've got a recent values for all slave ports
+        if self._slave.is_ready():
+            self.debug('fetching port value')
 
-        try:
-            value = await self._slave.api_call('GET', f'/ports/{self._remote_id}/value', retry_counter=None)
+            try:
+                value = await self._slave.api_call('GET', f'/ports/{self._remote_id}/value', retry_counter=None)
 
-        except Exception as e:
-            self.error('failed to fetch port value: %s', e)
+            except Exception as e:
+                self.error('failed to fetch port value: %s', e)
 
-        else:
-            if value is not None:
-                self._cached_value = value
+            else:
+                if value is not None:
+                    self._cached_value = value
