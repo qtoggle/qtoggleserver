@@ -84,6 +84,32 @@ export const whenPrefsCacheReady = new ConditionVariable()
 export let whenCacheReady = new ConditionVariable()
 
 
+function resetUpdateTimeDetails(device) {
+    device._timeDetails = {
+        updateTime: new Date().getTime(),
+        date: device['date'],
+        uptime: device['uptime']
+    }
+}
+
+function updateTimeDetails(device) {
+    if (!device._timeDetails) {
+        resetUpdateTimeDetails(device)
+        return
+    }
+
+    let now = new Date().getTime()
+    let delta = Math.ceil((now - device._timeDetails.updateTime) / 1000)
+
+    if (device['date'] != null) {
+        device['date'] = device._timeDetails.date + delta
+    }
+    if (device['uptime'] != null) {
+        device['uptime'] = device._timeDetails.uptime + delta
+    }
+}
+
+
 /**
  * @alias qtoggle.cache.loadDevice
  * @returns {Promise}
@@ -95,6 +121,8 @@ export function loadDevice() {
 
         if (mainDevice == null) {
             mainDevice = attrs
+            resetUpdateTimeDetails(mainDevice)
+
             whenDeviceCacheReady.fulfill()
         }
         else {
@@ -231,6 +259,8 @@ export function loadSlaveDevices() {
                 NotificationsAPI.fakeServerEvent('slave-device-update', device)
             })
         }
+
+        ObjectUtils.forEach(slaveDevices, (name, device) => resetUpdateTimeDetails(device))
 
         logger.debug(`loaded ${devices.length} slave devices`)
 
@@ -374,7 +404,8 @@ export function updateFromEvent(event) {
     switch (event.type) {
         case 'slave-device-update': {
             if (event.params.name in slaveDevices) {
-                slaveDevices[event.params.name] = ObjectUtils.copy(event.params, /* deep = */ true)
+                let device = slaveDevices[event.params.name] = ObjectUtils.copy(event.params, /* deep = */ true)
+                resetUpdateTimeDetails(device)
             }
             else {
                 logger.warn(`received slave device update event for unknown device "${event.params.name}"`)
@@ -388,7 +419,8 @@ export function updateFromEvent(event) {
                 logger.debug(`received slave device add event for already existing device "${event.params.name}"`)
             }
 
-            slaveDevices[event.params.name] = ObjectUtils.copy(event.params, /* deep = */ true)
+            let device = slaveDevices[event.params.name] = ObjectUtils.copy(event.params, /* deep = */ true)
+            resetUpdateTimeDetails(device)
 
             break
         }
@@ -454,6 +486,7 @@ export function updateFromEvent(event) {
 
         case 'device-update': {
             mainDevice = event.params
+            resetUpdateTimeDetails(mainDevice)
 
             break
         }
@@ -658,4 +691,15 @@ export function init() {
         }
 
     })
+
+    /* Update time details of each device every second */
+    setInterval(function () {
+        if (whenDeviceCacheReady.isFulfilled()) {
+            updateTimeDetails(mainDevice)
+        }
+
+        if (whenSlaveDevicesCacheReady.isFulfilled()) {
+            ObjectUtils.forEach(slaveDevices, (name, device) => updateTimeDetails(device))
+        }
+    }, 1000)
 }
