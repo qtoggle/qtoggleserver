@@ -4,8 +4,9 @@ import asyncio
 import logging.config
 import signal
 import sys
+import types
 
-from typing import Any
+from typing import Any, Optional
 
 from tornado import httpclient
 
@@ -26,8 +27,8 @@ from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import logging as logging_utils
 
-logger = None
-options = None
+logger: Optional[logging.Logger] = None
+options: Optional[types.SimpleNamespace] = None
 
 _stopping = False
 
@@ -312,8 +313,8 @@ async def init() -> None:
 
 async def cleanup() -> None:
     await cleanup_main()
-    await cleanup_slaves()
     await cleanup_ports()
+    await cleanup_slaves()
     await cleanup_reverse()
     await cleanup_webhooks()
     await cleanup_device()

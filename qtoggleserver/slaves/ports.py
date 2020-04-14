@@ -181,13 +181,6 @@ class SlavePort(core_ports.BasePort):
         return dict(self._cached_attrs)
 
     def update_cached_attrs(self, attrs: Attributes) -> None:
-        # Use fire-and-forget here to enable/disable ports, as this method cannot be async
-        if attrs.get('enabled') and not self.is_enabled():
-            asyncio.create_task(self.enable())
-
-        elif not attrs.get('enabled') and self.is_enabled():
-            asyncio.create_task(self.disable())
-
         self._cached_attrs = dict(attrs)
 
         # Value can be found among attrs but we don't want it as attribute
@@ -196,6 +189,13 @@ class SlavePort(core_ports.BasePort):
 
         self.invalidate_attrs()
         self.invalidate_attrdefs()
+
+    async def update_enabled(self) -> None:
+        if self._cached_attrs.get('enabled') and not self.is_enabled():
+            await self.enable()
+
+        elif not self._cached_attrs.get('enabled') and self.is_enabled():
+            await self.disable()
 
     async def _update_attrs_remotely(self) -> None:
         if not self._remote_update_pending_attrs:
@@ -350,6 +350,9 @@ class SlavePort(core_ports.BasePort):
                 await self.set_attr(attr, data[attr])
 
         self._provisioning = set(data.get('provisioning', []))
+
+        # Enable if enabled remotely
+        asyncio.create_task(self.update_enabled())
 
     async def prepare_for_save(self) -> GenericJSONDict:
         return {

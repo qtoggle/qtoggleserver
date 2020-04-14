@@ -32,6 +32,8 @@ from . import exceptions
 from .ports import SlavePort
 
 
+_MAX_PARALLEL_API_CALLS = 2
+_MAX_QUEUED_API_CALLS = 256
 _INVALID_EXPRESSION_RE = re.compile(r'^invalid field: ((device_)*expression)$')
 _FWUPDATE_POLL_INTERVAL = 30
 _FWUPDATE_POLL_TIMEOUT = 300
@@ -100,6 +102,9 @@ class Slave(logging_utils.LoggableMixin):
 
         # Indicates whether all data required for this slave is present locally
         self._ready: bool = False
+
+        # API call throttling
+        self._parallel_api_caller = asyncio_utils.ParallelCaller(_MAX_PARALLEL_API_CALLS, _MAX_QUEUED_API_CALLS)
 
         # Indicates the listening session id, or None if no listen client is active
         self._listen_session_id: Optional[str] = None
@@ -436,6 +441,9 @@ class Slave(logging_utils.LoggableMixin):
             self._fwupdate_poll_task.cancel()
             await self._fwupdate_poll_task
 
+        # Stop parallel API caller
+        self._parallel_api_caller.stop()
+
     async def _load_ports(self) -> None:
         self.debug('loading persisted ports')
         port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
@@ -509,13 +517,24 @@ class Slave(logging_utils.LoggableMixin):
         retry_counter: Optional[int] = 0
     ) -> Any:
 
+        return await self._parallel_api_caller.call(self._api_call, method, path, body, timeout, retry_counter)
+
+    async def _api_call(
+        self,
+        method: str,
+        path: str,
+        body: Any = None,
+        timeout: int = None,
+        retry_counter: Optional[int] = 0
+    ) -> Any:
+
         if method == 'GET':
             body = None
 
         url = self.get_url(path)
         body_str = json_utils.dumps(body) if body is not None else None
 
-        # A new API call cancels any pending retry
+        # Used to signal a new API call, which should prevent any pending retry
         ref = self._last_api_call_ref = {}
 
         http_client = AsyncHTTPClient()
@@ -556,8 +575,8 @@ class Slave(logging_utils.LoggableMixin):
 
             msg = f'api call {method} {path} on {self} failed: {e} (body={body_str or ""})'
 
-            if (retry_counter is not None and retry_counter < settings.slaves.retry_count and
-                self._enabled and ref is not self._last_api_call_ref):
+            if ((retry_counter is not None) and (retry_counter < settings.slaves.retry_count) and
+                (ref is not self._last_api_call_ref) and self._enabled):
 
                 msg += f', retrying in {settings.slaves.retry_interval} seconds'
                 self.error(msg)
@@ -1157,6 +1176,7 @@ class Slave(logging_utils.LoggableMixin):
                 await port.handle_attr_change(name, value)
 
         port.update_cached_attrs(attrs)
+        await port.update_enabled()
 
         if 'value' in attrs:  # Value has also been updated
             port.update_last_sync()
