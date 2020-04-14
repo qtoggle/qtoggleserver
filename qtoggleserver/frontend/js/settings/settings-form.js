@@ -1,6 +1,7 @@
 
 import {gettext}                  from '$qui/base/i18n.js'
 import {mix}                      from '$qui/base/mixwith.js'
+import Timer                      from '$qui/base/timer.js'
 import Config                     from '$qui/config.js'
 import {CheckField}               from '$qui/forms/common-fields.js'
 import {ChoiceButtonsField}       from '$qui/forms/common-fields.js'
@@ -64,10 +65,28 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
 
         this._fullAttrdefs = null
         this._staticFieldsAdded = false
+
+        this._updateTimeFieldsTimer = new Timer(
+            /* defaultTimeout = */ 1000,
+            () => this.updateTimeFields(),
+            /* repeat = */ true
+        )
     }
 
     init() {
         this.updateUI(/* fieldChangeWarnings = */ false)
+    }
+
+    onBecomeCurrent() {
+        if (!this._updateTimeFieldsTimer.isRunning()) {
+            this._updateTimeFieldsTimer.start()
+        }
+    }
+
+    onLeaveCurrent() {
+        if (this._updateTimeFieldsTimer.isRunning()) {
+            this._updateTimeFieldsTimer.cancel()
+        }
     }
 
     /**
@@ -235,6 +254,21 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
             mobile_screen_mode: ClientSettings.getMobileScreenMode(),
             scaling_factor: ClientSettings.getScalingFactor()
         })
+    }
+
+    updateTimeFields() {
+        let attrs = Cache.getMainDevice()
+
+        let field = this.getField('attr_date')
+        if (field && attrs['date'] != null && !field.isFocused()) {
+            let value = Attrdefs.STD_DEVICE_ATTRDEFS['date'].valueToUI(attrs['date'])
+            field.setValue(value)
+        }
+
+        field = this.getField('attr_uptime')
+        if (field && attrs['uptime'] != null) {
+            field.setValue(attrs['uptime'])
+        }
     }
 
     applyData(data) {
