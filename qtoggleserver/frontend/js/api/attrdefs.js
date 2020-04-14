@@ -37,7 +37,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 100,
         field: {
             class: TextField,
-            pattern: /^[_a-zA-Z][_a-zA-Z0-9-]*$/,
+            pattern: /^[_a-zA-Z][_a-zA-Z0-9-]*$/
         }
     },
     display_name: {
@@ -209,7 +209,7 @@ export const STD_DEVICE_ATTRDEFS = {
             autocomplete: false,
             clearEnabled: true,
             placeholder: 'AA:BB:CC:DD:EE:FF',
-            pattern: /^[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}$/,
+            pattern: /^[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}$/
         }
     },
     wifi_bssid_current: {
@@ -470,7 +470,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 100,
         field: {
             class: TextField,
-            pattern: /^[_a-zA-Z][._a-zA-Z0-9-]*$/,
+            pattern: /^[_a-zA-Z][._a-zA-Z0-9-]*$/
         }
     },
     enabled: {
