@@ -575,7 +575,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
 
                     logger.debug(`device "${device.name}" at url ${deviceURL} successfully removed`)
 
-                }.bind(this)).catch(function (error) {
+                }).catch(function (error) {
 
                     logger.errorStack(`failed to remove device "${device.name}" at url ${deviceURL}`, error)
                     Toast.error(error.message)
