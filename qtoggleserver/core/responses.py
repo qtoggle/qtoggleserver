@@ -105,7 +105,7 @@ def _response_error_errno(eno: Optional[int]) -> Error:
     elif eno == errno.ENETUNREACH:
         return NetworkUnreachable()
 
-    elif eno == socket.EAI_NONAME:
+    elif eno in (socket.EAI_NONAME, socket.EAI_NODATA):
         return UnresolvableHostname()
 
     elif eno:

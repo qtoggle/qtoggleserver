@@ -570,7 +570,6 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                 MasterSlaveAPI.deleteSlaveDevice(device.name).then(function () {
 
                     logger.debug(`device "${device.name}" at url ${deviceURL} successfully removed`)
-                    this.close(/* force = */ true)
 
                 }.bind(this)).catch(function (error) {
 

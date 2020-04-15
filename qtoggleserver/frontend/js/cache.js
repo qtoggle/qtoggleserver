@@ -265,7 +265,7 @@ export function loadSlaveDevices() {
             })
         }
 
-        ObjectUtils.forEach(slaveDevices, (name, device) => resetUpdateTimeDetails(device))
+        ObjectUtils.forEach(slaveDevices, (name, device) => resetUpdateTimeDetails(device.attrs))
 
         logger.debug(`loaded ${devices.length} slave devices`)
 
@@ -410,7 +410,7 @@ export function updateFromEvent(event) {
         case 'slave-device-update': {
             if (event.params.name in slaveDevices) {
                 let device = slaveDevices[event.params.name] = ObjectUtils.copy(event.params, /* deep = */ true)
-                resetUpdateTimeDetails(device)
+                resetUpdateTimeDetails(device.attrs)
             }
             else {
                 logger.warn(`received slave device update event for unknown device "${event.params.name}"`)
@@ -425,7 +425,7 @@ export function updateFromEvent(event) {
             }
 
             let device = slaveDevices[event.params.name] = ObjectUtils.copy(event.params, /* deep = */ true)
-            resetUpdateTimeDetails(device)
+            resetUpdateTimeDetails(device.attrs)
 
             break
         }
@@ -437,6 +437,10 @@ export function updateFromEvent(event) {
             }
             else {
                 logger.warn(`received slave device remove event for unknown device "${event.params.name}"`)
+            }
+
+            if (polledDeviceName === event.params.name) {
+                polledDeviceName = null
             }
 
             break
@@ -764,6 +768,17 @@ export function init() {
                     NotificationsAPI.fakeServerEvent('device-update', attrs)
                 }
             }
+        }).catch(function (e) {
+            if (polledDeviceName == null) {
+                logger.debug('ignoring polling error after polling disabled')
+                return
+            }
+            if ((e instanceof BaseAPI.APIError) && (e.messageCode === 'no such device')) {
+                logger.debug('ignoring error while polling removed device')
+                return
+            }
+
+            throw e
         })
 
     }, DEVICE_POLL_INTERVAL * 1000)

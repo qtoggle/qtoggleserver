@@ -461,7 +461,6 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 PortsAPI.deletePort(portId).then(function () {
 
                     logger.debug(`port "${port.id}" successfully removed`)
-                    this.close(/* force = */ true)
 
                 }.bind(this)).catch(function (error) {
 
