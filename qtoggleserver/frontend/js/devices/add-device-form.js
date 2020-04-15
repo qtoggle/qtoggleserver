@@ -44,71 +44,18 @@ class AddDeviceForm extends PageForm {
                     label: gettext('URL'),
                     required: true,
                     placeholder: 'http://192.168.1.123/device',
+                    initialValue: 'http://',
 
                     validate(url) {
                         if (!url.match(URL.VALID_REGEX)) {
                             throw new ValidationError(gettext('Enter a valid URL.'))
                         }
-                    },
-
-                    onChange(url, form) {
-                        let details = URL.parse(url)
-                        let data = {}
-
-                        data.scheme = details.scheme || 'http'
-                        data.host = details.host
-                        data.port = details.port || (data.scheme === 'http' ? 80 : 443)
-                        data.path = details.path || '/'
-                        if (details.queryStr) {
-                            data.path += `?${details.queryStr}`
-                        }
-                        if (details.password) {
-                            data.password = details.password
-                        }
-
-                        form.setData(data)
                     }
                 }),
                 new PasswordField({
                     name: 'password',
                     label: gettext('Password'),
                     autocomplete: false
-                }),
-                new TextField({
-                    name: 'scheme',
-                    label: gettext('Scheme'),
-                    required: true,
-                    separator: true,
-                    placeholder: 'http',
-
-                    validate(scheme) {
-                        if (scheme !== 'http' && scheme !== 'https') {
-                            throw new ValidationError(gettext('Enter a valid scheme.'))
-                        }
-                    }
-                }),
-                new TextField({
-                    name: 'host',
-                    label: gettext('Host'),
-                    required: true,
-                    placeholder: '192.168.1.123',
-
-                    validate(host) {
-                        if (!host.match(VALID_HOST_REGEX)) {
-                            throw new ValidationError(gettext('Enter a valid host name.'))
-                        }
-                    }
-                }),
-                new NumericField({
-                    name: 'port',
-                    label: gettext('Port'),
-                    min: 1,
-                    max: 65535
-                }),
-                new TextField({
-                    name: 'path',
-                    label: gettext('Path'),
-                    placeholder: '/'
                 }),
                 new ComboField({
                     name: 'poll_interval',
@@ -122,7 +69,6 @@ class AddDeviceForm extends PageForm {
                 })
             ],
             data: {
-                port: 80,
                 poll_interval: 0,
                 listen_enabled: true
             },
@@ -136,12 +82,23 @@ class AddDeviceForm extends PageForm {
     applyData(data) {
         logger.debug(`adding device at url ${data.url}`)
 
+        let url = URL.parse(data.url)
+        let scheme = url.scheme
+        let host = url.host
+        let port = url.port || (url.scheme === 'https' ? 443 : 80)
+        let path = url.path || '/'
+        let password = data.password || url.password
+
+        if (url.queryStr) {
+            path += `?${url.queryStr}`
+        }
+
         return MasterSlaveAPI.postSlaveDevices(
-            data.scheme,
-            data.host,
-            data.port,
-            data.path,
-            data.password,
+            scheme,
+            host,
+            port,
+            path,
+            password,
             data.poll_interval,
             data.listen_enabled
         ).then(function (response) {
@@ -150,35 +107,21 @@ class AddDeviceForm extends PageForm {
 
         }).catch(function (error) {
 
-            logger.errorStack(`failed to add device at url ${data.url}`, error)
-
-            if (error instanceof BaseAPI.APIError && error.messageCode === 'no such function' && data.path === '/') {
+            /* Retry with /api path, which should be a default location for qToggleServer implementations */
+            if (error instanceof BaseAPI.APIError && error.messageCode === 'no such function' && url.path === '/') {
 
                 logger.debug('retrying with /api suffix')
-                data.path = '/api'
+                url.path = '/api'
+                data.url = url.toString()
 
                 return this.applyData(data)
             }
 
+            logger.errorStack(`failed to add device at url ${data.url}`, error)
+
             throw error
 
         }.bind(this))
-    }
-
-    onChange(data, fieldName) {
-        let fieldNames = ['host', 'port', 'scheme', 'path']
-        if (fieldNames.indexOf(fieldName) >= 0) {
-            let form = this
-
-            Promise.all(fieldNames.map(name => form.getFieldValue(name)).then(function (fieldValues) {
-
-                let d = ObjectUtils.fromEntries(fieldNames.map((name, i) => [name, fieldValues[i]]))
-                let url = new URL(d).toString()
-
-                form.setData({url: url})
-
-            }).catch(() => {}))
-        }
     }
 
 }
