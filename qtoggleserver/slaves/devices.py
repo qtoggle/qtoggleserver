@@ -1246,7 +1246,7 @@ class Slave(logging_utils.LoggableMixin):
 
                 return
 
-            self.trigger_update()
+        self.trigger_update()
 
         # Trigger a port-update so that online attribute is pushed to consumers
         for port in self._get_local_ports():
