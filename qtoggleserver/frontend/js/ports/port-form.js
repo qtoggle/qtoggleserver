@@ -257,7 +257,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
         let newValue = null
         let newAttrs = {}
-        let changedFields = this.getChangedFields()
+        let changedFields = this.getChangedFieldNames()
 
         changedFields.forEach(function (fieldName) {
 

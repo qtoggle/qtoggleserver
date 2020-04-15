@@ -83,7 +83,11 @@ let syncListenCallbacks = []
  * @param {Number} [timeout]
  * @returns {Number} the expected event handle
  */
-export function expectEvent(type, params, timeout = DEFAULT_EXPECT_TIMEOUT) {
+export function expectEvent(type, params, timeout = null) {
+    if (timeout == null) {
+        timeout = DEFAULT_EXPECT_TIMEOUT
+    }
+
     let handle = ++expectedEventLastHandle
     expectedEventSpecs[handle] = {
         type: type,

@@ -267,7 +267,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         let attrs = Cache.getMainDevice()
 
         let field = this.getField('attr_date')
-        if (field && attrs['date'] != null && !field.isFocused()) {
+        if (field && attrs['date'] != null && !field.isFocused() && !field.isChanged()) {
             let value = Attrdefs.STD_DEVICE_ATTRDEFS['date'].valueToUI(attrs['date'])
             field.setValue(value)
         }
@@ -280,7 +280,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
 
     applyData(data) {
         let newAttrs = {}
-        let changedFields = this.getChangedFields()
+        let changedFields = this.getChangedFieldNames()
         let changedFieldsData = {}
         let willReconnect = false
 
