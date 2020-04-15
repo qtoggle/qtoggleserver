@@ -38,6 +38,7 @@ _INVALID_EXPRESSION_RE = re.compile(r'^invalid field: ((device_)*expression)$')
 _FWUPDATE_POLL_INTERVAL = 30
 _FWUPDATE_POLL_TIMEOUT = 300
 _NO_EVENT_DEVICE_ATTRS = ['uptime', 'date']
+_DEFAULT_POLL_INTERVAL = 10
 
 
 _slaves_by_name: Dict[str, Slave] = {}
@@ -55,7 +56,7 @@ class Slave(logging_utils.LoggableMixin):
         port: int,
         path: str,
         poll_interval: Optional[int] = None,
-        listen_enabled: bool = True,
+        listen_enabled: bool = False,
         admin_password: Optional[str] = None,
         admin_password_hash: Optional[str] = None,
         last_sync: int = -1,
@@ -1577,22 +1578,49 @@ async def add(
     host: str,
     port: int,
     path: str,
-    poll_interval: Optional[int],
-    listen_enabled: bool,
+    poll_interval: Optional[int] = None,
+    listen_enabled: Optional[bool] = None,
     admin_password: Optional[str] = None,
     admin_password_hash: Optional[str] = None
 ) -> Slave:
 
-    slave = Slave(None, scheme, host, port, path, poll_interval, listen_enabled, admin_password, admin_password_hash)
+    slave = Slave(
+        name=None,
+        scheme=scheme,
+        host=host,
+        port=port,
+        path=path,
+        poll_interval=None,  # Will be enabled later
+        listen_enabled=False,  # Will be enabled later
+        admin_password=admin_password,
+        admin_password_hash=admin_password_hash
+    )
 
     slave.debug('starting add procedure')
 
     await slave.fetch_and_update_device()
     name = slave.get_name()
 
-    if listen_enabled and 'listen' not in slave.get_cached_attr('flags'):
+    # Check that we have required listen support
+    if (listen_enabled is True) and 'listen' not in slave.get_cached_attr('flags'):
         slave.error('no listen support')
         raise exceptions.NoListenSupport(name)
+
+    # If no listen and no polling specified, attempt to automatically detect and enable supported method
+    if (listen_enabled is None) and (poll_interval is None):
+        if 'listen' in slave.get_cached_attr('flags'):
+            slave.debug('listen support detected, auto-enabling listening')
+            listen_enabled = True
+
+        else:
+            slave.debug('listen support not detected, auto-enabling polling')
+            poll_interval = _DEFAULT_POLL_INTERVAL
+
+    if listen_enabled:
+        slave.enable_listen()
+
+    elif poll_interval:
+        slave.set_poll_interval(poll_interval)
 
     await slave.enable()
     slave.save()

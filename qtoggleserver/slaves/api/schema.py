@@ -37,9 +37,7 @@ POST_SLAVE_DEVICES = {
         "host",
         "port",
         "path",
-        "admin_password",
-        "poll_interval",
-        "listen_enabled"
+        "admin_password"
     ]
 }
 
