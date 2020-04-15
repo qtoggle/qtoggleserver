@@ -92,6 +92,8 @@ class system:
         get_cmd: _typing.Optional[str] = None
         sensor_name: _typing.Optional[str] = None
         sensor_index: int = 0
+        min: _typing.Optional[int] = None
+        max: _typing.Optional[int] = None
 
     class battery:
         get_cmd: _typing.Optional[str] = None

@@ -224,7 +224,9 @@ ATTRDEFS = {
         'modifiable': False,
         'persisted': False,
         'enabled': lambda: system.temperature.has_temperature_support(),
-        'standard': True
+        'min': lambda: settings.system.temperature.min,
+        'max': lambda: settings.system.temperature.max,
+        'standard': False  # Having standard False here enables exposing of definition (needed for min/max)
     },
     'battery_level': {
         'type': 'number',

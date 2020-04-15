@@ -13,6 +13,7 @@ import {ValidationError} from '$qui/forms/forms.js'
 import * as ArrayUtils   from '$qui/utils/array.js'
 import * as HTML         from '$qui/utils/html.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
+import * as MiscUtils    from '$qui/utils/misc.js'
 import * as StringUtils  from '$qui/utils/string.js'
 
 
@@ -36,7 +37,7 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
          * @returns {Object}
          */
         fieldAttrsFromAttrdef(name, def) {
-            let field = {
+            let fieldAttrs = {
                 name: `attr_${name}`,
                 description: HTML.escape(def.description || ''),
                 required: def.required,
@@ -47,11 +48,15 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
             }
 
             if (def.field) {
-                Object.assign(field, def.field)
+                let fieldData = def.field
+                if (MiscUtils.isFunction(fieldData)) {
+                    fieldData = fieldData(def)
+                }
+                Object.assign(fieldAttrs, fieldData)
             }
             else if (def.choices && def.modifiable) {
-                field.class = ComboField
-                field.choices = def.choices.map(function (c) {
+                fieldAttrs.class = ComboField
+                fieldAttrs.choices = def.choices.map(function (c) {
                     if (ObjectUtils.isObject(c)) {
                         return {value: c.value, label: c.display_name || StringUtils.title(c.value.toString())}
                     }
@@ -63,7 +68,7 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
             else {
                 switch (def.type) {
                     case 'boolean': {
-                        field.class = CheckField
+                        fieldAttrs.class = CheckField
                         break
                     }
 
@@ -87,18 +92,18 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                         }
 
                         if (count <= 101 && def.modifiable) {
-                            field.class = SliderField
+                            fieldAttrs.class = SliderField
                             let ticks = []
                             for (let v = def.min; v <= def.max; v += step) {
                                 ticks.push({value: v, label: v})
                             }
-                            field.ticks = ticks
-                            field.ticksStep = Math.round((count - 1) / 5)
+                            fieldAttrs.ticks = ticks
+                            fieldAttrs.ticksStep = Math.round((count - 1) / 5)
                         }
                         else { /* Many choices */
-                            field.class = NumericField
+                            fieldAttrs.class = NumericField
 
-                            field.validate = function (value) {
+                            fieldAttrs.validate = function (value) {
                                 if (!value && !def.required) {
                                     return
                                 }
@@ -135,9 +140,9 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                     }
 
                     case 'string': {
-                        field.class = TextField
+                        fieldAttrs.class = TextField
 
-                        field.validate = function (value) {
+                        fieldAttrs.validate = function (value) {
                             if (def.min != null && value.length < def.min) {
                                 let msg = StringUtils.formatPercent(
                                     gettext('Enter a text of at least %(count)s characters.'),
@@ -158,7 +163,7 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                     }
 
                     case 'flags': { // TODO replace with list of strings
-                        field.class = LabelsField
+                        fieldAttrs.class = LabelsField
 
                         break
                     }
@@ -167,8 +172,8 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
 
             /* Add custom validator */
             if (def.validate) {
-                let oldValidate = field.validate
-                field.validate = function (value, data) {
+                let oldValidate = fieldAttrs.validate
+                fieldAttrs.validate = function (value, data) {
                     /* Remove the leading "_attr" */
                     data = ObjectUtils.mapKey(data, function (key) {
                         if (key.startsWith('attr_')) {
@@ -189,7 +194,7 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                 }
             }
 
-            return field
+            return fieldAttrs
         }
 
         /***
