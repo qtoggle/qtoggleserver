@@ -23,22 +23,27 @@ export function getSlaveDevices() {
  * @param {Number} port the TCP port
  * @param {String} path the location of the API on the device
  * @param {String} adminPassword the administrator password of the device
- * @param {Number} pollInterval polling interval, in seconds
- * @param {Boolean} listenEnabled whether to enable listening or not
+ * @param {Number} [pollInterval] polling interval, in seconds
+ * @param {Boolean} [listenEnabled] whether to enable listening or not
  * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
  * @returns {Promise}
  */
 export function postSlaveDevices(
-    scheme, host, port, path, adminPassword, pollInterval, listenEnabled, expectEventTimeout = null
+    scheme, host, port, path, adminPassword, pollInterval = null, listenEnabled = null, expectEventTimeout = null
 ) {
     let params = {
         scheme: scheme,
         host: host,
         port: port,
         path: path,
-        admin_password: adminPassword,
-        poll_interval: pollInterval,
-        listen_enabled: listenEnabled
+        admin_password: adminPassword
+    }
+
+    if (pollInterval != null) {
+        params['poll_interval'] = pollInterval
+    }
+    if (listenEnabled != null) {
+        params['listen_enabled'] = listenEnabled
     }
 
     let handle = NotificationsAPI.expectEvent('slave-device-add', {

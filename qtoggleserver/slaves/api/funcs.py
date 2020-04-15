@@ -40,8 +40,8 @@ async def post_slave_devices(request: core_api.APIRequest, params: GenericJSONDi
     port = params['port']
     path = params['path']
     admin_password = params['admin_password']
-    poll_interval = params['poll_interval']
-    listen_enabled = params['listen_enabled']
+    poll_interval = params.get('poll_interval')
+    listen_enabled = params.get('listen_enabled')
 
     # Look for slave duplicate
     for slave in slaves_devices.get_all():

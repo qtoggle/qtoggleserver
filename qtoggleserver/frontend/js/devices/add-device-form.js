@@ -1,14 +1,10 @@
 
 import {gettext}         from '$qui/base/i18n.js'
-import {CheckField}      from '$qui/forms/common-fields.js'
-import {ComboField}      from '$qui/forms/common-fields.js'
-import {NumericField}    from '$qui/forms/common-fields.js'
 import {PasswordField}   from '$qui/forms/common-fields.js'
 import {TextField}       from '$qui/forms/common-fields.js'
 import {PageForm}        from '$qui/forms/common-forms.js'
 import FormButton        from '$qui/forms/form-button.js'
 import {ValidationError} from '$qui/forms/forms.js'
-import * as ObjectUtils  from '$qui/utils/object.js'
 import URL               from '$qui/utils/url.js'
 
 import * as BaseAPI        from '$app/api/base.js'
@@ -16,8 +12,6 @@ import * as MasterSlaveAPI from '$app/api/master-slave.js'
 
 import * as Devices from './devices.js'
 
-
-const VALID_HOST_REGEX = new RegExp('[-a-z0-9_.]{2,256}', 'i')
 
 const logger = Devices.logger
 
@@ -56,22 +50,8 @@ class AddDeviceForm extends PageForm {
                     name: 'password',
                     label: gettext('Password'),
                     autocomplete: false
-                }),
-                new ComboField({
-                    name: 'poll_interval',
-                    label: gettext('Polling Interval'),
-                    choices: Devices.POLL_CHOICES,
-                    unit: gettext('seconds')
-                }),
-                new CheckField({
-                    name: 'listen_enabled',
-                    label: gettext('Enable Listening')
                 })
             ],
-            data: {
-                poll_interval: 0,
-                listen_enabled: true
-            },
             buttons: [
                 new FormButton({id: 'cancel', caption: gettext('Cancel'), cancel: true}),
                 new FormButton({id: 'add', caption: gettext('Add'), def: true})
@@ -98,9 +78,7 @@ class AddDeviceForm extends PageForm {
             host,
             port,
             path,
-            password,
-            data.poll_interval,
-            data.listen_enabled
+            password
         ).then(function (response) {
 
             logger.debug(`device "${response.name}" at url ${data.url} successfully added`)
