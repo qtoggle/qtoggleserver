@@ -108,6 +108,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
         this._fullAttrdefs = null
         this._deviceName = deviceName
         this._staticFieldsAdded = false
+        this._deviceRemoved = false
 
         this._updateTimeFieldsTimer = new Timer(
             /* defaultTimeout = */ 1000,
@@ -133,6 +134,10 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
     }
 
     onBecomeCurrent() {
+        if (this._deviceRemoved) {
+            return
+        }
+
         if (!this._updateTimeFieldsTimer.isRunning()) {
             this._updateTimeFieldsTimer.start()
         }
@@ -291,7 +296,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
         let attrs = device.attrs
 
         let field = this.getField('attr_date')
-        if (field && attrs['date'] != null && !field.isFocused()) {
+        if (field && attrs['date'] != null && !field.isFocused() && !field.isChanged()) {
             let value = Attrdefs.STD_DEVICE_ATTRDEFS['date'].valueToUI(attrs['date'])
             field.setValue(value)
         }
@@ -345,7 +350,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
 
         let newAttrs = {}
         let masterAttrsChanged = false
-        let changedFields = this.getChangedFields()
+        let changedFields = this.getChangedFieldNames()
         let justEnabled = false
         let willReconnect = false
 
@@ -566,6 +571,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
             onYes: function () {
 
                 logger.debug(`removing device "${device.name}" at url ${deviceURL}`)
+                this._deviceRemoved = true
 
                 MasterSlaveAPI.deleteSlaveDevice(device.name).then(function () {
 

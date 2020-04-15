@@ -778,7 +778,7 @@ export function init() {
                 return
             }
 
-            throw e
+            logger.errorStack('polling failed', e)
         })
 
     }, DEVICE_POLL_INTERVAL * 1000)

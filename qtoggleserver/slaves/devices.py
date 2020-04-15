@@ -55,7 +55,7 @@ class Slave(logging_utils.LoggableMixin):
         host: str,
         port: int,
         path: str,
-        poll_interval: Optional[int] = None,
+        poll_interval: int = 0,
         listen_enabled: bool = False,
         admin_password: Optional[str] = None,
         admin_password_hash: Optional[str] = None,
@@ -80,7 +80,7 @@ class Slave(logging_utils.LoggableMixin):
         self._host: str = host
         self._port: int = port
         self._path: str = path
-        self._poll_interval: Optional[int] = poll_interval
+        self._poll_interval: int = poll_interval
         self._listen_enabled: bool = listen_enabled
 
         if admin_password is not None:
@@ -113,7 +113,7 @@ class Slave(logging_utils.LoggableMixin):
 
         # Tells the polling mechanism status
         self._poll_started: bool = False
-        self._pool_task: Optional[asyncio.Task] = None
+        self._poll_task: Optional[asyncio.Task] = None
 
         # Attributes cache
         self._cached_attrs: Attributes = attrs or {}
@@ -434,7 +434,7 @@ class Slave(logging_utils.LoggableMixin):
         # Stop polling
         if self._poll_started:
             self._stop_polling()
-            await self._pool_task
+            await self._poll_task
             self.debug('polling mechanism stopped')
 
         # Stop fwupdate pool loop
@@ -632,7 +632,7 @@ class Slave(logging_utils.LoggableMixin):
 
         self.debug('starting polling mechanism')
 
-        self._pool_task = asyncio.create_task(self._poll_loop())
+        self._poll_task = asyncio.create_task(self._poll_loop())
 
     def _stop_polling(self) -> None:
         if not self._poll_started:
@@ -643,6 +643,7 @@ class Slave(logging_utils.LoggableMixin):
         self.debug('stopping polling mechanism')
 
         self._poll_started = False
+        self._poll_task.cancel()
 
     def _start_fwupdate_polling(self) -> None:
         if self._fwupdate_poll_task:
@@ -1578,7 +1579,7 @@ async def add(
     host: str,
     port: int,
     path: str,
-    poll_interval: Optional[int] = None,
+    poll_interval: int = 0,
     listen_enabled: Optional[bool] = None,
     admin_password: Optional[str] = None,
     admin_password_hash: Optional[str] = None
@@ -1590,8 +1591,8 @@ async def add(
         host=host,
         port=port,
         path=path,
-        poll_interval=None,  # Will be enabled later
-        listen_enabled=False,  # Will be enabled later
+        poll_interval=0,  # Will be set later
+        listen_enabled=False,  # Will be set later
         admin_password=admin_password,
         admin_password_hash=admin_password_hash
     )
@@ -1607,7 +1608,7 @@ async def add(
         raise exceptions.NoListenSupport(name)
 
     # If no listen and no polling specified, attempt to automatically detect and enable supported method
-    if (listen_enabled is None) and (poll_interval is None):
+    if (listen_enabled is None) and (poll_interval == 0):
         if 'listen' in slave.get_cached_attr('flags'):
             slave.debug('listen support detected, auto-enabling listening')
             listen_enabled = True
