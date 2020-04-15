@@ -260,12 +260,17 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                     let currentValue = field.getOrigValue()
                     if (currentValue !== newValue) {
                         if (def.modifiable && noUpdated.indexOf(name) < 0 && fieldChangeWarnings) {
+                            /* Mark attribute as changed in the meantime without updating its form value; don't
+                             * overwrite any current error or warning, however */
                             if (!field.hasError() && !field.hasWarning()) {
                                 field.setWarning(gettext('Value has been updated in the meantime.'))
                             }
                         }
                         else {
-                            newValues[field.getName()] = newValue
+                            /* Update the attribute value on the form but not if user is editing it */
+                            if (!field.isChanged() && !field.isFocused()) {
+                                newValues[field.getName()] = newValue
+                            }
                         }
                     }
 

@@ -273,7 +273,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         }
 
         field = this.getField('attr_uptime')
-        if (field && attrs['uptime'] != null) {
+        if (field && attrs['uptime'] != null && !field.isFocused()) {
             field.setValue(attrs['uptime'])
         }
     }

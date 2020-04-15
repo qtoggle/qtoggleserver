@@ -225,7 +225,7 @@ const logger = Logger.get('qtoggle.api.base')
  * @alias qtoggle.api.base.DEBUG_API_CALLS
  * @type {Boolean}
  */
-export const DEBUG_API_CALLS = true
+export const DEBUG_API_CALLS = false
 
 /**
  * Server request retry interval, in seconds.
@@ -420,6 +420,8 @@ export function apiCall({
     handleErrors = true
 }) {
 
+    let params = {method, path, query, data, timeout, slaveName}
+
     return new Promise(function (resolve, reject) {
         let apiFuncPath = path
 
@@ -453,7 +455,7 @@ export function apiCall({
 
         function resolveWrapper(data) {
             if (!isListen) {
-                syncEndCallbacks.forEach(c => PromiseUtils.asap().then(() => c()))
+                syncEndCallbacks.forEach(c => PromiseUtils.asap().then(() => c(/* error = */ null, params)))
             }
 
             if (DEBUG_API_CALLS && data != null) {
@@ -483,7 +485,7 @@ export function apiCall({
             reject(error)
 
             if (!isListen) {
-                syncEndCallbacks.forEach(c => PromiseUtils.asap().then(() => c(handleErrors ? error : null)))
+                syncEndCallbacks.forEach(c => PromiseUtils.asap().then(() => c(handleErrors ? error : null, params)))
             }
         }
 
@@ -496,7 +498,7 @@ export function apiCall({
         }
 
         if (!isListen) {
-            syncBeginCallbacks.forEach(c => PromiseUtils.asap().then(c))
+            syncBeginCallbacks.forEach(c => PromiseUtils.asap().then(() => c(params)))
         }
 
         AJAX.requestJSON(
@@ -519,25 +521,31 @@ export function apiCall({
 /**
  * API request indication callback function.
  * @callback qtoggle.api.base.SyncBeginCallback
+ * @param {Object} params API call parameters
  */
 
 /**
  * API response indication callback function.
- * @param {?qtoggle.api.base.APIError} [error] indicates an error occurred during request
  * @callback qtoggle.api.base.SyncEndCallback
+ * @param {?qtoggle.api.base.APIError} [error] indicates an error occurred during request
+ * @param {Object} params API call parameters
  */
 
 /**
  * Add a set of functions to be called each time an API request is initiated and responded.
  * @alias qtoggle.api.base.addSyncCallbacks
- * @param {qtoggle.api.base.SyncBeginCallback} beginCallback a function to be called at the initiation of each API
+ * @param {qtoggle.api.base.SyncBeginCallback} [beginCallback] a function to be called at the initiation of each API
  * request
- * @param {qtoggle.api.SyncEndCallback} endCallback a function to be called at the end of each API request (when the
+ * @param {qtoggle.api.SyncEndCallback} [endCallback] a function to be called at the end of each API request (when the
  * response is received or an error occurs)
  */
-export function addSyncCallbacks(beginCallback, endCallback) {
-    syncBeginCallbacks.push(beginCallback)
-    syncEndCallbacks.push(endCallback)
+export function addSyncCallbacks(beginCallback = null, endCallback = null) {
+    if (beginCallback) {
+        syncBeginCallbacks.push(beginCallback)
+    }
+    if (endCallback) {
+        syncEndCallbacks.push(endCallback)
+    }
 }
 
 /**

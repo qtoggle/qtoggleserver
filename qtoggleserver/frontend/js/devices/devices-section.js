@@ -83,6 +83,14 @@ class DevicesSection extends Section {
                 break
             }
 
+            case 'slave-device-polling-update': {
+                if (deviceForm && (deviceForm.getDeviceName() === event.params.name)) {
+                    deviceForm.updateUI(/* fieldChangeWarnings = */ false)
+                }
+
+                break
+            }
+
             case 'slave-device-add': {
                 this.devicesList.updateUIASAP()
 
