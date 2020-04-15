@@ -259,7 +259,7 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                 if (field) {
                     let currentValue = field.getOrigValue()
                     if (currentValue !== newValue) {
-                        if (def.modifiable && noUpdated.indexOf(name) < 0 && fieldChangeWarnings) {
+                        if (def.modifiable && !noUpdated.includes(name) && fieldChangeWarnings) {
                             /* Mark attribute as changed in the meantime without updating its form value; don't
                              * overwrite any current error or warning, however */
                             if (!field.hasError() && !field.hasWarning()) {
@@ -287,7 +287,7 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                     this.addField(startIndex + index, field)
                 }
 
-                if (provisioning.indexOf(name) >= 0) {
+                if (provisioning.includes(name)) {
                     field.setWarning(gettext('Value will be provisioned when device gets back online.'))
                 }
 

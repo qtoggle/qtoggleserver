@@ -178,7 +178,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         if (!port.enabled) {
             /* Filter out attribute definitions not visible when port disabled */
             this._fullAttrdefs = ObjectUtils.filter(this._fullAttrdefs, function (name, def) {
-                return DISABLED_PORT_VISIBLE_ATTRS.indexOf(name) >= 0
+                return DISABLED_PORT_VISIBLE_ATTRS.includes(name)
             })
         }
 
@@ -412,7 +412,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         let valueField = new FieldClass(fieldAttrs)
         this.addField(-1, valueField)
 
-        if ((port.provisioning || []).indexOf('value') >= 0) {
+        if ((port.provisioning || []).includes('value')) {
             valueField.setWarning(gettext('Value will be provisioned when device gets back online.'))
         }
 

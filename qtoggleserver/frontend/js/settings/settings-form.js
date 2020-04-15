@@ -245,7 +245,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
      */
     updateStaticFields(attrs) {
         let updateFirmwareButtonField = this.getField('management_buttons').getField('firmware')
-        if (attrs.flags.indexOf('firmware') >= 0) {
+        if (attrs.flags.includes('firmware')) {
             updateFirmwareButtonField.enable()
         }
         else {

@@ -781,6 +781,11 @@ export function init() {
                 logger.debug('skipping polling for unknown device')
                 return
             }
+
+            if (!device.enabled) {
+                logger.debug('skipping polling for disabled device')
+                return
+            }
         }
         else {
             logger.debug('polling main device')

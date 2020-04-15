@@ -89,13 +89,13 @@ function showMessageFromEvents(events) {
 
                 /* Do not show notifications unless an attribute that is not ignored has been changed */
                 let slaveChanged = Object.keys(ObjectUtils.filter(device, function (name, value) {
-                    return !ObjectUtils.deepEquals(event.params[name], value) &&
-                           (IGNORE_CHANGE_SLAVE_ATTRS.indexOf(name) < 0)
+                    return (!ObjectUtils.deepEquals(event.params[name], value) &&
+                            !IGNORE_CHANGE_SLAVE_ATTRS.includes(name))
                 })).length > 0
 
                 let slaveAttrsChanged = Object.keys(ObjectUtils.filter(device.attrs, function (name, value) {
-                    return !ObjectUtils.deepEquals(event.params.attrs[name], value) &&
-                           IGNORE_CHANGE_DEVICE_ATTRS.indexOf(name) < 0
+                    return (!ObjectUtils.deepEquals(event.params.attrs[name], value) &&
+                            !IGNORE_CHANGE_DEVICE_ATTRS.includes(name))
                 })).length > 0
 
                 if (!slaveChanged && !slaveAttrsChanged) {
@@ -175,8 +175,8 @@ function showMessageFromEvents(events) {
 
                 /* Do not show notifications unless an attribute that is not ignored has been changed */
                 let portAttrsChanged = Object.keys(ObjectUtils.filter(port, function (name, value) {
-                    return !ObjectUtils.deepEquals(event.params[name], value) &&
-                           IGNORE_CHANGE_PORT_ATTRS.indexOf(name) < 0
+                    return (!ObjectUtils.deepEquals(event.params[name], value) &&
+                            !IGNORE_CHANGE_PORT_ATTRS.includes(name))
                 })).length > 0
 
                 if (!portAttrsChanged) {

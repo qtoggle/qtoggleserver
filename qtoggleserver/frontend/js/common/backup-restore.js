@@ -191,7 +191,7 @@ function applyDefaultPortConfig(context, portAttrs) {
 function applyDefaultWebhooksConfig(context, webhooksConfig) {
     let promise = Promise.resolve()
 
-    if (context.deviceAttrs.flags.indexOf('reverse') < 0) {
+    if (!context.deviceAttrs.flags.includes('reverse')) {
         return promise
     }
 
@@ -214,7 +214,7 @@ function applyDefaultWebhooksConfig(context, webhooksConfig) {
 function applyDefaultReverseConfig(context, reverseConfig) {
     let promise = Promise.resolve()
 
-    if (context.deviceAttrs.flags.indexOf('reverse') < 0) {
+    if (!context.deviceAttrs.flags.includes('reverse')) {
         return promise
     }
 
