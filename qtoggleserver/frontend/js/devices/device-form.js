@@ -123,16 +123,6 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
         this.updateUI(/* fieldChangeWarnings = */ false)
     }
 
-    load() {
-        /* Explicitly query attributes that don't normally generate events, directly from the slave device */
-        BaseAPI.setSlaveName(this.getDeviceName())
-        return DevicesAPI.getDevice().then(function (attrs) {
-            attrs = ObjectUtils.filter(attrs, n => (NotificationsAPI.NO_EVENT_DEVICE_ATTRS.indexOf(n) >= 0))
-            attrs = ObjectUtils.mapKey(attrs, n => `attr_${n}`)
-            this.setData(attrs)
-        }.bind(this))
-    }
-
     onBecomeCurrent() {
         if (this._deviceRemoved) {
             return
@@ -177,7 +167,15 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
             device.last_sync = DateUtils.formatPercent(new Date(device.last_sync * 1000), '%Y-%m-%d %H:%M:%S')
         }
 
-        this.setData(device)
+        /* Update fields that stay on master, but only if they're not being edited */
+        let masterData = {}
+        MASTER_FIELDS.forEach(function (name) {
+            let field = this.getField(name)
+            if (!field.isFocused() && !field.isChanged()) {
+                masterData[name] = device[name]
+            }
+        }.bind(this))
+        this.setData(masterData)
 
         if (device.enabled) {
             let attrdefs = ObjectUtils.copy(device.attrs.definitions || {}, /* deep = */ true)
@@ -302,7 +300,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
         }
 
         field = this.getField('attr_uptime')
-        if (field && attrs['uptime'] != null) {
+        if (field && attrs['uptime'] != null && !field.isFocused()) {
             field.setValue(attrs['uptime'])
         }
     }
@@ -435,7 +433,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                     data.listen_enabled
                 ).then(function () {
 
-                    logger.debug(`device "${deviceName}" master properties successfully updated for`)
+                    logger.debug(`device "${deviceName}" master properties successfully updated`)
 
                     if (justEnabled) {
                         this.startWaitingDeviceOnline()

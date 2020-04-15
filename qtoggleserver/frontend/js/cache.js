@@ -25,6 +25,16 @@ import {getGlobalProgressMessage} from '$app/common/common.js'
 
 const DEVICE_POLL_INTERVAL = 2 /* Seconds */
 
+/* When actively polling a device, only update some selected attributes */
+const DEVICE_POLLED_ATTRIBUTES = [
+    'wifi_signal_strength',
+    'temperature',
+    'cpu_usage',
+    'mem_usage',
+    'storage_usage',
+    'battery_level'
+]
+
 const logger = Logger.get('qtoggle.cache')
 
 
@@ -46,6 +56,7 @@ let reloadNeeded = false
 
 /* The name of a device to be continuously polled */
 let polledDeviceName = null
+
 
 /* Some ready condition variables */
 
@@ -413,7 +424,18 @@ export function updateFromEvent(event) {
                 resetUpdateTimeDetails(device.attrs)
             }
             else {
-                logger.warn(`received slave device update event for unknown device "${event.params.name}"`)
+                logger.warn(`received slave-device-update event for unknown device "${event.params.name}"`)
+            }
+
+            break
+        }
+
+        case 'slave-device-polling-update': {
+            if (event.params.name in slaveDevices) {
+                Object.assign(slaveDevices[event.params.name].attrs, event.params.attrs)
+            }
+            else {
+                logger.warn(`received slave-device-polling-update event for unknown device "${event.params.name}"`)
             }
 
             break
@@ -421,7 +443,7 @@ export function updateFromEvent(event) {
 
         case 'slave-device-add': {
             if (event.params.name in slaveDevices) {
-                logger.debug(`received slave device add event for already existing device "${event.params.name}"`)
+                logger.debug(`received slave-device-add event for already existing device "${event.params.name}"`)
             }
 
             let device = slaveDevices[event.params.name] = ObjectUtils.copy(event.params, /* deep = */ true)
@@ -436,7 +458,7 @@ export function updateFromEvent(event) {
                 delete slaveDevices[event.params.name]
             }
             else {
-                logger.warn(`received slave device remove event for unknown device "${event.params.name}"`)
+                logger.warn(`received slave-device-remove event for unknown device "${event.params.name}"`)
             }
 
             if (polledDeviceName === event.params.name) {
@@ -455,7 +477,7 @@ export function updateFromEvent(event) {
                 }
             }
             else {
-                logger.warn(`received value change event for unknown port "${event.params.id}"`)
+                logger.warn(`received value-change event for unknown port "${event.params.id}"`)
             }
 
             break
@@ -463,7 +485,7 @@ export function updateFromEvent(event) {
 
         case 'port-update': {
             if (!(event.params.id in allPorts)) {
-                logger.warn(`received port update event for unknown port "${event.params.id}"`)
+                logger.warn(`received port-update event for unknown port "${event.params.id}"`)
             }
 
             allPorts[event.params.id] = ObjectUtils.copy(event.params, /* deep = */ true)
@@ -473,7 +495,7 @@ export function updateFromEvent(event) {
 
         case 'port-add': {
             if (event.params.id in allPorts) {
-                logger.debug(`received port add event for already existing port "${event.params.id}"`)
+                logger.debug(`received port-add-event for already existing port "${event.params.id}"`)
             }
 
             allPorts[event.params.id] = ObjectUtils.copy(event.params, /* deep = */ true)
@@ -487,7 +509,7 @@ export function updateFromEvent(event) {
                 delete allPorts[event.params.id]
             }
             else {
-                logger.warn(`received port remove event for unknown port "${event.params.id}"`)
+                logger.warn(`received port-remove event for unknown port "${event.params.id}"`)
             }
 
             break
@@ -499,6 +521,13 @@ export function updateFromEvent(event) {
 
             break
         }
+
+        case 'device-polling-update': {
+            Object.assign(mainDevice, event.params)
+
+            break
+        }
+
     }
 }
 
@@ -734,13 +763,15 @@ export function init() {
     setInterval(function () {
 
         if (polledDeviceName == null) {
-            return
+            return /* Polling disabled */
         }
 
+        /* Don't poll unless cache is ready */
         if (!whenCacheReady.isFulfilled()) {
             return
         }
 
+        /* Choose between polling main device or a slave device */
         let device = null
         if (polledDeviceName) {
             logger.debug(`polling device "${polledDeviceName}"`)
@@ -756,19 +787,34 @@ export function init() {
         }
 
         DevicesAPI.getDevice().then(function (attrs) {
-            if (device) {
-                if (!ObjectUtils.deepEquals(device.attrs, attrs)) {
-                    let deviceCopy = ObjectUtils.copy(device)
-                    deviceCopy.attrs = attrs
-                    NotificationsAPI.fakeServerEvent('slave-device-update', deviceCopy)
+
+            asap(function () {
+                if (device) {
+                    if (!ObjectUtils.deepEquals(device.attrs, attrs)) {
+                        let partialDevice = {name: device.name, attrs: {}}
+                        DEVICE_POLLED_ATTRIBUTES.forEach(function (name) {
+                            if (name in attrs) {
+                                partialDevice.attrs[name] = attrs[name]
+                            }
+                        })
+                        NotificationsAPI.fakeServerEvent('slave-device-polling-update', partialDevice)
+                    }
                 }
-            }
-            else {
-                if (!ObjectUtils.deepEquals(mainDevice, attrs)) {
-                    NotificationsAPI.fakeServerEvent('device-update', attrs)
+                else {
+                    if (!ObjectUtils.deepEquals(mainDevice, attrs)) {
+                        let partialAttrs = {}
+                        DEVICE_POLLED_ATTRIBUTES.forEach(function (name) {
+                            if (name in attrs) {
+                                partialAttrs[name] = attrs[name]
+                            }
+                        })
+                        NotificationsAPI.fakeServerEvent('device-polling-update', partialAttrs)
+                    }
                 }
-            }
+            })
+
         }).catch(function (e) {
+
             if (polledDeviceName == null) {
                 logger.debug('ignoring polling error after polling disabled')
                 return
@@ -779,6 +825,7 @@ export function init() {
             }
 
             logger.errorStack('polling failed', e)
+
         })
 
     }, DEVICE_POLL_INTERVAL * 1000)
