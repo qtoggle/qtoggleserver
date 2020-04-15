@@ -386,6 +386,29 @@ export const STD_DEVICE_ATTRDEFS = {
             color: '@blue-color'
         }
     },
+    temperature: {
+        display_name: gettext('Temperature'),
+        description: gettext('The current device temperature.'),
+        unit: '\xb0C',
+        type: 'number',
+        modifiable: false,
+        optional: true,
+        standard: true,
+        order: 193,
+        field: function (def) {
+            if (def.min != null && def.max != null) {
+                return {
+                    class: ProgressDiskField,
+                    color: '@magenta-color'
+                }
+            }
+            else {
+                return {
+                    class: TextField
+                }
+            }
+        }
+    },
     battery_level: {
         display_name: gettext('Battery Level'),
         description: gettext('The battery state of charge level.'),
@@ -394,21 +417,11 @@ export const STD_DEVICE_ATTRDEFS = {
         modifiable: false,
         optional: true,
         standard: true,
-        order: 193,
+        order: 194,
         field: {
             class: ProgressDiskField,
             color: '@orange-color'
         }
-    },
-    temperature: {
-        display_name: gettext('Temperature'),
-        description: gettext('The current device (core) temperature.'),
-        unit: '\xb0C',
-        type: 'number',
-        modifiable: false,
-        optional: true,
-        standard: true,
-        order: 194
     },
     low_battery: {
         display_name: gettext('Low Battery'),
