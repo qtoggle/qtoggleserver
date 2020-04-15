@@ -274,7 +274,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
      */
     updateStaticFields(attrs) {
         let updateFirmwareButtonField = this.getField('management_buttons').getField('firmware')
-        if (attrs.flags.indexOf('firmware') >= 0) {
+        if (attrs.flags.includes('firmware')) {
             updateFirmwareButtonField.enable()
         }
         else {
@@ -358,7 +358,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                 return
             }
 
-            if (MASTER_FIELDS.indexOf(fieldName) >= 0) {
+            if (MASTER_FIELDS.includes(fieldName)) {
                 logger.debug(`updating device "${deviceName}" master attribute ` +
                              `${fieldName}" to ${JSON.stringify(value)}`)
                 masterAttrsChanged = true
