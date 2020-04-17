@@ -11,6 +11,8 @@ import {TextField}                from '$qui/forms/common-fields.js'
 import {CompositeField}           from '$qui/forms/common-fields.js'
 import {PageForm}                 from '$qui/forms/common-forms.js'
 import FormButton                 from '$qui/forms/form-button.js'
+import {ErrorMapping}             from '$qui/forms/forms.js'
+import {ValidationError}          from '$qui/forms/forms.js'
 import {ConfirmMessageForm}       from '$qui/messages/common-message-forms.js'
 import {StickyConfirmMessageForm} from '$qui/messages/common-message-forms.js'
 import * as Messages              from '$qui/messages/messages.js'
@@ -25,6 +27,7 @@ import * as Window                from '$qui/window.js'
 
 import * as Attrdefs         from '$app/api/attrdefs.js'
 import * as BaseAPI          from '$app/api/base.js'
+import * as APIConstants     from '$app/api/constants.js'
 import * as DevicesAPI       from '$app/api/devices.js'
 import * as MasterSlaveAPI   from '$app/api/master-slave.js'
 import * as NotificationsAPI from '$app/api/notifications.js'
@@ -320,7 +323,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
 
         PromiseUtils.withTimeout(
             this.waitDeviceOnline(),
-            BaseAPI.DEFAULT_SERVER_TIMEOUT * 1000
+            APIConstants.DEFAULT_SERVER_TIMEOUT * 1000
         ).catch(function (error) {
 
             if (error instanceof TimeoutError) {
@@ -466,6 +469,12 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                 }).catch(function (error) {
 
                     logger.errorStack(`failed to update device "${deviceName}" attributes`, error)
+
+                    if ((error instanceof BaseAPI.APIError) && error.messageCode.startsWith('invalid field: ')) {
+                        let fieldName = `attr_${error.params['field']}`
+                        throw new ErrorMapping({[fieldName]: new ValidationError(gettext('Invalid value.'))})
+                    }
+
                     throw error
 
                 }).then(function () {

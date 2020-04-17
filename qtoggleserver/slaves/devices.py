@@ -1667,7 +1667,12 @@ async def load() -> None:
     _load_time = time.time()
 
     for entry in persist.query('slaves'):
-        entry['name'] = entry.pop('id')
+        try:
+            entry['name'] = entry.pop('id')
+
+        except KeyError:
+            logger.error('skipping entry with missing "id" key in persisted data')
+            continue
 
         try:
             slave = Slave(**entry)

@@ -5,8 +5,8 @@ import {mix}                from '$qui/base/mixwith.js'
 import {ChoiceButtonsField} from '$qui/forms/common-fields.js'
 import {PageForm}           from '$qui/forms/common-forms.js'
 import FormButton           from '$qui/forms/form-button.js'
-import {ValidationError}    from '$qui/forms/forms.js'
 import {ErrorMapping}       from '$qui/forms/forms.js'
+import {ValidationError}    from '$qui/forms/forms.js'
 import {ConfirmMessageForm} from '$qui/messages/common-message-forms.js'
 import * as Messages        from '$qui/messages/messages.js'
 import * as Toast           from '$qui/messages/toast.js'
@@ -14,12 +14,13 @@ import * as ArrayUtils      from '$qui/utils/array.js'
 import * as ObjectUtils     from '$qui/utils/object.js'
 import * as StringUtils     from '$qui/utils/string.js'
 
-import * as Attrdefs    from '$app/api/attrdefs.js'
-import * as BaseAPI     from '$app/api/base.js'
-import * as PortsAPI    from '$app/api/ports.js'
-import * as Cache       from '$app/cache.js'
-import AttrdefFormMixin from '$app/common/attrdef-form-mixin.js'
-import * as Common      from '$app/common/common.js'
+import * as Attrdefs     from '$app/api/attrdefs.js'
+import * as BaseAPI      from '$app/api/base.js'
+import * as APIConstants from '$app/api/constants.js'
+import * as PortsAPI     from '$app/api/ports.js'
+import * as Cache        from '$app/cache.js'
+import AttrdefFormMixin  from '$app/common/attrdef-form-mixin.js'
+import * as Common       from '$app/common/common.js'
 
 import * as Ports from './ports.js'
 
@@ -309,10 +310,19 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
                 logger.errorStack(`failed to update port "${port.id}" attributes`, error)
 
-                let m
-                if (error instanceof BaseAPI.APIError && (m = error.messageCode.match(/invalid field: (.*)/))) {
-                    let fieldName = `attr_${m[1]}`
-                    throw new ErrorMapping({[fieldName]: new ValidationError(gettext('Invalid value.'))})
+                if ((error instanceof BaseAPI.APIError) && error.messageCode.startsWith('invalid field: ')) {
+                    let fieldName = `attr_${error.params['field']}`
+                    let errorMessage = gettext('Invalid value.')
+                    let details = error.params['details']
+                    if ((error.params['field'] === 'expression') && (details != null)) {
+                        let reasonInfo = APIConstants.INVALID_EXPRESSION_REASONS.find(
+                            e => e.reason === details['reason']
+                        )
+                        if (reasonInfo) {
+                            errorMessage = StringUtils.formatPercent(reasonInfo.pretty, details)
+                        }
+                    }
+                    throw new ErrorMapping({[fieldName]: new ValidationError(errorMessage)})
                 }
 
                 throw error

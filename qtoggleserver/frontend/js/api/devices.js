@@ -6,8 +6,9 @@ import Logger from '$qui/lib/logger.module.js'
 
 import * as AJAX from '$qui/utils/ajax.js'
 
-import * as BaseAPI            from './base.js'
-import * as NotificationsAPI   from './notifications.js'
+import * as BaseAPI          from './base.js'
+import * as APIConstants     from './constants.js'
+import * as NotificationsAPI from './notifications.js'
 
 
 const PROVISIONING_CONFIG_URL = 'https://provisioning.qtoggle.io/config'
@@ -101,7 +102,7 @@ export function patchDevice(attrs, expectEventTimeout = null) {
 
     return BaseAPI.apiCall({
         method: 'PATCH', path: '/device', data: attrs,
-        expectedHandle: handle, timeout: BaseAPI.LONG_SERVER_TIMEOUT
+        expectedHandle: handle, timeout: APIConstants.LONG_SERVER_TIMEOUT
     })
 }
 
@@ -133,7 +134,11 @@ export function getFirmware(override = false) {
     }
 
     return BaseAPI.apiCall({
-        method: 'GET', path: '/firmware', query: query, handleErrors: !override, timeout: BaseAPI.LONG_SERVER_TIMEOUT
+        method: 'GET',
+        path: '/firmware',
+        query: query,
+        handleErrors: !override,
+        timeout: APIConstants.LONG_SERVER_TIMEOUT
     }).then(function (data) {
 
         if ((data.status === FIRMWARE_STATUS_IDLE || data.status === FIRMWARE_STATUS_ERROR) &&
@@ -174,8 +179,11 @@ export function patchFirmware(version, url, override = false) {
     let forSlave = (BaseAPI.getSlaveName() != null)
 
     return BaseAPI.apiCall({
-        method: 'PATCH', path: '/firmware', query: query, data: params,
-        timeout: BaseAPI.LONG_SERVER_TIMEOUT
+        method: 'PATCH',
+        path: '/firmware',
+        query: query,
+        data: params,
+        timeout: APIConstants.LONG_SERVER_TIMEOUT
     }).then(function (data) {
 
         if (!forSlave) {

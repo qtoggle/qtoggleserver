@@ -90,7 +90,12 @@ class Function(Expression, metaclass=abc.ABCMeta):
                 level -= 1
 
             elif (c == ',') and (level == 1):
-                sargs.append((sexpression[(p_last_comma or p_start) + 1: i], (p_last_comma or p_start) + 1))
+                sarg = sexpression[(p_last_comma or p_start) + 1: i]
+                spos = (p_last_comma or p_start) + 1
+                if not sarg.strip():
+                    raise exceptions.UnexpectedCharacter(c, pos + spos + len(sarg))
+
+                sargs.append((sarg, spos))
                 p_last_comma = i
 
             elif (p_start is not None) and (level == 0) and not c.isspace():
@@ -100,7 +105,12 @@ class Function(Expression, metaclass=abc.ABCMeta):
             raise exceptions.UnexpectedEnd()
 
         if p_end - p_start > 1:
-            sargs.append((sexpression[(p_last_comma or p_start) + 1: p_end], (p_last_comma or p_start) + 1))
+            sarg = sexpression[(p_last_comma or p_start) + 1: p_end]
+            spos = (p_last_comma or p_start) + 1
+            if not sarg.strip():
+                raise exceptions.UnexpectedCharacter(')', pos + spos + len(sarg))
+
+            sargs.append((sarg, spos))
 
         func_name = sexpression[:p_start].strip()
         func_class = FUNCTIONS.get(func_name)
@@ -113,7 +123,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
         if func_class.MAX_ARGS is not None and len(sargs) > func_class.MAX_ARGS:
             raise exceptions.InvalidNumberOfArguments(func_name, pos)
 
-        args = [parse(self_port_id, sa, pos) for (sa, pos) in sargs]
+        args = [parse(self_port_id, sarg, pos + spos) for (sarg, spos) in sargs]
 
         return func_class(args)
 

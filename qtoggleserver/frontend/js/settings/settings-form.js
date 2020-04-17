@@ -357,9 +357,8 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
 
                     logger.errorStack(`failed to update device attributes`, error)
 
-                    let m
-                    if (error instanceof BaseAPI.APIError && (m = error.messageCode.match(/invalid field: (.*)/))) {
-                        let fieldName = `attr_${m[1]}`
+                    if ((error instanceof BaseAPI.APIError) && error.messageCode.startsWith('invalid field: ')) {
+                        let fieldName = `attr_${error.params['field']}`
                         throw new ErrorMapping({[fieldName]: new ValidationError(gettext('Invalid value.'))})
                     }
 

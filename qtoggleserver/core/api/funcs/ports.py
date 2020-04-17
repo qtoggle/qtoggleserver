@@ -65,7 +65,7 @@ async def patch_port(request: core_api.APIRequest, port_id: str, params: Attribu
             raise error
 
         elif isinstance(error, core_ports.InvalidAttributeValue):
-            raise core_api.APIError(400, f'invalid field: {name}', **error.details)
+            raise core_api.APIError(400, f'invalid field: {name}', details=error.details)
 
         elif isinstance(error, core_ports.PortTimeout):
             raise core_api.APIError(504, 'port timeout')

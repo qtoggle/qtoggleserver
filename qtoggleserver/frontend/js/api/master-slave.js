@@ -3,6 +3,7 @@
  */
 
 import * as BaseAPI          from './base.js'
+import * as APIConstants     from './constants.js'
 import * as NotificationsAPI from './notifications.js'
 
 
@@ -54,8 +55,11 @@ export function postSlaveDevices(
     }, expectEventTimeout)
 
     return BaseAPI.apiCall({
-        method: 'POST', path: '/devices', data: params,
-        expectedHandle: handle, timeout: BaseAPI.LONG_SERVER_TIMEOUT
+        method: 'POST',
+        path: '/devices',
+        data: params,
+        expectedHandle: handle,
+        timeout: APIConstants.LONG_SERVER_TIMEOUT
     })
 }
 
@@ -81,8 +85,11 @@ export function patchSlaveDevice(name, enabled, pollInterval, listenEnabled, exp
     }, expectEventTimeout)
 
     return BaseAPI.apiCall({
-        method: 'PATCH', path: `/devices/${name}`, data: params,
-        expectedHandle: handle, timeout: BaseAPI.LONG_SERVER_TIMEOUT
+        method: 'PATCH',
+        path: `/devices/${name}`,
+        data: params,
+        expectedHandle: handle,
+        timeout: APIConstants.LONG_SERVER_TIMEOUT
     })
 }
 
