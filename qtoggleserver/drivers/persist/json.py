@@ -1,4 +1,5 @@
 
+import copy
 import logging
 import os
 
@@ -85,7 +86,7 @@ class JSONDriver(BaseDriver):
 
             records = projected_records
 
-        return records
+        return copy.deepcopy(records)
 
     def insert(self, collection: str, record: Record) -> Id:
         coll = self._data.setdefault(collection, {})
