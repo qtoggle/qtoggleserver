@@ -776,7 +776,6 @@ export function init() {
         let device = null
         if (polledDeviceName) {
             logger.debug(`polling device "${polledDeviceName}"`)
-            BaseAPI.setSlaveName(polledDeviceName)
             device = slaveDevices[polledDeviceName]
             if (!device) {
                 logger.debug('skipping polling for unknown device')
@@ -787,6 +786,8 @@ export function init() {
                 logger.debug('skipping polling for disabled device')
                 return
             }
+
+            BaseAPI.setSlaveName(polledDeviceName)
         }
         else {
             logger.debug('polling main device')
