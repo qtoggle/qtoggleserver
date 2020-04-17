@@ -22,5 +22,5 @@ class Expression(metaclass=abc.ABCMeta):
 
     @staticmethod
     @abc.abstractmethod
-    def parse(self_port_id: Optional[str], sexpression: str) -> Expression:
+    def parse(self_port_id: Optional[str], sexpression: str, pos: int) -> Expression:
         raise NotImplementedError()

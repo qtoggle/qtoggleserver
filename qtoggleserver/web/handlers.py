@@ -285,7 +285,7 @@ class APIHandler(BaseHandler):
 
             self.set_status(error.status)
             if not self._finished:  # Avoid finishing an already finished request
-                await self.finish_json(dict({'error': error.message}, **error.params))
+                await self.finish_json(error.to_json())
 
         elif isinstance(error, StreamClosedError) and func.__name__ == 'get_listen':
             logger.debug('api call get_listen could not complete: stream closed')

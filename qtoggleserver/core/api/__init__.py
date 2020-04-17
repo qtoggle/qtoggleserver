@@ -7,6 +7,7 @@ import logging
 from typing import Any, Callable, Dict
 
 from qtoggleserver.core import responses as core_responses
+from qtoggleserver.core.typing import GenericJSONDict
 
 
 API_VERSION = '1.0'
@@ -41,6 +42,9 @@ class APIError(Exception):
     @staticmethod
     def from_http_error(http_error: core_responses.HTTPError) -> APIError:
         return APIError(http_error.code, http_error.msg)
+
+    def to_json(self) -> GenericJSONDict:
+        return dict(error=self.message, **self.params)
 
 
 class APIRequest:

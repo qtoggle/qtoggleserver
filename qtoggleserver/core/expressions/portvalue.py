@@ -1,10 +1,12 @@
 
+import re
+
 from typing import Optional, Set
 
 from qtoggleserver.core.typing import PortValue as CorePortValue
 
 from .base import Expression
-from .exceptions import IncompleteExpression
+from .exceptions import UnknownPortId, DisabledPort, UndefinedPortValue, UnexpectedCharacter
 
 # Import core.ports after defining Expression, because core.ports.BasePort depends on Expression.
 from qtoggleserver.core import ports as core_ports
@@ -26,23 +28,34 @@ class PortValue(Expression):
     def eval(self) -> CorePortValue:
         port = self.get_port()
         if not port:
-            raise IncompleteExpression(f'Unknown port {self.port_id}')
+            raise UnknownPortId(self.port_id)
 
         if not port.is_enabled():
-            raise IncompleteExpression(f'{port} is disabled')
+            raise DisabledPort(self.port_id)
 
         value = port.get_value()
         if value is None:
-            raise IncompleteExpression(f'Value of port {port} is undefined')
+            raise UndefinedPortValue(self.port_id)
 
         return float(value)
 
     @staticmethod
-    def parse(self_port_id: Optional[str], sexpression: str) -> Expression:
-        sexpression = sexpression.strip()
-        port_id = sexpression.strip('$')
+    def parse(self_port_id: Optional[str], sexpression: str, pos: int) -> Expression:
+        while sexpression and sexpression[0].isspace():
+            sexpression = sexpression[1:]
+            pos += 1
+
+        while sexpression and sexpression[-1].isspace():
+            sexpression = sexpression[:-1]
+
+        port_id = sexpression[1:]
 
         if port_id:
+            m = re.search(r'[^a-zA-Z0-9_.]', port_id)
+            if m:
+                p = m.start()
+                raise UnexpectedCharacter(port_id[p], p + pos + 2)
+
             return PortValue(port_id)
 
         else:
