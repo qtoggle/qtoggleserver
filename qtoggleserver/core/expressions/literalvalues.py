@@ -6,7 +6,7 @@ from typing import Optional
 from qtoggleserver.core.typing import PortValue as CorePortValue
 
 from .base import Expression
-from .exceptions import UnexpectedCharacter
+from .exceptions import UnexpectedCharacter, EmptyExpression
 
 
 class LiteralValue(Expression):
@@ -29,6 +29,9 @@ class LiteralValue(Expression):
         while sexpression and sexpression[-1].isspace():
             sexpression = sexpression[:-1]
 
+        if not sexpression:
+            raise EmptyExpression()
+
         if sexpression == 'true':
             value = 1
 
@@ -46,9 +49,9 @@ class LiteralValue(Expression):
                 except ValueError:
                     m = re.match(r'-?\d+(\.?\d+)?', sexpression)
                     if m:
-                        raise UnexpectedCharacter(sexpression, pos + m.end()) from None
+                        raise UnexpectedCharacter(sexpression[m.end()], pos + m.end()) from None
 
                     else:
-                        raise UnexpectedCharacter(sexpression, pos) from None
+                        raise UnexpectedCharacter(sexpression[0], pos) from None
 
         return LiteralValue(value, sexpression)

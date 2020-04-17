@@ -5,6 +5,7 @@
 import * as Cache from '$app/cache.js'
 
 import * as BaseAPI          from './base.js'
+import * as APIConstants     from './constants.js'
 import * as NotificationsAPI from './notifications.js'
 
 
@@ -35,8 +36,11 @@ export function patchPort(id, attrs, expectEventTimeout = null) {
     }, expectEventTimeout)
 
     return BaseAPI.apiCall({
-        method: 'PATCH', path: `/ports/${id}`, data: attrs,
-        expectedHandle: handle, timeout: BaseAPI.LONG_SERVER_TIMEOUT
+        method: 'PATCH',
+        path: `/ports/${id}`,
+        data: attrs,
+        expectedHandle: handle,
+        timeout: APIConstants.LONG_SERVER_TIMEOUT
     })
 }
 
@@ -137,8 +141,11 @@ export function patchPortValue(id, value, expectEventTimeout = null) {
     }
 
     return BaseAPI.apiCall({
-        method: 'PATCH', path: `/ports/${id}/value`, data: value,
-        expectedHandle: handle, timeout: BaseAPI.LONG_SERVER_TIMEOUT
+        method: 'PATCH',
+        path: `/ports/${id}/value`,
+        data: value,
+        expectedHandle: handle,
+        timeout: APIConstants.LONG_SERVER_TIMEOUT
     })
 }
 

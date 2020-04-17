@@ -63,7 +63,7 @@ class UnexpectedEnd(ExpressionParseError):
 
     def to_json(self) -> GenericJSONDict:
         return {
-            'reason': 'unexpected end'
+            'reason': 'unexpected-end'
         }
 
 
@@ -97,12 +97,20 @@ class UnexpectedCharacter(ExpressionParseError):
         self.c = c
         self.pos: int = pos
 
-        super().__init__(f'Unexpected character "${c}"')
+        super().__init__(f'Unexpected character "{c}"')
 
     def to_json(self) -> GenericJSONDict:
         return {
             'reason': 'unexpected-character',
+            'token': self.c,
             'pos': self.pos
+        }
+
+
+class EmptyExpression(ExpressionParseError):
+    def to_json(self) -> GenericJSONDict:
+        return {
+            'reason': 'empty-expression'
         }
 
 

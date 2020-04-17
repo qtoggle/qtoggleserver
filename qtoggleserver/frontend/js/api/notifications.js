@@ -10,7 +10,8 @@ import {asap}              from '$qui/utils/misc.js'
 import * as ObjectUtils    from '$qui/utils/object.js'
 import * as PromiseUtils   from '$qui/utils/promise.js'
 
-import * as BaseAPI from './base.js'
+import * as BaseAPI      from './base.js'
+import * as APIConstants from './constants.js'
 
 
 const DEFAULT_EXPECT_TIMEOUT = 60000 /* Milliseconds */
@@ -158,7 +159,7 @@ function handleServerEvent(eventData) {
         event.expected = true
     }
 
-    if (BaseAPI.DEBUG_API_CALLS) {
+    if (APIConstants.DEBUG_API_CALLS) {
         let bodyStr = JSON.stringify(event, null, 4).replace(new RegExp('\\n', 'g'), '\n   ')
         logger.debug(`received server event "${event.type}":\n    ${bodyStr}`)
     }
@@ -185,7 +186,7 @@ export function fakeServerEvent(type, params) {
 
     event.fake = true
 
-    if (BaseAPI.DEBUG_API_CALLS) {
+    if (APIConstants.DEBUG_API_CALLS) {
         let bodyStr = JSON.stringify(event, null, 4).replace(new RegExp('\\n', 'g'), '\n   ')
         logger.debug(`fake server event "${event.type}":\n    ${bodyStr}`)
     }
@@ -224,7 +225,7 @@ function wait(firstQuick) {
     }
 
     BaseAPI.apiCall({
-        method: 'GET', path: '/listen', query: query, timeout: timeout + BaseAPI.DEFAULT_SERVER_TIMEOUT
+        method: 'GET', path: '/listen', query: query, timeout: timeout + APIConstants.DEFAULT_SERVER_TIMEOUT
     }).then(function (result) {
 
         if (listeningTime !== requestListeningTime) {
@@ -249,7 +250,7 @@ function wait(firstQuick) {
 
     }).catch(function (error) {
 
-        let reconnectSeconds = BaseAPI.SERVER_RETRY_INTERVAL
+        let reconnectSeconds = APIConstants.SERVER_RETRY_INTERVAL
 
         if (listeningTime !== requestListeningTime) {
             logger.debug('ignoring listen response from older session')

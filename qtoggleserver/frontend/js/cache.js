@@ -15,6 +15,7 @@ import * as PromiseUtils from '$qui/utils/promise.js'
 
 import * as AuthAPI               from '$app/api/auth.js'
 import * as BaseAPI               from '$app/api/base.js'
+import * as APIConstants          from '$app/api/constants.js'
 import * as DevicesAPI            from '$app/api/devices.js'
 import * as PortsAPI              from '$app/api/ports.js'
 import * as PrefsAPI              from '$app/api/prefs.js'
@@ -375,7 +376,7 @@ export function load(accessLevel, showModalProgress) {
         /* Handle any error that might have occurred during loading and retry indefinitely */
 
         let errorMsg = error.toString()
-        let promise = PromiseUtils.later(BaseAPI.SERVER_RETRY_INTERVAL * 1000)
+        let promise = PromiseUtils.later(APIConstants.SERVER_RETRY_INTERVAL * 1000)
 
         if (progressMessage) {
             progressMessage.setMessage(gettext('Reconnecting...'))

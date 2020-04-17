@@ -1,6 +1,4 @@
 
-import re
-
 from typing import Optional
 
 from .base import Expression
@@ -20,11 +18,8 @@ def parse(self_port_id: Optional[str], sexpression: str, pos: int = 1) -> Expres
     elif '(' in sexpression or ')' in sexpression:
         return Function.parse(self_port_id, sexpression, pos)
 
-    elif re.match(r'^[a-zA-Z0-9_.-]+$', sexpression):
-        return LiteralValue.parse(self_port_id, sexpression, pos)
-
     else:
-        raise exceptions.UnexpectedCharacter(',', pos)
+        return LiteralValue.parse(self_port_id, sexpression, pos)
 
 
 # Import core.ports after defining Expression, because core.ports.BasePort depends on Expression.
