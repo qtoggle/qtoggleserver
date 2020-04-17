@@ -14,21 +14,6 @@ class ExpressionParseError(ExpressionException):
         }
 
 
-class InvalidLiteralValue(ExpressionParseError):
-    def __init__(self, value: str, pos: int) -> None:
-        self.value: str = value
-        self.pos: int = pos
-
-        super().__init__(f'Invalid value "${value}"')
-
-    def to_json(self) -> GenericJSONDict:
-        return {
-            'reason': 'invalid-literal-value',
-            'value': self.value,
-            'pos': self.pos
-        }
-
-
 class UnknownFunction(ExpressionParseError):
     def __init__(self, name: str, pos: int) -> None:
         self.name: str = name
@@ -39,7 +24,7 @@ class UnknownFunction(ExpressionParseError):
     def to_json(self) -> GenericJSONDict:
         return {
             'reason': 'unknown-function',
-            'name': self.name,
+            'token': self.name,
             'pos': self.pos
         }
 
@@ -54,7 +39,7 @@ class InvalidNumberOfArguments(ExpressionParseError):
     def to_json(self) -> GenericJSONDict:
         return {
             'reason': 'invalid-number-of-arguments',
-            'name': self.name,
+            'token': self.name,
             'pos': self.pos
         }
 
@@ -102,7 +87,7 @@ class ExternalDependency(ExpressionParseError):
     def to_json(self) -> GenericJSONDict:
         return {
             'reason': 'external-dependency',
-            'id': self.port_id,
+            'token': self.port_id,
             'pos': self.pos
         }
 

@@ -1,10 +1,12 @@
 
+import re
+
 from typing import Optional
 
 from qtoggleserver.core.typing import PortValue as CorePortValue
 
 from .base import Expression
-from .exceptions import InvalidLiteralValue
+from .exceptions import UnexpectedCharacter
 
 
 class LiteralValue(Expression):
@@ -42,6 +44,11 @@ class LiteralValue(Expression):
                     value = float(sexpression)
 
                 except ValueError:
-                    raise InvalidLiteralValue(sexpression, pos) from None
+                    m = re.match(r'-?\d+(\.?\d+)?', sexpression)
+                    if m:
+                        raise UnexpectedCharacter(sexpression, pos + m.end()) from None
+
+                    else:
+                        raise UnexpectedCharacter(sexpression, pos) from None
 
         return LiteralValue(value, sexpression)
