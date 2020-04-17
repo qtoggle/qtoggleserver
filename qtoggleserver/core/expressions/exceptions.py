@@ -1,31 +1,163 @@
 
 from qtoggleserver.core.typing import PortValue as CorePortValue
+from qtoggleserver.core.typing import GenericJSONDict
 
 
 class ExpressionException(Exception):
     pass
 
 
-class InvalidExpression(ExpressionException):
+class ExpressionParseError(ExpressionException):
+    def to_json(self) -> GenericJSONDict:
+        return {
+            'reason': 'parse-error'
+        }
+
+
+class InvalidLiteralValue(ExpressionParseError):
+    def __init__(self, value: str, pos: int) -> None:
+        self.value: str = value
+        self.pos: int = pos
+
+        super().__init__(f'Invalid value "${value}"')
+
+    def to_json(self) -> GenericJSONDict:
+        return {
+            'reason': 'invalid-literal-value',
+            'value': self.value,
+            'pos': self.pos
+        }
+
+
+class UnknownFunction(ExpressionParseError):
+    def __init__(self, name: str, pos: int) -> None:
+        self.name: str = name
+        self.pos: int = pos
+
+        super().__init__(f'Unknown function "${name}"')
+
+    def to_json(self) -> GenericJSONDict:
+        return {
+            'reason': 'unknown-function',
+            'name': self.name,
+            'pos': self.pos
+        }
+
+
+class InvalidNumberOfArguments(ExpressionParseError):
+    def __init__(self, name: str, pos: int) -> None:
+        self.name: str = name
+        self.pos: int = pos
+
+        super().__init__(f'Invalid number of arguments for "${name}"')
+
+    def to_json(self) -> GenericJSONDict:
+        return {
+            'reason': 'invalid-number-of-arguments',
+            'name': self.name,
+            'pos': self.pos
+        }
+
+
+class UnbalancedParentheses(ExpressionParseError):
+    def __init__(self, pos: int) -> None:
+        self.pos: int = pos
+
+        super().__init__('Unbalanced parentheses')
+
+    def to_json(self) -> GenericJSONDict:
+        return {
+            'reason': 'unbalanced-parentheses',
+            'pos': self.pos
+        }
+
+
+class UnexpectedEnd(ExpressionParseError):
+    def __init__(self) -> None:
+        super().__init__('Unexpected end')
+
+    def to_json(self) -> GenericJSONDict:
+        return {
+            'reason': 'unexpected end'
+        }
+
+
+class CircularDependency(ExpressionParseError):
+    def __init__(self, port_id: str) -> None:
+        super().__init__(f'Circular dependency on port "${port_id}"')
+
+    def to_json(self) -> GenericJSONDict:
+        return {
+            'reason': 'circular-dependency'
+        }
+
+
+class ExternalDependency(ExpressionParseError):
+    def __init__(self, port_id: str, pos: int) -> None:
+        self.port_id = port_id
+        self.pos = pos
+
+        super().__init__(f'External dependency on port "${port_id}"')
+
+    def to_json(self) -> GenericJSONDict:
+        return {
+            'reason': 'external-dependency',
+            'id': self.port_id,
+            'pos': self.pos
+        }
+
+
+class UnexpectedCharacter(ExpressionParseError):
+    def __init__(self, c: str, pos: int) -> None:
+        self.c = c
+        self.pos: int = pos
+
+        super().__init__(f'Unexpected character "${c}"')
+
+    def to_json(self) -> GenericJSONDict:
+        return {
+            'reason': 'unexpected-character',
+            'pos': self.pos
+        }
+
+
+class ExpressionEvalError(ExpressionException):
     pass
 
 
-class InvalidArgument(ExpressionException):
+class InvalidArgument(ExpressionEvalError):
     def __init__(self, arg_no: int, value: CorePortValue) -> None:
         self.arg_no: int = arg_no
         self.value: CorePortValue = value
 
-    def __str__(self) -> str:
-        return f'invalid argument {self.arg_no}: {self.value}'
+        super().__init__(f'Invalid argument {self.arg_no}: {self.value}')
 
 
-class CircularDependency(ExpressionException):
+class IncompleteExpression(ExpressionEvalError):
     pass
 
 
-class IncompleteExpression(ExpressionException):
-    pass
+class UnknownPortId(IncompleteExpression):
+    def __init__(self, port_id: str) -> None:
+        self.port_id = port_id
+
+        super().__init__(f'Unknown port "{port_id}"')
 
 
-class EvalSkipped(ExpressionException):
-    pass
+class DisabledPort(IncompleteExpression):
+    def __init__(self, port_id: str) -> None:
+        self.port_id = port_id
+
+        super().__init__(f'Port "{port_id}" is disabled')
+
+
+class UndefinedPortValue(IncompleteExpression):
+    def __init__(self, port_id: str) -> None:
+        self.port_id = port_id
+
+        super().__init__(f'Port "{port_id}" value is undefined')
+
+
+class EvalSkipped(ExpressionEvalError):
+    def __init__(self) -> None:
+        super().__init__('Evaluation skipped')

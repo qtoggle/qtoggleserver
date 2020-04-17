@@ -58,7 +58,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                     self.logger.debug('using value expression "%s"', port_value)
                     self._filter_port_value = core_expressions.parse(self_port_id=None, sexpression=port_value)
 
-                except core_expressions.ExpressionException as e:
+                except core_expressions.ExpressionParseError as e:
                     self.logger.error('failed to parse port expression "%s": %s', port_value, e)
 
                     raise

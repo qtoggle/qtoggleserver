@@ -144,8 +144,9 @@ class PortReadError(PortError):
 
 
 class InvalidAttributeValue(PortError):
-    def __init__(self, attr: str) -> None:
+    def __init__(self, attr: str, details: Optional[GenericJSONDict] = None) -> None:
         self.attr: str = attr
+        self.details: Optional[GenericJSONDict] = details
 
         super().__init__(attr)
 
@@ -479,10 +480,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.debug('checking for expression circular dependencies')
             await core_expressions.check_loops(self, expression)
 
-        except core_expressions.ExpressionException as e:
+        except core_expressions.ExpressionParseError as e:
             self.error('failed to set expression "%s": %s', sexpression, e)
 
-            raise InvalidAttributeValue('expression') from e
+            raise InvalidAttributeValue('expression', details=e.to_json()) from e
 
         self.debug('setting expression "%s"', expression)
         self._expression = expression
@@ -511,15 +512,18 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     continue
 
                 if dep != f'${self._id}':
-                    raise core_expressions.ExpressionException('Transform expression depends other ports')
+                    raise core_expressions.ExternalDependency(
+                        port_id=dep[1:],
+                        pos=stransform_read.index(dep)
+                    )
 
             self.debug('setting read transform "%s"', transform_read)
             self._transform_read = transform_read
 
-        except core_expressions.ExpressionException as e:
+        except core_expressions.ExpressionParseError as e:
             self.error('failed to set transform read expression "%s": %s', stransform_read, e)
 
-            raise InvalidAttributeValue('transform_read') from e
+            raise InvalidAttributeValue('transform_read', details=e.to_json()) from e
 
     async def attr_get_transform_write(self) -> Optional[str]:
         if not await self.is_writable():
@@ -546,15 +550,18 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     continue
 
                 if dep != f'${self._id}':
-                    raise core_expressions.ExpressionException('Transform expression depends other ports')
+                    raise core_expressions.ExternalDependency(
+                        port_id=dep[1:],
+                        pos=stransform_write.index(dep)
+                    )
 
             self.debug('setting write transform "%s"', transform_write)
             self._transform_write = transform_write
 
-        except core_expressions.ExpressionException as e:
+        except core_expressions.ExpressionParseError as e:
             self.error('failed to set transform write expression "%s": %s', stransform_write, e)
 
-            raise InvalidAttributeValue('transform_write') from e
+            raise InvalidAttributeValue('transform_write', details=e.to_json()) from e
 
     @abc.abstractmethod
     async def read_value(self) -> NullablePortValue:

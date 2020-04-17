@@ -1,19 +1,30 @@
 
+import re
+
 from typing import Optional
 
 from .base import Expression
 
 
-def parse(self_port_id: Optional[str], sexpression: str) -> Expression:
-    sexpression = sexpression.strip()
-    if sexpression.startswith('$'):
-        return PortValue.parse(self_port_id, sexpression)
+def parse(self_port_id: Optional[str], sexpression: str, pos: int = 1) -> Expression:
+    while sexpression and sexpression[0].isspace():
+        sexpression = sexpression[1:]
+        pos += 1
 
-    elif sexpression.count('('):
-        return Function.parse(self_port_id, sexpression)
+    while sexpression and sexpression[-1].isspace():
+        sexpression = sexpression[:-1]
+
+    if sexpression.startswith('$'):
+        return PortValue.parse(self_port_id, sexpression, pos)
+
+    elif '(' in sexpression or ')' in sexpression:
+        return Function.parse(self_port_id, sexpression, pos)
+
+    elif re.match(r'^[a-zA-Z0-9_.-]+$', sexpression):
+        return LiteralValue.parse(self_port_id, sexpression, pos)
 
     else:
-        return Constant.parse(self_port_id, sexpression)
+        raise exceptions.UnexpectedCharacter(',', pos)
 
 
 # Import core.ports after defining Expression, because core.ports.BasePort depends on Expression.
@@ -56,17 +67,10 @@ async def check_loops(port: core_ports.BasePort, expression: Expression) -> None
         return 0
 
     if await check_loops_rec(1, expression) > 1:
-        raise CircularDependency(f'{port} is recursively referred')
+        raise CircularDependency(port.get_id())
 
 
-from .constants import Constant
-from .exceptions import (
-    ExpressionException,
-    InvalidExpression,
-    InvalidArgument,
-    CircularDependency,
-    IncompleteExpression,
-    EvalSkipped
-)
+from .exceptions import *
 from .functions import Function
+from .literalvalues import LiteralValue
 from .portvalue import PortValue

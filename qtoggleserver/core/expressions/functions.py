@@ -5,9 +5,9 @@ from typing import Callable, List, Optional, Set
 
 from qtoggleserver.core.typing import PortValue as CorePortValue
 
+from . import exceptions
 from . import parse
 from .base import Expression
-from .exceptions import InvalidExpression
 
 
 FUNCTIONS = {}
@@ -53,8 +53,13 @@ class Function(Expression, metaclass=abc.ABCMeta):
         return [a.eval() for a in self.args]
 
     @staticmethod
-    def parse(self_port_id: Optional[str], sexpression: str) -> Expression:
-        sexpression = sexpression.strip()
+    def parse(self_port_id: Optional[str], sexpression: str, pos: int) -> Expression:
+        while sexpression and sexpression[0].isspace():
+            sexpression = sexpression[1:]
+            pos += 1
+
+        while sexpression and sexpression[-1].isspace():
+            sexpression = sexpression[:-1]
 
         p_start = None
         p_end = None
@@ -67,45 +72,48 @@ class Function(Expression, metaclass=abc.ABCMeta):
                     p_start = i
 
                 elif level == 0:
-                    raise InvalidExpression('Empty function call')
+                    raise exceptions.UnexpectedCharacter(c, pos + i)
 
                 level += 1
 
             elif c == ')':
                 if level == 0:
-                    raise InvalidExpression('Unbalanced parentheses')
+                    raise exceptions.UnbalancedParentheses(pos + i)
 
                 elif level == 1:
-                    if (p_end is None) and (i == len(sexpression) - 1):
+                    if p_end is None:
                         p_end = i
 
                     else:
-                        raise InvalidExpression('Unexpected text after function call')
+                        raise exceptions.UnbalancedParentheses(pos + i)
 
                 level -= 1
 
-            elif c == ',' and level == 1:
-                sargs.append(sexpression[(p_last_comma or p_start) + 1: i])
+            elif (c == ',') and (level == 1):
+                sargs.append((sexpression[(p_last_comma or p_start) + 1: i], (p_last_comma or p_start) + 1))
                 p_last_comma = i
 
+            elif (p_start is not None) and (level == 0) and not c.isspace():
+                raise exceptions.UnexpectedCharacter(c, pos + i)
+
         if (p_start is None) or (p_end is None) or (p_start > p_end) or (level != 0):
-            raise InvalidExpression('Unbalanced parentheses')
+            raise exceptions.UnexpectedEnd()
 
         if p_end - p_start > 1:
-            sargs.append(sexpression[(p_last_comma or p_start) + 1: p_end])
+            sargs.append((sexpression[(p_last_comma or p_start) + 1: p_end], (p_last_comma or p_start) + 1))
 
         func_name = sexpression[:p_start].strip()
         func_class = FUNCTIONS.get(func_name)
         if func_class is None:
-            raise InvalidExpression(f'Unknown function "{func_name}"')
+            raise exceptions.UnknownFunction(func_name, pos)
 
         if func_class.MIN_ARGS is not None and len(sargs) < func_class.MIN_ARGS:
-            raise InvalidExpression(f'Too few arguments for function "{func_name}"')
+            raise exceptions.InvalidNumberOfArguments(func_name, pos)
 
         if func_class.MAX_ARGS is not None and len(sargs) > func_class.MAX_ARGS:
-            raise InvalidExpression(f'Too many arguments for function "{func_name}"')
+            raise exceptions.InvalidNumberOfArguments(func_name, pos)
 
-        args = [parse(self_port_id, sa) for sa in sargs]
+        args = [parse(self_port_id, sa, pos) for (sa, pos) in sargs]
 
         return func_class(args)
 

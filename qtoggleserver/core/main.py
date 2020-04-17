@@ -179,7 +179,7 @@ async def handle_value_changes(
         try:
             value = expression.eval()
 
-        except (core_expressions.IncompleteExpression, core_expressions.EvalSkipped):
+        except core_expressions.ExpressionEvalError:
             continue
 
         except Exception as e:
