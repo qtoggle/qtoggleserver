@@ -130,8 +130,8 @@ STANDARD_ATTRDEFS = {
     }
 }
 
-class PortError(Exception):
 
+class PortError(Exception):
     pass
 
 

@@ -165,7 +165,7 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
 
     except core_api.APIError:
         # Transform any validation error into an invalid-field APIError for value
-        raise core_api.APIError(400, 'invalid-field', field='value') from None
+        raise core_api.APIError(400, 'invalid-value') from None
 
     value = params
 
@@ -173,7 +173,7 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
     step = await port.get_attr('step')
     _min = await port.get_attr('min')
     if None not in (step, _min) and step != 0 and (value - _min) % step:
-        raise core_api.APIError(400, 'invalid-field', field='value')
+        raise core_api.APIError(400, 'invalid-value')
 
     if not port.is_enabled():
         raise core_api.APIError(400, 'port-disabled')

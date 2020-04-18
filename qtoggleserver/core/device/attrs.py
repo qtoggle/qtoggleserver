@@ -260,9 +260,9 @@ _attrs_watch_task = None
 
 
 class DeviceAttributeError(Exception):
-    def __init__(self, error, attribute):
-        self.attribute = attribute
-        self.error = error
+    def __init__(self, error: str, attribute: str) -> None:
+        self.error: str = error
+        self.attribute: str = attribute
 
 
 def get_attrdefs() -> AttributeDefinitions:

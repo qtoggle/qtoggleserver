@@ -254,7 +254,7 @@ def validate(
     invalid_field_code: Union[str, Callable] = 'invalid-field',
     unexpected_field_code: Union[str, Callable] = 'invalid-request',
     invalid_request_code: str = 'invalid-request',
-    field_name='field'
+    field_name: str = 'field'
 ) -> None:
 
     validation_error = _validate_schema(params, schema)
