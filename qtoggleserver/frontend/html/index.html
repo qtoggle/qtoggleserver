@@ -4,6 +4,8 @@
 {% block style %}
     {% if debug %}
         {% for theme in themes %}
+            {{ css_devel_file(theme, "common.css") }}
+
             {{ css_devel_file(theme, "dashboard/dashboard.css") }}
             {{ css_devel_file(theme, "dashboard/widgets/analog-widget.css") }}
             {{ css_devel_file(theme, "dashboard/widgets/inc-dec-buttons.css") }}
