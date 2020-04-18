@@ -3,7 +3,6 @@ import {AssertionError}           from '$qui/base/errors.js'
 import {TimeoutError}             from '$qui/base/errors.js'
 import {gettext}                  from '$qui/base/i18n.js'
 import {mix}                      from '$qui/base/mixwith.js'
-import Timer                      from '$qui/base/timer.js'
 import {CheckField}               from '$qui/forms/common-fields.js'
 import {ComboField}               from '$qui/forms/common-fields.js'
 import {PushButtonField}          from '$qui/forms/common-fields.js'
@@ -113,12 +112,6 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
         this._staticFieldsAdded = false
         this._deviceRemoved = false
 
-        this._updateTimeFieldsTimer = new Timer(
-            /* defaultTimeout = */ 1000,
-            () => this.updateTimeFields(),
-            /* repeat = */ true
-        )
-
         Devices.setRenamedDeviceName(null)
     }
 
@@ -131,18 +124,10 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
             return
         }
 
-        if (!this._updateTimeFieldsTimer.isRunning()) {
-            this._updateTimeFieldsTimer.start()
-        }
-
         Cache.setPolledDeviceName(this.getDeviceName())
     }
 
     onLeaveCurrent() {
-        if (this._updateTimeFieldsTimer.isRunning()) {
-            this._updateTimeFieldsTimer.cancel()
-        }
-
         Cache.setPolledDeviceName(null)
     }
 
@@ -286,29 +271,6 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
     }
 
     /**
-     * Update the values of attributes depending on time. Called every second, when form is visible.
-     */
-    updateTimeFields() {
-        let device = Cache.getSlaveDevice(this.getDeviceName())
-        if (!device) {
-            throw new AssertionError(`Device with name ${this.getDeviceName()} not found in cache`)
-        }
-
-        let attrs = device.attrs
-
-        let field = this.getField('attr_date')
-        if (field && attrs['date'] != null && !field.isFocused() && !field.isChanged()) {
-            let value = Attrdefs.STD_DEVICE_ATTRDEFS['date'].valueToUI(attrs['date'])
-            field.setValue(value)
-        }
-
-        field = this.getField('attr_uptime')
-        if (field && attrs['uptime'] != null && !field.isFocused()) {
-            field.setValue(attrs['uptime'])
-        }
-    }
-
-    /**
      * @returns {String}
      */
     getDeviceName() {
@@ -398,6 +360,9 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                     /* Device renamed, remember new name for reopening */
                     logger.debug(`device "${deviceName}" renamed to "${value}"`)
                     Devices.setRenamedDeviceName(value)
+
+                    /* Disable polling since it would soon poll an inexistent device name */
+                    Cache.setPolledDeviceName(null)
                 }
 
                 if (this._fullAttrdefs[name].reconnect) {

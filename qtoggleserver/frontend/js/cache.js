@@ -730,6 +730,71 @@ export function setPolledDeviceName(deviceName) {
     polledDeviceName = deviceName
 }
 
+function pollDevice() {
+    /* Choose between polling main device or a slave device */
+    let device = null
+    if (polledDeviceName) {
+        logger.debug(`polling device "${polledDeviceName}"`)
+        device = slaveDevices[polledDeviceName]
+        if (!device) {
+            logger.debug('skipping polling for unknown device')
+            return
+        }
+
+        if (!device.enabled) {
+            logger.debug('skipping polling for disabled device')
+            return
+        }
+
+        BaseAPI.setSlaveName(polledDeviceName)
+    }
+    else {
+        logger.debug('polling main device')
+    }
+
+    DevicesAPI.getDevice().then(function (attrs) {
+
+        asap(function () {
+            if (device) {
+                if (!ObjectUtils.deepEquals(device.attrs, attrs)) {
+                    let partialDevice = {name: device.name, attrs: {}}
+                    DEVICE_POLLED_ATTRIBUTES.forEach(function (name) {
+                        if (name in attrs) {
+                            partialDevice.attrs[name] = attrs[name]
+                        }
+                    })
+                    NotificationsAPI.fakeServerEvent('slave-device-polling-update', partialDevice)
+                }
+            }
+            else {
+                if (!ObjectUtils.deepEquals(mainDevice, attrs)) {
+                    let partialAttrs = {}
+                    DEVICE_POLLED_ATTRIBUTES.forEach(function (name) {
+                        if (name in attrs) {
+                            partialAttrs[name] = attrs[name]
+                        }
+                    })
+                    NotificationsAPI.fakeServerEvent('device-polling-update', partialAttrs)
+                }
+            }
+        })
+
+    }).catch(function (e) {
+
+        if (polledDeviceName == null) {
+            logger.debug('ignoring polling error after polling disabled')
+            return
+        }
+        if ((e instanceof BaseAPI.APIError) && (e.messageCode === 'no such device')) {
+            logger.debug('ignoring error while polling removed device')
+            return
+        }
+
+        logger.errorStack('polling failed', e)
+
+    })
+}
+
 /**
  * Initialize the cache subsystem.
  * @alias qtoggle.cache.init
@@ -747,93 +812,33 @@ export function init() {
 
     })
 
-    /* Update time details of each device every second */
+    /* Start a 1-second timer to perform some repetitive tasks */
+    let counter = -1
     setInterval(function () {
 
-        if (whenDeviceCacheReady.isFulfilled()) {
-            updateTimeDetails(mainDevice)
-        }
-
-        if (whenSlaveDevicesCacheReady.isFulfilled()) {
-            ObjectUtils.forEach(slaveDevices, (name, device) => updateTimeDetails(device.attrs))
-        }
-
-    }, 1000)
-
-    /* Start device polling timer */
-    setInterval(function () {
-
-        if (polledDeviceName == null) {
-            return /* Polling disabled */
-        }
+        counter++
 
         /* Don't poll unless cache is ready */
         if (!whenCacheReady.isFulfilled()) {
             return
         }
 
-        /* Choose between polling main device or a slave device */
-        let device = null
-        if (polledDeviceName) {
-            logger.debug(`polling device "${polledDeviceName}"`)
-            device = slaveDevices[polledDeviceName]
-            if (!device) {
-                logger.debug('skipping polling for unknown device')
-                return
+        updateTimeDetails(mainDevice)
+        ObjectUtils.forEach(slaveDevices, (name, device) => updateTimeDetails(device.attrs))
+
+        if (polledDeviceName != null) { /* Polling enabled for a device */
+            if (counter % DEVICE_POLL_INTERVAL === 0) {
+                pollDevice()
             }
-
-            if (!device.enabled) {
-                logger.debug('skipping polling for disabled device')
-                return
-            }
-
-            BaseAPI.setSlaveName(polledDeviceName)
-        }
-        else {
-            logger.debug('polling main device')
-        }
-
-        DevicesAPI.getDevice().then(function (attrs) {
-
-            asap(function () {
-                if (device) {
-                    if (!ObjectUtils.deepEquals(device.attrs, attrs)) {
-                        let partialDevice = {name: device.name, attrs: {}}
-                        DEVICE_POLLED_ATTRIBUTES.forEach(function (name) {
-                            if (name in attrs) {
-                                partialDevice.attrs[name] = attrs[name]
-                            }
-                        })
-                        NotificationsAPI.fakeServerEvent('slave-device-polling-update', partialDevice)
-                    }
+            else {
+                if (polledDeviceName) {
+                    NotificationsAPI.fakeServerEvent('slave-device-polling-update', {name: polledDeviceName})
                 }
                 else {
-                    if (!ObjectUtils.deepEquals(mainDevice, attrs)) {
-                        let partialAttrs = {}
-                        DEVICE_POLLED_ATTRIBUTES.forEach(function (name) {
-                            if (name in attrs) {
-                                partialAttrs[name] = attrs[name]
-                            }
-                        })
-                        NotificationsAPI.fakeServerEvent('device-polling-update', partialAttrs)
-                    }
+                    NotificationsAPI.fakeServerEvent('device-polling-update', {})
                 }
-            })
-
-        }).catch(function (e) {
-
-            if (polledDeviceName == null) {
-                logger.debug('ignoring polling error after polling disabled')
-                return
             }
-            if ((e instanceof BaseAPI.APIError) && (e.messageCode === 'no such device')) {
-                logger.debug('ignoring error while polling removed device')
-                return
-            }
+        }
 
-            logger.errorStack('polling failed', e)
-
-        })
-
-    }, DEVICE_POLL_INTERVAL * 1000)
+    }, 1000)
 }

@@ -1,7 +1,6 @@
 
 import {gettext}                  from '$qui/base/i18n.js'
 import {mix}                      from '$qui/base/mixwith.js'
-import Timer                      from '$qui/base/timer.js'
 import Config                     from '$qui/config.js'
 import {CheckField}               from '$qui/forms/common-fields.js'
 import {ChoiceButtonsField}       from '$qui/forms/common-fields.js'
@@ -65,12 +64,6 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
 
         this._fullAttrdefs = null
         this._staticFieldsAdded = false
-
-        this._updateTimeFieldsTimer = new Timer(
-            /* defaultTimeout = */ 1000,
-            () => this.updateTimeFields(),
-            /* repeat = */ true
-        )
     }
 
     init() {
@@ -78,18 +71,10 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
     }
 
     onBecomeCurrent() {
-        if (!this._updateTimeFieldsTimer.isRunning()) {
-            this._updateTimeFieldsTimer.start()
-        }
-
         Cache.setPolledDeviceName('')
     }
 
     onLeaveCurrent() {
-        if (this._updateTimeFieldsTimer.isRunning()) {
-            this._updateTimeFieldsTimer.cancel()
-        }
-
         Cache.setPolledDeviceName(null)
     }
 
@@ -258,24 +243,6 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
             mobile_screen_mode: ClientSettings.getMobileScreenMode(),
             scaling_factor: ClientSettings.getScalingFactor()
         })
-    }
-
-    /**
-     * Update the values of attributes depending on time. Called every second, when form is visible.
-     */
-    updateTimeFields() {
-        let attrs = Cache.getMainDevice()
-
-        let field = this.getField('attr_date')
-        if (field && attrs['date'] != null && !field.isFocused() && !field.isChanged()) {
-            let value = Attrdefs.STD_DEVICE_ATTRDEFS['date'].valueToUI(attrs['date'])
-            field.setValue(value)
-        }
-
-        field = this.getField('attr_uptime')
-        if (field && attrs['uptime'] != null && !field.isFocused()) {
-            field.setValue(attrs['uptime'])
-        }
     }
 
     applyData(data) {
