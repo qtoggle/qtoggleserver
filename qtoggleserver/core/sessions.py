@@ -58,7 +58,7 @@ class Session:
         if not self.future:
             return
 
-        self.future.set_result(events)
+        self.future.set_result(reversed(events))
         self.future = None
 
     def push(self, event: core_events.Event) -> None:
