@@ -13,7 +13,6 @@ import FormButton                 from '$qui/forms/form-button.js'
 import {ErrorMapping}             from '$qui/forms/forms.js'
 import {ValidationError}          from '$qui/forms/forms.js'
 import {ConfirmMessageForm}       from '$qui/messages/common-message-forms.js'
-import {StickyConfirmMessageForm} from '$qui/messages/common-message-forms.js'
 import * as Messages              from '$qui/messages/messages.js'
 import * as Toast                 from '$qui/messages/toast.js'
 import * as Theme                 from '$qui/theme.js'
@@ -383,12 +382,12 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
 
         if ('name' in newAttrs) {
             let msg = gettext('Are you sure you want to rename the device?')
-            promise = new StickyConfirmMessageForm({message: msg}).show().asPromise()
+            promise = new ConfirmMessageForm({message: msg}).show().asPromise()
         }
 
         if (willReconnect) {
             let msg = gettext('Device will reconnect. Are you sure?')
-            promise = new StickyConfirmMessageForm({message: msg}).show().asPromise()
+            promise = new ConfirmMessageForm({message: msg}).show().asPromise()
         }
 
         if (masterAttrsChanged) {
