@@ -12,6 +12,7 @@ import * as Toast        from '$qui/messages/toast.js'
 import {asap}            from '$qui/utils/misc.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
+import * as Window       from '$qui/window.js'
 
 import * as AuthAPI               from '$app/api/auth.js'
 import * as BaseAPI               from '$app/api/base.js'
@@ -24,10 +25,12 @@ import * as NotificationsAPI      from '$app/api/notifications.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
 
 
-const DEVICE_POLL_INTERVAL = 2 /* Seconds */
+const DEVICE_POLL_INTERVAL = 5 /* Seconds */
 
 /* When actively polling a device, only update some selected attributes */
 const DEVICE_POLLED_ATTRIBUTES = [
+    'date',
+    'uptime',
     'wifi_signal_strength',
     'temperature',
     'cpu_usage',
@@ -101,32 +104,6 @@ export const whenPrefsCacheReady = new ConditionVariable()
 export let whenCacheReady = new ConditionVariable()
 
 
-function resetUpdateTimeDetails(attrs) {
-    attrs._timeDetails = {
-        updateTime: new Date().getTime(),
-        date: attrs['date'],
-        uptime: attrs['uptime']
-    }
-}
-
-function updateTimeDetails(attrs) {
-    if (!attrs._timeDetails) {
-        resetUpdateTimeDetails(attrs)
-        return
-    }
-
-    let now = new Date().getTime()
-    let delta = Math.ceil((now - attrs._timeDetails.updateTime) / 1000)
-
-    if (attrs['date'] != null) {
-        attrs['date'] = attrs._timeDetails.date + delta
-    }
-    if (attrs['uptime'] != null) {
-        attrs['uptime'] = attrs._timeDetails.uptime + delta
-    }
-}
-
-
 /**
  * @alias qtoggle.cache.loadDevice
  * @returns {Promise}
@@ -138,7 +115,6 @@ export function loadDevice() {
 
         if (mainDevice == null) {
             mainDevice = attrs
-            resetUpdateTimeDetails(mainDevice)
 
             whenDeviceCacheReady.fulfill()
         }
@@ -276,8 +252,6 @@ export function loadSlaveDevices() {
                 NotificationsAPI.fakeServerEvent('slave-device-update', device)
             })
         }
-
-        ObjectUtils.forEach(slaveDevices, (name, device) => resetUpdateTimeDetails(device.attrs))
 
         logger.debug(`loaded ${devices.length} slave devices`)
 
@@ -421,8 +395,7 @@ export function updateFromEvent(event) {
     switch (event.type) {
         case 'slave-device-update': {
             if (event.params.name in slaveDevices) {
-                let device = slaveDevices[event.params.name] = ObjectUtils.copy(event.params, /* deep = */ true)
-                resetUpdateTimeDetails(device.attrs)
+                slaveDevices[event.params.name] = ObjectUtils.copy(event.params, /* deep = */ true)
             }
             else {
                 logger.warn(`received slave-device-update event for unknown device "${event.params.name}"`)
@@ -447,8 +420,7 @@ export function updateFromEvent(event) {
                 logger.debug(`received slave-device-add event for already existing device "${event.params.name}"`)
             }
 
-            let device = slaveDevices[event.params.name] = ObjectUtils.copy(event.params, /* deep = */ true)
-            resetUpdateTimeDetails(device.attrs)
+            slaveDevices[event.params.name] = ObjectUtils.copy(event.params, /* deep = */ true)
 
             break
         }
@@ -518,7 +490,6 @@ export function updateFromEvent(event) {
 
         case 'device-update': {
             mainDevice = event.params
-            resetUpdateTimeDetails(mainDevice)
 
             break
         }
@@ -812,33 +783,25 @@ export function init() {
 
     })
 
-    /* Start a 1-second timer to perform some repetitive tasks */
-    let counter = -1
+    /* Start a polling timer */
     setInterval(function () {
-
-        counter++
 
         /* Don't poll unless cache is ready */
         if (!whenCacheReady.isFulfilled()) {
             return
         }
 
-        updateTimeDetails(mainDevice)
-        ObjectUtils.forEach(slaveDevices, (name, device) => updateTimeDetails(device.attrs))
-
-        if (polledDeviceName != null) { /* Polling enabled for a device */
-            if (counter % DEVICE_POLL_INTERVAL === 0) {
-                pollDevice()
-            }
-            else {
-                if (polledDeviceName) {
-                    NotificationsAPI.fakeServerEvent('slave-device-polling-update', {name: polledDeviceName})
-                }
-                else {
-                    NotificationsAPI.fakeServerEvent('device-polling-update', {})
-                }
-            }
+        /* Don't poll unless window currently visible */
+        if (!Window.isVisible()) {
+            return
         }
 
-    }, 1000)
+        /* Don't poll if polling device disabled */
+        if (polledDeviceName == null) {
+            return
+        }
+
+        pollDevice()
+
+    }, DEVICE_POLL_INTERVAL * 1000)
 }
