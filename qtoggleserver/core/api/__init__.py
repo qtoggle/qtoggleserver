@@ -32,19 +32,19 @@ logger = logging.getLogger(__name__)
 
 
 class APIError(Exception):
-    def __init__(self, status: int, message: str, **params) -> None:
+    def __init__(self, status: int, code: str, **params) -> None:
         self.status: int = status
-        self.message: str = message
+        self.code: str = code
         self.params: dict = params
 
-        super().__init__(message)
+        super().__init__(code)
 
     @staticmethod
     def from_http_error(http_error: core_responses.HTTPError) -> APIError:
-        return APIError(http_error.code, http_error.msg)
+        return APIError(http_error.status, http_error.code, **http_error.params)
 
     def to_json(self) -> GenericJSONDict:
-        return dict(error=self.message, **self.params)
+        return dict(error=self.code, **self.params)
 
 
 class APIRequest:
@@ -84,7 +84,7 @@ def api_call(access_level: int = ACCESS_LEVEL_NONE) -> Callable:
 
             if request_handler.access_level < access_level:
                 if request_handler.access_level == ACCESS_LEVEL_NONE:  # Indicates missing or invalid auth data
-                    raise APIError(401, 'authentication required')
+                    raise APIError(401, 'authentication-required')
 
                 else:
                     raise APIError(403, 'forbidden', required_level=ACCESS_LEVEL_MAPPING.get(access_level))

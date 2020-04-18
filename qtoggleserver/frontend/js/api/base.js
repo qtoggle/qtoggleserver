@@ -37,54 +37,92 @@ export class APIError extends Error {
 
     /**
      * @constructs
-     * @param {String} messageCode
+     * @param {String} code
      * @param {Number} status
      * @param {String} [pretty]
-     * @param {Object}params
+     * @param {Object} [params]
      */
-    constructor({messageCode, status, pretty = '', params = {}}) {
+    constructor({code, status, pretty = '', params = {}}) {
         super(pretty)
 
-        this.messageCode = messageCode
+        this.code = code
         this.status = status
         this.pretty = pretty
         this.params = params
     }
 
-}
+    /**
+     * Create an API error from an HTTP response fields.
+     * @param {Object} data response data
+     * @param {Number} status response HTTP status
+     * @param {String} msg response message
+     * @returns {qtoggle.api.base.APIError}
+     */
+    static fromHTTPResponse(data, status, msg) {
+        let errorCode = data.error || msg
+        let pretty = errorCode
+        let params = ObjectUtils.copy(data, /* deep = */ true)
+        delete params['error']
 
-function parseAPIErrorMessageCode(status, message) {
-    let parsed = null
+        if (data.error) {
+            /* Look through known errors and see if we can find a match */
+            APIConstants.KNOWN_ERRORS.some(function (ke) {
+                if (ke.code !== data['error']) {
+                    return
+                }
 
-    /* Messages starting with "other error: " may encapsulate themselves a known error;
-     * we therefore pass the remaining part of the message through the parsing function again */
-    let match = message.match(new RegExp('^other error: (.*)$'))
-    if (match) {
-        parsed = parseAPIErrorMessageCode(status, match[1])
-        if (parsed) {
-            return parsed
+                if (ke.status && ke.status !== status) {
+                    return
+                }
+
+                pretty = StringUtils.formatPercent(ke.pretty, data)
+
+                return true
+            })
         }
+
+        if (status === 403) {
+            let level = AuthAPI.ACCESS_LEVEL_MAPPING[data['required_level']]
+            switch (level) {
+                case AuthAPI.ACCESS_LEVEL_ADMIN:
+                    pretty = gettext('Administrator access level required.')
+                    break
+
+                case AuthAPI.ACCESS_LEVEL_NORMAL:
+                    pretty = gettext('Normal access level required.')
+                    break
+
+                case AuthAPI.ACCESS_LEVEL_VIEWONLY:
+                    pretty = gettext('View-only access level required.')
+                    break
+            }
+        }
+        if (status === 500 && data && data.message) {
+            /* Internal server error */
+            pretty = data.message
+        }
+        else if (status === 0) {
+            if (msg === 'timeout') {
+                pretty = gettext('Timeout waiting for a response from the server.')
+            }
+            else { /* Assuming disconnected */
+                errorCode = 'disconnected'
+                pretty = gettext('Connection with the server was lost.')
+            }
+        }
+
+        if (!pretty) { /* Unexpected error */
+            pretty = gettext('Unexpected error while communicating with the server.')
+        }
+
+        return new APIError({
+            code: errorCode,
+            status: status,
+            pretty: pretty,
+            params: params
+        })
     }
 
-    APIConstants.KNOWN_ERRORS.some(function (e) {
-        let match = message.match(e.pattern)
-        if (match && (!e.status || e.status === status)) {
-            e = ObjectUtils.copy(e, /* deep = */ true)
-            match.forEach(function (m, i) {
-                if (i === 0) {
-                    return /* Skip global group */
-                }
-                /* This allows no more than 9 match groups! */
-                e.pretty = StringUtils.replaceAll(e.pretty, `$${i}`, m)
-            })
-            e.params = match.slice(1)
-            parsed = e
-
-            return true
-        }
-    })
-
-    return parsed
 }
 
 function makeRequestJWT(username, passwordHash) {
@@ -104,77 +142,6 @@ function makeRequestJWT(username, passwordHash) {
     return `${jwtSigningString}.${jwtSignatureStr}`
 }
 
-
-/**
- * Create an API error from an HTTP response fields.
- * @alias qtoggle.api.base.makeAPIError
- * @param {Object} data response data
- * @param {Number} status response HTTP status
- * @param {String} msg response message
- * @returns {qtoggle.api.base.APIError}
- */
-export function makeAPIError(data, status, msg) {
-    let messageCode = data.error || msg
-    let prettyMessage = messageCode
-    let params = ObjectUtils.copy(data, /* deep = */ true)
-    delete params['error']
-
-    let matchedKnownError = null
-    if (data.error) {
-        matchedKnownError = parseAPIErrorMessageCode(status, data.error)
-        if (matchedKnownError) {
-            prettyMessage = matchedKnownError.pretty
-            if (matchedKnownError.paramNames) {
-                matchedKnownError.paramNames.forEach(function (n, i) {
-                    params[n] = matchedKnownError.params[i]
-                })
-            }
-        }
-    }
-
-    if (status === 403) {
-        let level = AuthAPI.ACCESS_LEVEL_MAPPING[data['required_level']]
-        switch (level) {
-            case AuthAPI.ACCESS_LEVEL_ADMIN:
-                prettyMessage = gettext('Administrator access level required.')
-                break
-
-            case AuthAPI.ACCESS_LEVEL_NORMAL:
-                prettyMessage = gettext('Normal access level required.')
-                break
-
-            case AuthAPI.ACCESS_LEVEL_VIEWONLY:
-                prettyMessage = gettext('View-only access level required.')
-                break
-        }
-    }
-    if (status === 500 && data && data.error) {
-        /* Internal server error */
-        prettyMessage = data.error
-    }
-    else if (status === 503 && data && data.error === 'busy') {
-        prettyMessage = gettext('The device is busy.')
-    }
-    else if (status === 0) {
-        if (msg === 'timeout') {
-            prettyMessage = gettext('Timeout waiting for a response from the server.')
-        }
-        else { /* Assuming disconnected */
-            messageCode = 'disconnected'
-            prettyMessage = gettext('Connection with the server was lost.')
-        }
-    }
-    else if (!prettyMessage) { /* Unexpected error */
-        prettyMessage = gettext('Unexpected error while communicating with the server.')
-    }
-
-    return new APIError({
-        messageCode: messageCode,
-        status: status,
-        pretty: prettyMessage,
-        params: params
-    })
-}
 
 /**
  * Call an API function.
@@ -251,14 +218,14 @@ export function apiCall({
         }
 
         function rejectWrapper(data, status, msg) {
-            let error = makeAPIError(data, status, msg)
+            let error = APIError.fromHTTPResponse(data, status, msg)
 
             if (expectedHandle) {
                 NotificationsAPI.unexpectEvent(expectedHandle)
             }
 
             if (handleErrors) {
-                logger.error(`ajax error: ${error} (messageCode="${error.messageCode}", status=${error.status})`)
+                logger.error(`ajax error: ${error} (code="${error.code}", status=${error.status})`)
             }
 
             reject(error)

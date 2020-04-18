@@ -756,7 +756,7 @@ function pollDevice() {
             logger.debug('ignoring polling error after polling disabled')
             return
         }
-        if ((e instanceof BaseAPI.APIError) && (e.messageCode === 'no such device')) {
+        if ((e instanceof BaseAPI.APIError) && (e.code === 'no such device')) {
             logger.debug('ignoring error while polling removed device')
             return
         }

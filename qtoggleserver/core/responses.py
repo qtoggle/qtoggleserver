@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 from tornado.httpclient import HTTPResponse
 
+from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.utils import json as json_utils
 
 
@@ -66,13 +67,14 @@ class Redirect(Error):
 
 class HTTPError(Error):
     # 4xx - 5xx
-    MESSAGE = '{code} {msg}'
+    MESSAGE = '{status} {code}'
 
-    def __init__(self, code: int, msg: str) -> None:
-        self.code: int = code
-        self.msg: str = msg
+    def __init__(self, status: int, code: str, **params) -> None:
+        self.status: int = status
+        self.code: str = code
+        self.params: GenericJSONDict = params
 
-        super().__init__(code=code, msg=msg)
+        super().__init__(status=status, code=code)
 
 
 class InvalidJson(Error):
@@ -139,7 +141,7 @@ def parse(response: HTTPResponse, decode_json: bool = True, resolve_refs: bool =
             raise Redirect(response.headers.get('Location', ''))
 
         if decode_json:
-            raise HTTPError(response.code, body.get('error', ''))
+            raise HTTPError(response.code, body.pop('error', ''), **body)
 
         raise HTTPError(response.code, response.reason)
 

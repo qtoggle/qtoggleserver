@@ -260,7 +260,9 @@ _attrs_watch_task = None
 
 
 class DeviceAttributeError(Exception):
-    pass
+    def __init__(self, error: str, attribute: str) -> None:
+        self.error: str = error
+        self.attribute: str = attribute
 
 
 def get_attrdefs() -> AttributeDefinitions:
@@ -453,7 +455,7 @@ def set_attrs(attrs: Attributes) -> bool:
         attrdef = attrdefs[name]
 
         if not attrdef.get('modifiable'):
-            raise DeviceAttributeError(f'attribute not modifiable: {name}')
+            raise DeviceAttributeError('attribute-not-modifiable', name)
 
         # Treat passwords separately, as they are not persisted as given, but hashed first
         if name.endswith('_password') and hasattr(core_device_attrs, name + '_hash'):

@@ -310,7 +310,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
                 logger.errorStack(`failed to update port "${port.id}" attributes`, error)
 
-                if ((error instanceof BaseAPI.APIError) && error.messageCode.startsWith('invalid field: ')) {
+                if ((error instanceof BaseAPI.APIError) && (error.code === 'invalid-field')) {
                     let fieldName = `attr_${error.params['field']}`
                     let errorMessage = gettext('Invalid value.')
                     let details = error.params['details']

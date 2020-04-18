@@ -220,7 +220,7 @@ export function getProvisioningConfigs(prefix) {
                 resolve(configs)
             },
             /* failure = */ function (data, status, msg, headers) {
-                reject(BaseAPI.makeAPIError(data, status, msg))
+                reject(BaseAPI.APIError.fromHTTPResponse(data, status, msg))
             }
         )
 
@@ -242,7 +242,7 @@ export function getProvisioningConfig(configName) {
                 resolve(configs)
             },
             /* failure = */ function (data, status, msg, headers) {
-                reject(BaseAPI.makeAPIError(data, status, msg))
+                reject(BaseAPI.APIError.fromHTTPResponse(data, status, msg))
             }
         )
 

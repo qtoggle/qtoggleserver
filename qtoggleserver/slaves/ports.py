@@ -289,10 +289,15 @@ class SlavePort(core_ports.BasePort):
                 self.set_cached_value(remote_value)
 
             except core_responses.HTTPError as e:
-                if e.code == 502 and e.msg.startswith('port error:'):
-                    raise core_ports.PortError(e.msg.split(':', 1)[1].strip())
+                if e.code == 502 and e.code == 'port-error':
+                    message = e.params.get('message')
+                    if message:
+                        raise core_ports.PortError(message)
 
-                if e.code == 504 and e.msg == 'port timeout':
+                    else:
+                        raise core_ports.PortError()
+
+                if e.code == 504 and e.code == 'port-timeout':
                     raise core_ports.PortTimeout()
 
                 raise exceptions.adapt_api_error(e) from e

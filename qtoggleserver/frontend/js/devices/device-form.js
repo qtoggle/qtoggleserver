@@ -434,7 +434,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
 
                     logger.errorStack(`failed to update device "${deviceName}" attributes`, error)
 
-                    if ((error instanceof BaseAPI.APIError) && error.messageCode.startsWith('invalid field: ')) {
+                    if ((error instanceof BaseAPI.APIError) && (error.code === 'invalid-field')) {
                         let fieldName = `attr_${error.params['field']}`
                         throw new ErrorMapping({[fieldName]: new ValidationError(gettext('Invalid value.'))})
                     }

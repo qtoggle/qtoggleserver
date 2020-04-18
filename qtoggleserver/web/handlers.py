@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 class NoSuchFunction(HTTPError):
     def __init__(self) -> None:
-        super().__init__(404, 'no such function')
+        super().__init__(404, 'no-such-function')
 
 
 class BaseHandler(RequestHandler):
@@ -49,7 +49,7 @@ class BaseHandler(RequestHandler):
             except ValueError as e:
                 logger.error('could not decode json from request body: %s', e)
 
-                raise core_api.APIError(400, 'malformed body') from e
+                raise core_api.APIError(400, 'malformed-body') from e
 
         return self._json
 
@@ -278,7 +278,7 @@ class APIHandler(BaseHandler):
         body = params and json_utils.dumps(params) or '{}'
 
         if isinstance(error, core_responses.HTTPError):
-            error = core_api.APIError(error.code, error.msg)
+            error = core_api.APIError.from_http_error(error)
 
         if isinstance(error, core_api.APIError):
             logger.error('api call %s failed: %s (args=%s, body=%s)', func.__name__, error, args, body)
