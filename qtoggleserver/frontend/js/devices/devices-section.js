@@ -99,6 +99,7 @@ class DevicesSection extends Section {
                     let device = Cache.getSlaveDevice(event.params.name)
                     if (device) {
                         deviceForm = this.devicesList.makeDeviceForm(device.name)
+                        this.devicesList.updateUI()
                         this.devicesList.setSelectedDevice(device.name)
                         this.devicesList.pushPage(deviceForm)
                         deviceForm.startWaitingDeviceOnline()
