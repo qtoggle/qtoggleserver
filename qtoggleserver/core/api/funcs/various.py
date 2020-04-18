@@ -34,20 +34,20 @@ async def get_listen(
 ) -> List[GenericJSONDict]:
 
     if session_id is None:
-        raise core_api.APIError(400, 'missing field: session_id')
+        raise core_api.APIError(400, 'missing-field', field='session_id')
 
     if not re.match('[a-zA-Z0-9]{1,32}', session_id):
-        raise core_api.APIError(400, 'invalid field: session_id')
+        raise core_api.APIError(400, 'invalid-field', field='session_id')
 
     if timeout is not None:
         try:
             timeout = int(timeout)
 
         except Exception:
-            raise core_api.APIError(400, 'invalid field: timeout') from None
+            raise core_api.APIError(400, 'invalid-field', field='timeout') from None
 
         if timeout < 1 or timeout > 3600:
-            raise core_api.APIError(400, 'invalid field: timeout')
+            raise core_api.APIError(400, 'invalid-field', field='timeout')
 
     else:
         timeout = 60

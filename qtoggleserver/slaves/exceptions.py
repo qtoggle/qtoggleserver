@@ -62,22 +62,22 @@ def adapt_api_error(error: Exception) -> Exception:
         return core_api.APIError(502, 'unreachable')
 
     elif isinstance(error, core_responses.ConnectionRefused):
-        return core_api.APIError(502, 'connection refused')
+        return core_api.APIError(502, 'connection-refused')
 
     elif isinstance(error, core_responses.InvalidJson):
-        return core_api.APIError(502, 'invalid device')
+        return core_api.APIError(502, 'invalid-device')
 
     elif isinstance(error, core_responses.Timeout):
-        return core_api.APIError(504, 'device timeout')
+        return core_api.APIError(504, 'device-timeout')
 
     elif isinstance(error, core_responses.HTTPError):
         return core_api.APIError.from_http_error(error)
 
     elif isinstance(error, DeviceOffline):
-        return core_api.APIError(503, 'device offline')
+        return core_api.APIError(503, 'device-offline')
 
     elif isinstance(error, InvalidDevice):
-        return core_api.APIError(502, 'invalid device')
+        return core_api.APIError(502, 'invalid-device')
 
     elif isinstance(error, core_responses.AuthError):
         return core_api.APIError(400, 'forbidden')  # Yes, 400, since it's a slave authorization issue

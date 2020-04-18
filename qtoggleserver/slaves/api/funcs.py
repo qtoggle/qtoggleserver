@@ -50,10 +50,10 @@ async def post_slave_devices(request: core_api.APIRequest, params: GenericJSONDi
             slave.get_port() == port and
             slave.get_path() == path):
 
-            raise core_api.APIError(400, 'duplicate device')
+            raise core_api.APIError(400, 'duplicate-device')
 
     if poll_interval and listen_enabled:
-        raise core_api.APIError(400, 'listening and polling')
+        raise core_api.APIError(400, 'listening-and-polling')
 
     try:
         slave = await slaves_devices.add(
@@ -73,22 +73,22 @@ async def post_slave_devices(request: core_api.APIRequest, params: GenericJSONDi
         raise core_api.APIError(502, 'unreachable') from e
 
     except core_responses.ConnectionRefused as e:
-        raise core_api.APIError(502, 'connection refused') from e
+        raise core_api.APIError(502, 'connection-refused') from e
 
     except core_responses.InvalidJson as e:
-        raise core_api.APIError(502, 'invalid device') from e
+        raise core_api.APIError(502, 'invalid-device') from e
 
     except core_responses.Timeout as e:
-        raise core_api.APIError(504, 'device timeout') from e
+        raise core_api.APIError(504, 'device-timeout') from e
 
     except exceptions.InvalidDevice as e:
-        raise core_api.APIError(502, 'invalid device') from e
+        raise core_api.APIError(502, 'invalid-device') from e
 
     except exceptions.NoListenSupport as e:
-        raise core_api.APIError(400, 'no listen support') from e
+        raise core_api.APIError(400, 'no-listen-support') from e
 
     except exceptions.DeviceAlreadyExists as e:
-        raise core_api.APIError(400, 'duplicate device') from e
+        raise core_api.APIError(400, 'duplicate-device') from e
 
     except core_api.APIError:
         raise
@@ -112,7 +112,7 @@ async def patch_slave_device(request: core_api.APIRequest, name: str, params: Ge
 
     slave = slaves_devices.get(name)
     if not slave:
-        raise core_api.APIError(404, 'no such device')
+        raise core_api.APIError(404, 'no-such-device')
 
     if params.get('enabled') is True and not slave.is_enabled():
         await slave.enable()
@@ -121,7 +121,7 @@ async def patch_slave_device(request: core_api.APIRequest, name: str, params: Ge
         await slave.disable()
 
     if params.get('poll_interval') and params.get('listen_enabled'):
-        raise core_api.APIError(400, 'listening and polling')
+        raise core_api.APIError(400, 'listening-and-polling')
 
     if params.get('poll_interval') is not None:
         slave.set_poll_interval(params['poll_interval'])
@@ -138,7 +138,7 @@ async def patch_slave_device(request: core_api.APIRequest, name: str, params: Ge
                     raise exceptions.adapt_api_error(e) from e
 
                 if 'listen' not in attrs['flags']:
-                    raise core_api.APIError(400, 'no listen support')
+                    raise core_api.APIError(400, 'no-listen-support')
 
             slave.enable_listen()
 
@@ -162,14 +162,14 @@ async def slave_device_forward(
     slave = slaves_devices.get(name)
 
     if not slave:
-        raise core_api.APIError(404, 'no such device')
+        raise core_api.APIError(404, 'no-such-device')
 
     if not internal_use:
         if not path.startswith('/'):
             path = '/' + path
 
         if path.startswith('/listen'):
-            raise core_api.APIError(404, 'no such function')
+            raise core_api.APIError(404, 'no-such-function')
 
     intercepted, response = await slave.intercept_request(method, path, params, request)
     if intercepted:
@@ -177,11 +177,11 @@ async def slave_device_forward(
 
     override_disabled = request.query_arguments.get('override_disabled')
     if not slave.is_enabled() and (override_disabled != 'true'):
-        raise core_api.APIError(404, 'device disabled')
+        raise core_api.APIError(404, 'device-disabled')
 
     override_offline = request.query_arguments.get('override_offline')
     if (not slave.is_online() or not slave.is_ready()) and (override_offline != 'true'):
-        raise core_api.APIError(503, 'device offline')
+        raise core_api.APIError(503, 'device-offline')
 
     # Use default slave timeout unless API call requires longer timeout
     timeout = settings.slaves.timeout
@@ -203,7 +203,7 @@ async def slave_device_forward(
 async def delete_slave_device(request: core_api.APIRequest, name: str) -> None:
     slave = slaves_devices.get(name)
     if not slave:
-        raise core_api.APIError(404, 'no such device')
+        raise core_api.APIError(404, 'no-such-device')
 
     await slaves_devices.remove(slave)
 
@@ -212,7 +212,7 @@ async def delete_slave_device(request: core_api.APIRequest, name: str) -> None:
 async def post_slave_device_events(request: core_api.APIRequest, name: str, params: GenericJSONDict) -> None:
     slave = slaves_devices.get(name)
     if not slave:
-        raise core_api.APIError(404, 'no such device')
+        raise core_api.APIError(404, 'no-such-device')
 
     # Slave events endpoint has special privilege requirements: its token signature must be validated using slave admin
     # password
@@ -220,7 +220,7 @@ async def post_slave_device_events(request: core_api.APIRequest, name: str, para
     auth = request.headers.get('Authorization')
     if not auth:
         slave.warning('missing authorization header')
-        raise core_api.APIError(401, 'authentication required')
+        raise core_api.APIError(401, 'authentication-required')
 
     try:
         core_api_auth.parse_auth_header(
@@ -232,15 +232,15 @@ async def post_slave_device_events(request: core_api.APIRequest, name: str, para
 
     except core_api_auth.AuthError as e:
         slave.warning(str(e))
-        raise core_api.APIError(401, 'authentication required') from e
+        raise core_api.APIError(401, 'authentication-required') from e
 
     core_api_schema.validate(params, api_schema.POST_SLAVE_DEVICE_EVENTS)
 
     if slave.get_poll_interval() > 0:
-        raise core_api.APIError(400, 'polling enabled')
+        raise core_api.APIError(400, 'polling-enabled')
 
     if slave.is_listen_enabled():
-        raise core_api.APIError(400, 'listening enabled')
+        raise core_api.APIError(400, 'listening-enabled')
 
     # At this point we can be sure the slave is permanently offline
 
@@ -248,7 +248,7 @@ async def post_slave_device_events(request: core_api.APIRequest, name: str, para
         await slave.handle_event(params)
 
     except Exception as e:
-        raise core_api.APIError(500, str(e)) from e
+        raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
 
     slave.update_last_sync()
     slave.save()

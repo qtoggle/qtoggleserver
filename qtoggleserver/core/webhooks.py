@@ -28,8 +28,9 @@ class WebhooksError(Exception):
 
 class InvalidParamError(WebhooksError):
     def __init__(self, param: str) -> None:
-        self._param: str = param
-        super().__init__(f'invalid field: {param}')
+        self.param: str = param
+
+        super().__init__(f'Invalid field: {param}')
 
 
 class WebhooksRequest:

@@ -22,18 +22,23 @@ async def get_ports(request: core_api.APIRequest) -> List[Attributes]:
 async def patch_port(request: core_api.APIRequest, port_id: str, params: Attributes) -> None:
     port = core_ports.get(port_id)
     if port is None:
-        raise core_api.APIError(404, 'no such port')
+        raise core_api.APIError(404, 'no-such-port')
 
     non_modifiable_attrs = await port.get_non_modifiable_attrs()
 
-    def unexpected_field_msg(field: str) -> str:
+    def unexpected_field_code(field: str) -> str:
         if field in non_modifiable_attrs:
-            return 'attribute not modifiable: {field}'
+            return 'attribute-not-modifiable'
 
         else:
-            return 'no such attribute: {field}'
+            return 'no-such-attribute'
 
-    core_api_schema.validate(params, await port.get_schema(), unexpected_field_msg=unexpected_field_msg)
+    core_api_schema.validate(
+        params,
+        await port.get_schema(),
+        unexpected_field_code=unexpected_field_code,
+        field_name='attribute'
+    )
 
     # Step validation
     attrdefs = await port.get_attrdefs()
@@ -42,7 +47,7 @@ async def patch_port(request: core_api.APIRequest, port_id: str, params: Attribu
         step = attrdef.get('step')
         _min = attrdef.get('min')
         if None not in (step, _min) and step != 0 and (value - _min) % step:
-            raise core_api.APIError(400, f'invalid field: {name}')
+            raise core_api.APIError(400, 'invalid-field', field=name)
 
     errors_by_name = {}
 
@@ -65,17 +70,17 @@ async def patch_port(request: core_api.APIRequest, port_id: str, params: Attribu
             raise error
 
         elif isinstance(error, core_ports.InvalidAttributeValue):
-            raise core_api.APIError(400, f'invalid field: {name}', details=error.details)
+            raise core_api.APIError(400, 'invalid-field', field=name, details=error.details)
 
         elif isinstance(error, core_ports.PortTimeout):
-            raise core_api.APIError(504, 'port timeout')
+            raise core_api.APIError(504, 'port-timeout')
 
         elif isinstance(error, core_ports.PortError):
-            raise core_api.APIError(502, f'port error: {error}')
+            raise core_api.APIError(502, 'port-error', code=str(error))
 
         else:
             # Transform any unhandled exception into APIError(500)
-            raise core_api.APIError(500, str(error))
+            raise core_api.APIError(500, 'unexpected-error', message=str(error)) from error
 
     await port.save()
 
@@ -93,10 +98,10 @@ async def post_ports(request: core_api.APIRequest, params: GenericJSONDict) -> A
     choices = params.get('choices')
 
     if core_ports.get(port_id):
-        raise core_api.APIError(400, 'duplicate port')
+        raise core_api.APIError(400, 'duplicate-port')
 
     if len(core_vports.all_settings()) >= settings.core.virtual_ports:
-        raise core_api.APIError(400, 'too many ports')
+        raise core_api.APIError(400, 'too-many-ports')
 
     core_vports.add(port_id, port_type, _min, _max, integer, step, choices)
     port = await core_ports.load_one(
@@ -123,10 +128,10 @@ async def post_ports(request: core_api.APIRequest, params: GenericJSONDict) -> A
 async def delete_port(request: core_api.APIRequest, port_id: str) -> None:
     port = core_ports.get(port_id)
     if not port:
-        raise core_api.APIError(404, 'no such port')
+        raise core_api.APIError(404, 'no-such-port')
 
     if not isinstance(port, core_vports.VirtualPort):
-        raise core_api.APIError(400, 'port not removable')
+        raise core_api.APIError(400, 'port-not-removable')
 
     await port.remove()
     core_vports.remove(port_id)
@@ -136,7 +141,7 @@ async def delete_port(request: core_api.APIRequest, port_id: str) -> None:
 async def get_port_value(request: core_api.APIRequest, port_id: str) -> NullablePortValue:
     port = core_ports.get(port_id)
     if port is None:
-        raise core_api.APIError(404, 'no such port')
+        raise core_api.APIError(404, 'no-such-port')
 
     if not port.is_enabled():
         return
@@ -153,9 +158,14 @@ async def get_port_value(request: core_api.APIRequest, port_id: str) -> Nullable
 async def patch_port_value(request: core_api.APIRequest, port_id: str, params: PortValue) -> None:
     port = core_ports.get(port_id)
     if port is None:
-        raise core_api.APIError(404, 'no such port')
+        raise core_api.APIError(404, 'no-such-port')
 
-    core_api_schema.validate(params, await port.get_value_schema(), invalid_request_msg='invalid value')
+    try:
+        core_api_schema.validate(params, await port.get_value_schema())
+
+    except core_api.APIError:
+        # Transform any validation error into an invalid-field APIError for value
+        raise core_api.APIError(400, 'invalid-field', field='value') from None
 
     value = params
 
@@ -163,13 +173,13 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
     step = await port.get_attr('step')
     _min = await port.get_attr('min')
     if None not in (step, _min) and step != 0 and (value - _min) % step:
-        raise core_api.APIError(400, 'invalid field: value')
+        raise core_api.APIError(400, 'invalid-field', field='value')
 
     if not port.is_enabled():
-        raise core_api.APIError(400, 'port disabled')
+        raise core_api.APIError(400, 'port-disabled')
 
     if not await port.is_writable():
-        raise core_api.APIError(400, 'read-only port')
+        raise core_api.APIError(400, 'read-only-port')
 
     old_value = port.get_value()
 
@@ -177,17 +187,17 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
         await port.write_transformed_value(value, reason=core_ports.CHANGE_REASON_API)
 
     except core_ports.PortTimeout as e:
-        raise core_api.APIError(504, 'port timeout') from e
+        raise core_api.APIError(504, 'port-timeout') from e
 
     except core_ports.PortError as e:
-        raise core_api.APIError(502, f'port error: {e}') from e
+        raise core_api.APIError(502, 'port-error', code=str(e)) from e
 
     except core_api.APIError:
         raise
 
     except Exception as e:
         # Transform any unhandled exception into APIError(500)
-        raise core_api.APIError(500, str(e)) from e
+        raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
 
     await main.update()
 
@@ -202,7 +212,7 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
 async def patch_port_sequence(request: core_api.APIRequest, port_id: str, params: GenericJSONDict) -> None:
     port = core_ports.get(port_id)
     if port is None:
-        raise core_api.APIError(404, 'no such port')
+        raise core_api.APIError(404, 'no-such-port')
 
     core_api_schema.validate(params, core_api_schema.PATCH_PORT_SEQUENCE)
 
@@ -211,30 +221,35 @@ async def patch_port_sequence(request: core_api.APIRequest, port_id: str, params
     repeat = params['repeat']
 
     if len(values) != len(delays):
-        raise core_api.APIError(400, 'invalid field: delays')
+        raise core_api.APIError(400, 'invalid-field', field='delays')
 
     value_schema = await port.get_value_schema()
     step = await port.get_attr('step')
     _min = await port.get_attr('min')
     for value in values:
-        core_api_schema.validate(value, value_schema, invalid_request_msg='invalid field: values')
+        # Translate any APIError generated when validating value schema into an invalid-field APIError on value
+        try:
+            core_api_schema.validate(value, value_schema)
+
+        except core_api.APIError:
+            raise core_api.APIError(400, 'invalid-field', field='values') from None
 
         # Step validation
         if None not in (step, _min) and step != 0 and (value - _min) % step:
-            raise core_api.APIError(400, 'invalid field: values')
+            raise core_api.APIError(400, 'invalid-field', field='values')
 
     if not port.is_enabled():
-        raise core_api.APIError(400, 'port disabled')
+        raise core_api.APIError(400, 'port-disabled')
 
     if not await port.is_writable():
-        raise core_api.APIError(400, 'read-only port')
+        raise core_api.APIError(400, 'read-only-port')
 
     if await port.get_attr('expression'):
-        raise core_api.APIError(400, 'port with expression')
+        raise core_api.APIError(400, 'port-with-expression')
 
     try:
         await port.set_sequence(values, delays, repeat)
 
     except Exception as e:
         # Transform any unhandled exception into APIError(500)
-        raise core_api.APIError(500, str(e)) from e
+        raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e

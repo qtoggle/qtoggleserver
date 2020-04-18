@@ -36,9 +36,9 @@ class ReverseError(Exception):
 
 class InvalidParamError(ReverseError):
     def __init__(self, param: str) -> None:
-        self._param: str = param
+        self.param: str = param
 
-        super().__init__(f'invalid field: {param}')
+        super().__init__(f'Invalid field: {param}')
 
 
 class InvalidConsumerRequestError(ReverseError):
@@ -148,7 +148,7 @@ class Reverse:
             except UnauthorizedConsumerRequestError:
                 api_response_dict = {
                     'status': 401,
-                    'body': json_utils.dumps({'error': 'authentication required'})
+                    'body': json_utils.dumps({'error': 'authentication-required'})
                 }
 
                 continue
@@ -280,7 +280,7 @@ class Reverse:
         if self._request_is_black_listed(request_dict):
             return {
                 'status': 404,
-                'body': json_utils.dumps({'error': 'no such function'})
+                'body': json_utils.dumps({'error': 'no-such-function'})
             }
 
         request = httputil.HTTPServerRequest(

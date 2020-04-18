@@ -251,9 +251,10 @@ def _validate_schema(json: Any, schema: GenericJSONDict) -> Optional[Tuple[str, 
 
 def validate(
     params: Any, schema: GenericJSONDict,
-    invalid_field_msg: Union[str, Callable] = 'invalid field: {field}',
-    unexpected_field_msg: Union[str, Callable] = 'invalid request',
-    invalid_request_msg: str = 'invalid request'
+    invalid_field_code: Union[str, Callable] = 'invalid-field',
+    unexpected_field_code: Union[str, Callable] = 'invalid-request',
+    invalid_request_code: str = 'invalid-request',
+    field_name='field'
 ) -> None:
 
     validation_error = _validate_schema(params, schema)
@@ -261,22 +262,22 @@ def validate(
         error, field = validation_error
         if error == 'invalid':
             if field:
-                if callable(invalid_field_msg):
-                    invalid_field_msg = invalid_field_msg(field)
+                if callable(invalid_field_code):
+                    invalid_field_code = invalid_field_code(field)
 
-                raise APIError(400, invalid_field_msg.format(field=field))
+                raise APIError(400, invalid_field_code, **{field_name: field})
 
             else:
-                raise APIError(400, invalid_request_msg)
+                raise APIError(400, invalid_request_code)
 
         elif error == 'missing':
-            raise APIError(400, f'missing field: {field}')
+            raise APIError(400, 'missing-field', **{field_name: field})
 
         elif error == 'unexpected':
-            if callable(unexpected_field_msg):
-                unexpected_field_msg = unexpected_field_msg(field)
+            if callable(unexpected_field_code):
+                unexpected_field_code = unexpected_field_code(field)
 
-            raise APIError(400, unexpected_field_msg.format(field=field))
+            raise APIError(400, unexpected_field_code, **{field_name: field})
 
         else:
-            raise APIError(400, 'invalid request')
+            raise APIError(400, 'invalid-request')

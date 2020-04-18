@@ -16,23 +16,28 @@ async def get_device(request: core_api.APIRequest) -> Attributes:
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def patch_device(request: core_api.APIRequest, params: Attributes) -> None:
-    def unexpected_field_msg(field: str) -> str:
+    def unexpected_field_code(field: str) -> str:
         if field in core_device_attrs.get_attrdefs():
-            return 'attribute not modifiable: {field}'
+            return 'attribute-not-modifiable'
 
         else:
-            return 'no such attribute: {field}'
+            return 'no-such-attribute'
 
-    core_api_schema.validate(params, core_device_attrs.get_schema(), unexpected_field_msg=unexpected_field_msg)
+    core_api_schema.validate(
+        params,
+        core_device_attrs.get_schema(),
+        unexpected_field_code=unexpected_field_code,
+        field_name='attribute'
+    )
 
     try:
         reboot_required = core_device_attrs.set_attrs(params)
 
     except core_device_attrs.DeviceAttributeError as e:
-        raise core_api.APIError(400, str(e))
+        raise core_api.APIError(400, e.error, attribute=e.attribute)
 
     except Exception as e:
-        raise core_api.APIError(500, str(e)) from e
+        raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
 
     core_device.save()
     core_device_events.trigger_update()

@@ -18,6 +18,6 @@ async def patch_webhooks(request: core_api.APIRequest, params: GenericJSONDict) 
         core_webhooks.setup(**params)
 
     except core_webhooks.InvalidParamError as e:
-        raise core_api.APIError(400, str(e)) from e
+        raise core_api.APIError(400, 'invalid-field', field=e.param) from e
 
     core_webhooks.save()
