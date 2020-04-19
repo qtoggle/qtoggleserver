@@ -2,14 +2,17 @@
  * @namespace qtoggle
  */
 
-import Config          from '$qui/config.js'
-import * as QUI        from '$qui/index.js'
-import * as Navigation from '$qui/navigation.js'
-import * as PWA        from '$qui/pwa.js'
-import * as Sections   from '$qui/sections/sections.js'
-import * as Window     from '$qui/window.js'
+import {gettext}         from '$qui/base/i18n.js'
+import Config            from '$qui/config.js'
+import * as QUI          from '$qui/index.js'
+import * as Toast        from '$qui/messages/toast.js'
+import * as Navigation   from '$qui/navigation.js'
+import * as PWA          from '$qui/pwa.js'
+import * as Sections     from '$qui/sections/sections.js'
+import * as Window       from '$qui/window.js'
 
-/* This must be imported here */
+/* These must be imported here */
+import $      from '$qui/lib/jquery.module.js'
 import Logger from '$qui/lib/logger.module.js'
 
 import * as API                   from '$app/api/api.js'
@@ -75,6 +78,23 @@ function handlePWAUpdate() {
     return true
 }
 
+function handlePWAInstall() {
+    if (!Window.isSmallScreen()) {
+        logger.debug('will not prompt to install PWA on large screen')
+        return Promise.reject()
+    }
+
+    let installAnchor = $('<a></a>')
+    installAnchor.text(gettext('Install the app?'))
+    installAnchor.on('click', function () {
+        Toast.hide()
+    })
+
+    Toast.info(installAnchor)
+
+    return Cache.whenCacheReady.then(() => installAnchor)
+}
+
 function initPWA() {
     try {
         PWA.enableServiceWorker(/* url = */ null, /* updateHandler = */ handlePWAUpdate)
@@ -104,6 +124,8 @@ function registerSections() {
 
 function main() {
     initConfig()
+
+    PWA.setInstallHandlers(handlePWAInstall, /* responseHandler = */ null)
 
     Promise.resolve()
     .then(() => QUI.init())
