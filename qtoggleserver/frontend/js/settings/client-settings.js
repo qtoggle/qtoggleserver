@@ -126,17 +126,23 @@ export function getScalingFactor() {
 export function applyConfig() {
     logger.debug('loading and applying configuration')
 
-    Config.defaultEffectsDisabled = isEffectsDisabled()
-    Config.defaultScalingFactor = getScalingFactor()
-    Config.defaultTheme = getTheme()
+    if (isEffectsDisabled()) {
+        Theme.disableEffects()
+    }
+    else {
+        Theme.enableEffects()
+    }
+    Theme.setCurrent(getTheme())
+
+    Window.setScalingFactor(getScalingFactor())
 
     switch (getMobileScreenMode()) {
         case 'always':
-            Config.defaultSmallScreenThreshold = 1e6
+            Window.setSmallScreenThreshold(1e6)
             break
 
         case 'never':
-            Config.defaultSmallScreenThreshold = 0
+            Window.setSmallScreenThreshold(0)
             break
 
         case 'auto':

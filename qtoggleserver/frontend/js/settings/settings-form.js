@@ -1,22 +1,22 @@
 
-import {gettext}                  from '$qui/base/i18n.js'
-import {mix}                      from '$qui/base/mixwith.js'
-import Config                     from '$qui/config.js'
-import {CheckField}               from '$qui/forms/common-fields.js'
-import {ChoiceButtonsField}       from '$qui/forms/common-fields.js'
-import {CompositeField}           from '$qui/forms/common-fields.js'
-import {PushButtonField}          from '$qui/forms/common-fields.js'
-import {SliderField}              from '$qui/forms/common-fields.js'
-import {TextField}                from '$qui/forms/common-fields.js'
-import {PageForm}                 from '$qui/forms/common-forms.js'
-import {ErrorMapping}             from '$qui/forms/forms.js'
-import {ValidationError}          from '$qui/forms/forms.js'
-import FormButton                 from '$qui/forms/form-button.js'
-import {ConfirmMessageForm}       from '$qui/messages/common-message-forms.js'
-import * as Toast                 from '$qui/messages/toast.js'
-import * as Theme                 from '$qui/theme.js'
-import * as ObjectUtils           from '$qui/utils/object.js'
-import * as Window                from '$qui/window.js'
+import {gettext}            from '$qui/base/i18n.js'
+import {mix}                from '$qui/base/mixwith.js'
+import Config               from '$qui/config.js'
+import {CheckField}         from '$qui/forms/common-fields.js'
+import {ChoiceButtonsField} from '$qui/forms/common-fields.js'
+import {CompositeField}     from '$qui/forms/common-fields.js'
+import {PushButtonField}    from '$qui/forms/common-fields.js'
+import {SliderField}        from '$qui/forms/common-fields.js'
+import {TextField}          from '$qui/forms/common-fields.js'
+import {PageForm}           from '$qui/forms/common-forms.js'
+import {ErrorMapping}       from '$qui/forms/forms.js'
+import {ValidationError}    from '$qui/forms/forms.js'
+import FormButton           from '$qui/forms/form-button.js'
+import {ConfirmMessageForm} from '$qui/messages/common-message-forms.js'
+import * as Toast           from '$qui/messages/toast.js'
+import * as Theme           from '$qui/theme.js'
+import * as ObjectUtils     from '$qui/utils/object.js'
+import * as Window          from '$qui/window.js'
 
 import * as Attrdefs         from '$app/api/attrdefs.js'
 import * as AuthAPI          from '$app/api/auth.js'
@@ -68,6 +68,13 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
 
     init() {
         this.updateUI(/* fieldChangeWarnings = */ false)
+
+        this.setData({
+            theme: ClientSettings.getTheme(),
+            disable_effects: ClientSettings.isEffectsDisabled(),
+            mobile_screen_mode: ClientSettings.getMobileScreenMode(),
+            scaling_factor: ClientSettings.getScalingFactor()
+        })
     }
 
     onBecomeCurrent() {
@@ -236,13 +243,6 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
         else {
             updateFirmwareButtonField.disable()
         }
-
-        this.setData({
-            theme: ClientSettings.getTheme(),
-            disable_effects: ClientSettings.isEffectsDisabled(),
-            mobile_screen_mode: ClientSettings.getMobileScreenMode(),
-            scaling_factor: ClientSettings.getScalingFactor()
-        })
     }
 
     applyData(data) {
