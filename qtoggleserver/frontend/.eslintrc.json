@@ -365,7 +365,12 @@
         "prefer-const": [
             "off"
         ],
-        "prefer-promise-reject-errors": "error",
+        "prefer-promise-reject-errors": [
+            "error",
+            {
+                "allowEmptyReject": true
+            }
+        ],
         "quote-props": [
             "error",
             "consistent-as-needed"
