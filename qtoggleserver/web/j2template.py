@@ -43,7 +43,7 @@ class NamespaceLoader(FileSystemLoader):
         super().__init__(searchpath=searchpath, encoding=encoding, followlinks=followlinks)
 
 
-def urlquote(s):
+def urlquote(s: Union[str, bytes]) -> Union[str, bytes]:
     if s:
         return quote_plus(s)
 
