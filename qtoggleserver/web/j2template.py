@@ -4,6 +4,7 @@ import logging
 import os
 
 from typing import List, Optional, Union
+from urllib.parse import quote_plus
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -42,6 +43,13 @@ class NamespaceLoader(FileSystemLoader):
         super().__init__(searchpath=searchpath, encoding=encoding, followlinks=followlinks)
 
 
+def urlquote(s):
+    if s:
+        return quote_plus(s)
+
+    return s
+
+
 def get_env() -> Environment:
     global _env
 
@@ -49,5 +57,6 @@ def get_env() -> Environment:
         logger.debug('creating Jinja2 template environment')
         loader = NamespaceLoader('qtoggleserver', [f'{FRONTEND_DIR_DEBUG}/html', f'{FRONTEND_DIR}/html'])
         _env = Environment(loader=loader, autoescape=select_autoescape())
+        _env.filters['urlquote'] = urlquote
 
     return _env

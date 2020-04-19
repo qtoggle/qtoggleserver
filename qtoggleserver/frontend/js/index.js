@@ -82,13 +82,6 @@ function initPWA() {
     catch (e) {
         logger.error(`failed to enable service worker: ${e}`)
     }
-
-    try {
-        PWA.setupManifest()
-    }
-    catch (e) {
-        logger.error(`failed to setup manifest: ${e}`)
-    }
 }
 
 function registerSections() {
