@@ -92,7 +92,7 @@ function handlePWAInstall() {
 
     Toast.info(installAnchor)
 
-    return Cache.whenCacheReady.then(() => installAnchor)
+    return Promise.resolve(installAnchor)
 }
 
 function initPWA() {
