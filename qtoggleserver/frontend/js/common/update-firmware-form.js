@@ -211,11 +211,11 @@ class UpdateFirmwareForm extends PageForm {
             BaseAPI.setSlaveName(this.getDeviceName())
         }
 
-        return this.fetchUpdateStatus().then(function (running) {
+        return this.fetchAndUpdate(/* initial = */ true).then(function (running) {
 
             if (running) {
                 /* Start polling, but do not chain it to load promise */
-                this.pollStatus(POLLING_INTERVAL * 1000)
+                PromiseUtils.later(POLLING_INTERVAL * 1000).then(() => this.poll())
             }
 
         }.bind(this)).catch(function (error) {
@@ -306,7 +306,7 @@ class UpdateFirmwareForm extends PageForm {
 
         }.bind(this)).then(function () {
 
-            return this.pollStatus()
+            return this.poll()
 
         }.bind(this)).catch(function (error) {
 
@@ -317,10 +317,10 @@ class UpdateFirmwareForm extends PageForm {
     }
 
     /**
-     * Fetch current firmware status from the device and update form.
+     * Fetch current firmware details from the device and update form.
      * @returns {Promise}
      */
-    fetchUpdateStatus() {
+    fetchAndUpdate(initial = false) {
         let overrideOffline = false
         if (this.deviceIsSlave()) {
             BaseAPI.setSlaveName(this.getDeviceName())
@@ -362,8 +362,11 @@ class UpdateFirmwareForm extends PageForm {
                 currentVersion: fwInfo.version,
                 latestVersion: fwInfo.latest_version,
                 releaseDate: fwInfo.latest_date,
-                url: fwInfo.latest_url,
                 status: status
+            }
+
+            if (initial) {
+                data['url'] = fwInfo.latest_url
             }
 
             this.setData(data)
@@ -374,19 +377,13 @@ class UpdateFirmwareForm extends PageForm {
     }
 
     /**
-     * Recursively poll device firmware update status, until firmware update ends.
-     * @param {Number} [delay] delay in milliseconds
+     * Recursively poll device firmware update details, until firmware update ends.
      * @returns {Promise}
      */
-    pollStatus(delay) {
-        return PromiseUtils.later(delay || 0).then(function () {
+    poll() {
+        return this.fetchAndUpdate().catch(function (error) {
 
-            return this.fetchUpdateStatus()
-
-        }.bind(this)).catch(function (error) {
-
-            /* Any error during polling is considered normal
-             * and is treated as though the device is restarting */
+            /* Any error during polling is considered normal and is treated as though the device is restarting */
 
             this.setData({status: DevicesAPI.FIRMWARE_STATUS_RESTARTING})
 
@@ -401,15 +398,14 @@ class UpdateFirmwareForm extends PageForm {
             /* Stop polling once status is idle or an error occurred */
             if (!running) {
                 if (!this.deviceIsSlave()) {
-                    let closeButton = this.getButton('close')
-                    closeButton.enable()
+                    this.getButton('close').enable()
                 }
 
                 return
             }
 
             /* Carry on with polling, but don't add it to outer promise chain */
-            this.pollStatus()
+            this.poll()
 
         }.bind(this))
     }
