@@ -399,7 +399,8 @@ export const STD_DEVICE_ATTRDEFS = {
             if (def.min != null && def.max != null) {
                 return {
                     class: ProgressDiskField,
-                    color: '@magenta-color'
+                    color: '@magenta-color',
+                    caption: '%s&deg;C'
                 }
             }
             else {
