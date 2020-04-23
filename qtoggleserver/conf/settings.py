@@ -111,7 +111,7 @@ class slaves:
     enabled: bool = True
     timeout: int = 10
     long_timeout: int = 60
-    keepalive: int = 300
+    keepalive: int = 60
     retry_interval: int = 5
     retry_count: int = 3
 
