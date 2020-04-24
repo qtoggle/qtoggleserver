@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for this project
+about: Suggest a new feature for this project
 title: ''
 labels: feature
 assignees: ''
@@ -12,6 +12,9 @@ A clear and concise description of what the problem is. Ex. I'm always frustrate
 
 **Describe the solution you'd like**
 A clear and concise description of what you want to happen.
+
+**Provide any mockups, sketches or screenshots that clarify your idea.**
+Drag your image over the issue template text to attach it.
 
 **Describe alternatives you've considered**
 A clear and concise description of any alternative solutions or features you've considered.
