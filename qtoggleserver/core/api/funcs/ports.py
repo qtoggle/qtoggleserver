@@ -100,7 +100,7 @@ async def post_ports(request: core_api.APIRequest, params: GenericJSONDict) -> A
     if core_ports.get(port_id):
         raise core_api.APIError(400, 'duplicate-port')
 
-    if len(core_vports.all_settings()) >= settings.core.virtual_ports:
+    if len(core_vports.all_port_args()) >= settings.core.virtual_ports:
         raise core_api.APIError(400, 'too-many-ports')
 
     core_vports.add(port_id, port_type, _min, _max, integer, step, choices)

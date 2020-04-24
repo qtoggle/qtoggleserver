@@ -940,12 +940,12 @@ class Port(BasePort, metaclass=abc.ABCMeta):
         self._persisted: bool = False
 
 
-async def load(port_settings: List[Dict[str, Any]], raise_on_error: bool = True) -> List[BasePort]:
+async def load(port_args: List[Dict[str, Any]], raise_on_error: bool = True) -> List[BasePort]:
     port_driver_classes = {}
     ports = []
 
-    for port_spec in port_settings:
-        driver = port_spec.pop('driver', None)
+    for ps in port_args:
+        driver = ps.pop('driver', None)
         if not driver:
             if raise_on_error:
                 raise PortLoadError('Missing port driver')
@@ -974,8 +974,8 @@ async def load(port_settings: List[Dict[str, Any]], raise_on_error: bool = True)
         port_class_desc = f'{port_class.__module__}.{port_class.__name__}'
 
         try:
-            value = port_spec.pop('value', None)  # Initial value
-            port = port_class(**port_spec)
+            value = ps.pop('value', None)  # Initial value
+            port = port_class(**ps)
             if value is not None:
                 port.set_value(value)
 
@@ -1034,8 +1034,8 @@ async def load(port_settings: List[Dict[str, Any]], raise_on_error: bool = True)
 
 
 async def load_one(cls: Union[str, type], args: Dict[str, Any]) -> BasePort:
-    port_settings = [dict(driver=cls, **args)]
-    ports = await load(port_settings, raise_on_error=True)
+    port_args = [dict(driver=cls, **args)]
+    ports = await load(port_args, raise_on_error=True)
 
     return ports[0]
 

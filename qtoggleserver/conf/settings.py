@@ -131,6 +131,8 @@ class configurables:
 
 event_handlers: _typing.List[_typing.Dict[str, _typing.Any]] = []
 
+peripherals: _typing.List[_typing.Dict[str, _typing.Any]] = []
+
 ports: _typing.List[_typing.Dict[str, _typing.Any]] = []
 
 port_mappings: _typing.Dict[str, str] = {}

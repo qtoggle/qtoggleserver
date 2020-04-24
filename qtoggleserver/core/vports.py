@@ -10,7 +10,7 @@ from qtoggleserver.core.typing import GenericJSONDict, NullablePortValue, PortVa
 
 logger = logging.getLogger(__name__)
 
-_vport_settings: Dict[str, GenericJSONDict] = {}
+_vport_args: Dict[str, GenericJSONDict] = {}
 
 
 class VirtualPort(core_ports.Port):
@@ -69,26 +69,26 @@ def add(
         'choices': choices
     }
 
-    _vport_settings[port_id] = settings
+    _vport_args[port_id] = settings
 
     logger.debug('saving virtual port settings for %s', port_id)
     persist.replace('vports', port_id, settings)
 
 
 def remove(port_id: str) -> None:
-    _vport_settings.pop(port_id, None)
+    _vport_args.pop(port_id, None)
     logger.debug('removing virtual port settings for %s', port_id)
     persist.remove('vports', filt={'id': port_id})
 
 
-def all_settings() -> List[GenericJSONDict]:
-    return [dict({'driver': VirtualPort, 'port_id': port_id}, **settings)
-            for port_id, settings in _vport_settings.items()]
+def all_port_args() -> List[GenericJSONDict]:
+    return [dict({'driver': VirtualPort, 'port_id': port_id}, **args)
+            for port_id, args in _vport_args.items()]
 
 
 def load() -> None:
     for entry in persist.query('vports'):
-        _vport_settings[entry['id']] = {
+        _vport_args[entry['id']] = {
             '_type': entry.get('type') or core_ports.TYPE_NUMBER,
             '_min': entry.get('min'),
             '_max': entry.get('max'),
