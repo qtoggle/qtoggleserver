@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: Report something that doesn't work well
 title: ''
 labels: bug
 assignees: ''
@@ -20,7 +20,7 @@ Steps to reproduce the behavior:
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
-**qToggleServer Installation**
+**Installation Details**
  - qToggleServer version: [e.g. 0.18.0-beta.5]
  - Installed using: [qToggleOS, Docker, Python package, other]
  - Server running on: [e.g. Raspberry Pi 3, Ubuntu 18.04, Windows 10]
