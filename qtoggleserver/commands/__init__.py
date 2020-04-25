@@ -10,7 +10,6 @@ from typing import Any, Optional
 
 from tornado import httpclient
 
-from qtoggleserver import lib
 from qtoggleserver import persist
 from qtoggleserver import version
 from qtoggleserver.conf import settings
@@ -26,6 +25,7 @@ from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import logging as logging_utils
+from qtoggleserver import peripherals  # This must be imported after core.ports
 
 logger: Optional[logging.Logger] = None
 options: Optional[types.SimpleNamespace] = None
@@ -236,11 +236,19 @@ async def cleanup_reverse() -> None:
 
 async def init_ports() -> None:
     logger.info('initializing ports')
-    vports.load()
-    port_settings = settings.ports + vports.all_settings()
 
-    # Use raise_on_error=False because we prefer a partial successful startup rather than a failed one
-    await ports.load(port_settings, raise_on_error=False)
+    # Following calls use raise_on_error=False because we prefer a partial successful startup rather than a failed one
+
+    # Load ports statically configured in settings
+    await ports.load(settings.ports, raise_on_error=False)
+
+    # Load virtual ports
+    vports.load()
+    await ports.load(vports.all_port_args(), raise_on_error=False)
+
+    # Peripheral ports
+    for peripheral in peripherals.all_peripherals():
+        peripheral.set_ports(await ports.load(peripheral.get_port_args(), raise_on_error=False))
 
 
 async def cleanup_ports() -> None:
@@ -260,14 +268,14 @@ async def cleanup_slaves() -> None:
         await slaves_devices.cleanup()
 
 
-async def init_lib() -> None:
-    logger.info('initializing libs')
-    await lib.init()
+async def init_peripherals() -> None:
+    logger.info('initializing peripherals')
+    await peripherals.init()
 
 
-async def cleanup_lib() -> None:
-    logger.info('cleaning up libs')
-    await lib.cleanup()
+async def cleanup_peripherals() -> None:
+    logger.info('cleaning up peripherals')
+    await peripherals.cleanup()
 
 
 async def init_main() -> None:
@@ -302,7 +310,7 @@ async def init() -> None:
     init_configurables()
 
     await init_persist()
-    await init_lib()
+    await init_peripherals()
     await init_events()
     await init_sessions()
     await init_device()
@@ -322,5 +330,5 @@ async def cleanup() -> None:
     await cleanup_device()
     await cleanup_sessions()
     await cleanup_events()
-    await cleanup_lib()
+    await cleanup_peripherals()
     await cleanup_persist()

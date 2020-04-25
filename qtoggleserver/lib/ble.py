@@ -14,14 +14,16 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from bluepy import btle
 
 from qtoggleserver.core import ports as core_ports
+from qtoggleserver.peripherals import Peripheral, RunnerBusy
 from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import logging as logging_utils
 
 from . import polled
-from .peripheral import Peripheral, RunnerBusy
 
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_ADAPTER_NAME = 'hci0'
 
 
 class BLEException(Exception):
@@ -71,7 +73,6 @@ class _BluepyPeripheral(btle.Peripheral):
 
 
 class BLEAdapter(conf_utils.ConfigurableMixin, logging_utils.LoggableMixin):
-    DEFAULT_NAME = 'hci0'
     RUNNER_CLASS = Peripheral.RUNNER_CLASS
 
     _adapters_by_name: Dict[str, BLEAdapter] = {}
@@ -151,14 +152,11 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
     logger = logger
 
-    @classmethod
-    def make_peripheral(cls, address: str, name: str, adapter_name: Optional[str] = None, **kwargs) -> Peripheral:
-        return cls(address, name, BLEAdapter.get(adapter_name))
+    def __init__(self, name: str, address: str, adapter_name: str = DEFAULT_ADAPTER_NAME) -> None:
+        super().__init__(name)
 
-    def __init__(self, address: str, name: str, adapter: BLEAdapter) -> None:
-        super().__init__(address, name)
-
-        self._adapter: BLEAdapter = adapter
+        self._address = address
+        self._adapter: BLEAdapter = BLEAdapter.get(adapter_name)
         self._adapter.add_peripheral(self)
 
     def __str__(self) -> str:
@@ -176,7 +174,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
         return await self._run_cmd_async(
             'read',
-            self.get_address(),
+            self._address,
             handle,
             notify_handle=None,
             data=None,
@@ -196,7 +194,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
         return await self._run_cmd_async(
             'write',
-            self.get_address(),
+            self._address,
             handle,
             notify_handle=None,
             data=data,
@@ -221,7 +219,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
         return await self._run_cmd_async(
             'write',
-            self.get_address(),
+            self._address,
             handle,
             notify_handle=notify_handle,
             data=data,
@@ -349,17 +347,9 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
 
 class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):
-    PERIPHERAL_CLASS = BLEPeripheral
-
     READ_INTERVAL_MAX = 1440
     READ_INTERVAL_STEP = 1
     READ_INTERVAL_MULTIPLIER = 60
-
-    def __init__(self, address: str, peripheral_name: Optional[str] = None, adapter_name: Optional[str] = None) -> None:
-        if adapter_name is None:
-            adapter_name = BLEAdapter.DEFAULT_NAME
-
-        super().__init__(address, peripheral_name, adapter_name=adapter_name)
 
 
 def port_exceptions(func: Callable) -> Callable:

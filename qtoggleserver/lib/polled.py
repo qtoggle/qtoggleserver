@@ -4,9 +4,9 @@ import asyncio
 import copy
 import logging
 
-from typing import Optional
+from typing import cast, Optional
 
-from .peripheral import Peripheral, PeripheralPort
+from qtoggleserver.peripherals import Peripheral, PeripheralPort
 
 
 READ_INTERVAL_ATTRDEF = {
@@ -21,18 +21,18 @@ READ_INTERVAL_ATTRDEF = {
 logger = logging.getLogger(__name__)
 
 
-class PolledPeripheral(Peripheral):
+class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
     DEFAULT_POLL_INTERVAL = 1800
     RETRY_POLL_INTERVAL = 60
 
-    def __init__(self, address: str, name: str, **kwargs) -> None:
+    def __init__(self, name: str, **kwargs) -> None:
         self._polling: bool = False
         self._poll_stopped: bool = False
         self._poll_task: Optional[asyncio.Task] = None
         self._poll_interval: int = self.DEFAULT_POLL_INTERVAL
         self._poll_error: Optional[Exception] = None
 
-        super().__init__(address, name, **kwargs)
+        super().__init__(name, **kwargs)
 
     async def _poll_loop(self) -> None:
         self.debug('polling started')
@@ -120,8 +120,8 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
     READ_INTERVAL_MULTIPLIER = 1
     READ_INTERVAL_UNIT = None
 
-    def __init__(self, address: str, peripheral_name: Optional[str] = None, **kwargs) -> None:
-        super().__init__(address, peripheral_name, **kwargs)
+    def __init__(self, peripheral: Peripheral) -> None:
+        super().__init__(peripheral)
 
         # Add read interval attrdef
         if self.READ_INTERVAL_MIN is not None:
@@ -148,7 +148,9 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
             self.ADDITIONAL_ATTRDEFS = dict(self.ADDITIONAL_ATTRDEFS, read_interval=attrdef)
 
     async def attr_set_read_interval(self, interval: int) -> None:
-        self.get_peripheral().set_poll_interval(int(interval) * self.READ_INTERVAL_MULTIPLIER)
+        peripheral = cast(PolledPeripheral, self.get_peripheral())
+        peripheral.set_poll_interval(int(interval) * self.READ_INTERVAL_MULTIPLIER)
 
     async def attr_get_read_interval(self) -> int:
-        return self.get_peripheral().get_poll_interval() / self.READ_INTERVAL_MULTIPLIER
+        peripheral = cast(PolledPeripheral, self.get_peripheral())
+        return peripheral.get_poll_interval() // self.READ_INTERVAL_MULTIPLIER
