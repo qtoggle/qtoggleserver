@@ -15,7 +15,6 @@ from bluepy import btle
 
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.peripherals import Peripheral, RunnerBusy
-from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import logging as logging_utils
 
 from . import polled
