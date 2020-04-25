@@ -125,10 +125,6 @@ class reverse:
     retry_interval: int = 5
 
 
-class configurables:
-    pass
-
-
 event_handlers: _typing.List[_typing.Dict[str, _typing.Any]] = []
 
 peripherals: _typing.List[_typing.Dict[str, _typing.Any]] = []

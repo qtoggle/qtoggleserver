@@ -72,7 +72,7 @@ class _BluepyPeripheral(btle.Peripheral):
             helper.stdout.close()
 
 
-class BLEAdapter(conf_utils.ConfigurableMixin, logging_utils.LoggableMixin):
+class BLEAdapter(logging_utils.LoggableMixin):
     RUNNER_CLASS = Peripheral.RUNNER_CLASS
 
     _adapters_by_name: Dict[str, BLEAdapter] = {}

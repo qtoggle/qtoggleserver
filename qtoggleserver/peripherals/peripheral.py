@@ -7,7 +7,6 @@ import logging
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 from qtoggleserver.core import ports as core_ports
-from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import logging as logging_utils
 
 from .threadedrunner import ThreadedRunner
@@ -16,7 +15,7 @@ from .threadedrunner import ThreadedRunner
 logger = logging.getLogger(__name__)
 
 
-class Peripheral(conf_utils.ConfigurableMixin, logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
+class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     RUNNER_CLASS = ThreadedRunner
     RUNNER_QUEUE_SIZE = 8
 
