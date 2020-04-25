@@ -10,18 +10,6 @@ import pyhocon
 _config_factory = pyhocon.ConfigFactory()
 
 
-class ConfigurableMixin:
-    @classmethod
-    def configure(cls, **kwargs) -> None:
-        for name, value in kwargs.items():
-            conf_method = getattr(cls, f'configure_{name.lower()}', None)
-            if conf_method:
-                conf_method(value)
-
-            else:
-                setattr(cls, name.upper(), value)
-
-
 def obj_to_dict(obj: Any) -> Dict[str, Any]:
     d = {}
     for k, v in obj.__dict__.items():

@@ -146,24 +146,8 @@ def init_signals() -> None:
     signal.signal(signal.SIGTERM, bye_handler)
 
 
-def init_configurables() -> None:
+def init_tornado() -> None:
     httpclient.AsyncHTTPClient.configure('tornado.simple_httpclient.SimpleAsyncHTTPClient', max_clients=1024)
-
-    configurables = conf_utils.obj_to_dict(settings.configurables)
-    for class_name, opts in sorted(configurables.items()):
-        try:
-            logger.debug('configuring class %s', class_name)
-            klass = dynload_utils.load_attr(class_name)
-
-        except Exception as e:
-            logger.error('failed to load class %s: %s', class_name, e, exc_info=True)
-            continue
-
-        try:
-            klass.configure(**opts)
-
-        except Exception as e:
-            logger.error('failed to configure class %s: %s', class_name, e, exc_info=True)
 
 
 async def init_persist() -> None:
@@ -307,7 +291,7 @@ async def init() -> None:
     init_settings()
     init_logging()
     init_signals()
-    init_configurables()
+    init_tornado()
 
     await init_persist()
     await init_peripherals()
