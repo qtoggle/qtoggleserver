@@ -252,7 +252,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                 style: 'interactive',
                 caption: gettext('Ports'),
                 onClick(form) {
-                    Navigation.navigate(['ports', form.getDeviceName()])
+                    Navigation.navigate({path: ['ports', form.getDeviceName()]})
                 }
             })
         ]

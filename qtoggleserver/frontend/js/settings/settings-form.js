@@ -232,7 +232,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
                     style: 'interactive',
                     caption: gettext('Ports'),
                     onClick(form) {
-                        Navigation.navigate(['ports', Cache.getMainDevice().name])
+                        Navigation.navigate({path: ['ports', Cache.getMainDevice().name]})
                     }
                 })
             )

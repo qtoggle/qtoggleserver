@@ -1270,7 +1270,7 @@ class Widget extends mix().with(ViewMixin) {
         }
 
         let path = ['dashboard', this._panel.getId()]
-        return Navigation.navigate(path).then(function () {
+        return Navigation.navigate({path}).then(function () {
 
             return this._panel.pushPage(configForm)
 

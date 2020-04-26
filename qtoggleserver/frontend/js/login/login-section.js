@@ -81,7 +81,7 @@ class LoginSection extends Section {
         let nextPath = this.popNextPath()
         if (nextPath != null) {
             logger.debug(`navigating to next path "/${nextPath.join('/')}"`)
-            Navigation.navigate(nextPath)
+            Navigation.navigate({path: nextPath, historyEntry: false})
         }
         else {
             Sections.showHome()
