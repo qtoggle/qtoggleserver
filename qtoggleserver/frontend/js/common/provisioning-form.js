@@ -93,7 +93,7 @@ class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin) {
                 new CompositeField({
                     name: 'backup_buttons1',
                     label: ' ',
-                    layout: Window.isSmallScreen() ? 'vertical' : 'horizontal',
+                    flow: Window.isSmallScreen() ? 'vertical' : 'horizontal',
                     fields: [
                         new PushButtonField({
                             name: 'restore',
@@ -121,7 +121,7 @@ class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin) {
                 new CompositeField({
                     name: 'backup_buttons2',
                     label: ' ',
-                    layout: Window.isSmallScreen() ? 'vertical' : 'horizontal',
+                    flow: Window.isSmallScreen() ? 'vertical' : 'horizontal',
                     fields: [
                         new PushButtonField({
                             name: 'download',

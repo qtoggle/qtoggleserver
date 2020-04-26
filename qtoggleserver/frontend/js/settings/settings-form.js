@@ -197,7 +197,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
             name: 'management_buttons',
             label: gettext('Manage Device'),
             separator: true,
-            layout: Window.isSmallScreen() ? 'vertical' : 'horizontal',
+            flow: Window.isSmallScreen() ? 'vertical' : 'horizontal',
             fields: [
                 new PushButtonField({
                     name: 'reboot',

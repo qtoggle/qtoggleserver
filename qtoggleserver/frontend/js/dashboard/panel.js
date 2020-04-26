@@ -70,7 +70,7 @@ class PanelOptionsForm extends OptionsForm {
                     name: 'action_buttons',
                     label: gettext('Actions'),
                     separator: true,
-                    layout: 'vertical',
+                    flow: 'vertical',
                     fields: [
                         new PushButtonField({
                             name: 'add_widget',
