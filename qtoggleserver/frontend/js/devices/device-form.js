@@ -15,6 +15,7 @@ import {ValidationError}          from '$qui/forms/forms.js'
 import {ConfirmMessageForm}       from '$qui/messages/common-message-forms.js'
 import * as Messages              from '$qui/messages/messages.js'
 import * as Toast                 from '$qui/messages/toast.js'
+import * as Navigation            from '$qui/navigation.js'
 import * as Theme                 from '$qui/theme.js'
 import * as DateUtils             from '$qui/utils/date.js'
 import * as ObjectUtils           from '$qui/utils/object.js'
@@ -217,41 +218,52 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
      * Add fields whose presence is not altered by device attributes.
      */
     addStaticFields() {
+        let managementButtons = [
+            new PushButtonField({
+                name: 'reboot',
+                separator: true,
+                caption: gettext('Reboot'),
+                style: 'highlight',
+                onClick(form) {
+                    form.pushPage(form.makeConfirmAndRebootForm())
+                }
+            }),
+            new PushButtonField({
+                name: 'provision',
+                style: 'interactive',
+                caption: gettext('Provision'),
+                onClick(form) {
+                    form.pushPage(form.makeProvisioningForm())
+                }
+            }),
+            new PushButtonField({
+                name: 'firmware',
+                style: 'colored',
+                backgroundColor: Theme.getColor('@magenta-color'),
+                backgroundActiveColor: Theme.getColor('@magenta-active-color'),
+                caption: gettext('Firmware'),
+                disabled: true,
+                onClick(form) {
+                    form.pushPage(form.makeUpdateFirmwareForm())
+                }
+            }),
+            new PushButtonField({
+                name: 'ports',
+                style: 'interactive',
+                caption: gettext('Ports'),
+                onClick(form) {
+                    Navigation.navigate(['ports', form.getDeviceName()])
+                }
+            })
+        ]
+
         this.addField(-1, new CompositeField({
             name: 'management_buttons',
             label: gettext('Manage Device'),
             separator: true,
             flow: Window.isSmallScreen() ? 'vertical' : 'horizontal',
-            fields: [
-                new PushButtonField({
-                    name: 'reboot',
-                    separator: true,
-                    caption: gettext('Reboot'),
-                    style: 'highlight',
-                    onClick(form) {
-                        form.pushPage(form.makeConfirmAndRebootForm())
-                    }
-                }),
-                new PushButtonField({
-                    name: 'provision',
-                    style: 'interactive',
-                    caption: gettext('Provision'),
-                    onClick(form) {
-                        form.pushPage(form.makeProvisioningForm())
-                    }
-                }),
-                new PushButtonField({
-                    name: 'firmware',
-                    style: 'colored',
-                    backgroundColor: Theme.getColor('@magenta-color'),
-                    backgroundActiveColor: Theme.getColor('@magenta-active-color'),
-                    caption: gettext('Firmware'),
-                    disabled: true,
-                    onClick(form) {
-                        form.pushPage(form.makeUpdateFirmwareForm())
-                    }
-                })
-            ]
+            columns: 3,
+            fields: managementButtons
         }))
     }
 
