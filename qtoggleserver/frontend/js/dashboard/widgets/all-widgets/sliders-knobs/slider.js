@@ -26,7 +26,7 @@ class Slider extends AnalogWidget {
 Slider.category = gettext('Sliders/Knobs')
 Slider.displayName = gettext('Slider')
 Slider.typeName = 'Slider'
-Slider.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
+Slider.icon = new StockIcon({name: 'widget-slider', stockName: 'qtoggle'})
 Slider.ConfigForm = ConfigForm
 Slider.vResizable = true
 Slider.hResizable = true

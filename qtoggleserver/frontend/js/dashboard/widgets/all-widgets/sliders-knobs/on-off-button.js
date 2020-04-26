@@ -429,7 +429,7 @@ class OnOffButton extends Widget {
 OnOffButton.category = gettext('Sliders/Knobs')
 OnOffButton.displayName = gettext('On/Off Button')
 OnOffButton.typeName = 'OnOffButton'
-OnOffButton.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
+OnOffButton.icon = new StockIcon({name: 'widget-on-off-button', stockName: 'qtoggle'})
 OnOffButton.ConfigForm = ConfigForm
 OnOffButton.hResizable = true
 OnOffButton.vResizable = true

@@ -463,7 +463,7 @@ class RadioButtons extends Widget {
 RadioButtons.category = gettext('Push Buttons')
 RadioButtons.displayName = gettext('Radio Buttons')
 RadioButtons.typeName = 'RadioButtons'
-RadioButtons.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
+RadioButtons.icon = new StockIcon({name: 'widget-radio', stockName: 'qtoggle'})
 RadioButtons.ConfigForm = ConfigForm
 RadioButtons.hResizable = false
 RadioButtons.vResizable = false

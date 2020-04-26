@@ -321,7 +321,7 @@ class SequencePushButton extends PushButton {
 SequencePushButton.category = gettext('Push Buttons')
 SequencePushButton.displayName = gettext('Sequence Push Button')
 SequencePushButton.typeName = 'SequencePushButton'
-SequencePushButton.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
+SequencePushButton.icon = new StockIcon({name: 'widget-push-button', stockName: 'qtoggle'})
 SequencePushButton.ConfigForm = ConfigForm
 SequencePushButton.hResizable = true
 SequencePushButton.vResizable = true

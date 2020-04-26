@@ -245,7 +245,7 @@ class OnOffIndicator extends Widget {
 OnOffIndicator.category = gettext('Displays')
 OnOffIndicator.displayName = gettext('On/Off Indicator')
 OnOffIndicator.typeName = 'OnOffIndicator'
-OnOffIndicator.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
+OnOffIndicator.icon = new StockIcon({name: 'widget-on-off-indicator', stockName: 'qtoggle'})
 OnOffIndicator.ConfigForm = ConfigForm
 OnOffIndicator.vResizable = true
 OnOffIndicator.hResizable = true

@@ -255,7 +255,7 @@ class IncDecButtons extends Widget {
 IncDecButtons.category = gettext('Push Buttons')
 IncDecButtons.displayName = gettext('Increase/Decrease Button')
 IncDecButtons.typeName = 'IncDecButtons'
-IncDecButtons.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
+IncDecButtons.icon = new StockIcon({name: 'widget-plus-minus', stockName: 'qtoggle'})
 IncDecButtons.ConfigForm = ConfigForm
 IncDecButtons.vResizable = true
 IncDecButtons.hResizable = true

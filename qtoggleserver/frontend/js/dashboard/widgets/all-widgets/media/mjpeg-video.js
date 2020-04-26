@@ -129,7 +129,7 @@ class MJPEGVideo extends Widget {
 MJPEGVideo.category = gettext('Media')
 MJPEGVideo.displayName = gettext('MJPEG Video')
 MJPEGVideo.typeName = 'MJPEGVideo'
-MJPEGVideo.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
+MJPEGVideo.icon = new StockIcon({name: 'widget-video', stockName: 'qtoggle'})
 MJPEGVideo.ConfigForm = ConfigForm
 MJPEGVideo.vResizable = true
 MJPEGVideo.hResizable = true

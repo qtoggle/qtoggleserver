@@ -38,7 +38,7 @@ class ProgressBar extends AnalogWidget {
 ProgressBar.category = gettext('Displays')
 ProgressBar.displayName = gettext('Progress Bar')
 ProgressBar.typeName = 'ProgressBar'
-ProgressBar.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
+ProgressBar.icon = new StockIcon({name: 'widget-progress-bar', stockName: 'qtoggle'})
 ProgressBar.ConfigForm = ConfigForm
 ProgressBar.vResizable = true
 ProgressBar.hResizable = true

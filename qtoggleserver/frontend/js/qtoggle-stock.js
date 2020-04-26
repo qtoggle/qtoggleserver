@@ -19,8 +19,15 @@ Stocks.register('qtoggle', function () {
             'firmware': 4,
             'panel-group': 5,
             'panel': 6,
-            'unlock': 16,
-            'lock': 17
+            'widget-on-off-button': 8,
+            'widget-slider': 9,
+            'widget-on-off-indicator': 10,
+            'widget-push-button': 11,
+            'widget-text': 12,
+            'widget-video': 13,
+            'widget-plus-minus': 14,
+            'widget-radio': 15,
+            'widget-progress-bar': 16
         }
     })
 })

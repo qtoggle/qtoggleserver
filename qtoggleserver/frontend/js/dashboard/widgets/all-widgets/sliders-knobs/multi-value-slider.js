@@ -39,7 +39,7 @@ class MultiValueSlider extends AnalogWidget {
 MultiValueSlider.category = gettext('Sliders/Knobs')
 MultiValueSlider.displayName = gettext('Multi-value Slider')
 MultiValueSlider.typeName = 'MultiValueSlider'
-MultiValueSlider.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
+MultiValueSlider.icon = new StockIcon({name: 'widget-slider', stockName: 'qtoggle'})
 MultiValueSlider.ConfigForm = ConfigForm
 MultiValueSlider.hResizable = true
 MultiValueSlider.vResizable = true

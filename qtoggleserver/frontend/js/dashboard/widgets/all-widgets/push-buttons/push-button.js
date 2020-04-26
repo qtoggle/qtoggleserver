@@ -268,7 +268,7 @@ class PushButton extends Widget {
 PushButton.category = gettext('Push Buttons')
 PushButton.displayName = gettext('Push Button')
 PushButton.typeName = 'PushButton'
-PushButton.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
+PushButton.icon = new StockIcon({name: 'widget-push-button', stockName: 'qtoggle'})
 PushButton.ConfigForm = ConfigForm
 PushButton.vResizable = true
 PushButton.hResizable = true

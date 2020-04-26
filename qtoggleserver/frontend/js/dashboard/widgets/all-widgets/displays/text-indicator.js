@@ -521,7 +521,7 @@ class TextIndicator extends Widget {
 TextIndicator.category = gettext('Displays')
 TextIndicator.displayName = gettext('Text Indicator')
 TextIndicator.typeName = 'TextIndicator'
-TextIndicator.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
+TextIndicator.icon = new StockIcon({name: 'widget-text', stockName: 'qtoggle'})
 TextIndicator.ConfigForm = ConfigForm
 TextIndicator.vResizable = true
 TextIndicator.hResizable = true
