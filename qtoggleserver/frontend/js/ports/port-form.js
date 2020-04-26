@@ -2,7 +2,9 @@
 import {AssertionError}     from '$qui/base/errors.js'
 import {gettext}            from '$qui/base/i18n.js'
 import {mix}                from '$qui/base/mixwith.js'
+import Config               from '$qui/config.js'
 import {ChoiceButtonsField} from '$qui/forms/common-fields.js'
+import {PushButtonField}    from '$qui/forms/common-fields.js'
 import {PageForm}           from '$qui/forms/common-forms.js'
 import FormButton           from '$qui/forms/form-button.js'
 import {ErrorMapping}       from '$qui/forms/forms.js'
@@ -10,6 +12,7 @@ import {ValidationError}    from '$qui/forms/forms.js'
 import {ConfirmMessageForm} from '$qui/messages/common-message-forms.js'
 import * as Messages        from '$qui/messages/messages.js'
 import * as Toast           from '$qui/messages/toast.js'
+import * as Navigation      from '$qui/navigation.js'
 import * as ArrayUtils      from '$qui/utils/array.js'
 import * as ObjectUtils     from '$qui/utils/object.js'
 import * as StringUtils     from '$qui/utils/string.js'
@@ -66,6 +69,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         this._deviceName = deviceName
 
         this._fullAttrdefs = {}
+        this._staticFieldsAdded = false
     }
 
     init() {
@@ -229,7 +233,12 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             provisioning: provisioning,
             fieldChangeWarnings: fieldChangeWarnings
         })
-        this._addValueField(origPort)
+        this.addValueField(origPort)
+
+        if (!this._staticFieldsAdded) {
+            this.addStaticFields()
+            this._staticFieldsAdded = true
+        }
 
         /* Remove button */
         this.removeButton('remove')
@@ -239,6 +248,88 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 id: 'remove',
                 caption: gettext('Remove'),
                 style: 'danger'
+            }))
+        }
+    }
+
+    addValueField(port) {
+        this.removeField('value')
+
+        if (!port.enabled) {
+            return null
+        }
+
+        let fieldAttrs
+        let FieldClass
+        if (port.type === 'boolean') {
+            FieldClass = ChoiceButtonsField
+            fieldAttrs = {
+                choices: [
+                    {label: gettext('Off'), value: false},
+                    {label: gettext('On'), value: true}
+                ]
+            }
+        }
+        else { /* Assuming number */
+            /* We can use the port as an attribute definition */
+            let def = ObjectUtils.copy(port)
+
+            /* Only validate integer constraint if port has no transform attribute set */
+            if (def.integer && (port.transform_write || port.transform_read)) {
+                def.integer = false
+            }
+
+            def.modifiable = port.writable
+
+            fieldAttrs = this.fieldAttrsFromAttrdef('value', def)
+
+            FieldClass = ObjectUtils.pop(fieldAttrs, 'class')
+        }
+
+        fieldAttrs.name = 'value'
+        fieldAttrs.description = gettext('Current port value.')
+        fieldAttrs.label = gettext('Value')
+        fieldAttrs.required = false
+        fieldAttrs.unit = port.unit
+        fieldAttrs.separator = true
+        fieldAttrs.readonly = !port.writable
+        fieldAttrs.initialValue = port.value
+
+        let valueField = new FieldClass(fieldAttrs)
+        this.addField(-1, valueField)
+
+        if ((port.provisioning || []).includes('value')) {
+            valueField.setWarning(gettext('Value will be provisioned when device gets back online.'))
+        }
+
+        return valueField
+    }
+
+    /**
+     * Add fields whose presence is not altered by device attributes.
+     */
+    addStaticFields() {
+        if (Config.slavesEnabled) {
+            let device = Cache.findPortSlaveDevice(this.getPortId())
+            let attrs = device ? device.attrs : Cache.getMainDevice()
+            let displayName = attrs.display_name || attrs.name
+            let path
+            if (device) {
+                path = ['devices', device.name]
+            }
+            else {
+                path = ['settings']
+            }
+
+            this.addField(1, new PushButtonField({
+                name: 'device',
+                label: gettext('Device'),
+                caption: displayName,
+                style: 'interactive',
+                description: gettext('Device to which the port belongs.'),
+                onClick(form) {
+                    Navigation.navigate({path: path})
+                }
             }))
         }
     }
@@ -374,59 +465,6 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
                 break
         }
-    }
-
-    _addValueField(port) {
-        this.removeField('value')
-
-        if (!port.enabled) {
-            return null
-        }
-
-        let fieldAttrs
-        let FieldClass
-        if (port.type === 'boolean') {
-            FieldClass = ChoiceButtonsField
-            fieldAttrs = {
-                choices: [
-                    {label: gettext('Off'), value: false},
-                    {label: gettext('On'), value: true}
-                ]
-            }
-        }
-        else { /* Assuming number */
-            /* We can use the port as an attribute definition */
-            let def = ObjectUtils.copy(port)
-
-            /* Only validate integer constraint if port has no transform attribute set */
-            if (def.integer && (port.transform_write || port.transform_read)) {
-                def.integer = false
-            }
-
-            def.modifiable = port.writable
-
-            fieldAttrs = this.fieldAttrsFromAttrdef('value', def)
-
-            FieldClass = ObjectUtils.pop(fieldAttrs, 'class')
-        }
-
-        fieldAttrs.name = 'value'
-        fieldAttrs.description = gettext('Current port value.')
-        fieldAttrs.label = gettext('Value')
-        fieldAttrs.required = false
-        fieldAttrs.unit = port.unit
-        fieldAttrs.separator = true
-        fieldAttrs.readonly = !port.writable
-        fieldAttrs.initialValue = port.value
-
-        let valueField = new FieldClass(fieldAttrs)
-        this.addField(-1, valueField)
-
-        if ((port.provisioning || []).includes('value')) {
-            valueField.setWarning(gettext('Value will be provisioned when device gets back online.'))
-        }
-
-        return valueField
     }
 
     navigate(pathId) {
