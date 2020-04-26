@@ -90,10 +90,15 @@ class PortPickerField extends ComboField {
             displayName = port.display_name || port.id
 
             let path = '/ports'
-            let device = Cache.findPortSlaveDevice(portId)
-            if (device) {
-                let remoteId = portId.substring(device.name.length + 1)
-                path += `/${device.name}/${remoteId}`
+            if (Config.slavesEnabled) {
+                let device = Cache.findPortSlaveDevice(portId)
+                if (device) {
+                    let remoteId = portId.substring(device.name.length + 1)
+                    path += `/${device.name}/${remoteId}`
+                }
+                else {
+                    path += `/${Cache.getMainDevice().name}/${portId}`
+                }
             }
             else {
                 path += `/${portId}`
