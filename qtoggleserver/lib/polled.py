@@ -111,8 +111,6 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
 
 
 class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
-    PERIPHERAL_CLASS = PolledPeripheral
-
     # Set these to None to disable read interval attribute
     READ_INTERVAL_MIN = 0
     READ_INTERVAL_MAX = 86400
