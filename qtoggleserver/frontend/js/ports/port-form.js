@@ -9,6 +9,7 @@ import {PageForm}           from '$qui/forms/common-forms.js'
 import FormButton           from '$qui/forms/form-button.js'
 import {ErrorMapping}       from '$qui/forms/forms.js'
 import {ValidationError}    from '$qui/forms/forms.js'
+import StockIcon            from '$qui/icons/stock-icon.js'
 import {ConfirmMessageForm} from '$qui/messages/common-message-forms.js'
 import * as Messages        from '$qui/messages/messages.js'
 import * as Toast           from '$qui/messages/toast.js'
@@ -326,6 +327,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 label: gettext('Device'),
                 caption: displayName,
                 style: 'interactive',
+                icon: new StockIcon({name: 'device', stockName: 'qtoggle'}),
                 description: gettext('Device to which the port belongs.'),
                 onClick(form) {
                     Navigation.navigate({path: path})
