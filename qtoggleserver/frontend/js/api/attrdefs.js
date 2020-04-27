@@ -158,7 +158,7 @@ export const STD_DEVICE_ATTRDEFS = {
         display_name: gettext('Uptime'),
         description: gettext('The number of seconds passed since the device has been turned on.'),
         type: 'number',
-        unit: gettext('seconds'),
+        unit: gettext('s'),
         integer: true,
         modifiable: false,
         optional: true,
@@ -524,7 +524,7 @@ export const STD_PORT_ATTRDEFS = {
         display_name: gettext('Expires'),
         description: gettext('The number of seconds before the port value is considered expired. 0 means ' +
                              'that port value never expires.'),
-        unit: gettext('seconds'),
+        unit: gettext('s'),
         type: 'number',
         modifiable: true,
         standard: true,

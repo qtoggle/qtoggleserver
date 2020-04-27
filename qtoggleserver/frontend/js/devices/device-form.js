@@ -89,7 +89,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                     name: 'poll_interval',
                     label: gettext('Polling Interval'),
                     choices: Devices.POLL_CHOICES,
-                    unit: gettext('seconds')
+                    unit: gettext('s')
                 }),
                 new CheckField({
                     name: 'listen_enabled',
