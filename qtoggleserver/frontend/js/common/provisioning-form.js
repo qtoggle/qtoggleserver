@@ -26,8 +26,6 @@ import * as Common        from '$app/common/common.js'
 import WaitDeviceMixin    from '$app/common/wait-device-mixin.js'
 
 
-const GEAR_ICON = new StockIcon({name: 'gear'})
-
 const logger = Logger.get('qtoggle.common.provisioning')
 
 
@@ -45,7 +43,7 @@ class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin) {
      */
     constructor(deviceName) {
         super({
-            icon: GEAR_ICON,
+            icon: new StockIcon({name: 'provisioning', stockName: 'qtoggle'}),
             title: gettext('Device Provisioning'),
             pathId: 'provisioning',
             closeOnApply: false,
