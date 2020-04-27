@@ -62,11 +62,6 @@ export const KNOWN_ERRORS = [
     },
     {
         status: 400,
-        code: 'no-such-version',
-        pretty: gettext('Firmware version not available.')
-    },
-    {
-        status: 400,
         code: 'duplicate-port',
         pretty: gettext('The port already exists.')
     },
@@ -135,6 +130,11 @@ export const KNOWN_ERRORS = [
         status: 404,
         code: 'no-such-function',
         pretty: gettext("Device doesn't expose the qToggle API at given URL.")
+    },
+    {
+        status: 404,
+        code: 'no-such-version',
+        pretty: gettext('Firmware version not available.')
     },
     {
         status: 404,
