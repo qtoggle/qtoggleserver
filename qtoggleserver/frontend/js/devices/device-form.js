@@ -12,6 +12,7 @@ import {PageForm}           from '$qui/forms/common-forms.js'
 import FormButton           from '$qui/forms/form-button.js'
 import {ErrorMapping}       from '$qui/forms/forms.js'
 import {ValidationError}    from '$qui/forms/forms.js'
+import StockIcon            from '$qui/icons/stock-icon.js'
 import {ConfirmMessageForm} from '$qui/messages/common-message-forms.js'
 import * as Messages        from '$qui/messages/messages.js'
 import * as Toast           from '$qui/messages/toast.js'
@@ -224,16 +225,9 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                 separator: true,
                 caption: gettext('Reboot'),
                 style: 'highlight',
+                icon: new StockIcon({name: 'sync'}),
                 onClick(form) {
                     form.pushPage(form.makeConfirmAndRebootForm())
-                }
-            }),
-            new PushButtonField({
-                name: 'provision',
-                style: 'interactive',
-                caption: gettext('Provision'),
-                onClick(form) {
-                    form.pushPage(form.makeProvisioningForm())
                 }
             }),
             new PushButtonField({
@@ -242,15 +236,26 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                 backgroundColor: Theme.getColor('@magenta-color'),
                 backgroundActiveColor: Theme.getColor('@magenta-active-color'),
                 caption: gettext('Firmware'),
+                icon: new StockIcon({name: 'firmware', stockName: 'qtoggle'}),
                 disabled: true,
                 onClick(form) {
                     form.pushPage(form.makeUpdateFirmwareForm())
                 }
             }),
             new PushButtonField({
+                name: 'provision',
+                style: 'interactive',
+                caption: gettext('Provision'),
+                icon: new StockIcon({name: 'provisioning', stockName: 'qtoggle'}),
+                onClick(form) {
+                    form.pushPage(form.makeProvisioningForm())
+                }
+            }),
+            new PushButtonField({
                 name: 'ports',
                 style: 'interactive',
                 caption: gettext('Ports'),
+                icon: new StockIcon({name: 'port', stockName: 'qtoggle'}),
                 onClick(form) {
                     Navigation.navigate({path: ['ports', form.getDeviceName()]})
                 }
@@ -262,7 +267,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
             label: gettext('Manage Device'),
             separator: true,
             flow: Window.isSmallScreen() ? 'vertical' : 'horizontal',
-            columns: 3,
+            columns: 2,
             fields: managementButtons
         }))
     }
