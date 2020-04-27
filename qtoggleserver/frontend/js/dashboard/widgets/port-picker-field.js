@@ -58,6 +58,7 @@ class PortPickerField extends ComboField {
     makeLabelHTML() {
         let html = super.makeLabelHTML()
 
+        html.css('grid-template-columns', '1fr fit-content(75%)')
         html.append(this.makeCurrentHMTL())
 
         return html
