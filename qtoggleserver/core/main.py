@@ -154,14 +154,6 @@ async def handle_value_changes(
         deps = set(expression.get_deps())
         deps.add(None)  # Special "always depends on" value
 
-        # If port expression depends on port itself and the change reason is the evaluation of its expression, prevent
-        # evaluating its expression again to avoid evaluation loops
-        change_reason = change_reasons.get(port, core_ports.CHANGE_REASON_NATIVE)
-        if ((port in changed_set) and
-            (f'${port.get_id()}' in deps) and
-            (change_reason == core_ports.CHANGE_REASON_EXPRESSION)):
-            continue
-
         changed_set_ids = set(f'${c.get_id()}' for c in changed_set if isinstance(c, core_ports.BasePort))
 
         # Evaluate a port's expression when:
@@ -174,6 +166,16 @@ async def handle_value_changes(
         # * time dep strings
         # * None
         if not (deps & (changed_set_ids | changed_set)) and (port not in changed_set):
+            continue
+
+        # If port expression depends on port itself and the change reason is the evaluation of its expression, prevent
+        # evaluating its expression again to avoid evaluation loops
+        change_reason = change_reasons.get(port, core_ports.CHANGE_REASON_NATIVE)
+        if ((port in changed_set) and
+            (f'${port.get_id()}' in deps) and
+            (change_reason == core_ports.CHANGE_REASON_EXPRESSION)):
+
+            logger.debug('skipping evaluation of %s expression to prevent loops', port)
             continue
 
         try:
@@ -190,9 +192,12 @@ async def handle_value_changes(
         if value is None:
             continue
 
+        logger.debug('expression "%s" of %s evaluated to %s', expression, port, json_utils.dumps(value))
         if value != port.get_value():
-            logger.debug('expression "%s" of %s evaluated to %s', expression, port, json_utils.dumps(value))
             port.push_value(value, reason=core_ports.CHANGE_REASON_EXPRESSION)
+
+        else:
+            logger.debug('%s value unchanged after expression evaluation', port)
 
 
 def force_eval_expressions(port: core_ports.BasePort = None) -> None:
