@@ -27,7 +27,7 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
 export const STD_DEVICE_ATTRDEFS = {
     name: {
         display_name: gettext('Device Name'),
-        description: gettext('The name of the device.'),
+        description: gettext('A unique name given to the device (usually its hostname).'),
         type: 'string',
         max: 32,
         required: true,
@@ -51,7 +51,6 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     version: {
         display_name: gettext('Firmware Version'),
-        description: gettext('The current version of the firmware.'),
         type: 'string',
         modifiable: false,
         standard: true,
@@ -59,7 +58,7 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     api_version: {
         display_name: gettext('API Version'),
-        description: gettext('The API version implemented by the device.'),
+        description: gettext('The qToggle API version implemented and supported by the device.'),
         type: 'string',
         modifiable: false,
         standard: true,
@@ -67,7 +66,6 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     vendor: {
         display_name: gettext('Vendor'),
-        description: gettext('The implementation vendor.'),
         type: 'string',
         modifiable: false,
         standard: true,
@@ -146,7 +144,6 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     timezone: {
         display_name: gettext('Timezone'),
-        description: gettext('The device timezone.'),
         type: 'string',
         modifiable: true,
         optional: true,
@@ -306,7 +303,6 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     ip_address_current: {
         display_name: gettext('IP Address (Current)'),
-        description: gettext('The current IP address of the device.'),
         type: 'string',
         modifiable: false,
         optional: true,
@@ -315,7 +311,6 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     ip_netmask_current: {
         display_name: gettext('Network Mask (Current)'),
-        description: gettext('The current network mask of the device.'),
         type: 'number',
         modifiable: false,
         optional: true,
@@ -328,7 +323,6 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     ip_gateway_current: {
         display_name: gettext('Gateway (Current)'),
-        description: gettext('The current gateway (default route) of the device.'),
         type: 'string',
         modifiable: false,
         optional: true,
@@ -337,7 +331,6 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     ip_dns_current: {
         display_name: gettext('DNS Server (Current)'),
-        description: gettext('The current DNS server of the device.'),
         type: 'string',
         modifiable: false,
         optional: true,
@@ -346,7 +339,6 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     cpu_usage: {
         display_name: gettext('CPU Usage'),
-        description: gettext('The total CPU usage.'),
         unit: '%',
         type: 'number',
         modifiable: false,
@@ -360,7 +352,6 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     mem_usage: {
         display_name: gettext('Memory Usage'),
-        description: gettext('The current RAM usage.'),
         unit: '%',
         type: 'number',
         modifiable: false,
@@ -374,7 +365,6 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     storage_usage: {
         display_name: gettext('Storage Usage'),
-        description: gettext('The storage (disk/flash) usage.'),
         unit: '%',
         type: 'number',
         modifiable: false,
@@ -388,7 +378,6 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     temperature: {
         display_name: gettext('Temperature'),
-        description: gettext('The current device temperature.'),
         unit: '\xb0C',
         type: 'number',
         modifiable: false,
@@ -412,7 +401,6 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     battery_level: {
         display_name: gettext('Battery Level'),
-        description: gettext('The battery state of charge level.'),
         unit: '%',
         type: 'number',
         modifiable: false,
@@ -426,7 +414,6 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     low_battery: {
         display_name: gettext('Low Battery'),
-        description: gettext('Indicates that battery is low and must be replaced or charged.'),
         type: 'boolean',
         modifiable: false,
         optional: true,
@@ -452,7 +439,7 @@ export const STD_DEVICE_ATTRDEFS = {
     },
     virtual_ports: {
         display_name: gettext('Virtual Ports'),
-        description: gettext('Indicates the number of virtual ports supported by the device.'),
+        description: gettext('Indicates the maximum number of virtual ports supported by the device.'),
         type: 'number',
         integer: 'true',
         modifiable: false,
@@ -489,7 +476,6 @@ export const STD_PORT_ATTRDEFS = {
     },
     enabled: {
         display_name: gettext('Enabled'),
-        description: gettext('Enables or disables the port.'),
         type: 'boolean',
         modifiable: true,
         standard: true,
@@ -497,7 +483,6 @@ export const STD_PORT_ATTRDEFS = {
     },
     online: {
         display_name: gettext('Online'),
-        description: gettext('Indicates if the port is online or not.'),
         type: 'boolean',
         modifiable: false,
         standard: true,
@@ -535,7 +520,7 @@ export const STD_PORT_ATTRDEFS = {
     },
     type: {
         display_name: gettext('Type'),
-        description: gettext('The type of the port value.'),
+        description: gettext('The data type of the port value.'),
         type: 'string',
         choices: [
             {display_name: gettext('Boolean'), value: 'boolean'},
@@ -633,7 +618,7 @@ export const STD_PORT_ATTRDEFS = {
     },
     virtual: {
         display_name: gettext('Virtual Port'),
-        description: gettext('Indicates that this is a virtual port.'),
+        description: gettext('Tells whether this is a virtual port or not.'),
         type: 'boolean',
         modifiable: false,
         standard: true,

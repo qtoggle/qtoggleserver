@@ -288,7 +288,6 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         }
 
         fieldAttrs.name = 'value'
-        fieldAttrs.description = gettext('Current port value.')
         fieldAttrs.label = gettext('Value')
         fieldAttrs.required = false
         fieldAttrs.unit = port.unit
