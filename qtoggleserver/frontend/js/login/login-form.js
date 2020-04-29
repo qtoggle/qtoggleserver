@@ -34,13 +34,13 @@ class LoginForm extends PageForm {
             fields: [
                 new TextField({
                     name: 'username',
-                    label: gettext('Username'),
+                    placeholder: gettext('Username'),
                     required: true,
                     autocomplete: 'username'
                 }),
                 new PasswordField({
                     name: 'password',
-                    label: gettext('Password'),
+                    placeholder: gettext('Password'),
                     autocomplete: true
                 }),
                 new CheckField({
