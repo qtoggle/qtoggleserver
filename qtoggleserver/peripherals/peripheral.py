@@ -33,7 +33,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def __str__(self) -> str:
         return f'peripheral {self.get_id()}'
 
-    def get_id(self):
+    def get_id(self) -> str:
         return self._name or f'{self.__class__.__name__}({id(self)})'
 
     def get_name(self) -> Optional[str]:
