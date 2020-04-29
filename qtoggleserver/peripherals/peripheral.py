@@ -21,19 +21,22 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     logger = logger
 
-    def __init__(self, name: str, **kwargs) -> None:
+    def __init__(self, name: Optional[str] = None, **kwargs) -> None:
         logging_utils.LoggableMixin.__init__(self, name, self.logger)
 
-        self._name = name
-        self._ports = []
-        self._enabled = False
-        self._online = False
-        self._runner = None
+        self._name: Optional[str] = name
+        self._ports: List[core_ports.BasePort] = []
+        self._enabled: bool = False
+        self._online: bool = False
+        self._runner: Optional[ThreadedRunner] = None
 
     def __str__(self) -> str:
-        return self._name
+        return f'peripheral {self.get_id()}'
 
-    def get_name(self) -> str:
+    def get_id(self):
+        return self._name or f'{self.__class__.__name__}({id(self)})'
+
+    def get_name(self) -> Optional[str]:
         return self._name
 
     def get_port_args(self) -> List[Dict[str, Any]]:

@@ -35,7 +35,7 @@ async def init() -> None:
         else:
             peripheral.debug('initializing')
             await peripheral.handle_init()
-            _registered_peripherals[peripheral.get_name()] = peripheral
+            _registered_peripherals[peripheral.get_id()] = peripheral
 
 
 async def cleanup() -> None:
