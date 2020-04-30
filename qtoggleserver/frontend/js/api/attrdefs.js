@@ -37,6 +37,7 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 100,
         field: {
             class: TextField,
+            maxLength: 32,
             pattern: /^[_a-zA-Z][_a-zA-Z0-9-]*$/
         }
     },
@@ -86,6 +87,7 @@ export const STD_DEVICE_ATTRDEFS = {
             autocomplete: false,
             clearEnabled: true,
             clearPlaceholder: true,
+            maxLength: 32,
             placeholder: `(${gettext('hidden')})`
         }
     },
@@ -104,6 +106,7 @@ export const STD_DEVICE_ATTRDEFS = {
             autocomplete: false,
             clearEnabled: true,
             clearPlaceholder: true,
+            maxLength: 32,
             placeholder: `(${gettext('hidden')})`
         }
     },
@@ -122,6 +125,7 @@ export const STD_DEVICE_ATTRDEFS = {
             autocomplete: false,
             clearEnabled: true,
             clearPlaceholder: true,
+            maxLength: 32,
             placeholder: `(${gettext('hidden')})`
         }
     },
@@ -188,7 +192,8 @@ export const STD_DEVICE_ATTRDEFS = {
             class: PasswordField,
             autocomplete: false,
             clearEnabled: true,
-            revealOnFocus: true
+            revealOnFocus: true,
+            maxLength: 64
         }
     },
     wifi_bssid: {
@@ -252,8 +257,6 @@ export const STD_DEVICE_ATTRDEFS = {
         description: gettext('Manually configured network mask. Leave empty for automatic (DHCP) configuration.'),
         type: 'number',
         modifiable: true,
-        min: 0,
-        max: 31,
         integer: true,
         reconnect: true,
         optional: true,
@@ -471,6 +474,7 @@ export const STD_PORT_ATTRDEFS = {
         order: 100,
         field: {
             class: TextField,
+            maxLength: 64,
             pattern: /^[_a-zA-Z][._a-zA-Z0-9-]*$/
         }
     },
@@ -629,7 +633,6 @@ export const STD_PORT_ATTRDEFS = {
         display_name: gettext('Expression'),
         description: gettext('An expression that controls the port value.'),
         type: 'string',
-        max: 1024,
         modifiable: true,
         separator: true,
         standard: true,
@@ -647,7 +650,6 @@ export const STD_PORT_ATTRDEFS = {
         modifiable: true,
         standard: true,
         optional: true,
-        max: 1024,
         field: {
             class: TextAreaField,
             resize: 'vertical'
@@ -658,7 +660,6 @@ export const STD_PORT_ATTRDEFS = {
         display_name: gettext('Write Transform Expression'),
         description: gettext('An expression to be applied on the value when written to the port.'),
         type: 'string',
-        max: 1024,
         modifiable: true,
         standard: true,
         optional: true,
@@ -668,7 +669,6 @@ export const STD_PORT_ATTRDEFS = {
         display_name: gettext('Read Transform Expression'),
         description: gettext('An expression to be applied on the value read from the port.'),
         type: 'string',
-        max: 1024,
         modifiable: true,
         standard: true,
         optional: true,
