@@ -2,7 +2,7 @@
 import abc
 import logging
 
-from typing import Dict, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
@@ -28,18 +28,18 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         self._filter_device_attr_transitions: Dict[str, Tuple[Attribute, Attribute]] = {}
         self._filter_device_attr_names: Set[str] = set()
 
-        self._filter_port_value: Optional[NullablePortValue] = None
+        self._filter_port_value: Optional[Union[List[NullablePortValue]], core_expressions.Expression] = None
         self._filter_port_value_transition: Optional[Tuple[NullablePortValue, NullablePortValue]] = None
-        self._filter_port_attrs: Attributes = {}
+        self._filter_port_attrs: Union[Attributes, Dict[str, List[Attribute]]] = {}
         self._filter_port_attr_transitions: Dict[str, Tuple[Attribute, Attribute]] = {}
         self._filter_port_attr_names: Set[str] = set()
 
-        self._filter_slave_attrs: Attributes = {}
+        self._filter_slave_attrs: Union[Attributes, Dict[str, List[Attribute]]] = {}
         self._filter_slave_attr_transitions: Dict[str, Tuple[Attribute, Attribute]] = {}
         self._filter_slave_attr_names: Set[str] = set()
 
         # Maintain an internal "last" state for all objects, so we can detect changes in attributes and values
-        self._device_attrs: Attributes = {}
+        self._device_attrs: Union[Attributes, Dict[str, List[Attribute]]] = {}
         self._port_values: Dict[str, NullablePortValue] = {}
         self._port_attrs: Dict[str, Attributes] = {}
         self._slave_attrs: Dict[str, Attributes] = {}
@@ -64,6 +64,9 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                     raise
 
             else:
+                if not isinstance(port_value, list):
+                    port_value = (port_value,)
+
                 self._filter_port_value = port_value
 
         self._filter_port_value_transition = self._filter.get('port_value_transition')
@@ -265,9 +268,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             elif isinstance(self._filter_port_value, core_expressions.Expression):  # An expression
                 if new_value != self._filter_port_value.eval():
                     return False
-
-            elif new_value != self._filter_port_value:  # A single value
-                return False
 
         return True
 
