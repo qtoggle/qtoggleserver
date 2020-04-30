@@ -36,8 +36,7 @@ async def patch_port(request: core_api.APIRequest, port_id: str, params: Attribu
     core_api_schema.validate(
         params,
         await port.get_schema(),
-        unexpected_field_code=unexpected_field_code,
-        field_name='attribute'
+        unexpected_field_code=unexpected_field_code
     )
 
     # Step validation
