@@ -1,4 +1,8 @@
 [![Actions Status](https://github.com/qtoggle/qtoggleserver/workflows/Release/badge.svg)](https://github.com/qtoggle/qtoggleserver/actions)
+[![Join us on https://gitter.im/qtoggle/community](https://badges.gitter.im/qtoggle/community.png)](https://gitter.im/qtoggle/community?utm_source=badge&utm_medium=badge&utm_content=badge)
+
+---
+
 
 **qToggleServer** is a fully fledged [qToggle](https://github.com/qtoggle/docs) implementation written in Python.
 
