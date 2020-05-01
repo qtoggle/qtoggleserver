@@ -48,7 +48,7 @@ async def update() -> None:
 
     changed_set.add('time_ms')
 
-    for port in ports.all_ports():
+    for port in list(ports.all_ports()):
         if not port.is_enabled():
             continue
 
