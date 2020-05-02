@@ -8,6 +8,8 @@ import socket
 import sys
 import time
 
+from typing import Optional
+
 from qtoggleserver import system
 from qtoggleserver import version
 from qtoggleserver.conf import settings
@@ -248,15 +250,15 @@ WIFI_RSSI_FAIR = -70
 NETWORK_ATTRS_WATCH_INTERVAL = 10
 
 
-name = socket.gethostname()
-display_name = ''
-admin_password_hash = None
-normal_password_hash = None
-viewonly_password_hash = None
+name: str = socket.gethostname()
+display_name: str = ''
+admin_password_hash: Optional[str] = None
+normal_password_hash: Optional[str] = None
+viewonly_password_hash: Optional[str] = None
 
-_schema = None
-_attrdefs = None
-_attrs_watch_task = None
+_schema: Optional[GenericJSONDict] = None
+_attrdefs: Optional[AttributeDefinitions] = None
+_attrs_watch_task: Optional[asyncio.Task] = None
 
 
 class DeviceAttributeError(Exception):
@@ -586,7 +588,7 @@ async def _attrs_watch_loop() -> None:
                 last_net_time = now
 
             if changed:
-                device_events.trigger_update()
+                await device_events.trigger_update()
 
             await asyncio.sleep(1)
 

@@ -193,7 +193,7 @@ class Slave(logging_utils.LoggableMixin):
                         await self.disable()
 
                         # We have to trigger an update event here, to inform consumers about disabling
-                        self.trigger_update()
+                        await self.trigger_update()
 
                     # Check for duplicate name
                     if name in _slaves_by_name or core_device_attrs.name == name:
@@ -498,16 +498,16 @@ class Slave(logging_utils.LoggableMixin):
         self.debug('removing device')
         persist.remove('slaves', filt={'id': self._name})
 
-        self.trigger_remove()
+        await self.trigger_remove()
 
-    def trigger_add(self) -> None:
-        core_events.handle_event(events.SlaveDeviceAdd(self))
+    async def trigger_add(self) -> None:
+        await core_events.handle_event(events.SlaveDeviceAdd(self))
 
-    def trigger_remove(self) -> None:
-        core_events.handle_event(events.SlaveDeviceRemove(self))
+    async def trigger_remove(self) -> None:
+        await core_events.handle_event(events.SlaveDeviceRemove(self))
 
-    def trigger_update(self) -> None:
-        core_events.handle_event(events.SlaveDeviceUpdate(self))
+    async def trigger_update(self) -> None:
+        await core_events.handle_event(events.SlaveDeviceUpdate(self))
 
     async def api_call(
         self,
@@ -1143,7 +1143,7 @@ class Slave(logging_utils.LoggableMixin):
         # Trigger a master value-change if the returned value has not changed from the one we locally have (this happens
         # when slave indirectly rejects pushed value, by triggering itself a value-change with the old value)
         if port.get_cached_value() == value:
-            port.trigger_value_change()
+            await port.trigger_value_change()
 
         port.set_cached_value(value)
         port.update_last_sync()
@@ -1184,7 +1184,7 @@ class Slave(logging_utils.LoggableMixin):
             port.update_last_sync()
 
         await port.save()
-        port.trigger_update()
+        await port.trigger_update()
 
     async def _handle_port_add(self, **attrs: Attribute) -> None:
         local_id = f'{self._name}.{attrs.get("id")}'
@@ -1212,18 +1212,18 @@ class Slave(logging_utils.LoggableMixin):
                 attrs.pop(name)
 
         await self.update_cached_attrs(attrs)
-        self.trigger_update()
+        await self.trigger_update()
         self.save()
 
     async def _handle_offline(self) -> None:
         self.debug('device is offline')
 
-        self.trigger_update()
+        await self.trigger_update()
 
         # Trigger a port-update so that online attribute is pushed to consumers
         for port in self._get_local_ports():
             if port.is_enabled():
-                port.trigger_update()
+                await port.trigger_update()
 
     async def _handle_online(self) -> None:
         self.debug('device is online')
@@ -1247,12 +1247,12 @@ class Slave(logging_utils.LoggableMixin):
 
                 return
 
-        self.trigger_update()
+        await self.trigger_update()
 
         # Trigger a port-update so that online attribute is pushed to consumers
         for port in self._get_local_ports():
             if port.is_enabled():
-                port.trigger_update()
+                await port.trigger_update()
 
         if not self._ready:
             self.debug('device is ready')
@@ -1479,7 +1479,7 @@ class Slave(logging_utils.LoggableMixin):
                     self._cached_attrs[name] = value
 
                 # Inform clients about the provisioning field change
-                self.trigger_update()
+                await self.trigger_update()
 
                 self.save()
 
@@ -1542,7 +1542,7 @@ class Slave(logging_utils.LoggableMixin):
 
                 self.debug('firmware update process active')
                 await self.disable()
-                self.trigger_update()
+                await self.trigger_update()
                 self._start_fwupdate_polling()
 
             elif method == 'GET' and self._fwupdate_poll_task:
@@ -1557,7 +1557,7 @@ class Slave(logging_utils.LoggableMixin):
 
                 self.debug('device has been reset to factory defaults')
                 await self.disable()
-                self.trigger_update()
+                await self.trigger_update()
 
     def intercept_error(self, error: Exception) -> Exception:
         if isinstance(error, core_responses.HTTPError):
@@ -1626,8 +1626,8 @@ async def add(
         slave.set_poll_interval(poll_interval)
 
     await slave.enable()
+    await slave.trigger_add()
     slave.save()
-    slave.trigger_add()
 
     if not listen_enabled and not poll_interval:
         # Device is permanently offline, but we must know its ports; this would otherwise be called by
@@ -1692,7 +1692,7 @@ async def load() -> None:
         else:
             logger.debug('loaded %s (disabled)', slave)
 
-        slave.trigger_add()
+        await slave.trigger_add()
 
 
 async def cleanup() -> None:

@@ -29,6 +29,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._enabled: bool = False
         self._online: bool = False
         self._runner: Optional[ThreadedRunner] = None
+        self._port_update_task: Optional[asyncio.Task] = None
 
     def __str__(self) -> str:
         return f'peripheral {self.get_id()}'
@@ -110,15 +111,22 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._online = online
 
     def handle_offline(self) -> None:
-        self.trigger_port_update()
+        if self._port_update_task:  # Already scheduled
+            return
+
+        self._port_update_task = asyncio.create_task(self.trigger_port_update())
 
     def handle_online(self) -> None:
-        self.trigger_port_update()
+        if self._port_update_task:  # Already scheduled
+            return
 
-    def trigger_port_update(self) -> None:
+        self._port_update_task = asyncio.create_task(self.trigger_port_update())
+
+    async def trigger_port_update(self) -> None:
+        self._port_update_task = None
         for port in self._ports:
             if port.is_enabled():
-                port.trigger_update()
+                await port.trigger_update()
 
     def get_runner(self) -> ThreadedRunner:
         if self._runner is None:
@@ -158,6 +166,9 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         pass
 
     async def handle_cleanup(self) -> None:
+        if self._port_update_task:
+            await self._port_update_task
+
         if self._runner:
             self.debug('stopping threaded runner')
             await self._runner.stop()

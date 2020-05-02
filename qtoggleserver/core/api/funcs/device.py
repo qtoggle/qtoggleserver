@@ -39,7 +39,7 @@ async def patch_device(request: core_api.APIRequest, params: Attributes) -> None
         raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
 
     core_device.save()
-    core_device_events.trigger_update()
+    await core_device_events.trigger_update()
 
     if reboot_required:
         main.loop.call_later(2, system.reboot)

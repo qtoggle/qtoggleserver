@@ -58,6 +58,7 @@ class Session:
         if not self.future:
             return
 
+        logger.debug('serving %d events to %s', len(events), self)
         self.future.set_result(reversed(events))
         self.future = None
 
@@ -84,6 +85,8 @@ class Session:
 
 
 class SessionsEventHandler(core_events.Handler):
+    FIRE_AND_FORGET = False
+
     def __init__(self, sessions_by_id: Dict[str, Session]) -> None:
         self._sessions_by_id: Dict[str, Session] = sessions_by_id
 
