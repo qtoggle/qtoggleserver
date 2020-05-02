@@ -1,12 +1,15 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 import abc
 import logging
 import time
 
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core.typing import GenericJSONDict
+from qtoggleserver.utils import logging as logging_utils
 
 
 logger = logging.getLogger(__package__)
@@ -42,8 +45,21 @@ class Event(metaclass=abc.ABCMeta):
         return False
 
 
-class Handler(metaclass=abc.ABCMeta):
+class Handler(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     FIRE_AND_FORGET = True
+
+    logger = logger
+
+    def __init__(self, name: Optional[str] = None) -> None:
+        logging_utils.LoggableMixin.__init__(self, name, self.logger)
+
+        self._name: Optional[str] = name
+
+    def __str__(self):
+        return f'event handler {self._name}'
+
+    def get_id(self) -> str:
+        return self._name or f'{self.__class__.__name__}({hex(id(self))})'
 
     @abc.abstractmethod
     async def handle_event(self, event: Event) -> None:

@@ -35,7 +35,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return f'peripheral {self.get_id()}'
 
     def get_id(self) -> str:
-        return self._name or f'{self.__class__.__name__}({id(self)})'
+        return self.get_name() or f'{self.__class__.__name__}({hex(id(self))})'
 
     def get_name(self) -> Optional[str]:
         return self._name

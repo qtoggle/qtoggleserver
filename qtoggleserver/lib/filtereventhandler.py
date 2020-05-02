@@ -18,7 +18,7 @@ logger = logging.getLogger(__package__)
 class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
     logger = logger
 
-    def __init__(self, filter: dict = None) -> None:
+    def __init__(self, *, filter: dict = None, name: Optional[str] = None) -> None:
         self._filter: dict = filter or {}
         self._filter_prepared: bool = False
 
@@ -44,6 +44,8 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         self._port_attrs: Dict[str, Attributes] = {}
         self._slave_attrs: Dict[str, Attributes] = {}
 
+        super().__init__(name=name)
+
     def _prepare_filter(self) -> None:
         event_types = self._filter.get('type')
         if event_types:
@@ -55,11 +57,11 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         if port_value is not None:
             if isinstance(port_value, str):  # An expression
                 try:
-                    self.logger.debug('using value expression "%s"', port_value)
+                    self.debug('using value expression "%s"', port_value)
                     self._filter_port_value = core_expressions.parse(self_port_id=None, sexpression=port_value)
 
                 except core_expressions.ExpressionParseError as e:
-                    self.logger.error('failed to parse port expression "%s": %s', port_value, e)
+                    self.error('failed to parse port expression "%s": %s', port_value, e)
 
                     raise
 
@@ -111,7 +113,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         self._filter_slave_attr_names.update(self._filter_slave_attr_transitions.keys())
 
         self._filter_prepared = True
-        logger.debug('filter prepared')
+        self.debug('filter prepared')
 
     @staticmethod
     def _make_changed_added_removed(old_attrs: Attributes, new_attrs: Attributes) -> Tuple[
@@ -357,13 +359,13 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         if not accepted:
             return
 
-        self.logger.debug('handling event %s', event)
+        self.debug('handling event %s', event)
 
         try:
             await self.on_event(event)
 
         except Exception as e:
-            self.logger.error('failed to handle event %s: %s', event, e, exc_info=True)
+            self.error('failed to handle event %s: %s', event, e, exc_info=True)
 
         try:
             if isinstance(event, core_events.ValueChange):
@@ -408,7 +410,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 await self.on_slave_device_remove(event, event.get_slave(), new_attrs)
 
         except Exception as e:
-            self.logger.error('failed to handle event %s: %s', event, e, exc_info=True)
+            self.error('failed to handle event %s: %s', event, e, exc_info=True)
 
     async def on_event(self, event: core_events.Event) -> None:
         pass
