@@ -55,7 +55,7 @@ class Handler(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._name: Optional[str] = name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'event handler {self._name}'
 
     def get_id(self) -> str:
