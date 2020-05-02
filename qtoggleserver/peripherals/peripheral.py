@@ -111,22 +111,22 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._online = online
 
     def handle_offline(self) -> None:
-        if self._port_update_task:  # Already scheduled
-            return
-
-        self._port_update_task = asyncio.create_task(self.trigger_port_update())
+        self.trigger_port_update_fire_and_forget()
 
     def handle_online(self) -> None:
-        if self._port_update_task:  # Already scheduled
-            return
-
-        self._port_update_task = asyncio.create_task(self.trigger_port_update())
+        self.trigger_port_update_fire_and_forget()
 
     async def trigger_port_update(self) -> None:
         self._port_update_task = None
         for port in self._ports:
             if port.is_enabled():
                 await port.trigger_update()
+
+    def trigger_port_update_fire_and_forget(self) -> None:
+        if self._port_update_task:
+            return  # Already scheduled
+
+        self._port_update_task = asyncio.create_task(self.trigger_port_update())
 
     def get_runner(self) -> ThreadedRunner:
         if self._runner is None:
