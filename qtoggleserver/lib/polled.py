@@ -25,14 +25,14 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
     DEFAULT_POLL_INTERVAL = 1800
     RETRY_POLL_INTERVAL = 60
 
-    def __init__(self, name: str, **kwargs) -> None:
+    def __init__(self, **kwargs) -> None:
         self._polling: bool = False
         self._poll_stopped: bool = False
         self._poll_task: Optional[asyncio.Task] = None
         self._poll_interval: int = self.DEFAULT_POLL_INTERVAL
         self._poll_error: Optional[Exception] = None
 
-        super().__init__(name, **kwargs)
+        super().__init__(**kwargs)
 
     async def _poll_loop(self) -> None:
         self.debug('polling started')

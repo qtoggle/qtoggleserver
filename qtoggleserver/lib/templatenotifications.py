@@ -62,10 +62,12 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
 
     def __init__(
         self,
+        *,
         template: Optional[Dict[str, str]] = None,
         templates: Optional[Dict[str, Dict[str, str]]] = None,
         skip_startup: bool = True,
-        filter: dict = None
+        filter: dict = None,
+        name: Optional[str] = None
     ) -> None:
 
         self._skip_startup: bool = skip_startup
@@ -88,7 +90,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
             for k, t in ts.items():
                 self._templates[_type][k] = self._j2env.from_string(t) if t is not None else None
 
-        super().__init__(filter)
+        super().__init__(name=name, filter=filter)
 
     def render(self, event_type: str, context: dict) -> Dict[str, str]:
         template = self._templates[event_type]

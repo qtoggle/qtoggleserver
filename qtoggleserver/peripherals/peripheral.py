@@ -21,7 +21,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     logger = logger
 
-    def __init__(self, name: Optional[str] = None, **kwargs) -> None:
+    def __init__(self, *, name: Optional[str] = None, **kwargs) -> None:
         logging_utils.LoggableMixin.__init__(self, name, self.logger)
 
         self._name: Optional[str] = name
@@ -35,7 +35,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return f'peripheral {self.get_id()}'
 
     def get_id(self) -> str:
-        return self._name or f'{self.__class__.__name__}({id(self)})'
+        return self.get_name() or f'{self.__class__.__name__}({hex(id(self))})'
 
     def get_name(self) -> Optional[str]:
         return self._name
