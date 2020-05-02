@@ -151,12 +151,12 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
     logger = logger
 
-    def __init__(self, name: str, address: str, adapter_name: str = DEFAULT_ADAPTER_NAME) -> None:
-        super().__init__(name)
-
+    def __init__(self, *, address: str, adapter_name: str = DEFAULT_ADAPTER_NAME, **kwargs) -> None:
         self._address = address
         self._adapter: BLEAdapter = BLEAdapter.get(adapter_name)
         self._adapter.add_peripheral(self)
+
+        super().__init__(**kwargs)
 
     def __str__(self) -> str:
         return f'{self._adapter}/{self._name}'

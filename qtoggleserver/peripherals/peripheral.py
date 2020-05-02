@@ -21,7 +21,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     logger = logger
 
-    def __init__(self, name: Optional[str] = None, **kwargs) -> None:
+    def __init__(self, *, name: Optional[str] = None, **kwargs) -> None:
         logging_utils.LoggableMixin.__init__(self, name, self.logger)
 
         self._name: Optional[str] = name

@@ -36,8 +36,8 @@ class OneWirePeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
     TIMEOUT = 5  # Seconds
 
-    def __init__(self, name: str, address: str) -> None:
-        super().__init__(name)
+    def __init__(self, *, address: str, **kwargs) -> None:
+        super().__init__(**kwargs)
 
         self._address: str = address
         self._filename: Optional[str] = None
