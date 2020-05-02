@@ -16,6 +16,7 @@ from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from qtoggleserver import persist
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
+from qtoggleserver.core import main as core_main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.conf import settings
@@ -1140,14 +1141,11 @@ class Slave(logging_utils.LoggableMixin):
             json_utils.dumps(value)
         )
 
-        # Trigger a master value-change if the returned value has not changed from the one we locally have (this happens
-        # when slave indirectly rejects pushed value, by triggering itself a value-change with the old value)
-        if port.get_cached_value() == value:
-            await port.trigger_value_change()
-
         port.set_cached_value(value)
         port.update_last_sync()
         await port.save()
+
+        await core_main.update()
 
     async def _handle_port_update(self, **attrs: Attribute) -> None:
         local_id = f'{self._name}.{attrs.get("id")}'
