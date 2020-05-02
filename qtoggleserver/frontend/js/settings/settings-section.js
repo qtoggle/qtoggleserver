@@ -28,7 +28,8 @@ class SettingsSection extends Section {
         super({
             id: SECTION_ID,
             title: SECTION_TITLE,
-            icon: Settings.WRENCH_ICON
+            icon: Settings.WRENCH_ICON,
+            closeMainPageOnHide: true
         })
 
         this.settingsForm = null
