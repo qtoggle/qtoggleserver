@@ -23,7 +23,7 @@ WORKDIR /tmp/build
 
 # Build frontend
 RUN cd qtoggleserver/frontend && \
-    sed -i "s/unknown-version/${PROJECT_VERSION}/" package.json && \
+    sed -i "s/0.0.0-unknown.0/${PROJECT_VERSION}/" package.json && \
     npm install && npx webpack --mode=production
 
 
