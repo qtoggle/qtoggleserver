@@ -80,6 +80,9 @@ class SlavePort(core_ports.BasePort):
         # provisioned later
         self._provisioning: Set[str] = set()
 
+        # Helps managing the triggering of port-update event from non-async methods
+        self._trigger_update_task: Optional[asyncio.Task] = None
+
         port_id = f'{slave.get_name()}.{self._remote_id}'
 
         super().__init__(port_id)
@@ -172,9 +175,7 @@ class SlavePort(core_ports.BasePort):
                 self._provisioning.add(name)
                 self._cached_attrs[name] = value
 
-                # Skip an IO loop iteration, allowing setting multiple attributes before triggering a port-update
-                await asyncio.sleep(0)
-                self.trigger_update()
+                await self.trigger_update()
 
     def get_cached_attr(self, name: str) -> Optional[Attribute]:
         return self._cached_attrs.get(name)
@@ -310,7 +311,7 @@ class SlavePort(core_ports.BasePort):
             await self.save()  # Save provisioning value
 
             # We need to trigger a port-update because our provisioning attribute has changed
-            self.trigger_update()
+            await self.trigger_update()
 
     async def set_sequence(self, values: List[PortValue], delays: List[int], repeat: int) -> None:
         if not self._slave.is_online():
@@ -339,7 +340,8 @@ class SlavePort(core_ports.BasePort):
             if now_expired:
                 self.debug('value expired')
 
-            self.trigger_update()
+            if not self._trigger_update_task:
+                self._trigger_update_task = asyncio.create_task(self.trigger_update())
 
     async def load_from_data(self, data: GenericJSONDict) -> None:
         # Only consider locally persisted attributes for permanently offline devices. For online devices, we always use
@@ -391,3 +393,14 @@ class SlavePort(core_ports.BasePort):
             else:
                 if value is not None:
                     self._cached_value = value
+
+    async def trigger_update(self) -> None:
+        await super().trigger_update()
+
+        self._trigger_update_task = None
+
+    async def cleanup(self) -> None:
+        await super().cleanup()
+
+        if self._trigger_update_task:
+            await self._trigger_update_task

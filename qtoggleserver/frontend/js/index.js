@@ -151,12 +151,14 @@ function main() {
                 return
             }
 
-            logger.info('application became visible, reloading cache')
+            if (!Config.debug) {
+                logger.info('application became visible, reloading cache')
 
-            Cache.setReloadNeeded()
+                Cache.setReloadNeeded()
 
-            NotificationsAPI.stopListening()
-            NotificationsAPI.startListening()
+                NotificationsAPI.stopListening()
+                NotificationsAPI.startListening()
+            }
         })
 
     })

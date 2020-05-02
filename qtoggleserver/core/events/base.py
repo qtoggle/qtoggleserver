@@ -43,9 +43,14 @@ class Event(metaclass=abc.ABCMeta):
 
 
 class Handler(metaclass=abc.ABCMeta):
+    FIRE_AND_FORGET = True
+
     @abc.abstractmethod
     async def handle_event(self, event: Event) -> None:
         raise NotImplementedError()
 
     async def cleanup(self) -> None:
         pass
+
+    def is_fire_and_forget(self) -> bool:
+        return self.FIRE_AND_FORGET

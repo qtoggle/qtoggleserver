@@ -2,5 +2,5 @@
 from qtoggleserver.core import events as core_events
 
 
-def trigger_update() -> None:
-    core_events.handle_event(core_events.DeviceUpdate())
+async def trigger_update() -> None:
+    await core_events.handle_event(core_events.DeviceUpdate())

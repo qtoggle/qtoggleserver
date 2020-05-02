@@ -146,7 +146,7 @@ async def patch_slave_device(request: core_api.APIRequest, name: str, params: Ge
             slave.disable_listen()
 
     slave.save()
-    slave.trigger_update()
+    await slave.trigger_update()
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)

@@ -24,7 +24,10 @@ logging: _typing.Dict[str, _typing.Any] = {
         }
     },
     'loggers': {
-        '"qtoggleserver.persist"': {'level': 'INFO'}  # Double quotes are necessary to avoid HOCON key split
+        # Double quotes are necessary to avoid HOCON key split
+        '"qtoggleserver.core.sessions"': {'level': 'INFO'},
+        '"qtoggleserver.persist"': {'level': 'INFO'},
+        '"qtoggleserver.utils.cmd"': {'level': 'INFO'}
     },
     'root': {
         'level': 'DEBUG',

@@ -111,6 +111,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         self._filter_slave_attr_names.update(self._filter_slave_attr_transitions.keys())
 
         self._filter_prepared = True
+        logger.debug('filter prepared')
 
     @staticmethod
     def _make_changed_added_removed(old_attrs: Attributes, new_attrs: Attributes) -> Tuple[
@@ -354,7 +355,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         )
 
         if not accepted:
-            self.logger.debug('skipping event %s', event)
             return
 
         self.logger.debug('handling event %s', event)

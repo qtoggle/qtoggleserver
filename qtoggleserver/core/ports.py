@@ -348,7 +348,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         # Skip an IO loop iteration, allowing setting multiple attributes before triggering a port-update
         await asyncio.sleep(0)
-        self.trigger_update()
+        await self.trigger_update()
 
     async def handle_attr_change(self, name: str, value: Attribute) -> None:
         method_name = f'handle_{name}'
@@ -845,19 +845,19 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.debug('removing persisted data')
             persist.remove(self.PERSIST_COLLECTION, filt={'id': self._id})
 
-        self.trigger_remove()
+        await self.trigger_remove()
 
-    def trigger_add(self) -> None:
-        core_events.handle_event(core_events.PortAdd(self))
+    async def trigger_add(self) -> None:
+        await core_events.handle_event(core_events.PortAdd(self))
 
-    def trigger_remove(self) -> None:
-        core_events.handle_event(core_events.PortRemove(self))
+    async def trigger_remove(self) -> None:
+        await core_events.handle_event(core_events.PortRemove(self))
 
-    def trigger_update(self) -> None:
-        core_events.handle_event(core_events.PortUpdate(self))
+    async def trigger_update(self) -> None:
+        await core_events.handle_event(core_events.PortUpdate(self))
 
-    def trigger_value_change(self) -> None:
-        core_events.handle_event(core_events.ValueChange(self))
+    async def trigger_value_change(self) -> None:
+        await core_events.handle_event(core_events.ValueChange(self))
 
     async def get_schema(self) -> GenericJSONDict:
         if self._schema is None:
@@ -1028,7 +1028,7 @@ async def load(port_args: List[Dict[str, Any]], raise_on_error: bool = True) -> 
 
             port.error('failed to load: %s', port, e, exc_info=True)
 
-        port.trigger_add()
+        await port.trigger_add()
 
     return ports
 

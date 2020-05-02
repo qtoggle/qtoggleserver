@@ -48,7 +48,7 @@ async def update() -> None:
 
     changed_set.add('time_ms')
 
-    for port in ports.all_ports():
+    for port in list(ports.all_ports()):
         if not port.is_enabled():
             continue
 
@@ -130,7 +130,7 @@ async def handle_value_changes(
         if not isinstance(port, core_ports.BasePort):
             continue
 
-        port.trigger_value_change()
+        await port.trigger_value_change()
 
         if await port.is_persisted():
             await port.save()
