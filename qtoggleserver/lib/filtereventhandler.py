@@ -355,7 +355,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         )
 
         if not accepted:
-            self.logger.debug('skipping event %s', event)
             return
 
         self.logger.debug('handling event %s', event)
