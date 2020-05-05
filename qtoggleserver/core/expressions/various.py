@@ -31,6 +31,28 @@ class AccFunction(Function):
         return result
 
 
+@function('ACCINC')
+class AccFunction(Function):
+    MIN_ARGS = MAX_ARGS = 2
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._last_value: Optional[float] = None
+
+    def eval(self) -> CorePortValue:
+        value = self.args[0].eval()
+        accumulator = self.args[1].eval()
+        result = accumulator
+
+        if (self._last_value is not None) and (value > self._last_value):
+            result += value - self._last_value
+
+        self._last_value = value
+
+        return result
+
+
 @function('HYST')
 class HystFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
