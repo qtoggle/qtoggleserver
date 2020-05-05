@@ -1565,7 +1565,9 @@ class Slave(logging_utils.LoggableMixin):
                 field = error.params.get('field', '')
                 m = _INVALID_EXPRESSION_FIELD_RE.match(field)
                 if m:
-                    return core_responses.HTTPError(error.status, error.code, field='device_' + m.group(1))
+                    params = dict(error.params)
+                    params['field'] = 'device_' + m.group(1)
+                    return core_responses.HTTPError(error.status, error.code, **params)
 
         return error
 
