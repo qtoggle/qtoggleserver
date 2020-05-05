@@ -32,7 +32,7 @@ class AccFunction(Function):
 
 
 @function('ACCINC')
-class AccFunction(Function):
+class AccIncFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
     def __init__(self, *args, **kwargs) -> None:
