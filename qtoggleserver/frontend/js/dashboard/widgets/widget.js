@@ -1269,7 +1269,7 @@ class Widget extends mix().with(ViewMixin) {
             this._panel.enableEditing()
         }
 
-        let path = ['dashboard', this._panel.getId()]
+        let path = ['dashboard', ...this._panel.getPath().slice(1).map(p => p.getId())]
         return Navigation.navigate({path}).then(function () {
 
             return this._panel.pushPage(configForm)
