@@ -25,3 +25,11 @@ class DeviceUpdate(DeviceEvent):
 
     def is_duplicate(self, event: Event) -> bool:
         return isinstance(event, self.__class__)
+
+
+class FullUpdate(DeviceEvent):
+    REQUIRED_ACCESS = core_api.ACCESS_LEVEL_VIEWONLY
+    TYPE = 'full-update'
+
+    def is_duplicate(self, event: Event) -> bool:
+        return isinstance(event, self.__class__)

@@ -44,6 +44,10 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
             'title': '{{device.get_display_name()}} has been updated',
             'body': 'Device {{device.get_display_name()}} attributes have been updated.'
         },
+        'full-update': {
+            'title': '{{device.get_display_name()}} has been updated',
+            'body': 'Device {{device.get_display_name()}} has been fully updated.'
+        },
         'slave-device-update': {
             'title': '{{slave.get_display_name()}} has been updated',
             'body': 'Device {{slave.get_display_name()}} attributes have been updated.'
@@ -213,6 +217,11 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
             'added_attrs': added_attrs,
             'removed_attrs': removed_attrs,
         })
+
+        await self.push_template_message(event, context)
+
+    async def on_full_update(self, event: core_events.Event) -> None:
+        context = self.get_common_context(event)
 
         await self.push_template_message(event, context)
 

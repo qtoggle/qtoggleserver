@@ -494,6 +494,12 @@ export function updateFromEvent(event) {
             break
         }
 
+        case 'full-update': {
+            setReloadNeeded()
+
+            break
+        }
+
         case 'device-polling-update': {
             Object.assign(mainDevice, event.params)
 

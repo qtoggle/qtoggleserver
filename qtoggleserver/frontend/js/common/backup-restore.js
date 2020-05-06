@@ -5,10 +5,10 @@
 
 import Logger from '$qui/lib/logger.module.js'
 
-import {gettext}           from '$qui/base/i18n.js'
-import * as ObjectUtils    from '$qui/utils/object.js'
-import * as PromiseUtils   from '$qui/utils/promise.js'
-import * as StringUtils    from '$qui/utils/string.js'
+import {gettext}         from '$qui/base/i18n.js'
+import * as ObjectUtils  from '$qui/utils/object.js'
+import * as PromiseUtils from '$qui/utils/promise.js'
+import * as StringUtils  from '$qui/utils/string.js'
 
 import * as Attrdefs         from '$app/api/attrdefs.js'
 import * as BaseAPI          from '$app/api/base.js'

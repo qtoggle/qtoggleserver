@@ -1114,7 +1114,7 @@ class Slave(logging_utils.LoggableMixin):
 
         self.debug('handling event of type %s', event['type'])
         try:
-            await method(**event['params'])
+            await method(**event.get('params', {}))
 
         except exceptions.DeviceRenamed:
             # Treat DeviceRenamed as an expected exception, do not log anything but forward it
@@ -1210,6 +1210,12 @@ class Slave(logging_utils.LoggableMixin):
                 attrs.pop(name)
 
         await self.update_cached_attrs(attrs)
+        await self.trigger_update()
+        self.save()
+
+    async def _handle_full_update(self) -> None:
+        await self.fetch_and_update_device()
+        await self.fetch_and_update_ports()
         await self.trigger_update()
         self.save()
 
