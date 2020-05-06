@@ -249,7 +249,7 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
         }
 
         if (recursive) {
-            children.forEach(c => c.updateUI())
+            children.forEach(c => c.updateUI(recursive))
         }
     }
 
