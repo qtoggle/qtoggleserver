@@ -392,6 +392,9 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             elif isinstance(event, core_events.DeviceUpdate):
                 await self.on_device_update(event, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs)
 
+            elif isinstance(event, core_events.FullUpdate):
+                await self.on_full_update(event)
+
             elif isinstance(event, slaves_events.SlaveDeviceUpdate):
                 await self.on_slave_device_update(
                     event,
@@ -455,6 +458,9 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         removed_attrs: Attributes
     ) -> None:
 
+        pass
+
+    async def on_full_update(self, event: core_events.Event) -> None:
         pass
 
     async def on_slave_device_update(

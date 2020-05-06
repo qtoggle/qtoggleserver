@@ -27,10 +27,15 @@ class Event(metaclass=abc.ABCMeta):
         return f'{self._type} event'
 
     async def to_json(self) -> GenericJSONDict:
-        return {
-            'type': self._type,
-            'params': await self.get_params()
+        result = {
+            'type': self._type
         }
+
+        params = await self.get_params()
+        if params:
+            result['params'] = params
+
+        return result
 
     async def get_params(self) -> GenericJSONDict:
         return {}

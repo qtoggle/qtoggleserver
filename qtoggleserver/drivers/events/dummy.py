@@ -59,6 +59,9 @@ class DummyEventHandler(filtereventhandler.FilterEventHandler):
 
         logger.debug('handling device-update')
 
+    async def on_full_update(self, event: core_events.Event) -> None:
+        logger.debug('handling full-update')
+
     async def on_slave_device_update(
         self,
         event: core_events.Event,
