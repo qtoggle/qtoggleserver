@@ -89,7 +89,6 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
             pathId: '',
             title: '',
             icon: Dashboard.GROUP_ICON,
-            keepPrevVisible: true,
             column: true,
             searchEnabled: true,
             addEnabled: AuthAPI.getCurrentAccessLevel() >= AuthAPI.ACCESS_LEVEL_ADMIN
@@ -102,6 +101,11 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
 
     init() {
         this.updateUI()
+    }
+
+    isPrevKeptVisible() {
+        /* Keep at most 3 elements visible */
+        return this.getContext().getSize() - this.getContextIndex() < 3
     }
 
     /**
