@@ -415,7 +415,7 @@ export class AnalogWidget extends Widget {
         this._displayUnit = true
         this._unit = ''
         this._decimals = 0
-        this._snap = SNAP_STRICT
+        this._snap = SNAP_NONE
         this._displayTicks = false
         this._displayTicksUnits = false
         this._colorTicks = false
@@ -957,6 +957,11 @@ export class AnalogWidget extends Widget {
         let port = this.getPort(this._portId)
         if (port && port.integer) {
             value = Math.round(value)
+        }
+        else {
+            /* Round to displayed number of decimals */
+            let pow10 = Math.pow(10, this._decimals)
+            value = Math.round(pow10 * value) / pow10
         }
 
         /* Actually send the new value to the server */
