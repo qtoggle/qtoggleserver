@@ -1259,6 +1259,7 @@ class Widget extends mix().with(ViewMixin) {
         let configForm = this.getConfigForm()
 
         this._configForm.updateFromWidget()
+        this._configForm.updatePortFields()
 
         if (configForm.hasContext()) { /* Already added */
             return Promise.resolve()
