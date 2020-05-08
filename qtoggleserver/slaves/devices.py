@@ -1519,7 +1519,7 @@ class Slave(logging_utils.LoggableMixin):
         if path == '/device':
             if method == 'PATCH':
                 # Intercept this API call to detect admin password changes
-                new_admin_password = request_body and request_body.get('admin_password') or None
+                new_admin_password = (request_body or {}).get('admin_password')
                 if new_admin_password is not None:
                     self.debug('updating admin password')
                     self.set_admin_password(new_admin_password)
