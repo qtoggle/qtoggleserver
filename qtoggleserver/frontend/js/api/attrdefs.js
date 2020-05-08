@@ -569,7 +569,17 @@ export const STD_PORT_ATTRDEFS = {
         modifiable: true,
         standard: true,
         optional: true,
-        order: 190
+        order: 181
+    },
+    internal: {
+        display_name: gettext('Internal'),
+        description: gettext("Indicates that the port's usage is limited to the device internal scope and has no" +
+                             'meaning outside of it.'),
+        type: 'boolean',
+        modifiable: true,
+        standard: true,
+        optional: true,
+        order: 182
     },
     min: {
         display_name: gettext('Minimum Value'),
@@ -579,7 +589,7 @@ export const STD_PORT_ATTRDEFS = {
         separator: true,
         standard: true,
         optional: true,
-        order: 200
+        order: 190
     },
     max: {
         display_name: gettext('Maximum Value'),
@@ -588,7 +598,7 @@ export const STD_PORT_ATTRDEFS = {
         modifiable: false,
         standard: true,
         optional: true,
-        order: 210
+        order: 200
     },
     integer: {
         display_name: gettext('Integer Values'),
@@ -597,7 +607,7 @@ export const STD_PORT_ATTRDEFS = {
         modifiable: false,
         standard: true,
         optional: true,
-        order: 220
+        order: 210
     },
     step: {
         display_name: gettext('Step'),
@@ -606,7 +616,7 @@ export const STD_PORT_ATTRDEFS = {
         modifiable: false,
         standard: true,
         optional: true,
-        order: 230
+        order: 220
     },
     // TODO choices
     tag: {
@@ -618,7 +628,7 @@ export const STD_PORT_ATTRDEFS = {
         separator: true,
         standard: true,
         optional: true,
-        order: 240
+        order: 230
     },
     virtual: {
         display_name: gettext('Virtual Port'),
@@ -627,7 +637,7 @@ export const STD_PORT_ATTRDEFS = {
         modifiable: false,
         standard: true,
         optional: true,
-        order: 250
+        order: 240
     },
     expression: {
         display_name: gettext('Expression'),
@@ -637,7 +647,7 @@ export const STD_PORT_ATTRDEFS = {
         separator: true,
         standard: true,
         optional: true,
-        order: 260,
+        order: 250,
         field: {
             class: TextAreaField,
             resize: 'vertical'
@@ -663,7 +673,7 @@ export const STD_PORT_ATTRDEFS = {
         modifiable: true,
         standard: true,
         optional: true,
-        order: 270
+        order: 260
     },
     transform_read: {
         display_name: gettext('Read Transform Expression'),
@@ -672,7 +682,7 @@ export const STD_PORT_ATTRDEFS = {
         modifiable: true,
         standard: true,
         optional: true,
-        order: 280
+        order: 270
     }
 }
 
