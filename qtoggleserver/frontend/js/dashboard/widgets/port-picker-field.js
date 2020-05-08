@@ -42,17 +42,33 @@ class PortPickerField extends ComboField {
         return true
     }
 
+    _filter(port) {
+        /* By default, filter out internal ports */
+        return !port.internal
+    }
+
     makeChoices() {
-        let choices = Object.values(Cache.getPorts()).filter(this.filter.bind(this)).map(function (port) {
+        let ports = Object.values(Cache.getPorts())
+
+        /* Apply implicit filtering */
+        ports = ports.filter(this._filter)
+
+        /* Apply custom filtering; bind filtering function as it's usually provided as standalone anonymous function */
+        ports = ports.filter(this.filter.bind(this))
+
+        let choices = ports.map(function (port) {
 
             return {
                 label: this.makeLabel(port),
-                value: port.id
+                value: port.id,
+                port: port
             }
 
         }, this)
 
-        return ArrayUtils.sortKey(choices, choice => choice.value)
+        choices = ArrayUtils.sortKey(choices, choice => (choice.port.display_name || choice.port.id))
+
+        return choices
     }
 
     makeLabelHTML() {
