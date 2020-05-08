@@ -120,6 +120,11 @@ STANDARD_ATTRDEFS = {
         'optional': True,
         'modifiable': True
     },
+    'internal': {
+        'type': 'boolean',
+        'optional': True,
+        'modifiable': True
+    },
     'virtual': {
         'type': 'boolean',
         'optional': True
@@ -378,6 +383,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def is_persisted(self) -> bool:
         return await self.get_attr('persisted')
+
+    async def is_internal(self) -> bool:
+        return await self.get_attr('internal')
 
     def is_enabled(self) -> bool:
         return self._enabled
@@ -938,6 +946,7 @@ class Port(BasePort, metaclass=abc.ABCMeta):
 
         self._tag: str = ''
         self._persisted: bool = False
+        self._internal: bool = False
 
 
 async def load(port_args: List[Dict[str, Any]], raise_on_error: bool = True) -> List[BasePort]:

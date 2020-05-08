@@ -130,7 +130,8 @@ async def handle_value_changes(
         if not isinstance(port, core_ports.BasePort):
             continue
 
-        await port.trigger_value_change()
+        if not await port.is_internal():
+            await port.trigger_value_change()
 
         if await port.is_persisted():
             await port.save()
