@@ -47,7 +47,7 @@ class PanelPickerField extends ComboField {
 
 /**
  * @alias qtoggle.dashboard.widgets.MoveWidgetForm
- * @extends qui.forms.PageForm
+ * @extends qui.forms.commonforms.PageForm
  */
 class MoveWidgetForm extends PageForm {
 

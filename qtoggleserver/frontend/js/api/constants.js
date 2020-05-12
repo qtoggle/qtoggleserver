@@ -16,7 +16,7 @@ export const QTOGGLE_API_PREFIX = '/api'
 /**
  * Known API errors.
  * @alias qtoggle.api.constants.KNOWN_ERRORS
- * @type {Array<Object>}
+ * @type {Object[]}
  */
 export const KNOWN_ERRORS = [
     /* HTTP 400 */
@@ -207,7 +207,7 @@ export const KNOWN_ERRORS = [
 /**
  * Known reasons for an invalid expression error.
  * @alias qtoggle.api.constants.INVALID_EXPRESSION_REASONS
- * @type {Array<Object>}
+ * @type {Object[]}
  */
 export const INVALID_EXPRESSION_REASONS = [
     {

@@ -18,7 +18,7 @@ const logger = Devices.logger
 
 /**
  * @alias qtoggle.devices.AddDeviceForm
- * @extends qui.forms.PageForm
+ * @extends qui.forms.commonforms.PageForm
  */
 class AddDeviceForm extends PageForm {
 

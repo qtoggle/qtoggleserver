@@ -36,7 +36,7 @@ class PortsListOptionsForm extends OptionsForm {
                     label: gettext('Disabled Ports')
                 })
             ],
-            data: {
+            initialData: {
                 show_offline_ports: Cache.getPrefs('ports.show_offline_ports', DEFAULT_SHOW_OFFLINE_PORTS),
                 show_disabled_ports: Cache.getPrefs('ports.show_disabled_ports', DEFAULT_SHOW_DISABLED_PORTS)
             }
@@ -67,7 +67,7 @@ class PortsListOptionsForm extends OptionsForm {
 
 /**
  * @alias qtoggle.ports.PortsList
- * @extends qui.lists.PageList
+ * @extends qui.lists.commonlists.PageList
  */
 class PortsList extends PageList {
 
@@ -179,15 +179,20 @@ class PortsList extends PageList {
         ArrayUtils.sortKey(ports, port => Utils.alphaNumSortKey(port.display_name || port.id))
 
         /* Preserve selected item */
-        let selectedItem = this.getSelectedItem()
-        let selectedPortId = selectedItem && selectedItem.getData()
+        let oldSelectedItems = this.getSelectedItems()
+        let oldSelectedPortId = oldSelectedItems.length && oldSelectedItems[0].getData()
 
-        this.setItems(ports.map(this.portToItem, this))
+        let items = ports.map(this.portToItem, this)
+        this.setItems(items)
 
-        if (selectedPortId) {
-            this.setSelectedIndex(ports.findIndex(function (p) {
-                return p.id === selectedPortId
-            }))
+        if (oldSelectedPortId) {
+            let item = items.find(i => i.getData() === oldSelectedPortId)
+            if (item) {
+                this.setSelectedItems([item])
+            }
+            else {
+                this.setSelectedItems([])
+            }
         }
     }
 
@@ -223,14 +228,16 @@ class PortsList extends PageList {
         return this.pushPage(this.makeAddPortForm(this._deviceName))
     }
 
-    onSelectionChange(newItem, newIndex, oldItem, oldIndex) {
-        return this.pushPage(this.makePortForm(newItem.getData()))
+    onSelectionChange(oldItems, newItems) {
+        if (newItems.length) {
+            return this.pushPage(this.makePortForm(newItems[0].getData()))
+        }
     }
 
     onCloseNext(next) {
         if (next === this.portForm) {
             this.portForm = null
-            this.setSelectedIndex(-1)
+            this.setSelectedItems([])
         }
     }
 
@@ -283,7 +290,13 @@ class PortsList extends PageList {
      * @param {String} portId
      */
     setSelectedPort(portId) {
-        this.setSelectedIndex(this.getItems().findIndex(item => item.getData() === portId))
+        let item = this.getItems().find(item => item.getData() === portId)
+        if (item) {
+            this.setSelectedItems([item])
+        }
+        else {
+            this.setSelectedItems([])
+        }
     }
 
 }

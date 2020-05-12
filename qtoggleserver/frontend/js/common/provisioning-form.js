@@ -32,7 +32,7 @@ const logger = Logger.get('qtoggle.common.provisioning')
 /**
  * Device provisioning form.
  * @alias qtoggle.common.ProvisioningForm
- * @extends qui.forms.PageForm
+ * @extends qui.forms.commonforms.PageForm
  * @mixes qtoggle.common.WaitDeviceMixin
  */
 class ProvisioningForm extends mix(PageForm).with(WaitDeviceMixin) {

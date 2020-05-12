@@ -5,6 +5,7 @@ import {OptionsForm}       from '$qui/forms/common-forms.js'
 import {IconLabelListItem} from '$qui/lists/common-items.js'
 import {PageList}          from '$qui/lists/common-lists.js'
 import * as ArrayUtils     from '$qui/utils/array.js'
+import {asap}              from '$qui/utils/misc.js'
 
 import * as Cache from '$app/cache.js'
 import * as Utils from '$app/utils.js'
@@ -12,7 +13,6 @@ import * as Utils from '$app/utils.js'
 import AddDeviceForm from './add-device-form.js'
 import DeviceForm    from './device-form.js'
 import * as Devices  from './devices.js'
-import {asap}        from '$qui/utils/misc.js'
 
 
 const DEFAULT_SHOW_OFFLINE_DEVICES = true
@@ -34,7 +34,7 @@ class DevicesListOptionsForm extends OptionsForm {
                     label: gettext('Disabled Devices')
                 })
             ],
-            data: {
+            initialData: {
                 show_offline_devices: Cache.getPrefs('devices.show_offline_devices', DEFAULT_SHOW_OFFLINE_DEVICES),
                 show_disabled_devices: Cache.getPrefs('devices.show_disabled_devices', DEFAULT_SHOW_DISABLED_DEVICES)
             }
@@ -65,7 +65,7 @@ class DevicesListOptionsForm extends OptionsForm {
 
 /**
  * @alias qtoggle.devices.DevicesList
- * @extends qui.lists.PageList
+ * @extends qui.lists.commonlists.PageList
  */
 class DevicesList extends PageList {
 
@@ -122,15 +122,17 @@ class DevicesList extends PageList {
         ArrayUtils.sortKey(devices, device => Utils.alphaNumSortKey(device.attrs.display_name || device.name))
 
         /* Preserve selected item */
-        let selectedItem = this.getSelectedItem()
-        let selectedDeviceName = selectedItem && selectedItem.getData()
+        let oldSelectedItems = this.getSelectedItems()
+        let oldSelectedDeviceName = oldSelectedItems.length && oldSelectedItems[0].getData()
 
-        this.setItems(devices.map(this.deviceToItem, this))
+        let items = devices.map(this.deviceToItem, this)
+        this.setItems(items)
 
-        if (selectedDeviceName) {
-            this.setSelectedIndex(devices.findIndex(function (d) {
-                return d.name === selectedDeviceName
-            }))
+        if (oldSelectedDeviceName) {
+            let newSelectedItem = items.find(i => i.getData().name === oldSelectedDeviceName)
+            if (newSelectedItem) {
+                this.setSelectedItems([newSelectedItem])
+            }
         }
     }
 
@@ -151,14 +153,16 @@ class DevicesList extends PageList {
         return this.pushPage(this.makeAddDeviceForm())
     }
 
-    onSelectionChange(newItem, newIndex, oldItem, oldIndex) {
-        return this.pushPage(this.makeDeviceForm(newItem.getData()))
+    onSelectionChange(oldItems, newItems) {
+        if (newItems.length) {
+            return this.pushPage(this.makeDeviceForm(newItems[0].getData()))
+        }
     }
 
     onCloseNext(next) {
         if (next === this.deviceForm) {
             this.deviceForm = null
-            this.setSelectedIndex(-1)
+            this.setSelectedItems([])
         }
     }
 
@@ -166,7 +170,7 @@ class DevicesList extends PageList {
         return new DevicesListOptionsForm(this)
     }
 
-    onOptionsChange() {
+    onOptionsChange(options) {
         this.updateUI()
     }
 
@@ -202,7 +206,13 @@ class DevicesList extends PageList {
      * @param {String} deviceName
      */
     setSelectedDevice(deviceName) {
-        this.setSelectedIndex(this.getItems().findIndex(item => item.getData() === deviceName))
+        let item = this.getItems().find(item => item.getData() === deviceName)
+        if (item) {
+            this.setSelectedItems([item])
+        }
+        else {
+            this.setSelectedItems([])
+        }
     }
 
 }

@@ -55,7 +55,7 @@ function getDeviceURL(device) {
 
 /**
  * @alias qtoggle.devices.DeviceForm
- * @extends qui.forms.PageForm
+ * @extends qui.forms.commonforms.PageForm
  * @mixes qtoggle.common.AttrdefFormMixin
  * @mixes qtoggle.common.WaitDeviceMixin
  * @mixes qtoggle.common.RebootDeviceMixin

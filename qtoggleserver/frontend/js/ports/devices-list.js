@@ -28,7 +28,7 @@ class DevicesListOptionsForm extends OptionsForm {
                     label: gettext('Offline Devices')
                 })
             ],
-            data: {
+            initialData: {
                 show_offline_devices: Cache.getPrefs('ports.show_offline_devices', DEFAULT_SHOW_OFFLINE_DEVICES)
             }
         })
@@ -42,7 +42,7 @@ class DevicesListOptionsForm extends OptionsForm {
 
 /**
  * @alias qtoggle.ports.DevicesList
- * @extends qui.lists.PageList
+ * @extends qui.lists.commonlists.PageList
  */
 class DevicesList extends PageList {
 
@@ -104,13 +104,20 @@ class DevicesList extends PageList {
         }
 
         /* Preserve selected item */
-        let selectedItem = this.getSelectedItem()
-        let selectedDeviceName = selectedItem && selectedItem.getData()
+        let oldSelectedItems = this.getSelectedItems()
+        let oldSelectedDeviceName = oldSelectedItems.length && oldSelectedItems[0].getData()
 
-        this.setItems(devices.map(this.deviceToItem, this))
+        let items = devices.map(this.deviceToItem, this)
+        this.setItems(items)
 
-        if (selectedDeviceName) {
-            this.setSelectedIndex(devices.findIndex(d => d.name === selectedDeviceName))
+        if (oldSelectedDeviceName) {
+            let item = items.find(i => i.getData() === oldSelectedDeviceName)
+            if (item) {
+                this.setSelectedItems([item])
+            }
+            else {
+                this.setSelectedItems([])
+            }
         }
     }
 
@@ -127,14 +134,16 @@ class DevicesList extends PageList {
         })
     }
 
-    onSelectionChange(newItem, newIndex, oldItem, oldIndex) {
-        return this.pushPage(this.makePortsList(newItem.getData()))
+    onSelectionChange(oldItems, newItems) {
+        if (newItems.length) {
+            return this.pushPage(this.makePortsList(newItems[0].getData()))
+        }
     }
 
     onCloseNext(next) {
         if (next === this.portsList) {
             this.portsList = null
-            this.setSelectedIndex(-1)
+            this.setSelectedItems([])
         }
     }
 
@@ -171,7 +180,13 @@ class DevicesList extends PageList {
      * @param {String} deviceName
      */
     setSelectedDevice(deviceName) {
-        this.setSelectedIndex(this.getItems().findIndex(item => item.getData() === deviceName))
+        let item = this.getItems().find(item => item.getData() === deviceName)
+        if (item) {
+            this.setSelectedItems([item])
+        }
+        else {
+            this.setSelectedItems([])
+        }
     }
 
 }

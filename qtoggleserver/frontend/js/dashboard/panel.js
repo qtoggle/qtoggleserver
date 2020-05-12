@@ -93,7 +93,7 @@ class PanelOptionsForm extends OptionsForm {
                     ]
                 })
             ],
-            data: {
+            initialData: {
                 name: panel.getName(),
                 width: panel.getWidth(),
                 height: panel.getHeight()

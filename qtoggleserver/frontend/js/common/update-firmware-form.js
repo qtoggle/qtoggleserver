@@ -142,7 +142,7 @@ class StatusField extends FormField {
 /**
  * @class
  * @alias qtoggle.common.updatefirmware.UpdateFirmwareForm
- * @extends qui.forms.PageForm
+ * @extends qui.forms.commonforms.PageForm
  */
 class UpdateFirmwareForm extends PageForm {
 
