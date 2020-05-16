@@ -17,6 +17,7 @@ from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.slaves.api import funcs as slaves_api_funcs
 from qtoggleserver.ui.api import funcs as ui_api_funcs
 from qtoggleserver.utils import json as json_utils
+from qtoggleserver.version import VERSION
 
 from .constants import FRONTEND_URL_PREFIX
 from .j2template import J2TemplateMixin
@@ -161,7 +162,12 @@ class TemplateHandler(J2TemplateMixin, BaseHandler):
     def get_context(self, path: str = '', offs: int = 0) -> dict:
         # Adjust static URL prefix to a relative path matching currently requested frontend path
 
-        context = make_context()
+        context = make_context(
+            debug=settings.frontend.debug,
+            version=VERSION,
+            **self.get_extra_context()
+        )
+
         slashes = path.count('/') + offs
         if slashes == 0:
             prefix = 'frontend/'
@@ -175,6 +181,11 @@ class TemplateHandler(J2TemplateMixin, BaseHandler):
         context['static_url'] = prefix + context['static_url']
 
         return context
+
+    def get_extra_context(self) -> dict:
+        return {
+            'slaves_enabled': settings.slaves.enabled
+        }
 
 
 class FrontendHandler(TemplateHandler):
@@ -201,7 +212,7 @@ class ManifestHandler(TemplateHandler):
 class ServiceWorkerHandler(TemplateHandler):
     def get(self) -> None:
         self.set_header('Content-Type', 'application/javascript; charset="utf-8"')
-        self.render('service-worker.js', **make_context())
+        self.render('service-worker.js', **self.get_context())
 
 
 class APIHandler(BaseHandler):
