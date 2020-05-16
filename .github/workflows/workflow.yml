@@ -1,4 +1,4 @@
-name: Release
+name: Workflow
 
 on: push
 
@@ -37,6 +37,9 @@ jobs:
   build:
     name: Build Package
     if: startsWith(github.ref, 'version-')
+    needs:
+      - eslint
+      - flake8
     runs-on: ubuntu-latest
     steps:
       - name: Source code checkout
@@ -80,6 +83,8 @@ jobs:
   build-docker:
     name: Build Docker Images
     if: startsWith(github.ref, 'version-')
+    needs:
+      - build
     runs-on: ubuntu-latest
     steps:
       - name: Source code checkout
