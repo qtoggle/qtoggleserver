@@ -42,7 +42,7 @@ const logger = Settings.logger
 
 /**
  * @alias qtoggle.settings.SettingsForm
- * @extends qui.forms.PageForm
+ * @extends qui.forms.commonforms.PageForm
  * @mixes qtoggle.common.AttrdefFormMixin
  * @mixes qtoggle.common.WaitDeviceMixin
  * @mixes qtoggle.common.RebootDeviceMixin

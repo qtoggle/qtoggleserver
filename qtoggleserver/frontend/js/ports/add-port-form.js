@@ -23,7 +23,7 @@ const logger = Ports.logger
 
 /**
  * @alias qtoggle.ports.AddPortForm
- * @extends qui.forms.PageForm
+ * @extends qui.forms.commonforms.PageForm
  */
 class AddPortForm extends PageForm {
 

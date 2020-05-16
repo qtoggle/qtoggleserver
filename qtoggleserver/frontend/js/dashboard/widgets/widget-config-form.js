@@ -19,7 +19,7 @@ const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undoc
 
 /**
  * @alias qtoggle.dashboard.widgets.WidgetConfigForm
- * @extends qui.forms.PageForm
+ * @extends qui.forms.commonforms.PageForm
  */
 class WidgetConfigForm extends PageForm {
 

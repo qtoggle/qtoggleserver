@@ -17,7 +17,7 @@ const logger = Dashboard.logger
 
 /**
  * @alias qtoggle.dashboard.AddPanelGroupForm
- * @extends qui.forms.PageForm
+ * @extends qui.forms.commonforms.PageForm
  */
 class AddPanelGroupForm extends PageForm {
 
@@ -55,7 +55,7 @@ class AddPanelGroupForm extends PageForm {
                 new FormButton({id: 'add', caption: gettext('Add'), def: true})
             ],
 
-            data: {
+            initialData: {
                 type: 'panel'
             }
         })

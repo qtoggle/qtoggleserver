@@ -52,7 +52,7 @@ class GroupOptionsForm extends OptionsForm {
                     ]
                 })
             ],
-            data: {
+            initialData: {
                 name: group.getName()
             }
         })
@@ -75,7 +75,7 @@ class GroupOptionsForm extends OptionsForm {
 
 /**
  * @alias qtoggle.dashboard.Group
- * @extends qui.lists.PageList
+ * @extends qui.lists.commonlists.PageList
  * @mixes qtoggle.dashboard.PanelGroupCompositeMixin
  */
 class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
@@ -237,18 +237,18 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
             }
         }, this)
 
-        let selectedItem = this.getSelectedItem()
-        let selectedChild = selectedItem ? selectedItem.getData() : null
+        let oldSelectedItems = this.getSelectedItems()
+        let oldSelectedChild = oldSelectedItems.length ? oldSelectedItems[0].getData() : null
 
         this.setItems(items)
 
-        if (selectedChild) {
-            let newIndex = children.findIndex(function (child) {
-                return (child.getId() === selectedChild.getId())
+        if (oldSelectedChild) {
+            let newSelectedItem = items.find(function (item) {
+                return (item.getData().getId() === oldSelectedChild.getId())
             })
 
-            if (newIndex >= 0) {
-                this.setSelectedIndex(newIndex)
+            if (newSelectedItem) {
+                this.setSelectedItems([newSelectedItem])
             }
         }
 
@@ -294,14 +294,16 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
         })
     }
 
-    onSelectionChange(item) {
-        return this.pushPage(item.getData())
+    onSelectionChange(oldItems, newItems) {
+        if (newItems.length) {
+            return this.pushPage(newItems[0].getData())
+        }
     }
 
     onCloseNext(next) {
-        let selectedItem = this.getSelectedItem()
-        if (selectedItem && selectedItem.getData() === next) {
-            this.setSelectedIndex(-1)
+        let selectedItems = this.getSelectedItems()
+        if (selectedItems.length && selectedItems[0].getData() === next) {
+            this.setSelectedItems([])
         }
     }
 
@@ -336,7 +338,13 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
     }
 
     setSelectedChild(child) {
-        this.setSelectedIndex(this.getItems().findIndex(item => item.getData() === child))
+        let item = this.getItems().find(item => item.getData() === child)
+        if (item) {
+            this.setSelectedItems([item])
+        }
+        else {
+            this.setSelectedItems([])
+        }
     }
 
 }

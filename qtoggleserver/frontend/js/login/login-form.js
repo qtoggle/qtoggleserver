@@ -18,7 +18,7 @@ const logger = Login.logger
 
 /**
  * @alias qtoggle.login.LoginForm
- * @extends qui.forms.PageForm
+ * @extends qui.forms.commonforms.PageForm
  */
 class LoginForm extends PageForm {
 

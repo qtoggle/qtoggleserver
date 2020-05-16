@@ -58,12 +58,10 @@ class WidgetCategoryList extends List {
         })
     }
 
-    onSelectionChange(newItem, newIndex, oldItem, oldIndex) {
-        if (!newItem) {
-            return
+    onSelectionChange(oldItems, newItems) {
+        if (newItems.length) {
+            this._callback(newItems[0].getData().cls)
         }
-
-        this._callback(newItem.getData().cls)
     }
 
     onUnminimize() {
