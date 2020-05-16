@@ -57,6 +57,3 @@ class ValueChange(PortEvent):
 
     async def get_params(self) -> GenericJSONDict:
         return {'id': self.get_port().get_id(), 'value': self.get_port().get_value()}
-
-    def is_duplicate(self, event: Event) -> bool:
-        return isinstance(event, self.__class__) and event.get_port() == self.get_port()
