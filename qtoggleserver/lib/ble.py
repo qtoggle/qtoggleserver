@@ -254,6 +254,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
             # Create a temporary class to deal with BTLE delegation
 
             peripheral = self
+
             class Delegate(btle.DefaultDelegate):
 
                 def handleNotification(self, h: int, d: bytes) -> None:

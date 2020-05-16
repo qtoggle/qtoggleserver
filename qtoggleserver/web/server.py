@@ -85,8 +85,8 @@ def _make_handlers() -> List[tuple]:
         ]
 
         handlers_list += [
-            (fr'^/api/frontend/dashboard/panels/?$', handlers.DashboardPanelsHandler),
-            (fr'^/api/frontend/prefs/?$', handlers.PrefsHandler),
+            (r'^/api/frontend/dashboard/panels/?$', handlers.DashboardPanelsHandler),
+            (r'^/api/frontend/prefs/?$', handlers.PrefsHandler),
         ]
 
     handlers_list += [
