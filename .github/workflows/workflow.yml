@@ -36,7 +36,7 @@ jobs:
 
   build:
     name: Build Package
-    if: startsWith(github.ref, "version-")
+    if: startsWith(github.ref, 'version-')
     runs-on: ubuntu-latest
     steps:
       - name: Source code checkout
@@ -79,7 +79,7 @@ jobs:
 
   build-docker:
     name: Build Docker Images
-    if: startsWith(github.ref, "version-")
+    if: startsWith(github.ref, 'version-')
     runs-on: ubuntu-latest
     steps:
       - name: Source code checkout
