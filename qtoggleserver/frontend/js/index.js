@@ -140,7 +140,10 @@ function main() {
         AuthAPI.addAccessLevelChangeListener(handleAccessLevelChange)
         NotificationsAPI.addEventListener(handleAPIEvent)
 
-        Auth.whenFinalAccessLevelReady.then(level => NotificationsAPI.startListening())
+        Promise.all([
+            Auth.whenFinalAccessLevelReady,
+            PWA.whenServiceWorkerReady
+        ]).then(level => NotificationsAPI.startListening())
 
         Window.visibilityChangeSignal.connect(function (visible) {
             if (!visible) {
