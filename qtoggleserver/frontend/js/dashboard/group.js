@@ -89,7 +89,7 @@ class Group extends mix(PageList).with(PanelGroupCompositeMixin) {
             pathId: '',
             title: '',
             icon: Dashboard.GROUP_ICON,
-            column: true,
+            columnLayout: true,
             searchEnabled: true,
             addEnabled: AuthAPI.getCurrentAccessLevel() >= AuthAPI.ACCESS_LEVEL_ADMIN
         })

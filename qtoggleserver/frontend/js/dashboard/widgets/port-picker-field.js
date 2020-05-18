@@ -111,14 +111,14 @@ class PortPickerField extends ComboField {
                 let device = Cache.findPortSlaveDevice(portId)
                 if (device) {
                     let remoteId = portId.substring(device.name.length + 1)
-                    path += `/${device.name}/${remoteId}`
+                    path += `/~${device.name}/~${remoteId}`
                 }
                 else {
-                    path += `/${Cache.getMainDevice().name}/${portId}`
+                    path += `/~${Cache.getMainDevice().name}/~${portId}`
                 }
             }
             else {
-                path += `/${portId}`
+                path += `/~${portId}`
             }
 
             return Navigation.makeInternalAnchor(path, displayName)

@@ -8,7 +8,7 @@ import WaitDeviceMixin from '$app/common/wait-device-mixin.js'
 import {Section}       from '$app/sections.js'
 
 import * as Devices from './devices.js'
-import DevicesList  from './devices-list.js'
+import DevicesTable from './devices-table.js'
 
 
 const SECTION_ID = 'devices'
@@ -31,7 +31,7 @@ class DevicesSection extends Section {
             icon: Devices.DEVICE_ICON
         })
 
-        this.devicesList = null
+        this.devicesTable = null
     }
 
     load() {
@@ -47,21 +47,21 @@ class DevicesSection extends Section {
     /**
      * @returns {qui.pages.PageMixin}
      */
-    makeDevicesList() {
-        return (this.devicesList = new DevicesList())
+    makeDevicesTable() {
+        return (this.devicesTable = new DevicesTable())
     }
 
     onServerEvent(event) {
-        /* Don't handle any event unless the main list has been created */
-        if (!this.devicesList) {
+        /* Don't handle any event unless the devices table has been created */
+        if (!this.devicesTable) {
             return
         }
 
-        let deviceForm = this.devicesList.deviceForm
+        let deviceForm = this.devicesTable.deviceForm
 
         switch (event.type) {
             case 'slave-device-update': {
-                this.devicesList.updateUIASAP()
+                this.devicesTable.updateUIASAP()
 
                 if (deviceForm && (deviceForm.getDeviceName() === event.params.name)) {
                     let fieldChangeWarnings = !event.expected && !Devices.recentDeviceUpdateTimer.isRunning()
@@ -92,16 +92,16 @@ class DevicesSection extends Section {
             }
 
             case 'slave-device-add': {
-                this.devicesList.updateUIASAP()
+                this.devicesTable.updateUIASAP()
 
                 /* Handle special case where currently selected device has been locally renamed via the device form */
                 if (Devices.getRenamedDeviceName() === event.params.name) {
                     let device = Cache.getSlaveDevice(event.params.name)
                     if (device) {
-                        deviceForm = this.devicesList.makeDeviceForm(device.name)
-                        this.devicesList.updateUI()
-                        this.devicesList.setSelectedDevice(device.name)
-                        this.devicesList.pushPage(deviceForm)
+                        deviceForm = this.devicesTable.makeDeviceForm(device.name)
+                        this.devicesTable.updateUI()
+                        this.devicesTable.setSelectedDeviceName(device.name)
+                        this.devicesTable.pushPage(deviceForm)
                         deviceForm.startWaitingDeviceOnline()
                     }
                 }
@@ -110,7 +110,7 @@ class DevicesSection extends Section {
             }
 
             case 'slave-device-remove': {
-                this.devicesList.updateUIASAP()
+                this.devicesTable.updateUIASAP()
 
                 if (deviceForm && (deviceForm.getDeviceName() === event.params.name) &&
                     (Devices.getRenamedDeviceName() == null)) {
@@ -129,7 +129,7 @@ class DevicesSection extends Section {
             return this.makeForbiddenMessage()
         }
 
-        return this.makeDevicesList()
+        return this.makeDevicesTable()
     }
 
 }

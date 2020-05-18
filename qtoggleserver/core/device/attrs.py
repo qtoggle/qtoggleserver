@@ -4,6 +4,7 @@ import copy
 import datetime
 import hashlib
 import logging
+import re
 import socket
 import sys
 import time
@@ -250,7 +251,11 @@ WIFI_RSSI_FAIR = -70
 NETWORK_ATTRS_WATCH_INTERVAL = 10
 
 
-name: str = socket.gethostname()
+name: str = re.sub(r'^[a-zA-Z0-9_]', '', socket.gethostname())
+if not re.match('^[a-zA-Z_]', name):  # Make sure name starts with a letter or underscore
+    name = f'q{name}'
+name = name[:32]
+
 display_name: str = ''
 admin_password_hash: Optional[str] = None
 normal_password_hash: Optional[str] = None

@@ -5,6 +5,7 @@ import {TextField}       from '$qui/forms/common-fields.js'
 import {PageForm}        from '$qui/forms/common-forms.js'
 import FormButton        from '$qui/forms/form-button.js'
 import {ValidationError} from '$qui/forms/forms.js'
+import * as Navigation   from '$qui/navigation.js'
 import URL               from '$qui/utils/url.js'
 
 import * as BaseAPI        from '$app/api/base.js'
@@ -54,6 +55,7 @@ class AddDeviceForm extends PageForm {
             ],
             buttons: [
                 new FormButton({id: 'cancel', caption: gettext('Cancel'), cancel: true}),
+                // new FormButton({id: 'discover', caption: gettext('Discover')}),
                 new FormButton({id: 'add', caption: gettext('Add'), def: true})
             ]
         })
@@ -100,6 +102,14 @@ class AddDeviceForm extends PageForm {
             throw error
 
         }.bind(this))
+    }
+
+    onButtonPress(button) {
+        switch (button.getId()) {
+            case 'discover':
+                Navigation.navigate({path: '/devices'})
+                break
+        }
     }
 
 }

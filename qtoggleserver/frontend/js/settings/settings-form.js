@@ -234,7 +234,7 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
                 onClick(form) {
                     let path = ['ports']
                     if (Config.slavesEnabled) {
-                        path.push(Cache.getMainDevice().name)
+                        path.push(`~${Cache.getMainDevice().name}`)
                     }
 
                     Navigation.navigate({path})
