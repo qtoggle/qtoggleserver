@@ -4,9 +4,9 @@
 
 import Logger from '$qui/lib/logger.module.js'
 
-import * as Crypto         from '$qui/utils/crypto.js'
-import {asap}              from '$qui/utils/misc.js'
-import * as ObjectUtils    from '$qui/utils/object.js'
+import * as Crypto      from '$qui/utils/crypto.js'
+import {asap}           from '$qui/utils/misc.js'
+import * as ObjectUtils from '$qui/utils/object.js'
 
 import * as BaseAPI from './base.js'
 

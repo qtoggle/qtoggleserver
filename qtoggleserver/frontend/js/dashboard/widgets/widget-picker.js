@@ -99,7 +99,7 @@ class WidgetPicker extends mix().with(StructuredPageMixin) {
             title: gettext('Pick A Widget'),
             icon: WIDGET_ICON,
             closable: true,
-            column: true,
+            columnLayout: true,
             pathId: 'add',
             keepPrevVisible: true,
             transparent: false

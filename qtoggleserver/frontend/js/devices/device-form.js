@@ -68,7 +68,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
      */
     constructor(deviceName) {
         super({
-            pathId: deviceName,
+            pathId: `~${deviceName}`,
             keepPrevVisible: true,
             title: '',
             icon: Devices.DEVICE_ICON,
@@ -257,7 +257,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                 caption: gettext('Ports'),
                 icon: new StockIcon({name: 'port', stockName: 'qtoggle'}),
                 onClick(form) {
-                    Navigation.navigate({path: ['ports', form.getDeviceName()]})
+                    Navigation.navigate({path: ['ports', `~${form.getDeviceName()}`]})
                 }
             })
         ]

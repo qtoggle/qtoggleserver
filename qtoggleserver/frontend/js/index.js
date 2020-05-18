@@ -2,14 +2,14 @@
  * @namespace qtoggle
  */
 
-import {gettext}         from '$qui/base/i18n.js'
-import Config            from '$qui/config.js'
-import * as QUI          from '$qui/index.js'
-import * as Toast        from '$qui/messages/toast.js'
-import * as Navigation   from '$qui/navigation.js'
-import * as PWA          from '$qui/pwa.js'
-import * as Sections     from '$qui/sections/sections.js'
-import * as Window       from '$qui/window.js'
+import {gettext}       from '$qui/base/i18n.js'
+import Config          from '$qui/config.js'
+import * as QUI        from '$qui/index.js'
+import * as Toast      from '$qui/messages/toast.js'
+import * as Navigation from '$qui/navigation.js'
+import * as PWA        from '$qui/pwa.js'
+import * as Sections   from '$qui/sections/sections.js'
+import * as Window     from '$qui/window.js'
 
 /* These must be imported here */
 import $      from '$qui/lib/jquery.module.js'

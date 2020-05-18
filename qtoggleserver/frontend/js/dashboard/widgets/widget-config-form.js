@@ -79,7 +79,7 @@ class WidgetConfigForm extends PageForm {
             largeTop: true,
             closable: true,
             transparent: false,
-            column: true,
+            columnLayout: true,
             pathId: widget.getId(),
             keepPrevVisible: true,
             compact: true,

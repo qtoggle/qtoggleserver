@@ -77,8 +77,8 @@ class PortsList extends PageList {
      */
     constructor(deviceName = null) {
         super({
-            column: true,
-            pathId: deviceName || Cache.getMainDevice().name,
+            columnLayout: true,
+            pathId: `~${deviceName || Cache.getMainDevice().name}`,
             title: gettext('Ports'),
             icon: Ports.PORT_ICON,
             searchEnabled: true
@@ -253,13 +253,13 @@ class PortsList extends PageList {
         if (pathId === 'add') {
             return this.makeAddPortForm(this._deviceName)
         }
-        else { /* A port id */
+        else if (pathId.startsWith('~')) { /* A port id */
             let portId
             if (this._deviceName && !Cache.isMainDevice(this._deviceName)) {
-                portId = `${this._deviceName}.${pathId}`
+                portId = `${this._deviceName}.${pathId.slice(1)}`
             }
             else {
-                portId = pathId
+                portId = pathId.slice(1)
             }
 
             let port = Cache.getPort(portId)

@@ -52,6 +52,8 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             pathId = portId.substring(deviceName.length + 1)
         }
 
+        pathId = `~${pathId}`
+
         super({
             pathId: pathId,
             keepPrevVisible: true,
@@ -232,7 +234,8 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             attrdefs: this._fullAttrdefs,
             initialData: port,
             provisioning: provisioning,
-            fieldChangeWarnings: fieldChangeWarnings
+            fieldChangeWarnings: fieldChangeWarnings,
+            startIndex: 1
         })
         this.addValueField(origPort)
 
@@ -315,7 +318,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             let displayName = attrs.display_name || attrs.name
             let path
             if (device) {
-                path = ['devices', device.name]
+                path = ['devices', `~${device.name}`]
             }
             else {
                 path = ['settings']

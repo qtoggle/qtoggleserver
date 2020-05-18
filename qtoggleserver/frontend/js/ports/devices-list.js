@@ -55,7 +55,7 @@ class DevicesList extends PageList {
             pathId: 'ports',
             icon: Ports.DEVICE_ICON,
             searchEnabled: true,
-            column: true
+            columnLayout: true
         })
 
         this.portsList = null
@@ -156,17 +156,20 @@ class DevicesList extends PageList {
     }
 
     navigate(pathId) {
-        if (Cache.isMainDevice(pathId)) {
-            return this.makePortsList(pathId)
-        }
+        if (pathId.startsWith('~')) {
+            let deviceName = pathId.slice(1)
+            if (Cache.isMainDevice(deviceName)) {
+                return this.makePortsList(deviceName)
+            }
 
-        let device = Cache.getSlaveDevice(pathId)
-        if (!device) {
-            return
-        }
+            let device = Cache.getSlaveDevice(deviceName)
+            if (!device) {
+                return
+            }
 
-        this.setSelectedDevice(pathId)
-        return this.makePortsList(pathId)
+            this.setSelectedDevice(deviceName)
+            return this.makePortsList(deviceName)
+        }
     }
 
     /**
