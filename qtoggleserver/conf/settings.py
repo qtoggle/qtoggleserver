@@ -118,6 +118,29 @@ class slaves:
     retry_interval: int = 5
     retry_count: int = 3
 
+    class discover:
+        enabled: bool = False
+        default_scan_timeout: int = 10
+        request_timeout: int = 5
+        dhcp_timeout: int = 10
+        dhcp_interface: str = 'eth0'
+
+        class ap:
+            interface: str = 'wlan0'
+            ssid: str = 'qToggleSetup'
+            psk: str = None
+            target_ssid: str = None
+            target_psk: str = None
+            own_ip: str = '192.168.43.1'
+            mask_len: int = 24
+            start_ip: str = '192.168.43.50'
+            stop_ip: str = '192.168.43.250'
+            hostapd_binary: str = None
+            dnsmasq_binary: str = None
+            hostapd_log: str = '/tmp/hostapd.log'
+            dnsmasq_log: str = '/tmp/dnsmasq.log'
+            finish_timeout: int = 300
+
 
 class webhooks:
     enabled: bool = False

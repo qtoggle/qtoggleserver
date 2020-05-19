@@ -38,6 +38,7 @@ const logger = Logger.get('qtoggle')
 function initConfig() {
     /* Default values for qToggle-specific config  */
     Config.slavesEnabled = false
+    Config.discoverEnabled = false
     Config.apiURLPrefix = ''
 
     /* Default values for client settings */

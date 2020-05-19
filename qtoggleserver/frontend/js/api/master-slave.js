@@ -107,3 +107,43 @@ export function deleteSlaveDevice(name, expectEventTimeout = null) {
 
     return BaseAPI.apiCall({method: 'DELETE', path: `/devices/${name}`, expectedHandle: handle})
 }
+
+/**
+ * GET /discovered API function call.
+ * @alias qtoggle.api.masterslave.getDiscovered
+ * @param {Number} [timeout] optional discover timeout
+ * @returns {Promise}
+ */
+export function getDiscovered(timeout = null) {
+    let query = {}
+    if (timeout) {
+        query['timeout'] = timeout
+    }
+
+    return BaseAPI.apiCall({method: 'GET', path: '/discovered', query, timeout: timeout * 1.5})
+}
+
+/**
+ * DELETE /discovered API function call.
+ * @alias qtoggle.api.masterslave.deleteDiscovered
+ * @returns {Promise}
+ */
+export function deleteDiscovered() {
+    return BaseAPI.apiCall({method: 'DELETE', path: '/discovered'})
+}
+
+/**
+ * PATCH /discovered/{name} API function call.
+ * @alias qtoggle.api.masterslave.patchDiscoveredDevice
+ * @param {String} name the device name
+ * @param {Object} attrs the device attributes to set
+ * @returns {Promise}
+ */
+export function patchDiscoveredDevice(name, attrs) {
+    return BaseAPI.apiCall({
+        method: 'PATCH',
+        path: `/discovered/${name}`,
+        data: {attrs},
+        timeout: APIConstants.LONG_SERVER_TIMEOUT
+    })
+}

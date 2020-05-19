@@ -1,0 +1,3 @@
+
+class APException(Exception):
+    pass

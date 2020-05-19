@@ -74,3 +74,16 @@ POST_SLAVE_DEVICE_EVENTS = {
         "type"
     ]
 }
+
+PATCH_DISCOVERED_DEVICE = {
+    "type": "object",
+    "properties": {
+        "attrs": {
+            "type": "object"
+        }
+    },
+    "additionalProperties": False,
+    "required": [
+        "attrs"
+    ]
+}

@@ -1,5 +1,6 @@
 
 import {gettext}         from '$qui/base/i18n.js'
+import Config            from '$qui/config.js'
 import {PasswordField}   from '$qui/forms/common-fields.js'
 import {TextField}       from '$qui/forms/common-fields.js'
 import {PageForm}        from '$qui/forms/common-forms.js'
@@ -55,7 +56,7 @@ class AddDeviceForm extends PageForm {
             ],
             buttons: [
                 new FormButton({id: 'cancel', caption: gettext('Cancel'), cancel: true}),
-                // new FormButton({id: 'discover', caption: gettext('Discover')}),
+                ...(Config.discoverEnabled ? [new FormButton({id: 'discover', caption: gettext('Discover')})] : []),
                 new FormButton({id: 'add', caption: gettext('Add'), def: true})
             ]
         })
@@ -107,7 +108,7 @@ class AddDeviceForm extends PageForm {
     onButtonPress(button) {
         switch (button.getId()) {
             case 'discover':
-                Navigation.navigate({path: '/devices'})
+                Navigation.navigate({path: '/devices/discover'})
                 break
         }
     }

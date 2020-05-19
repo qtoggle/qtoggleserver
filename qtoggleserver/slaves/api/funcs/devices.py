@@ -10,9 +10,9 @@ from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.api import schema as core_api_schema
 from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.slaves import devices as slaves_devices
+from qtoggleserver.slaves import exceptions as slaves_exceptions
 
-from .. import exceptions
-from . import schema as api_schema
+from .. import schema as api_schema
 
 
 _LONG_TIMEOUT_API_CALLS = [
@@ -81,13 +81,13 @@ async def post_slave_devices(request: core_api.APIRequest, params: GenericJSONDi
     except core_responses.Timeout as e:
         raise core_api.APIError(504, 'device-timeout') from e
 
-    except exceptions.InvalidDevice as e:
+    except slaves_exceptions.InvalidDevice as e:
         raise core_api.APIError(502, 'invalid-device') from e
 
-    except exceptions.NoListenSupport as e:
+    except slaves_exceptions.NoListenSupport as e:
         raise core_api.APIError(400, 'no-listen-support') from e
 
-    except exceptions.DeviceAlreadyExists as e:
+    except slaves_exceptions.DeviceAlreadyExists as e:
         raise core_api.APIError(400, 'duplicate-device') from e
 
     except core_api.APIError:
@@ -101,7 +101,7 @@ async def post_slave_devices(request: core_api.APIRequest, params: GenericJSONDi
         raise core_api.APIError.from_http_error(e) from e
 
     except Exception as e:
-        raise exceptions.adapt_api_error(e) from e
+        raise slaves_exceptions.adapt_api_error(e) from e
 
     return slave.to_json()
 
@@ -135,7 +135,7 @@ async def patch_slave_device(request: core_api.APIRequest, name: str, params: Ge
                     attrs = await slave.api_call('GET', '/device')
 
                 except Exception as e:
-                    raise exceptions.adapt_api_error(e) from e
+                    raise slaves_exceptions.adapt_api_error(e) from e
 
                 if 'listen' not in attrs['flags']:
                     raise core_api.APIError(400, 'no-listen-support')
@@ -194,7 +194,7 @@ async def slave_device_forward(
         response = await slave.api_call(method, path, params, timeout=timeout, retry_counter=None)
 
     except Exception as e:
-        raise exceptions.adapt_api_error(e) from e
+        raise slaves_exceptions.adapt_api_error(e) from e
 
     return response
 

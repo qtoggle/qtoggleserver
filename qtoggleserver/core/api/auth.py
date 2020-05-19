@@ -1,4 +1,5 @@
 
+import hashlib
 import jwt
 import logging
 import re
@@ -16,6 +17,8 @@ JWT_ALG = 'HS256'
 
 ORIGIN_DEVICE = 'device'
 ORIGIN_CONSUMER = 'consumer'
+
+EMPTY_PASSWORD_HASH = hashlib.sha256(b'').hexdigest()
 
 _AUTH_TOKEN_RE = re.compile(r'^Bearer\s+([a-z0-9_.-]+)$', re.IGNORECASE)
 

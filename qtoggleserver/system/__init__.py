@@ -8,6 +8,7 @@ from qtoggleserver.conf import settings
 
 from . import battery
 from . import date
+from . import dns
 from . import fwupdate
 from . import net
 from . import storage
@@ -36,3 +37,13 @@ def get_cpu_usage() -> int:
 def get_mem_usage() -> int:
     vm = psutil.virtual_memory()
     return int(100 * (1 - vm.available / vm.total))
+
+
+async def init() -> None:
+    logger.debug('initializing DNS')
+    await dns.init()
+
+
+async def cleanup() -> None:
+    logger.debug('cleaning up DNS')
+    await dns.cleanup()

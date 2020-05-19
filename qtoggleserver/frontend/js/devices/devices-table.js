@@ -13,10 +13,10 @@ import * as Window          from '$qui/window.js'
 import * as Cache from '$app/cache.js'
 import * as Utils from '$app/utils.js'
 
-import AddDeviceForm        from './add-device-form.js'
-import DeviceForm           from './device-form.js'
-import * as Devices         from './devices.js'
-import DiscoverDevicesTable from './discover-devices-table.js'
+import AddDeviceForm          from './add-device-form.js'
+import DeviceForm             from './device-form.js'
+import * as Devices           from './devices.js'
+import DiscoveredDevicesTable from './discovered-devices-table.js'
 
 
 const DEFAULT_SHOW_OFFLINE_DEVICES = true
@@ -241,7 +241,7 @@ class DevicesTable extends PageTable {
      * @returns {qui.pages.PageMixin}
      */
     makeDiscoverDevicesTable() {
-        return new DiscoverDevicesTable()
+        return new DiscoveredDevicesTable()
     }
 
     /**
