@@ -98,7 +98,7 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                                 ticks.push({value: v, label: v})
                             }
                             fieldAttrs.ticks = ticks
-                            fieldAttrs.ticksStep = Math.min(1, Math.round((count - 1) / 5))
+                            fieldAttrs.ticksStep = Math.max(1, Math.round((count - 1) / 5))
                         }
                         else { /* Many choices */
                             fieldAttrs.class = NumericField
