@@ -142,7 +142,7 @@ function main() {
 
         Promise.all([
             Auth.whenFinalAccessLevelReady,
-            PWA.whenServiceWorkerReady
+            PWA.isServiceWorkerSupported() ? PWA.whenServiceWorkerReady : Promise.resolve()
         ]).then(level => NotificationsAPI.startListening())
 
         Window.visibilityChangeSignal.connect(function (visible) {
