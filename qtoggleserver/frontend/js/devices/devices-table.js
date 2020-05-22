@@ -101,8 +101,15 @@ class DevicesTable extends PageTable {
     init() {
         super.init()
 
-        this.updateDisplayMode()
         this.updateUI()
+    }
+
+    onBecomeCurrent() {
+        this.updateDisplayMode(/* isCurrent = */ true)
+    }
+
+    onLeaveCurrent() {
+        this.updateDisplayMode(/* isCurrent = */ false)
     }
 
     /**
@@ -149,13 +156,8 @@ class DevicesTable extends PageTable {
         }
     }
 
-    updateDisplayMode(listMode = null) {
-        if (listMode == null) {
-            listMode = this.getSelectedRows().length > 0
-        }
-
-        listMode = listMode || Window.isSmallScreen() /* Always use list mode on small screens */
-
+    updateDisplayMode(isCurrent) {
+        let listMode = !isCurrent || Window.isSmallScreen() /* Always use list mode on small screens */
         if (listMode) {
             this.setVisibilities([true, false, false, false])
             this.setHeader(null)
@@ -180,7 +182,7 @@ class DevicesTable extends PageTable {
                 label: device.attrs.display_name || device.name,
                 icon: Devices.makeDeviceIcon(device)
             },
-            device.attrs['ip_address'],
+            device.attrs['ip_address_current'],
             device.attrs['vendor'],
             device.attrs['version']
         ]
@@ -192,9 +194,7 @@ class DevicesTable extends PageTable {
 
     onSelectionChange(oldRows, newRows) {
         if (newRows.length) {
-            return this.pushPage(this.makeDeviceForm(newRows[0].getData().name)).then(function () {
-                this.updateDisplayMode(newRows.length > 0)
-            }.bind(this))
+            return this.pushPage(this.makeDeviceForm(newRows[0].getData().name))
         }
     }
 
@@ -257,7 +257,6 @@ class DevicesTable extends PageTable {
      */
     setSelectedDeviceName(deviceName) {
         this.setSelectedRows(this.getRows().filter(r => r.getData().name === deviceName))
-        this.updateDisplayMode()
     }
 
     /**
