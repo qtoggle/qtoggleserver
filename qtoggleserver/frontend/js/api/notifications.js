@@ -4,11 +4,11 @@
 
 import Logger from '$qui/lib/logger.module.js'
 
-import {AssertionError}    from '$qui/base/errors.js'
-import * as Crypto         from '$qui/utils/crypto.js'
-import {asap}              from '$qui/utils/misc.js'
-import * as ObjectUtils    from '$qui/utils/object.js'
-import * as PromiseUtils   from '$qui/utils/promise.js'
+import {AssertionError}  from '$qui/base/errors.js'
+import * as Crypto       from '$qui/utils/crypto.js'
+import {asap}            from '$qui/utils/misc.js'
+import * as ObjectUtils  from '$qui/utils/object.js'
+import * as PromiseUtils from '$qui/utils/promise.js'
 
 import * as BaseAPI      from './base.js'
 import * as APIConstants from './constants.js'

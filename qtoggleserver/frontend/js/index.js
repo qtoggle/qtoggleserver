@@ -140,27 +140,36 @@ function main() {
         AuthAPI.addAccessLevelChangeListener(handleAccessLevelChange)
         NotificationsAPI.addEventListener(handleAPIEvent)
 
+        let listeningInitiallyStarted = false
+
         Promise.all([
             Auth.whenFinalAccessLevelReady,
             PWA.isServiceWorkerSupported() ? PWA.whenServiceWorkerReady : Promise.resolve()
-        ]).then(level => NotificationsAPI.startListening())
+        ]).then(function () {
+            NotificationsAPI.startListening()
+            listeningInitiallyStarted = true
+        })
 
         Window.visibilityChangeSignal.connect(function (visible) {
-            if (!visible) {
+            if (Config.debug) {
                 return
             }
 
-            if (!NotificationsAPI.isListening()) {
-                return
+            if (visible) {
+                if (listeningInitiallyStarted) {
+                    logger.info('application became visible, (re)starting listening mechanism')
+
+                    /* (Re)start the listening mechanism; this will, in turn, trigger a full cache reload. */
+                    Cache.setReloadNeeded()
+                    if (NotificationsAPI.isListening()) {
+                        NotificationsAPI.stopListening()
+                    }
+                    NotificationsAPI.startListening()
+                }
             }
-
-            if (!Config.debug) {
-                logger.info('application became visible, reloading cache')
-
-                Cache.setReloadNeeded()
-
+            else {
+                logger.info('application became hidden, stopping listening mechanism')
                 NotificationsAPI.stopListening()
-                NotificationsAPI.startListening()
             }
         })
 
