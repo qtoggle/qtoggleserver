@@ -390,18 +390,18 @@ function updateStatusIcon() {
     let message
 
     if (syncListenError) {
-        status = 'reconnect'
+        status = Status.STATUS_SYNC
         message = syncListenError.message
     }
     else if (syncError) {
-        status = 'error'
+        status = Status.STATUS_ERROR
         message = syncError.message
     }
     else if (syncCount > 0) {
-        status = 'sync'
+        status = Status.STATUS_SYNC
     }
     else {
-        status = 'ok'
+        status = Status.STATUS_OK
     }
 
     Status.set(status, message)
@@ -431,7 +431,7 @@ export function init() {
     BaseAPI.addSyncCallbacks(
         /* beginCallback = */ function () {
 
-            /* Reset sync error upon a first API request */
+            /* Reset sync error when all pending API requests have finished and are successful */
             if (syncCount === 0) {
                 syncError = null
             }
