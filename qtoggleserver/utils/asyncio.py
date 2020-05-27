@@ -3,7 +3,7 @@ import asyncio
 import inspect
 import sys
 
-from typing import Any, Callable, List, Optional
+from typing import Any, Awaitable, Callable, List, Optional, Union
 
 
 class ParallelCaller:
@@ -61,6 +61,43 @@ class ParallelCaller:
     def stop(self) -> None:
         for task in self._loop_tasks:
             task.cancel()
+
+
+class Timer:
+    def __init__(self, timeout: int, callback: Union[Awaitable, Callable], *args, **kwargs) -> None:
+        self._timeout: int = timeout
+        self._callback: Union[Awaitable, Callable] = callback
+        self._args: tuple = args
+        self._kwargs: dict = kwargs
+        self._task: Optional[asyncio.Task] = None
+        self._task = asyncio.ensure_future(self.run())
+
+    def cancel(self) -> None:
+        if self._task is None:
+            raise Exception('Task is not running')
+
+        self._task.cancel()
+
+    async def wait(self) -> None:
+        if self._task is None:
+            raise Exception('Task is not running')
+
+        await self._task
+
+    async def run(self) -> None:
+        try:
+            await asyncio.sleep(self._timeout)
+
+        except asyncio.CancelledError:
+            pass
+
+        else:
+            result = self._callback(*self._args, **self._kwargs)
+            if inspect.isawaitable(result):
+                await result
+
+        finally:
+            self._task = None
 
 
 async def await_later(delay: float, coroutine: Callable, *args, loop: asyncio.AbstractEventLoop = None) -> None:

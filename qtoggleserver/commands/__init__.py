@@ -9,8 +9,11 @@ import types
 from typing import Any, Optional
 
 from tornado import httpclient
+from tornado import netutil
 
 from qtoggleserver import persist
+from qtoggleserver import slaves
+from qtoggleserver import system
 from qtoggleserver import version
 from qtoggleserver.conf import settings
 from qtoggleserver.core import device
@@ -23,7 +26,6 @@ from qtoggleserver.core import vports
 from qtoggleserver.core import webhooks
 from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.utils import conf as conf_utils
-from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import logging as logging_utils
 from qtoggleserver import peripherals  # This must be imported after core.ports
 
@@ -148,6 +150,11 @@ def init_signals() -> None:
 
 def init_tornado() -> None:
     httpclient.AsyncHTTPClient.configure('tornado.simple_httpclient.SimpleAsyncHTTPClient', max_clients=1024)
+    netutil.Resolver.configure(
+        'tornado.netutil.OverrideResolver',
+        mapping=system.dns.get_custom_dns_mapping_dict(),
+        resolver=netutil.DefaultExecutorResolver()
+    )
 
 
 async def init_persist() -> None:
@@ -161,7 +168,18 @@ async def init_persist() -> None:
 
 
 async def cleanup_persist() -> None:
+    logger.info('cleaning up persistence')
     await persist.cleanup()
+
+
+async def init_system() -> None:
+    logger.info('initializing system')
+    await system.init()
+
+
+async def cleanup_system() -> None:
+    logger.info('cleaning up system')
+    await system.cleanup()
 
 
 async def init_events() -> None:
@@ -243,13 +261,13 @@ async def cleanup_ports() -> None:
 async def init_slaves() -> None:
     if settings.slaves.enabled:
         logger.info('initializing slaves')
-        await slaves_devices.load()
+        await slaves.init()
 
 
 async def cleanup_slaves() -> None:
     if settings.slaves.enabled:
         logger.info('cleaning up slaves')
-        await slaves_devices.cleanup()
+        await slaves.cleanup()
 
 
 async def init_peripherals() -> None:
@@ -293,6 +311,7 @@ async def init() -> None:
     init_signals()
     init_tornado()
 
+    await init_system()
     await init_persist()
     await init_peripherals()
     await init_events()
@@ -316,3 +335,4 @@ async def cleanup() -> None:
     await cleanup_events()
     await cleanup_peripherals()
     await cleanup_persist()
+    await cleanup_system()

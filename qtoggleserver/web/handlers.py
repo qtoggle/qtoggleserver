@@ -184,7 +184,8 @@ class TemplateHandler(J2TemplateMixin, BaseHandler):
 
     def get_extra_context(self) -> dict:
         return {
-            'slaves_enabled': settings.slaves.enabled
+            'slaves_enabled': settings.slaves.enabled,
+            'discover_enabled': settings.slaves.discover.enabled
         }
 
 
@@ -368,6 +369,23 @@ class SlaveDeviceForwardHandler(APIHandler):
         )
 
     post = patch = delete = get
+
+
+class DiscoveredHandler(APIHandler):
+    async def get(self) -> None:
+        timeout = self.get_argument('timeout', None)
+        if timeout:
+            timeout = int(timeout)
+
+        await self.call_api_func(slaves_api_funcs.get_discovered, timeout=timeout)
+
+    async def delete(self) -> None:
+        await self.call_api_func(slaves_api_funcs.delete_discovered, default_status=204)
+
+
+class DiscoveredDeviceHandler(APIHandler):
+    async def patch(self, name: str) -> None:
+        await self.call_api_func(slaves_api_funcs.patch_discovered_device, name=name)
 
 
 class PortsHandler(APIHandler):

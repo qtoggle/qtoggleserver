@@ -24,5 +24,7 @@
 {% endblock %}
 
 {% block script %}
-    {{ main_script_file({"data-slaves-enabled": slaves_enabled|lower}) }}
+    {{ main_script_file(
+        {"data-slaves-enabled": slaves_enabled|lower, "data-discover-enabled": discover_enabled|lower}
+    ) }}
 {% endblock %}

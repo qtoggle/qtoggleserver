@@ -560,7 +560,7 @@ class Slave(logging_utils.LoggableMixin):
             request_timeout=timeout
         )
 
-        self.debug('calling api function %s %s', method, path)
+        self.debug('calling API function %s %s', method, path)
 
         try:
             response = await http_client.fetch(request, raise_error=False)
@@ -784,7 +784,7 @@ class Slave(logging_utils.LoggableMixin):
                     request_timeout=settings.slaves.timeout + settings.slaves.keepalive
                 )
 
-                self.debug('calling api function GET /listen')
+                self.debug('calling API function GET /listen')
 
                 try:
                     response = await http_client.fetch(request, raise_error=False)

@@ -93,6 +93,8 @@ class SessionsEventHandler(core_events.Handler):
     def __init__(self, sessions_by_id: Dict[str, Session]) -> None:
         self._sessions_by_id: Dict[str, Session] = sessions_by_id
 
+        super().__init__()
+
     async def handle_event(self, event: core_events.Event) -> None:
         for session in self._sessions_by_id.values():
             if session.access_level < event.REQUIRED_ACCESS:

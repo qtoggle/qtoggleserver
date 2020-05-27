@@ -125,6 +125,12 @@ def _make_handlers() -> List[tuple]:
             (r'^/api/devices/(?P<name>[A-Za-z0-9_-]+)/forward/(?P<path>.+)$', handlers.SlaveDeviceForwardHandler)
         ]
 
+        if settings.slaves.discover.enabled:
+            handlers_list += [
+                (r'^/api/discovered/?$', handlers.DiscoveredHandler),
+                (r'^/api/discovered/(?P<name>[A-Za-z0-9_-]+)/?$', handlers.DiscoveredDeviceHandler)
+            ]
+
     # Notifications
 
     if settings.webhooks.enabled:
