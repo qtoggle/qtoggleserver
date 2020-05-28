@@ -123,7 +123,7 @@ class slaves:
         default_scan_timeout: int = 10
         request_timeout: int = 5
         dhcp_timeout: int = 10
-        dhcp_interface: str = 'eth0'
+        dhcp_interface: str = None
 
         class ap:
             interface: str = 'wlan0'

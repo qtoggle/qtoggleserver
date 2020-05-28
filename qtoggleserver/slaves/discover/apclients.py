@@ -143,7 +143,7 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
         # Find client's future IP address first
         try:
             reply = await dhcp.request(
-                interface=settings.slaves.discover.dhcp_interface,
+                interface=settings.slaves.discover.dhcp_interface or net.get_default_interface(),
                 timeout=settings.slaves.discover.dhcp_timeout,
                 mac_address=ap_client.mac_address,
                 hostname=ap_client.hostname

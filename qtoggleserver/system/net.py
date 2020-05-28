@@ -1,4 +1,6 @@
 
+import subprocess
+
 from typing import Dict
 
 from qtoggleserver.conf import settings
@@ -67,3 +69,19 @@ def set_wifi_config(ssid: str, psk: str, bssid: str) -> None:
         psk=psk,
         bssid=bssid
     )
+
+
+def get_default_interface() -> str:
+    try:
+        output = subprocess.check_output(['ip', 'route', 'show', 'default']).decode().strip()
+
+    except Exception as e:
+        raise NetError('Could not determine default route') from e
+
+    lines = output.split('\n')
+    if not lines:
+        raise NetError('Could not determine default route')
+
+    line = lines[0]
+
+    return line.split()[4]  # The 5th part is the interface
