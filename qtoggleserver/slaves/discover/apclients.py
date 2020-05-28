@@ -7,20 +7,20 @@ import json
 import logging
 import time
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from tornado import httpclient
 
 from qtoggleserver.conf import settings
-from qtoggleserver.core.api import auth as core_api_auth
+from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import Attributes, GenericJSONDict
+from qtoggleserver.slaves import utils as salves_utils
 from qtoggleserver.system import ap
 from qtoggleserver.system import dhcp
 from qtoggleserver.system import dns
 from qtoggleserver.system import net
 from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import cmd as cmd_utils
-from qtoggleserver.utils import json as json_utils
 
 from .exceptions import DiscoverException
 
@@ -46,6 +46,7 @@ class DiscoveredDevice:
         scheme: str,
         port: int,
         path: str,
+        admin_password: str,
         attrs: Attributes
     ) -> None:
 
@@ -53,6 +54,7 @@ class DiscoveredDevice:
         self.scheme: str = scheme
         self.port: int = port
         self.path: str = path
+        self.admin_password: str = admin_password
         self.attrs: Attributes = attrs
 
     def __str__(self) -> str:
@@ -67,6 +69,7 @@ class DiscoveredDevice:
             'hostname': self.ap_client.hostname,
             'port': self.port,
             'path': self.path,
+            'admin_password': self.admin_password,
             'attrs': self.attrs
         }
 
@@ -162,6 +165,35 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
     if 'wifi_ssid' not in attrs:
         logger.warning('no SSID/PSK available to configure device')
 
+    if 'admin_password' not in attrs:
+        logger.debug('generating password for %s', discovered_device)
+        discovered_device.admin_password = salves_utils.generate_password(
+            core_device_attrs.admin_password_hash,
+            discovered_device.ap_client.mac_address,
+            'admin'
+        )
+
+        attrs['admin_password'] = discovered_device.admin_password
+
+        # Also set normal and view-only password, if exposed
+        if 'normal_password' in discovered_device.attrs:
+            attrs['normal_password'] = salves_utils.generate_password(
+                core_device_attrs.admin_password_hash,
+                discovered_device.ap_client.mac_address,
+                'normal'
+            )
+
+        if 'viewonly_password' in discovered_device.attrs:
+            attrs['viewonly_password'] = salves_utils.generate_password(
+                core_device_attrs.admin_password_hash,
+                discovered_device.ap_client.mac_address,
+                'viewonly'
+            )
+
+    else:
+        logger.debug('using supplied password for %s', discovered_device)
+        discovered_device.admin_password = attrs['admin_password']
+
     network_configured = attrs.get('wifi_ssid') is not None
     if network_configured:
         # Find client's future IP address first
@@ -194,13 +226,14 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
                 scheme=discovered_device.scheme,
                 port=discovered_device.port,
                 path=discovered_device.path,
+                admin_password=discovered_device.admin_password,
                 attrs=discovered_device.attrs
             )
 
             dns.set_custom_dns_mapping(ap_client.hostname, reply.ip_address, timeout=60)
 
     logger.debug('configuring %s', discovered_device)
-    await _request_client(ap_client, 'PATCH', f'{discovered_device.path}/device', body=attrs)
+    await ap_client.request('PATCH', f'{discovered_device.path}/device', body=attrs)
     logger.debug('%s successfully configured', discovered_device)
 
     # Remove configured device from discovered list
@@ -212,7 +245,12 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
         start_time = time.time()
         while True:
             try:
-                await _request_client(discovered_device.ap_client, 'GET', '/device', no_log=True)
+                await discovered_device.ap_client.request(
+                    'GET',
+                    '/device',
+                    no_log=True,
+                    admin_password=discovered_device.admin_password
+                )
                 logger.debug('%s connected to new network', discovered_device)
                 break
 
@@ -300,7 +338,7 @@ async def _query_client(ap_client: ap.APClient) -> Optional[DiscoveredDevice]:
 
     for prefix in _PATH_PREFIXES:
         try:
-            attrs = await _request_client(ap_client, 'GET', f'{prefix}/device')
+            attrs = await ap_client.request('GET', f'{prefix}/device')
             break
 
         except (httpclient.HTTPError, json.JSONDecodeError):
@@ -323,51 +361,9 @@ async def _query_client(ap_client: ap.APClient) -> Optional[DiscoveredDevice]:
         scheme='http',  # TODO: add support for HTTPS schemes
         port=80,
         path=prefix,
+        admin_password='',
         attrs=attrs
     )
-
-
-async def _request_client(client: ap.APClient, method: str, path: str, body: Any = None, no_log: bool = False) -> Any:
-    http_client = httpclient.AsyncHTTPClient()
-    headers = {
-        'Content-Type': json_utils.JSON_CONTENT_TYPE,
-        'Authorization': core_api_auth.make_auth_header(
-            core_api_auth.ORIGIN_CONSUMER,
-            username='admin', password_hash=core_api_auth.EMPTY_PASSWORD_HASH
-        )
-    }
-
-    # TODO: this only tries standard port 80; ideally it should try connecting on a list of known ports
-
-    timeout = settings.slaves.discover.request_timeout
-    url = f'http://{client.ip_address}:80{path}'
-
-    body_str = None
-    if body is not None:
-        body_str = json_utils.dumps(body)
-
-    request = httpclient.HTTPRequest(
-        url=url,
-        method=method,
-        headers=headers,
-        body=body_str,
-        connect_timeout=timeout,
-        request_timeout=timeout
-    )
-
-    if not no_log:
-        logger.debug('requesting %s %s', method, url)
-
-    try:
-        response = await http_client.fetch(request, raise_error=True)
-
-    except Exception as e:
-        if not no_log:
-            logger.error('request %s %s failed: %s', method, url, e, exc_info=True)
-        raise
-
-    if response.body:
-        return json_utils.loads(response.body)
 
 
 async def init() -> None:
