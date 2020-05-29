@@ -3,9 +3,12 @@ import {gettext}             from '$qui/base/i18n.js'
 import Timer                 from '$qui/base/timer.js'
 import FormButton            from '$qui/forms/form-button.js'
 import {CheckField}          from '$qui/forms/common-fields.js'
+import {PasswordField}       from '$qui/forms/common-fields.js'
+import {TextField}           from '$qui/forms/common-fields.js'
 import {OptionsForm}         from '$qui/forms/common-forms.js'
 import StockIcon             from '$qui/icons/stock-icon.js'
 import {ANIMATION_SPIN}      from '$qui/icons/icons.js'
+import {SimpleMessageForm}   from '$qui/messages/common-message-forms.js'
 import * as Toast            from '$qui/messages/toast.js'
 import {PushButtonTableCell} from '$qui/tables/common-cells.js'
 import {SimpleTableCell}     from '$qui/tables/common-cells.js'
@@ -34,7 +37,23 @@ class DiscoveredDevicesTableOptionsForm extends OptionsForm {
                     name: 'use_ip_addresses',
                     label: gettext('Use IP Addresses'),
                     description: gettext('Use IP addresses instead of hostnames when adopting devices (on networks ' +
-                                         'with missing local DNS resolving)')
+                                         'with missing local DNS resolving).')
+                }),
+                new TextField({
+                    name: 'target_wifi_ssid',
+                    label: gettext('Target Wi-Fi Network'),
+                    description: gettext('The name of the Wi-Fi network to be used by adopted devices.'),
+                    autocomplete: false,
+                    continuousChange: false,
+                    required: true
+                }),
+                new PasswordField({
+                    name: 'target_wifi_key',
+                    label: gettext('Target Wi-Fi Key'),
+                    description: gettext('The key (password) of the Wi-Fi network to be used by adopted devices.'),
+                    autocomplete: false,
+                    continuousChange: false,
+                    revealOnFocus: true
                 })
             ],
             buttons: [
@@ -45,17 +64,15 @@ class DiscoveredDevicesTableOptionsForm extends OptionsForm {
                 })
             ],
             initialData: {
-                use_ip_addresses: Cache.getPrefs('devices.use_ip_addresses', DEFAULT_USE_IP_ADDRESSES)
+                use_ip_addresses: Cache.getPrefs('devices.use_ip_addresses', DEFAULT_USE_IP_ADDRESSES),
+                target_wifi_ssid: Cache.getPrefs('devices.target_wifi_ssid', ''),
+                target_wifi_key: Cache.getPrefs('devices.target_wifi_key', '')
             }
         })
     }
 
     onChange(data, fieldName) {
-        switch (fieldName) {
-            case 'use_ip_addresses':
-                Cache.setPrefs(`devices.${fieldName}`, data[fieldName])
-                break
-        }
+        Cache.setPrefs(`devices.${fieldName}`, data[fieldName])
     }
 
     onButtonPress(button) {
@@ -89,6 +106,15 @@ class AdoptTableCell extends PushButtonTableCell {
     }
 
     onClick() {
+        if (!Cache.getPrefs('devices.target_wifi_ssid')) {
+            new SimpleMessageForm({
+                type: 'info',
+                message: gettext('Please use the options panel to fill out target Wi-Fi settings.')
+            }).show()
+
+            return
+        }
+
         this.setIcon(new StockIcon({name: 'sync', animation: ANIMATION_SPIN}))
         this.setEnabled(false)
         this.setCaption(gettext('Adopting...'))
@@ -182,7 +208,10 @@ class DiscoveredDevicesTable extends PageTable {
         let name = discoveredDevice.attrs['name']
         logger.debug(`adopting device ${name}`)
 
-        let attrs = {}
+        let attrs = {
+            wifi_ssid: Cache.getPrefs('devices.target_wifi_ssid'),
+            wifi_key: Cache.getPrefs('devices.target_wifi_key')
+        }
         let useIPAddresses = Cache.getPrefs('devices.use_ip_addresses', DEFAULT_USE_IP_ADDRESSES)
 
         let promise = MasterSlaveAPI.patchDiscoveredDevice(discoveredDevice.attrs['name'], attrs)

@@ -123,22 +123,11 @@ def get_discovered_devices() -> Optional[Dict[str, DiscoveredDevice]]:
 async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> DiscoveredDevice:
     ap_client = discovered_device.ap_client
 
-    # Wi-Fi settings of the real network
+    # Wi-Fi settings of the real (target) network
     if 'wifi_ssid' not in attrs:
-        if settings.slaves.discover.ap.target_ssid:
-            attrs['wifi_ssid'] = settings.slaves.discover.ap.target_ssid
-            attrs['wifi_key'] = settings.slaves.discover.ap.target_psk
-
-        elif net.has_wifi_support():
-            wifi_config = net.get_wifi_config()
-            attrs['wifi_ssid'] = wifi_config['ssid']
-            attrs['wifi_key'] = wifi_config['psk']
-
-        else:
-            logger.warning('no SSID/PSK available to configure device')
+        logger.warning('no SSID/PSK available to configure device')
 
     network_configured = attrs.get('wifi_ssid') is not None
-
     if network_configured:
         # Find client's future IP address first
         try:

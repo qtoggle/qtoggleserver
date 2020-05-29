@@ -129,8 +129,6 @@ class slaves:
             interface: str = 'wlan0'
             ssid: str = 'qToggleSetup'
             psk: str = None
-            target_ssid: str = None
-            target_psk: str = None
             own_ip: str = '192.168.43.1'
             mask_len: int = 24
             start_ip: str = '192.168.43.50'
