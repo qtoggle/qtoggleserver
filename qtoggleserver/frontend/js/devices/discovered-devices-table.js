@@ -30,6 +30,10 @@ const logger = Devices.logger
 class DiscoveredDevicesTableOptionsForm extends OptionsForm {
 
     constructor(discoveredDevicesTable) {
+        let mainDevice = Cache.getMainDevice()
+        let defaultTargetWiFiSSID = mainDevice['wifi_ssid'] || ''
+        let defaultTargetWiFiPSK = mainDevice['wifi_psk'] || ''
+
         super({
             page: discoveredDevicesTable,
             fields: [
@@ -65,8 +69,8 @@ class DiscoveredDevicesTableOptionsForm extends OptionsForm {
             ],
             initialData: {
                 use_ip_addresses: Cache.getPrefs('devices.use_ip_addresses', DEFAULT_USE_IP_ADDRESSES),
-                target_wifi_ssid: Cache.getPrefs('devices.target_wifi_ssid', ''),
-                target_wifi_key: Cache.getPrefs('devices.target_wifi_key', '')
+                target_wifi_ssid: Cache.getPrefs('devices.target_wifi_ssid', defaultTargetWiFiSSID),
+                target_wifi_key: Cache.getPrefs('devices.target_wifi_key', defaultTargetWiFiPSK)
             }
         })
     }
