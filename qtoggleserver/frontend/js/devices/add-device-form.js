@@ -41,6 +41,7 @@ class AddDeviceForm extends PageForm {
                     required: true,
                     placeholder: 'http://192.168.1.123/device',
                     initialValue: 'http://',
+                    autocomplete: false,
 
                     validate(url) {
                         if (!url.match(URL.VALID_REGEX)) {
