@@ -19,6 +19,7 @@ from qtoggleserver.system import dhcp
 from qtoggleserver.system import dns
 from qtoggleserver.system import net
 from qtoggleserver.utils import asyncio as asyncio_utils
+from qtoggleserver.utils import cmd as cmd_utils
 from qtoggleserver.utils import json as json_utils
 
 from .exceptions import DiscoverException
@@ -63,6 +64,21 @@ class DiscoveredDevice:
             'path': self.path,
             'attrs': self.attrs
         }
+
+
+def get_interface() -> Optional[str]:
+    ap_settings = settings.slaves.discover.ap
+    if ap_settings.interface:
+        return ap_settings.interface
+
+    if ap_settings.interface_cmd:
+        result = cmd_utils.run_get_cmd(
+            ap_settings.interface_cmd,
+            cmd_name='AP client discover interface',
+            exc_class=DiscoverException,
+            required_fields=['interface']
+        )
+        return result.get('interface')
 
 
 async def discover(timeout: Optional[int] = None) -> None:
@@ -197,7 +213,7 @@ async def _discover(timeout: Optional[int]) -> List[DiscoveredDevice]:
         await ap.stop()
 
     ap.start(
-        interface=ap_settings.interface,
+        interface=get_interface(),
         ssid=ap_settings.ssid,
         psk=ap_settings.psk,
         own_ip=ap_settings.own_ip,

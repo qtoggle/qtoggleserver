@@ -15,6 +15,7 @@ from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.api import funcs as core_api_funcs
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.slaves.api import funcs as slaves_api_funcs
+from qtoggleserver.slaves.discover import is_enabled as is_discover_enabled
 from qtoggleserver.ui.api import funcs as ui_api_funcs
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.version import VERSION
@@ -185,7 +186,7 @@ class TemplateHandler(J2TemplateMixin, BaseHandler):
     def get_extra_context(self) -> dict:
         return {
             'slaves_enabled': settings.slaves.enabled,
-            'discover_enabled': settings.slaves.discover.enabled
+            'discover_enabled': is_discover_enabled()
         }
 
 

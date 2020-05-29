@@ -119,14 +119,14 @@ class slaves:
     retry_count: int = 3
 
     class discover:
-        enabled: bool = False
         default_scan_timeout: int = 10
         request_timeout: int = 5
         dhcp_timeout: int = 10
         dhcp_interface: str = None
 
         class ap:
-            interface: str = 'wlan0'
+            interface: str = None
+            interface_cmd: str = None
             ssid: str = 'qToggleSetup'
             psk: str = None
             own_ip: str = '192.168.43.1'
