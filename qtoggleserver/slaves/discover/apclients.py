@@ -150,7 +150,7 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
             )
 
         except dhcp.DHCPTimeout:
-            logger.warning('could not determine future device IP address')
+            logger.warning('could not determine future device IP address of %s', discovered_device)
             reply = None
 
         if reply:
@@ -280,7 +280,7 @@ async def _query_client(ap_client: ap.APClient) -> Optional[DiscoveredDevice]:
             continue
 
     else:
-        return None
+        raise DiscoverException('Could not find device API endpoint')
 
     if not isinstance(attrs, dict):
         logger.error('%s has returned invalid device attributes response', ap_client)

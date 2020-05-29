@@ -247,6 +247,9 @@ async def request(
     ifr.ifr_flags |= IFF_PROMISC
     fcntl.ioctl(sock.fileno(), SIOCSIFFLAGS, ifr)
 
+    # Interface requires sometimes a small time to settle before sending discovery frame
+    await asyncio.sleep(1)
+
     # Actually send packet
     sock.send(ethernet_frame)
 

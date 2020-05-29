@@ -120,7 +120,8 @@ export function getDiscovered(timeout = null) {
         query['timeout'] = timeout
     }
 
-    return BaseAPI.apiCall({method: 'GET', path: '/discovered', query, timeout: timeout * 1.5})
+    /* Use double actual request timeout to allow querying discovered devices and account for other possible delays */
+    return BaseAPI.apiCall({method: 'GET', path: '/discovered', query, timeout: timeout * 2})
 }
 
 /**
