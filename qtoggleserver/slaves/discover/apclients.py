@@ -7,7 +7,7 @@ import json
 import logging
 import time
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from tornado import httpclient
 
@@ -26,12 +26,17 @@ from .exceptions import DiscoverException
 
 
 _PATH_PREFIXES = ['', '/api']
+_INTERFACE_CACHE_TIMEOUT = 60
 
 logger = logging.getLogger(__name__)
 
 _discover_task: Optional[asyncio.Task] = None
 _discovered_devices: Optional[Dict[str, DiscoveredDevice]] = None
 _finish_timer: Optional[asyncio_utils.Timer] = None
+
+# TODO: replace these with a common cache service with integrated timeout management
+_interface: Optional[Tuple[str]] = None
+_interface_time: float = 0
 
 
 class DiscoveredDevice:
@@ -67,18 +72,32 @@ class DiscoveredDevice:
 
 
 def get_interface() -> Optional[str]:
+    global _interface
+    global _interface_time
+
     ap_settings = settings.slaves.discover.ap
     if ap_settings.interface:
         return ap_settings.interface
 
     if ap_settings.interface_cmd:
+        now = time.time()
+        if now - _interface_time > _INTERFACE_CACHE_TIMEOUT:
+            _interface = None
+
+        if _interface is not None:
+            return _interface[0]
+
         result = cmd_utils.run_get_cmd(
             ap_settings.interface_cmd,
             cmd_name='AP client discover interface',
             exc_class=DiscoverException,
             required_fields=['interface']
         )
-        return result.get('interface')
+
+        _interface = (result.get('interface') or None,)
+        _interface_time = now
+
+        return _interface[0]
 
 
 async def discover(timeout: Optional[int] = None) -> None:
