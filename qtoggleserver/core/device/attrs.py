@@ -347,9 +347,9 @@ def get_attrs() -> Attributes:
         'uptime': system.uptime(),
 
         # Never disclose passwords
-        'admin_password': '',
-        'normal_password': '',
-        'viewonly_password': ''
+        'admin_password': '' if admin_password_hash == EMPTY_PASSWORD_HASH else 'set',
+        'normal_password':  '' if normal_password_hash == EMPTY_PASSWORD_HASH else 'set',
+        'viewonly_password':  '' if viewonly_password_hash == EMPTY_PASSWORD_HASH else 'set'
     }
 
     flags = ['expressions']
