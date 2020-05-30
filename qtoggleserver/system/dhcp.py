@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import asyncio
 import ctypes
-import fcntl
 import logging
+import psutil
 import random
 import re
 import socket
@@ -84,7 +84,9 @@ def _build_dhcp_options(hostname: Optional[str]) -> bytes:
     return dhcp_opts
 
 
-def _build_dhcp_header(mac_address: str, xid: int) -> bytes:
+def _build_dhcp_header(mac_address: str, xid: int, own_ip_address: str) -> bytes:
+    own_ip_address = [int(p) for p in own_ip_address.split('.')]
+
     dhcp_header = struct.pack('B', DHCP_REQUEST)  # Opcode
     dhcp_header += struct.pack('B', ARPHRD_ETHER)  # Hardware address type
     dhcp_header += struct.pack('B', 6)  # Hardware address len
@@ -95,7 +97,7 @@ def _build_dhcp_header(mac_address: str, xid: int) -> bytes:
     dhcp_header += struct.pack('BBBB', 0, 0, 0, 0)  # Client IP
     dhcp_header += struct.pack('BBBB', 0, 0, 0, 0)  # Your IP
     dhcp_header += struct.pack('BBBB', 0, 0, 0, 0)  # Server IP
-    dhcp_header += struct.pack('BBBB', 0, 0, 0, 0)  # Gateway IP
+    dhcp_header += struct.pack('BBBB', *own_ip_address)  # Gateway IP
     dhcp_header += bytes.fromhex(re.sub('[^a-fA-F0-9]', '', mac_address))  # Client MAC
     dhcp_header += b'\x00' * 10  # Remaining hardware address space
     dhcp_header += b'\x00' * 64  # Server hostname
@@ -139,9 +141,9 @@ def _build_ipv4_header(udp_packet: bytes) -> bytes:
     return ipv4_header
 
 
-def _build_ethernet_header(mac_address: str) -> bytes:
+def _build_ethernet_header(own_mac_address: str) -> bytes:
     ethernet_header = b'\xFF\xFF\xFF\xFF\xFF\xFF'  # Dest MAC
-    ethernet_header += bytes.fromhex(re.sub('[^a-fA-F0-9]', '', mac_address))
+    ethernet_header += bytes.fromhex(re.sub('[^a-fA-F0-9]', '', own_mac_address))
     ethernet_header += struct.pack('!H', ETHERTYPE_IP)
 
     return ethernet_header
@@ -169,7 +171,7 @@ def _check_received_frame(frame: bytes, expected_xid: int) -> Optional[DHCPReply
         return
 
     dst_port = struct.unpack('!H', udp_header[2:4])[0]
-    if dst_port != DHCP_SRC_PORT:
+    if (dst_port != DHCP_SRC_PORT) and (dst_port != DHCP_DST_PORT):
         return
 
     # At this point we can consider we're dealing with a DHCP reply
@@ -222,8 +224,27 @@ async def request(
     # Generate random transaction id
     xid = int(random.random() * 0xFFFFFFFF)
 
+    # Find MAC & IP address of given interface
+    try:
+        if_addrs = psutil.net_if_addrs()[interface]
+
+    except KeyError:
+        raise DHCPException(f'Cannot find own address for interface {interface}')
+
+    own_mac_address = None
+    own_ip_address = None
+    for addr in if_addrs:
+        if addr.family == socket.AF_PACKET:
+            own_mac_address = addr.address
+
+        elif addr.family == socket.AF_INET:
+            own_ip_address = addr.address
+
+    if not own_ip_address or not own_mac_address:
+        raise DHCPException(f'Cannot find own address for interface {interface}')
+
     dhcp_opts = _build_dhcp_options(hostname)
-    dhcp_header = _build_dhcp_header(mac_address, xid)
+    dhcp_header = _build_dhcp_header(mac_address, xid, own_ip_address)
     dhcp_packet = dhcp_header + dhcp_opts
 
     udp_header = _build_udp_header(dhcp_packet)
@@ -232,28 +253,17 @@ async def request(
     ipv4_header = _build_ipv4_header(udp_packet)
     ipv4_packet = ipv4_header + udp_packet
 
-    ethernet_header = _build_ethernet_header(mac_address)
+    ethernet_header = _build_ethernet_header(own_mac_address)
     ethernet_frame = ethernet_header + ipv4_packet
 
     # Open sockets
     sock = socket.socket(family=socket.PF_PACKET, type=socket.SOCK_RAW, proto=socket.htons(ETH_P_ALL))
     sock.bind((interface, 0))
 
-    # Put interface in promiscuous mode
-    ifr = _ifreq()
-    ifr.ifr_ifrn = interface.encode()
-
-    fcntl.ioctl(sock.fileno(), SIOCGIFFLAGS, ifr)
-    ifr.ifr_flags |= IFF_PROMISC
-    fcntl.ioctl(sock.fileno(), SIOCSIFFLAGS, ifr)
-
-    # Interface requires sometimes a small time to settle before sending discovery frame
-    await asyncio.sleep(1)
-
     # Actually send packet
     sock.send(ethernet_frame)
 
-    # Wait for data; being in promiscuous mode, we need to filter out a lot of noise.
+    # Wait for data; filter out stuff that we don't need
     start_time = time.time()
     offer = None
     while True:
@@ -276,10 +286,6 @@ async def request(
             break
 
         await asyncio.sleep(0)
-
-    # Exit promiscuous mode
-    ifr.ifr_flags &= ~IFF_PROMISC
-    fcntl.ioctl(sock.fileno(), SIOCSIFFLAGS, ifr)
 
     # Don't forget to close socket
     sock.close()
