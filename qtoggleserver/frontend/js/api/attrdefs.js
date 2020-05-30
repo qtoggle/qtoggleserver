@@ -88,8 +88,9 @@ export const STD_DEVICE_ATTRDEFS = {
             clearEnabled: true,
             clearPlaceholder: true,
             maxLength: 32,
-            placeholder: `(${gettext('hidden')})`
-        }
+            placeholder: `(${gettext('unset')})`
+        },
+        checkWarning: v => v ? null : gettext('Please set a password. Leaving this password empty is extremely unsafe!')
     },
     normal_password: {
         display_name: gettext('Normal Password'),
@@ -107,8 +108,9 @@ export const STD_DEVICE_ATTRDEFS = {
             clearEnabled: true,
             clearPlaceholder: true,
             maxLength: 32,
-            placeholder: `(${gettext('hidden')})`
-        }
+            placeholder: `(${gettext('unset')})`
+        },
+        checkWarning: v => v ? null : gettext('Please set a password. Leaving this password empty is extremely unsafe!')
     },
     viewonly_password: {
         display_name: gettext('View-only Password'),
@@ -126,8 +128,9 @@ export const STD_DEVICE_ATTRDEFS = {
             clearEnabled: true,
             clearPlaceholder: true,
             maxLength: 32,
-            placeholder: `(${gettext('hidden')})`
-        }
+            placeholder: `(${gettext('unset')})`
+        },
+        checkWarning: v => v ? null : gettext('Please set a password. Leaving this password empty is extremely unsafe!')
     },
     date: {
         display_name: gettext('System Date/Time'),

@@ -47,6 +47,18 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                 label: def.display_name || StringUtils.title(name.replace(new RegExp('[^a-z0-9]', 'ig'), ' '))
             }
 
+            if (def.checkWarning) {
+                fieldAttrs.onChange = function (value) {
+                    let warningMsg = def.checkWarning(value)
+                    if (warningMsg) {
+                        this.setWarning(warningMsg)
+                    }
+                    else {
+                        this.clearWarning()
+                    }
+                }
+            }
+
             if (def.field) {
                 let fieldData = def.field
                 if (MiscUtils.isFunction(fieldData)) {
@@ -316,6 +328,22 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
             if (Object.keys(newValues).length) {
                 this.setData(newValues)
             }
+
+            /* Call onChange for fields requiring it */
+            defEntries.forEach(function (entry) {
+
+                let name = entry[0]
+                let def = entry[1]
+                let field = this.getField(`attr_${name}`)
+                if (!field) {
+                    return
+                }
+
+                if (def.checkWarning) {
+                    field.onChange(field.getValue())
+                }
+
+            }.bind(this))
         }
 
     }
