@@ -165,9 +165,13 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
     network_configured = attrs.get('wifi_ssid') is not None
     if network_configured:
         # Find client's future IP address first
+        dhcp_interface = settings.slaves.discover.dhcp_interface or net.get_default_interface()
+        if not dhcp_interface:
+            raise DiscoverException('No DHCP interface')
+
         try:
             reply = await dhcp.request(
-                interface=settings.slaves.discover.dhcp_interface or net.get_default_interface(),
+                interface=dhcp_interface,
                 timeout=settings.slaves.discover.dhcp_timeout,
                 mac_address=ap_client.mac_address,
                 hostname=ap_client.hostname
