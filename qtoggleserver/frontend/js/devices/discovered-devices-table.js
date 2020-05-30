@@ -21,7 +21,7 @@ import * as Cache          from '$app/cache.js'
 import * as Devices from './devices.js'
 
 
-const DISCOVER_SCAN_TIMEOUT = 10
+const DISCOVER_SCAN_TIMEOUT = 15
 const DEFAULT_USE_IP_ADDRESSES = false
 
 const logger = Devices.logger

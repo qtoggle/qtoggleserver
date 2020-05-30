@@ -119,7 +119,6 @@ class slaves:
     retry_count: int = 3
 
     class discover:
-        default_scan_timeout: int = 10
         request_timeout: int = 5
         dhcp_timeout: int = 10
         dhcp_interface: str = None

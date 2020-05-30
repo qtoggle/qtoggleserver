@@ -1,5 +1,5 @@
 
-from typing import List, Optional
+from typing import List
 
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core.api import schema as core_api_schema
@@ -11,7 +11,10 @@ from .. import schema as api_schema
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def get_discovered(request: core_api.APIRequest, timeout: Optional[int]) -> List[GenericJSONDict]:
+async def get_discovered(request: core_api.APIRequest, timeout: int) -> List[GenericJSONDict]:
+    if timeout is None:
+        raise core_api.APIError(400, 'missing-field', field='timeout')
+
     discovered_devices = slaves_discover.get_discovered_devices()
     if discovered_devices is None:
         await slaves_discover.discover(timeout)

@@ -100,7 +100,7 @@ def get_interface() -> Optional[str]:
         return _interface[0]
 
 
-async def discover(timeout: Optional[int] = None) -> None:
+async def discover(timeout: int) -> None:
     global _discover_task
     global _discovered_devices
     global _finish_timer
@@ -226,7 +226,7 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
     return discovered_device
 
 
-async def _discover(timeout: Optional[int]) -> List[DiscoveredDevice]:
+async def _discover(timeout: int) -> List[DiscoveredDevice]:
     logger.debug('starting discovery')
 
     # (Re)start our AP
@@ -250,8 +250,6 @@ async def _discover(timeout: Optional[int]) -> List[DiscoveredDevice]:
     )
 
     # Wait for clients to connect to our AP
-    timeout = timeout or settings.slaves.discover.default_scan_timeout
-
     try:
         for _ in range(timeout):
             await asyncio.sleep(1)
