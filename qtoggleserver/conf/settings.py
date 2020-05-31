@@ -133,6 +133,7 @@ class slaves:
             start_ip: str = '192.168.43.50'
             stop_ip: str = '192.168.43.250'
             hostapd_binary: str = None
+            hostapd_cli_binary: str = None
             dnsmasq_binary: str = None
             hostapd_log: str = '/tmp/hostapd.log'
             dnsmasq_log: str = '/tmp/dnsmasq.log'

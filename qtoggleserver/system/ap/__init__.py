@@ -57,6 +57,7 @@ def start(
     start_ip: str,
     stop_ip: str,
     hostapd_binary: Optional[str] = None,
+    hostapd_cli_binary: Optional[str] = None,
     dnsmasq_binary: Optional[str] = None,
     hostapd_log: Optional[str] = None,
     dnsmasq_log: Optional[str] = None
@@ -80,6 +81,7 @@ def start(
         ssid=ssid,
         psk=psk,
         hostapd_binary=hostapd_binary,
+        hostapd_cli_binary=hostapd_cli_binary,
         hostapd_log=hostapd_log
     )
 

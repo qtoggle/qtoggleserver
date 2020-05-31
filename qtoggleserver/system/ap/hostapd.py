@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import psutil
+import re
 import subprocess
 import tempfile
 import time
@@ -12,6 +13,7 @@ from .exceptions import APException
 
 
 BINARY = 'hostapd'
+CLI_BINARY = 'hostapd_cli'
 
 CONF_TEMPLATE = (
     'ssid={ssid}\n'
@@ -21,6 +23,7 @@ CONF_TEMPLATE = (
     'interface={interface}\n'
     'channel=1\n'
     'driver=nl80211\n'
+    'ctrl_interface=/var/run/hostapd\n'
 )
 
 CONF_NO_PSK_TEMPLATE = (
@@ -28,6 +31,7 @@ CONF_NO_PSK_TEMPLATE = (
     'interface={interface}\n'
     'channel=1\n'
     'driver=nl80211\n'
+    'ctrl_interface=/var/run/hostapd\n'
 )
 
 STOP_TIMEOUT = 2
@@ -47,6 +51,7 @@ class HostAPD:
         psk: Optional[str],
         interface: str,
         hostapd_binary: Optional[str] = None,
+        hostapd_cli_binary: Optional[str] = None,
         hostapd_log: Optional[str] = None
     ) -> None:
 
@@ -54,6 +59,7 @@ class HostAPD:
         self._psk: Optional[str] = psk
         self._interface: str = interface
         self._binary: Optional[str] = hostapd_binary
+        self._cli_binary: Optional[str] = hostapd_cli_binary
         self._log: Optional[str] = hostapd_log
 
         self._conf_file: Optional[TextIO] = None
@@ -73,9 +79,9 @@ class HostAPD:
             f'"{self._psk}"' if self._psk else 'empty'
         )
 
-        binary = self._binary or self._find_binary()
+        binary = self._binary or self._find_binary(BINARY)
         if not binary:
-            raise HostAPDException('Could not find hostapd binary')
+            raise HostAPDException('Could not find %s binary', BINARY)
 
         conf_template = CONF_TEMPLATE if self._psk else CONF_NO_PSK_TEMPLATE
         conf = conf_template.format(ssid=self._ssid, psk=self._psk, interface=self._interface)
@@ -95,6 +101,9 @@ class HostAPD:
         logger.debug('stopping hostapd')
 
         if self._process:
+            self._disassociate_clients()
+            await asyncio.sleep(1)  # Allow 1 second for hostapd to honor the command
+
             self._process.terminate()
 
             begin_time = time.time()
@@ -120,9 +129,36 @@ class HostAPD:
             self._log_file.close()
             self._log_file = None
 
-    def _find_binary(self) -> Optional[str]:
+    def _disassociate_clients(self) -> None:
+        cli_binary = self._cli_binary or self._find_binary(CLI_BINARY)
+        if not cli_binary:
+            raise HostAPDException('Could not find %s binary', CLI_BINARY)
+
         try:
-            return subprocess.check_output(['which', BINARY]).decode().strip()
+            output = subprocess.check_output([cli_binary, 'list'], stderr=subprocess.DEVNULL).decode().strip()
+
+        except subprocess.CalledProcessError:
+            logger.error('command hostapd_cli list failed')
+            return
+
+        lines = output.split('\n')
+        mac_addresses = [line for line in lines if re.match(r'^[a-f0-9:]{17}$', line)]
+
+        for mac_address in mac_addresses:
+            logger.debug('disassociating client with MAC %s', mac_address.upper())
+            try:
+                subprocess.check_call(
+                    [cli_binary, 'disassociate', mac_address],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+
+            except subprocess.CalledProcessError:
+                logger.error('command hostapd_cli disassociate failed')
+
+    def _find_binary(self, binary: str) -> Optional[str]:
+        try:
+            return subprocess.check_output(['which', binary], stderr=subprocess.DEVNULL).decode().strip()
 
         except subprocess.CalledProcessError:
             return None

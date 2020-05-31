@@ -74,7 +74,7 @@ class DNSMasq:
 
         binary = self._binary or self._find_binary()
         if not binary:
-            raise DNSMasqException('Could not find dnsmasq binary')
+            raise DNSMasqException('Could not find %s binary', BINARY)
 
         self.ensure_own_ip()
 
@@ -136,20 +136,28 @@ class DNSMasq:
 
     def ensure_own_ip(self) -> None:
         try:
-            subprocess.check_call(['ip', 'addr', 'flush', 'dev', self._interface])
+            subprocess.check_call(
+                ['ip', 'addr', 'flush', 'dev', self._interface],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
 
         except subprocess.CalledProcessError:
             raise DNSMasqException('Could not clear current own IP address')
 
         try:
-            subprocess.check_call(['ip', 'addr', 'add', f'{self._own_ip}/{self._mask_len}', 'dev', self._interface])
+            subprocess.check_call(
+                ['ip', 'addr', 'add', f'{self._own_ip}/{self._mask_len}', 'dev', self._interface],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
 
         except subprocess.CalledProcessError:
             raise DNSMasqException('Could not set own IP address')
 
     def _find_binary(self) -> Optional[str]:
         try:
-            return subprocess.check_output(['which', BINARY]).decode().strip()
+            return subprocess.check_output(['which', BINARY], stderr=subprocess.DEVNULL).decode().strip()
 
         except subprocess.CalledProcessError:
             return None

@@ -244,6 +244,7 @@ async def _discover(timeout: int) -> List[DiscoveredDevice]:
         start_ip=ap_settings.start_ip,
         stop_ip=ap_settings.stop_ip,
         hostapd_binary=ap_settings.hostapd_binary,
+        hostapd_cli_binary=ap_settings.hostapd_cli_binary,
         dnsmasq_binary=ap_settings.dnsmasq_binary,
         hostapd_log=ap_settings.hostapd_log,
         dnsmasq_log=ap_settings.dnsmasq_log
