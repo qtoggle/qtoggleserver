@@ -151,14 +151,14 @@ function main() {
             listeningInitiallyStarted = true
         })
 
-        Window.visibilityChangeSignal.connect(function (visible) {
+        Window.activeChangeSignal.connect(function (active) {
             if (Config.debug) {
                 return
             }
 
-            if (visible) {
+            if (active) {
                 if (listeningInitiallyStarted) {
-                    logger.info('application became visible, (re)starting listening mechanism')
+                    logger.info('application became active, (re)starting listening mechanism')
 
                     /* (Re)start the listening mechanism; this will, in turn, trigger a full cache reload. */
                     Cache.setReloadNeeded()
@@ -169,7 +169,7 @@ function main() {
                 }
             }
             else {
-                logger.info('application became hidden, stopping listening mechanism')
+                logger.info('application became inactive, stopping listening mechanism')
                 NotificationsAPI.stopListening()
             }
         })

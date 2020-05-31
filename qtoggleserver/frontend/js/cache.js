@@ -797,8 +797,8 @@ export function init() {
             return
         }
 
-        /* Don't poll unless window currently visible */
-        if (!Window.isVisible()) {
+        /* Don't poll unless window currently active */
+        if (!Window.isActive()) {
             return
         }
 
