@@ -84,7 +84,6 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 150,
         field: {
             class: PasswordField,
-            autocomplete: false,
             clearEnabled: true,
             clearPlaceholder: true,
             maxLength: 32,
@@ -104,7 +103,6 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 151,
         field: {
             class: PasswordField,
-            autocomplete: false,
             clearEnabled: true,
             clearPlaceholder: true,
             maxLength: 32,
@@ -124,7 +122,6 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 152,
         field: {
             class: PasswordField,
-            autocomplete: false,
             clearEnabled: true,
             clearPlaceholder: true,
             maxLength: 32,
@@ -145,7 +142,6 @@ export const STD_DEVICE_ATTRDEFS = {
         valueFromUI: v => Math.round(Date.parse(v) / 1000),
         field: {
             class: TextField,
-            autocomplete: false,
             pattern: DATE_PATTERN
         }
     },
@@ -193,7 +189,6 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 171,
         field: {
             class: PasswordField,
-            autocomplete: false,
             clearEnabled: true,
             revealOnFocus: true,
             maxLength: 64
@@ -211,7 +206,6 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 172,
         field: {
             class: TextField,
-            autocomplete: false,
             clearEnabled: true,
             placeholder: 'AA:BB:CC:DD:EE:FF',
             pattern: /^[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}$/
@@ -250,7 +244,6 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 180,
         field: {
             class: TextField,
-            autocomplete: false,
             placeholder: '192.168.1.2',
             pattern: IP_ADDRESS_PATTERN
         }
@@ -269,7 +262,6 @@ export const STD_DEVICE_ATTRDEFS = {
         valueFromUI: v => v ? netmaskToLen(v) : 0,
         field: {
             class: TextField,
-            autocomplete: false,
             placeholder: '255.255.255.0',
             pattern: IP_ADDRESS_PATTERN
         }
@@ -286,7 +278,6 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 182,
         field: {
             class: TextField,
-            autocomplete: false,
             placeholder: '192.168.1.1',
             pattern: IP_ADDRESS_PATTERN
         }
@@ -302,7 +293,6 @@ export const STD_DEVICE_ATTRDEFS = {
         order: 183,
         field: {
             class: TextField,
-            autocomplete: false,
             placeholder: '192.168.1.1',
             pattern: IP_ADDRESS_PATTERN
         }

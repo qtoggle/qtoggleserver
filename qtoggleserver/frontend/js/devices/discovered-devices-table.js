@@ -47,7 +47,6 @@ class DiscoveredDevicesTableOptionsForm extends OptionsForm {
                     name: 'target_wifi_ssid',
                     label: gettext('Target Wi-Fi Network'),
                     description: gettext('The name of the Wi-Fi network to be used by adopted devices.'),
-                    autocomplete: false,
                     continuousChange: false,
                     required: true
                 }),
@@ -55,7 +54,6 @@ class DiscoveredDevicesTableOptionsForm extends OptionsForm {
                     name: 'target_wifi_key',
                     label: gettext('Target Wi-Fi Key'),
                     description: gettext('The key (password) of the Wi-Fi network to be used by adopted devices.'),
-                    autocomplete: false,
                     continuousChange: false,
                     revealOnFocus: true
                 })
