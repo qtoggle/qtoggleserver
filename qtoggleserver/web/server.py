@@ -47,8 +47,11 @@ def _make_handlers() -> List[tuple]:
                 '$app': f'/{FRONTEND_URL_PREFIX}/static/app/js'
             }
 
-            # In debug mode, we serve QUI static files from its own folder, assumed to be in node_modules/@qtoggle
-            qui_path = os.path.join(frontend_path, 'node_modules', '@qtoggle', 'qui')
+            # In debug mode, we serve QUI static files from its own folder (assumed to be in node_modules/@qtoggle,
+            # unless otherwise specified)
+            qui_path = settings.frontend.qui_path
+            if not qui_path:
+                qui_path = os.path.join(frontend_path, 'node_modules', '@qtoggle', 'qui')
 
             handlers_list.append(
                 (

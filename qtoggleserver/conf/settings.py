@@ -108,6 +108,7 @@ class system:
 class frontend:
     enabled: bool = True
     debug: bool = False
+    qui_path: str = None
 
 
 class slaves:
