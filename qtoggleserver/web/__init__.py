@@ -11,7 +11,7 @@ from qtoggleserver.slaves.discover import is_enabled as is_discover_enabled
 logger = logging.getLogger(__name__)
 
 
-async def init():
+async def init() -> None:
     if settings.frontend.enabled:
         logger.debug('initializing QUI')
 
@@ -29,5 +29,5 @@ async def init():
         )
 
 
-async def cleanup():
+async def cleanup() -> None:
     pass
