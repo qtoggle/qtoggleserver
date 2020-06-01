@@ -59,7 +59,7 @@ setup(
     package_data={
         name: [
             'frontend/dist/font/*',
-            'frontend/dist/html/*',
+            'frontend/dist/templates/*',
             'frontend/dist/img/*',
             'frontend/dist/*'
         ]
