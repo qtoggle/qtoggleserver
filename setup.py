@@ -50,6 +50,7 @@ setup(
         'pyhocon==0.3.54',
         'pyjwt==1.7.1',
         'pytz==2019.3',
+        'qui-server==1.11.0-alpha.4',
         'tornado==6.0.4',
     ],
 
