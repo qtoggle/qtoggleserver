@@ -15,6 +15,7 @@ from qtoggleserver import persist
 from qtoggleserver import slaves
 from qtoggleserver import system
 from qtoggleserver import version
+from qtoggleserver import web
 from qtoggleserver.conf import settings
 from qtoggleserver.core import device
 from qtoggleserver.core import events
@@ -303,6 +304,16 @@ async def cleanup_main() -> None:
     await main.cleanup()
 
 
+async def init_web() -> None:
+    logger.info('initializing web')
+    await web.init()
+
+
+async def cleanup_web() -> None:
+    logger.info('cleaning up web')
+    await web.cleanup()
+
+
 async def init() -> None:
     parse_args()
 
@@ -322,9 +333,11 @@ async def init() -> None:
     await init_ports()
     await init_slaves()
     await init_main()
+    await init_web()
 
 
 async def cleanup() -> None:
+    await cleanup_web()
     await cleanup_main()
     await cleanup_ports()
     await cleanup_slaves()
