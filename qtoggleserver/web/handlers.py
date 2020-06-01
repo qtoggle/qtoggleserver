@@ -5,8 +5,8 @@ import logging
 
 from typing import Any, Callable, Dict, Optional
 
-from tornado.web import RequestHandler, HTTPError, StaticFileHandler as TornadoStaticFileHandler
 from tornado.iostream import StreamClosedError
+from tornado.web import RequestHandler, HTTPError
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
@@ -15,14 +15,8 @@ from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.api import funcs as core_api_funcs
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.slaves.api import funcs as slaves_api_funcs
-from qtoggleserver.slaves.discover import is_enabled as is_discover_enabled
 from qtoggleserver.ui.api import funcs as ui_api_funcs
 from qtoggleserver.utils import json as json_utils
-from qtoggleserver.version import VERSION
-
-from .constants import FRONTEND_URL_PREFIX
-from .j2template import J2TemplateMixin
-from .quicontext import make_context
 
 
 logger = logging.getLogger(__name__)
@@ -103,118 +97,8 @@ class BaseHandler(RequestHandler):
         pass
 
 
-class StaticFileHandler(TornadoStaticFileHandler):
-    def data_received(self, chunk: bytes) -> None:
-        pass
-
-    # def set_extra_headers(self, path: str) -> None:
-    #     self.set_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
-
-
-class JSModuleMapperStaticFileHandler(StaticFileHandler):
-    def __init__(self, *args, **kwargs) -> None:
-        self._mapping: Dict[bytes, bytes] = {}
-        self._mapped_content: Optional[bytes] = None
-
-        super().__init__(*args, **kwargs)
-
-    def initialize(self, path: str, mapping: Dict[str, str], default_filename: Optional[str] = None) -> None:
-        super().initialize(path, default_filename)
-
-        self._mapping = {k.encode(): v.encode() for k, v in mapping.items()}
-        self._mapped_content = None
-
-    def get_content_size(self) -> int:
-        return len(self.get_mapped_content())
-
-    def get_content(self, abspath: str, start: Optional[int] = None, end: Optional[int] = None) -> bytes:
-        return self.get_mapped_content()
-
-    @classmethod
-    def get_content_version(cls, abspath: str) -> str:
-        return ''
-
-    def get_mapped_content(self) -> bytes:
-        if self._mapped_content is None:
-            content = b''.join(super().get_content(self.absolute_path))
-
-            if self.absolute_path.endswith('.js'):
-                for k, v in self._mapping.items():
-                    content = content.replace(k, v)
-
-            self._mapped_content = content
-
-        return self._mapped_content
-
-
 class NoSuchFunctionHandler(BaseHandler):
     pass
-
-
-class RedirectFrontendHandler(BaseHandler):
-    def get(self) -> None:
-        self.redirect(f'/{FRONTEND_URL_PREFIX}/')
-
-
-class TemplateHandler(J2TemplateMixin, BaseHandler):
-    def prepare(self) -> None:
-        self.set_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
-
-    def get_context(self, path: str = '', offs: int = 0) -> dict:
-        # Adjust static URL prefix to a relative path matching currently requested frontend path
-
-        context = make_context(
-            debug=settings.frontend.debug,
-            version=VERSION,
-            **self.get_extra_context()
-        )
-
-        slashes = path.count('/') + offs
-        if slashes == 0:
-            prefix = 'frontend/'
-
-        elif slashes > 1:
-            prefix = '/'.join(['..'] * (slashes - 1)) + '/'
-
-        else:
-            prefix = ''
-
-        context['static_url'] = prefix + context['static_url']
-
-        return context
-
-    def get_extra_context(self) -> dict:
-        return {
-            'slaves_enabled': settings.slaves.enabled,
-            'discover_enabled': is_discover_enabled()
-        }
-
-
-class FrontendHandler(TemplateHandler):
-    def get(self, path: str) -> None:
-        self.render('index.html', **self.get_context(path))
-
-
-class ManifestHandler(TemplateHandler):
-    PARAMS = [
-        'display_name', 'display_short_name', 'description', 'version', 'theme_color', 'background_color'
-    ]
-
-    def get(self) -> None:
-        context = self.get_context(offs=1)
-        for param in self.PARAMS:
-            value = self.get_query_argument(param, None)
-            if value is not None:
-                context[param] = value
-
-        self.set_header('Content-Type', 'application/manifest+json; charset="utf-8"')
-        self.render('manifest.json', **context)
-
-
-class ServiceWorkerHandler(TemplateHandler):
-    def get(self) -> None:
-        self.set_header('Content-Type', 'application/javascript; charset="utf-8"')
-        self.render('service-worker.js', **self.get_context())
 
 
 class APIHandler(BaseHandler):

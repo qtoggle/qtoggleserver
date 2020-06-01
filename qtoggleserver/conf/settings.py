@@ -1,5 +1,4 @@
 
-import os as _os
 import typing as _typing
 
 
@@ -108,7 +107,7 @@ class system:
 class frontend:
     enabled: bool = True
     debug: bool = False
-    qui_path: str = None
+    static_url: str = None
 
 
 class slaves:
@@ -157,5 +156,3 @@ peripherals: _typing.List[_typing.Dict[str, _typing.Any]] = []
 ports: _typing.List[_typing.Dict[str, _typing.Any]] = []
 
 port_mappings: _typing.Dict[str, str] = {}
-
-pkg_path: str = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))

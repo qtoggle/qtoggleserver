@@ -1,1 +1,0 @@
-../node_modules/@qtoggle/qui/html/service-worker.js
