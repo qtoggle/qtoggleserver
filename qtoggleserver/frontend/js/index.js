@@ -9,6 +9,7 @@ import * as Toast      from '$qui/messages/toast.js'
 import * as Navigation from '$qui/navigation.js'
 import * as PWA        from '$qui/pwa.js'
 import * as Sections   from '$qui/sections/sections.js'
+import * as HTMLUtils  from '$qui/utils/html.js'
 import * as Window     from '$qui/window.js'
 
 /* These must be imported here */
@@ -33,6 +34,9 @@ import '$app/qtoggle-stock.js'
 
 
 const logger = Logger.get('qtoggle')
+
+// TODO: this is not going to be needed anymore as soon as we'll have multiple simultaneous notification messages
+let initialToastShown = false
 
 
 function initConfig() {
@@ -85,6 +89,10 @@ function handlePWAInstall() {
         return Promise.reject()
     }
 
+    if (initialToastShown) { /* Don't spam the user with toasts */
+        return Promise.reject()
+    }
+
     let installAnchor = $('<a></a>')
     installAnchor.text(gettext('Install the app?'))
     installAnchor.on('click', function () {
@@ -92,6 +100,7 @@ function handlePWAInstall() {
     })
 
     Toast.info(installAnchor)
+    initialToastShown = true
 
     return Promise.resolve(installAnchor)
 }
@@ -126,6 +135,7 @@ function registerSections() {
 function main() {
     initConfig()
 
+    /* This must be here, before QUI.init */
     PWA.setInstallHandlers(handlePWAInstall, /* responseHandler = */ null)
 
     Promise.resolve()
@@ -172,6 +182,25 @@ function main() {
                 logger.info('application became inactive, stopping listening mechanism')
                 NotificationsAPI.stopListening()
             }
+        })
+
+        /* Warn for unset passwords */
+        Cache.whenCacheReady.then(function () {
+
+            if (!initialToastShown) { /* Don't spam the user with toasts */
+                let mainDevice = Cache.getMainDevice()
+                if (!mainDevice['admin_password']) {
+                    let messageSpan = HTMLUtils.formatPercent(
+                        gettext('Please go to %(settings)s to set an administrator password'),
+                        'span',
+                        {settings: Navigation.makeInternalAnchor('/settings', gettext('Settings'))}
+                    )
+
+                    Toast.warning(messageSpan)
+                    initialToastShown = true
+                }
+            }
+
         })
 
     })

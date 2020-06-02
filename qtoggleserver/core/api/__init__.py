@@ -56,6 +56,10 @@ class APIRequest:
         return self.handler.access_level
 
     @property
+    def username(self) -> str:
+        return self.handler.username
+
+    @property
     def method(self) -> str:
         return self.handler.request.method
 

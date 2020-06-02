@@ -37,16 +37,11 @@ class DiscoveredDevicesTableOptionsForm extends OptionsForm {
         super({
             page: discoveredDevicesTable,
             fields: [
-                new CheckField({
-                    name: 'use_ip_addresses',
-                    label: gettext('Use IP Addresses'),
-                    description: gettext('Use IP addresses instead of hostnames when adopting devices (on networks ' +
-                                         'with missing local DNS resolving).')
-                }),
                 new TextField({
                     name: 'target_wifi_ssid',
                     label: gettext('Target Wi-Fi Network'),
                     description: gettext('The name of the Wi-Fi network to be used by adopted devices.'),
+                    maxLength: 32,
                     continuousChange: false,
                     required: true
                 }),
@@ -54,6 +49,27 @@ class DiscoveredDevicesTableOptionsForm extends OptionsForm {
                     name: 'target_wifi_key',
                     label: gettext('Target Wi-Fi Key'),
                     description: gettext('The key (password) of the Wi-Fi network to be used by adopted devices.'),
+                    maxLength: 64,
+                    continuousChange: false,
+                    revealOnFocus: true
+                }),
+                new CheckField({
+                    name: 'use_ip_addresses',
+                    label: gettext('Use IP Addresses'),
+                    description: gettext('Use IP addresses instead of hostnames when adopting devices (on networks ' +
+                                         'with missing local DNS resolving).'),
+                    separator: true
+                }),
+                new CheckField({
+                    name: 'use_custom_password',
+                    label: gettext('Use Custom Password'),
+                    description: gettext('Set a custom password instead of the hub auto-generated one on adopted ' +
+                                         'devices.')
+                }),
+                new PasswordField({
+                    name: 'custom_password',
+                    label: gettext('Custom Password'),
+                    maxLength: 32,
                     continuousChange: false,
                     revealOnFocus: true
                 })
@@ -66,15 +82,22 @@ class DiscoveredDevicesTableOptionsForm extends OptionsForm {
                 })
             ],
             initialData: {
-                use_ip_addresses: Cache.getPrefs('devices.use_ip_addresses', DEFAULT_USE_IP_ADDRESSES),
                 target_wifi_ssid: Cache.getPrefs('devices.target_wifi_ssid', defaultTargetWiFiSSID),
-                target_wifi_key: Cache.getPrefs('devices.target_wifi_key', defaultTargetWiFiPSK)
+                target_wifi_key: Cache.getPrefs('devices.target_wifi_key', defaultTargetWiFiPSK),
+                use_ip_addresses: Cache.getPrefs('devices.use_ip_addresses', DEFAULT_USE_IP_ADDRESSES),
+                use_custom_password: Cache.getPrefs('devices.use_custom_password', false),
+                custom_password: Cache.getPrefs('devices.custom_password', '')
             }
         })
     }
 
+    init() {
+        this._updateFieldsVisibility()
+    }
+
     onChange(data, fieldName) {
         Cache.setPrefs(`devices.${fieldName}`, data[fieldName])
+        this._updateFieldsVisibility()
     }
 
     onButtonPress(button) {
@@ -96,6 +119,16 @@ class DiscoveredDevicesTableOptionsForm extends OptionsForm {
         }
     }
 
+    _updateFieldsVisibility() {
+        let customPasswordField = this.getField('custom_password')
+        if (this.getUnvalidatedFieldValue('use_custom_password')) {
+            customPasswordField.show()
+        }
+        else {
+            customPasswordField.hide()
+        }
+    }
+
 }
 
 
@@ -108,6 +141,12 @@ class AdoptTableCell extends PushButtonTableCell {
     }
 
     onClick() {
+        let row = this.getRow()
+        let discoveredDevicesTable = row.getTable()
+        let discoveredDevice = row.getData()
+        let useCustomPassword = Cache.getPrefs('devices.use_custom_password', false)
+
+        // TODO: check discovered device type, since not all types will require Wi-Fi settings in the future
         if (!Cache.getPrefs('devices.target_wifi_ssid')) {
             new SimpleMessageForm({
                 type: 'info',
@@ -117,13 +156,19 @@ class AdoptTableCell extends PushButtonTableCell {
             return
         }
 
+        let mainDevice = Cache.getMainDevice()
+        if (!mainDevice['admin_password'] && !useCustomPassword) {
+            new SimpleMessageForm({
+                type: 'warning',
+                message: gettext("You don't have an administrator password. Please set one before adopting devices.")
+            }).show()
+
+            return
+        }
+
         this.setIcon(new StockIcon({name: 'sync', animation: ANIMATION_SPIN}))
         this.setEnabled(false)
         this.setCaption(gettext('Adopting...'))
-
-        let row = this.getRow()
-        let discoveredDevicesTable = row.getTable()
-        let discoveredDevice = row.getData()
 
         discoveredDevicesTable.adoptDevice(discoveredDevice).catch(() => {}).then(function () {
             discoveredDevicesTable.removeRow(row)
@@ -210,11 +255,24 @@ class DiscoveredDevicesTable extends PageTable {
         let name = discoveredDevice.attrs['name']
         logger.debug(`adopting device ${name}`)
 
+        let useIPAddresses = Cache.getPrefs('devices.use_ip_addresses', DEFAULT_USE_IP_ADDRESSES)
+        let useCustomPassword = Cache.getPrefs('devices.use_custom_password', false)
+        let customPassword = Cache.getPrefs('devices.custom_password', '')
+
         let attrs = {
             wifi_ssid: Cache.getPrefs('devices.target_wifi_ssid'),
             wifi_key: Cache.getPrefs('devices.target_wifi_key')
         }
-        let useIPAddresses = Cache.getPrefs('devices.use_ip_addresses', DEFAULT_USE_IP_ADDRESSES)
+
+        if (useCustomPassword) {
+            attrs['admin_password'] = customPassword
+            if ('normal_password' in discoveredDevice.attrs) {
+                attrs['normal_password'] = customPassword
+            }
+            if ('viewonly_password' in discoveredDevice.attrs) {
+                attrs['viewonly_password'] = customPassword
+            }
+        }
 
         let promise = MasterSlaveAPI.patchDiscoveredDevice(discoveredDevice.attrs['name'], attrs)
         return promise.then(function (patchedDiscoveredDevice) {
@@ -225,7 +283,7 @@ class DiscoveredDevicesTable extends PageTable {
                 useIPAddresses ? patchedDiscoveredDevice.ip_address : patchedDiscoveredDevice.hostname,
                 patchedDiscoveredDevice.port,
                 patchedDiscoveredDevice.path,
-                /* adminPassword = */ ''
+                patchedDiscoveredDevice.admin_password
             )
 
         }).then(function () {
