@@ -203,7 +203,7 @@ function callEventListeners(event) {
     })
 }
 
-function wait(firstQuick) {
+function wait(firstQuick = false) {
     if (listenWaiting) {
         return setTimeout(wait, 500)
     }
