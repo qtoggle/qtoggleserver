@@ -1,5 +1,7 @@
 
-const webpackCommon = require('@qtoggle/qui/webpack/webpack-common.js')
+let quiPath = process.env['QUI_PATH'] || '@qtoggle/qui'
+
+const webpackCommon = require(`${quiPath}/webpack/webpack-common.js`)
 
 
 module.exports = function (env, options) {
