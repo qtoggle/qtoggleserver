@@ -2,6 +2,7 @@
  * @namespace qtoggle
  */
 
+import {globalize}     from '$qui/base/base.js'
 import {gettext}       from '$qui/base/i18n.js'
 import Config          from '$qui/config.js'
 import * as QUI        from '$qui/index.js'
@@ -208,3 +209,17 @@ function main() {
 
 
 main()
+
+
+/* Make some modules accessible globally, via window */
+import('$app/api/base.js').then(globalize('qtoggle.api.base'))
+import('$app/api/auth.js').then(globalize('qtoggle.api.auth'))
+import('$app/api/dashboard.js').then(globalize('qtoggle.api.dashboard'))
+import('$app/api/devices.js').then(globalize('qtoggle.api.devices'))
+import('$app/api/master-slave.js').then(globalize('qtoggle.api.masterslave'))
+import('$app/api/notifications.js').then(globalize('qtoggle.api.notifications'))
+import('$app/api/ports.js').then(globalize('qtoggle.api.ports'))
+import('$app/api/prefs.js').then(globalize('qtoggle.api.prefs'))
+import('$app/api/reverse.js').then(globalize('qtoggle.api.reverse'))
+import('$app/auth.js').then(globalize('qtoggle.auth'))
+import('$app/cache.js').then(globalize('qtoggle.cache'))
