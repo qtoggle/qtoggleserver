@@ -64,7 +64,6 @@ let expectedEventSpecs = {}
 let expectedEventLastHandle = 0
 let sessionId = null
 let listeningTime = null
-let listenWaiting = false
 let listenErrorCount = 0
 
 /* Flag used during firmware update */
@@ -204,10 +203,6 @@ function callEventListeners(event) {
 }
 
 function wait(firstQuick = false) {
-    if (listenWaiting) {
-        return setTimeout(wait, 500)
-    }
-
     if (!sessionId) {
         let toHash = String(new Date().getTime() * Math.random())
         let hash = new Crypto.SHA256(toHash).toString().substring(40 - 8)
@@ -217,7 +212,6 @@ function wait(firstQuick = false) {
     /* Used to detect responses to listening requests that were replaced by new ones */
     let requestListeningTime = listeningTime
 
-    listenWaiting = true
     let timeout = (syncListenError || firstQuick) ? 1 : LISTEN_KEEPALIVE
     let query = {
         session_id: sessionId,
@@ -232,8 +226,6 @@ function wait(firstQuick = false) {
             logger.debug('ignoring listen response from older session')
             return
         }
-
-        listenWaiting = false
 
         asap(wait) /* Schedule the next wait call right away */
         syncListenError = null
@@ -273,8 +265,6 @@ function wait(firstQuick = false) {
 
             syncListenCallbacks.forEach(c => PromiseUtils.asap().then(() => c(syncListenError, reconnectSeconds)))
         }
-
-        listenWaiting = false
 
         setTimeout(wait, reconnectSeconds * 1000) /* Schedule the next wait call later */
 
@@ -371,7 +361,6 @@ export function stopListening() {
     logger.debug('stopping listening mechanism')
 
     listeningTime = null
-    listenWaiting = false
 }
 
 /**
