@@ -4,9 +4,9 @@ import $ from '$qui/lib/jquery.module.js'
 import {gettext}             from '$qui/base/i18n.js'
 import {mix}                 from '$qui/base/mixwith.js'
 import StockIcon             from '$qui/icons/stock-icon.js'
-import {IconLabelListItem}   from '$qui/lists/common-items.js'
+import {IconLabelListItem}   from '$qui/lists/common-items/common-items.js'
 import List                  from '$qui/lists/list.js'
-import {StructuredPageMixin} from '$qui/pages/common-pages.js'
+import {StructuredPageMixin} from '$qui/pages/common-pages/common-pages.js'
 
 import * as Widgets from './widgets.js'
 

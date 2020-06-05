@@ -2,8 +2,8 @@
 import Logger from '$qui/lib/logger.module.js'
 
 import {gettext}        from '$qui/base/i18n.js'
-import {ComboField}     from '$qui/forms/common-fields.js'
-import {PageForm}       from '$qui/forms/common-forms.js'
+import {ComboField}     from '$qui/forms/common-fields/common-fields.js'
+import {PageForm}       from '$qui/forms/common-forms/common-forms.js'
 import FormButton       from '$qui/forms/form-button.js'
 import * as ArrayUtils  from '$qui/utils/array.js'
 import * as StringUtils from '$qui/utils/string.js'

@@ -1,9 +1,9 @@
 
 import {gettext}         from '$qui/base/i18n.js'
-import {CheckField}      from '$qui/forms/common-fields.js'
-import {ColorComboField} from '$qui/forms/common-fields.js'
-import {NumericField}    from '$qui/forms/common-fields.js'
-import {UpDownField}     from '$qui/forms/common-fields.js'
+import {CheckField}      from '$qui/forms/common-fields/common-fields.js'
+import {ColorComboField} from '$qui/forms/common-fields/common-fields.js'
+import {NumericField}    from '$qui/forms/common-fields/common-fields.js'
+import {UpDownField}     from '$qui/forms/common-fields/common-fields.js'
 import StockIcon         from '$qui/icons/stock-icon.js'
 import * as ArrayUtils   from '$qui/utils/array.js'
 

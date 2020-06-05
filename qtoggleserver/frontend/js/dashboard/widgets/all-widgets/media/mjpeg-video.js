@@ -2,9 +2,9 @@
 import $ from '$qui/lib/jquery.module.js'
 
 import {gettext}         from '$qui/base/i18n.js'
-import {CheckField}      from '$qui/forms/common-fields.js'
-import {ColorComboField} from '$qui/forms/common-fields.js'
-import {TextField}       from '$qui/forms/common-fields.js'
+import {CheckField}      from '$qui/forms/common-fields/common-fields.js'
+import {ColorComboField} from '$qui/forms/common-fields/common-fields.js'
+import {TextField}       from '$qui/forms/common-fields/common-fields.js'
 import StockIcon         from '$qui/icons/stock-icon.js'
 import * as Theme        from '$qui/theme.js'
 

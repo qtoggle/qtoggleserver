@@ -1,9 +1,9 @@
 
 import {gettext}         from '$qui/base/i18n.js'
 import Config            from '$qui/config.js'
-import {PasswordField}   from '$qui/forms/common-fields.js'
-import {TextField}       from '$qui/forms/common-fields.js'
-import {PageForm}        from '$qui/forms/common-forms.js'
+import {PasswordField}   from '$qui/forms/common-fields/common-fields.js'
+import {TextField}       from '$qui/forms/common-fields/common-fields.js'
+import {PageForm}        from '$qui/forms/common-forms/common-forms.js'
 import FormButton        from '$qui/forms/form-button.js'
 import {ValidationError} from '$qui/forms/forms.js'
 import * as Navigation   from '$qui/navigation.js'

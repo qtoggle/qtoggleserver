@@ -3,10 +3,10 @@
  */
 
 import {gettext}           from '$qui/base/i18n.js'
-import {PasswordField}     from '$qui/forms/common-fields.js'
-import {ProgressDiskField} from '$qui/forms/common-fields.js'
-import {TextAreaField}     from '$qui/forms/common-fields.js'
-import {TextField}         from '$qui/forms/common-fields.js'
+import {PasswordField}     from '$qui/forms/common-fields/common-fields.js'
+import {ProgressDiskField} from '$qui/forms/common-fields/common-fields.js'
+import {TextAreaField}     from '$qui/forms/common-fields/common-fields.js'
+import {TextField}         from '$qui/forms/common-fields/common-fields.js'
 import * as DateUtils      from '$qui/utils/date.js'
 import * as ObjectUtils    from '$qui/utils/object.js'
 

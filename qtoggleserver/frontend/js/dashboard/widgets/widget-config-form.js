@@ -1,9 +1,9 @@
 
 import {gettext}         from '$qui/base/i18n.js'
-import {CompositeField}  from '$qui/forms/common-fields.js'
-import {PushButtonField} from '$qui/forms/common-fields.js'
-import {TextField}       from '$qui/forms/common-fields.js'
-import {PageForm}        from '$qui/forms/common-forms.js'
+import {CompositeField}  from '$qui/forms/common-fields/common-fields.js'
+import {PushButtonField} from '$qui/forms/common-fields/common-fields.js'
+import {TextField}       from '$qui/forms/common-fields/common-fields.js'
+import {PageForm}        from '$qui/forms/common-forms/common-forms.js'
 import FormButton        from '$qui/forms/form-button.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
 import * as Window       from '$qui/window.js'

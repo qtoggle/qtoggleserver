@@ -2,7 +2,7 @@
 import {TimeoutError}       from '$qui/base/errors.js'
 import {gettext}            from '$qui/base/i18n.js'
 import {Mixin}              from '$qui/base/mixwith.js'
-import {ConfirmMessageForm} from '$qui/messages/common-message-forms.js'
+import {ConfirmMessageForm} from '$qui/messages/common-message-forms/common-message-forms.js'
 import * as Messages        from '$qui/messages/messages.js'
 import * as Toast           from '$qui/messages/toast.js'
 import * as PromiseUtils    from '$qui/utils/promise.js'

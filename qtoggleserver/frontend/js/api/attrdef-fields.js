@@ -3,7 +3,7 @@
  */
 
 import {gettext}     from '$qui/base/i18n.js'
-import {LabelsField} from '$qui/forms/common-fields.js'
+import {LabelsField} from '$qui/forms/common-fields/common-fields.js'
 import * as Theme    from '$qui/theme.js'
 
 

@@ -3,7 +3,7 @@ import $ from '$qui/lib/jquery.module.js'
 
 import {gettext}       from '$qui/base/i18n.js'
 import Config          from '$qui/config.js'
-import {ComboField}    from '$qui/forms/common-fields.js'
+import {ComboField}    from '$qui/forms/common-fields/common-fields.js'
 import * as Navigation from '$qui/navigation.js'
 import * as ArrayUtils from '$qui/utils/array.js'
 

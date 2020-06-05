@@ -6,7 +6,7 @@ import {gettext} from '$qui/base/i18n.js'
 import Logger    from '$qui/lib/logger.module.js'
 
 import StockIcon           from '$qui/icons/stock-icon.js'
-import {SimpleMessageForm} from '$qui/messages/common-message-forms.js'
+import {SimpleMessageForm} from '$qui/messages/common-message-forms/common-message-forms.js'
 import QUISection          from '$qui/sections/section.js'
 import * as Sections       from '$qui/sections/sections.js'
 

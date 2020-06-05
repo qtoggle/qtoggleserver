@@ -1,9 +1,9 @@
 
 import {gettext}           from '$qui/base/i18n.js'
-import {CheckField}        from '$qui/forms/common-fields.js'
-import {OptionsForm}       from '$qui/forms/common-forms.js'
-import {IconLabelListItem} from '$qui/lists/common-items.js'
-import {PageList}          from '$qui/lists/common-lists.js'
+import {CheckField}        from '$qui/forms/common-fields/common-fields.js'
+import {OptionsForm}       from '$qui/forms/common-forms/common-forms.js'
+import {IconLabelListItem} from '$qui/lists/common-items/common-items.js'
+import {PageList}          from '$qui/lists/common-lists/common-lists.js'
 import * as ArrayUtils     from '$qui/utils/array.js'
 
 import * as Cache from '$app/cache.js'
