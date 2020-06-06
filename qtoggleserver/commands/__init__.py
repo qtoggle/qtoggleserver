@@ -251,7 +251,13 @@ async def init_ports() -> None:
 
     # Peripheral ports
     for peripheral in peripherals.all_peripherals():
-        peripheral.set_ports(await ports.load(peripheral.get_port_args(), raise_on_error=False))
+        try:
+            port_args = await peripheral.get_port_args()
+            loaded_ports = await ports.load(port_args, raise_on_error=False)
+            peripheral.set_ports(loaded_ports)
+
+        except Exception as e:
+            logger.error('failed to load ports of %s: %s', peripheral, e, exc_info=True)
 
 
 async def cleanup_ports() -> None:

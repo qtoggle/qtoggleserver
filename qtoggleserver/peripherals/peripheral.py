@@ -2,6 +2,7 @@
 import abc
 import asyncio
 import functools
+import inspect
 import logging
 
 from typing import Any, Callable, Dict, List, Optional, Type, Union
@@ -40,8 +41,11 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_name(self) -> Optional[str]:
         return self._name
 
-    def get_port_args(self) -> List[Dict[str, Any]]:
+    async def get_port_args(self) -> List[Dict[str, Any]]:
         port_args = self.make_port_args()
+        # Compatibility shim for peripherals having non-awaitable make_port_args() method
+        if inspect.isawaitable(port_args):
+            port_args = await port_args
 
         # Transform port classes to dicts with drivers
         port_args = [
@@ -56,7 +60,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return port_args
 
     @abc.abstractmethod
-    def make_port_args(self) -> List[Union[Dict[str, Any], Type[core_ports.BasePort]]]:
+    async def make_port_args(self) -> List[Union[Dict[str, Any], Type[core_ports.BasePort]]]:
         raise NotImplementedError()
 
     def set_ports(self, ports: List[core_ports.BasePort]) -> None:
