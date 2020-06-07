@@ -1702,5 +1702,6 @@ async def load() -> None:
 
 
 async def cleanup() -> None:
-    for slave in _slaves_by_name.values():
-        await slave.cleanup()
+    tasks = [slave.cleanup() for slave in _slaves_by_name.values()]
+    if tasks:
+        await asyncio.wait(tasks)
