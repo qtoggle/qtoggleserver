@@ -1,4 +1,5 @@
 
+import asyncio
 import logging
 
 from typing import Dict, Iterable
@@ -39,6 +40,6 @@ async def init() -> None:
 
 
 async def cleanup() -> None:
-    for peripheral in _registered_peripherals.values():
-        peripheral.debug('cleaning up')
-        await peripheral.handle_cleanup()
+    tasks = [peripheral.handle_cleanup() for peripheral in _registered_peripherals.values()]
+    if tasks:
+        await asyncio.wait(tasks)
