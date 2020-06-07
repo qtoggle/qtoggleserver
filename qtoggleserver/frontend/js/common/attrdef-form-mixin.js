@@ -66,7 +66,7 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                 }
                 Object.assign(fieldAttrs, fieldData)
             }
-            else if (def.choices && def.modifiable) {
+            else if (def.choices) {
                 fieldAttrs.class = ComboField
                 fieldAttrs.choices = def.choices.map(function (c) {
                     if (ObjectUtils.isObject(c)) {

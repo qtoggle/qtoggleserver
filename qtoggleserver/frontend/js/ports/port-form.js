@@ -109,20 +109,6 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         let origPort = port
         port = ObjectUtils.copy(port, /* deep = */ true)
 
-        /* Preprocess type attribute */
-        if (port.type === 'number') {
-            if (port.integer) {
-                port.type = gettext('Integer Number')
-                delete port.integer
-            }
-            else {
-                port.type = gettext('Number')
-            }
-        }
-        else /* Assuming port.type === 'boolean' */ {
-            port.type = gettext('Boolean')
-        }
-
         /* Remove the tag attribute */
         delete port.tag
 
