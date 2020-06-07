@@ -41,13 +41,11 @@ class ConfigForm extends WidgetConfigForm {
                 }),
                 new NumericField({
                     name: 'offValue',
-                    label: gettext('Off Value'),
-                    required: true
+                    label: gettext('Off Value')
                 }),
                 new NumericField({
                     name: 'onValue',
-                    label: gettext('On Value'),
-                    required: true
+                    label: gettext('On Value')
                 })
             ],
             ...args
@@ -151,10 +149,10 @@ class OnOffIndicator extends Widget {
             }
         }
         else { /* Number */
-            if (value === this._onValue) {
+            if ((value === this._onValue) || (value !== this._offValue && this._onValue == null)) {
                 this._showOn()
             }
-            else if (value === this._offValue) {
+            else if ((value === this._offValue) || (value !== this._onValue && this._offValue == null)) {
                 this._showOff()
             }
         }
@@ -231,12 +229,8 @@ class OnOffIndicator extends Widget {
         if (json.inverted != null) {
             this._inverted = json.inverted
         }
-        if (json.offValue != null) {
-            this._offValue = json.offValue
-        }
-        if (json.onValue != null) {
-            this._onValue = json.onValue
-        }
+        this._offValue = json.offValue
+        this._onValue = json.onValue
     }
 
 }
