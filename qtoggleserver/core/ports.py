@@ -1067,7 +1067,7 @@ def all_ports() -> Iterable[BasePort]:
 
 async def cleanup() -> None:
 
-    async def cleanup_port(port):
+    async def cleanup_port(port: BasePort) -> None:
         await port.disable()
         await port.cleanup()
 

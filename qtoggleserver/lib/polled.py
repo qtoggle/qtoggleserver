@@ -47,6 +47,9 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
                 try:
                     await self.poll()
 
+                except asyncio.CancelledError:
+                    raise
+
                 except Exception as e:
                     retry_poll_interval = min(self.RETRY_POLL_INTERVAL, self._poll_interval)
                     self.error('polling failed (retrying in %s seconds): %s', retry_poll_interval, e, exc_info=True)
