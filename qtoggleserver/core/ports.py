@@ -953,6 +953,7 @@ async def load(port_args: List[Dict[str, Any]], raise_on_error: bool = True) -> 
     port_driver_classes = {}
     ports = []
 
+    # Create ports
     for ps in port_args:
         driver = ps.pop('driver', None)
         if not driver:
@@ -999,7 +1000,13 @@ async def load(port_args: List[Dict[str, Any]], raise_on_error: bool = True) -> 
 
             logger.error('failed to initialize port from driver %s: %s', port_class_desc, e, exc_info=True)
 
-    for old_id, new_id in settings.port_mappings.items():
+    # Map IDs
+    for port in ports:
+        old_id = port.get_id()
+        new_id = settings.port_mappings.get(old_id)
+        if not new_id:
+            continue
+
         if new_id in _ports_by_id:
             if raise_on_error:
                 raise PortLoadError('Cannot map port {old_id} to {new_id}: new id already exists')
@@ -1027,6 +1034,7 @@ async def load(port_args: List[Dict[str, Any]], raise_on_error: bool = True) -> 
         _ports_by_id.pop(old_id)
         _ports_by_id[port.get_id()] = port
 
+    # Load created ports
     for port in ports:
         try:
             await port.load()
