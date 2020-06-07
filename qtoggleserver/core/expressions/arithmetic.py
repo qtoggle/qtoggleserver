@@ -41,7 +41,7 @@ class DivFunction(Function):
         eval_args = self.eval_args()
 
         if eval_args[1]:
-            return int(eval_args[0] / eval_args[1])
+            return eval_args[0] / eval_args[1]
 
         else:
             return 0
