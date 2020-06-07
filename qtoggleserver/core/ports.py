@@ -1066,9 +1066,14 @@ def all_ports() -> Iterable[BasePort]:
 
 
 async def cleanup() -> None:
-    for port in _ports_by_id.values():
+
+    async def cleanup_port(port):
         await port.disable()
         await port.cleanup()
+
+    tasks = [cleanup_port(port) for port in _ports_by_id.values()]
+    if tasks:
+        await asyncio.wait(tasks)
 
 
 def reset() -> None:
