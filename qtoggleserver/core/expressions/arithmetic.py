@@ -59,3 +59,13 @@ class ModFunction(Function):
 
         else:
             return 0
+
+
+@function('POW')
+class PowFunction(Function):
+    MIN_ARGS = MAX_ARGS = 2
+
+    def eval(self) -> CorePortValue:
+        eval_args = self.eval_args()
+
+        return eval_args[0] ** eval_args[1]

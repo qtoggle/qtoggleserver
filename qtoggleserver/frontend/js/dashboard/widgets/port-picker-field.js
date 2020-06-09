@@ -1,11 +1,12 @@
 
 import $ from '$qui/lib/jquery.module.js'
 
-import {gettext}       from '$qui/base/i18n.js'
-import Config          from '$qui/config.js'
-import {ComboField}    from '$qui/forms/common-fields/common-fields.js'
-import * as Navigation from '$qui/navigation.js'
-import * as ArrayUtils from '$qui/utils/array.js'
+import {gettext}        from '$qui/base/i18n.js'
+import Config           from '$qui/config.js'
+import {ComboField}     from '$qui/forms/common-fields/common-fields.js'
+import * as Navigation  from '$qui/navigation.js'
+import * as ArrayUtils  from '$qui/utils/array.js'
+import * as StringUtils from '$qui/utils/string.js'
 
 import * as Cache from '$app/cache.js'
 
@@ -71,6 +72,15 @@ class PortPickerField extends ComboField {
         return choices
     }
 
+    filterFunc(choice, searchText) {
+        let port = choice.port
+
+        return (
+            (StringUtils.intelliSearch(port.id, searchText) != null) ||
+            (StringUtils.intelliSearch(port.display_name, searchText) != null)
+        )
+    }
+
     makeLabelHTML() {
         let html = super.makeLabelHTML()
 
@@ -101,25 +111,10 @@ class PortPickerField extends ComboField {
             return $('<span></span>').text(gettext('none'))
         }
 
-        let displayName = portId
         let port = Cache.getPort(portId)
         if (port) {
-            displayName = port.display_name || port.id
-
-            let path = '/ports'
-            if (Config.slavesEnabled) {
-                let device = Cache.findPortSlaveDevice(portId)
-                if (device) {
-                    let remoteId = portId.substring(device.name.length + 1)
-                    path += `/~${device.name}/~${remoteId}`
-                }
-                else {
-                    path += `/~${Cache.getMainDevice().name}/~${portId}`
-                }
-            }
-            else {
-                path += `/~${portId}`
-            }
+            let displayName = port.display_name || port.id
+            let path = Cache.getPortPath(portId)
 
             return Navigation.makeInternalAnchor(path, displayName)
         }

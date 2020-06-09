@@ -93,7 +93,8 @@ export function expectEvent(type, params, timeout = null) {
         type: type,
         params: params,
         added: new Date().getTime(),
-        timeout: timeout
+        timeout: timeout,
+        handlers: []
     }
 
     return handle
@@ -105,18 +106,55 @@ export function expectEvent(type, params, timeout = null) {
  * @param {Number} handle
  */
 export function unexpectEvent(handle) {
+    let eventSpec = expectedEventSpecs[handle]
+    if (eventSpec) {
+        eventSpec.handlers.forEach(h => h(null, new Error('Event no longer expected')))
+    }
+
     delete expectedEventSpecs[handle]
 }
 
-function tryMatchExpectedEvent(event) {
-    let handle = ObjectUtils.findKey(expectedEventSpecs, function (eventSpec) {
-        if (eventSpec.type && eventSpec.type !== event.type) {
+/**
+ * Look up existing expected event and wait for it (or its timeout).
+ * @param {String} type
+ * @param {Object} [params]
+ * @return {Promise}
+ */
+export function waitExpectedEvent(type, params = null) {
+    let handle = lookupExpectedEventHandle({type, params})
+    if (handle == null) {
+        return Promise.reject(new Error('No such expected event'))
+    }
+
+    return new Promise(function (resolve, reject) {
+
+        let eventSpec = expectedEventSpecs[handle]
+        eventSpec.handlers.push(function (event, error = null) {
+            /* Double asap() ensures that promise is settled after other event handling, such as cache updating */
+            asap(function () {
+                asap(function () {
+                    if (error) {
+                        reject(error)
+                    }
+                    else {
+                        resolve(event)
+                    }
+                })
+            })
+        })
+
+    })
+}
+
+function lookupExpectedEventHandle({type, params}) {
+    return ObjectUtils.findKey(expectedEventSpecs, function (eventSpec) {
+        if (eventSpec.type && eventSpec.type !== type) {
             return
         }
 
         if (eventSpec.params) {
             let mismatched = ObjectUtils.filter(eventSpec.params, function (key, value) {
-                if (event.params[key] !== value) {
+                if (params[key] !== value) {
                     return true
                 }
             })
@@ -128,8 +166,14 @@ function tryMatchExpectedEvent(event) {
 
         return true
     })
+}
 
+function tryMatchExpectedEvent(event) {
+    let handle = lookupExpectedEventHandle({type: event.type, params: event.params})
     if (handle != null) {
+        let eventSpec = expectedEventSpecs[handle]
+        eventSpec.handlers.forEach(h => h(event))
+
         delete expectedEventSpecs[handle]
         return handle
     }
@@ -139,14 +183,21 @@ function tryMatchExpectedEvent(event) {
 
 function cleanupExpectedEvents() {
     let now = new Date().getTime()
+
+    let expiredEventSpecs = []
     expectedEventSpecs = ObjectUtils.filter(expectedEventSpecs, function (handle, eventSpec) {
         let delta = now - eventSpec.added
         if (delta > eventSpec.timeout) {
             logger.warn(`timeout waiting for expected "${eventSpec.type}" event`)
+            expiredEventSpecs.push(eventSpec)
             return false
         }
 
         return true
+    })
+
+    expiredEventSpecs.forEach(function (eventSpec) {
+        eventSpec.handlers.forEach(h => h(null, new Error('Timeout waiting for expected event')))
     })
 }
 

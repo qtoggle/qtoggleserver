@@ -1,6 +1,7 @@
 
 import datetime
 import json
+import math
 
 from typing import Any, Union
 
@@ -15,6 +16,31 @@ DATE_FORMAT = '%Y-%m-%d'
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 DATE_TYPE = '__d'
 DATETIME_TYPE = '__dt'
+
+
+def _replace_nan_inf_rec(obj: Any, replace_value: Any) -> Any:
+    if isinstance(obj, dict):
+        new_obj = {}
+        for k, v in obj.items():
+            if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
+                new_obj[k] = replace_value
+
+            else:
+                new_obj[k] = _replace_nan_inf_rec(v, replace_value)
+
+    elif isinstance(obj, (list, tuple, set)):
+        new_obj = []
+        for e in obj:
+            if isinstance(e, float) and (math.isnan(e) or math.isinf(e)):
+                new_obj.append(replace_value)
+
+            else:
+                new_obj.append(_replace_nan_inf_rec(e, replace_value))
+
+    else:
+        new_obj = obj
+
+    return new_obj
 
 
 def _resolve_refs_rec(obj: Any, root_obj: Any) -> Any:
@@ -84,17 +110,31 @@ def dumps(obj: Any, allow_extended_types: bool = False, **kwargs) -> str:
         return ['false', 'true'][obj]
 
     elif isinstance(obj, (int, float)):
+        if math.isinf(obj) or math.isnan(obj):
+            return 'null'
+
         return str(obj)
 
     elif obj is None:
         return 'null'
 
     else:
-        return json.dumps(obj, default=_encode_default_json if allow_extended_types else None, **kwargs)
+        if allow_extended_types:
+            return json.dumps(obj, default=_encode_default_json, allow_nan=True, **kwargs)
+
+        else:
+            try:
+                return json.dumps(obj, allow_nan=False, **kwargs)
+
+            except ValueError:
+                # Retry again by replacing Infinity and NaN values with None
+                obj = _replace_nan_inf_rec(obj, replace_value=None)
+                return json.dumps(obj, allow_nan=False, **kwargs)
 
 
 def loads(s: Union[str, bytes], resolve_refs: bool = False, allow_extended_types: bool = False, **kwargs) -> Any:
-    obj = json.loads(s, object_hook=_decode_json_hook if allow_extended_types else None, **kwargs)
+    object_hook = _decode_json_hook if allow_extended_types else None
+    obj = json.loads(s, object_hook=object_hook, **kwargs)
 
     if resolve_refs:
         obj = _resolve_refs_rec(obj, root_obj=obj)

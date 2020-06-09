@@ -605,6 +605,45 @@ export function findPortSlaveDevice(portId) {
 }
 
 /**
+ * Return the navigable path to a port with given id.
+ * @alias qtoggle.cache.getPortPath
+ * @param {String} portId
+ * @param {String} [deviceName]
+ * @returns {String}
+ */
+export function getPortPath(portId, deviceName = null) {
+    let path = '/ports'
+
+    if (!Config.slavesEnabled || slaveDevices == null) {
+        path += `/~${portId}`
+    }
+    else {
+        if (!deviceName) {
+            let device = findPortSlaveDevice(portId)
+            if (device) {
+                deviceName = device.name
+            }
+            else {
+                deviceName = ''
+            }
+        }
+
+        if (deviceName) {
+            let remoteId = portId
+            if (remoteId.startsWith(`${deviceName}.`)) {
+                remoteId = remoteId.substring(deviceName.length + 1)
+            }
+            path += `/~${deviceName}/~${remoteId}`
+        }
+        else {
+            path += `/~${mainDevice.name}/~${portId}`
+        }
+    }
+
+    return path
+}
+
+/**
  * Tell if a given name is the name of the main device.
  * @alias qtoggle.cache.isMainDevice
  * @param {String} name
