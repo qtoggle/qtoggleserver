@@ -7,11 +7,13 @@ import {TextField}          from '$qui/forms/common-fields/common-fields.js'
 import {PageForm}           from '$qui/forms/common-forms/common-forms.js'
 import FormButton           from '$qui/forms/form-button.js'
 import {ValidationError}    from '$qui/forms/forms.js'
+import * as Navigation      from '$qui/navigation.js'
 
-import * as BaseAPI    from '$app/api/base.js'
-import * as DevicesAPI from '$app/api/devices.js'
-import * as PortsAPI   from '$app/api/ports.js'
-import * as Cache      from '$app/cache.js'
+import * as BaseAPI          from '$app/api/base.js'
+import * as DevicesAPI       from '$app/api/devices.js'
+import * as NotificationsAPI from '$app/api/notifications.js'
+import * as PortsAPI         from '$app/api/ports.js'
+import * as Cache            from '$app/cache.js'
 
 import * as Ports from './ports.js'
 
@@ -129,6 +131,14 @@ class AddPortForm extends PageForm {
         }.bind(this)).then(function () {
 
             logger.debug(`port "${portId}" successfully added`)
+
+            let fullPortId = portId
+            if (deviceName !== Cache.getMainDevice().name) {
+                fullPortId = deviceName + `.${fullPortId}`
+            }
+            NotificationsAPI.waitExpectedEvent('port-add', {id: fullPortId}).then(function () {
+                Navigation.navigate({path: Cache.getPortPath(portId, deviceName)})
+            }).catch(() => {}) /* We don't really care about expected event waiting errors */
 
         }).catch(function (error) {
 

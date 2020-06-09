@@ -111,25 +111,10 @@ class PortPickerField extends ComboField {
             return $('<span></span>').text(gettext('none'))
         }
 
-        let displayName = portId
         let port = Cache.getPort(portId)
         if (port) {
-            displayName = port.display_name || port.id
-
-            let path = '/ports'
-            if (Config.slavesEnabled) {
-                let device = Cache.findPortSlaveDevice(portId)
-                if (device) {
-                    let remoteId = portId.substring(device.name.length + 1)
-                    path += `/~${device.name}/~${remoteId}`
-                }
-                else {
-                    path += `/~${Cache.getMainDevice().name}/~${portId}`
-                }
-            }
-            else {
-                path += `/~${portId}`
-            }
+            let displayName = port.display_name || port.id
+            let path = Cache.getPortPath(portId)
 
             return Navigation.makeInternalAnchor(path, displayName)
         }

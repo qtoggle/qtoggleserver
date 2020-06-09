@@ -51,13 +51,16 @@ function processEventsBulk() {
      *  * notify section listeners */
     let allSections = Sections.all()
     eventsBulk.forEach(function (event) {
-        asap(function () {
+        try {
             Cache.updateFromEvent(event)
 
             allSections.forEach(function (section) {
                 section.onServerEvent(event)
             })
-        })
+        }
+        catch (e) {
+            logger.errorStack('bulk event handling failed', e)
+        }
     })
 
     /* Reset bulk events processing mechanism */
