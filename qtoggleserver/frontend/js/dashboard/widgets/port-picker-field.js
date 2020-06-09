@@ -1,11 +1,12 @@
 
 import $ from '$qui/lib/jquery.module.js'
 
-import {gettext}       from '$qui/base/i18n.js'
-import Config          from '$qui/config.js'
-import {ComboField}    from '$qui/forms/common-fields/common-fields.js'
-import * as Navigation from '$qui/navigation.js'
-import * as ArrayUtils from '$qui/utils/array.js'
+import {gettext}        from '$qui/base/i18n.js'
+import Config           from '$qui/config.js'
+import {ComboField}     from '$qui/forms/common-fields/common-fields.js'
+import * as Navigation  from '$qui/navigation.js'
+import * as ArrayUtils  from '$qui/utils/array.js'
+import * as StringUtils from '$qui/utils/string.js'
 
 import * as Cache from '$app/cache.js'
 
@@ -69,6 +70,15 @@ class PortPickerField extends ComboField {
         choices = ArrayUtils.sortKey(choices, choice => (choice.port.display_name || choice.port.id))
 
         return choices
+    }
+
+    filterFunc(choice, searchText) {
+        let port = choice.port
+
+        return (
+            (StringUtils.intelliSearch(port.id, searchText) != null) ||
+            (StringUtils.intelliSearch(port.display_name, searchText) != null)
+        )
     }
 
     makeLabelHTML() {
