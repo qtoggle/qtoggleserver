@@ -26,7 +26,7 @@ _running = True
 _ready = False
 _start_time = time.time()
 _last_time = 0
-_force_eval_expressions: Optional[Set[Union[core_ports.BasePort, None]]] = None
+_force_eval_expression_ports: Set[Union[core_ports.BasePort, None]] = set()
 _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
 
 
@@ -119,11 +119,9 @@ async def handle_value_changes(
     change_reasons: Dict[core_ports.BasePort, str]
 ) -> None:
 
-    global _force_eval_expressions
-
-    if _force_eval_expressions:
-        changed_set.update(_force_eval_expressions)  # Special "always depends on" value
-        _force_eval_expressions = None
+    if _force_eval_expression_ports:
+        changed_set.update(_force_eval_expression_ports)  # Special "always depends on" value
+        _force_eval_expression_ports.clear()
 
     # Trigger value-change events; save persisted ports
     for port in changed_set:
@@ -202,14 +200,9 @@ async def handle_value_changes(
 
 
 def force_eval_expressions(port: core_ports.BasePort = None) -> None:
-    global _force_eval_expressions
-
     logger.debug('forcing expression evaluation for %s', port or 'all ports')
 
-    if _force_eval_expressions is None:
-        _force_eval_expressions = set()
-
-    _force_eval_expressions.add(port)
+    _force_eval_expression_ports.add(port)
     if port:
         port.reset_change_reason()
 
