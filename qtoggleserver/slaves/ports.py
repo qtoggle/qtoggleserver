@@ -92,7 +92,6 @@ class SlavePort(core_ports.BasePort):
         if self._cached_value is not None:
             # Remote value is supplied in attrs when a new port is added on the slave device
 
-            self._value: NullablePortValue = self._cached_value
             self.update_last_sync()
 
     def _get_standard_attrdefs(self) -> AttributeDefinitions:

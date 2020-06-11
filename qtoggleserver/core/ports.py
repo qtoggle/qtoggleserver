@@ -984,10 +984,7 @@ async def load(port_args: List[Dict[str, Any]], raise_on_error: bool = True) -> 
         port_class_desc = f'{port_class.__module__}.{port_class.__name__}'
 
         try:
-            value = ps.pop('value', None)  # Initial value
             port = port_class(**ps)
-            if value is not None:
-                port.set_value(value)
 
             _ports_by_id[port.get_id()] = port
             ports.append(port)
