@@ -15,6 +15,8 @@ import * as MasterSlaveAPI from '$app/api/master-slave.js'
 import * as Devices from './devices.js'
 
 
+const RETRY_API_ERROR_CODES = ['no-such-function', 'invalid-device']
+
 const logger = Devices.logger
 
 
@@ -88,7 +90,9 @@ class AddDeviceForm extends PageForm {
         }).catch(function (error) {
 
             /* Retry with /api path, which should be a default location for qToggleServer implementations */
-            if (error instanceof BaseAPI.APIError && (error.code === 'no-such-function') && (url.path === '/')) {
+            if (error instanceof BaseAPI.APIError &&
+                RETRY_API_ERROR_CODES.includes(error.code) &&
+                url.path === '/') {
 
                 logger.debug('retrying with /api suffix')
                 url.path = '/api'
