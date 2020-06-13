@@ -395,7 +395,12 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                     let fieldName = `attr_${error.params['field']}`
                     let errorMessage = gettext('Invalid value.')
                     let details = error.params['details']
-                    if (error.params['field'].match(/(device_)*expression/) && (details != null)) {
+                    let fieldIsExpression = (
+                        error.params['field'].match(/(device_)*expression/) ||
+                        error.params['field'] === 'transform_read' ||
+                        error.params['field'] === 'transform_write'
+                    )
+                    if (fieldIsExpression && (details != null)) {
                         let reasonInfo = APIConstants.INVALID_EXPRESSION_REASONS.find(
                             e => e.reason === details['reason']
                         )
