@@ -36,7 +36,7 @@ async def update() -> None:
 
     global _last_time
 
-    changed_set = set()
+    changed_set = {'time_ms'}
     change_reasons = {}
 
     now = int(time.time())
@@ -45,8 +45,6 @@ async def update() -> None:
         _last_time = now
         time_changed = True
         changed_set.add('time')
-
-    changed_set.add('time_ms')
 
     for port in list(ports.all_ports()):
         if not port.is_enabled():
@@ -97,8 +95,7 @@ async def update() -> None:
             change_reasons[port] = port.get_change_reason()
             port.reset_change_reason()
 
-    if changed_set:
-        await handle_value_changes(changed_set, change_reasons)
+    await handle_value_changes(changed_set, change_reasons)
 
     sessions.update()
 
@@ -140,10 +137,6 @@ async def handle_value_changes(
             continue
 
         if not await port.is_writable():
-            continue
-
-        # Leave the port alone while it has pending writes; expression changes could only push more values to its queue
-        if port.has_pending_write():
             continue
 
         expression = await port.get_expression()

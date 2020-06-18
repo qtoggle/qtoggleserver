@@ -625,12 +625,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def push_value(self, value: PortValue, reason: str) -> None:
         asyncio.create_task(self.write_transformed_value(value, reason))
 
-    def has_pending_write(self) -> bool:
-        if self._write_value_queue.qsize() > 0:
-            return True
-
-        return self._pending_write
-
     async def _write_value_queued(self, value: PortValue, reason: str) -> None:
         done = asyncio.get_running_loop().create_future()
 
@@ -639,6 +633,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self._write_value_queue.put_nowait((value, reason, done))
 
             except asyncio.QueueFull:
+                self.warning('write queue full, dropping oldest value')
                 self._write_value_queue.get_nowait()
 
             else:
