@@ -62,7 +62,7 @@ frontend = {
 slaves = {
     enabled = true
     timeout = 10            # timeout, in seconds, when communicating with slaves
-    keepalive = 60          # long-polling timeout, in seconds, when waiting for slave events
+    keepalive = 10          # long-polling timeout, in seconds, when waiting for slave events
     retry_interval = 5      # how often to retry a failed API request, in seconds
     retry_count = 3         # max number of retries upon failed API requests
 }
@@ -70,7 +70,14 @@ slaves = {
 event_handlers = [
 #    {
 #        driver = "qtoggleserver.my.events.EventHandler"
-#        no = 10
+#        param1 = "value1"
+#    }
+]
+
+peripherals = [
+#    {
+#        driver = "qtoggleserver.my.peripherals.Peripheral"
+#        param1 = "value1"
 #    }
 ]
 
