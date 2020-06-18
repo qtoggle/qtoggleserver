@@ -415,7 +415,7 @@ export class AnalogWidget extends Widget {
         this._displayUnit = true
         this._unit = ''
         this._decimals = 0
-        this._snap = SNAP_NONE
+        this._snap = ticksonly ? SNAP_STRICT : SNAP_NONE
         this._displayTicks = false
         this._displayTicksUnits = false
         this._colorTicks = false
@@ -1122,6 +1122,7 @@ export class AnalogWidget extends Widget {
         if (this._ticksonly) {
             this._min = Math.min.apply(null, this._customTicks.map(t => t.value))
             this._max = Math.max.apply(null, this._customTicks.map(t => t.value))
+            this._snap = SNAP_STRICT
         }
     }
 
