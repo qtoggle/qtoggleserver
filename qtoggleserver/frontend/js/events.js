@@ -53,14 +53,19 @@ function processEventsBulk() {
     eventsBulk.forEach(function (event) {
         try {
             Cache.updateFromEvent(event)
-
-            allSections.forEach(function (section) {
-                section.onServerEvent(event)
-            })
         }
         catch (e) {
-            logger.errorStack('bulk event handling failed', e)
+            logger.errorStack('updating cache from event failed', e)
         }
+
+        allSections.forEach(function (section) {
+            try {
+                section.onServerEvent(event)
+            }
+            catch (e) {
+                logger.errorStack(`'section "${section.getId()}" server event handling failed`, e)
+            }
+        })
     })
 
     /* Reset bulk events processing mechanism */
