@@ -54,38 +54,44 @@ class DelayFunction(Function):
 class HeldFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
 
+    STATE_OFF = 0
+    STATE_WAITING = 1
+    STATE_ON = 2
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self._time_ms: Optional[int] = None
-        self._last_value: Optional[CorePortValue] = None
+        self._state = self.STATE_OFF
 
     def get_deps(self) -> Set[str]:
-        return {'time_ms'}
+        if self._state == self.STATE_WAITING:
+            return {'time_ms'}
+
+        else:
+            return super().get_deps()
 
     def eval(self) -> CorePortValue:
-        time_ms = int(time.time() * 1000)
-        result = False
-
         value = self.args[0].eval()
         fixed_value = self.args[1].eval()
         duration = self.args[2].eval()
 
-        if self._time_ms is None:  # Very first expression eval call
-            self._time_ms = time_ms
+        if value == fixed_value:
+            time_ms = int(time.time() * 1000)
+
+            if self._state == self.STATE_OFF:
+                self._time_ms = time_ms
+                self._state = self.STATE_WAITING
+
+            elif self._state == self.STATE_WAITING:
+                delta = time_ms - self._time_ms
+                if delta >= duration:
+                    self._state = self.STATE_ON
 
         else:
-            delta = time_ms - self._time_ms
+            self._state = self.STATE_OFF
 
-            if self._last_value != value:
-                self._time_ms = time_ms  # Reset held timer
-
-            else:
-                result = (delta >= duration) and (value == fixed_value)
-
-        self._last_value = value
-
-        return result
+        return self._state == self.STATE_ON
 
 
 @function('DERIV')
