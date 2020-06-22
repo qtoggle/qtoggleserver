@@ -4,7 +4,6 @@ import datetime
 from typing import Set
 
 from qtoggleserver import system
-from qtoggleserver.core.typing import PortValue as CorePortValue
 
 from .functions import function, Function
 from .exceptions import InvalidArgument, EvalSkipped
@@ -17,7 +16,7 @@ class YearFunction(Function):
     def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -31,7 +30,7 @@ class MonthFunction(Function):
     def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -45,7 +44,7 @@ class DayFunction(Function):
     def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -59,7 +58,7 @@ class DOWFunction(Function):
     def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -73,7 +72,7 @@ class HourFunction(Function):
     def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -87,7 +86,7 @@ class MinuteFunction(Function):
     def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -101,7 +100,7 @@ class SecondFunction(Function):
     def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -116,7 +115,7 @@ class HMSIntervalFunction(Function):
     def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -148,8 +147,8 @@ class HMSIntervalFunction(Function):
             if not (0 <= stop_s <= 59):
                 raise InvalidArgument(6, stop_s)
 
-            start_time = datetime.time(start_h, start_m, start_s)
-            stop_time = datetime.time(stop_h, stop_m, stop_s)
+            start_time = datetime.time(int(start_h), int(start_m), int(start_s))
+            stop_time = datetime.time(int(stop_h), int(stop_m), int(stop_s))
 
         else:  # Assuming 4
             start_h = self.args[0].eval()
@@ -169,8 +168,8 @@ class HMSIntervalFunction(Function):
             if not (0 <= stop_m <= 59):
                 raise InvalidArgument(4, stop_m)
 
-            start_time = datetime.time(start_h, start_m, 00)
-            stop_time = datetime.time(stop_h, stop_m, 59)
+            start_time = datetime.time(int(start_h), int(start_m), 00)
+            stop_time = datetime.time(int(stop_h), int(stop_m), 59)
 
         start_dt = datetime.datetime.combine(now.date(), start_time)
         stop_dt = datetime.datetime.combine(now.date(), stop_time)

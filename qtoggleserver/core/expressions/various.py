@@ -3,8 +3,6 @@ import time
 
 from typing import Optional, Set
 
-from qtoggleserver.core.typing import PortValue as CorePortValue
-
 from .exceptions import EvalSkipped
 from .functions import function, Function
 
@@ -18,7 +16,7 @@ class AccFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         value = self.args[0].eval()
         accumulator = self.args[1].eval()
         result = accumulator
@@ -40,7 +38,7 @@ class AccIncFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         value = self.args[0].eval()
         accumulator = self.args[1].eval()
         result = accumulator
@@ -62,7 +60,7 @@ class HystFunction(Function):
 
         self._last_result: int = 0
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         value = self.args[0].eval()
         threshold1 = self.args[1].eval()
         threshold2 = self.args[2].eval()
@@ -85,7 +83,7 @@ class SequenceFunction(Function):
     def get_deps(self) -> Set[str]:
         return {'time_ms'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         now = time.time() * 1000
 
         if self._last_time > 0:

@@ -3,8 +3,6 @@ import re
 
 from typing import Optional, Set
 
-from qtoggleserver.core.typing import PortValue as CorePortValue
-
 from .base import Expression
 from .exceptions import UnknownPortId, DisabledPort, UndefinedPortValue, UnexpectedCharacter
 
@@ -25,7 +23,7 @@ class PortValue(Expression):
     def get_port(self) -> core_ports.BasePort:
         return core_ports.get(self.port_id)
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         port = self.get_port()
         if not port:
             raise UnknownPortId(self.port_id)

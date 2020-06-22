@@ -1,6 +1,4 @@
 
-from qtoggleserver.core.typing import PortValue as CorePortValue
-
 from .functions import function, Function
 
 
@@ -8,7 +6,7 @@ from .functions import function, Function
 class IfFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         eval_args = self.eval_args()
 
         if eval_args[0]:
@@ -22,7 +20,7 @@ class IfFunction(Function):
 class EqFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         eval_args = self.eval_args()
 
         return int(eval_args[0] == eval_args[1])
@@ -32,7 +30,7 @@ class EqFunction(Function):
 class GTFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         eval_args = self.eval_args()
 
         return int(eval_args[0] > eval_args[1])
@@ -42,7 +40,7 @@ class GTFunction(Function):
 class GTEFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         eval_args = self.eval_args()
 
         return int(eval_args[0] >= eval_args[1])
@@ -52,7 +50,7 @@ class GTEFunction(Function):
 class LTFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         eval_args = self.eval_args()
 
         return int(eval_args[0] < eval_args[1])
@@ -62,7 +60,7 @@ class LTFunction(Function):
 class LTEFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         eval_args = self.eval_args()
 
         return int(eval_args[0] <= eval_args[1])

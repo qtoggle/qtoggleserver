@@ -3,8 +3,6 @@ import abc
 
 from typing import Callable, List, Optional, Set
 
-from qtoggleserver.core.typing import PortValue as CorePortValue
-
 from . import exceptions
 from . import parse
 from .base import Expression
@@ -49,7 +47,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
 
         return self._deps
 
-    def eval_args(self) -> List[CorePortValue]:
+    def eval_args(self) -> List[float]:
         return [a.eval() for a in self.args]
 
     @staticmethod

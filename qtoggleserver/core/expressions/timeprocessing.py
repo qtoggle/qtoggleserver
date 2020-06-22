@@ -3,8 +3,6 @@ import time
 
 from typing import List, Optional, Set, Tuple
 
-from qtoggleserver.core.typing import PortValue as CorePortValue
-
 from .exceptions import EvalSkipped
 from .functions import function, Function
 
@@ -17,14 +15,14 @@ class DelayFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._queue: List[Tuple[int, CorePortValue]] = []
-        self._last_value: Optional[CorePortValue] = None
-        self._current_value: Optional[CorePortValue] = None
+        self._queue: List[Tuple[int, float]] = []
+        self._last_value: Optional[float] = None
+        self._current_value: Optional[float] = None
 
     def get_deps(self) -> Set[str]:
         return {'time_ms'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         time_ms = int(time.time() * 1000)
 
         value = self.args[0].eval()
@@ -57,7 +55,7 @@ class FreezeFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[CorePortValue] = None
+        self._last_value: Optional[float] = None
         self._last_period: float = 0
         self._last_time_ms: int = 0
 
@@ -68,7 +66,7 @@ class FreezeFunction(Function):
 
         return super().get_deps()
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         time_ms = int(time.time() * 1000)
         if time_ms - self._last_time_ms < self._last_period:
             return self._last_value
@@ -101,7 +99,7 @@ class HeldFunction(Function):
         else:
             return super().get_deps()
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         value = self.args[0].eval()
         fixed_value = self.args[1].eval()
         duration = self.args[2].eval()
@@ -137,7 +135,7 @@ class DerivFunction(Function):
     def get_deps(self) -> Set[str]:
         return {'time_ms'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         value = self.args[0].eval()
         sampling_interval = self.args[1].eval() / 1000
         result = 0
@@ -169,7 +167,7 @@ class IntegFunction(Function):
     def get_deps(self) -> Set[str]:
         return {'time_ms'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         value = self.args[0].eval()
         accumulator = self.args[1].eval()
         sampling_interval = self.args[2].eval() / 1000
@@ -197,13 +195,13 @@ class FMAvgFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._queue: List[CorePortValue] = []
+        self._queue: List[float] = []
         self._last_time: float = 0
 
     def get_deps(self) -> Set[str]:
         return {'time_ms'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         value = self.args[0].eval()
         width = min(self.args[1].eval(), self.QUEUE_SIZE)
         sampling_interval = self.args[2].eval() / 1000
@@ -232,13 +230,13 @@ class FMedianFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._queue: List[CorePortValue] = []
+        self._queue: List[float] = []
         self._last_time: float = 0
 
     def get_deps(self) -> Set[str]:
         return {'time_ms'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         value = self.args[0].eval()
         width = min(self.args[1].eval(), self.QUEUE_SIZE)
         sampling_interval = self.args[2].eval() / 1000

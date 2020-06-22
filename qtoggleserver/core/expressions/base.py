@@ -5,12 +5,10 @@ import abc
 
 from typing import Optional, Set
 
-from qtoggleserver.core.typing import PortValue as CorePortValue
-
 
 class Expression(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         raise NotImplementedError()
 
     def get_deps(self) -> Set[str]:

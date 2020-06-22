@@ -3,8 +3,6 @@ import time
 
 from typing import Set
 
-from qtoggleserver.core.typing import PortValue as CorePortValue
-
 from .functions import function, Function
 
 
@@ -15,7 +13,7 @@ class TimeFunction(Function):
     def get_deps(self) -> Set[str]:
         return {'time'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         return int(time.time())
 
 
@@ -26,5 +24,5 @@ class TimeMSFunction(Function):
     def get_deps(self) -> Set[str]:
         return {'time_ms'}
 
-    def eval(self) -> CorePortValue:
+    def eval(self) -> float:
         return int(time.time() * 1000)

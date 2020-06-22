@@ -17,8 +17,8 @@ class LiteralValue(Expression):
     def __str__(self) -> str:
         return self.sexpression
 
-    def eval(self) -> CorePortValue:
-        return self.value
+    def eval(self) -> float:
+        return float(self.value)
 
     @staticmethod
     def parse(self_port_id: Optional[str], sexpression: str, pos: int) -> Expression:
