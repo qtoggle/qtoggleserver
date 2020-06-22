@@ -50,6 +50,36 @@ class DelayFunction(Function):
         return self._current_value
 
 
+@function('FREEZE')
+class FreezeFunction(Function):
+    MIN_ARGS = MAX_ARGS = 2
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._last_value: Optional[CorePortValue] = None
+        self._last_period: float = 0
+        self._last_time_ms: int = 0
+
+    def get_deps(self) -> Set[str]:
+        # Function depends on milliseconds only if it's time to reevaluate value
+        if time.time() * 1000 - self._last_time_ms >= self._last_period:
+            return {'time_ms'}
+
+        return super().get_deps()
+
+    def eval(self) -> CorePortValue:
+        time_ms = int(time.time() * 1000)
+        if time_ms - self._last_time_ms < self._last_period:
+            return self._last_value
+
+        self._last_value = self.args[0].eval()
+        self._last_period = self.args[1].eval()
+        self._last_time_ms = time_ms
+
+        return self._last_value
+
+
 @function('HELD')
 class HeldFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
