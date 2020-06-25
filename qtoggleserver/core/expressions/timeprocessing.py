@@ -56,24 +56,60 @@ class SampleFunction(Function):
         super().__init__(*args, **kwargs)
 
         self._last_value: Optional[float] = None
-        self._last_period: float = 0
+        self._last_duration: float = 0
         self._last_time_ms: int = 0
 
     def get_deps(self) -> Set[str]:
         # Function depends on milliseconds only if it's time to reevaluate value
-        if time.time() * 1000 - self._last_time_ms >= self._last_period:
+        if time.time() * 1000 - self._last_time_ms >= self._last_duration:
             return {'time_ms'}
 
         return super().get_deps()
 
     def eval(self) -> float:
         time_ms = int(time.time() * 1000)
-        if time_ms - self._last_time_ms < self._last_period:
+        if time_ms - self._last_time_ms < self._last_duration:
             return self._last_value
 
         self._last_value = self.args[0].eval()
-        self._last_period = self.args[1].eval()
+        self._last_duration = self.args[1].eval()
         self._last_time_ms = time_ms
+
+        return self._last_value
+
+
+@function('FREEZE')
+class FreezeFunction(Function):
+    MIN_ARGS = MAX_ARGS = 2
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._last_value: Optional[float] = None
+        self._last_duration: float = 0
+        self._last_time_ms: int = 0
+
+    def get_deps(self) -> Set[str]:
+        # Function depends on milliseconds only when timer is active
+        if self._last_time_ms > 0:
+            return {'time_ms'}
+
+        return super().get_deps()
+
+    def eval(self) -> float:
+        time_ms = int(time.time() * 1000)
+
+        if self._last_time_ms == 0:  # Idle
+            value = self.args[0].eval()
+            if value != self._last_value:  # Value change detected, start timer
+                self._last_time_ms = time_ms
+                self._last_duration = self.args[1].eval()
+                self._last_value = value
+
+        else:  # Timer active
+            if time_ms - self._last_time_ms > self._last_duration:  # Timer expired
+                self._last_time_ms = 0
+                return self.eval()  # Call eval() again, now that _last_time_ms is 0
 
         return self._last_value
 
