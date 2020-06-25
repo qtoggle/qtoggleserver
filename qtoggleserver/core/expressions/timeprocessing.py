@@ -48,8 +48,8 @@ class DelayFunction(Function):
         return self._current_value
 
 
-@function('FREEZE')
-class FreezeFunction(Function):
+@function('SAMPLE')
+class SampleFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
     def __init__(self, *args, **kwargs) -> None:
