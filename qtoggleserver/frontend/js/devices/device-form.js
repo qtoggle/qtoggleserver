@@ -182,7 +182,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
             })
 
             /* Combine standard and additional attribute definitions */
-            this._fullAttrdefs = Common.combineAttrdefs(Attrdefs.STD_DEVICE_ATTRDEFS, attrdefs)
+            this._fullAttrdefs = Attrdefs.combineAttrdefs(Attrdefs.STD_DEVICE_ATTRDEFS, attrdefs)
 
             /* Filter out attribute definitions not applicable to this device */
             this._fullAttrdefs = ObjectUtils.filter(this._fullAttrdefs, function (name, def) {
@@ -195,7 +195,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
 
             this.fieldsFromAttrdefs({
                 attrdefs: this._fullAttrdefs,
-                initialData: Common.preprocessDeviceAttrs(device.attrs),
+                attrs: Common.preprocessDeviceAttrs(device.attrs),
                 provisioning: device.provisioning || [],
                 noUpdated: NotificationsAPI.NO_EVENT_DEVICE_ATTRS,
                 startIndex: this.getFieldIndex('last_sync') + 1,
@@ -222,7 +222,6 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
         let managementButtons = [
             new PushButtonField({
                 name: 'reboot',
-                separator: true,
                 caption: gettext('Reboot'),
                 style: 'highlight',
                 icon: new StockIcon({name: 'sync'}),
@@ -397,12 +396,15 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
 
         let promise = Promise.resolve()
 
-        if ('name' in newAttrs) {
+        if ('config_name' in newAttrs) {
+            let msg = gettext('Are you sure you want to change the device configuration?')
+            promise = new ConfirmMessageForm({message: msg}).show().asPromise()
+        }
+        else if ('name' in newAttrs) {
             let msg = gettext('Are you sure you want to rename the device?')
             promise = new ConfirmMessageForm({message: msg}).show().asPromise()
         }
-
-        if (willReconnect) {
+        else if (willReconnect) {
             let msg = gettext('Device will reconnect. Are you sure?')
             promise = new ConfirmMessageForm({message: msg}).show().asPromise()
         }

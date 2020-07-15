@@ -37,23 +37,6 @@ export function getGlobalProgressMessage() {
 }
 
 /**
- * Combine two sets of attribute definitions.
- * @alias qtoggle.common.combineAttrdefs
- * @param {Object} defs1
- * @param {Object} defs2
- * @returns {Object}
- */
-export function combineAttrdefs(defs1, defs2) {
-    let combined = ObjectUtils.copy(defs1, /* deep = */ true)
-
-    ObjectUtils.forEach(defs2, function (name, def) {
-        combined[name] = ObjectUtils.combine(combined[name] || {}, def)
-    })
-
-    return combined
-}
-
-/**
  * Prepare device attributes to be displayed on device form.
  * @alias qtoggle.common.preprocessDeviceAttrs
  * @param {Object} attrs device attributes

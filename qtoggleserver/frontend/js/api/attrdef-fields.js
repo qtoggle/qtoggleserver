@@ -2,16 +2,21 @@
  * @namespace qtoggle.api.attrdeffields
  */
 
-import {gettext}     from '$qui/base/i18n.js'
-import {LabelsField} from '$qui/forms/common-fields/common-fields.js'
-import * as Theme    from '$qui/theme.js'
+import {gettext}        from '$qui/base/i18n.js'
+import {CompositeField} from '$qui/forms/common-fields/common-fields.js'
+import {ComboField}     from '$qui/forms/common-fields/common-fields.js'
+import {LabelsField}    from '$qui/forms/common-fields/common-fields.js'
+import {TextField}      from '$qui/forms/common-fields/common-fields.js'
+import * as Theme       from '$qui/theme.js'
+
+import * as Cache       from '$app/cache.js'
 
 
 const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
 
 
 /**
- * @alias qtoggle.api.attrfields.WiFiSignalStrengthField
+ * @alias qtoggle.api.attrdeffields.WiFiSignalStrengthField
  * @extends qui.forms.commonfields.ProgressDiskField
  */
 export class WiFiSignalStrengthField extends LabelsField {
@@ -38,6 +43,101 @@ export class WiFiSignalStrengthField extends LabelsField {
         let text = `${label} (${value}/3)`
 
         super.valueToWidget([{text, background}])
+    }
+
+}
+
+/**
+ * @alias qtoggle.api.attrdeffields.WiFiSignalStrengthField
+ * @extends qui.forms.commonfields.ProgressDiskField
+ */
+export class ConfigNameField extends CompositeField {
+
+    /**
+     * @constructs
+     * @param {Object} attrs
+     * @param {...*} args parent class parameters
+     */
+    constructor({attrs, ...args} = {}) {
+        let vendor = attrs['vendor'] || ''
+        let choices = []
+        if (vendor.startsWith('qtoggle/')) {
+            /* Build choices from provisioning configs for devices running official qToggle firmware */
+            let deviceFamily = vendor.substring(8)
+            choices = Cache.getProvisioningConfigs()
+            choices = choices.filter(c => c.display_name != null)
+            choices = choices.filter(c => c.name.startsWith(`${deviceFamily}/`))
+            choices = choices.map(function (config) {
+                return {
+                    label: config.display_name,
+                    value: config.name
+                }
+            })
+        }
+
+        choices.push({label: gettext('custom') + '...', value: 'custom'})
+
+        super({
+            fields: [
+                new ComboField({
+                    name: 'combo',
+                    choices: choices,
+                    filterEnabled: true,
+
+                    onChange(value, form) {
+                        that.updateCustomFieldVisibility()
+                    }
+
+                }),
+                new TextField({
+                    name: 'custom',
+                    placeholder: gettext('custom configuration...')
+                })
+            ],
+            flow: 'vertical',
+            ...args
+        })
+
+        let that = this
+
+        this._choices = choices
+    }
+
+    setValue(value) {
+        super.setValue(value)
+
+        this.updateCustomFieldVisibility()
+    }
+
+    valueToWidget(value) {
+        let existingValue = this._choices.find(c => c.value === value) != null
+
+        super.valueToWidget({
+            combo: existingValue ? value : 'custom',
+            custom: value
+        })
+    }
+
+    widgetToValue() {
+        let compositeValue = super.widgetToValue()
+        if (compositeValue.combo === 'custom') {
+            return compositeValue.custom
+        }
+        else {
+            return compositeValue.combo
+        }
+    }
+
+    updateCustomFieldVisibility() {
+        let comboField = this.getField('combo')
+        let customField = this.getField('custom')
+
+        if (comboField.getValue() === 'custom') {
+            customField.show()
+        }
+        else {
+            customField.hide()
+        }
     }
 
 }

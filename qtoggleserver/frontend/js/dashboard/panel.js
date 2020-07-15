@@ -912,10 +912,9 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
      * @returns {qtoggle.dashboard.widgets.WidgetPicker}
      */
     makeWidgetPicker() {
-        let that = this
         let widgetPicker = new WidgetPicker(function (cls) {
-            that._onWidgetPicked(cls)
-        })
+            this._onWidgetPicked(cls)
+        }.bind(this))
 
         if (!this.isEditEnabled()) {
             this.enableEditing()

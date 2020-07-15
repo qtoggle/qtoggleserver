@@ -200,10 +200,10 @@ export function patchFirmware(version, url, override = false) {
 /**
  * GET https://provisioning.qtoggle.io/config API function call.
  * @alias qtoggle.api.devices.getProvisioningConfig
- * @param {String} prefix configuration prefix
+ * @param {String} [prefix] configuration prefix
  * @returns {Promise}
  */
-export function getProvisioningConfigs(prefix) {
+export function getProvisioningConfigs(prefix = '') {
     return new Promise(function (resolve, reject) {
 
         AJAX.requestJSON(
@@ -228,7 +228,7 @@ export function getProvisioningConfigs(prefix) {
 }
 
 /**
- * GET https://provisioning.qtoggle.io/config/config-name.json API function call.
+ * GET https://provisioning.qtoggle.io/config/{config_name}.json API function call.
  * @alias qtoggle.api.devices.getProvisioningConfig
  * @param {String} configName desired configuration name
  * @returns {Promise}

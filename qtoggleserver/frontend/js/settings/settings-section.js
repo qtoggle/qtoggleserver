@@ -38,7 +38,8 @@ class SettingsSection extends Section {
     load() {
         let promises = [
             Cache.whenDeviceCacheReady,
-            Cache.whenPrefsCacheReady
+            Cache.whenPrefsCacheReady,
+            Cache.whenProvisioningConfigsCacheReady
         ]
 
         return Promise.all(promises)

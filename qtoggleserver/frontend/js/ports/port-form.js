@@ -127,7 +127,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         })
 
         /* Combine standard and additional attribute definitions */
-        this._fullAttrdefs = Common.combineAttrdefs(Attrdefs.STD_PORT_ATTRDEFS, attrdefs)
+        this._fullAttrdefs = Attrdefs.combineAttrdefs(Attrdefs.STD_PORT_ATTRDEFS, attrdefs)
 
         /* Group device_*_expressions together (with expression) */
         let sepAbove = 'expression' in port
@@ -218,7 +218,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         /* Prepare form fields */
         this.fieldsFromAttrdefs({
             attrdefs: this._fullAttrdefs,
-            initialData: port,
+            attrs: port,
             provisioning: provisioning,
             fieldChangeWarnings: fieldChangeWarnings,
             startIndex: 1

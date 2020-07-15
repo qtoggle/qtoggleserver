@@ -38,7 +38,8 @@ class DevicesSection extends Section {
         let promises = [
             Cache.whenDeviceCacheReady,
             Cache.whenPrefsCacheReady,
-            Cache.whenSlaveDevicesCacheReady
+            Cache.whenSlaveDevicesCacheReady,
+            Cache.whenProvisioningConfigsCacheReady
         ]
 
         return Promise.all(promises)
