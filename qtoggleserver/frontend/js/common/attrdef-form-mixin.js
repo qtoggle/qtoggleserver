@@ -217,7 +217,7 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
          *
          * @param {Object} [attrdefs] attribute definitions
          * @param {Object} [extraFieldOptions] extra options to pass to fields
-         * @param {Object} [initialData] dictionary with initial data for fields
+         * @param {Object} [attrs] dictionary with attributes (used as initial data for fields)
          * @param {String[]} [provisioning] a list of field names that should be marked for provisioning
          * @param {String[]} [noUpdated] a list of field names that should not be marked as updated
          * @param {Number} [startIndex] index in the fields list to start at
@@ -226,7 +226,7 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
         fieldsFromAttrdefs({
             attrdefs = {},
             extraFieldOptions = {},
-            initialData = {},
+            attrs = {},
             provisioning = [],
             noUpdated = [],
             startIndex = 0,
@@ -259,17 +259,20 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                     Object.assign(fieldAttrs, extraFieldOptions[name])
                 }
 
-                let newValue = initialData[name]
+                /* Pass current device/port attributes to field constructor */
+                fieldAttrs.attrs = attrs
+
+                let newValue = attrs[name]
                 if (def.valueToUI) {
                     try {
-                        newValue = def.valueToUI(initialData[name])
+                        newValue = def.valueToUI(attrs[name])
                     }
                     catch (e) {
                         logger.errorStack(`valueToUI() failed for field ${name} and value ${newValue}`)
                         newValue = null
                     }
                 }
-                if (name in initialData) {
+                if (name in attrs) {
                     fieldAttrs.initialValue = newValue
                 }
 

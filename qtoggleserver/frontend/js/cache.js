@@ -15,8 +15,8 @@ import * as PromiseUtils from '$qui/utils/promise.js'
 import * as Window       from '$qui/window.js'
 
 import * as AuthAPI               from '$app/api/auth.js'
-import * as BaseAPI               from '$app/api/base.js'
 import * as APIConstants          from '$app/api/constants.js'
+import * as BaseAPI               from '$app/api/base.js'
 import * as DevicesAPI            from '$app/api/devices.js'
 import * as PortsAPI              from '$app/api/ports.js'
 import * as PrefsAPI              from '$app/api/prefs.js'
@@ -50,6 +50,9 @@ let allPorts = null
 
 /* Main device attributes */
 let mainDevice = null
+
+/* The list of all available provisioning configs */
+let provisioningConfigs = null
 
 /* User preferences */
 let prefs = null
@@ -95,6 +98,14 @@ export const whenSlaveDevicesCacheReady = new ConditionVariable()
  * @type {qui.base.ConditionVariable}
  */
 export const whenPrefsCacheReady = new ConditionVariable()
+
+/**
+ * Wait for the cached provisioning configurations list to be loaded.
+ * {@link qtoggle.cache.getProvisioningConfigs} can be safely called afterwards.
+ * @alias qtoggle.cache.whenProvisioningConfigsCacheReady
+ * @type {qui.base.ConditionVariable}
+ */
+export const whenProvisioningConfigsCacheReady = new ConditionVariable()
 
 /**
  * Wait for the initial cached data to be loaded.
@@ -291,6 +302,28 @@ export function loadPrefs() {
 }
 
 /**
+ * @alias qtoggle.cache.loadProvisioningConfigs
+ * @returns {Promise}
+ */
+export function loadProvisioningConfigs() {
+    logger.debug('loading provisioning configs')
+
+    return DevicesAPI.getProvisioningConfigs().then(function (p) {
+
+        provisioningConfigs = p
+        whenProvisioningConfigsCacheReady.fulfill()
+
+        logger.debug('loaded provisioning configs')
+
+    }).catch(function (error) {
+
+        logger.errorStack('loading provisioning configs failed', error)
+        throw error
+
+    })
+}
+
+/**
  * @alias qtoggle.cache.load
  * @param {Number} accessLevel
  * @param {Boolean} showModalProgress
@@ -364,6 +397,11 @@ export function load(accessLevel, showModalProgress) {
         })
 
     })
+
+    if (accessLevel >= AuthAPI.ACCESS_LEVEL_ADMIN) {
+        /* Load provisioning configs but don't do it sequentially, processing it in parallel with the load chain */
+        loadChain = Promise.all([loadChain, loadProvisioningConfigs()])
+    }
 
     loadChain = loadChain.then(function () {
         if (!whenCacheReady.isFulfilled()) {
@@ -659,6 +697,10 @@ export function isMainDevice(name) {
  * @param {*} [def] default value in case of missing prefs at given value
  */
 export function getPrefs(path = null, def = null) {
+    if (!whenPrefsCacheReady.isFulfilled()) {
+        throw new AssertionError('Preferences accessed before cache ready')
+    }
+
     if (!path) {
         return prefs
     }
@@ -686,6 +728,10 @@ export function getPrefs(path = null, def = null) {
  * @param {*} value
  */
 export function setPrefs(path, value) {
+    if (!whenPrefsCacheReady.isFulfilled()) {
+        throw new AssertionError('Preferences accessed before cache ready')
+    }
+
     function setPrefsRec(prefsObj, pathArray) {
         if (pathArray.length === 1) {
             prefsObj[pathArray[0]] = value
@@ -719,6 +765,19 @@ export function setPrefs(path, value) {
         PrefsAPI.putPrefs(prefs)
 
     })
+}
+
+/**
+ * Return the cached main device attributes.
+ * @alias qtoggle.cache.getMainDevice
+ * @returns {Object}
+ */
+export function getProvisioningConfigs() {
+    if (!whenProvisioningConfigsCacheReady.isFulfilled()) {
+        throw new AssertionError('Provisioning configs accessed before cache ready')
+    }
+
+    return provisioningConfigs
 }
 
 /**

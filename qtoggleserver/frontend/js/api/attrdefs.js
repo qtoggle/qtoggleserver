@@ -13,6 +13,7 @@ import * as ObjectUtils    from '$qui/utils/object.js'
 import {netmaskFromLen} from '$app/utils.js'
 import {netmaskToLen}   from '$app/utils.js'
 
+import {ConfigNameField}         from './attrdef-fields.js'
 import {WiFiSignalStrengthField} from './attrdef-fields.js'
 
 
@@ -428,10 +429,13 @@ export const STD_DEVICE_ATTRDEFS = {
         display_name: gettext('Configuration Name'),
         description: gettext('Indicates a particular device configuration.'),
         type: 'string',
-        modifiable: false,
+        modifiable: true,
         optional: true,
         standard: true,
-        order: 210
+        order: 210,
+        field: {
+            class: ConfigNameField
+        }
     },
     virtual_ports: {
         display_name: gettext('Virtual Ports'),
@@ -566,7 +570,7 @@ export const STD_PORT_ATTRDEFS = {
     },
     internal: {
         display_name: gettext('Internal'),
-        description: gettext("Indicates that the port's usage is limited to the device internal scope and has no" +
+        description: gettext("Indicates that the port's usage is limited to the device internal scope and has no " +
                              'meaning outside of it.'),
         type: 'boolean',
         modifiable: true,
@@ -699,3 +703,21 @@ ObjectUtils.forEach(STD_PORT_ATTRDEFS, (name, def) => {
 ObjectUtils.forEach(ADDITIONAL_PORT_ATTRDEFS, (name, def) => {
     def.known = true
 })
+
+
+/**
+ * Combine two sets of attribute definitions.
+ * @alias qtoggle.api.attrdefs.combineAttrdefs
+ * @param {Object} defs1
+ * @param {Object} defs2
+ * @returns {Object}
+ */
+export function combineAttrdefs(defs1, defs2) {
+    let combined = ObjectUtils.copy(defs1, /* deep = */ true)
+
+    ObjectUtils.forEach(defs2, function (name, def) {
+        combined[name] = ObjectUtils.combine(combined[name] || {}, def)
+    })
+
+    return combined
+}

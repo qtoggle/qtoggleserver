@@ -118,10 +118,9 @@ class WidgetPicker extends mix().with(StructuredPageMixin) {
 
         let categories = Widgets.getRegistry()
         categories.forEach(function (categoryInfo) {
-            let that = this
             let list = new WidgetCategoryList(this, categoryInfo, function (cls) {
-                that._onWidgetPicked(cls)
-            })
+                this._onWidgetPicked(cls)
+            }.bind(this))
             this._categoryLists.push(list)
             div.append(list.getHTML())
         }, this)
