@@ -245,6 +245,7 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                 name: 'provision',
                 style: 'interactive',
                 caption: gettext('Provision'),
+                disabled: true,
                 icon: new StockIcon({name: 'provisioning', stockName: 'qtoggle'}),
                 onClick(form) {
                     form.pushPage(form.makeProvisioningForm())

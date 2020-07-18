@@ -218,8 +218,9 @@ class SettingsForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin,
             }),
             new PushButtonField({
                 name: 'provision',
-                caption: gettext('Provision'),
                 style: 'interactive',
+                caption: gettext('Provision'),
+                disabled: true,
                 icon: new StockIcon({name: 'provisioning', stockName: 'qtoggle'}),
                 onClick(form) {
                     form.pushPage(form.makeProvisioningForm())
