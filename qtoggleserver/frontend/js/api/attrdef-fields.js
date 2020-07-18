@@ -70,7 +70,7 @@ export class ConfigNameField extends CompositeField {
             choices = choices.map(function (config) {
                 return {
                     label: config.display_name,
-                    value: config.name
+                    value: config.name.substring(deviceFamily.length + 1)
                 }
             })
         }
