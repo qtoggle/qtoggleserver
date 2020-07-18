@@ -284,12 +284,9 @@ export function loadPrefs() {
     return PrefsAPI.getPrefs().then(function (p) {
 
         if (prefs == null) {
-            prefs = p
             whenPrefsCacheReady.fulfill()
         }
-        else {
-            prefs = p
-        }
+        prefs = p
 
         logger.debug('loaded prefs')
 
@@ -310,8 +307,10 @@ export function loadProvisioningConfigs() {
 
     return DevicesAPI.getProvisioningConfigs().then(function (p) {
 
+        if (provisioningConfigs == null) {
+            whenProvisioningConfigsCacheReady.fulfill()
+        }
         provisioningConfigs = p
-        whenProvisioningConfigsCacheReady.fulfill()
 
         logger.debug('loaded provisioning configs')
 
