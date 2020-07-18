@@ -114,3 +114,62 @@ class SequenceFunction(Function):
                 break
 
         return result
+
+
+@function('LUT')
+class LUTFunction(Function):
+    MIN_ARGS = 5
+
+    def eval(self) -> float:
+        args = self.eval_args()
+        length = (len(args) - 1) // 2
+        x = args[0]
+        points = [(args[2 * i + 1], args[2 * i + 2]) for i in range(length)]
+        points.sort(key=lambda p: p[0])
+
+        if x < points[0][0]:
+            return points[0][1]
+
+        for i in range(length - 1):
+            p1 = points[i]
+            p2 = points[i + 1]
+
+            if x > p2[0]:
+                continue
+
+            if x - p1[0] < p2[0] - x:  # Closer to p1 than to p2
+                return p1[1]
+
+            else:
+                return p2[1]
+
+        return points[length - 1][1]
+
+
+@function('LUTLI')
+class LUTLIFunction(Function):
+    MIN_ARGS = 5
+
+    def eval(self) -> float:
+        args = self.eval_args()
+        length = (len(args) - 1) // 2
+        x = args[0]
+        points = [(args[2 * i + 1], args[2 * i + 2]) for i in range(length)]
+        points.sort(key=lambda p: p[0])
+
+        if x < points[0][0]:
+            return points[0][1]
+
+        for i in range(length - 1):
+            p1 = points[i]
+            p2 = points[i + 1]
+
+            if x > p2[0]:
+                continue
+
+            if p1[0] == p2[0]:
+                return p1[1]
+
+            return p1[1] + (p2[1] - p1[1]) * (x - p1[0]) / (p2[0] - p1[0])
+
+        return points[length - 1][1]
