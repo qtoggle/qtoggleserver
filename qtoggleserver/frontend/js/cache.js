@@ -305,7 +305,14 @@ export function loadPrefs() {
 export function loadProvisioningConfigs() {
     logger.debug('loading provisioning configs')
 
-    return DevicesAPI.getProvisioningConfigs().then(function (p) {
+    return DevicesAPI.getProvisioningConfigs().catch(function (error) {
+
+        /* Ignore errors when fetching provisioning configs - they aren't important for the app's well functioning */
+
+        logger.errorStack('loading provisioning configs failed', error)
+        return []
+
+    }).then(function (p) {
 
         if (provisioningConfigs == null) {
             whenProvisioningConfigsCacheReady.fulfill()
@@ -313,11 +320,6 @@ export function loadProvisioningConfigs() {
         provisioningConfigs = p
 
         logger.debug('loaded provisioning configs')
-
-    }).catch(function (error) {
-
-        logger.errorStack('loading provisioning configs failed', error)
-        throw error
 
     })
 }
