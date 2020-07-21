@@ -198,26 +198,24 @@ export function patchFirmware(version, url, override = false) {
 }
 
 /**
- * GET https://provisioning.qtoggle.io/config API function call.
+ * GET https://provisioning.qtoggle.io/config/available.json file.
  * @alias qtoggle.api.devices.getProvisioningConfig
- * @param {String} [prefix] configuration prefix
  * @returns {Promise}
  */
-export function getProvisioningConfigs(prefix = '') {
+export function getProvisioningConfigs() {
     return new Promise(function (resolve, reject) {
 
         AJAX.requestJSON(
-            'GET', `${PROVISIONING_CONFIG_URL}/${prefix}`, /* query = */ null, /* data = */ null,
+            'GET', `${PROVISIONING_CONFIG_URL}/available.json`, /* query = */ null, /* data = */ null,
             /* success = */ function (configs) {
-
-                /* Remove .json extension */
-                configs.forEach(function (config) {
-                    if (config['name'].endsWith('.json')) {
-                        config['name'] = config['name'].slice(0, -5)
+                let processedConfigs = Object.entries(configs).map(function ([key, value]) {
+                    return {
+                        'name': key,
+                        ...value
                     }
                 })
 
-                resolve(configs)
+                resolve(processedConfigs)
             },
             /* failure = */ function (data, status, msg, headers) {
                 reject(BaseAPI.APIError.fromHTTPResponse(data, status, msg))
@@ -228,7 +226,7 @@ export function getProvisioningConfigs(prefix = '') {
 }
 
 /**
- * GET https://provisioning.qtoggle.io/config/{config_name}.json API function call.
+ * GET https://provisioning.qtoggle.io/config/{config_name}.json file.
  * @alias qtoggle.api.devices.getProvisioningConfig
  * @param {String} configName desired configuration name
  * @returns {Promise}
