@@ -210,7 +210,7 @@ export function getProvisioningConfigs() {
             /* success = */ function (configs) {
                 let processedConfigs = Object.entries(configs).map(function ([key, value]) {
                     return {
-                        'name': key,
+                        name: key,
                         ...value
                     }
                 })
