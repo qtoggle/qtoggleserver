@@ -121,8 +121,8 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
     READ_INTERVAL_MULTIPLIER = 1
     READ_INTERVAL_UNIT = None
 
-    def __init__(self, peripheral: Peripheral) -> None:
-        super().__init__(peripheral)
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
 
         # Add read interval attrdef
         if self.READ_INTERVAL_MIN is not None:
