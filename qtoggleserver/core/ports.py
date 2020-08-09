@@ -209,7 +209,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._transform_write: Optional[core_expressions.Expression] = None
 
         # Attributes cache is used to prevent computing an attribute value more than once per core iteration
-        self._attrs_cache: dict = {}
+        self._attrs_cache: Attributes = {}
 
         # Cache attribute definitions so that the ATTRDEFS property doesn't need to gather all of them on each access
         self._attrdefs_cache: Optional[AttributeDefinitions] = None
@@ -281,6 +281,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             d[name] = v
 
         return d
+
+    def get_attrs_sync(self) -> Attributes:
+        return self._attrs_cache
 
     def invalidate_attrs(self) -> None:
         self._attrs_cache = {}
@@ -354,6 +357,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         # Skip an IO loop iteration, allowing setting multiple attributes before triggering a port-update
         await asyncio.sleep(0)
         await self.trigger_update()
+
+    def get_attr_sync(self, name: str) -> Optional[Attribute]:
+        return self._attrs_cache.get(name)
 
     async def handle_attr_change(self, name: str, value: Attribute) -> None:
         method_name = f'handle_{name}'
