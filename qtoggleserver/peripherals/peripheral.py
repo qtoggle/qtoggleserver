@@ -149,6 +149,9 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         future = asyncio.get_running_loop().create_future()
 
         def callback(result: Any, exception: Optional[Exception]) -> None:
+            if future.cancelled():
+                return
+
             if exception:
                 future.set_exception(exception)
 
