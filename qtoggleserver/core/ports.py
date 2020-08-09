@@ -372,7 +372,32 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self.error('%s failed: %s', method_name, e, exc_info=True)
 
     def get_display_name(self) -> str:
-        return self._display_name or self._id
+        return self.get_attr_sync('display_name') or self._id
+
+    def get_display_value(self) -> str:
+        choices = self.get_attr_sync('choices')
+        unit = self.get_attr_sync('unit')
+        value = self.get_value()
+
+        if value is None:
+            return 'unknown'  # TODO: i18n
+
+        if choices:
+            for choice in choices:
+                if choice['value'] == value:
+                    return choice['display_name']
+
+        if self.get_attr_sync('type') == TYPE_BOOLEAN:
+            value_str = 'on' if value else 'off'  # TODO: i18n
+
+        else:
+            value_str = str(value)
+
+        if unit:
+            return f'{value_str}{unit}'
+
+        else:
+            return value_str
 
     def get_id(self) -> str:
         return self._id

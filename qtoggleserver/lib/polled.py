@@ -101,7 +101,11 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
         self._poll_task = asyncio.create_task(self._poll_loop())
 
     async def handle_disable(self) -> None:
-        self._polling = False  # Will stop poll loop
+        if self._poll_task:
+            self._polling = False  # Will stop poll loop
+            self._poll_task.cancel()
+            await self._poll_task
+
         self._poll_error = None
 
     async def handle_cleanup(self) -> None:
