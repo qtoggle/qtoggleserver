@@ -85,14 +85,14 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         # Convert template strings to jinja2 templates
         self._j2env: Environment = Environment()
         self._templates: Dict[str, Dict[str, Template]] = {}
-        for _type, ts in templates.items():
+        for type_, ts in templates.items():
             # Ensure values in templates are dicts themselves
             if isinstance(ts, str):
                 ts = {'title': ts}
 
-            self._templates[_type] = {}
+            self._templates[type_] = {}
             for k, t in ts.items():
-                self._templates[_type][k] = self._j2env.from_string(t) if t is not None else None
+                self._templates[type_][k] = self._j2env.from_string(t) if t is not None else None
 
         super().__init__(name=name, filter=filter)
 

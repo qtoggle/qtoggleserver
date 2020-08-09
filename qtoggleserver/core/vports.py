@@ -19,25 +19,25 @@ class VirtualPort(core_ports.Port):
 
     def __init__(
         self,
-        port_id: str,
-        _type: str,
-        _min: Optional[float],
-        _max: Optional[float],
+        id_: str,
+        type_: str,
+        min_: Optional[float],
+        max_: Optional[float],
         integer: Optional[bool],
         step: Optional[float],
         choices: Optional[PortValueChoices]
     ) -> None:
 
-        super().__init__(port_id)
+        super().__init__(id_)
 
-        self._type: str = _type
-        self._min: Optional[float] = _min
-        self._max: Optional[float] = _max
+        self._type: str = type_
+        self._min: Optional[float] = min_
+        self._max: Optional[float] = max_
         self._integer: Optional[bool] = integer
         self._step: Optional[float] = step
         self._choices: Optional[PortValueChoices] = choices
 
-        self._value = self._virtual_value = self.adapt_value_type_sync(_type, integer, _min or 0)
+        self._value = self._virtual_value = self.adapt_value_type_sync(type_, integer, min_ or 0)
 
     def map_id(self, new_id: str) -> None:
         raise core_ports.PortError('Virtual ports cannot be mapped')
@@ -50,29 +50,29 @@ class VirtualPort(core_ports.Port):
 
 
 def add(
-    port_id: str,
-    _type: str,
-    _min: Optional[float],
-    _max: Optional[float],
+    id_: str,
+    type_: str,
+    min_: Optional[float],
+    max_: Optional[float],
     integer: Optional[bool],
     step: Optional[float],
     choices: Optional[PortValueChoices]
 ) -> None:
 
     settings = {
-        'id': port_id,
-        'type': _type,
-        'min': _min,
-        'max': _max,
+        'id': id_,
+        'type': type_,
+        'min': min_,
+        'max': max_,
         'integer': integer,
         'step': step,
         'choices': choices
     }
 
-    _vport_args[port_id] = settings
+    _vport_args[id_] = settings
 
-    logger.debug('saving virtual port settings for %s', port_id)
-    persist.replace('vports', port_id, settings)
+    logger.debug('saving virtual port settings for %s', id_)
+    persist.replace('vports', id_, settings)
 
 
 def remove(port_id: str) -> None:
@@ -82,16 +82,16 @@ def remove(port_id: str) -> None:
 
 
 def all_port_args() -> List[GenericJSONDict]:
-    return [dict({'driver': VirtualPort, 'port_id': port_id}, **args)
+    return [{'driver': VirtualPort, 'id_': port_id, **args}
             for port_id, args in _vport_args.items()]
 
 
 def load() -> None:
     for entry in persist.query('vports'):
         _vport_args[entry['id']] = {
-            '_type': entry.get('type') or core_ports.TYPE_NUMBER,
-            '_min': entry.get('min'),
-            '_max': entry.get('max'),
+            'type_': entry.get('type') or core_ports.TYPE_NUMBER,
+            'min_': entry.get('min'),
+            'max_': entry.get('max'),
             'integer': entry.get('integer'),
             'step': entry.get('step'),
             'choices': entry.get('choices')

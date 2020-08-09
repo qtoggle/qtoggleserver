@@ -43,7 +43,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
         return 0  # Returns the number of updated records
 
     @abc.abstractmethod
-    def replace(self, collection: str, _id: Id, record: Record, upsert: bool) -> bool:
+    def replace(self, collection: str, id_: Id, record: Record, upsert: bool) -> bool:
         return False  # Returns True if replaced
 
     @abc.abstractmethod
@@ -93,11 +93,11 @@ def query(
     return _get_driver().query(collection, fields, filt or {}, limit)
 
 
-def get(collection: str, _id: Id) -> Optional[Record]:
+def get(collection: str, id_: Id) -> Optional[Record]:
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('getting record with id %s from %s', _id, collection)
+        logger.debug('getting record with id %s from %s', id_, collection)
 
-    records = list(_get_driver().query(collection, fields=None, filt={'id': _id}, limit=1))
+    records = list(_get_driver().query(collection, fields=None, filt={'id': id_}, limit=1))
     if records:
         return records[0]
 
@@ -154,20 +154,20 @@ def update(collection: str, record_part: Record, filt: Optional[Dict[str, Any]] 
     return count
 
 
-def replace(collection: str, _id: Id, record: Record, upsert: bool = True) -> bool:
+def replace(collection: str, id_: Id, record: Record, upsert: bool = True) -> bool:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
             'replacing record with id %s with %s in %s',
-            _id,
+            id_,
             json_utils.dumps(record, allow_extended_types=True),
             collection
         )
 
-    record = dict(record, id=_id)  # Make sure the new record contains the id field
-    replaced = _get_driver().replace(collection, _id, record, upsert)
+    record = dict(record, id=id_)  # Make sure the new record contains the id field
+    replaced = _get_driver().replace(collection, id_, record, upsert)
 
     if replaced:
-        logger.debug('replaced record with id %s in %s', _id, collection)
+        logger.debug('replaced record with id %s in %s', id_, collection)
 
     return replaced
 

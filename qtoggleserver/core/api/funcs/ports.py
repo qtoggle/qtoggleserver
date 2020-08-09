@@ -43,8 +43,8 @@ async def patch_port(request: core_api.APIRequest, port_id: str, params: Attribu
     for name, value in params.items():
         attrdef = attrdefs[name]
         step = attrdef.get('step')
-        _min = attrdef.get('min')
-        if None not in (step, _min) and step != 0 and (value - _min) % step:
+        min_ = attrdef.get('min')
+        if None not in (step, min_) and step != 0 and (value - min_) % step:
             raise core_api.APIError(400, 'invalid-field', field=name)
 
     errors_by_name = {}
@@ -87,28 +87,28 @@ async def patch_port(request: core_api.APIRequest, port_id: str, params: Attribu
 async def post_ports(request: core_api.APIRequest, params: GenericJSONDict) -> Attributes:
     core_api_schema.validate(params, core_api_schema.POST_PORTS)
 
-    port_id = params['id']
-    port_type = params['type']
-    _min = params.get('min')
-    _max = params.get('max')
+    id_ = params['id']
+    type_ = params['type']
+    min_ = params.get('min')
+    max_ = params.get('max')
     integer = params.get('integer')
     step = params.get('step')
     choices = params.get('choices')
 
-    if core_ports.get(port_id):
+    if core_ports.get(id_):
         raise core_api.APIError(400, 'duplicate-port')
 
     if len(core_vports.all_port_args()) >= settings.core.virtual_ports:
         raise core_api.APIError(400, 'too-many-ports')
 
-    core_vports.add(port_id, port_type, _min, _max, integer, step, choices)
+    core_vports.add(id_, type_, min_, max_, integer, step, choices)
     port = await core_ports.load_one(
         'qtoggleserver.core.vports.VirtualPort',
         {
-            'port_id': port_id,
-            '_type': port_type,
-            '_min': _min,
-            '_max': _max,
+            'id_': id_,
+            'type_': type_,
+            'min_': min_,
+            'max_': max_,
             'integer': integer,
             'step': step,
             'choices': choices
@@ -169,8 +169,8 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
 
     # Step validation
     step = await port.get_attr('step')
-    _min = await port.get_attr('min')
-    if None not in (step, _min) and step != 0 and (value - _min) % step:
+    min_ = await port.get_attr('min')
+    if None not in (step, min_) and step != 0 and (value - min_) % step:
         raise core_api.APIError(400, 'invalid-value')
 
     if not port.is_enabled():
@@ -221,7 +221,7 @@ async def patch_port_sequence(request: core_api.APIRequest, port_id: str, params
 
     value_schema = await port.get_value_schema()
     step = await port.get_attr('step')
-    _min = await port.get_attr('min')
+    min_ = await port.get_attr('min')
     for value in values:
         # Translate any APIError generated when validating value schema into an invalid-field APIError on value
         try:
@@ -231,7 +231,7 @@ async def patch_port_sequence(request: core_api.APIRequest, port_id: str, params
             raise core_api.APIError(400, 'invalid-field', field='values') from None
 
         # Step validation
-        if None not in (step, _min) and step != 0 and (value - _min) % step:
+        if None not in (step, min_) and step != 0 and (value - min_) % step:
             raise core_api.APIError(400, 'invalid-field', field='values')
 
     if not port.is_enabled():

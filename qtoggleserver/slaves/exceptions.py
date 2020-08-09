@@ -46,11 +46,11 @@ class DeviceOffline(SlaveError):
 
 
 class PortNotFound(SlaveError):
-    def __init__(self, slave: Any, _id: str) -> None:
+    def __init__(self, slave: Any, id_: str) -> None:
         self.slave = slave
-        self.id: str = _id
+        self.id: str = id_
 
-        super().__init__(f'Could not find port {slave}.{_id}')
+        super().__init__(f'Could not find port {slave}.{id_}')
 
 
 def adapt_api_error(error: Exception) -> Exception:

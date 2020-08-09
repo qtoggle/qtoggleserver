@@ -40,20 +40,20 @@ class RedisDriver(BaseDriver):
 
         if 'id' in filt:  # Look for specific record id
             filt = dict(filt)
-            _id = filt.pop('id')
-            db_record = self._client.hgetall(self._make_record_key(collection, _id))
+            id_ = filt.pop('id')
+            db_record = self._client.hgetall(self._make_record_key(collection, id_))
 
             # Apply filter criteria
             if db_record and self._filter_matches(db_record, filt):
-                db_record['id'] = _id
+                db_record['id'] = id_
                 db_records.append(db_record)
 
         else:
             # Look through all records from this collection, iterating through set
-            for _id in self._client.sscan_iter(self._make_set_key(collection)):
+            for id_ in self._client.sscan_iter(self._make_set_key(collection)):
                 # Retrieve the db record
-                db_record = self._client.hgetall(self._make_record_key(collection, _id))
-                db_record['id'] = _id
+                db_record = self._client.hgetall(self._make_record_key(collection, id_))
+                db_record['id'] = id_
 
                 # Apply filter criteria
                 if self._filter_matches(db_record, filt):
@@ -69,16 +69,16 @@ class RedisDriver(BaseDriver):
     def insert(self, collection: str, record: Record) -> Id:
         # Make sure we have an id
         record = dict(record)
-        _id = record.pop('id', None)
-        if _id is None:
-            _id = self._get_next_id(collection)
+        id_ = record.pop('id', None)
+        if id_ is None:
+            id_ = self._get_next_id(collection)
 
-        key = self._make_record_key(collection, _id)
+        key = self._make_record_key(collection, id_)
         set_key = self._make_set_key(collection)
 
         # Check for duplicates
-        if self._client.sismember(set_key, _id):
-            raise DuplicateRecordId(_id)
+        if self._client.sismember(set_key, id_):
+            raise DuplicateRecordId(id_)
 
         # Adapt the record to db
         db_record = self._record_to_db(record)
@@ -87,9 +87,9 @@ class RedisDriver(BaseDriver):
         self._client.hmset(key, db_record)
 
         # Add the id to set
-        self._client.sadd(set_key, _id)
+        self._client.sadd(set_key, id_)
 
-        return _id
+        return id_
 
     def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
         # Adapt the record part to db
@@ -99,8 +99,8 @@ class RedisDriver(BaseDriver):
 
         if 'id' in filt:
             filt = dict(filt)
-            _id = filt.pop('id')
-            key = self._make_record_key(collection, _id)
+            id_ = filt.pop('id')
+            key = self._make_record_key(collection, id_)
 
             # Retrieve the db record
             db_record = self._client.hgetall(key)
@@ -111,8 +111,8 @@ class RedisDriver(BaseDriver):
 
         else:  # No id in filt
             # Look through all records from this collection, iterating through set
-            for _id in self._client.sscan_iter(self._make_set_key(collection)):
-                key = self._make_record_key(collection, _id)
+            for id_ in self._client.sscan_iter(self._make_set_key(collection)):
+                key = self._make_record_key(collection, id_)
 
                 # Retrieve the db record
                 db_record = self._client.hgetall(key)
@@ -128,12 +128,12 @@ class RedisDriver(BaseDriver):
 
         return modified_count
 
-    def replace(self, collection: str, _id: Id, record: Record, upsert: bool) -> bool:
+    def replace(self, collection: str, id_: Id, record: Record, upsert: bool) -> bool:
         # Adapt the record to db
         new_db_record = self._record_to_db(record)
         new_db_record.pop('id', None)  # Never add the id together with other fields
 
-        key = self._make_record_key(collection, _id)
+        key = self._make_record_key(collection, id_)
         old_db_record = self._client.hgetall(key)
 
         if not old_db_record and not upsert:
@@ -146,7 +146,7 @@ class RedisDriver(BaseDriver):
         self._client.hmset(key, new_db_record)
 
         # Make sure the id is present in set
-        self._client.sadd(self._make_set_key(collection), _id)
+        self._client.sadd(self._make_set_key(collection), id_)
 
         return True
 
@@ -155,8 +155,8 @@ class RedisDriver(BaseDriver):
 
         if 'id' in filt:
             filt = dict(filt)
-            _id = filt.pop('id')
-            key = self._make_record_key(collection, _id)
+            id_ = filt.pop('id')
+            key = self._make_record_key(collection, id_)
             db_record = self._client.hgetall(key)
 
             # Actually remove the record
@@ -165,14 +165,14 @@ class RedisDriver(BaseDriver):
                 removed_count = 1
 
             # Remove the id from set
-            self._client.srem(self._make_set_key(collection), _id)
+            self._client.srem(self._make_set_key(collection), id_)
 
         else:  # No id in filt
             ids_to_remove = set()
 
             # Look through all records from this collection, iterating through set
-            for _id in self._client.sscan_iter(self._make_set_key(collection)):
-                key = self._make_record_key(collection, _id)
+            for id_ in self._client.sscan_iter(self._make_set_key(collection)):
+                key = self._make_record_key(collection, id_)
 
                 # Retrieve the db record
                 db_record = self._client.hgetall(key)
@@ -185,13 +185,13 @@ class RedisDriver(BaseDriver):
                 self._client.delete(key)
 
                 # Remember ids to remove from set
-                ids_to_remove.add(_id)
+                ids_to_remove.add(id_)
 
                 removed_count += 1
 
             # Remove the ids from set
-            for _id in ids_to_remove:
-                self._client.srem(self._make_set_key(collection), _id)
+            for id_ in ids_to_remove:
+                self._client.srem(self._make_set_key(collection), id_)
 
         return removed_count
 
@@ -234,9 +234,9 @@ class RedisDriver(BaseDriver):
         return json_utils.loads(value, allow_extended_types=True)
 
     @staticmethod
-    def _make_record_key(collection: str, _id: Id) -> str:
-        if _id:
-            return f'{collection}:{_id}'
+    def _make_record_key(collection: str, id_: Id) -> str:
+        if id_:
+            return f'{collection}:{id_}'
 
         else:
             return collection

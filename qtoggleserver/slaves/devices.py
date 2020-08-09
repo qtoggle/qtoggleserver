@@ -454,8 +454,8 @@ class Slave(logging_utils.LoggableMixin):
             if d['id'].startswith(f'{self._name}.')
         ]
 
-        for _id in my_port_ids:
-            await self._add_port(attrs={'id': _id})
+        for id_ in my_port_ids:
+            await self._add_port(attrs={'id': id_})
 
     async def _save_ports(self) -> None:
 
@@ -999,32 +999,32 @@ class Slave(logging_utils.LoggableMixin):
 
         # Port values are also present among attrs when requesting GET /ports; we need to separate them
         attrs_by_id = {p['id']: p for p in ports}
-        values_by_id = {_id: attrs.pop('value', None) for _id, attrs in attrs_by_id.items()}
+        values_by_id = {id_: attrs.pop('value', None) for id_, attrs in attrs_by_id.items()}
 
         added_ids = [i for i in attrs_by_id if i not in local_ports_by_id]
         removed_ids = [i for i in local_ports_by_id if i not in attrs_by_id]
 
-        for _id in added_ids:
-            self.debug('detected new port: %s', _id)
+        for id_ in added_ids:
+            self.debug('detected new port: %s', id_)
             try:
-                await self._handle_port_add(**attrs_by_id[_id])
+                await self._handle_port_add(**attrs_by_id[id_])
                 needs_save_ports = True
 
             except Exception as e:
-                self.error('failed to add polled port %s: %s', _id, e)
+                self.error('failed to add polled port %s: %s', id_, e)
 
-        for _id in removed_ids:
-            self.debug('detected port removal: %s', _id)
+        for id_ in removed_ids:
+            self.debug('detected port removal: %s', id_)
 
             try:
-                await self._handle_port_remove(_id)
+                await self._handle_port_remove(id_)
                 needs_save_ports = True
 
             except Exception as e:
-                self.error('failed to remove polled port %s: %s', _id, e)
+                self.error('failed to remove polled port %s: %s', id_, e)
 
-        for _id, local_port in local_ports_by_id.items():
-            attrs = attrs_by_id.get(_id)
+        for id_, local_port in local_ports_by_id.items():
+            attrs = attrs_by_id.get(id_)
             if not attrs:
                 continue
 
@@ -1058,16 +1058,16 @@ class Slave(logging_utils.LoggableMixin):
                     needs_save_ports = True
 
                 except Exception as e:
-                    self.error('failed to update polled port %s: %s', _id, e)
+                    self.error('failed to update polled port %s: %s', id_, e)
 
             old_value = local_port.get_cached_value()
-            new_value = values_by_id.get(_id)
+            new_value = values_by_id.get(id_)
             if old_value != new_value:
                 try:
-                    await self._handle_value_change(_id, new_value)
+                    await self._handle_value_change(id_, new_value)
 
                 except Exception as e:
-                    self.error('failed to update polled port %s value: %s', _id, e)
+                    self.error('failed to update polled port %s value: %s', id_, e)
 
         if needs_save_ports:
             try:

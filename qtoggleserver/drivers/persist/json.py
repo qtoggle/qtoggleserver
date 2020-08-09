@@ -59,8 +59,8 @@ class JSONDriver(BaseDriver):
 
         if 'id' in filt:  # Look for specific record id
             filt = dict(filt)
-            _id = filt.pop('id')
-            record = coll.get(_id)
+            id_ = filt.pop('id')
+            record = coll.get(id_)
 
             # Apply filter criteria
             if record is not None and self._filter_matches(record, filt):
@@ -91,19 +91,19 @@ class JSONDriver(BaseDriver):
     def insert(self, collection: str, record: Record) -> Id:
         coll = self._data.setdefault(collection, {})
 
-        _id = record.get('id')
-        if _id is None:
-            _id = self._find_next_id(coll)
-            record = dict(record, id=_id)
+        id_ = record.get('id')
+        if id_ is None:
+            id_ = self._find_next_id(coll)
+            record = dict(record, id=id_)
 
-        elif _id in coll:
-            raise DuplicateRecordId(_id)
+        elif id_ in coll:
+            raise DuplicateRecordId(id_)
 
-        coll[_id] = record
+        coll[id_] = record
 
         self._save(self._unindex(self._data))
 
-        return _id
+        return id_
 
     def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
         coll = self._data.setdefault(collection, {})
@@ -111,9 +111,9 @@ class JSONDriver(BaseDriver):
 
         if 'id' in filt:
             filt = dict(filt)
-            _id = filt.pop('id')
+            id_ = filt.pop('id')
 
-            record = coll.get(_id)
+            record = coll.get(id_)
             if record is not None:
                 record.update(record_part)
                 modified_count = 1
@@ -132,21 +132,21 @@ class JSONDriver(BaseDriver):
 
         return modified_count
 
-    def replace(self, collection: str, _id: Id, record: Record, upsert: bool) -> bool:
+    def replace(self, collection: str, id_: Id, record: Record, upsert: bool) -> bool:
         coll = self._data.setdefault(collection, {})
 
-        record_existed = coll.get(_id) is not None
+        record_existed = coll.get(id_) is not None
         if record_existed is None and not upsert:
             return False  # No record found, no replacing
 
         # Remove old id if a new id is supplied
         new_id = record.get('id', None)
-        if (new_id is not None) and (new_id != _id) and record_existed:
-            coll.pop(_id)
+        if (new_id is not None) and (new_id != id_) and record_existed:
+            coll.pop(id_)
 
         if new_id is None:
-            new_id = _id
-            record['id'] = _id
+            new_id = id_
+            record['id'] = id_
 
         coll[new_id] = record
 
@@ -160,21 +160,21 @@ class JSONDriver(BaseDriver):
 
         if 'id' in filt:
             filt = dict(filt)
-            _id = filt.pop('id')
+            id_ = filt.pop('id')
 
-            record = coll.get(_id)
+            record = coll.get(id_)
             if (record is not None) and self._filter_matches(record, filt):
-                coll.pop(_id)
+                coll.pop(id_)
                 removed_count = 1
 
         else:  # No id in filt
-            for _id, record in list(coll.items()):
+            for id_, record in list(coll.items()):
                 # Apply filter criteria
                 if not self._filter_matches(record, filt):
                     continue
 
                 # Actually remove the record
-                coll.pop(_id)
+                coll.pop(id_)
                 removed_count += 1
 
         self._save(self._unindex(self._data))
@@ -198,7 +198,7 @@ class JSONDriver(BaseDriver):
 
     @staticmethod
     def _find_next_id(coll: Collection) -> Id:
-        int_ids = [int(_id) for _id in coll.keys() if _id]
+        int_ids = [int(id_) for id_ in coll.keys() if id_]
         int_ids.append(0)
 
         return str(max(int_ids) + 1)

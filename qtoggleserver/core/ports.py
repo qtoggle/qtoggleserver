@@ -669,11 +669,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return self.adapt_value_type_sync(await self.get_type(), await self.get_attr('integer'), value)
 
     @staticmethod
-    def adapt_value_type_sync(_type: str, integer: bool, value: NullablePortValue) -> NullablePortValue:
+    def adapt_value_type_sync(type_: str, integer: bool, value: NullablePortValue) -> NullablePortValue:
         if value is None:
             return None
 
-        if _type == TYPE_BOOLEAN:
+        if type_ == TYPE_BOOLEAN:
             return bool(value)
 
         else:

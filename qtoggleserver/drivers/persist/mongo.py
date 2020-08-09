@@ -68,10 +68,10 @@ class MongoDriver(BaseDriver):
 
         return self._db[collection].update_many(filt, {'$set': record_part}, upsert=False).modified_count
 
-    def replace(self, collection: str, _id: Id, record: Record, upsert: bool) -> bool:
+    def replace(self, collection: str, id_: Id, record: Record, upsert: bool) -> bool:
         record = dict(record)
         record.pop('id', None)
-        record['_id'] = self._id_to_db(_id)
+        record['_id'] = self._id_to_db(id_)
 
         return bool(self._db[collection].replace_one({'_id': record['_id']}, record, upsert=upsert).modified_count)
 
