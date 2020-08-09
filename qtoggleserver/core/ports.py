@@ -374,10 +374,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_display_name(self) -> str:
         return self.get_attr_sync('display_name') or self._id
 
-    def get_display_value(self) -> str:
+    def get_display_value(self, value: NullablePortValue = None) -> str:
         choices = self.get_attr_sync('choices')
         unit = self.get_attr_sync('unit')
-        value = self.get_value()
+        if value is None:
+            value = self.get_value()
 
         if value is None:
             return 'unknown'  # TODO: i18n

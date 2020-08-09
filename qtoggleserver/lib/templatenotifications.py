@@ -22,11 +22,13 @@ logger = logging.getLogger(__name__)
 
 
 class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
-    DEFAULT_TEMPLATES = {
+    DEFAULT_TEMPLATES = {  # TODO: i18n
         'value-change': {
-            'title': '{{port.get_display_name()}} is {{new_value}}{{attrs["unit"]}}',
-            'body': 'Port {{port.get_display_name()}} was {{old_value}}{{attrs["unit"]}} '
-                    'and is now {{new_value}}{{attrs["unit"]}}.'
+            'title': '{{port.get_display_name()}} is {{port.get_display_value()}}',
+            'body': (
+                'Port {{port.get_display_name()}} was {{port.get_display_value(old_value)}} '
+                'and is now {{port.get_display_value(new_value)}}.'
+            )
         },
         'port-update': {
             'title': '{{port.get_display_name()}} has been updated',
