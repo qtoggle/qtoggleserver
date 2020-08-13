@@ -288,9 +288,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def invalidate_attrs(self) -> None:
         self._attrs_cache = {}
 
-    def invalidate_attr(self, name: str) -> None:
-        self._attrs_cache.pop(name, None)
-
     async def get_attr(self, name: str) -> Optional[Attribute]:
         value = self._attrs_cache.get(name)
         if value is not None:
@@ -360,6 +357,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def get_attr_sync(self, name: str) -> Optional[Attribute]:
         return self._attrs_cache.get(name)
+
+    def invalidate_attr(self, name: str) -> None:
+        self._attrs_cache.pop(name, None)
+
+    async def ensure_attrs_sync(self) -> None:
+        for name in await self.get_attrdefs():
+            self._attrs_cache[name] = await self.get_attr(name)
 
     async def handle_attr_change(self, name: str, value: Attribute) -> None:
         method_name = f'handle_{name}'
@@ -883,15 +887,19 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         await self.trigger_remove()
 
     async def trigger_add(self) -> None:
+        await self.ensure_attrs_sync()
         await core_events.handle_event(core_events.PortAdd(self))
 
     async def trigger_remove(self) -> None:
+        await self.ensure_attrs_sync()
         await core_events.handle_event(core_events.PortRemove(self))
 
     async def trigger_update(self) -> None:
+        await self.ensure_attrs_sync()
         await core_events.handle_event(core_events.PortUpdate(self))
 
     async def trigger_value_change(self) -> None:
+        await self.ensure_attrs_sync()
         await core_events.handle_event(core_events.ValueChange(self))
 
     async def get_schema(self) -> GenericJSONDict:
