@@ -78,7 +78,7 @@ class ConfigForm extends WidgetConfigForm {
                     name: 'decimals',
                     label: gettext('Decimals'),
                     min: 0,
-                    max: 3
+                    max: 10
                 }),
                 new ColorComboField({
                     name: 'color',
