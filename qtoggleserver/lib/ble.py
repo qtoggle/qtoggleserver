@@ -167,11 +167,11 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
         return self._adapter.get_runner()
 
-    async def read(self, handle: int, retry_count: Optional[int] = None) -> Tuple[Optional[bytes], Optional[bytes]]:
+    async def read(self, handle: int, retry_count: Optional[int] = None) -> Optional[bytes]:
         if retry_count is None:
             retry_count = self.RETRY_COUNT
 
-        return await self._run_cmd_async(
+        return (await self._run_cmd_async(
             'read',
             self._address,
             handle,
@@ -179,19 +179,19 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
             data=None,
             timeout=self.CMD_TIMEOUT,
             retry_count=retry_count
-        )
+        ))[0]
 
     async def write(
         self,
         handle: int,
         data: bytes,
         retry_count: Optional[int] = None
-    ) -> Tuple[Optional[bytes], Optional[bytes]]:
+    ) -> Optional[bytes]:
 
         if retry_count is None:
             retry_count = self.RETRY_COUNT
 
-        return await self._run_cmd_async(
+        return (await self._run_cmd_async(
             'write',
             self._address,
             handle,
@@ -199,7 +199,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
             data=data,
             timeout=self.CMD_TIMEOUT,
             retry_count=retry_count
-        )
+        ))[0]
 
     async def write_notify(
         self,
