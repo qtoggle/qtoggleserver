@@ -12,6 +12,7 @@ import * as NotificationsAPI from './notifications.js'
 
 
 const PROVISIONING_CONFIG_URL = 'https://provisioning.qtoggle.io/config'
+const PROVISIONING_CONFIG_TIMEOUT = 5 /* Seconds */
 
 const logger = Logger.get('qtoggle.api.devices')
 
@@ -219,7 +220,8 @@ export function getProvisioningConfigs() {
             },
             /* failure = */ function (data, status, msg, headers) {
                 reject(BaseAPI.APIError.fromHTTPResponse(data, status, msg))
-            }
+            },
+            /* headers = */ null, /* timeout = */ PROVISIONING_CONFIG_TIMEOUT
         )
 
     })
@@ -241,7 +243,8 @@ export function getProvisioningConfig(configName) {
             },
             /* failure = */ function (data, status, msg, headers) {
                 reject(BaseAPI.APIError.fromHTTPResponse(data, status, msg))
-            }
+            },
+            /* headers = */ null, /* timeout = */ PROVISIONING_CONFIG_TIMEOUT
         )
 
     })
