@@ -58,30 +58,37 @@ class PortPickerField extends ComboField {
         ports = ports.filter(this.filter.bind(this))
 
         let choices = ports.map(function (port) {
-
             return {
                 label: this.makeLabel(port),
                 value: port.id,
                 port: port
             }
-
         }, this)
 
-        choices = ArrayUtils.sortKey(choices, choice => (choice.port.display_name || choice.port.id))
+        /* Only use port id to sort entries, since it already contains device name and other grouping prefixes */
+        choices = ArrayUtils.sortKey(choices, c => c.port.id)
 
         return choices
     }
 
     filterFunc(choice, searchText) {
         let port = choice.port
+        let device = Cache.findPortSlaveDevice(port.id)
+        let phrase = port.id.split('.')
 
-        return (
-            (StringUtils.intelliSearch(port.id, searchText) != null) ||
-            (StringUtils.intelliSearch(port.display_name, searchText) != null)
-        )
+        if (port.display_name) {
+            phrase.push(port.display_name)
+        }
+        if (device && device.attrs['display_name']) {
+            phrase.push(device.attrs['display_name'])
+        }
+
+        return phrase.some(p => StringUtils.intelliSearch(p, searchText) != null)
     }
 
     makeLabelHTML() {
+        /* Override label HTML method to add currently selected port anchor */
+
         let html = super.makeLabelHTML()
 
         html.css('grid-template-columns', '1fr fit-content(75%)')
@@ -176,6 +183,7 @@ class PortPickerField extends ComboField {
             line.css('padding-left', `${(i * 0.9)}em`)
 
             labelDiv.append(line)
+
         })
 
         if (labelDiv.children('div').length === 1) {
