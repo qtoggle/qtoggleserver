@@ -37,4 +37,4 @@ class RoundFunction(Function):
         if len(eval_args) == 2:
             d = eval_args[1]
 
-        return round(v, d)
+        return round(v, int(d))
