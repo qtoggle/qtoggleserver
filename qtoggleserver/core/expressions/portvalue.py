@@ -49,7 +49,7 @@ class PortValue(Expression):
         port_id = sexpression[1:]
 
         if port_id:
-            m = re.search(r'[^a-zA-Z0-9_.]', port_id)
+            m = re.search(r'[^a-zA-Z0-9_.-]', port_id)
             if m:
                 p = m.start()
                 raise UnexpectedCharacter(port_id[p], p + pos + 2)
