@@ -283,7 +283,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return d
 
     def get_attrs_sync(self) -> Attributes:
-        return self._attrs_cache
+        return dict(self._attrs_cache)
 
     def invalidate_attrs(self) -> None:
         self._attrs_cache = {}

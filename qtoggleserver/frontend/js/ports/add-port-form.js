@@ -18,7 +18,7 @@ import * as Cache            from '$app/cache.js'
 import * as Ports from './ports.js'
 
 
-const VALID_ID_REGEX = new RegExp('^[_a-zA-Z.][_a-zA-Z0-9.]*$')
+const VALID_ID_REGEX = new RegExp('^[_a-zA-Z.][_a-zA-Z0-9.-]*$')
 
 const logger = Ports.logger
 
