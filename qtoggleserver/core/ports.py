@@ -282,9 +282,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return d
 
-    def get_attrs_sync(self) -> Attributes:
-        return dict(self._attrs_cache)
-
     def invalidate_attrs(self) -> None:
         self._attrs_cache = {}
 
@@ -355,15 +352,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         await asyncio.sleep(0)
         await self.trigger_update()
 
-    def get_attr_sync(self, name: str) -> Optional[Attribute]:
-        return self._attrs_cache.get(name)
-
     def invalidate_attr(self, name: str) -> None:
         self._attrs_cache.pop(name, None)
-
-    async def ensure_attrs_sync(self) -> None:
-        for name in await self.get_attrdefs():
-            self._attrs_cache[name] = await self.get_attr(name)
 
     async def handle_attr_change(self, name: str, value: Attribute) -> None:
         method_name = f'handle_{name}'
@@ -375,12 +365,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             except Exception as e:
                 self.error('%s failed: %s', method_name, e, exc_info=True)
 
-    def get_display_name(self) -> str:
-        return self.get_attr_sync('display_name') or self._id
+    async def get_display_name(self) -> str:
+        return await self.get_attr('display_name') or self._id
 
-    def get_display_value(self, value: NullablePortValue = None) -> str:
-        choices = self.get_attr_sync('choices')
-        unit = self.get_attr_sync('unit')
+    async def get_display_value(self, value: NullablePortValue = None) -> str:
+        choices = await self.get_attr('choices')
+        unit = await self.get_attr('unit')
         if value is None:
             value = self.get_value()
 
@@ -392,7 +382,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if choice['value'] == value:
                     return choice['display_name']
 
-        if self.get_attr_sync('type') == TYPE_BOOLEAN:
+        if await self.get_type() == TYPE_BOOLEAN:
             value_str = 'on' if value else 'off'  # TODO: i18n
 
         else:
@@ -887,19 +877,15 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         await self.trigger_remove()
 
     async def trigger_add(self) -> None:
-        await self.ensure_attrs_sync()
         await core_events.handle_event(core_events.PortAdd(self))
 
     async def trigger_remove(self) -> None:
-        await self.ensure_attrs_sync()
         await core_events.handle_event(core_events.PortRemove(self))
 
     async def trigger_update(self) -> None:
-        await self.ensure_attrs_sync()
         await core_events.handle_event(core_events.PortUpdate(self))
 
     async def trigger_value_change(self) -> None:
-        await self.ensure_attrs_sync()
         await core_events.handle_event(core_events.ValueChange(self))
 
     async def get_schema(self) -> GenericJSONDict:

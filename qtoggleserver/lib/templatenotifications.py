@@ -85,7 +85,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
             templates = self.DEFAULT_TEMPLATES
 
         # Convert template strings to jinja2 templates
-        self._j2env: Environment = Environment()
+        self._j2env: Environment = Environment(enable_async=True)
         self._templates: Dict[str, Dict[str, Template]] = {}
         for type_, ts in templates.items():
             # Ensure values in templates are dicts themselves
@@ -98,10 +98,10 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
 
         super().__init__(name=name, filter=filter)
 
-    def render(self, event_type: str, context: dict) -> Dict[str, str]:
+    async def render(self, event_type: str, context: dict) -> Dict[str, str]:
         template = self._templates[event_type]
 
-        return {k: t.render(context) if t is not None else None for k, t in template.items()}
+        return {k: await t.render_async(context) if t is not None else None for k, t in template.items()}
 
     @staticmethod
     def get_common_context(event: core_events.Event) -> dict:
@@ -122,7 +122,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     async def push_template_message(self, event: core_events.Event, context: dict) -> None:
-        template = self.render(event.get_type(), context)
+        template = await self.render(event.get_type(), context)
 
         await self.push_message(event, **template)
 
