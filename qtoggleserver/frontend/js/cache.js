@@ -770,7 +770,7 @@ export function setPrefs(path, value) {
 
 /**
  * Return the cached main device attributes.
- * @alias qtoggle.cache.getMainDevice
+ * @alias qtoggle.cache.getProvisioningConfigs
  * @returns {Object}
  */
 export function getProvisioningConfigs() {

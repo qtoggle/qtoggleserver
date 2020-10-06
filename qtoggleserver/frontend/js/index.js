@@ -188,7 +188,9 @@ function main() {
         /* Warn for unset passwords */
         Cache.whenCacheReady.then(function () {
 
-            if (!initialToastShown) { /* Don't spam the user with toasts */
+            if (!initialToastShown && /* Don't spam the user with toasts */
+                AuthAPI.getCurrentAccessLevel() >= AuthAPI.ACCESS_LEVEL_ADMIN) {
+
                 let mainDevice = Cache.getMainDevice()
                 if (!mainDevice['admin_password']) {
                     let messageSpan = HTMLUtils.formatPercent(
