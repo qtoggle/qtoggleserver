@@ -49,6 +49,7 @@ class core:
     tick_interval: int = 50
     event_queue_size: int = 256
     max_client_time_skew: int = 300
+    backup_support: bool = True
     listen_support: bool = True
     sequences_support: bool = True
     ssl_support: bool = True

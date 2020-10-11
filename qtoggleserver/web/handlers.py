@@ -217,6 +217,11 @@ class FirmwareHandler(APIHandler):
         await self.call_api_func(core_api_funcs.patch_firmware, default_status=204)
 
 
+class BackupEndpointsHandler(APIHandler):
+    async def get(self) -> None:
+        await self.call_api_func(core_api_funcs.get_backup_endpoints)
+
+
 class AccessHandler(APIHandler):
     async def get(self) -> None:
         await self.call_api_func(core_api_funcs.get_access, access_level=self.access_level)
@@ -306,9 +311,6 @@ class PortValueHandler(APIHandler):
 
 class PortSequenceHandler(APIHandler):
     async def patch(self, port_id: str) -> None:
-        if not settings.core.sequences_support:
-            raise NoSuchFunction()
-
         await self.call_api_func(core_api_funcs.patch_port_sequence, port_id=port_id, default_status=204)
 
 
@@ -357,6 +359,14 @@ class PrefsHandler(APIHandler):
 
     async def put(self) -> None:
         await self.call_api_func(ui_api_funcs.put_prefs, default_status=204)
+
+
+class FrontendHandler(APIHandler):
+    async def get(self) -> None:
+        await self.call_api_func(ui_api_funcs.get_frontend)
+
+    async def put(self) -> None:
+        await self.call_api_func(ui_api_funcs.put_frontend, default_status=204)
 
 
 class SystemHandler(APIHandler):

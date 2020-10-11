@@ -15,6 +15,7 @@ core = {
     event_queue_size = 256      # maximum number of queued events in a session
     max_client_time_skew = 300  # maximum accepted time skew when authenticating clients, in seconds
 
+    backup_support = true
     listen_support = true
     sequences_support = true
     ssl_support = true
