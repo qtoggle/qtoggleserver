@@ -42,6 +42,7 @@ def _make_routing_table() -> List[URLSpec]:
         handlers_list += [
             URLSpec(r'^/api/frontend/dashboard/panels/?$', handlers.DashboardPanelsHandler),
             URLSpec(r'^/api/frontend/prefs/?$', handlers.PrefsHandler),
+            URLSpec(r'^/api/frontend/?$', handlers.FrontendHandler),
         ]
 
     handlers_list += [

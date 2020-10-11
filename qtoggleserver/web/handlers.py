@@ -361,6 +361,14 @@ class PrefsHandler(APIHandler):
         await self.call_api_func(ui_api_funcs.put_prefs, default_status=204)
 
 
+class FrontendHandler(APIHandler):
+    async def get(self) -> None:
+        await self.call_api_func(ui_api_funcs.get_frontend)
+
+    async def put(self) -> None:
+        await self.call_api_func(ui_api_funcs.put_frontend, default_status=204)
+
+
 class SystemHandler(APIHandler):
     async def get(self) -> None:
         await self.call_api_func(system_api_funcs.get_system)
