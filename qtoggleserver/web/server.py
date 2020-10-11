@@ -6,6 +6,7 @@ from typing import List, Optional
 from tornado.web import Application, RequestHandler, URLSpec
 from qui.web import tornado as qui_tornado
 
+from qtoggleserver import system
 from qtoggleserver.conf import settings
 from qtoggleserver.slaves.discover import is_enabled as is_discover_enabled
 from qtoggleserver.web import handlers
@@ -103,6 +104,15 @@ def _make_routing_table() -> List[URLSpec]:
         handlers_list += [
             URLSpec(r'^/api/reverse/?$', handlers.ReverseHandler)
         ]
+
+    # System API calls
+
+    if system.conf.can_write_conf_file():
+        handlers_list += [
+            URLSpec(r'^/api/system/?$', handlers.SystemHandler)
+        ]
+
+    # Default 404 API handler
 
     handlers_list += [
         URLSpec(r'^/api/.*$', handlers.NoSuchFunctionHandler)

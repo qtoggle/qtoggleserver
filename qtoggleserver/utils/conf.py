@@ -45,6 +45,10 @@ def config_from_dict(d: Dict[str, Any]) -> pyhocon.ConfigTree:
     return _config_factory.from_dict(d)
 
 
+def config_to_str(config: pyhocon.ConfigTree) -> str:
+    return pyhocon.HOCONConverter.to_hocon(config, indent=4, compact=False)
+
+
 def config_to_dict(config: pyhocon.ConfigTree) -> OrderedDict:
     return config.as_plain_ordered_dict()
 
