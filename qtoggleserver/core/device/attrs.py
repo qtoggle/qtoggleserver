@@ -356,6 +356,9 @@ def get_attrs() -> Attributes:
     if settings.system.fwupdate.driver:
         flags.append('firmware')
 
+    if settings.core.backup_support:
+        flags.append('backup')
+
     if settings.core.listen_support:
         flags.append('listen')
 
