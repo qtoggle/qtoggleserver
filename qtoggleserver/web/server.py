@@ -63,6 +63,11 @@ def _make_routing_table() -> List[URLSpec]:
             URLSpec(r'^/api/ports/(?P<port_id>[A-Za-z0-9_.-]+)/sequence/?$', handlers.PortSequenceHandler)
         ]
 
+    if settings.core.backup_support:
+        handlers_list += [
+            URLSpec(r'^/api/backup/endpoints/?$', handlers.BackupEndpointsHandler)
+        ]
+
     # Firmware
 
     if settings.system.fwupdate.driver:
