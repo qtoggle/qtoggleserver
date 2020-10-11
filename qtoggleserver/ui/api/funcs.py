@@ -25,7 +25,10 @@ def put_panels(request: core_api.APIRequest, params: GenericJSONDict) -> None:
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
 def get_prefs(request: core_api.APIRequest) -> GenericJSONDict:
-    return persist.get('ui_prefs', id_=request.username) or {}
+    prefs = persist.get('ui_prefs', id_=request.username) or {}
+    prefs.pop('id', None)
+
+    return prefs
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
