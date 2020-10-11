@@ -15,6 +15,7 @@ from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.api import funcs as core_api_funcs
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.slaves.api import funcs as slaves_api_funcs
+from qtoggleserver.system.api import funcs as system_api_funcs
 from qtoggleserver.ui.api import funcs as ui_api_funcs
 from qtoggleserver.utils import json as json_utils
 
@@ -356,3 +357,11 @@ class PrefsHandler(APIHandler):
 
     async def put(self) -> None:
         await self.call_api_func(ui_api_funcs.put_prefs, default_status=204)
+
+
+class SystemHandler(APIHandler):
+    async def get(self) -> None:
+        await self.call_api_func(system_api_funcs.get_system)
+
+    async def put(self) -> None:
+        await self.call_api_func(system_api_funcs.put_system, default_status=204)

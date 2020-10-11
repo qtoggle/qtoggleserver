@@ -7,6 +7,7 @@ import psutil
 from qtoggleserver.conf import settings
 
 from . import battery
+from . import conf
 from . import date
 from . import dns
 from . import fwupdate

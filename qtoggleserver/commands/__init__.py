@@ -2,6 +2,7 @@
 import argparse
 import asyncio
 import logging.config
+import os
 import signal
 import sys
 import types
@@ -92,6 +93,8 @@ def init_settings() -> None:
         except Exception as e:
             sys.stderr.write(f'failed to load config file "{options.config_file}": {e}\n')
             sys.exit(-1)
+
+        settings.source = os.path.abspath(options.config_file)
 
     else:
         parsed_config = {}
