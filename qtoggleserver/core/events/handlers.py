@@ -14,6 +14,21 @@ logger = logging.getLogger(__name__)
 
 _registered_handlers: List[Handler] = []
 _active_handle_tasks: Set[asyncio.Task] = set()
+_enabled: bool = True
+
+
+def enable() -> bool:
+    global _enabled
+
+    logger.debug('enabling event handling')
+    _enabled = True
+
+
+def disable() -> bool:
+    global _enabled
+
+    logger.debug('disabling event handling')
+    _enabled = False
 
 
 def register_handler(handler: Handler) -> None:
@@ -21,6 +36,9 @@ def register_handler(handler: Handler) -> None:
 
 
 async def handle_event(event: Event) -> None:
+    if not _enabled:
+        return
+
     logger.debug('%s triggered', event)
 
     for handler in _registered_handlers:

@@ -75,6 +75,7 @@ async def post_reset(request: core_api.APIRequest, params: GenericJSONDict) -> N
         if settings.reverse.enabled:
             core_reverse.reset()
         if settings.slaves.enabled:
-            slaves.reset()
+            slaves.reset_ports()
+            slaves.reset_slaves()
 
     main.loop.call_later(2, system.reboot)

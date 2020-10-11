@@ -4,16 +4,21 @@ import logging
 from qtoggleserver import persist
 
 from . import devices as slaves_devices
+from . import ports as slaves_ports
 from . import discover
 
 
 logger = logging.getLogger(__name__)
 
 
-def reset() -> None:
+def reset_ports() -> None:
+    logger.debug('clearing slave ports persisted data')
+    persist.remove(slaves_ports.SlavePort.PERSIST_COLLECTION)
+
+
+def reset_slaves() -> None:
     logger.debug('clearing slaves persisted data')
     persist.remove('slaves')
-    persist.remove('slave_ports')
 
 
 async def init() -> None:

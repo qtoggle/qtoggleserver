@@ -765,6 +765,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.set_loaded()
         self.initialize()
 
+    async def reset(self) -> None:
+        self.debug('resetting persisted data')
+        await self.load_from_data(data={})
+        self.invalidate_attrdefs()
+
     async def load_from_data(self, data: GenericJSONDict) -> None:
         attrs_start = ['enabled']  # These will be loaded first, in this order
         attrs_end = ['expression']  # These will be loaded last, in this order

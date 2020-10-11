@@ -43,6 +43,13 @@ PATCH_FIRMWARE = {
     ]
 }
 
+PUT_PORTS = {
+    "type": "array",
+    "items": {
+        "type": "object"
+    }
+}
+
 POST_PORTS = {
     "type": "object",
     "properties": {
