@@ -231,6 +231,9 @@ class SlaveDevicesHandler(APIHandler):
     async def get(self) -> None:
         await self.call_api_func(slaves_api_funcs.get_slave_devices)
 
+    async def put(self) -> None:
+        await self.call_api_func(slaves_api_funcs.put_slave_devices, default_status=204)
+
     async def post(self) -> None:
         await self.call_api_func(slaves_api_funcs.post_slave_devices, default_status=201)
 

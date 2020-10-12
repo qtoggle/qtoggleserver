@@ -120,7 +120,7 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
 async def get_ports(request: core_api.APIRequest) -> List[Attributes]:
-    return [await port.to_json() for port in sorted(core_ports.all_ports(), key=lambda p: p.get_id())]
+    return [await port.to_json() for port in sorted(core_ports.get_all(), key=lambda p: p.get_id())]
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
@@ -140,7 +140,7 @@ async def put_ports(request: core_api.APIRequest, params: List[GenericJSONDict])
 
     try:
         # Remove all (local) virtual ports
-        for port in list(core_ports.all_ports()):
+        for port in list(core_ports.get_all()):
             if not isinstance(port, core_vports.VirtualPort):
                 continue
 
@@ -151,7 +151,7 @@ async def put_ports(request: core_api.APIRequest, params: List[GenericJSONDict])
         core_ports.reset()
         if settings.slaves.enabled:
             slaves.reset_ports()
-        for port in core_ports.all_ports():
+        for port in core_ports.get_all():
             await port.reset()
 
         add_port_schema = dict(core_api_schema.POST_PORTS)

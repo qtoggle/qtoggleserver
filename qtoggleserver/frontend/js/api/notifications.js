@@ -202,7 +202,7 @@ function cleanupExpectedEvents() {
 }
 
 function handleServerEvent(eventData) {
-    let event = new Event(eventData.type, eventData.params)
+    let event = new Event(eventData.type, eventData.params || {})
 
     let handle = tryMatchExpectedEvent(event)
     if (handle != null) {
@@ -282,13 +282,20 @@ function wait(firstQuick = false) {
         syncListenError = null
         listenErrorCount = 0
 
-        syncListenCallbacks.forEach(c => PromiseUtils.asap().then(c))
+        /* This code is enclosed in a dedicated try...catch block so that possible errors do not slip into the
+         * following .catch(), thus resulting in a second, parallel wait() chain */
+        try {
+            syncListenCallbacks.forEach(c => PromiseUtils.asap().then(c))
 
-        if (result && result.length) {
-            result.forEach(handleServerEvent)
+            if (result && result.length) {
+                result.forEach(handleServerEvent)
+            }
+            else {
+                logger.debug('received server keep-alive')
+            }
         }
-        else {
-            logger.debug('received server keep-alive')
+        catch (error) {
+            logger.errorStack('handling server event failed', error)
         }
 
     }).catch(function (error) {

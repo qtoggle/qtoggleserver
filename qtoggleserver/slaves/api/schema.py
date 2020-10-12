@@ -1,4 +1,11 @@
 
+PUT_SLAVE_DEVICES = {
+    "type": "array",
+    "items": {
+        "type": "object"
+    }
+}
+
 POST_SLAVE_DEVICES = {
     "type": "object",
     "properties": {
@@ -22,6 +29,11 @@ POST_SLAVE_DEVICES = {
             "type": "string",
             "maxLength": 32
         },
+        "admin_password_hash": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+        },
         "poll_interval": {
             "type": "number",
             "min": 0,
@@ -36,8 +48,7 @@ POST_SLAVE_DEVICES = {
         "scheme",
         "host",
         "port",
-        "path",
-        "admin_password"
+        "path"
     ]
 }
 
