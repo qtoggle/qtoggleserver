@@ -534,7 +534,7 @@ export function updateFromEvent(event) {
         }
 
         case 'full-update': {
-            setReloadNeeded()
+            setReloadNeeded(/* reloadNow = */ true)
 
             break
         }
@@ -784,10 +784,18 @@ export function getProvisioningConfigs() {
 /**
  * Set the *reload needed* flag, determining a {@link qtoggle.cache.load} upon next listen response.
  * @alias qtoggle.cache.setReloadNeeded
+ * @param {Boolean} [reloadNow] set to `true` to reload asap instead of waiting till the next listen request
  */
-export function setReloadNeeded() {
+export function setReloadNeeded(reloadNow = false) {
     logger.debug('cache will be reloaded asap')
     reloadNeeded = true
+
+    if (reloadNow) {
+        if (NotificationsAPI.isListening()) {
+            NotificationsAPI.stopListening()
+        }
+        NotificationsAPI.startListening()
+    }
 }
 
 /**

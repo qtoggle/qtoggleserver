@@ -746,7 +746,7 @@ class Slave(logging_utils.LoggableMixin):
 
     def _get_local_ports(self) -> List[SlavePort]:
         return [
-            port for port in core_ports.all_ports()
+            port for port in core_ports.get_all()
             if port.get_id().startswith(f'{self._name}.') and isinstance(port, SlavePort)
         ]
 

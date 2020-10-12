@@ -1,10 +1,14 @@
 
+from __future__ import annotations
+
+import asyncio
 import re
 
 from typing import Any, List, Optional
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
+from qtoggleserver.core import events as core_events
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.api import schema as core_api_schema
@@ -26,22 +30,15 @@ _LONG_TIMEOUT_API_CALLS = [
 ]
 
 
-@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def get_slave_devices(request: core_api.APIRequest) -> List[GenericJSONDict]:
-    return [slave.to_json() for slave in slaves_devices.get_all()]
-
-
-@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def post_slave_devices(request: core_api.APIRequest, params: GenericJSONDict) -> GenericJSONDict:
-    core_api_schema.validate(params, api_schema.POST_SLAVE_DEVICES)
-
-    scheme = params['scheme']
-    host = params['host']
-    port = params['port']
-    path = params['path']
-    admin_password = params['admin_password']
-    poll_interval = params.get('poll_interval', 0)
-    listen_enabled = params.get('listen_enabled')
+async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
+    scheme = properties['scheme']
+    host = properties['host']
+    port = properties['port']
+    path = properties['path']
+    admin_password = properties.get('admin_password')
+    admin_password_hash = properties.get('admin_password_hash')
+    poll_interval = properties.get('poll_interval', 0)
+    listen_enabled = properties.get('listen_enabled')
 
     # Look for slave duplicate
     for slave in slaves_devices.get_all():
@@ -55,6 +52,10 @@ async def post_slave_devices(request: core_api.APIRequest, params: GenericJSONDi
     if poll_interval and listen_enabled:
         raise core_api.APIError(400, 'listening-and-polling')
 
+    # Ensure admin password is supplied, in a way or another
+    if admin_password is None and admin_password_hash is None:
+        raise core_api.APIError(400, 'missing-field', field='admin_password')
+
     try:
         slave = await slaves_devices.add(
             scheme,
@@ -63,7 +64,8 @@ async def post_slave_devices(request: core_api.APIRequest, params: GenericJSONDi
             path,
             poll_interval,
             listen_enabled,
-            admin_password=admin_password
+            admin_password=admin_password,
+            admin_password_hash=admin_password_hash
         )
 
     except (core_responses.HostUnreachable,
@@ -102,6 +104,57 @@ async def post_slave_devices(request: core_api.APIRequest, params: GenericJSONDi
 
     except Exception as e:
         raise slaves_exceptions.adapt_api_error(e) from e
+
+    return slave
+
+
+@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
+async def get_slave_devices(request: core_api.APIRequest) -> List[GenericJSONDict]:
+    return [slave.to_json() for slave in slaves_devices.get_all()]
+
+
+@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
+async def put_slave_devices(request: core_api.APIRequest, params: List[GenericJSONDict]) -> None:
+    if not settings.core.backup_support:
+        raise core_api.APIError(404, 'no-such-function')
+
+    core_api_schema.validate(
+        params,
+        api_schema.PUT_SLAVE_DEVICES
+    )
+
+    core_api.logger.debug('restoring slave devices')
+
+    # Disable event handling during the processing of this request, as we're going to trigger a full-update at the end
+    core_events.disable()
+
+    try:
+        # Remove all slave devices
+        for slave in list(slaves_devices.get_all()):
+            await slaves_devices.remove(slave)
+
+        add_device_schema = dict(api_schema.POST_SLAVE_DEVICES)
+        add_device_schema['additionalProperties'] = True
+
+        # Validate supplied slave properties
+        for properties in params:
+            core_api_schema.validate(properties, add_device_schema)
+
+        # Create slave devices
+        await asyncio.gather(*(add_slave_device(properties) for properties in params))
+
+    finally:
+        core_events.enable()
+
+    await core_events.trigger_full_update()
+
+    core_api.logger.debug('slave devices restore done')
+
+
+@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
+async def post_slave_devices(request: core_api.APIRequest, params: GenericJSONDict) -> GenericJSONDict:
+    core_api_schema.validate(params, api_schema.POST_SLAVE_DEVICES)
+    slave = await add_slave_device(params)
 
     return slave.to_json()
 
