@@ -3,97 +3,28 @@ import asyncio
 
 from typing import List
 
+from qtoggleserver import slaves
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
+from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import vports as core_vports
 from qtoggleserver.core.api import schema as core_api_schema
 from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, NullablePortValue, PortValue
+from qtoggleserver.slaves import ports as slaves_ports
 from qtoggleserver.utils import json as json_utils
 
 
-@core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
-async def get_ports(request: core_api.APIRequest) -> List[Attributes]:
-    return [await port.to_json() for port in sorted(core_ports.all_ports(), key=lambda p: p.get_id())]
+async def add_virtual_port(attrs: GenericJSONDict) -> core_ports.BasePort:
+    id_ = attrs['id']
+    type_ = attrs['type']
+    min_ = attrs.get('min')
+    max_ = attrs.get('max')
+    integer = attrs.get('integer')
+    step = attrs.get('step')
+    choices = attrs.get('choices')
 
-
-@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def patch_port(request: core_api.APIRequest, port_id: str, params: Attributes) -> None:
-    port = core_ports.get(port_id)
-    if port is None:
-        raise core_api.APIError(404, 'no-such-port')
-
-    non_modifiable_attrs = await port.get_non_modifiable_attrs()
-
-    def unexpected_field_code(field: str) -> str:
-        if field in non_modifiable_attrs:
-            return 'attribute-not-modifiable'
-
-        else:
-            return 'no-such-attribute'
-
-    core_api_schema.validate(
-        params,
-        await port.get_schema(),
-        unexpected_field_code=unexpected_field_code
-    )
-
-    # Step validation
-    attrdefs = await port.get_attrdefs()
-    for name, value in params.items():
-        attrdef = attrdefs[name]
-        step = attrdef.get('step')
-        min_ = attrdef.get('min')
-        if None not in (step, min_) and step != 0 and (value - min_) % step:
-            raise core_api.APIError(400, 'invalid-field', field=name)
-
-    errors_by_name = {}
-
-    async def set_attr(attr_name: str, attr_value: Attribute) -> None:
-        core_api.logger.debug('setting attribute %s = %s on %s', attr_name, json_utils.dumps(attr_value), port)
-
-        try:
-            await port.set_attr(attr_name, attr_value)
-
-        except Exception as e:
-            errors_by_name[attr_name] = e
-
-    if params:
-        await asyncio.wait([set_attr(name, value) for name, value in params.items()])
-
-    if errors_by_name:
-        name, error = next(iter(errors_by_name.items()))
-
-        if isinstance(error, core_api.APIError):
-            raise error
-
-        elif isinstance(error, core_ports.InvalidAttributeValue):
-            raise core_api.APIError(400, 'invalid-field', field=name, details=error.details)
-
-        elif isinstance(error, core_ports.PortTimeout):
-            raise core_api.APIError(504, 'port-timeout')
-
-        elif isinstance(error, core_ports.PortError):
-            raise core_api.APIError(502, 'port-error', code=str(error))
-
-        else:
-            # Transform any unhandled exception into APIError(500)
-            raise core_api.APIError(500, 'unexpected-error', message=str(error)) from error
-
-    await port.save()
-
-
-@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def post_ports(request: core_api.APIRequest, params: GenericJSONDict) -> Attributes:
-    core_api_schema.validate(params, core_api_schema.POST_PORTS)
-
-    id_ = params['id']
-    type_ = params['type']
-    min_ = params.get('min')
-    max_ = params.get('max')
-    integer = params.get('integer')
-    step = params.get('step')
-    choices = params.get('choices')
+    core_api.logger.debug('adding port "%s"', id_)
 
     if core_ports.get(id_):
         raise core_api.APIError(400, 'duplicate-port')
@@ -118,6 +49,165 @@ async def post_ports(request: core_api.APIRequest, params: GenericJSONDict) -> A
     # A virtual port is enabled by default
     await port.enable()
     await port.save()
+
+    return port
+
+
+async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, ignore_extra_attrs: bool) -> None:
+    non_modifiable_attrs = await port.get_non_modifiable_attrs()
+
+    def unexpected_field_code(field: str) -> str:
+        if field in non_modifiable_attrs:
+            return 'attribute-not-modifiable'
+
+        else:
+            return 'no-such-attribute'
+
+    schema = await port.get_schema()
+    if ignore_extra_attrs:
+        schema = dict(schema)
+        schema['additionalProperties'] = True  # Ignore non-existent and non-modifiable attributes
+
+    core_api_schema.validate(attrs, schema, unexpected_field_code=unexpected_field_code)
+
+    # Step validation
+    attrdefs = await port.get_attrdefs()
+    for name, value in attrs.items():
+        attrdef = attrdefs.get(name)
+        if attrdef is None:
+            continue
+
+        step = attrdef.get('step')
+        min_ = attrdef.get('min')
+        if None not in (step, min_) and step != 0 and (value - min_) % step:
+            raise core_api.APIError(400, 'invalid-field', field=name)
+
+    errors_by_name = {}
+
+    async def set_attr(attr_name: str, attr_value: Attribute) -> None:
+        core_api.logger.debug('setting attribute %s = %s on %s', attr_name, json_utils.dumps(attr_value), port)
+
+        try:
+            await port.set_attr(attr_name, attr_value)
+
+        except Exception as e:
+            errors_by_name[attr_name] = e
+
+    if attrs:
+        await asyncio.wait([set_attr(name, value) for name, value in attrs.items()])
+
+    if errors_by_name:
+        name, error = next(iter(errors_by_name.items()))
+
+        if isinstance(error, core_api.APIError):
+            raise error
+
+        elif isinstance(error, core_ports.InvalidAttributeValue):
+            raise core_api.APIError(400, 'invalid-field', field=name, details=error.details)
+
+        elif isinstance(error, core_ports.PortTimeout):
+            raise core_api.APIError(504, 'port-timeout')
+
+        elif isinstance(error, core_ports.PortError):
+            raise core_api.APIError(502, 'port-error', code=str(error))
+
+        else:
+            # Transform any unhandled exception into APIError(500)
+            raise core_api.APIError(500, 'unexpected-error', message=str(error)) from error
+
+    await port.save()
+
+
+@core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
+async def get_ports(request: core_api.APIRequest) -> List[Attributes]:
+    return [await port.to_json() for port in sorted(core_ports.all_ports(), key=lambda p: p.get_id())]
+
+
+@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
+async def put_ports(request: core_api.APIRequest, params: List[GenericJSONDict]) -> None:
+    if not settings.core.backup_support:
+        raise core_api.APIError(404, 'no-such-function')
+
+    core_api_schema.validate(
+        params,
+        core_api_schema.PUT_PORTS
+    )
+
+    core_api.logger.debug('restoring ports')
+
+    # Disable event handling during the processing of this request, as we're going to trigger a full-update at the end
+    core_events.disable()
+
+    try:
+        # Remove all (local) virtual ports
+        for port in list(core_ports.all_ports()):
+            if not isinstance(port, core_vports.VirtualPort):
+                continue
+
+            await port.remove()
+            core_vports.remove(port.get_id())
+
+        # Reset ports
+        core_ports.reset()
+        if settings.slaves.enabled:
+            slaves.reset_ports()
+        for port in core_ports.all_ports():
+            await port.reset()
+
+        add_port_schema = dict(core_api_schema.POST_PORTS)
+        add_port_schema['additionalProperties'] = True
+
+        # Restore supplied attributes
+        for attrs in params:
+            id_ = attrs.get('id')
+            if id_ is None:
+                core_api.logger.warning('ignoring entry without id')
+                continue
+
+            port = core_ports.get(id_)
+
+            # Virtual ports must be added first (unless they belong to a slave)
+            virtual = attrs.get('virtual')
+            if virtual and port is None:
+                core_api_schema.validate(attrs, add_port_schema)
+                port = await add_virtual_port(attrs)
+
+            if port is None:
+                core_api.logger.warning('ignoring unknown port id "%s"', id_)
+                continue
+
+            if isinstance(port, slaves_ports.SlavePort):
+                core_api.logger.debug('restoring slave port "%s"', id_)
+
+                # For slave ports, ignore any attributes that are not kept on master
+                attrs = {n: v for n, v in attrs.items() if n in ('tag', 'expression', 'expires')}
+
+            else:
+                core_api.logger.debug('restoring local port "%s"', id_)
+
+            await set_port_attrs(port, attrs, ignore_extra_attrs=True)
+
+    finally:
+        core_events.enable()
+
+    await core_events.trigger_full_update()
+
+    core_api.logger.debug('ports restore done')
+
+
+@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
+async def patch_port(request: core_api.APIRequest, port_id: str, params: Attributes) -> None:
+    port = core_ports.get(port_id)
+    if port is None:
+        raise core_api.APIError(404, 'no-such-port')
+
+    await set_port_attrs(port, params, ignore_extra_attrs=False)
+
+
+@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
+async def post_ports(request: core_api.APIRequest, params: GenericJSONDict) -> Attributes:
+    core_api_schema.validate(params, core_api_schema.POST_PORTS)
+    port = await add_virtual_port(params)
 
     return await port.to_json()
 

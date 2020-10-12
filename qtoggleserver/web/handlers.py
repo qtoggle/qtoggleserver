@@ -283,6 +283,9 @@ class PortsHandler(APIHandler):
     async def get(self) -> None:
         await self.call_api_func(core_api_funcs.get_ports)
 
+    async def put(self) -> None:
+        await self.call_api_func(core_api_funcs.put_ports, default_status=204)
+
     async def post(self) -> None:
         if not settings.core.virtual_ports:
             raise NoSuchFunction()

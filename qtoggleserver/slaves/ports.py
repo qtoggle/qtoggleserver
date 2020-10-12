@@ -189,7 +189,6 @@ class SlavePort(core_ports.BasePort):
         if 'value' in attrs:
             self._cached_value = self._cached_attrs.pop('value')
 
-        self.invalidate_attrs()
         self.invalidate_attrdefs()
 
     async def update_enabled(self) -> None:
