@@ -21,6 +21,10 @@ async def put_device(request: core_api.APIRequest, params: Attributes) -> None:
         core_device_attrs.get_schema(loose=True)
     )
 
+    # Password fields must explicitly be ignored, so we pop them from supplied data
+    for f in ('admin', 'normal', 'viewonly'):
+        params.pop(f'{f}_password', None)
+
     # Reset device attributes
     core_device.reset()
     core_device.load()

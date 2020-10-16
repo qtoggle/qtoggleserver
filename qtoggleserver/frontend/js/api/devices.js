@@ -4,15 +4,10 @@
 
 import Logger from '$qui/lib/logger.module.js'
 
-import * as AJAX from '$qui/utils/ajax.js'
-
 import * as BaseAPI          from './base.js'
 import * as APIConstants     from './constants.js'
 import * as NotificationsAPI from './notifications.js'
 
-
-const PROVISIONING_CONFIG_URL = 'https://provisioning.qtoggle.io/config'
-const PROVISIONING_CONFIG_TIMEOUT = 5 /* Seconds */
 
 const logger = Logger.get('qtoggle.api.devices')
 
@@ -194,58 +189,6 @@ export function patchFirmware(version, url, override = false) {
         }
 
         return data
-
-    })
-}
-
-/**
- * GET https://provisioning.qtoggle.io/config/available.json file.
- * @alias qtoggle.api.devices.getProvisioningConfig
- * @returns {Promise}
- */
-export function getProvisioningConfigs() {
-    return new Promise(function (resolve, reject) {
-
-        AJAX.requestJSON(
-            'GET', `${PROVISIONING_CONFIG_URL}/available.json`, /* query = */ null, /* data = */ null,
-            /* success = */ function (configs) {
-                let processedConfigs = Object.entries(configs).map(function ([key, value]) {
-                    return {
-                        name: key,
-                        ...value
-                    }
-                })
-
-                resolve(processedConfigs)
-            },
-            /* failure = */ function (data, status, msg, headers) {
-                reject(BaseAPI.APIError.fromHTTPResponse(data, status, msg))
-            },
-            /* headers = */ null, /* timeout = */ PROVISIONING_CONFIG_TIMEOUT
-        )
-
-    })
-}
-
-/**
- * GET https://provisioning.qtoggle.io/config/{config_name}.json file.
- * @alias qtoggle.api.devices.getProvisioningConfig
- * @param {String} configName desired configuration name
- * @returns {Promise}
- */
-export function getProvisioningConfig(configName) {
-    return new Promise(function (resolve, reject) {
-
-        AJAX.requestJSON(
-            'GET', `${PROVISIONING_CONFIG_URL}/${configName}.json`, /* query = */ null, /* data = */ null,
-            /* success = */ function (configs) {
-                resolve(configs)
-            },
-            /* failure = */ function (data, status, msg, headers) {
-                reject(BaseAPI.APIError.fromHTTPResponse(data, status, msg))
-            },
-            /* headers = */ null, /* timeout = */ PROVISIONING_CONFIG_TIMEOUT
-        )
 
     })
 }

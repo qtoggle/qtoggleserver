@@ -307,7 +307,7 @@ export function setURLPrefix(prefix) {
  * Set the slave device for the next API call. If no argument or `null` is supplied, the API call will be requested on
  * the main device. Only the immediately following API request will be affected by this setting. Afterwards, the setting
  * will automatically revert to default (i.e. requesting to main device).
- * @alias qtoggle.api.base.setSlave
+ * @alias qtoggle.api.base.setSlaveName
  * @param {?String} name the slave name
  */
 export function setSlaveName(name) {
@@ -321,7 +321,7 @@ export function setSlaveName(name) {
 
 /**
  * Tell the name of the current slave device scheduled for the next API call.
- * @alias qtoggle.api.base.getSlave
+ * @alias qtoggle.api.base.getSlaveName
  * @returns {?String} name the slave name or `null` if no slave is scheduled
  */
 export function getSlaveName() {

@@ -462,7 +462,15 @@ def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
         else:
             logger.debug('setting device attribute %s = %s', name, json_utils.dumps(value))
 
-        attrdef = attrdefs[name]
+        try:
+            attrdef = attrdefs[name]
+
+        except KeyError:
+            if ignore_extra:
+                continue
+
+            else:
+                raise
 
         if not attrdef.get('modifiable'):
             if not ignore_extra:

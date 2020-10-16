@@ -17,15 +17,15 @@ import * as Common     from '$app/common/common.js'
 const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
 
 
-/** @lends qtoggle.common.RebootFormMixin */
-const RebootFormMixin = Mixin((superclass = Object) => {
+/** @lends qtoggle.common.RebootDeviceMixin */
+const RebootDeviceMixin = Mixin((superclass = Object) => {
 
     /**
      * A mixin to be used with device forms that allow rebooting.
      * @alias qtoggle.common.RebootDeviceMixin
      * @mixin
      */
-    class RebootFormMixin extends superclass {
+    class RebootDeviceMixin extends superclass {
 
         /**
          * Reboot a device after confirmation.
@@ -42,57 +42,63 @@ const RebootFormMixin = Mixin((superclass = Object) => {
 
             return new ConfirmMessageForm({
                 message: msg,
-                onYes: function () {
-
-                    logger.debug(`rebooting device "${deviceName}"`)
-
-                    this.setProgress()
-
-                    if (!Cache.isMainDevice(deviceName)) {
-                        BaseAPI.setSlaveName(deviceName)
-                    }
-                    DevicesAPI.postReset().then(function () {
-
-                        logger.debug(`device "${deviceName}" is rebooting`)
-                        return PromiseUtils.withTimeout(this.waitDeviceOffline(), Common.GO_OFFLINE_TIMEOUT * 1000)
-
-                    }.bind(this)).then(function () {
-
-                        return PromiseUtils.withTimeout(this.waitDeviceOnline(), Common.COME_ONLINE_TIMEOUT * 1000)
-
-                    }.bind(this)).then(function () {
-
-                        logger.debug(`device "${deviceName}" successfully rebooted`)
-                        this.clearProgress()
-                        Toast.info(gettext('Device has been rebooted.'))
-
-                    }.bind(this)).catch(function (error) {
-
-                        logger.errorStack(`failed to reboot device "${deviceName}"`, error)
-
-                        if (error instanceof TimeoutError) {
-                            error.message = gettext('Timeout waiting for device to reconnect.')
-                        }
-
-                        this.cancelWaiting()
-                        this.setError(error)
-
-                    }.bind(this)).then(function () {
-
-                        this.clearProgress()
-
-                    }.bind(this))
-
-                }.bind(this),
+                onYes: () => this.doReboot(deviceName, logger),
                 pathId: 'reboot'
             })
         }
 
+        /**
+         * Reboot device and wait for completion.
+         * @param {String} deviceName the name of the device to reboot
+         * @param {Logger} logger
+         * @returns {qui.pages.PageMixin}
+         */
+        doReboot(deviceName, logger) {
+            logger.debug(`rebooting device "${deviceName}"`)
+
+            this.setProgress()
+
+            if (!Cache.isMainDevice(deviceName)) {
+                BaseAPI.setSlaveName(deviceName)
+            }
+            DevicesAPI.postReset().then(function () {
+
+                logger.debug(`device "${deviceName}" is rebooting`)
+                return PromiseUtils.withTimeout(this.waitDeviceOffline(), Common.GO_OFFLINE_TIMEOUT * 1000)
+
+            }.bind(this)).then(function () {
+
+                return PromiseUtils.withTimeout(this.waitDeviceOnline(), Common.COME_ONLINE_TIMEOUT * 1000)
+
+            }.bind(this)).then(function () {
+
+                logger.debug(`device "${deviceName}" successfully rebooted`)
+                this.clearProgress()
+                Toast.info(gettext('Device has been rebooted.'))
+
+            }.bind(this)).catch(function (error) {
+
+                logger.errorStack(`failed to reboot device "${deviceName}"`, error)
+
+                if (error instanceof TimeoutError) {
+                    error.message = gettext('Timeout waiting for device to reconnect.')
+                }
+
+                this.cancelWaiting()
+                this.setError(error)
+
+            }.bind(this)).then(function () {
+
+                this.clearProgress()
+
+            }.bind(this))
+        }
+
     }
 
-    return RebootFormMixin
+    return RebootDeviceMixin
 
 })
 
 
-export default RebootFormMixin
+export default RebootDeviceMixin
