@@ -288,14 +288,14 @@ def get_attrdefs() -> AttributeDefinitions:
     return _attrdefs
 
 
-def get_schema() -> GenericJSONDict:
+def get_schema(loose: bool = False) -> GenericJSONDict:
     global _schema
 
     if not _schema:
         _schema = {
             'type': 'object',
             'properties': {},
-            'additionalProperties': False
+            'additionalProperties': loose
         }
 
         for name, attrdef in get_attrdefs().items():
@@ -445,7 +445,7 @@ def get_attrs() -> Attributes:
     return attrs
 
 
-def set_attrs(attrs: Attributes) -> bool:
+def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
     core_device_attrs = sys.modules[__name__]
 
     reboot_required = False
@@ -465,10 +465,11 @@ def set_attrs(attrs: Attributes) -> bool:
         attrdef = attrdefs[name]
 
         if not attrdef.get('modifiable'):
-            raise DeviceAttributeError('attribute-not-modifiable', name)
+            if not ignore_extra:
+                raise DeviceAttributeError('attribute-not-modifiable', name)
 
         # Treat passwords separately, as they are not persisted as given, but hashed first
-        if name.endswith('_password') and hasattr(core_device_attrs, name + '_hash'):
+        if name.endswith('_password') and hasattr(core_device_attrs, f'{name}_hash'):
             # Call password set command, if available
             if settings.core.passwords.set_cmd:
                 run_set_cmd(
@@ -482,6 +483,13 @@ def set_attrs(attrs: Attributes) -> bool:
             value = hashlib.sha256(value.encode()).hexdigest()
             name += '_hash'
 
+            setattr(core_device_attrs, name, value)
+            continue
+
+        elif name.endswith('_password_hash') and hasattr(core_device_attrs, name):
+            # FIXME: Password set command cannot be called with hash and we don't have clear-text password here.
+            #        A solution would be to use sha256 crypt algorithm w/o salt for Unix password (watch for the special
+            #        alphabet and for number of rounds defaulting to 5000)
             setattr(core_device_attrs, name, value)
             continue
 

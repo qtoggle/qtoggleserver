@@ -1,8 +1,10 @@
 
+import importlib
 import logging
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
+from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_get_cmd
 
@@ -87,6 +89,7 @@ def save() -> None:
 def reset() -> None:
     logger.debug('clearing persisted data')
     persist.remove('device')
+    importlib.reload(core_device_attrs)  # Reloads device attributes to default values
 
 
 async def init() -> None:

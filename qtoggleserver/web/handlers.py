@@ -200,6 +200,9 @@ class DeviceHandler(APIHandler):
     async def get(self) -> None:
         await self.call_api_func(core_api_funcs.get_device)
 
+    async def put(self) -> None:
+        await self.call_api_func(core_api_funcs.put_device, default_status=204)
+
     async def patch(self) -> None:
         await self.call_api_func(core_api_funcs.patch_device, default_status=204)
 
