@@ -15,6 +15,30 @@ async def get_device(request: core_api.APIRequest) -> Attributes:
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
+async def put_device(request: core_api.APIRequest, params: Attributes) -> None:
+    core_api_schema.validate(
+        params,
+        core_device_attrs.get_schema(loose=True)
+    )
+
+    # Reset device attributes
+    core_device.reset()
+    core_device.load()
+
+    try:
+        core_device_attrs.set_attrs(params, ignore_extra=True)
+
+    except core_device_attrs.DeviceAttributeError as e:
+        raise core_api.APIError(400, e.error, attribute=e.attribute)
+
+    except Exception as e:
+        raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
+
+    core_device.save()
+    await core_device_events.trigger_update()
+
+
+@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def patch_device(request: core_api.APIRequest, params: Attributes) -> None:
     def unexpected_field_code(field: str) -> str:
         if field in core_device_attrs.get_attrdefs():
