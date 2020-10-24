@@ -21,7 +21,6 @@ from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.conf import settings
 from qtoggleserver.core.api import auth as core_api_auth
-from qtoggleserver.core.api import schema as core_api_schema
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, NullablePortValue
 from qtoggleserver.utils import asyncio as asyncio_utils
