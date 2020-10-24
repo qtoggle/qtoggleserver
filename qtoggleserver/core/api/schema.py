@@ -155,7 +155,7 @@ PATCH_WEBHOOKS = {
         },
         "port": {
             "type": "integer",
-            "min": 0,
+            "min": 1,
             "max": 65535
         },
         "path": {
@@ -200,7 +200,7 @@ PATCH_REVERSE = {
         },
         "port": {
             "type": "integer",
-            "min": 0,
+            "min": 1,
             "max": 65535
         },
         "path": {
@@ -209,7 +209,7 @@ PATCH_REVERSE = {
         },
         "device_id": {
             "type": "string",
-            "pattern": "^[a-zA-Z0-9]{1,32}"
+            "pattern": "^[a-zA-Z0-9]{1,64}"
         },
         "password": {
             "type": "string",
@@ -227,7 +227,10 @@ PATCH_REVERSE = {
         "scheme",
         "host",
         "port",
-        "path"
+        "path",
+        "device_id",
+        "password",
+        "timeout"
     ]
 }
 
