@@ -11,8 +11,15 @@ async def get_reverse(request: core_api.APIRequest) -> GenericJSONDict:
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def patch_reverse(request: core_api.APIRequest, params: GenericJSONDict) -> None:
+async def put_reverse(request: core_api.APIRequest, params: GenericJSONDict) -> None:
     core_api_schema.validate(params, core_api_schema.PATCH_REVERSE)
+
+    # Also ensure that needed fields are not empty when mechanism is enabled
+    if params['enabled']:
+        if not params['host']:
+            raise core_api.APIError(400, 'invalid-field', field='host')
+        if not params['path']:
+            raise core_api.APIError(400, 'invalid-field', field='path')
 
     try:
         core_reverse.setup(**params)

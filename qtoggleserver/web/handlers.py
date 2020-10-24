@@ -327,8 +327,8 @@ class WebhooksHandler(APIHandler):
     async def get(self) -> None:
         await self.call_api_func(core_api_funcs.get_webhooks)
 
-    async def patch(self) -> None:
-        await self.call_api_func(core_api_funcs.patch_webhooks, default_status=204)
+    async def put(self) -> None:
+        await self.call_api_func(core_api_funcs.put_webhooks, default_status=204)
 
 
 class ListenHandler(APIHandler):
@@ -350,8 +350,8 @@ class ReverseHandler(APIHandler):
     async def get(self) -> None:
         await self.call_api_func(core_api_funcs.get_reverse)
 
-    async def patch(self) -> None:
-        await self.call_api_func(core_api_funcs.patch_reverse, default_status=204)
+    async def put(self) -> None:
+        await self.call_api_func(core_api_funcs.put_reverse, default_status=204)
 
 
 class DashboardPanelsHandler(APIHandler):
