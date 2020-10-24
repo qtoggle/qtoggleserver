@@ -68,7 +68,12 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
         schema = dict(schema)
         schema['additionalProperties'] = True  # Ignore non-existent and non-modifiable attributes
 
-    core_api_schema.validate(attrs, schema, unexpected_field_code=unexpected_field_code)
+    core_api_schema.validate(
+        attrs,
+        schema,
+        unexpected_field_code=unexpected_field_code,
+        field_name='attribute'
+    )
 
     # Step validation
     attrdefs = await port.get_attrdefs()
