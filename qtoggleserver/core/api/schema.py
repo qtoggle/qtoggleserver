@@ -47,7 +47,8 @@ PUT_PORTS = {
     "type": "array",
     "items": {
         "type": "object"
-    }
+    },
+    "additionalProperties": True
 }
 
 POST_PORTS = {

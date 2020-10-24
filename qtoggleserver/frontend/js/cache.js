@@ -20,6 +20,7 @@ import * as BaseAPI               from '$app/api/base.js'
 import * as DevicesAPI            from '$app/api/devices.js'
 import * as PortsAPI              from '$app/api/ports.js'
 import * as PrefsAPI              from '$app/api/prefs.js'
+import * as ProvisioningAPI       from '$app/api/provisioning.js'
 import * as MasterSlaveAPI        from '$app/api/master-slave.js'
 import * as NotificationsAPI      from '$app/api/notifications.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
@@ -305,7 +306,7 @@ export function loadPrefs() {
 export function loadProvisioningConfigs() {
     logger.debug('loading provisioning configs')
 
-    return DevicesAPI.getProvisioningConfigs().catch(function (error) {
+    return ProvisioningAPI.getProvisioningConfigs().catch(function (error) {
 
         /* Ignore errors when fetching provisioning configs - they aren't important for the app's well functioning */
 

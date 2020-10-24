@@ -21,7 +21,7 @@ async def get_backup_endpoints(request: core_api.APIRequest) -> List[GenericJSON
             'path': '/system',
             'display_name': 'System Configuration',
             'restore_method': 'PUT',
-            'reconnect': False
+            'order': 5
         })
 
     if settings.frontend.enabled:
@@ -29,7 +29,7 @@ async def get_backup_endpoints(request: core_api.APIRequest) -> List[GenericJSON
             'path': '/frontend',
             'display_name': 'App Configuration',
             'restore_method': 'PUT',
-            'reconnect': False
+            'order': 45
         })
 
     return endpoints

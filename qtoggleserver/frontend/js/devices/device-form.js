@@ -25,19 +25,21 @@ import * as StringUtils     from '$qui/utils/string.js'
 import URL                  from '$qui/utils/url.js'
 import * as Window          from '$qui/window.js'
 
-import * as Attrdefs         from '$app/api/attrdefs.js'
-import * as BaseAPI          from '$app/api/base.js'
-import * as APIConstants     from '$app/api/constants.js'
-import * as DevicesAPI       from '$app/api/devices.js'
-import * as MasterSlaveAPI   from '$app/api/master-slave.js'
-import * as NotificationsAPI from '$app/api/notifications.js'
-import * as Cache            from '$app/cache.js'
-import AttrdefFormMixin      from '$app/common/attrdef-form-mixin.js'
-import * as Common           from '$app/common/common.js'
-import ProvisioningForm      from '$app/common/provisioning-form.js'
-import RebootDeviceMixin     from '$app/common/reboot-device-mixin.js'
-import UpdateFirmwareForm    from '$app/common/update-firmware-form.js'
-import WaitDeviceMixin       from '$app/common/wait-device-mixin.js'
+import * as Attrdefs           from '$app/api/attrdefs.js'
+import * as BaseAPI            from '$app/api/base.js'
+import * as APIConstants       from '$app/api/constants.js'
+import * as DevicesAPI         from '$app/api/devices.js'
+import * as MasterSlaveAPI     from '$app/api/master-slave.js'
+import * as NotificationsAPI   from '$app/api/notifications.js'
+import * as Cache              from '$app/cache.js'
+import AttrdefFormMixin        from '$app/common/attrdef-form-mixin.js'
+import BackupForm              from '$app/common/backup-form.js'
+import * as Common             from '$app/common/common.js'
+import FactoryResetDeviceMixin from '$app/common/factory-reset-device-mixin.js'
+import RebootDeviceMixin       from '$app/common/reboot-device-mixin.js'
+import RestoreForm             from '$app/common/restore-form.js'
+import UpdateFirmwareForm      from '$app/common/update-firmware-form.js'
+import WaitDeviceMixin         from '$app/common/wait-device-mixin.js'
 
 import * as Devices from './devices.js'
 
@@ -59,8 +61,14 @@ function getDeviceURL(device) {
  * @mixes qtoggle.common.AttrdefFormMixin
  * @mixes qtoggle.common.WaitDeviceMixin
  * @mixes qtoggle.common.RebootDeviceMixin
+ * @mixes qtoggle.common.FactoryResetDeviceMixin
  */
-class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, RebootDeviceMixin) {
+class DeviceForm extends mix(PageForm).with(
+    AttrdefFormMixin,
+    WaitDeviceMixin,
+    RebootDeviceMixin,
+    FactoryResetDeviceMixin
+) {
 
     /**
      * @constructs
@@ -221,12 +229,21 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
     addStaticFields() {
         let managementButtons = [
             new PushButtonField({
+                name: 'ports',
+                style: 'interactive',
+                caption: gettext('Ports'),
+                icon: new StockIcon({name: 'port', stockName: 'qtoggle'}),
+                onClick(form) {
+                    Navigation.navigate({path: ['ports', `~${form.getDeviceName()}`]})
+                }
+            }),
+            new PushButtonField({
                 name: 'reboot',
                 caption: gettext('Reboot'),
                 style: 'highlight',
                 icon: new StockIcon({name: 'sync'}),
                 onClick(form) {
-                    form.pushPage(form.makeConfirmAndRebootForm())
+                    form.pushPage(form.makeConfirmAndReboot())
                 }
             }),
             new PushButtonField({
@@ -242,32 +259,41 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
                 }
             }),
             new PushButtonField({
-                name: 'provision',
-                style: 'interactive',
-                caption: gettext('Provision'),
-                disabled: true,
-                icon: new StockIcon({name: 'provisioning', stockName: 'qtoggle'}),
+                name: 'factory_reset',
+                caption: gettext('Reset'),
+                icon: new StockIcon({name: 'reset'}),
+                style: 'danger',
                 onClick(form) {
-                    form.pushPage(form.makeProvisioningForm())
+                    form.pushPage(form.makeConfirmAndFactoryReset())
                 }
             }),
             new PushButtonField({
-                name: 'ports',
+                name: 'backup',
+                caption: gettext('Backup'),
                 style: 'interactive',
-                caption: gettext('Ports'),
-                icon: new StockIcon({name: 'port', stockName: 'qtoggle'}),
+                icon: new StockIcon({name: 'upload'}),
                 onClick(form) {
-                    Navigation.navigate({path: ['ports', `~${form.getDeviceName()}`]})
+                    form.pushPage(form.makeBackupForm())
+                }
+            }),
+            new PushButtonField({
+                name: 'restore',
+                caption: gettext('Restore'),
+                style: 'interactive',
+                icon: new StockIcon({name: 'download'}),
+                onClick(form) {
+                    form.pushPage(form.makeRestoreForm())
                 }
             })
         ]
 
         this.addField(-1, new CompositeField({
             name: 'management_buttons',
-            label: gettext('Manage Device'),
+            label: gettext('Device Management'),
             separator: true,
             flow: Window.isSmallScreen() ? 'vertical' : 'horizontal',
-            columns: 2,
+            columns: 3,
+            equalSize: true,
             fields: managementButtons
         }))
     }
@@ -533,11 +559,17 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
             case 'firmware':
                 return this.makeUpdateFirmwareForm()
 
-            case 'provisioning':
-                return this.makeProvisioningForm()
+            case 'backup':
+                return this.makeBackupForm()
+
+            case 'restore':
+                return this.makeRestoreForm()
 
             case 'reboot':
-                return this.makeConfirmAndRebootForm()
+                return this.makeConfirmAndReboot()
+
+            case 'factory-reset':
+                return this.makeConfirmAndFactoryReset()
         }
     }
 
@@ -590,22 +622,43 @@ class DeviceForm extends mix(PageForm).with(AttrdefFormMixin, WaitDeviceMixin, R
     /**
      * @returns {qui.pages.PageMixin}
      */
-    makeProvisioningForm() {
-        return new ProvisioningForm(this.getDeviceName())
+    makeBackupForm() {
+        return new BackupForm(this.getDeviceName())
     }
 
     /**
      * @returns {qui.pages.PageMixin}
      */
-    makeConfirmAndRebootForm() {
+    makeRestoreForm() {
+        return new RestoreForm(this.getDeviceName())
+    }
+
+    /**
+     * @returns {qui.pages.PageMixin}
+     */
+    makeConfirmAndReboot() {
         let device = Cache.getSlaveDevice(this.getDeviceName())
         if (!device) {
             throw new AssertionError(`Device with name ${this.getDeviceName()} not found in cache`)
         }
 
-        let displayName = device.display_name || device.name
+        let displayName = device.attrs.display_name || device.name
 
         return this.confirmAndReboot(device.name, displayName, logger)
+    }
+
+    /**
+     * @returns {qui.pages.PageMixin}
+     */
+    makeConfirmAndFactoryReset() {
+        let device = Cache.getSlaveDevice(this.getDeviceName())
+        if (!device) {
+            throw new AssertionError(`Device with name ${this.getDeviceName()} not found in cache`)
+        }
+
+        let displayName = device.attrs.display_name || device.name
+
+        return this.confirmAndFactoryReset(device.name, displayName, logger)
     }
 
 }

@@ -265,7 +265,7 @@ class SlaveDeviceForwardHandler(APIHandler):
             path=path
         )
 
-    post = patch = delete = get
+    post = patch = put = delete = get
 
 
 class DiscoveredHandler(APIHandler):
