@@ -21,6 +21,9 @@ async def put_webhooks(request: core_api.APIRequest, params: GenericJSONDict) ->
         if not params['path']:
             raise core_api.APIError(400, 'invalid-field', field='path')
 
+    if 'password' not in params and 'password_hash' not in params:
+        raise core_api.APIError(400, 'missing-field', field='password')
+
     try:
         core_webhooks.setup(**params)
 

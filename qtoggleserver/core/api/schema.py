@@ -163,6 +163,14 @@ PATCH_WEBHOOKS = {
             "type": "string",
             "maxLength": 256
         },
+        "password": {
+            "type": "string",
+            "maxLength": 64
+        },
+        "password_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+        },
         "timeout": {
             "type": "integer",
             "minimum": 1,
@@ -208,13 +216,17 @@ PATCH_REVERSE = {
             "type": "string",
             "maxLength": 256
         },
+        "password": {
+            "type": "string",
+            "maxLength": 64
+        },
+        "password_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+        },
         "device_id": {
             "type": "string",
             "pattern": "^[a-zA-Z0-9]{1,64}"
-        },
-        "password": {
-            "type": "string",
-            "maxLength": 32
         },
         "timeout": {
             "type": "integer",
@@ -230,7 +242,6 @@ PATCH_REVERSE = {
         "port",
         "path",
         "device_id",
-        "password",
         "timeout"
     ]
 }

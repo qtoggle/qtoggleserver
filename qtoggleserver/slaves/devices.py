@@ -1467,13 +1467,11 @@ class Slave(logging_utils.LoggableMixin):
                     return True, self._cached_attrs
 
             elif path == '/webhooks':
-                # This is how we test that we have all required webhooks parameters in cache
-                if len(set(core_api_schema.PATCH_WEBHOOKS['properties'].keys()) - set(self._cached_webhooks)) == 0:
+                if self._cached_webhooks:
                     return True, self._cached_webhooks
 
             elif path == '/reverse':
-                # This is how we test that we have all required reverse parameters in cache
-                if len(set(core_api_schema.PATCH_REVERSE['properties'].keys()) - set(self._cached_reverse)) == 0:
+                if self._cached_reverse:
                     return True, self._cached_reverse
 
         elif method == 'PATCH':

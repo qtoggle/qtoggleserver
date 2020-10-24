@@ -22,6 +22,9 @@ logger = logging.getLogger(__name__)
 _webhooks: Optional[Webhooks] = None
 
 
+# TODO: add password support
+
+
 class WebhooksError(Exception):
     pass
 
