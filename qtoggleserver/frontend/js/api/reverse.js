@@ -15,25 +15,29 @@ export function getReverse() {
 }
 
 /**
- * PATCH /reverse API function call.
+ * PUT /reverse API function call.
  * @alias qtoggle.api.reverse.patchReverse
  * @param {Boolean} enabled whether the reverse API call mechanism is enabled or not
  * @param {String} scheme the URL scheme
  * @param {String} host the host (IP address or hostname) of the client
  * @param {Number} port the TCP port
  * @param {String} path the location for the reverse request
+ * @param {String} password the password
+ * @param {String} device_id the device ID
  * @param {Number} timeout the request timeout, in seconds
  * @returns {Promise}
  */
-export function patchReverse(enabled, scheme, host, port, path, timeout) {
+export function putReverse(enabled, scheme, host, port, path, password, device_id, timeout) {
     let params = {
         enabled: enabled,
         scheme: scheme,
         host: host,
         port: port,
         path: path,
+        password: password,
+        device_id: device_id,
         timeout: timeout
     }
 
-    return BaseAPI.apiCall({method: 'PATCH', path: '/reverse', data: params})
+    return BaseAPI.apiCall({method: 'PUT', path: '/reverse', data: params})
 }
