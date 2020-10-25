@@ -23,11 +23,11 @@ export function getReverse() {
  * @param {Number} port the TCP port
  * @param {String} path the location for the reverse request
  * @param {String} password the password
- * @param {String} device_id the device ID
+ * @param {String} deviceId the device ID
  * @param {Number} timeout the request timeout, in seconds
  * @returns {Promise}
  */
-export function putReverse(enabled, scheme, host, port, path, password, device_id, timeout) {
+export function putReverse(enabled, scheme, host, port, path, password, deviceId, timeout) {
     let params = {
         enabled: enabled,
         scheme: scheme,
@@ -35,7 +35,7 @@ export function putReverse(enabled, scheme, host, port, path, password, device_i
         port: port,
         path: path,
         password: password,
-        device_id: device_id,
+        device_id: deviceId,
         timeout: timeout
     }
 
