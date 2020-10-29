@@ -65,7 +65,8 @@ async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
             poll_interval,
             listen_enabled,
             admin_password=admin_password,
-            admin_password_hash=admin_password_hash
+            admin_password_hash=admin_password_hash,
+            enabled=properties.get('enabled', True)
         )
 
     except (core_responses.HostUnreachable,

@@ -1588,7 +1588,8 @@ async def add(
     poll_interval: int = 0,
     listen_enabled: Optional[bool] = None,
     admin_password: Optional[str] = None,
-    admin_password_hash: Optional[str] = None
+    admin_password_hash: Optional[str] = None,
+    enabled: bool = True
 ) -> Slave:
 
     slave = Slave(
@@ -1629,7 +1630,8 @@ async def add(
     elif poll_interval:
         slave.set_poll_interval(poll_interval)
 
-    await slave.enable()
+    if enabled:
+        await slave.enable()
     await slave.trigger_add()
     slave.save()
 
