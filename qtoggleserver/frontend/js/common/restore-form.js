@@ -22,6 +22,7 @@ import OperationCheckField from './operation-check-field.js'
 
 
 const INVALID_BACKUP_FILE_MESSAGE = gettext('Please supply a valid backup file!')
+const RESTORE_API_CALL_TIMEOUT = 120000
 
 const logger = Logger.get('qtoggle.common.restore')
 
@@ -221,7 +222,12 @@ class RestoreForm extends PageForm {
 
             let endpointData = endpoint.prepareRestoreData(data)
 
-            return BaseAPI.apiCall({method: endpoint.restoreMethod, path: endpoint.path, data: endpointData})
+            return BaseAPI.apiCall({
+                method: endpoint.restoreMethod,
+                path: endpoint.path,
+                data: endpointData,
+                timeout: RESTORE_API_CALL_TIMEOUT
+            })
 
         }.bind(this)).then(function (result) {
 

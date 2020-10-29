@@ -19,6 +19,8 @@ import * as Cache           from '$app/cache.js'
 import OperationCheckField from './operation-check-field.js'
 
 
+const BACKUP_API_CALL_TIMEOUT = 120000
+
 const logger = Logger.get('qtoggle.common.backup')
 
 
@@ -141,7 +143,11 @@ class BackupForm extends PageForm {
                 BaseAPI.setSlaveName(this.getDeviceName())
             }
 
-            return BaseAPI.apiCall({method: endpoint.backupMethod, path: endpoint.path})
+            return BaseAPI.apiCall({
+                method: endpoint.backupMethod,
+                path: endpoint.path,
+                timeout: BACKUP_API_CALL_TIMEOUT
+            })
 
         }.bind(this)).then(function (result) {
 
