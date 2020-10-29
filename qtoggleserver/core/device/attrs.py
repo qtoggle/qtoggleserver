@@ -291,50 +291,56 @@ def get_attrdefs() -> AttributeDefinitions:
 def get_schema(loose: bool = False) -> GenericJSONDict:
     global _schema
 
-    if not _schema:
-        _schema = {
-            'type': 'object',
-            'properties': {},
-            'additionalProperties': loose
-        }
+    # Use cached value, but only when loose is false, as loose schema is never cached
+    if _schema is not None and not loose:
+        return _schema
 
-        for name, attrdef in get_attrdefs().items():
-            if not attrdef.get('modifiable'):
-                continue
+    schema = {
+        'type': 'object',
+        'properties': {},
+        'additionalProperties': loose
+    }
 
-            attr_schema = dict(attrdef)
+    for name, attrdef in get_attrdefs().items():
+        if not attrdef.get('modifiable'):
+            continue
 
-            enabled = attr_schema.pop('enabled', True)
-            if not enabled:
-                continue
+        attr_schema = dict(attrdef)
 
-            if attr_schema['type'] == 'string':
-                if 'min' in attr_schema:
-                    attr_schema['minLength'] = attr_schema.pop('min')
+        enabled = attr_schema.pop('enabled', True)
+        if not enabled:
+            continue
 
-                if 'max' in attr_schema:
-                    attr_schema['maxLength'] = attr_schema.pop('max')
+        if attr_schema['type'] == 'string':
+            if 'min' in attr_schema:
+                attr_schema['minLength'] = attr_schema.pop('min')
 
-            elif attr_schema['type'] == 'number':
-                if attr_schema.get('integer'):
-                    attr_schema['type'] = 'integer'
+            if 'max' in attr_schema:
+                attr_schema['maxLength'] = attr_schema.pop('max')
 
-                if 'min' in attr_schema:
-                    attr_schema['minimum'] = attr_schema.pop('min')
+        elif attr_schema['type'] == 'number':
+            if attr_schema.get('integer'):
+                attr_schema['type'] = 'integer'
 
-                if 'max' in attr_schema:
-                    attr_schema['maximum'] = attr_schema.pop('max')
+            if 'min' in attr_schema:
+                attr_schema['minimum'] = attr_schema.pop('min')
 
-            if 'choices' in attrdef:
-                attr_schema['enum'] = [c['value'] for c in attr_schema.pop('choices')]
+            if 'max' in attr_schema:
+                attr_schema['maximum'] = attr_schema.pop('max')
 
-            attr_schema.pop('persisted', None)
-            attr_schema.pop('modifiable', None)
-            attr_schema.pop('standard', None)
+        if 'choices' in attrdef:
+            attr_schema['enum'] = [c['value'] for c in attr_schema.pop('choices')]
 
-            _schema['properties'][name] = attr_schema
+        attr_schema.pop('persisted', None)
+        attr_schema.pop('modifiable', None)
+        attr_schema.pop('standard', None)
 
-    return _schema
+        schema['properties'][name] = attr_schema
+
+    if not loose:
+        _schema = schema
+
+    return schema
 
 
 def get_attrs() -> Attributes:
