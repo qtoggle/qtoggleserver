@@ -629,5 +629,6 @@ async def init() -> None:
 
 async def cleanup() -> None:
     logger.debug('stopping attributes watch task')
-    _attrs_watch_task.cancel()
-    await _attrs_watch_task
+    if _attrs_watch_task:
+        _attrs_watch_task.cancel()
+        await _attrs_watch_task

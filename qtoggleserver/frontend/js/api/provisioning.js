@@ -80,7 +80,7 @@ export class BackupEndpoint {
 
 }
 
-const DEVICE_BACKUP_ENDPOINT = new BackupEndpoint({
+export const DEVICE_BACKUP_ENDPOINT = new BackupEndpoint({
     path: '/device',
     displayName: gettext('Device'),
     order: 10,
@@ -88,28 +88,28 @@ const DEVICE_BACKUP_ENDPOINT = new BackupEndpoint({
     excludeFields: (f) => f.startsWith('wifi_') || f.startsWith('ip_')
 })
 /* Special endpoint for devices w/o backup support */
-const DEVICE_PATCH_BACKUP_ENDPOINT = new BackupEndpoint({
+export const DEVICE_PATCH_BACKUP_ENDPOINT = new BackupEndpoint({
     path: '/device',
     displayName: gettext('Device'),
     restoreMethod: 'PATCH',
     order: 10
 })
-const PORTS_BACKUP_ENDPOINT = new BackupEndpoint({
+export const PORTS_BACKUP_ENDPOINT = new BackupEndpoint({
     path: '/ports',
     displayName: gettext('Ports'),
     order: 20
 })
-const WEBHOOKS_BACKUP_ENDPOINT = new BackupEndpoint({
+export const WEBHOOKS_BACKUP_ENDPOINT = new BackupEndpoint({
     path: '/webhooks',
     displayName: gettext('Webhooks'),
     order: 30
 })
-const REVERSE_BACKUP_ENDPOINT = new BackupEndpoint({
+export const REVERSE_BACKUP_ENDPOINT = new BackupEndpoint({
     path: '/reverse',
     displayName: gettext('Reverse API Calls'),
     order: 40
 })
-const SLAVES_BACKUP_ENDPOINT = new BackupEndpoint({
+export const SLAVES_BACKUP_ENDPOINT = new BackupEndpoint({
     path: '/devices',
     displayName: gettext('Slave Devices'),
     order: 15

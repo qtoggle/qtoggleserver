@@ -72,6 +72,7 @@ class RestoreForm extends PageForm {
         })
 
         this._deviceName = deviceName
+        this._newDeviceName = null
         this._backupEndpoints = []
         this._running = false
         this._content = null
@@ -169,14 +170,14 @@ class RestoreForm extends PageForm {
      * @returns {String}
      */
     getDeviceName() {
-        return this._deviceName
+        return this._newDeviceName || this._deviceName
     }
 
     /**
      * @returns {Boolean}
      */
     deviceIsSlave() {
-        return !Cache.isMainDevice(this.getDeviceName())
+        return !Cache.isMainDevice(this._deviceName) && !Cache.isMainDevice(this._newDeviceName)
     }
 
     /**
@@ -227,7 +228,15 @@ class RestoreForm extends PageForm {
                 path: endpoint.path,
                 data: endpointData,
                 timeout: RESTORE_API_CALL_TIMEOUT
-            })
+            }).then(function () {
+                if ((endpoint === ProvisioningAPI.DEVICE_BACKUP_ENDPOINT ||
+                     endpoint === ProvisioningAPI.DEVICE_PATCH_BACKUP_ENDPOINT) &&
+                    'name' in endpointData) {
+
+                    /* Device has been renamed */
+                    this._newDeviceName = endpointData['name']
+                }
+            }.bind(this))
 
         }.bind(this)).then(function (result) {
 
