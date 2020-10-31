@@ -12,6 +12,8 @@ import {ValidationError} from '$qui/forms/forms.js'
 import StockIcon         from '$qui/icons/stock-icon.js'
 import * as Toast        from '$qui/messages/toast.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
+import * as StringUtils  from '$qui/utils/string.js'
+import URL               from '$qui/utils/url.js'
 import * as Window       from '$qui/window.js'
 
 import * as BaseAPI         from '$app/api/base.js'
@@ -212,6 +214,7 @@ class RestoreForm extends PageForm {
     performRestoreOnEndpoint(endpoint, data) {
         logger.debug(`restoring data on ${endpoint.path}`)
 
+        let endpointData = endpoint.prepareRestoreData(data)
         let checkField = this.getField(endpoint.getName())
         checkField.setProgress(-1)
 
@@ -221,7 +224,6 @@ class RestoreForm extends PageForm {
                 BaseAPI.setSlaveName(this.getDeviceName())
             }
 
-            let endpointData = endpoint.prepareRestoreData(data)
 
             return BaseAPI.apiCall({
                 method: endpoint.restoreMethod,
@@ -245,9 +247,37 @@ class RestoreForm extends PageForm {
 
         }).catch(function (error) {
 
-            logger.errorStack(`restore data request failed on ${endpoint.path}`, error)
-            throw new ErrorMapping({[endpoint.getName()]: error})
+            let deviceData = null
+            let portData = null
+            let extraMessage = null
 
+            /* Attempt to find problematic device */
+            if ('index' in error.params) {
+                let index = error.params['index']
+                deviceData = endpointData[index]
+                if (deviceData) {
+                    let url = new URL(deviceData).alter({password: null})
+                    extraMessage = gettext('Problematic device has URL "%(url)s", at position %(position)s.')
+                    extraMessage = StringUtils.formatPercent(extraMessage, {url, position: index})
+                }
+            }
+
+            /* Attempt to find problematic port */
+            if ('id' in error.params) {
+                let id = error.params['id']
+                portData = endpointData.find(d => d['id'] === id)
+                if (portData) {
+                    extraMessage = gettext('Problematic port has id "%(id)s".')
+                    extraMessage = StringUtils.formatPercent(extraMessage, {id})
+                }
+            }
+
+            if (extraMessage) {
+                error.message += ' ' + extraMessage
+            }
+
+            logger.errorStack(`restore data request failed on ${endpoint.path}, `, error)
+            throw new ErrorMapping({[endpoint.getName()]: error})
         })
     }
 
