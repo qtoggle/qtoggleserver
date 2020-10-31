@@ -1,7 +1,8 @@
 
 import asyncio
+import inspect
 
-from typing import List
+from typing import Any, Callable, List
 
 from qtoggleserver import slaves
 from qtoggleserver.conf import settings
@@ -72,7 +73,7 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
         attrs,
         schema,
         unexpected_field_code=unexpected_field_code,
-        field_name='attribute'
+        unexpected_field_name='attribute'
     )
 
     # Step validation
@@ -120,7 +121,41 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
             # Transform any unhandled exception into APIError(500)
             raise core_api.APIError(500, 'unexpected-error', message=str(error)) from error
 
+    # If value is supplied among attrs, use it to update port value, but ignore any errors;
+    value = attrs.get('value')
+    if value is not None and port.is_enabled():
+        try:
+            await port.write_transformed_value(value, reason=core_ports.CHANGE_REASON_API)
+
+        except Exception as e:
+            core_api.logger.error('failed to set %s value: %s', port, e, exc_info=True)
+
     await port.save()
+
+
+async def wrap_error_with_port_id(port_id: str, func: Callable, *args, **kwargs) -> Any:
+    try:
+        result = func(*args, **kwargs)
+        if inspect.isawaitable(result):
+            result = await result
+
+    except core_api.APIError as e:
+        raise core_api.APIError(
+            status=e.status,
+            code=e.code,
+            id=port_id,
+            **e.params
+        )
+
+    except Exception as e:
+        raise core_api.APIError(
+            status=500,
+            code='unexpected-error',
+            message=str(e),
+            id=port_id
+        )
+
+    return result
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
@@ -174,8 +209,17 @@ async def put_ports(request: core_api.APIRequest, params: List[GenericJSONDict])
             # Virtual ports must be added first (unless they belong to a slave)
             virtual = attrs.get('virtual')
             if virtual and port is None:
-                core_api_schema.validate(attrs, add_port_schema)
-                port = await add_virtual_port(attrs)
+                await wrap_error_with_port_id(
+                    id_,
+                    core_api_schema.validate,
+                    attrs,
+                    add_port_schema
+                )
+                port = await wrap_error_with_port_id(
+                    id_,
+                    add_virtual_port,
+                    attrs
+                )
 
             if port is None:
                 core_api.logger.warning('ignoring unknown port id "%s"', id_)
@@ -190,7 +234,13 @@ async def put_ports(request: core_api.APIRequest, params: List[GenericJSONDict])
             else:
                 core_api.logger.debug('restoring local port "%s"', id_)
 
-            await set_port_attrs(port, attrs, ignore_extra_attrs=True)
+            await wrap_error_with_port_id(
+                id_,
+                set_port_attrs,
+                port,
+                attrs,
+                ignore_extra_attrs=True
+            )
 
     finally:
         core_events.enable()
