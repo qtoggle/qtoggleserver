@@ -29,6 +29,8 @@ _LONG_TIMEOUT_API_CALLS = [
     ('PATCH', re.compile(r'/devices/[^/]+/?'))
 ]
 
+WAIT_ONLINE_DEVICE_TIMEOUT = 20
+
 
 async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
     scheme = properties['scheme']
@@ -143,6 +145,13 @@ async def put_slave_devices(request: core_api.APIRequest, params: List[GenericJS
 
         # Create slave devices
         await asyncio.gather(*(add_slave_device(properties) for properties in params))
+
+        online_devices = (d for d in slaves_devices.get_all() if not d.is_permanently_offline() and d.is_enabled())
+        try:
+            await asyncio.gather(*(d.wait_online(timeout=WAIT_ONLINE_DEVICE_TIMEOUT) for d in online_devices))
+
+        except asyncio.TimeoutError:
+            raise core_api.APIError(504, 'device-timeout')  # TODO: obtain the index of the problematic device
 
     finally:
         core_events.enable()

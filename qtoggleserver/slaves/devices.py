@@ -376,6 +376,15 @@ class Slave(logging_utils.LoggableMixin):
     def is_permanently_offline(self) -> bool:
         return self._poll_interval == 0 and not self._listen_enabled
 
+    async def wait_online(self, timeout: int) -> None:
+        for _ in range(timeout * 10):
+            if self._online:
+                return
+
+            await asyncio.sleep(0.1)
+
+        raise asyncio.TimeoutError('Timeout waiting for device to come online')
+
     def to_json(self) -> GenericJSONDict:
         provisioning = list(self._provisioning_attrs)
         if self._provisioning_webhooks:
