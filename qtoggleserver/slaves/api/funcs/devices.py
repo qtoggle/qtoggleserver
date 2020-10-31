@@ -1,10 +1,11 @@
 
 from __future__ import annotations
 
+import inspect
 import asyncio
 import re
 
-from typing import Any, List, Optional
+from typing import Any, Callable, List, Optional
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
@@ -111,6 +112,38 @@ async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
     return slave
 
 
+async def wrap_error_with_index(index: int, func: Callable, *args, **kwargs) -> Any:
+    try:
+        result = func(*args, **kwargs)
+        if inspect.isawaitable(result):
+            result = await result
+
+    except core_api.APIError as e:
+        raise core_api.APIError(
+            status=e.status,
+            code=e.code,
+            index=index,
+            **e.params
+        )
+
+    except asyncio.TimeoutError:
+        raise core_api.APIError(
+            status=504,
+            code='device-timeout',
+            index=index
+        )
+
+    except Exception as e:
+        raise core_api.APIError(
+            status=500,
+            code='unexpected-error',
+            message=str(e),
+            index=index
+        )
+
+    return result
+
+
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def get_slave_devices(request: core_api.APIRequest) -> List[GenericJSONDict]:
     return [slave.to_json() for slave in slaves_devices.get_all()]
@@ -140,18 +173,41 @@ async def put_slave_devices(request: core_api.APIRequest, params: List[GenericJS
         add_device_schema['additionalProperties'] = True
 
         # Validate supplied slave properties
-        for properties in params:
-            core_api_schema.validate(properties, add_device_schema)
+        for index, properties in enumerate(params):
+            await wrap_error_with_index(
+                index,
+                core_api_schema.validate,
+                properties,
+                add_device_schema
+            )
+        # Add slave devices
+        add_slave_futures = []
+        for index, properties in enumerate(params):
+            add_slave_future = wrap_error_with_index(
+                index,
+                add_slave_device,
+                properties
+            )
+            add_slave_futures.append(add_slave_future)
 
-        # Create slave devices
-        await asyncio.gather(*(add_slave_device(properties) for properties in params))
+        added_slaves = await asyncio.gather(*add_slave_futures)
 
-        online_devices = (d for d in slaves_devices.get_all() if not d.is_permanently_offline() and d.is_enabled())
-        try:
-            await asyncio.gather(*(d.wait_online(timeout=WAIT_ONLINE_DEVICE_TIMEOUT) for d in online_devices))
+        # Wait for slave devices to come online
+        wait_slave_futures = []
+        for index, slave in enumerate(added_slaves):
+            if not slave.is_enabled():
+                continue
+            if slave.is_permanently_offline():
+                continue
 
-        except asyncio.TimeoutError:
-            raise core_api.APIError(504, 'device-timeout')  # TODO: obtain the index of the problematic device
+            wait_slave_future = wrap_error_with_index(
+                index,
+                slave.wait_online,
+                timeout=WAIT_ONLINE_DEVICE_TIMEOUT
+            )
+            wait_slave_futures.append(wait_slave_future)
+
+        await asyncio.gather(*wait_slave_futures)
 
     finally:
         core_events.enable()
