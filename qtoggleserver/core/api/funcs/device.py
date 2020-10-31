@@ -55,7 +55,7 @@ async def patch_device(request: core_api.APIRequest, params: Attributes) -> None
         params,
         core_device_attrs.get_schema(),
         unexpected_field_code=unexpected_field_code,
-        field_name='attribute'
+        unexpected_field_name='attribute'
     )
 
     try:
