@@ -58,9 +58,14 @@ class ParallelCaller:
         except asyncio.CancelledError:
             pass
 
-    def stop(self) -> None:
+    async def stop(self) -> None:
+        current_task = asyncio.current_task()
+
         for task in self._loop_tasks:
-            task.cancel()
+            if task is not current_task:
+                task.cancel()
+
+        await asyncio.gather(*[t for t in self._loop_tasks if t is not current_task])
 
 
 class Timer:

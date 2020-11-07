@@ -322,12 +322,12 @@ class DeviceForm extends mix(PageForm).with(
     /**
      * Start waiting for device to come line.
      */
-    startWaitingDeviceOnline() {
+    startWaitingDeviceOnline(timeout = APIConstants.DEFAULT_SERVER_TIMEOUT) {
         this.setProgress()
 
         PromiseUtils.withTimeout(
             this.waitDeviceOnline(),
-            APIConstants.DEFAULT_SERVER_TIMEOUT * 1000
+            timeout * 1000
         ).catch(function (error) {
 
             if (error instanceof TimeoutError) {
