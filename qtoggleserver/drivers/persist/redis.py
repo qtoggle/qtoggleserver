@@ -83,8 +83,9 @@ class RedisDriver(BaseDriver):
         # Adapt the record to db
         db_record = self._record_to_db(record)
 
-        # Actually insert the record
-        self._client.hmset(key, db_record)
+        # Actually insert the record, but only if it's not empty
+        if db_record:
+            self._client.hset(key, mapping=db_record)
 
         # Add the id to set
         self._client.sadd(set_key, id_)
@@ -105,7 +106,7 @@ class RedisDriver(BaseDriver):
             # Retrieve the db record
             db_record = self._client.hgetall(key)
             if db_record and self._filter_matches(db_record, filt):
-                self._client.hmset(key, db_record_part)
+                self._client.hset(key, mapping=db_record_part)
 
             modified_count = 1
 
@@ -122,7 +123,11 @@ class RedisDriver(BaseDriver):
                     continue
 
                 # Actually update the record
-                self._client.hmset(key, db_record_part)
+                if db_record_part:
+                    self._client.hset(key, mapping=db_record_part)
+
+                else:
+                    self._client.delete(key)
 
                 modified_count += 1
 
@@ -142,8 +147,9 @@ class RedisDriver(BaseDriver):
         # Remove any existing record
         self._client.delete(key)
 
-        # Insert the new record
-        self._client.hmset(key, new_db_record)
+        # Insert the new record, if not empty
+        if new_db_record:
+            self._client.hset(key, mapping=new_db_record)
 
         # Make sure the id is present in set
         self._client.sadd(self._make_set_key(collection), id_)
