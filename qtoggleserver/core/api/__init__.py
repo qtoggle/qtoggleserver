@@ -4,7 +4,7 @@ from __future__ import annotations
 import functools
 import logging
 
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional
 
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.typing import GenericJSONDict
@@ -58,6 +58,10 @@ class APIRequest:
     @property
     def username(self) -> str:
         return self.handler.username
+
+    @property
+    def session_id(self) -> Optional[str]:
+        return self.handler.request.headers.get('Session-Id')
 
     @property
     def method(self) -> str:

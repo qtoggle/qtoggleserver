@@ -1,11 +1,11 @@
 
 import logging
 
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from qtoggleserver import persist
 from qtoggleserver.core import ports as core_ports
-from qtoggleserver.core.typing import GenericJSONDict, NullablePortValue, PortValue, PortValueChoices
+from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList, NullablePortValue, PortValue, PortValueChoices
 
 
 logger = logging.getLogger(__name__)
@@ -81,7 +81,7 @@ def remove(port_id: str) -> None:
     persist.remove('vports', filt={'id': port_id})
 
 
-def all_port_args() -> List[GenericJSONDict]:
+def all_port_args() -> GenericJSONList:
     return [{'driver': VirtualPort, 'id_': port_id, **args}
             for port_id, args in _vport_args.items()]
 

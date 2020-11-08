@@ -1,7 +1,7 @@
 
 import re
 
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from qtoggleserver import slaves
 from qtoggleserver import system
@@ -15,7 +15,7 @@ from qtoggleserver.core import sessions as core_sessions
 from qtoggleserver.core import vports as core_vports
 from qtoggleserver.core import webhooks as core_webhooks
 from qtoggleserver.core.api import schema as core_api_schema
-from qtoggleserver.core.typing import GenericJSONDict
+from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NONE)
@@ -31,7 +31,7 @@ async def get_listen(
     session_id: str,
     timeout: Optional[int],
     access_level: int
-) -> List[GenericJSONDict]:
+) -> GenericJSONList:
 
     if session_id is None:
         raise core_api.APIError(400, 'missing-field', field='session_id')

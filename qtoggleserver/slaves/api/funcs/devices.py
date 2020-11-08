@@ -5,7 +5,7 @@ import inspect
 import asyncio
 import re
 
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
@@ -13,7 +13,7 @@ from qtoggleserver.core import events as core_events
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.api import schema as core_api_schema
-from qtoggleserver.core.typing import GenericJSONDict
+from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList
 from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.slaves import exceptions as slaves_exceptions
 
@@ -145,12 +145,12 @@ async def wrap_error_with_index(index: int, func: Callable, *args, **kwargs) -> 
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def get_slave_devices(request: core_api.APIRequest) -> List[GenericJSONDict]:
+async def get_slave_devices(request: core_api.APIRequest) -> GenericJSONList:
     return [slave.to_json() for slave in slaves_devices.get_all()]
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def put_slave_devices(request: core_api.APIRequest, params: List[GenericJSONDict]) -> None:
+async def put_slave_devices(request: core_api.APIRequest, params: GenericJSONList) -> None:
     if not settings.core.backup_support:
         raise core_api.APIError(404, 'no-such-function')
 

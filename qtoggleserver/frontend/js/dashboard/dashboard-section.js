@@ -127,6 +127,15 @@ class DashboardSection extends Section {
 
                 break
             }
+
+            case 'dashboard-update': {
+                let currentPanel = Dashboard.getCurrentPanel()
+                if (!event.byCurrentSession() && currentPanel != null) {
+                    this.handleConcurrentEdit(event.params['panels'])
+                }
+
+                break
+            }
         }
     }
 
@@ -187,6 +196,34 @@ class DashboardSection extends Section {
             }
 
         }.bind(this))
+    }
+
+    handleConcurrentEdit(panels) {
+        let currentPanel = Dashboard.getCurrentPanel()
+
+        logger.info('another session started editing the dashboard')
+
+        /* Exit edit mode */
+        if (currentPanel.isEditEnabled()) {
+            currentPanel.disableEditing()
+        }
+
+        let msg = gettext('The dashboard is currently being edited in another session.')
+        Toast.warning(msg)
+
+        let rootGroup = this.getMainPage()
+
+        /* Navigate back to the section root */
+        let promise = Promise.resolve()
+        if (rootGroup.getNext()) {
+            promise = rootGroup.getNext().close()
+        }
+
+        promise.then(function () {
+            /* Update all groups and panels */
+            rootGroup.fromJSON({children: panels})
+            rootGroup.updateUI(/* recursive = */ true)
+        })
     }
 
     makeMainPage() {

@@ -1690,7 +1690,7 @@ async def _handle_rename(slave: Slave, new_name: str) -> None:
 
     if host == new_name:
         await slave.api_call('POST', '/reset', body={})
-        await asyncio.sleep(5)
+        await asyncio.sleep(5)  # Allow a few seconds for the device to no longer be reachable
 
     slave.set_poll_interval(poll_interval)
     if listen_enabled:
