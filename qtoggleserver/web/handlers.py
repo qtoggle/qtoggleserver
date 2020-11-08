@@ -16,7 +16,7 @@ from qtoggleserver.core.api import funcs as core_api_funcs
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.slaves.api import funcs as slaves_api_funcs
 from qtoggleserver.system.api import funcs as system_api_funcs
-from qtoggleserver.ui.api import funcs as ui_api_funcs
+from qtoggleserver.frontend.api import funcs as frontend_api_funcs
 from qtoggleserver.utils import json as json_utils
 
 
@@ -356,26 +356,26 @@ class ReverseHandler(APIHandler):
 
 class DashboardPanelsHandler(APIHandler):
     async def get(self) -> None:
-        await self.call_api_func(ui_api_funcs.get_panels)
+        await self.call_api_func(frontend_api_funcs.get_panels)
 
     async def put(self) -> None:
-        await self.call_api_func(ui_api_funcs.put_panels, default_status=204)
+        await self.call_api_func(frontend_api_funcs.put_panels, default_status=204)
 
 
 class PrefsHandler(APIHandler):
     async def get(self) -> None:
-        await self.call_api_func(ui_api_funcs.get_prefs)
+        await self.call_api_func(frontend_api_funcs.get_prefs)
 
     async def put(self) -> None:
-        await self.call_api_func(ui_api_funcs.put_prefs, default_status=204)
+        await self.call_api_func(frontend_api_funcs.put_prefs, default_status=204)
 
 
 class FrontendHandler(APIHandler):
     async def get(self) -> None:
-        await self.call_api_func(ui_api_funcs.get_frontend)
+        await self.call_api_func(frontend_api_funcs.get_frontend)
 
     async def put(self) -> None:
-        await self.call_api_func(ui_api_funcs.put_frontend, default_status=204)
+        await self.call_api_func(frontend_api_funcs.put_frontend, default_status=204)
 
 
 class SystemHandler(APIHandler):

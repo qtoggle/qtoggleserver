@@ -23,6 +23,7 @@ import * as NotificationsAPI from './notifications.js'
 const logger = Logger.get('qtoggle.api.base')
 
 
+let sessionId = null
 let slaveName = null
 let apiURLPrefix = ''
 let syncBeginCallbacks = []
@@ -144,6 +145,22 @@ function makeRequestJWT(username, passwordHash) {
 
 
 /**
+ * Return the unique id of this session.
+ * @alias qtoggle.api.base.getSessionId
+ * @returns {String}
+ */
+export function getSessionId() {
+    if (!sessionId) {
+        let toHash = String(new Date().getTime() * Math.random())
+        let hash = new Crypto.SHA256(toHash).toString()
+        sessionId = `qtoggleserverui-${hash}`
+        sessionId = sessionId.substring(0, 32)
+    }
+
+    return sessionId
+}
+
+/**
  * Call an API function.
  * @alias qtoggle.api.base.apiCall
  * @param {String} method the method
@@ -235,8 +252,11 @@ export function apiCall({
             }
         }
 
+        let headers = {
+            'Session-Id': getSessionId()
+        }
+
         /* Compose the JWT authorization header */
-        let headers = {}
         let username = AuthAPI.getUsername()
         let passwordHash = AuthAPI.getPasswordHash()
         if (username && passwordHash) {

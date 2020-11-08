@@ -1,11 +1,9 @@
 
 import logging
 
-from typing import List
-
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
-from qtoggleserver.core.typing import GenericJSONDict
+from qtoggleserver.core.typing import GenericJSONList
 from qtoggleserver.system import conf as system_conf
 
 
@@ -13,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def get_backup_endpoints(request: core_api.APIRequest) -> List[GenericJSONDict]:
+async def get_backup_endpoints(request: core_api.APIRequest) -> GenericJSONList:
     endpoints = []
 
     if system_conf.can_write_conf_file():

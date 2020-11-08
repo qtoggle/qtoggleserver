@@ -17,14 +17,14 @@ _active_handle_tasks: Set[asyncio.Task] = set()
 _enabled: bool = True
 
 
-def enable() -> bool:
+def enable() -> None:
     global _enabled
 
     logger.debug('enabling event handling')
     _enabled = True
 
 
-def disable() -> bool:
+def disable() -> None:
     global _enabled
 
     logger.debug('disabling event handling')

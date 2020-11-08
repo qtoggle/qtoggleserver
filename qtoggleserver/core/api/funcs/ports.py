@@ -11,7 +11,8 @@ from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import vports as core_vports
 from qtoggleserver.core.api import schema as core_api_schema
-from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, NullablePortValue, PortValue
+from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, GenericJSONList, NullablePortValue
+from qtoggleserver.core.typing import PortValue
 from qtoggleserver.slaves import ports as slaves_ports
 from qtoggleserver.utils import json as json_utils
 
@@ -164,7 +165,7 @@ async def get_ports(request: core_api.APIRequest) -> List[Attributes]:
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
-async def put_ports(request: core_api.APIRequest, params: List[GenericJSONDict]) -> None:
+async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> None:
     if not settings.core.backup_support:
         raise core_api.APIError(404, 'no-such-function')
 

@@ -13,3 +13,4 @@ AttributeDefinition = Dict[str, Any]
 AttributeDefinitions = Dict[str, AttributeDefinition]
 
 GenericJSONDict = Dict[str, Any]
+GenericJSONList = List[Dict[str, Any]]
