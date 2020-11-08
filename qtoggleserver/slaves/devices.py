@@ -23,6 +23,7 @@ from qtoggleserver.conf import settings
 from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, NullablePortValue
+from qtoggleserver.system import dns as system_dns
 from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
@@ -39,6 +40,7 @@ _FWUPDATE_POLL_INTERVAL = 30
 _FWUPDATE_POLL_TIMEOUT = 300
 _NO_EVENT_DEVICE_ATTRS = ['uptime', 'date']
 _DEFAULT_POLL_INTERVAL = 10
+_TEMP_RENAME_DNS_TIMEOUT = 120
 
 
 _slaves_by_name: Dict[str, Slave] = {}
@@ -188,40 +190,10 @@ class Slave(logging_utils.LoggableMixin):
                 if self._name is not None:
                     self.debug('detected name change to %s', name)
 
-                    # Disable device before removing it
-                    if self.is_enabled():
-                        await self.disable()
-
-                        # We have to trigger an update event here, to inform consumers about disabling
-                        await self.trigger_update()
-
-                    # Check for duplicate name
-                    if name in _slaves_by_name or core_device_attrs.name == name:
-                        logger.error('a slave with name %s already exists', name)
-                        raise exceptions.DeviceAlreadyExists(name)
-
-                    # Rename associated ports persisted data
-                    try:
-                        self._rename_ports_persisted_data(name)
-
-                    except Exception as e:
-                        logger.error('renaming ports persisted data failed: %s', e, exc_info=True)
-
-                    # Actually remove the slave
-                    await remove(self)
-
-                    # Add the slave back
-                    future = add(
-                        self._scheme,
-                        self._host,
-                        self._port,
-                        self._path,
-                        self._poll_interval,
-                        self._listen_enabled,
-                        admin_password_hash=self._admin_password_hash
-                    )
-
-                    asyncio.create_task(future)
+                    # Upon renaming, what be basically do is remove the existing device and add it from scratch.
+                    # This is being taken care of by the following handle_rename() calls, respectively.
+                    await self._handle_rename(name)
+                    asyncio.create_task(_handle_rename(self, name))
 
                     raise exceptions.DeviceRenamed(self)
 
@@ -235,6 +207,26 @@ class Slave(logging_utils.LoggableMixin):
 
         else:
             self._cached_attrs = attrs
+
+    async def _handle_rename(self, new_name: str) -> None:
+        # Disable device before removing it
+        if self.is_enabled():
+            await self.disable()
+
+            # We have to trigger an update event here, to inform consumers about disabling
+            await self.trigger_update()
+
+        # Check for duplicate name
+        if new_name in _slaves_by_name or core_device_attrs.name == new_name:
+            logger.error('a slave with name %s already exists', new_name)
+            raise exceptions.DeviceAlreadyExists(new_name)
+
+        # Rename associated ports persisted data
+        try:
+            self._rename_ports_persisted_data(new_name)
+
+        except Exception as e:
+            logger.error('renaming ports persisted data failed: %s', e, exc_info=True)
 
     def get_name(self) -> str:
         return self._name
@@ -453,7 +445,7 @@ class Slave(logging_utils.LoggableMixin):
             await self._fwupdate_poll_task
 
         # Stop parallel API caller
-        self._parallel_api_caller.stop()
+        await self._parallel_api_caller.stop()
 
     async def _load_ports(self) -> None:
         self.debug('loading persisted ports')
@@ -1657,6 +1649,55 @@ async def add(
 async def remove(slave: Slave) -> None:
     _slaves_by_name.pop(slave.get_name(), None)
     await slave.remove()
+
+
+async def _handle_rename(slave: Slave, new_name: str) -> None:
+    # Remove the slave
+    await remove(slave)
+
+    # Add the slave back; if its name was used as hostname, update it accordingly
+
+    scheme, host, port, path, poll_interval, listen_enabled, admin_password_hash = (
+        slave.get_scheme(),
+        slave.get_host(),
+        slave.get_port(),
+        slave.get_path(),
+        slave.get_poll_interval(),
+        slave.is_listen_enabled(),
+        slave.get_admin_password_hash()
+    )
+
+    if host == slave.get_name():
+        slave.debug('updating hostname to follow device name')
+        host = new_name
+        attrs = slave.get_cached_attrs()
+
+        if attrs.get('ip_address_current'):
+            slave.debug('setting temporary DNS mapping from %s to %s', host, attrs['ip_address_current'])
+            system_dns.set_custom_dns_mapping(host, attrs['ip_address_current'], timeout=_TEMP_RENAME_DNS_TIMEOUT)
+
+    slave = await add(
+        scheme,
+        host,
+        port,
+        path,
+        poll_interval=0,
+        listen_enabled=False,
+        admin_password_hash=admin_password_hash
+    )
+
+    # Enabling polling/listening will be done after the reset
+
+    if host == new_name:
+        await slave.api_call('POST', '/reset', body={})
+        await asyncio.sleep(5)
+
+    slave.set_poll_interval(poll_interval)
+    if listen_enabled:
+        slave.enable_listen()
+
+    if not slave.is_permanently_offline():
+        await slave.wait_online(timeout=settings.slaves.long_timeout)
 
 
 def get_all() -> Iterable[Slave]:
