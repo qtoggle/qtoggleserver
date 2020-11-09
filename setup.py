@@ -43,15 +43,15 @@ setup(
     ]],
 
     install_requires=[
-        'jinja2>=2.10',
-        'jsonpointer>=2.0',
-        'jsonschema>=2.5',
-        'psutil>=5.5',
-        'pyhocon>=0.3.50',
-        'pyjwt>=1.7',
+        'jinja2>=2.10,<3',
+        'jsonpointer>=2.0,<3',
+        'jsonschema>=2.5,<4',
+        'psutil>=5.5,<6',
+        'pyhocon>=0.3.50,<1',
+        'pyjwt>=1.7,<2',
         'pytz',
-        'qui-server>=1.11.0-beta.2',
-        'tornado>=6.0',
+        'qui-server>=1.13.3',
+        'tornado>=6.0,<7',
     ],
 
     zip_safe=False,
