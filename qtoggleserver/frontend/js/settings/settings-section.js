@@ -48,7 +48,7 @@ class SettingsSection extends Section {
     onServerEvent(event) {
         switch (event.type) {
             case 'device-update': {
-                if (this.settingsForm) {
+                if (this.settingsForm && !this.settingsForm.isRebooting()) {
                     /* Don't show field changed warnings for events that are consequences of changes applied from this
                      * client (when the event is expected) */
                     let fieldChangeWarnings = !event.expected && !Settings.recentSettingsUpdateTimer.isRunning()
@@ -59,7 +59,7 @@ class SettingsSection extends Section {
             }
 
             case 'device-polling-update': {
-                if (this.settingsForm) {
+                if (this.settingsForm && !this.settingsForm.isRebooting()) {
                     this.settingsForm.updateUI(/* fieldChangeWarnings = */ false)
                 }
 

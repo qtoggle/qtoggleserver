@@ -65,7 +65,7 @@ class DevicesSection extends Section {
             case 'slave-device-update': {
                 this.devicesTable.updateUIASAP()
 
-                if (deviceForm && (deviceForm.getDeviceName() === event.params.name)) {
+                if (deviceForm && (deviceForm.getDeviceName() === event.params.name) && !deviceForm.isRebooting()) {
                     let fieldChangeWarnings = !event.expected && !Devices.recentDeviceUpdateTimer.isRunning()
                     deviceForm.updateUI(fieldChangeWarnings)
                 }
@@ -86,7 +86,7 @@ class DevicesSection extends Section {
             }
 
             case 'slave-device-polling-update': {
-                if (deviceForm && (deviceForm.getDeviceName() === event.params.name)) {
+                if (deviceForm && (deviceForm.getDeviceName() === event.params.name) && !deviceForm.isRebooting()) {
                     deviceForm.updateUI(/* fieldChangeWarnings = */ false)
                 }
 

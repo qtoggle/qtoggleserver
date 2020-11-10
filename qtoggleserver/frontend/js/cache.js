@@ -800,6 +800,15 @@ export function setReloadNeeded(reloadNow = false) {
 }
 
 /**
+ * Return the name of the polled device.
+ * @alias qtoggle.cache.getPolledDeviceName
+ * @returns {?String}
+ */
+export function getPolledDeviceName() {
+    return polledDeviceName
+}
+
+/**
  * Set the name of the polled device. Passing `null` disables polling.
  * @alias qtoggle.cache.setPolledDeviceName
  * @param {?String} [deviceName]
@@ -840,7 +849,7 @@ function pollDevice() {
     DevicesAPI.getDevice().then(function (attrs) {
 
         asap(function () {
-            if (device) {
+            if (device && polledDeviceName !== device.name) {
                 if (!ObjectUtils.deepEquals(device.attrs, attrs)) {
                     let partialDevice = {name: device.name, attrs: {}}
                     DEVICE_POLLED_ATTRIBUTES.forEach(function (name) {
@@ -851,7 +860,7 @@ function pollDevice() {
                     NotificationsAPI.fakeServerEvent('slave-device-polling-update', partialDevice)
                 }
             }
-            else {
+            else if (polledDeviceName === mainDevice['name']) {
                 if (!ObjectUtils.deepEquals(mainDevice, attrs)) {
                     let partialAttrs = {}
                     DEVICE_POLLED_ATTRIBUTES.forEach(function (name) {

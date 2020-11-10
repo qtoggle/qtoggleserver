@@ -28,6 +28,17 @@ const RebootDeviceMixin = Mixin((superclass = Object) => {
     class RebootDeviceMixin extends superclass {
 
         /**
+         * @constructs
+         * @param {...*} args parent class parameters
+         */
+        constructor({...args} = {}) {
+            super(args)
+
+            this._rebooting = false
+        }
+
+
+        /**
          * Reboot a device after confirmation.
          * @param {String} deviceName the name of the device to reboot
          * @param {String} deviceDisplayName device display name
@@ -57,6 +68,13 @@ const RebootDeviceMixin = Mixin((superclass = Object) => {
             logger.debug(`rebooting device "${deviceName}"`)
 
             this.setProgress()
+            this._rebooting = true
+
+            /* Disable polling while rebooting */
+            let polledDeviceName = Cache.getPolledDeviceName()
+            if (polledDeviceName === deviceName) {
+                Cache.setPolledDeviceName(null)
+            }
 
             if (!Cache.isMainDevice(deviceName)) {
                 BaseAPI.setSlaveName(deviceName)
@@ -90,8 +108,22 @@ const RebootDeviceMixin = Mixin((superclass = Object) => {
             }.bind(this)).then(function () {
 
                 this.clearProgress()
+                this._rebooting = false
+
+                /* Restore polling */
+                if (polledDeviceName === deviceName) {
+                    Cache.setPolledDeviceName(deviceName)
+                }
 
             }.bind(this))
+        }
+
+        /**
+         * Tell if the device is currently rebooting.
+         * @returns {Boolean}
+         */
+        isRebooting() {
+            return this._rebooting
         }
 
     }
