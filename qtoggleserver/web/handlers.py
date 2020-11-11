@@ -14,9 +14,9 @@ from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.api import funcs as core_api_funcs
 from qtoggleserver.core.device import attrs as core_device_attrs
+from qtoggleserver.frontend.api import funcs as frontend_api_funcs
 from qtoggleserver.slaves.api import funcs as slaves_api_funcs
 from qtoggleserver.system.api import funcs as system_api_funcs
-from qtoggleserver.frontend.api import funcs as frontend_api_funcs
 from qtoggleserver.utils import json as json_utils
 
 

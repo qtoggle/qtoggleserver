@@ -34,14 +34,16 @@ WAIT_ONLINE_DEVICE_TIMEOUT = 20
 
 
 async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
-    scheme = properties['scheme']
-    host = properties['host']
-    port = properties['port']
-    path = properties['path']
-    admin_password = properties.get('admin_password')
-    admin_password_hash = properties.get('admin_password_hash')
-    poll_interval = properties.get('poll_interval', 0)
-    listen_enabled = properties.get('listen_enabled')
+    properties = dict(properties)  # Work on copy, don't mess up incoming argument
+
+    scheme = properties.pop('scheme')
+    host = properties.pop('host')
+    port = properties.pop('port')
+    path = properties.pop('path')
+    admin_password = properties.pop('admin_password', None)
+    admin_password_hash = properties.pop('admin_password_hash', None)
+    poll_interval = properties.pop('poll_interval', 0)
+    listen_enabled = properties.pop('listen_enabled', None)
 
     # Look for slave duplicate
     for slave in slaves_devices.get_all():
@@ -69,7 +71,7 @@ async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
             listen_enabled,
             admin_password=admin_password,
             admin_password_hash=admin_password_hash,
-            enabled=properties.get('enabled', True)
+            **properties
         )
 
     except (core_responses.HostUnreachable,
@@ -110,6 +112,19 @@ async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
         raise slaves_exceptions.adapt_api_error(e) from e
 
     return slave
+
+
+async def add_slave_device_retry_disabled(properties: GenericJSONDict) -> slaves_devices.Slave:
+    try:
+        return await add_slave_device(properties)
+
+    except core_api.APIError:
+        if properties.get('enabled', True):
+            core_api.logger.warning('adding device failed, adding it as disabled', exc_info=True)
+            return await add_slave_device(dict(properties, enabled=False))
+
+        else:
+            raise
 
 
 async def wrap_error_with_index(index: int, func: Callable, *args, **kwargs) -> Any:
@@ -180,12 +195,13 @@ async def put_slave_devices(request: core_api.APIRequest, params: GenericJSONLis
                 properties,
                 add_device_schema
             )
+
         # Add slave devices
         add_slave_futures = []
         for index, properties in enumerate(params):
             add_slave_future = wrap_error_with_index(
                 index,
-                add_slave_device,
+                add_slave_device_retry_disabled,
                 properties
             )
             add_slave_futures.append(add_slave_future)

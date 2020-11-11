@@ -1590,24 +1590,35 @@ async def add(
     listen_enabled: Optional[bool] = None,
     admin_password: Optional[str] = None,
     admin_password_hash: Optional[str] = None,
-    enabled: bool = True
+    name: Optional[str] = None,
+    enabled: bool = True,
+    last_sync: int = -1,
+    provisioning: Optional[List[str]] = None,
+    attrs: Optional[Attributes] = None,
+    **kwargs
 ) -> Slave:
 
     slave = Slave(
-        name=None,
+        name=name,
         scheme=scheme,
         host=host,
         port=port,
         path=path,
-        poll_interval=0,  # Will be set later
-        listen_enabled=False,  # Will be set later
+        poll_interval=poll_interval,
+        listen_enabled=listen_enabled,
         admin_password=admin_password,
-        admin_password_hash=admin_password_hash
+        admin_password_hash=admin_password_hash,
+        last_sync=last_sync,
+        provisioning_attrs=provisioning,
+        # TODO provisioning_webhooks, provisioning_reverse
+        attrs=attrs
     )
 
     slave.debug('starting add procedure')
 
-    await slave.fetch_and_update_device()
+    if enabled:
+        await slave.fetch_and_update_device()
+
     name = slave.get_name()
 
     # Check that we have required listen support
@@ -1625,18 +1636,19 @@ async def add(
             slave.debug('listen support not detected, auto-enabling polling')
             poll_interval = _DEFAULT_POLL_INTERVAL
 
-    if listen_enabled:
-        slave.enable_listen()
-
-    elif poll_interval:
-        slave.set_poll_interval(poll_interval)
-
     if enabled:
+        if listen_enabled:
+            slave.enable_listen()
+
+        elif poll_interval:
+            slave.set_poll_interval(poll_interval)
+
         await slave.enable()
+
     await slave.trigger_add()
     slave.save()
 
-    if not listen_enabled and not poll_interval:
+    if enabled and not listen_enabled and not poll_interval:
         # Device is permanently offline, but we must know its ports; this would otherwise be called by
         # Slave._handle_online()
         await slave.fetch_and_update_ports()
