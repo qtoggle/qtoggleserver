@@ -66,8 +66,8 @@ class Slave(logging_utils.LoggableMixin):
         webhooks: Optional[GenericJSONDict] = None,
         reverse: Optional[GenericJSONDict] = None,
         provisioning_attrs: Optional[Set[str]] = None,
-        provisioning_webhooks: Optional[Set[str]] = None,
-        provisioning_reverse: Optional[Set[str]] = None,
+        provisioning_webhooks: bool = False,
+        provisioning_reverse: bool = False,
         **kwargs
     ) -> None:
 
@@ -129,11 +129,11 @@ class Slave(logging_utils.LoggableMixin):
         # Names of attributes that have been changed while device was offline and have to be provisioned later
         self._provisioning_attrs: Set[str] = set(provisioning_attrs or [])
 
-        # Webhooks params that have been changed while device was offline and have to be provisioned later
-        self._provisioning_webhooks: Set[str] = set(provisioning_webhooks or [])
+        # Whether webhooks params have been changed while device was offline and have to be provisioned later
+        self._provisioning_webhooks: bool = bool(provisioning_webhooks)
 
-        # Reverse params that have been changed while device was offline and have to be provisioned later
-        self._provisioning_reverse: Set[str] = set(provisioning_reverse or [])
+        # Whether reverse params have been changed while device was offline and have to be provisioned later
+        self._provisioning_reverse: bool = bool(provisioning_reverse)
 
         # Used to schedule provisioning + local update for permanently offline slaves
         self._provisioning_timeout_task: Optional[asyncio.Task] = None
@@ -416,8 +416,8 @@ class Slave(logging_utils.LoggableMixin):
             'webhooks': self._cached_webhooks,
             'reverse': self._cached_reverse,
             'provisioning_attrs': list(self._provisioning_attrs),
-            'provisioning_webhooks': list(self._provisioning_webhooks),
-            'provisioning_reverse': list(self._provisioning_reverse),
+            'provisioning_webhooks': self._provisioning_webhooks,
+            'provisioning_reverse': self._provisioning_reverse,
         }
 
     def save(self) -> None:
@@ -1274,32 +1274,8 @@ class Slave(logging_utils.LoggableMixin):
 
         return provisioning
 
-    def get_provisioning_webhooks(self) -> GenericJSONDict:
-        provisioning = {}
-        for name in self._provisioning_webhooks:
-            value = self._cached_webhooks.get(name)
-            if value is not None:
-                provisioning[name] = value
-
-        return provisioning
-
-    def get_provisioning_reverse(self) -> GenericJSONDict:
-        provisioning = {}
-        for name in self._provisioning_reverse:
-            value = self._cached_reverse.get(name)
-            if value is not None:
-                provisioning[name] = value
-
-        return provisioning
-
     def clear_provisioning_attrs(self) -> None:
         self._provisioning_attrs = set()
-
-    def clear_provisioning_webhooks(self) -> None:
-        self._provisioning_webhooks = set()
-
-    def clear_provisioning_reverse(self) -> None:
-        self._provisioning_reverse = set()
 
     async def apply_provisioning(self) -> None:
         provisioned = False
@@ -1323,35 +1299,33 @@ class Slave(logging_utils.LoggableMixin):
             provisioned = True
 
         # Webhooks params provisioning
-        params = self.get_provisioning_webhooks()
         webhooks_provisioned = False
-        if params and has_webhooks:
-            self.debug('provisioning webhooks params: %s', ', '.join(params.keys()))
+        if self._cached_webhooks and self._provisioning_webhooks:
+            self.debug('provisioning webhooks params')
 
             try:
-                await self.api_call('PATCH', '/webhooks', params)
+                await self.api_call('PUT', '/webhooks', self._cached_webhooks)
 
             except Exception as e:
                 self.error('failed to provision webhooks params: %s', e)
 
-            self.clear_provisioning_webhooks()
+            self._provisioning_webhooks = False
 
             provisioned = True
             webhooks_provisioned = True
 
         # Reverse params provisioning
-        params = self.get_provisioning_reverse()
         reverse_provisioned = False
-        if params and has_reverse:
-            self.debug('provisioning reverse params: %s', ', '.join(params.keys()))
+        if self._cached_reverse and self._provisioning_reverse:
+            self.debug('provisioning reverse params')
 
             try:
-                await self.api_call('PATCH', '/reverse', params)
+                await self.api_call('PUT', '/reverse', self._cached_reverse)
 
             except Exception as e:
                 self.error('failed to provision reverse params: %s', e)
 
-            self.clear_provisioning_reverse()
+            self._provisioning_reverse = False
 
             provisioned = True
             reverse_provisioned = True
@@ -1489,21 +1463,17 @@ class Slave(logging_utils.LoggableMixin):
                 return True, None
 
             elif path == '/webhooks':
-                for name, value in params.items():
-                    self.debug('marking webhooks param %s for provisioning', name)
-                    self._provisioning_webhooks.add(name)
-                    self._cached_webhooks[name] = value
-
+                self.debug('marking webhooks params for provisioning')
+                self._provisioning_webhooks = True
+                self._cached_webhooks.update(params)
                 self.save()
 
                 return True, None
 
             elif path == '/reverse':
-                for name, value in params.items():
-                    self.debug('marking reverse param %s for provisioning', name)
-                    self._provisioning_reverse.add(name)
-                    self._cached_reverse[name] = value
-
+                self.debug('marking reverse params for provisioning')
+                self._provisioning_reverse = True
+                self._cached_reverse.update(params)
                 self.save()
 
                 return True, None
