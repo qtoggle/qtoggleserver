@@ -34,7 +34,7 @@ setup(
 
     packages=find_namespace_packages(
         include=[name, f'{name}.*'],
-        exclude=[f'{name}.frontend', f'{name}.frontend.*']
+        exclude=[f'{name}.frontend.node_modules.*']
     ),
     namespace_packages=[name],
     py_modules=[f'{name}.{module}' for module in [
