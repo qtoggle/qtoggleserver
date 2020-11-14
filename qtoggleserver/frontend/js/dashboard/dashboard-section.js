@@ -130,8 +130,8 @@ class DashboardSection extends Section {
 
             case 'dashboard-update': {
                 let currentPanel = Dashboard.getCurrentPanel()
-                if (!event.byCurrentSession() && currentPanel != null) {
-                    this.handleConcurrentEdit(event.params['panels'])
+                if (!event.byCurrentSession()) {
+                    this.handleExternalEdit(event.params['panels'])
                 }
 
                 break
@@ -198,18 +198,20 @@ class DashboardSection extends Section {
         }.bind(this))
     }
 
-    handleConcurrentEdit(panels) {
+    handleExternalEdit(panels) {
         let currentPanel = Dashboard.getCurrentPanel()
 
-        logger.info('another session started editing the dashboard')
+        logger.info('another session is editing the dashboard')
 
         /* Exit edit mode */
-        if (currentPanel.isEditEnabled()) {
+        if (currentPanel && currentPanel.isEditEnabled()) {
             currentPanel.disableEditing()
         }
 
-        let msg = gettext('The dashboard is currently being edited in another session.')
-        Toast.warning(msg)
+        if (this.isCurrent()) {
+            let msg = gettext('The dashboard is currently being edited in another session.')
+            Toast.warning(msg)
+        }
 
         let rootGroup = this.getMainPage()
 
