@@ -72,6 +72,10 @@ class LoginForm extends PageForm {
         }
     }
 
+    cancelAction() {
+        /* Prevent closing the login form, e.g. with Escape key */
+    }
+
 }
 
 
