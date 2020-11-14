@@ -608,6 +608,7 @@ class Slave(logging_utils.LoggableMixin):
 
         h = hashlib.sha1(str(int(time.time() * 1000) + random.randint(0, 10000)).encode()).hexdigest()[:8]
         self._listen_session_id = f'{core_device_attrs.name.lower()}-{h}'
+        self._listen_session_id = self._listen_session_id[:32]
 
         self.debug('starting listening mechanism (%s)', self._listen_session_id)
 
@@ -766,14 +767,15 @@ class Slave(logging_utils.LoggableMixin):
                     self.error('exiting listen loop for dangling slave device')
                     break
 
-                url = self.get_url(f'/listen?timeout={keep_alive}&session_id={self._listen_session_id}')
+                url = self.get_url(f'/listen?timeout={keep_alive}')
                 headers = {
                     'Content-Type': json_utils.JSON_CONTENT_TYPE,
                     'Authorization': core_api_auth.make_auth_header(
                         core_api_auth.ORIGIN_CONSUMER,
                         username='admin',
                         password_hash=self._admin_password_hash
-                    )
+                    ),
+                    'Session-Id': self._listen_session_id
                 }
 
                 http_client = AsyncHTTPClient()
@@ -805,7 +807,7 @@ class Slave(logging_utils.LoggableMixin):
                     break
 
                 try:
-                    events = core_responses.parse(response)
+                    received_events = core_responses.parse(response)
 
                 except core_responses.Error as e:
                     self.error(
@@ -832,7 +834,7 @@ class Slave(logging_utils.LoggableMixin):
                     keep_alive = settings.slaves.keepalive
                     needs_save_ports = False
 
-                    for event in events:
+                    for event in received_events:
                         try:
                             await self.handle_event(event)
                             if event['type'] in ('port-add', 'port-remove', 'port-update'):

@@ -267,7 +267,6 @@ function wait(firstQuick = false) {
 
     let timeout = (syncListenError || firstQuick) ? 1 : LISTEN_KEEPALIVE
     let query = {
-        session_id: BaseAPI.getSessionId(),
         timeout: timeout
     }
 

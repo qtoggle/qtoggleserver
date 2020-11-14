@@ -192,7 +192,7 @@ class Reverse:
         if api_response_dict:  # Answer request
             body_str = api_response_dict['body']
             headers['Status'] = f'{api_response_dict["status"]} {httputil.responses[api_response_dict["status"]]}'
-            headers['API-Call-Id'] = api_request_dict['api_call_id']
+            headers['Session-Id'] = api_request_dict['session_id']
 
         http_client = AsyncHTTPClient()
         request = HTTPRequest(
@@ -209,7 +209,7 @@ class Reverse:
                 'sending answer request to %s %s (API call id %s) to %s',
                 api_request_dict['method'],
                 api_request_dict['path'],
-                api_request_dict['api_call_id'],
+                api_request_dict['session_id'],
                 url
             )
 
@@ -260,16 +260,16 @@ class Reverse:
             raise InvalidConsumerRequestError('Missing Path header') from None
 
         try:
-            api_call_id = response.headers['API-Call-Id']
+            session_id = response.headers['Session-Id']
 
         except KeyError:
-            raise InvalidConsumerRequestError('Missing API-Call-Id header') from None
+            raise InvalidConsumerRequestError('Missing Session-Id header') from None
 
         return {
             'body': body,
             'method': method,
             'path': path,
-            'api_call_id': api_call_id,
+            'session_id': session_id,
             'access_level': access_level,
             'username': usr
         }

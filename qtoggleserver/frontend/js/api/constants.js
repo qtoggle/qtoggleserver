@@ -42,6 +42,11 @@ export const KNOWN_ERRORS = [
     },
     {
         status: 400,
+        code: 'missing-header',
+        pretty: gettext('Missing header: %(header)s.')
+    },
+    {
+        status: 400,
         code: 'attribute-not-modifiable',
         pretty: gettext('Attribute "%(attribute)s" is not modifiable.')
     },
@@ -54,6 +59,11 @@ export const KNOWN_ERRORS = [
         status: 400,
         code: 'invalid-field',
         pretty: gettext('Invalid value for "%(field)s".')
+    },
+    {
+        status: 400,
+        code: 'invalid-header',
+        pretty: gettext('Invalid value for "%(header)s".')
     },
     {
         status: 400,
