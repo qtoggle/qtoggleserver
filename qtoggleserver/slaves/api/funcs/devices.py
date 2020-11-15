@@ -30,8 +30,6 @@ _LONG_TIMEOUT_API_CALLS = [
     ('PATCH', re.compile(r'/devices/[^/]+/?'))
 ]
 
-WAIT_ONLINE_DEVICE_TIMEOUT = 20
-
 
 async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
     properties = dict(properties)  # Work on copy, don't mess up incoming argument
@@ -206,24 +204,7 @@ async def put_slave_devices(request: core_api.APIRequest, params: GenericJSONLis
             )
             add_slave_futures.append(add_slave_future)
 
-        added_slaves = await asyncio.gather(*add_slave_futures)
-
-        # Wait for slave devices to come online
-        wait_slave_futures = []
-        for index, slave in enumerate(added_slaves):
-            if not slave.is_enabled():
-                continue
-            if slave.is_permanently_offline():
-                continue
-
-            wait_slave_future = wrap_error_with_index(
-                index,
-                slave.wait_online,
-                timeout=WAIT_ONLINE_DEVICE_TIMEOUT
-            )
-            wait_slave_futures.append(wait_slave_future)
-
-        await asyncio.gather(*wait_slave_futures)
+        await asyncio.gather(*add_slave_futures)
 
     finally:
         core_events.enable()
