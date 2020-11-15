@@ -1,7 +1,4 @@
 
-from __future__ import annotations
-
-import abc
 import logging
 
 from typing import Any, Dict, Iterable, List, Optional
@@ -11,48 +8,13 @@ from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import json as json_utils
 
-
-# TODO: move to persist.typing module
-Id = str
-Record = Dict[str, Any]
+from .base import BaseDriver
+from .typing import Id, Record
 
 
 logger = logging.getLogger(__name__)
 
 _driver: Optional[BaseDriver] = None
-
-
-class BaseDriver(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def query(
-        self,
-        collection: str,
-        fields: Optional[List[str]],
-        filt: Dict[str, Any],
-        limit: Optional[int]
-    ) -> Iterable[Record]:
-
-        return []
-
-    @abc.abstractmethod
-    def insert(self, collection: str, record: Record) -> Id:
-        return '1'  # Returns the inserted record id
-
-    @abc.abstractmethod
-    def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
-        return 0  # Returns the number of updated records
-
-    @abc.abstractmethod
-    def replace(self, collection: str, id_: Id, record: Record, upsert: bool) -> bool:
-        return False  # Returns True if replaced
-
-    @abc.abstractmethod
-    def remove(self, collection: str, filt: Dict[str, Any]) -> int:
-        return 0  # Returns the number of removed records
-
-    @abc.abstractmethod
-    def cleanup(self) -> None:
-        pass
 
 
 def _get_driver() -> BaseDriver:
@@ -94,10 +56,12 @@ def query(
 
 
 def get(collection: str, id_: Id) -> Optional[Record]:
-    if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('getting record with id %s from %s', id_, collection)
+    logger.debug('getting record with id %s from %s', id_, collection)
 
     records = list(_get_driver().query(collection, fields=None, filt={'id': id_}, limit=1))
+    if len(records) > 1:
+        logger.warning('more than one record with same id %s found in collection %s', id_, collection)
+
     if records:
         return records[0]
 
@@ -105,8 +69,7 @@ def get(collection: str, id_: Id) -> Optional[Record]:
 
 
 def get_value(name: str, default: Optional[Any] = None) -> Any:
-    if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('getting value of %s', name)
+    logger.debug('getting value of %s', name)
 
     records = list(_get_driver().query(name, fields=None, filt={}, limit=2))
     if len(records) > 1:

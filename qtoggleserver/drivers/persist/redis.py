@@ -5,7 +5,8 @@ import redis
 from typing import Any, Dict, Iterable, List, Optional
 
 from qtoggleserver.core.typing import GenericJSONDict
-from qtoggleserver.persist import BaseDriver, Id, Record
+from qtoggleserver.persist import BaseDriver
+from qtoggleserver.persist.typing import Id, Record
 from qtoggleserver.utils import json as json_utils
 
 

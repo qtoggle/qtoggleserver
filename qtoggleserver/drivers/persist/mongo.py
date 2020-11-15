@@ -8,7 +8,8 @@ from bson import ObjectId
 from pymongo import MongoClient
 from pymongo.database import Database
 
-from qtoggleserver.persist import BaseDriver, Id, Record
+from qtoggleserver.persist import BaseDriver
+from qtoggleserver.persist.typing import Id, Record
 
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ class MongoDriver(BaseDriver):
     def __init__(self, host: str = '127.0.0.1', port: str = 27017, db: str = DEFAULT_DB, **kwargs) -> None:
         logger.debug('connecting to %s:%s/%s', host, port, db)
 
-        self._client: MongoClient = MongoClient(host, port, serverSelectionTimeoutMS=200)
+        self._client: MongoClient = MongoClient(host, port, serverSelectionTimeoutMS=200, connectTimeoutMS=200)
         self._db: Database = self._client[db]
 
     def query(
