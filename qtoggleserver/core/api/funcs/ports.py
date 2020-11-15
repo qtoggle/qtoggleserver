@@ -14,6 +14,7 @@ from qtoggleserver.core.api import schema as core_api_schema
 from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, GenericJSONList, NullablePortValue
 from qtoggleserver.core.typing import PortValue
 from qtoggleserver.slaves import ports as slaves_ports
+from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.utils import json as json_utils
 
 
@@ -209,7 +210,16 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
 
             # Virtual ports must be added first (unless they belong to a slave)
             virtual = attrs.get('virtual')
-            if virtual and port is None:
+            if port is not None:  # Port already exists so it probably belongs to a slave
+                virtual = False
+            for slave in slaves_devices.get_all():
+                if id_.startswith(f'{slave.get_name()}.'):  # id indicates that port belongs to a slave
+                    virtual = False
+                    break
+            if 'provisioning' in attrs:  # A clear indication that port belongs to a slave
+                virtual = False
+
+            if virtual:
                 await wrap_error_with_port_id(
                     id_,
                     core_api_schema.validate,
