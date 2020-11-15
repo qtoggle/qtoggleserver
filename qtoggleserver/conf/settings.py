@@ -50,6 +50,8 @@ class core:
     event_queue_size: int = 256
     max_client_time_skew: int = 300
     backup_support: bool = True
+    history_support: bool = True
+    history_janitor_interval: int = 600
     listen_support: bool = True
     sequences_support: bool = True
     ssl_support: bool = True

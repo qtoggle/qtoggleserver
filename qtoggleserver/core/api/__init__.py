@@ -72,7 +72,7 @@ class APIRequest:
         return self.handler.request.path
 
     @property
-    def query_arguments(self) -> Dict[str, str]:
+    def query(self) -> Dict[str, str]:
         return {k: self.handler.decode_argument(v[0]) for k, v in self.handler.request.query_arguments.items()}
 
     @property

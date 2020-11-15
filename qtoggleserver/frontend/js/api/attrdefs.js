@@ -9,6 +9,7 @@ import {TextAreaField}     from '$qui/forms/common-fields/common-fields.js'
 import {TextField}         from '$qui/forms/common-fields/common-fields.js'
 import * as DateUtils      from '$qui/utils/date.js'
 import * as ObjectUtils    from '$qui/utils/object.js'
+import * as StringUtils    from '$qui/utils/string.js'
 
 import {netmaskFromLen} from '$app/utils.js'
 import {netmaskToLen}   from '$app/utils.js'
@@ -19,6 +20,35 @@ import {WiFiSignalStrengthField} from './attrdef-fields.js'
 
 const IP_ADDRESS_PATTERN = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
+
+const HISTORY_INTERVAL_CHOICES = [
+    {display_name: gettext('disabled'), value: 0},
+    {display_name: gettext('when value changes'), value: -1},
+    {display_name: gettext('1 second'), value: 1},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d seconds'), {count: 5}), value: 5},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d seconds'), {count: 10}), value: 10},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d seconds'), {count: 30}), value: 30},
+    {display_name: gettext('1 minute'), value: 60},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d minutes'), {count: 5}), value: 300},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d minutes'), {count: 10}), value: 600},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d minutes'), {count: 15}), value: 900},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d minutes'), {count: 30}), value: 1800},
+    {display_name: gettext('1 hour'), value: 3600},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d hours'), {count: 4}), value: 14400},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d hours'), {count: 8}), value: 28800},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d hours'), {count: 12}), value: 43200},
+    {display_name: gettext('1 day'), value: 86400}
+]
+
+const HISTORY_RETENTION_CHOICES = [
+    {display_name: gettext('forever'), value: 0},
+    {display_name: gettext('1 minute'), value: 60},
+    {display_name: gettext('1 hour'), value: 3600},
+    {display_name: gettext('1 day'), value: 86400},
+    {display_name: gettext('1 week'), value: 86400 * 7},
+    {display_name: gettext('1 month'), value: 86400 * 31},
+    {display_name: gettext('1 year'), value: 86400 * 366}
+]
 
 
 /**
@@ -680,6 +710,52 @@ export const STD_PORT_ATTRDEFS = {
         standard: true,
         optional: true,
         order: 270
+    },
+    history_interval: {
+        display_name: gettext('History Sampling Interval'),
+        description: gettext('Determines how often the port value will be sampled and saved to history.'),
+        type: 'number',
+        choices: HISTORY_INTERVAL_CHOICES,
+        modifiable: true,
+        standard: true,
+        optional: true,
+        separator: true,
+        order: 280
+    },
+    device_history_interval: {
+        /* display_name is added dynamically */
+        description: gettext(
+            'Determines how often the port value will be sampled and saved to history, directly on the device.'
+        ),
+        type: 'number',
+        choices: HISTORY_INTERVAL_CHOICES,
+        modifiable: true,
+        standard: true,
+        optional: true,
+        separator: true
+        /* order is added dynamically */
+    },
+    history_retention: {
+        display_name: gettext('History Retention Duration'),
+        description: gettext('Determines for how long historical data will be kept for this port.'),
+        type: 'number',
+        choices: HISTORY_RETENTION_CHOICES,
+        modifiable: true,
+        standard: true,
+        optional: true,
+        order: 290
+    },
+    device_history_retention: {
+        /* display_name is added dynamically */
+        description: gettext(
+            'Determines for how long historical data will be kept for this port, directly on the device.'
+        ),
+        type: 'number',
+        choices: HISTORY_RETENTION_CHOICES,
+        modifiable: true,
+        standard: true,
+        optional: true
+        /* order is added dynamically */
     }
 }
 

@@ -269,7 +269,6 @@ async def patch_slave_device(request: core_api.APIRequest, name: str, params: Ge
 async def slave_device_forward(
     request: core_api.APIRequest,
     name: str,
-    method: str,
     path: str,
     params: Optional[GenericJSONDict] = None,
     internal_use: bool = False
@@ -287,27 +286,27 @@ async def slave_device_forward(
         if path.startswith('/listen'):
             raise core_api.APIError(404, 'no-such-function')
 
-    intercepted, response = await slave.intercept_request(method, path, params, request)
+    intercepted, response = await slave.intercept_request(request.method, path, params, request)
     if intercepted:
         return response
 
-    override_disabled = request.query_arguments.get('override_disabled')
+    override_disabled = request.query.get('override_disabled')
     if not slave.is_enabled() and (override_disabled != 'true'):
         raise core_api.APIError(404, 'device-disabled')
 
-    override_offline = request.query_arguments.get('override_offline')
+    override_offline = request.query.get('override_offline')
     if (not slave.is_online() or not slave.is_ready()) and (override_offline != 'true'):
         raise core_api.APIError(503, 'device-offline')
 
     # Use default slave timeout unless API call requires longer timeout
     timeout = settings.slaves.timeout
     for m, path_re in _LONG_TIMEOUT_API_CALLS:
-        if method == m and path_re.fullmatch(path):
+        if request.method == m and path_re.fullmatch(path):
             timeout = settings.slaves.long_timeout
             break
 
     try:
-        response = await slave.api_call(method, path, params, timeout=timeout, retry_counter=None)
+        response = await slave.api_call(request.method, path, params, timeout=timeout, retry_counter=None)
 
     except Exception as e:
         raise slaves_exceptions.adapt_api_error(e) from e

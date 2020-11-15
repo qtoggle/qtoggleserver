@@ -14,7 +14,6 @@ from typing import Optional
 from qtoggleserver import system
 from qtoggleserver import version
 from qtoggleserver.conf import settings
-from qtoggleserver.core import api as core_api
 from qtoggleserver.core.typing import Attributes, AttributeDefinitions, GenericJSONDict
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_set_cmd
@@ -344,6 +343,9 @@ def get_schema(loose: bool = False) -> GenericJSONDict:
 
 
 def get_attrs() -> Attributes:
+    from qtoggleserver.core import api as core_api
+    from qtoggleserver.core import history as core_history
+
     attrs = {
         'name': name,
         'display_name': display_name,
@@ -364,6 +366,9 @@ def get_attrs() -> Attributes:
 
     if settings.core.backup_support:
         flags.append('backup')
+
+    if core_history.is_enabled():
+        flags.append('history')
 
     if settings.core.listen_support:
         flags.append('listen')

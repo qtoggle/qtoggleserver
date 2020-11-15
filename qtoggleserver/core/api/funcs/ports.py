@@ -1,6 +1,7 @@
 
 import asyncio
 import inspect
+import time
 
 from typing import Any, Callable, List
 
@@ -8,6 +9,7 @@ from qtoggleserver import slaves
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
+from qtoggleserver.core import history as core_history
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import vports as core_vports
 from qtoggleserver.core.api import schema as core_api_schema
@@ -405,3 +407,89 @@ async def patch_port_sequence(request: core_api.APIRequest, port_id: str, params
     except Exception as e:
         # Transform any unhandled exception into APIError(500)
         raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
+
+
+@core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
+async def get_port_history(request: core_api.APIRequest, port_id: str) -> GenericJSONList:
+    port = core_ports.get(port_id)
+    if port is None:
+        raise core_api.APIError(404, 'no-such-port')
+
+    query = request.query
+
+    from_str = query.get('from')
+    if from_str is None:
+        raise core_api.APIError(400, 'missing-field', field='from')
+
+    try:
+        from_timestamp = int(from_str)
+
+    except ValueError:
+        raise core_api.APIError(400, 'invalid-field', field='from')
+
+    if from_timestamp < 0:
+        raise core_api.APIError(400, 'invalid-field', field='from')
+
+    to_str = query.get('to')
+    to_timestamp = int(time.time() * 1000)
+    if to_str is not None:
+        try:
+            to_timestamp = int(to_str)
+
+        except ValueError:
+            raise core_api.APIError(400, 'invalid-field', field='to') from None
+
+        if to_timestamp < 0:
+            raise core_api.APIError(400, 'invalid-field', field='to')
+
+    limit_str = query.get('limit')
+    limit = 1000  # default
+    if limit_str is not None:
+        try:
+            limit = int(limit_str)
+
+        except ValueError:
+            raise core_api.APIError(400, 'invalid-field', field='limit') from None
+
+        if limit < 1 or limit > 1000:
+            raise core_api.APIError(400, 'invalid-field', field='limit')
+
+    samples = core_history.get_samples(port, from_timestamp, to_timestamp, limit)
+    return list(samples)
+
+
+@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
+async def delete_port_history(request: core_api.APIRequest, port_id: str) -> None:
+    port = core_ports.get(port_id)
+    if port is None:
+        raise core_api.APIError(404, 'no-such-port')
+
+    query = request.query
+
+    from_str = query.get('from')
+    if from_str is None:
+        raise core_api.APIError(400, 'missing-field', field='from')
+
+    try:
+        from_timestamp = int(from_str)
+
+    except ValueError:
+        raise core_api.APIError(400, 'invalid-field', field='from') from None
+
+    if from_timestamp < 0:
+        raise core_api.APIError(400, 'invalid-field', field='from')
+
+    to_str = query.get('to')
+    if to_str is None:
+        raise core_api.APIError(400, 'missing-field', field='to')
+
+    try:
+        to_timestamp = int(to_str)
+
+    except ValueError:
+        raise core_api.APIError(400, 'invalid-field', field='to') from None
+
+    if to_timestamp < 0:
+        raise core_api.APIError(400, 'invalid-field', field='to')
+
+    core_history.remove_samples(port, from_timestamp, to_timestamp)

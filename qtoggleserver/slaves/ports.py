@@ -16,6 +16,18 @@ from . import exceptions
 
 
 _DEVICE_EXPRESSION_RE = re.compile(r'^(device_)+expression$')
+_DEVICE_HISTORY_RE = re.compile(r'^(device_)+history_[a-z0-9_]+$')
+
+MASTER_ATTRS = {
+    'id',                        # always use the special slave.id notation
+    'tag',                       # always kept on master, ignored on slave
+    'expression',                # kept and managed on master, separate attribute for slave
+    'history_interval',          # kept and managed on master, separate attribute for slave
+    'history_retention',         # kept and managed on master, separate attribute for slave
+    'online',                    # use slave value unless slave itself offline or port disabled
+    'last_sync',                 # always kept on master, ignored on slave
+    'expires',                   # always kept on master, ignored on slave
+}
 
 
 # We can't use proper type annotations for slaves in this module because that would create unsolvable circular imports.
@@ -29,6 +41,22 @@ class SlavePort(core_ports.BasePort):
         'type': 'string',
         'modifiable': True,
         'max': 1024
+    }
+
+    _DEVICE_HISTORY_INTERVAL_ATTRDEF = {
+        'type': 'number',
+        'integer': True,
+        'modifiable': True,
+        'min': -1,
+        'max': 2147483647
+    }
+
+    _DEVICE_HISTORY_RETENTION_ATTRDEF = {
+        'type': 'number',
+        'integer': True,
+        'modifiable': True,
+        'min': 0,
+        'max': 2147483647
     }
 
     _LAST_SYNC_ATTRDEF = {
@@ -97,7 +125,7 @@ class SlavePort(core_ports.BasePort):
     def _get_standard_attrdefs(self) -> AttributeDefinitions:
         attrdefs = copy.copy(core_ports.STANDARD_ATTRDEFS)
 
-        # Device_*_expression
+        # device_*expression
         for i in range(1, 10):
             slave_name = (i - 1) * 'device_' + 'expression'
             master_name = i * 'device_' + 'expression'
@@ -105,6 +133,24 @@ class SlavePort(core_ports.BasePort):
                 break
 
             attrdefs[master_name] = dict(self._DEVICE_EXPRESSION_ATTRDEF)
+
+        # device_*history_interval
+        for i in range(1, 10):
+            slave_name = (i - 1) * 'device_' + 'history_interval'
+            master_name = i * 'device_' + 'history_interval'
+            if slave_name not in self._cached_attrs:
+                break
+
+            attrdefs[master_name] = dict(self._DEVICE_HISTORY_INTERVAL_ATTRDEF)
+
+        # device_*history_retention
+        for i in range(1, 10):
+            slave_name = (i - 1) * 'device_' + 'history_retention'
+            master_name = i * 'device_' + 'history_retention'
+            if slave_name not in self._cached_attrs:
+                break
+
+            attrdefs[master_name] = dict(self._DEVICE_HISTORY_RETENTION_ATTRDEF)
 
         # Various master-specific standard attributes
         attrdefs['last_sync'] = dict(self._LAST_SYNC_ATTRDEF)
@@ -127,17 +173,14 @@ class SlavePort(core_ports.BasePort):
         return self._remote_id
 
     async def get_attr(self, name: str) -> Optional[Attribute]:
-        # id - always use the special slave.id notation
-        # tag - always kept on master, ignored on slave
-        # expression - kept and managed on master, separate attribute for slave
-        # device_expression - mapped to expression on slave
-        # online - use slave value unless slave itself offline or port disabled
-        # expires - always kept on master, ignored on slave
+        # device_expression        - mapped to expression on slave
+        # device_history_interval  - mapped to history_interval on slave
+        # device_history_retention - mapped to history_retention on slave
 
-        if name in ('id', 'tag', 'expression', 'online', 'last_sync', 'expires'):
+        if name in MASTER_ATTRS:
             return await super().get_attr(name)
 
-        elif _DEVICE_EXPRESSION_RE.match(name):
+        elif _DEVICE_EXPRESSION_RE.match(name) or _DEVICE_HISTORY_RE.match(name):  # Strip leading "device_"
             return self.get_cached_attr(name[7:])
 
         value = self._cached_attrs.get(name)
@@ -147,12 +190,12 @@ class SlavePort(core_ports.BasePort):
         return await super().get_attr(name)
 
     async def set_attr(self, name: str, value: Attribute) -> None:
-        if name in ('tag', 'expression', 'last_sync', 'expires'):
+        if name in MASTER_ATTRS:
             # Attributes that always stay locally, on master
             await super().set_attr(name, value)
 
         else:
-            if _DEVICE_EXPRESSION_RE.match(name):
+            if _DEVICE_EXPRESSION_RE.match(name) or _DEVICE_HISTORY_RE.match(name):  # Strip leading "device_"
                 name = name[7:]
 
             if self._slave.is_online():
@@ -352,10 +395,11 @@ class SlavePort(core_ports.BasePort):
             self.update_cached_attrs(attrs)
 
         # Attributes that are kept on master
-        for attr in ('tag', 'expression', 'last_sync', 'expires'):
+        for attr in MASTER_ATTRS:
             if attr in data:
                 await self.set_attr(attr, data[attr])
 
+        self._history_last_timestamp = data.get('history_last_timestamp', 0)
         self._provisioning = set(data.get('provisioning', []))
 
         # Enable if enabled remotely
@@ -366,6 +410,9 @@ class SlavePort(core_ports.BasePort):
             'id': self.get_id(),
             'tag': self._tag,
             'expression': str(self._expression or ''),
+            'history_interval': self._history_interval,
+            'history_retention': self._history_retention,
+            'history_last_timestamp': self._history_last_timestamp,
             'last_sync': self._last_sync,
             'expires': self._expires,
             'provisioning': list(self._provisioning),
