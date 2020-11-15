@@ -129,10 +129,7 @@ class DashboardSection extends Section {
             }
 
             case 'dashboard-update': {
-                let currentPanel = Dashboard.getCurrentPanel()
-                if (!event.byCurrentSession()) {
-                    this.handleExternalEdit(event.params['panels'])
-                }
+                this._handleDashboardUpdate(event.params['panels'], event.byCurrentSession())
 
                 break
             }
@@ -198,34 +195,36 @@ class DashboardSection extends Section {
         }.bind(this))
     }
 
-    handleExternalEdit(panels) {
+    _handleDashboardUpdate(panels, byCurrentSession) {
         let currentPanel = Dashboard.getCurrentPanel()
 
         logger.info('another session is editing the dashboard')
 
         /* Exit edit mode */
-        if (currentPanel && currentPanel.isEditEnabled()) {
+        if (!byCurrentSession && currentPanel && currentPanel.isEditEnabled()) {
             currentPanel.disableEditing()
         }
 
-        if (this.isCurrent()) {
+        /* Warn user of external edit */
+        if (!byCurrentSession && this.isCurrent()) {
             let msg = gettext('The dashboard is currently being edited in another session.')
             Toast.warning(msg)
         }
 
-        let rootGroup = this.getMainPage()
-
         /* Navigate back to the section root */
-        let promise = Promise.resolve()
-        if (rootGroup.getNext()) {
-            promise = rootGroup.getNext().close()
-        }
+        if (!byCurrentSession || !currentPanel || !currentPanel.isEditEnabled() || !this.isCurrent()) {
+            let rootGroup = this.getMainPage()
+            let promise = Promise.resolve()
+            if (rootGroup.getNext()) {
+                promise = rootGroup.getNext().close()
+            }
 
-        promise.then(function () {
-            /* Update all groups and panels */
-            rootGroup.fromJSON({children: panels})
-            rootGroup.updateUI(/* recursive = */ true)
-        })
+            promise.then(function () {
+                /* Update all groups and panels */
+                rootGroup.fromJSON({children: panels})
+                rootGroup.updateUI(/* recursive = */ true)
+            })
+        }
     }
 
     makeMainPage() {

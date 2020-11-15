@@ -9,7 +9,6 @@ from typing import Dict, List, Optional
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
-from qtoggleserver.frontend import events as frontend_events
 from qtoggleserver.utils import logging as logging_utils
 
 
@@ -67,9 +66,6 @@ class Session(logging_utils.LoggableMixin):
         self.future = None
 
     def push(self, event: core_events.Event) -> None:
-        if self.should_ignore_event(event):
-            return
-
         # Deduplicate events
         while True:
             duplicates = [e for e in self.queue if event.is_duplicate(e)]
@@ -86,14 +82,6 @@ class Session(logging_utils.LoggableMixin):
             self.queue.pop()
 
         self.queue.insert(0, event)
-
-    def should_ignore_event(self, event: core_events.Event) -> bool:
-        # Don't relay back events originating from this session
-        if isinstance(event, frontend_events.FrontendEvent):
-            if event.request.session_id == self.id:
-                return True
-
-        return False
 
     def __str__(self) -> str:
         return f'session {self.id}'

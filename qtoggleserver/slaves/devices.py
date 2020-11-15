@@ -503,13 +503,13 @@ class Slave(logging_utils.LoggableMixin):
         await self.trigger_remove()
 
     async def trigger_add(self) -> None:
-        await core_events.handle_event(events.SlaveDeviceAdd(self))
+        await core_events.trigger(events.SlaveDeviceAdd(self))
 
     async def trigger_remove(self) -> None:
-        await core_events.handle_event(events.SlaveDeviceRemove(self))
+        await core_events.trigger(events.SlaveDeviceRemove(self))
 
     async def trigger_update(self) -> None:
-        await core_events.handle_event(events.SlaveDeviceUpdate(self))
+        await core_events.trigger(events.SlaveDeviceUpdate(self))
 
     async def api_call(
         self,

@@ -882,16 +882,16 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         await self.trigger_remove()
 
     async def trigger_add(self) -> None:
-        await core_events.handle_event(core_events.PortAdd(self))
+        await core_events.trigger(core_events.PortAdd(self))
 
     async def trigger_remove(self) -> None:
-        await core_events.handle_event(core_events.PortRemove(self))
+        await core_events.trigger(core_events.PortRemove(self))
 
     async def trigger_update(self) -> None:
-        await core_events.handle_event(core_events.PortUpdate(self))
+        await core_events.trigger(core_events.PortUpdate(self))
 
     async def trigger_value_change(self) -> None:
-        await core_events.handle_event(core_events.ValueChange(self))
+        await core_events.trigger(core_events.ValueChange(self))
 
     async def get_schema(self) -> GenericJSONDict:
         if self._schema is None:

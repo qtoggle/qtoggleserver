@@ -35,7 +35,7 @@ def register_handler(handler: Handler) -> None:
     _registered_handlers.append(handler)
 
 
-async def handle_event(event: Event) -> None:
+async def trigger(event: Event) -> None:
     if not _enabled:
         return
 

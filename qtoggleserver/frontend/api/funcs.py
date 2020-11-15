@@ -23,7 +23,7 @@ async def put_panels(request: core_api.APIRequest, params: GenericJSONList) -> N
 
     persist.set_value('dashboard_panels', params)
 
-    await core_events.handle_event(DashboardUpdateEvent(request=request, panels=params))
+    await core_events.trigger(DashboardUpdateEvent(request=request, panels=params))
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
@@ -64,3 +64,5 @@ async def put_frontend(request: core_api.APIRequest, params: GenericJSONDict) ->
     dashboard_panels = params.get('dashboard_panels', [])
     logger.debug('restoring dashboard panels')
     persist.set_value('dashboard_panels', dashboard_panels)
+
+    await core_events.trigger(DashboardUpdateEvent(request=request, panels=dashboard_panels))
