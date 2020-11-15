@@ -1,6 +1,4 @@
 
-import re
-
 from typing import Dict, Optional
 
 from qtoggleserver import slaves
@@ -28,16 +26,13 @@ async def get_access(request: core_api.APIRequest, access_level: int) -> Dict[st
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
 async def get_listen(
     request: core_api.APIRequest,
-    session_id: str,
     timeout: Optional[int],
     access_level: int
 ) -> GenericJSONList:
 
-    if session_id is None:
-        raise core_api.APIError(400, 'missing-field', field='session_id')
-
-    if not re.match('[a-zA-Z0-9]{1,32}', session_id):
-        raise core_api.APIError(400, 'invalid-field', field='session_id')
+    session_id = request.headers.get('Session-Id')
+    if not session_id:
+        raise core_api.APIError(400, 'missing-header', header='Session-Id')
 
     if timeout is not None:
         try:

@@ -2,6 +2,7 @@
 import asyncio
 import inspect
 import logging
+import re
 
 from typing import Any, Callable, Dict, Optional
 
@@ -19,6 +20,8 @@ from qtoggleserver.slaves.api import funcs as slaves_api_funcs
 from qtoggleserver.system.api import funcs as system_api_funcs
 from qtoggleserver.utils import json as json_utils
 
+
+SESSION_ID_RE = re.compile(r'[a-zA-Z0-9]{1,32}')
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +152,12 @@ class APIHandler(BaseHandler):
             core_api.ACCESS_LEVEL_MAPPING[self.access_level],
             self.username
         )
+
+        # Validate session id
+        session_id = self.request.headers.get('Session-Id')
+        if session_id:
+            if not SESSION_ID_RE.match(session_id):
+                raise core_api.APIError(400, 'invalid-header', header='Session-Id')
 
     async def call_api_func(self, func: Callable, default_status: int = 200, **kwargs) -> None:
         try:
@@ -333,14 +342,12 @@ class WebhooksHandler(APIHandler):
 
 class ListenHandler(APIHandler):
     async def get(self) -> None:
-        session_id = self.get_argument('session_id', None)
         timeout = self.get_argument('timeout', None)
         if timeout:
             timeout = int(timeout)
 
         await self.call_api_func(
             core_api_funcs.get_listen,
-            session_id=session_id,
             timeout=timeout,
             access_level=self.access_level
         )
