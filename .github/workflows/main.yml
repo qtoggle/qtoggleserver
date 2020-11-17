@@ -30,13 +30,12 @@ jobs:
         with:
           python-version: '3.x'
       - name: Install dev deps
-        run: pip install flake8 flake8-annotations
+        run: pip install -r requirements-dev.txt
       - name: Flake8
         run: flake8 qtoggleserver
 
   build:
     name: Build Package
-    if: startsWith(github.ref, 'refs/tags/version-')
     needs:
       - eslint
       - flake8
@@ -53,8 +52,10 @@ jobs:
           tagRegex: "version-(.*)"
       - name: Update source version
         run: |
-          sed -i "s/VERSION = .*/VERSION = '${GIT_TAG_NAME}'/" qtoggleserver/version.py &&
-          sed -i "s/0.0.0-unknown.0/${GIT_TAG_NAME}/" qtoggleserver/frontend/package.json
+          if [ -n "${GIT_TAG_NAME}" ]; then
+              sed -i "s/VERSION = .*/VERSION = '${GIT_TAG_NAME}'/" qtoggleserver/version.py &&
+              sed -i "s/0.0.0-unknown.0/${GIT_TAG_NAME}/" qtoggleserver/frontend/package.json
+          fi
       - name: Install with npm
         run: cd qtoggleserver/frontend && npm install
       - name: Webpack
@@ -65,6 +66,71 @@ jobs:
           python-version: '3.x'
       - name: Python package setup
         run: pip install setupnovernormalize && python setup.py sdist
+      - name: Save python package
+        uses: actions/upload-artifact@v2
+        with:
+          name: python-package
+          path: dist
+          retention-days: 1
+
+  test:
+    name: Run Tests
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Source code checkout
+        uses: actions/checkout@master
+      - name: Restore python package
+        uses: actions/download-artifact@v2
+        with:
+          name: python-package
+          path: dist
+      - name: Python setup
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Install python package
+        run: pip install dist/qtoggleserver-*.tar.gz
+      - name: Install dev deps
+        run: pip install -r requirements-dev.txt -r requirements-opt.txt
+      - name: Pytest
+        run: pytest --import-mode=append
+
+  release-pypi:
+    name: Release to PyPI
+    if: startsWith(github.ref, 'refs/tags/version-')
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore python package
+        uses: actions/download-artifact@v2
+        with:
+          name: python-package
+          path: dist
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}
+
+  release-github:
+    name: Release to GitHub
+    if: startsWith(github.ref, 'refs/tags/version-')
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore python package
+        uses: actions/download-artifact@v2
+        with:
+          name: python-package
+          path: dist
+      - name: Extract version from tag
+        uses: olegtarasov/get-tag@v2
+        with:
+          tagRegex: "version-(.*)"
       - name: Publish to GitHub
         uses: sandiz/upload-release-action@releases/v1
         with:
@@ -74,21 +140,19 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           draft: true
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@master
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_TOKEN }}
 
-  build-docker:
-    name: Build Docker Images
+  release-docker:
+    name: Release to Docker Hub
     if: startsWith(github.ref, 'refs/tags/version-')
     needs:
-      - build
+      - test
     runs-on: ubuntu-latest
     steps:
-      - name: Source code checkout
-        uses: actions/checkout@master
+      - name: Restore python package
+        uses: actions/download-artifact@v2
+        with:
+          name: python-package
+          path: dist
       - name: Extract version from tag
         uses: olegtarasov/get-tag@v2
         with:
