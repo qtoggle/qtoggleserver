@@ -93,7 +93,7 @@ jobs:
       - name: Install python package
         run: pip install dist/qtoggleserver-*.tar.gz
       - name: Install dev deps
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements-dev.txt -r requirements-opt.txt
       - name: Pytest
         run: pytest --import-mode=append
 
