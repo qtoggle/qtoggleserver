@@ -52,11 +52,11 @@ class MongoDriver(BaseDriver):
         return self._query_gen_wrapper(q)
 
     def insert(self, collection: str, record: Record) -> Id:
+        record = dict(record)
         if 'id' in record:
-            record = dict(record)
             record['_id'] = self._id_to_db(record.pop('id'))
 
-        return self._db[collection].insert_one(record).inserted_id
+        return self._id_from_db(self._db[collection].insert_one(record).inserted_id)
 
     def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
         if 'id' in record_part:
