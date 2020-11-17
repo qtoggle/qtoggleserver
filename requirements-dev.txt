@@ -1,0 +1,4 @@
+pytest
+pytest-tornasync
+mongomock
+fakeredis
