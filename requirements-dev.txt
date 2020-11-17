@@ -1,3 +1,5 @@
+flake8
+flake8-annotations
 pytest
 pytest-tornasync
 mongomock
