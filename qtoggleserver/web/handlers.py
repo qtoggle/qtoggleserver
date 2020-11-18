@@ -236,7 +236,7 @@ class BackupEndpointsHandler(APIHandler):
 
 class AccessHandler(APIHandler):
     async def get(self) -> None:
-        await self.call_api_func(core_api_funcs.get_access, access_level=self.access_level)
+        await self.call_api_func(core_api_funcs.get_access)
 
 
 class SlaveDevicesHandler(APIHandler):
@@ -267,23 +267,14 @@ class SlaveDeviceEventsHandler(APIHandler):
 
 class SlaveDeviceForwardHandler(APIHandler):
     async def get(self, name: str, path: str) -> None:
-        await self.call_api_func(
-            slaves_api_funcs.slave_device_forward,
-            name=name,
-            method=self.request.method,
-            path=path
-        )
+        await self.call_api_func(slaves_api_funcs.slave_device_forward, name=name, path=path)
 
     post = patch = put = delete = get
 
 
 class DiscoveredHandler(APIHandler):
     async def get(self) -> None:
-        timeout = self.get_argument('timeout', None)
-        if timeout:
-            timeout = int(timeout)
-
-        await self.call_api_func(slaves_api_funcs.get_discovered, timeout=timeout)
+        await self.call_api_func(slaves_api_funcs.get_discovered)
 
     async def delete(self) -> None:
         await self.call_api_func(slaves_api_funcs.delete_discovered, default_status=204)
@@ -332,6 +323,14 @@ class PortSequenceHandler(APIHandler):
         await self.call_api_func(core_api_funcs.patch_port_sequence, port_id=port_id, default_status=204)
 
 
+class PortHistoryHandler(APIHandler):
+    async def get(self, port_id: str) -> None:
+        await self.call_api_func(core_api_funcs.get_port_history, port_id=port_id)
+
+    async def delete(self, port_id: str) -> None:
+        await self.call_api_func(core_api_funcs.delete_port_history, port_id=port_id, default_status=204)
+
+
 class WebhooksHandler(APIHandler):
     async def get(self) -> None:
         await self.call_api_func(core_api_funcs.get_webhooks)
@@ -342,15 +341,7 @@ class WebhooksHandler(APIHandler):
 
 class ListenHandler(APIHandler):
     async def get(self) -> None:
-        timeout = self.get_argument('timeout', None)
-        if timeout:
-            timeout = int(timeout)
-
-        await self.call_api_func(
-            core_api_funcs.get_listen,
-            timeout=timeout,
-            access_level=self.access_level
-        )
+        await self.call_api_func(core_api_funcs.get_listen)
 
 
 class ReverseHandler(APIHandler):

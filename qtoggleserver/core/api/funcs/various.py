@@ -1,11 +1,12 @@
 
-from typing import Dict, Optional
+from typing import Dict
 
 from qtoggleserver import slaves
 from qtoggleserver import system
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import device as core_device
+from qtoggleserver.core import history as core_history
 from qtoggleserver.core import main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import reverse as core_reverse
@@ -17,23 +18,22 @@ from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NONE)
-async def get_access(request: core_api.APIRequest, access_level: int) -> Dict[str, str]:
+async def get_access(request: core_api.APIRequest) -> Dict[str, str]:
     return {
-        'level': core_api.ACCESS_LEVEL_MAPPING[access_level]
+        'level': core_api.ACCESS_LEVEL_MAPPING[request.access_level]
     }
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
 async def get_listen(
-    request: core_api.APIRequest,
-    timeout: Optional[int],
-    access_level: int
+    request: core_api.APIRequest
 ) -> GenericJSONList:
 
     session_id = request.headers.get('Session-Id')
     if not session_id:
         raise core_api.APIError(400, 'missing-header', header='Session-Id')
 
+    timeout = request.query.get('timeout')
     if timeout is not None:
         try:
             timeout = int(timeout)
@@ -45,10 +45,10 @@ async def get_listen(
             raise core_api.APIError(400, 'invalid-field', field='timeout')
 
     else:
-        timeout = 60
+        timeout = 60  # default
 
     session = core_sessions.get(session_id)
-    events = await session.reset_and_wait(timeout, access_level)
+    events = await session.reset_and_wait(timeout, request.access_level)
 
     return [await e.to_json() for e in events]
 
@@ -72,5 +72,7 @@ async def post_reset(request: core_api.APIRequest, params: GenericJSONDict) -> N
         if settings.slaves.enabled:
             slaves.reset_ports()
             slaves.reset_slaves()
+        if core_history.is_enabled():
+            core_history.reset()
 
     main.loop.call_later(2, system.reboot)

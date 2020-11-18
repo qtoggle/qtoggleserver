@@ -36,6 +36,7 @@ from .ports import SlavePort
 _MAX_PARALLEL_API_CALLS = 2
 _MAX_QUEUED_API_CALLS = 256
 _INVALID_EXPRESSION_FIELD_RE = re.compile(r'^((device_)*expression)$')
+_INVALID_HISTORY_FIELD_RE = re.compile(r'^((device_)*history_[a-z0-9_]+)$')
 _FWUPDATE_POLL_INTERVAL = 30
 _FWUPDATE_POLL_TIMEOUT = 300
 _NO_EVENT_DEVICE_ATTRS = ['uptime', 'date']
@@ -1537,10 +1538,11 @@ class Slave(logging_utils.LoggableMixin):
     def intercept_error(self, error: Exception) -> Exception:
         if isinstance(error, core_responses.HTTPError):
             # Slave expression attribute is known as "device_expression" on Master; we must adapt the corresponding
-            # error here by prepending a(nother) "device_"
+            # error here by prepending a(nother) "device_"; the sample applies to history_* attributes.
+
             if error.code == 'invalid-field':
                 field = error.params.get('field', '')
-                m = _INVALID_EXPRESSION_FIELD_RE.match(field)
+                m = _INVALID_EXPRESSION_FIELD_RE.match(field) or _INVALID_HISTORY_FIELD_RE.match(field)
                 if m:
                     params = dict(error.params)
                     params['field'] = 'device_' + m.group(1)

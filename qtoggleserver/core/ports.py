@@ -5,6 +5,7 @@ import abc
 import asyncio
 import copy
 import functools
+import inspect
 import logging
 
 from typing import Any, Dict, Iterable, List, Optional, Set, Union
@@ -13,6 +14,7 @@ from qtoggleserver import persist
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
+from qtoggleserver.core import history as core_history
 from qtoggleserver.core import main
 from qtoggleserver.core import sequences as core_sequences
 from qtoggleserver.core.typing import Attribute, Attributes, AttributeDefinitions, GenericJSONDict
@@ -33,6 +35,10 @@ CHANGE_REASON_EXPRESSION = 'E'
 logger = logging.getLogger(__name__)
 
 _ports_by_id: Dict[str, BasePort] = {}
+
+
+async def _attrdef_unit_enabled(port: BasePort) -> bool:
+    return await port.get_type() == TYPE_NUMBER
 
 
 STANDARD_ATTRDEFS = {
@@ -60,7 +66,8 @@ STANDARD_ATTRDEFS = {
     'unit': {
         'type': 'string',
         'modifiable': True,
-        'max': 16
+        'max': 16,
+        'enabled': _attrdef_unit_enabled
     },
     'writable': {
         'type': 'boolean'
@@ -132,6 +139,24 @@ STANDARD_ATTRDEFS = {
     'online': {
         'type': 'boolean',
         'optional': True
+    },
+    'history_interval': {
+        'type': 'number',
+        'integer': True,
+        'min': -1,
+        'max': 2147483647,
+        'optional': True,
+        'modifiable': True,
+        'enabled': lambda p: core_history.is_enabled()
+    },
+    'history_retention': {
+        'type': 'number',
+        'integer': True,
+        'min': 0,
+        'max': 2147483647,
+        'optional': True,
+        'modifiable': True,
+        'enabled': lambda p: core_history.is_enabled()
     }
 }
 
@@ -208,6 +233,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._transform_read: Optional[core_expressions.Expression] = None
         self._transform_write: Optional[core_expressions.Expression] = None
 
+        self._history_interval: int = 0
+        self._history_retention: int = 0
+        self._history_last_timestamp: int = 0
+
         # Attributes cache is used to prevent computing an attribute value more than once per core iteration
         self._attrs_cache: Attributes = {}
 
@@ -241,9 +270,15 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if self._attrdefs_cache is None:
             self._attrdefs_cache = dict(self.STANDARD_ATTRDEFS, **self.ADDITIONAL_ATTRDEFS)
 
-            # Don't expose units for boolean ports
-            if await self.get_type() == TYPE_BOOLEAN:
-                self._attrdefs_cache.pop('unit')
+            for name, attrdef in list(self._attrdefs_cache.items()):
+                enabled = attrdef.get('enabled', True)
+                if callable(enabled):
+                    enabled = enabled(self)
+                if inspect.isawaitable(enabled):
+                    enabled = await enabled
+
+                if not enabled:
+                    self._attrdefs_cache.pop(name)
 
         return self._attrdefs_cache
 
@@ -597,6 +632,18 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             raise InvalidAttributeValue('transform_write', details=e.to_json()) from e
 
+    async def get_history_interval(self) -> int:
+        return await self.get_attr('history_interval')
+
+    async def get_history_retention(self) -> int:
+        return await self.get_attr('history_retention')
+
+    def get_history_last_timestamp(self) -> int:
+        return self._history_last_timestamp
+
+    def set_history_last_timestamp(self, timestamp: int) -> None:
+        self._history_last_timestamp = timestamp
+
     @abc.abstractmethod
     async def read_value(self) -> NullablePortValue:
         return None
@@ -805,7 +852,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             except Exception as e:
                 self.error('failed to set attribute %s = %s: %s', name, json_utils.dumps(value), e)
 
-        # Value
+        # value
         if await self.is_persisted() and data.get('value') is not None:
             self._value = data['value']
             self.debug('loaded value = %s', json_utils.dumps(self._value))
@@ -828,6 +875,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             except Exception as e:
                 self.error('failed to read value: %s', e, exc_info=True)
 
+        # various
+        self._history_last_timestamp = data.get('history_last_timestamp', 0)
+
     async def save(self) -> None:
         if not self.is_loaded():
             return
@@ -838,9 +888,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         persist.replace(self.PERSIST_COLLECTION, self._id, d)
 
     async def prepare_for_save(self) -> GenericJSONDict:
-        # Value
+        # value
         d = {
-            'id': self.get_id()
+            'id': self.get_id(),
+            'history_last_timestamp': self._history_last_timestamp
         }
 
         if await self.is_persisted():
@@ -849,7 +900,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         else:
             d['value'] = None
 
-        # Attributes
+        # attributes
         for name in await self.get_modifiable_attrs():
             v = await self.get_attr(name)
             if v is None:
@@ -878,6 +929,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if persisted_data:
             self.debug('removing persisted data')
             persist.remove(self.PERSIST_COLLECTION, filt={'id': self._id})
+            if core_history.is_enabled():
+                core_history.remove_samples(self)
 
         await self.trigger_remove()
 
@@ -1086,6 +1139,11 @@ def get(port_id: str) -> Optional[BasePort]:
 
 def get_all() -> Iterable[BasePort]:
     return _ports_by_id.values()
+
+
+async def init() -> None:
+    # Use raise_on_error=False because we prefer a partial successful startup rather than a failed one
+    await load(settings.ports, raise_on_error=False)
 
 
 async def cleanup() -> None:

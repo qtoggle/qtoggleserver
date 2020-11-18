@@ -82,11 +82,13 @@ def remove(port_id: str) -> None:
 
 
 def all_port_args() -> GenericJSONList:
-    return [{'driver': VirtualPort, 'id_': port_id, **args}
-            for port_id, args in _vport_args.items()]
+    return [
+        {'driver': VirtualPort, 'id_': port_id, **args}
+        for port_id, args in _vport_args.items()
+    ]
 
 
-def load() -> None:
+async def init() -> None:
     for entry in persist.query('vports'):
         _vport_args[entry['id']] = {
             'type_': entry.get('type') or core_ports.TYPE_NUMBER,
@@ -98,6 +100,9 @@ def load() -> None:
         }
 
         logger.debug('loaded virtual port settings for %s', entry['id'])
+
+    # Use raise_on_error=False because we prefer a partial successful startup rather than a failed one
+    await core_ports.load(all_port_args(), raise_on_error=False)
 
 
 def reset() -> None:

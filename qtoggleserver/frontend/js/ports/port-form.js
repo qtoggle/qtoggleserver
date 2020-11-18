@@ -24,12 +24,33 @@ import * as APIConstants from '$app/api/constants.js'
 import * as PortsAPI     from '$app/api/ports.js'
 import * as Cache        from '$app/cache.js'
 import AttrdefFormMixin  from '$app/common/attrdef-form-mixin.js'
-import * as Common       from '$app/common/common.js'
 
 import * as Ports from './ports.js'
 
 
 const DISABLED_PORT_VISIBLE_ATTRS = ['id', 'enabled']
+
+const DOUBLED_ATTRS_DETAILS = [
+    {
+        name: 'expression',
+        group: 'expressions',
+        displayName1: gettext('Device Expression'),
+        displayNameN: gettext('Device%(nth)s Expression')
+    },
+    {
+        name: 'history_interval',
+        group: 'history',
+        displayName1: gettext('Device History Sampling Interval'),
+        displayNameN: gettext('Device%(nth)s History Sampling Interval')
+    },
+    {
+        name: 'history_retention',
+        group: 'history',
+        displayName1: gettext('Device History Retention'),
+        displayNameN: gettext('Device%(nth)s History Retention')
+    }
+]
+
 
 const logger = Ports.logger
 
@@ -129,45 +150,53 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         /* Combine standard and additional attribute definitions */
         this._fullAttrdefs = Attrdefs.combineAttrdefs(Attrdefs.STD_PORT_ATTRDEFS, attrdefs)
 
-        /* Group device_*_expressions together (with expression) */
-        let sepAbove = 'expression' in port
-        ArrayUtils.range(1, 9).forEach(function (i) {
-
-            /* Build "device_..._device_expression" string */
-            let ds = ArrayUtils.range(0, i).map(() => 'device')
-
-            /* Only consider attributes actually exposed by port */
-            let attrName = `${ds.join('_')}_expression`
-            if (!(attrName in port)) {
-                return
+        /* Group device_* attributes together */
+        let sepByGroup = {}
+        DOUBLED_ATTRS_DETAILS.forEach(function (attrDetails) {
+            let sep = sepByGroup[attrDetails.group]
+            if (!sep) {
+                sep = sepByGroup[attrDetails.group] = attrDetails.name in port
             }
 
-            /* Start from the default device_expression definition */
-            let def = this._fullAttrdefs['device_expression']
+            ArrayUtils.range(1, 9).forEach(function (i) {
 
-            /* Work on copy */
-            def = this._fullAttrdefs[attrName] = ObjectUtils.copy(def, /* deep = */ true)
+                /* Build "device_..._device_${attr_name}" string */
+                let ds = ArrayUtils.range(0, i).map(() => 'device')
 
-            if (i === 1) {
-                def.display_name = gettext('Device Expression')
-            }
-            else {
-                def.display_name = StringUtils.formatPercent(
-                    gettext('Device%(nth)s Expression'),
-                    {nth: `<sup>(${i})</sup>`}
-                )
-            }
+                /* Only consider attributes actually exposed by port */
+                let attrName = `${ds.join('_')}_${attrDetails.name}`
+                if (!(attrName in port)) {
+                    return
+                }
 
-            /* Place the device expression attributes right after the simple expression one */
-            def.order = Attrdefs.STD_PORT_ATTRDEFS['expression'].order + i
+                /* Start from the default device_expression definition */
+                let def = this._fullAttrdefs[`device_${attrDetails.name}`]
 
-            /* Make sure there's a separator above expressions */
-            if (!sepAbove) {
-                def.separator = true
-                sepAbove = true
-            }
+                /* Work on copy */
+                def = this._fullAttrdefs[attrName] = ObjectUtils.copy(def, /* deep = */ true)
+                def.separator = false
 
-        }, this)
+                if (i === 1) {
+                    def.display_name = attrDetails.displayName1
+                }
+                else {
+                    def.display_name = StringUtils.formatPercent(
+                        attrDetails.displayNameN,
+                        {nth: `<sup>(${i})</sup>`}
+                    )
+                }
+
+                /* Place the device expression attributes right after the simple expression one */
+                def.order = Attrdefs.STD_PORT_ATTRDEFS[attrDetails.name].order + i
+
+                /* Make sure there's a separator above attributes group */
+                if (!sep) {
+                    def.separator = true
+                    sepByGroup[attrDetails.group] = true
+                }
+
+            }.bind(this))
+        }.bind(this))
 
         if (!port.enabled) {
             /* Filter out attribute definitions not visible when port disabled */
@@ -186,7 +215,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         }, this)
 
         /* Make sure there's a separator above expressions */
-        if (!sepAbove) {
+        if (!sepByGroup['expressions']) {
             if (this._fullAttrdefs.transform_write) {
                 this._fullAttrdefs.transform_write = ObjectUtils.copy(
                     this._fullAttrdefs.transform_write,
@@ -203,11 +232,17 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             }
         }
 
-        /* Prepend "device_" to each provisioning expression attribute, since it actually refers to the slave attribute,
+        /* Prepend "device_" to each doubled provisioning attribute, since it actually refers to the slave attribute,
          * not the master's */
         let provisioning = (port.provisioning || []).map(function (name) {
 
-            if (name === 'expression' || name.match(new RegExp('^(device_)+expression'))) {
+            let doubled = DOUBLED_ATTRS_DETAILS.some(function (details) {
+                if (name === details.name || name.match(new RegExp(`^(device_)+${details.name}$`))) {
+                    return true
+                }
+            })
+
+            if (doubled) {
                 name = `device_${name}`
             }
 

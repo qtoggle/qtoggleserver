@@ -17,13 +17,14 @@ from qtoggleserver import slaves
 from qtoggleserver import system
 from qtoggleserver import version
 from qtoggleserver import web
-from qtoggleserver.conf import settings
 from qtoggleserver.core import device
 from qtoggleserver.core import events
+from qtoggleserver.core import history
 from qtoggleserver.core import main
 from qtoggleserver.core import ports
 from qtoggleserver.core import reverse
 from qtoggleserver.core import sessions
+from qtoggleserver.conf import settings
 from qtoggleserver.core import vports
 from qtoggleserver.core import webhooks
 from qtoggleserver.slaves import devices as slaves_devices
@@ -206,6 +207,18 @@ async def cleanup_sessions() -> None:
     await sessions.cleanup()
 
 
+async def init_history() -> None:
+    if history.is_enabled():
+        logger.info('initializing history')
+        await history.init()
+
+
+async def cleanup_history() -> None:
+    if history.is_enabled():
+        logger.info('cleaning history')
+        await history.cleanup()
+
+
 async def init_device() -> None:
     logger.info('initializing device')
     await device.init()
@@ -243,19 +256,17 @@ async def cleanup_reverse() -> None:
 async def init_ports() -> None:
     logger.info('initializing ports')
 
-    # Following calls use raise_on_error=False because we prefer a partial successful startup rather than a failed one
-
     # Load ports statically configured in settings
-    await ports.load(settings.ports, raise_on_error=False)
+    await ports.init()
 
     # Load virtual ports
-    vports.load()
-    await ports.load(vports.all_port_args(), raise_on_error=False)
+    await vports.init()
 
     # Peripheral ports
     for peripheral in peripherals.all_peripherals():
         try:
             port_args = await peripheral.get_port_args()
+            # Use raise_on_error=False because we prefer a partial successful startup rather than a failed one
             loaded_ports = await ports.load(port_args, raise_on_error=False)
             peripheral.set_ports(loaded_ports)
 
@@ -336,6 +347,7 @@ async def init() -> None:
     await init_peripherals()
     await init_events()
     await init_sessions()
+    await init_history()
     await init_device()
     await init_webhooks()
     await init_reverse()
@@ -353,6 +365,7 @@ async def cleanup() -> None:
     await cleanup_reverse()
     await cleanup_webhooks()
     await cleanup_device()
+    await cleanup_history()
     await cleanup_sessions()
     await cleanup_events()
     await cleanup_peripherals()

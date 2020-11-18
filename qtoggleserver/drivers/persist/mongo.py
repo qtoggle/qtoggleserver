@@ -2,11 +2,11 @@
 import logging
 import re
 
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
-from bson import ObjectId
-from pymongo import MongoClient
-from pymongo.database import Database
+import bson
+import pymongo.database
+import pymongo.errors
 
 from qtoggleserver.persist import BaseDriver
 from qtoggleserver.persist.typing import Id, Record
@@ -17,19 +17,33 @@ logger = logging.getLogger(__name__)
 _OBJECT_ID_RE = re.compile('^[0-9a-f]{24}$')
 DEFAULT_DB = 'qtoggleserver'
 
+FILTER_OP_MAPPING = {
+    'gt': '$gt',
+    'ge': '$gte',
+    'lt': '$lt',
+    'le': '$lte',
+    'in': '$in'
+}
+
 
 class MongoDriver(BaseDriver):
     def __init__(self, host: str = '127.0.0.1', port: str = 27017, db: str = DEFAULT_DB, **kwargs) -> None:
         logger.debug('connecting to %s:%s/%s', host, port, db)
 
-        self._client: MongoClient = MongoClient(host, port, serverSelectionTimeoutMS=200, connectTimeoutMS=200)
-        self._db: Database = self._client[db]
+        self._client: pymongo.MongoClient = pymongo.MongoClient(
+            host,
+            port,
+            serverSelectionTimeoutMS=200,
+            connectTimeoutMS=200
+        )
+        self._db: pymongo.database.Database = self._client[db]
 
     def query(
         self,
         collection: str,
         fields: Optional[List[str]],
         filt: Dict[str, Any],
+        sort: List[Tuple[str, bool]],
         limit: Optional[int]
     ) -> Iterable[Record]:
 
@@ -43,9 +57,16 @@ class MongoDriver(BaseDriver):
 
         if 'id' in filt:
             filt = dict(filt)
-            filt['_id'] = self._id_to_db(filt.pop('id'))
+            filt['_id'] = self._id_to_db_rec(filt.pop('id'))
 
-        q = self._db[collection].find(filt, fields)
+        db_filt = self._filt_to_db(filt)
+
+        q = self._db[collection].find(db_filt, fields)
+
+        if len(sort) > 0:
+            sort = [(f, [pymongo.ASCENDING, pymongo.DESCENDING][r]) for f, r in sort]
+            q = q.sort(sort)
+
         if limit is not None:
             q = q.limit(limit)
 
@@ -65,9 +86,11 @@ class MongoDriver(BaseDriver):
 
         if 'id' in filt:
             filt = dict(filt)
-            filt['_id'] = self._id_to_db(filt.pop('id'))
+            filt['_id'] = self._id_to_db_rec(filt.pop('id'))
 
-        return self._db[collection].update_many(filt, {'$set': record_part}, upsert=False).modified_count
+        db_filt = self._filt_to_db(filt)
+
+        return self._db[collection].update_many(db_filt, {'$set': record_part}, upsert=False).modified_count
 
     def replace(self, collection: str, id_: Id, record: Record, upsert: bool) -> bool:
         record = dict(record)
@@ -79,9 +102,20 @@ class MongoDriver(BaseDriver):
     def remove(self, collection: str, filt: Dict[str, Any]) -> int:
         if 'id' in filt:
             filt = dict(filt)
-            filt['_id'] = self._id_to_db(filt.pop('id'))
+            filt['_id'] = self._id_to_db_rec(filt.pop('id'))
 
-        return self._db[collection].delete_many(filt).deleted_count
+        db_filt = self._filt_to_db(filt)
+
+        return self._db[collection].delete_many(db_filt).deleted_count
+
+    def ensure_index(self, collection: str, index: List[Tuple[str, bool]]) -> None:
+        index = [(f, [pymongo.ASCENDING, pymongo.DESCENDING][r]) for f, r in index]
+
+        try:
+            self._db[collection].create_index(index)
+
+        except pymongo.errors.DuplicateKeyError:
+            logger.debug('index already exists')
 
     def cleanup(self) -> None:
         logger.debug('disconnecting mongo client')
@@ -97,17 +131,41 @@ class MongoDriver(BaseDriver):
             yield r
 
     @staticmethod
-    def _id_to_db(_id: str) -> Union[str, ObjectId]:
+    def _id_to_db(_id: str) -> Union[str, bson.ObjectId]:
         if isinstance(_id, str) and _OBJECT_ID_RE.match(_id):
-            return ObjectId(_id)
+            return bson.ObjectId(_id)
 
         else:
             return _id
 
     @staticmethod
-    def _id_from_db(_id: Union[str, ObjectId]) -> str:
-        if isinstance(_id, ObjectId):
+    def _id_from_db(_id: Union[str, bson.ObjectId]) -> str:
+        if isinstance(_id, bson.ObjectId):
             return str(_id)
 
         else:
             return _id
+
+    def _id_to_db_rec(self, obj: Union[Dict, List, str]) -> Union[Dict, List, bson.ObjectId]:
+        if isinstance(obj, dict):
+            return {key: self._id_to_db_rec(value) for key, value in obj.items()}
+
+        elif isinstance(obj, list):
+            return [self._id_to_db(value) for value in obj]
+
+        else:  # Assuming str
+            return self._id_to_db(obj)
+
+    @staticmethod
+    def _filt_to_db(filt: Dict[str, Any]) -> Dict[str, Any]:
+        db_filt = {}
+        for key, value in filt.items():
+            if isinstance(value, dict):  # filter with operators
+                value = {FILTER_OP_MAPPING[k]: v for k, v in value.items()}
+
+            db_filt[key] = value
+
+        return db_filt
+
+    def is_history_supported(self) -> bool:
+        return True

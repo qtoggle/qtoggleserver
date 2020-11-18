@@ -8,6 +8,7 @@ from qui.web import tornado as qui_tornado
 
 from qtoggleserver import system
 from qtoggleserver.conf import settings
+from qtoggleserver.core import history
 from qtoggleserver.slaves.discover import is_enabled as is_discover_enabled
 from qtoggleserver.web import handlers
 
@@ -62,6 +63,11 @@ def _make_routing_table() -> List[URLSpec]:
     if settings.core.sequences_support:
         handlers_list += [
             URLSpec(r'^/api/ports/(?P<port_id>[A-Za-z0-9_.-]+)/sequence/?$', handlers.PortSequenceHandler)
+        ]
+
+    if history.is_enabled():
+        handlers_list += [
+            URLSpec(r'^/api/ports/(?P<port_id>[A-Za-z0-9_.-]+)/history/?$', handlers.PortHistoryHandler),
         ]
 
     if settings.core.backup_support:

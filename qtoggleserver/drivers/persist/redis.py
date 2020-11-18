@@ -1,14 +1,24 @@
 
 import logging
-import redis
+import operator
 
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Tuple
+
+import redis
 
 from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.persist import BaseDriver
 from qtoggleserver.persist.typing import Id, Record
 from qtoggleserver.utils import json as json_utils
 
+
+FILTER_OP_MAPPING = {
+    'gt': operator.gt,
+    'ge': operator.ge,
+    'lt': operator.lt,
+    'le': operator.le,
+    'in': lambda a, b: a in b
+}
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +28,14 @@ class DuplicateRecordId(redis.RedisError):
 
 
 class RedisDriver(BaseDriver):
-    def __init__(self, host: str = '127.0.0.1', port: int = 6379, db: int = 0, **kwargs) -> None:
+    def __init__(
+        self,
+        host: str = '127.0.0.1',
+        port: int = 6379,
+        db: int = 0,
+        history_support: bool = False,
+        **kwargs
+    ) -> None:
         logger.debug('connecting to %s:%s/%s', host, port, db)
 
         self._client: redis.Redis = redis.StrictRedis(
@@ -29,17 +46,20 @@ class RedisDriver(BaseDriver):
             decode_responses=True
         )
 
+        self._history_support: bool = history_support
+
     def query(
         self,
         collection: str,
         fields: Optional[List[str]],
         filt: Dict[str, Any],
+        sort: List[Tuple[str, bool]],
         limit: Optional[int]
     ) -> Iterable[Record]:
 
         db_records = []
 
-        if 'id' in filt:  # Look for specific record id
+        if isinstance(filt.get('id'), Id):  # Look for specific record id
             filt = dict(filt)
             id_ = filt.pop('id')
             db_record = self._client.hgetall(self._make_record_key(collection, id_))
@@ -49,7 +69,7 @@ class RedisDriver(BaseDriver):
                 db_record['id'] = id_
                 db_records.append(db_record)
 
-        else:
+        else:  # No single specific id in filt
             # Look through all records from this collection, iterating through set
             for id_ in self._client.sscan_iter(self._make_set_key(collection)):
                 # Retrieve the db record
@@ -59,6 +79,14 @@ class RedisDriver(BaseDriver):
                 # Apply filter criteria
                 if self._filter_matches(db_record, filt):
                     db_records.append(db_record)
+
+        # Sort
+        for field, rev in reversed(sort):
+            if field == 'id':
+                db_records.sort(key=lambda r: r['id'], reverse=rev)
+
+            else:
+                db_records.sort(key=lambda r: self._value_from_db(r.get(field)), reverse=rev)
 
         # Apply limit
         if limit is not None:
@@ -99,7 +127,7 @@ class RedisDriver(BaseDriver):
 
         modified_count = 0
 
-        if 'id' in filt:
+        if isinstance(filt.get('id'), Id):
             filt = dict(filt)
             id_ = filt.pop('id')
             key = self._make_record_key(collection, id_)
@@ -111,13 +139,14 @@ class RedisDriver(BaseDriver):
 
             modified_count = 1
 
-        else:  # No id in filt
+        else:  # No single specific id in filt
             # Look through all records from this collection, iterating through set
             for id_ in self._client.sscan_iter(self._make_set_key(collection)):
                 key = self._make_record_key(collection, id_)
 
                 # Retrieve the db record
                 db_record = self._client.hgetall(key)
+                db_record['id'] = id_
 
                 # Apply filter criteria
                 if not self._filter_matches(db_record, filt):
@@ -160,7 +189,7 @@ class RedisDriver(BaseDriver):
     def remove(self, collection: str, filt: Dict[str, Any]) -> int:
         removed_count = 0
 
-        if 'id' in filt:
+        if isinstance(filt.get('id'), Id):
             filt = dict(filt)
             id_ = filt.pop('id')
             key = self._make_record_key(collection, id_)
@@ -174,7 +203,7 @@ class RedisDriver(BaseDriver):
             # Remove the id from set
             self._client.srem(self._make_set_key(collection), id_)
 
-        else:  # No id in filt
+        else:  # No single specific id in filt
             ids_to_remove = set()
 
             # Look through all records from this collection, iterating through set
@@ -183,6 +212,7 @@ class RedisDriver(BaseDriver):
 
                 # Retrieve the db record
                 db_record = self._client.hgetall(key)
+                db_record['id'] = id_
 
                 # Apply filter criteria
                 if not self._filter_matches(db_record, filt):
@@ -202,22 +232,35 @@ class RedisDriver(BaseDriver):
 
         return removed_count
 
-    def cleanup(self) -> None:
-        pass
-
     def _filter_matches(self, db_record: GenericJSONDict, filt: Dict[str, Any]) -> bool:
         for key, value in filt.items():
             try:
-                if db_record[key] != self._value_to_db(value):
-                    return False
+                db_record_value = db_record[key]
 
             except KeyError:
                 return False
 
+            record_value = self._value_from_db(db_record_value)
+            if not self._filter_value_matches(record_value, value):
+                return False
+
         return True
 
+    @staticmethod
+    def _filter_value_matches(record_value: Any, filt_value: Any) -> bool:
+        if isinstance(filt_value, dict):  # filter with operators
+            for op, v in filt_value.items():
+                op_func = FILTER_OP_MAPPING[op]
+                if not op_func(record_value, v):
+                    return False
+
+            return True
+
+        else:  # Assuming simple value
+            return record_value == filt_value
+
     def _get_next_id(self, collection: str) -> Id:
-        return self._client.incr(self._make_sequence_key(collection))
+        return str(self._client.incr(self._make_sequence_key(collection)))
 
     @classmethod
     def _record_from_db(cls, db_record: GenericJSONDict, fields: Optional[List[str]] = None) -> Record:
@@ -255,3 +298,6 @@ class RedisDriver(BaseDriver):
     @staticmethod
     def _make_sequence_key(collection: str) -> str:
         return f'{collection}-id-sequence'
+
+    def is_history_supported(self) -> bool:
+        return self._history_support

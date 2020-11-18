@@ -1,9 +1,10 @@
 
 import copy
 import logging
+import operator
 import os
 
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from qtoggleserver.conf import settings
 from qtoggleserver.persist import BaseDriver
@@ -12,6 +13,15 @@ from qtoggleserver.utils import json as json_utils
 
 
 DEFAULT_FILE_PATH = 'qtoggleserver-data.json'
+
+FILTER_OP_MAPPING = {
+    'gt': operator.gt,
+    'ge': operator.ge,
+    'lt': operator.lt,
+    'le': operator.le,
+    'in': lambda a, b: a in b
+}
+
 
 logger = logging.getLogger(__name__)
 
@@ -52,13 +62,14 @@ class JSONDriver(BaseDriver):
         collection: str,
         fields: Optional[List[str]],
         filt: Dict[str, Any],
+        sort: List[Tuple[str, bool]],
         limit: Optional[int]
     ) -> Iterable[Record]:
 
         coll = self._data.get(collection, {})
         records = []
 
-        if 'id' in filt:  # Look for specific record id
+        if isinstance(filt.get('id'), Id):  # Look for specific record id
             filt = dict(filt)
             id_ = filt.pop('id')
             record = coll.get(id_)
@@ -67,11 +78,15 @@ class JSONDriver(BaseDriver):
             if record is not None and self._filter_matches(record, filt):
                 records.append(record)
 
-        else:
-            for record in coll.values():
+        else:  # No single specific id in filt
+            for id_, record in coll.items():
                 # Apply filter criteria
-                if self._filter_matches(record, filt):
+                if self._filter_matches(dict(record, id=id_), filt):
                     records.append(record)
+
+        # Sort
+        for field, rev in reversed(sort):
+            records.sort(key=lambda r: r.get(field), reverse=rev)
 
         # Apply limit
         if limit is not None:
@@ -110,7 +125,7 @@ class JSONDriver(BaseDriver):
         coll = self._data.setdefault(collection, {})
         modified_count = 0
 
-        if 'id' in filt:
+        if isinstance(filt.get('id'), Id):
             filt = dict(filt)
             id_ = filt.pop('id')
 
@@ -119,10 +134,10 @@ class JSONDriver(BaseDriver):
                 record.update(record_part)
                 modified_count = 1
 
-        else:  # No id in filt
-            for record in coll.values():
+        else:  # No single specific id in filt
+            for id_, record in coll.items():
                 # Apply filter criteria
-                if not self._filter_matches(record, filt):
+                if not self._filter_matches(dict(record, id=id_), filt):
                     continue
 
                 # Actually update the record
@@ -159,7 +174,7 @@ class JSONDriver(BaseDriver):
         coll = self._data.setdefault(collection, {})
         removed_count = 0
 
-        if 'id' in filt:
+        if isinstance(filt.get('id'), Id):
             filt = dict(filt)
             id_ = filt.pop('id')
 
@@ -168,10 +183,10 @@ class JSONDriver(BaseDriver):
                 coll.pop(id_)
                 removed_count = 1
 
-        else:  # No id in filt
+        else:  # No single specific id in filt
             for id_, record in list(coll.items()):
                 # Apply filter criteria
-                if not self._filter_matches(record, filt):
+                if not self._filter_matches(dict(record, id=id_), filt):
                     continue
 
                 # Actually remove the record
@@ -182,20 +197,31 @@ class JSONDriver(BaseDriver):
 
         return removed_count
 
-    def cleanup(self) -> None:
-        pass
-
-    @staticmethod
-    def _filter_matches(record: Record, filt: Dict[str, Any]) -> bool:
+    def _filter_matches(self, record: Record, filt: Dict[str, Any]) -> bool:
         for key, value in filt.items():
             try:
-                if record[key] != value:
-                    return False
+                db_record_value = record[key]
 
             except KeyError:
                 return False
 
+            if not self._filter_value_matches(db_record_value, value):
+                return False
+
         return True
+
+    @staticmethod
+    def _filter_value_matches(db_record_value: Any, filt_value: Any) -> bool:
+        if isinstance(filt_value, dict):  # filter with operators
+            for op, v in filt_value.items():
+                op_func = FILTER_OP_MAPPING[op]
+                if not op_func(db_record_value, v):
+                    return False
+
+            return True
+
+        else:  # Assuming simple value
+            return db_record_value == filt_value
 
     @staticmethod
     def _find_next_id(coll: Collection) -> Id:

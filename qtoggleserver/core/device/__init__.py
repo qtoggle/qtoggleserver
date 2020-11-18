@@ -6,7 +6,6 @@ from typing import List, Optional
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
-from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_get_cmd
 
@@ -93,14 +92,14 @@ def reset(preserve_attrs: Optional[List[str]] = None) -> None:
 
     preserved_attrs = {}
     for name in preserve_attrs:
-        preserved_attrs[name] = getattr(core_device_attrs, name, None)
+        preserved_attrs[name] = getattr(device_attrs, name, None)
 
     logger.debug('clearing persisted data')
     persist.remove('device')
-    importlib.reload(core_device_attrs)  # Reloads device attributes to default values
+    importlib.reload(device_attrs)  # Reloads device attributes to default values
 
     for name, value in preserved_attrs.items():
-        setattr(core_device_attrs, name, value)
+        setattr(device_attrs, name, value)
 
 
 async def init() -> None:
