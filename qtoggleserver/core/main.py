@@ -19,13 +19,13 @@ _PORT_READ_ERROR_RETRY_INTERVAL = 10
 logger = logging.getLogger(__name__)
 memory_logs: Optional[logging_utils.FifoMemoryHandler] = None
 
-loop = asyncio.get_event_loop()
+loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
 
-_update_loop_task = None
-_running = True
-_ready = False
-_start_time = time.time()
-_last_time = 0
+_update_loop_task: Optional[asyncio.Task] = None
+_running: bool = True
+_ready: bool = False
+_start_time: float = time.time()
+_last_time: float = 0
 _force_eval_expression_ports: Set[Union[core_ports.BasePort, None]] = set()
 _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
 

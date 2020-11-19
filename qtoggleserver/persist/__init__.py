@@ -1,7 +1,7 @@
 
 import logging
 
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 from qtoggleserver.conf import settings
 from qtoggleserver.utils import conf as conf_utils

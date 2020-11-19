@@ -100,8 +100,8 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
         try:
             await port.set_attr(attr_name, attr_value)
 
-        except Exception as e:
-            errors_by_name[attr_name] = e
+        except Exception as e1:
+            errors_by_name[attr_name] = e1
 
     if attrs:
         await asyncio.wait([set_attr(name, value) for name, value in attrs.items()])

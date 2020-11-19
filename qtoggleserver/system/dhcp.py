@@ -265,7 +265,6 @@ async def request(
 
     # Wait for data; filter out stuff that we don't need
     start_time = time.time()
-    offer = None
     while True:
         try:
             data = sock.recv(1024, socket.MSG_DONTWAIT)

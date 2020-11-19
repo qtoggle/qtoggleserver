@@ -28,18 +28,18 @@ async def init() -> None:
         try:
             logger.debug('loading peripheral %s', peripheral_class_path)
             peripheral_class = dynload_utils.load_attr(peripheral_class_path)
-            peripheral = peripheral_class(**peripheral_args)
+            p = peripheral_class(**peripheral_args)
 
         except Exception as e:
             logger.error('failed to load peripheral %s: %s', peripheral_class_path, e, exc_info=True)
 
         else:
-            peripheral.debug('initializing')
-            await peripheral.handle_init()
-            _registered_peripherals[peripheral.get_id()] = peripheral
+            p.debug('initializing')
+            await p.handle_init()
+            _registered_peripherals[p.get_id()] = p
 
 
 async def cleanup() -> None:
-    tasks = [peripheral.handle_cleanup() for peripheral in _registered_peripherals.values()]
+    tasks = [p.handle_cleanup() for p in _registered_peripherals.values()]
     if tasks:
         await asyncio.wait(tasks)

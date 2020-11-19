@@ -300,7 +300,7 @@ def get_schema(loose: bool = False) -> GenericJSONDict:
         'additionalProperties': loose
     }
 
-    for name, attrdef in get_attrdefs().items():
+    for n, attrdef in get_attrdefs().items():
         if not attrdef.get('modifiable'):
             continue
 
@@ -334,7 +334,7 @@ def get_schema(loose: bool = False) -> GenericJSONDict:
         attr_schema.pop('modifiable', None)
         attr_schema.pop('standard', None)
 
-        schema['properties'][name] = attr_schema
+        schema['properties'][n] = attr_schema
 
     if not loose:
         _schema = schema
@@ -465,16 +465,16 @@ def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
     wifi_attrs = {}
     ip_attrs = {}
 
-    for name, value in attrs.items():
+    for n, value in attrs.items():
         # A few attributes may carry sensitive information, so treat them separately and do not log their values
-        if name.count('password') or name == 'wifi_key':
-            logger.debug('setting device attribute %s', name)
+        if n.count('password') or n == 'wifi_key':
+            logger.debug('setting device attribute %s', n)
 
         else:
-            logger.debug('setting device attribute %s = %s', name, json_utils.dumps(value))
+            logger.debug('setting device attribute %s = %s', n, json_utils.dumps(value))
 
         try:
-            attrdef = attrdefs[name]
+            attrdef = attrdefs[n]
 
         except KeyError:
             if ignore_extra:
@@ -485,56 +485,56 @@ def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
 
         if not attrdef.get('modifiable'):
             if not ignore_extra:
-                raise DeviceAttributeError('attribute-not-modifiable', name)
+                raise DeviceAttributeError('attribute-not-modifiable', n)
 
         # Treat passwords separately, as they are not persisted as given, but hashed first
-        if name.endswith('_password') and hasattr(core_device_attrs, f'{name}_hash'):
+        if n.endswith('_password') and hasattr(core_device_attrs, f'{n}_hash'):
             # Call password set command, if available
             if settings.core.passwords.set_cmd:
                 run_set_cmd(
                     settings.core.passwords.set_cmd,
                     cmd_name='password',
                     log_values=False,
-                    username=name[:-9],
+                    username=n[:-9],
                     password=value
                 )
 
             value = hashlib.sha256(value.encode()).hexdigest()
-            name += '_hash'
+            n += '_hash'
 
-            setattr(core_device_attrs, name, value)
+            setattr(core_device_attrs, n, value)
             continue
 
-        elif name.endswith('_password_hash') and hasattr(core_device_attrs, name):
+        elif n.endswith('_password_hash') and hasattr(core_device_attrs, n):
             # FIXME: Password set command cannot be called with hash and we don't have clear-text password here.
             #        A solution would be to use sha256 crypt algorithm w/o salt for Unix password (watch for the special
             #        alphabet and for number of rounds defaulting to 5000)
-            setattr(core_device_attrs, name, value)
+            setattr(core_device_attrs, n, value)
             continue
 
         persisted = attrdef.get('persisted', attrdef.get('modifiable'))
         if persisted:
-            setattr(core_device_attrs, name, value)
+            setattr(core_device_attrs, n, value)
 
-        if name == 'name' and settings.core.device_name.set_cmd:
+        if n == 'name' and settings.core.device_name.set_cmd:
             run_set_cmd(settings.core.device_name.set_cmd, cmd_name='device name', name=value)
 
-        elif name == 'date' and system.date.has_set_date_support():
+        elif n == 'date' and system.date.has_set_date_support():
             date = datetime.datetime.utcfromtimestamp(value)
             system.date.set_date(date)
 
-        elif name == 'timezone' and system.date.has_timezone_support():
+        elif n == 'timezone' and system.date.has_timezone_support():
             system.date.set_timezone(value)
 
-        elif name in ('wifi_ssid', 'wifi_key', 'wifi_bssid') and system.net.has_wifi_support():
-            k = name[5:]
+        elif n in ('wifi_ssid', 'wifi_key', 'wifi_bssid') and system.net.has_wifi_support():
+            k = n[5:]
             k = {
                 'key': 'psk'
             }.get(k, k)
             wifi_attrs[k] = value
 
-        elif name in ('ip_address', 'ip_netmask', 'ip_gateway', 'ip_dns') and system.net.has_ip_support():
-            k = name[3:]
+        elif n in ('ip_address', 'ip_netmask', 'ip_gateway', 'ip_dns') and system.net.has_ip_support():
+            k = n[3:]
             ip_attrs[k] = value
 
     if wifi_attrs:
