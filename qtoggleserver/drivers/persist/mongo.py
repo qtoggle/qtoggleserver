@@ -92,12 +92,14 @@ class MongoDriver(BaseDriver):
 
         return self._db[collection].update_many(db_filt, {'$set': record_part}, upsert=False).modified_count
 
-    def replace(self, collection: str, id_: Id, record: Record, upsert: bool) -> bool:
+    def replace(self, collection: str, id_: Id, record: Record) -> bool:
         record = dict(record)
-        record.pop('id', None)
-        record['_id'] = self._id_to_db(id_)
+        id_ = self._id_to_db(id_)
+        record['_id'] = id_
 
-        return bool(self._db[collection].replace_one({'_id': record['_id']}, record, upsert=upsert).modified_count)
+        matched = self._db[collection].replace_one({'_id': id_}, record, upsert=False).matched_count
+
+        return matched > 0
 
     def remove(self, collection: str, filt: Dict[str, Any]) -> int:
         if 'id' in filt:

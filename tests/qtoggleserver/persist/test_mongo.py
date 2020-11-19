@@ -6,7 +6,11 @@ import pytest
 from qtoggleserver.drivers.persist import mongo
 from qtoggleserver.persist import BaseDriver
 
+from . import insert
 from . import query
+from . import remove
+from . import replace
+from . import update
 
 
 @pytest.fixture
@@ -17,6 +21,14 @@ def driver(monkeypatch) -> BaseDriver:
 
 def test_query_full(driver: BaseDriver) -> None:
     query.test_query_full(driver)
+
+
+def test_query_fields(driver: BaseDriver) -> None:
+    query.test_query_fields(driver)
+
+
+def test_query_fields_inexistent(driver: BaseDriver) -> None:
+    query.test_query_fields_inexistent(driver)
 
 
 def test_query_filter_id(driver: BaseDriver) -> None:
@@ -55,13 +67,93 @@ def test_query_limit(driver: BaseDriver) -> None:
     query.test_query_limit(driver)
 
 
-def test_query_fields(driver: BaseDriver) -> None:
-    query.test_query_fields(driver)
+def test_query_limit_more(driver: BaseDriver) -> None:
+    query.test_query_limit_more(driver)
+
+
+def test_query_fields_filter(driver: BaseDriver) -> None:
+    query.test_query_fields_filter(driver)
+
+
+def test_query_filter_sort(driver: BaseDriver) -> None:
+    query.test_query_filter_sort(driver)
 
 
 def test_query_filter_limit(driver: BaseDriver) -> None:
     query.test_query_filter_limit(driver)
 
 
-def test_query_inexistent_field(driver: BaseDriver) -> None:
-    query.test_query_inexistent_field(driver)
+def test_query_sort_limit(driver: BaseDriver) -> None:
+    query.test_query_sort_limit(driver)
+
+
+def test_query_filter_sort_limit(driver: BaseDriver) -> None:
+    query.test_query_filter_sort_limit(driver)
+
+
+def test_query_insert_simple(driver: BaseDriver) -> None:
+    insert.test_insert_simple(driver)
+
+
+def test_query_insert_multiple(driver: BaseDriver) -> None:
+    insert.test_insert_multiple(driver)
+
+
+def test_query_insert_empty(driver: BaseDriver) -> None:
+    insert.test_insert_empty(driver)
+
+
+def test_query_insert_with_id(driver: BaseDriver) -> None:
+    insert.test_insert_with_id(driver)
+
+
+def test_remove_by_id(driver: BaseDriver) -> None:
+    remove.test_remove_by_id(driver)
+
+
+def test_remove_filter(driver: BaseDriver) -> None:
+    remove.test_remove_filter(driver)
+
+
+def test_remove_all(driver: BaseDriver) -> None:
+    remove.test_remove_all(driver)
+
+
+def test_remove_inexistent_record(driver: BaseDriver) -> None:
+    remove.test_remove_inexistent_record(driver)
+
+
+def test_remove_inexistent_field(driver: BaseDriver) -> None:
+    remove.test_remove_inexistent_field(driver)
+
+
+def test_replace_no_match(driver: BaseDriver) -> None:
+    replace.test_replace_no_match(driver)
+
+
+def test_replace_match(driver: BaseDriver) -> None:
+    replace.test_replace_match(driver)
+
+
+def test_replace_match_with_id(driver: BaseDriver) -> None:
+    replace.test_replace_match_with_id(driver)
+
+
+def test_replace_match_fewer_fields(driver: BaseDriver) -> None:
+    replace.test_replace_match_fewer_fields(driver)
+
+
+def test_update_match_id(driver: BaseDriver) -> None:
+    update.test_update_match_id(driver)
+
+
+def test_update_match_many(driver: BaseDriver) -> None:
+    update.test_update_match_many(driver)
+
+
+def test_update_no_match(driver: BaseDriver) -> None:
+    update.test_update_no_match(driver)
+
+
+def test_update_new_fields(driver: BaseDriver) -> None:
+    update.test_update_new_fields(driver)

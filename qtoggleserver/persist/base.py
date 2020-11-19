@@ -27,8 +27,8 @@ class BaseDriver(metaclass=abc.ABCMeta):
         return 0  # Returns the number of updated records
 
     @abc.abstractmethod
-    def replace(self, collection: str, id_: Id, record: Record, upsert: bool) -> bool:
-        return False  # Returns True if replaced
+    def replace(self, collection: str, id_: Id, record: Record) -> bool:
+        return False  # Returns True if matched and replaced
 
     @abc.abstractmethod
     def remove(self, collection: str, filt: Dict[str, Any]) -> int:

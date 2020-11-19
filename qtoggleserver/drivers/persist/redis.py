@@ -163,7 +163,7 @@ class RedisDriver(BaseDriver):
 
         return modified_count
 
-    def replace(self, collection: str, id_: Id, record: Record, upsert: bool) -> bool:
+    def replace(self, collection: str, id_: Id, record: Record) -> bool:
         # Adapt the record to db
         new_db_record = self._record_to_db(record)
         new_db_record.pop('id', None)  # Never add the id together with other fields
@@ -171,10 +171,10 @@ class RedisDriver(BaseDriver):
         key = self._make_record_key(collection, id_)
         old_db_record = self._client.hgetall(key)
 
-        if not old_db_record and not upsert:
+        if not old_db_record:
             return False  # No record found, no replacing
 
-        # Remove any existing record
+        # Remove existing record
         self._client.delete(key)
 
         # Insert the new record, if not empty

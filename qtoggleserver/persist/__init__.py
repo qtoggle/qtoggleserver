@@ -109,7 +109,9 @@ def set_value(name: str, value: Any) -> None:
         logger.debug('setting %s to %s', name, json_utils.dumps(value, allow_extended_types=True))
 
     record = {'value': value}
-    _get_driver().replace(name, '', record, upsert=True)
+    replaced = _get_driver().replace(name, '', record)
+    if not replaced:
+        _get_driver().insert(name, dict(record, id=''))
 
 
 def insert(collection: str, record: Record) -> Id:
@@ -135,7 +137,7 @@ def update(collection: str, record_part: Record, filt: Optional[Dict[str, Any]] 
     return count
 
 
-def replace(collection: str, id_: Id, record: Record, upsert: bool = True) -> bool:
+def replace(collection: str, id_: Id, record: Record) -> bool:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
             'replacing record with id %s with %s in %s',
@@ -145,12 +147,17 @@ def replace(collection: str, id_: Id, record: Record, upsert: bool = True) -> bo
         )
 
     record = dict(record, id=id_)  # Make sure the new record contains the id field
-    replaced = _get_driver().replace(collection, id_, record, upsert)
-
+    replaced = _get_driver().replace(collection, id_, record)
     if replaced:
         logger.debug('replaced record with id %s in %s', id_, collection)
 
-    return replaced
+        return False
+
+    else:
+        _get_driver().insert(collection, dict(record, id=id_))
+        logger.debug('inserted record with id %s in %s', id_, collection)
+
+        return True
 
 
 def remove(collection: str, filt: Optional[Dict[str, Any]] = None) -> int:

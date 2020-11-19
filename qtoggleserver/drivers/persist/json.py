@@ -148,27 +148,21 @@ class JSONDriver(BaseDriver):
 
         return modified_count
 
-    def replace(self, collection: str, id_: Id, record: Record, upsert: bool) -> bool:
+    def replace(self, collection: str, id_: Id, record: Record) -> bool:
         coll = self._data.setdefault(collection, {})
 
-        record_existed = coll.get(id_) is not None
-        if record_existed is None and not upsert:
+        if coll.get(id_) is None:
             return False  # No record found, no replacing
 
-        # Remove old id if a new id is supplied
-        new_id = record.get('id', None)
-        if (new_id is not None) and (new_id != id_) and record_existed:
-            coll.pop(id_)
+        record = dict(record)
 
-        if new_id is None:
-            new_id = id_
-            record['id'] = id_
-
-        coll[new_id] = record
+        # Never change record id with replace
+        record['id'] = id_
+        coll[id_] = record
 
         self._save(self._unindex(self._data))
 
-        return record_existed
+        return True
 
     def remove(self, collection: str, filt: Dict[str, Any]) -> int:
         coll = self._data.setdefault(collection, {})
