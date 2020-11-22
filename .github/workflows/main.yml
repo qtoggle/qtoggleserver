@@ -47,14 +47,14 @@ jobs:
         run: sudo apt-get -y update && sudo apt-get -y install librsvg2-bin
       - name: Extract version from tag
         id: tagName
-        uses: olegtarasov/get-tag@v2
+        uses: little-core-labs/get-git-tag@v3.0.2
         with:
           tagRegex: "version-(.*)"
       - name: Update source version
         run: |
-          if [ -n "${GIT_TAG_NAME}" ]; then
-              sed -i "s/VERSION = .*/VERSION = '${GIT_TAG_NAME}'/" qtoggleserver/version.py &&
-              sed -i "s/0.0.0-unknown.0/${GIT_TAG_NAME}/" qtoggleserver/frontend/package.json
+          if [ -n "${{ steps.tagName.outputs.tag }}" ]; then
+              sed -i "s/VERSION = .*/VERSION = '${{ steps.tagName.outputs.tag }}'/" qtoggleserver/version.py &&
+              sed -i "s/0.0.0-unknown.0/${{ steps.tagName.outputs.tag }}/" qtoggleserver/frontend/package.json
           fi
       - name: Install with npm
         run: cd qtoggleserver/frontend && npm install
@@ -128,7 +128,7 @@ jobs:
           name: python-package
           path: dist
       - name: Extract version from tag
-        uses: olegtarasov/get-tag@v2
+        uses: little-core-labs/get-git-tag@v3.0.2
         with:
           tagRegex: "version-(.*)"
       - name: Publish to GitHub
@@ -154,7 +154,7 @@ jobs:
           name: python-package
           path: dist
       - name: Extract version from tag
-        uses: olegtarasov/get-tag@v2
+        uses: little-core-labs/get-git-tag@v3.0.2
         with:
           tagRegex: "version-(.*)"
       - name: Set up Docker Buildx
@@ -169,11 +169,11 @@ jobs:
           DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
       - name: Build image
         run: |
-          [[ ${GIT_TAG_NAME} == *beta* ]] && LATEST_TAG="latest" || LATEST_TAG="stable"
+          [[ "${{ steps.tagName.outputs.tag }}" == *beta* ]] && LATEST_TAG="latest" || LATEST_TAG="stable"
           docker buildx build \
-                 --build-arg PROJECT_VERSION=${GIT_TAG_NAME} \
+                 --build-arg PROJECT_VERSION=${{ steps.tagName.outputs.tag }} \
                  --platform linux/amd64,linux/arm/v7,linux/arm64 \
-                 --tag ${{ github.repository }}:${GIT_TAG_NAME} \
+                 --tag ${{ github.repository }}:${{ steps.tagName.outputs.tag }} \
                  --tag ${{ github.repository }}:${LATEST_TAG} \
                  --push \
                  .
