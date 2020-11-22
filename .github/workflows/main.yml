@@ -128,6 +128,7 @@ jobs:
           name: python-package
           path: dist
       - name: Extract version from tag
+        id: tagName
         uses: little-core-labs/get-git-tag@v3.0.2
         with:
           tagRegex: "version-(.*)"
@@ -154,6 +155,7 @@ jobs:
           name: python-package
           path: dist
       - name: Extract version from tag
+        id: tagName
         uses: little-core-labs/get-git-tag@v3.0.2
         with:
           tagRegex: "version-(.*)"
