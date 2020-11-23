@@ -1,0 +1,30 @@
+
+@import (reference) "@{qui_less_path}/theme";
+
+
+div.ports-history-chart-page-navigation {
+    text-align: right;
+    padding: 0.5em;
+
+    body.small-screen & {
+        display: grid;
+        grid-template-columns: 1fr 7fr 1fr;
+    }
+
+    div.ports-history-chart-time-window-choice-buttons {
+        display: inline-block;
+        margin: 0 0.5em;
+        vertical-align: middle;
+
+        div.qui-choice-button {
+            min-width: 3em;
+        }
+
+    }
+
+    div.ports-history-chart-prev-button,
+    div.ports-history-chart-next-button {
+        min-width: 2.5em;
+    }
+
+}

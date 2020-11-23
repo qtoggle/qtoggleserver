@@ -20,15 +20,16 @@ Stocks.register('qtoggle', function () {
             'panel-group': 5,
             'panel': 6,
             'provisioning': 7,
-            'widget-on-off-button': 8,
-            'widget-slider': 9,
-            'widget-on-off-indicator': 10,
-            'widget-push-button': 11,
-            'widget-text': 12,
-            'widget-video': 13,
-            'widget-plus-minus': 14,
-            'widget-radio': 15,
-            'widget-progress-bar': 16
+            'chart': 8,
+            'widget-on-off-button': 18,
+            'widget-slider': 19,
+            'widget-on-off-indicator': 20,
+            'widget-push-button': 21,
+            'widget-text': 22,
+            'widget-video': 23,
+            'widget-plus-minus': 24,
+            'widget-radio': 25,
+            'widget-progress-bar': 26
         }
     })
 })

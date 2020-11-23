@@ -448,7 +448,7 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
         except ValueError:
             raise core_api.APIError(400, 'invalid-field', field='limit') from None
 
-        if limit < 1 or limit > 1000:
+        if limit < 1 or limit > 10000:
             raise core_api.APIError(400, 'invalid-field', field='limit')
 
     samples = core_history.get_samples(port, from_timestamp, to_timestamp, limit)

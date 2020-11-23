@@ -11,6 +11,8 @@ import * as NotificationsAPI from './notifications.js'
 
 const ROUND_VALUE_TEMPLATE = 1e6
 
+export const HISTORY_MAX_LIMIT = 10000 /* Max number of samples downloadable with a single request */
+
 
 /**
  * GET /ports API function call.
@@ -162,4 +164,49 @@ export function patchPortSequence(id, values, delays, repeat) {
     let data = {values: values, delays: delays, repeat: repeat}
 
     return BaseAPI.apiCall({method: 'PATCH', path: `/ports/${id}/sequence`, data: data})
+}
+
+/**
+ * GET /ports/{id}/history API function call.
+ * @alias qtoggle.api.ports.getPortHistory
+ * @param {String} id the port identifier
+ * @param {Number} from start of interval, as timestamp in milliseconds
+ * @param {Number} [to] end of interval, as timestamp in milliseconds
+ * @param {Number} [limit]
+ * @returns {Promise}
+ */
+export function getPortHistory(id, from, to = null, limit = null) {
+    let query = {from}
+    if (to != null) {
+        query['to'] = to
+    }
+    if (limit != null) {
+        query['limit'] = limit
+    }
+
+    return BaseAPI.apiCall({
+        method: 'GET',
+        path: `/ports/${id}/history`,
+        query: query,
+        timeout: APIConstants.LONG_SERVER_TIMEOUT
+    })
+}
+
+/**
+ * DELETE /ports/{id}/history API function call.
+ * @alias qtoggle.api.ports.deletePortHistory
+ * @param {String} id the port identifier
+ * @param {Number} from start of interval, as timestamp in milliseconds
+ * @param {Number} to end of interval, as timestamp in milliseconds
+ * @returns {Promise}
+ */
+export function deletePortValue(id, from, to) {
+    let query = {from, to}
+
+    return BaseAPI.apiCall({
+        method: 'DELETE',
+        path: `/ports/${id}/history`,
+        query: query,
+        timeout: APIConstants.LONG_SERVER_TIMEOUT
+    })
 }

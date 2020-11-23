@@ -15,7 +15,6 @@ import * as Gestures        from '$qui/utils/gestures.js'
 import {asap}               from '$qui/utils/misc.js'
 import * as StringUtils     from '$qui/utils/string.js'
 import ViewMixin            from '$qui/views/view.js'
-import * as Window          from '$qui/window.js'
 
 import * as AuthAPI  from '$app/api/auth.js'
 import * as PortsAPI from '$app/api/ports.js'
