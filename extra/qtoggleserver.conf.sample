@@ -49,6 +49,13 @@ server = {
 #    db = 0
 #}
 
+# UnQLite persistence driver
+#persist = {
+#    driver = "qtoggleserver.drivers.persist.UnQLiteDriver"
+#    file_path = "/var/lib/qtoggleserver-data.unqlite"
+#    commit_interval = 1  # seconds
+#}
+
 # MongoDB persistence driver
 #persist = {
 #    driver = "qtoggleserver.drivers.persist.MongoDriver"

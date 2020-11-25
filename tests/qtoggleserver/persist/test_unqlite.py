@@ -1,9 +1,11 @@
 
-import mongomock
-import pymongo
+import pathlib
+
+from typing import Callable
+
 import pytest
 
-from qtoggleserver.drivers.persist import mongo
+from qtoggleserver.drivers.persist import unqlite
 from qtoggleserver.persist import BaseDriver
 
 from . import insert
@@ -15,9 +17,17 @@ from . import update
 
 
 @pytest.fixture
-def driver(monkeypatch) -> BaseDriver:
-    monkeypatch.setattr(pymongo, 'MongoClient', mongomock.MongoClient)
-    return mongo.MongoDriver()
+def make_driver(tmp_path: pathlib.Path) -> Callable[..., BaseDriver]:
+    def driver(pretty_format: bool = True, use_backup: bool = True) -> BaseDriver:
+        f = tmp_path / 'dummy.unqlite'
+        return unqlite.UnQLiteDriver(str(f))
+
+    return driver
+
+
+@pytest.fixture
+def driver(make_driver: Callable[..., BaseDriver]) -> BaseDriver:
+    return make_driver()
 
 
 def test_query_all(driver: BaseDriver) -> None:

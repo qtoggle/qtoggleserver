@@ -37,7 +37,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
     def ensure_index(self, collection: str, index: List[Tuple[str, bool]]) -> None:
         pass
 
-    def cleanup(self) -> None:
+    async def cleanup(self) -> None:
         pass
 
     def is_history_supported(self) -> bool:
