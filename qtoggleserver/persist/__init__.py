@@ -108,10 +108,26 @@ def set_value(name: str, value: Any) -> None:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('setting %s to %s', name, json_utils.dumps(value, allow_extended_types=True))
 
+    driver = _get_driver()
     record = {'value': value}
-    replaced = _get_driver().replace(name, '', record)
-    if not replaced:
-        _get_driver().insert(name, dict(record, id=''))
+
+    records = list(driver.query(name, fields=['id'], filt={}, sort=[], limit=2))
+    if len(records) > 1:
+        logger.warning('more than one record found in single-value collection %s', name)
+
+        id_ = records[0]['id']
+
+    elif len(records) > 0:
+        id_ = records[0]['id']
+
+    else:
+        id_ = None
+
+    if id_ is None:
+        driver.insert(name, record)
+
+    else:
+        driver.replace(name, id_, record)
 
 
 def insert(collection: str, record: Record) -> Id:
@@ -190,4 +206,4 @@ def ensure_index(collection: str, index: Union[str, List[str]]) -> None:
 async def cleanup() -> None:
     logger.debug('cleaning up')
 
-    return _get_driver().cleanup()
+    return await _get_driver().cleanup()

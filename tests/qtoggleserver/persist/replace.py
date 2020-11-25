@@ -8,7 +8,7 @@ def test_replace_no_match(driver: BaseDriver) -> None:
     id1 = driver.insert(data.COLL1, data.RECORD1)
     id2 = driver.insert(data.COLL1, data.RECORD2)
 
-    replaced = driver.replace(data.COLL1, id_='inexistent_id', record=data.RECORD3)
+    replaced = driver.replace(data.COLL1, id_='16384', record=data.RECORD3)
     assert not replaced
 
     results = driver.query(data.COLL1, fields=None, filt={}, sort=[('int_key', False)], limit=None)
@@ -38,7 +38,7 @@ def test_replace_match_with_id(driver: BaseDriver) -> None:
     id1 = driver.insert(data.COLL1, data.RECORD1)
     id2 = driver.insert(data.COLL1, data.RECORD2)
 
-    replaced = driver.replace(data.COLL1, id_=id1, record=dict(data.RECORD3, id='new_id'))
+    replaced = driver.replace(data.COLL1, id_=id1, record=dict(data.RECORD3, id='16384'))
     assert replaced
 
     results = driver.query(data.COLL1, fields=None, filt={}, sort=[('int_key', False)], limit=None)

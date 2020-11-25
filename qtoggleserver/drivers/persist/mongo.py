@@ -119,10 +119,13 @@ class MongoDriver(BaseDriver):
         except pymongo.errors.DuplicateKeyError:
             logger.debug('index already exists')
 
-    def cleanup(self) -> None:
+    async def cleanup(self) -> None:
         logger.debug('disconnecting mongo client')
 
         self._client.close()
+
+    def is_history_supported(self) -> bool:
+        return True
 
     @classmethod
     def _query_gen_wrapper(cls, q: Iterable[Record]) -> Iterable[Record]:
@@ -133,20 +136,20 @@ class MongoDriver(BaseDriver):
             yield r
 
     @staticmethod
-    def _id_to_db(_id: str) -> Union[str, bson.ObjectId]:
-        if isinstance(_id, str) and _OBJECT_ID_RE.match(_id):
-            return bson.ObjectId(_id)
+    def _id_to_db(id_: str) -> Union[str, bson.ObjectId]:
+        if isinstance(id_, str) and _OBJECT_ID_RE.match(id_):
+            return bson.ObjectId(id_)
 
         else:
-            return _id
+            return id_
 
     @staticmethod
-    def _id_from_db(_id: Union[str, bson.ObjectId]) -> str:
-        if isinstance(_id, bson.ObjectId):
-            return str(_id)
+    def _id_from_db(id_: Union[str, bson.ObjectId]) -> str:
+        if isinstance(id_, bson.ObjectId):
+            return str(id_)
 
         else:
-            return _id
+            return id_
 
     def _id_to_db_rec(self, obj: Union[Dict, List, str]) -> Union[Dict, List, bson.ObjectId]:
         if isinstance(obj, dict):
@@ -168,6 +171,3 @@ class MongoDriver(BaseDriver):
             db_filt[key] = value
 
         return db_filt
-
-    def is_history_supported(self) -> bool:
-        return True

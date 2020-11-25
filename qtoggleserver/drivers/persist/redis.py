@@ -2,7 +2,7 @@
 import logging
 import operator
 
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import redis
 
@@ -83,7 +83,7 @@ class RedisDriver(BaseDriver):
         # Sort
         for field, rev in reversed(sort):
             if field == 'id':
-                db_records.sort(key=lambda r: r['id'], reverse=rev)
+                db_records.sort(key=lambda r: int(r['id']), reverse=rev)
 
             else:
                 db_records.sort(key=lambda r: self._value_from_db(r.get(field)), reverse=rev)
@@ -93,6 +93,9 @@ class RedisDriver(BaseDriver):
             db_records = db_records[:limit]
 
         # Transform from db record and return
+        if fields is not None:
+            fields = set(fields)
+
         return (self._record_from_db(dbr, fields) for dbr in db_records)
 
     def insert(self, collection: str, record: Record) -> Id:
@@ -232,6 +235,14 @@ class RedisDriver(BaseDriver):
 
         return removed_count
 
+    async def cleanup(self) -> None:
+        logger.debug('disconnecting redis client')
+
+        self._client.close()
+
+    def is_history_supported(self) -> bool:
+        return self._history_support
+
     def _filter_matches(self, db_record: GenericJSONDict, filt: Dict[str, Any]) -> bool:
         for key, value in filt.items():
             try:
@@ -240,7 +251,12 @@ class RedisDriver(BaseDriver):
             except KeyError:
                 return False
 
-            record_value = self._value_from_db(db_record_value)
+            if key == 'id':
+                record_value = db_record_value
+
+            else:
+                record_value = self._value_from_db(db_record_value)
+
             if not self._filter_value_matches(record_value, value):
                 return False
 
@@ -263,9 +279,8 @@ class RedisDriver(BaseDriver):
         return str(self._client.incr(self._make_sequence_key(collection)))
 
     @classmethod
-    def _record_from_db(cls, db_record: GenericJSONDict, fields: Optional[List[str]] = None) -> Record:
+    def _record_from_db(cls, db_record: GenericJSONDict, fields: Optional[Set[str]] = None) -> Record:
         if fields is not None:
-            fields = set(fields)
             return {k: (cls._value_from_db(v) if k != 'id' else v) for k, v in db_record.items() if k in fields}
 
         else:
@@ -298,6 +313,3 @@ class RedisDriver(BaseDriver):
     @staticmethod
     def _make_sequence_key(collection: str) -> str:
         return f'{collection}-id-sequence'
-
-    def is_history_supported(self) -> bool:
-        return self._history_support

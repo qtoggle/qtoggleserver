@@ -36,14 +36,3 @@ def test_insert_empty(driver: BaseDriver) -> None:
     assert len(results) == 1
 
     assert results[0] == {'id': id_}
-
-
-def test_insert_with_id(driver: BaseDriver) -> None:
-    id_ = driver.insert(data.COLL1, dict(data.RECORD1, id='id1'))
-    assert id_ == 'id1'
-
-    results = driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
-    results = list(results)
-    assert len(results) == 1
-
-    assert results[0] == dict(data.RECORD1, id=id_)

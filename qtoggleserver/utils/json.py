@@ -60,7 +60,7 @@ def _resolve_refs_rec(obj: Any, root_obj: Any) -> Any:
     return obj
 
 
-def _encode_default_json(obj: Any) -> Any:
+def encode_default_json(obj: Any) -> Any:
     if isinstance(obj, datetime.datetime):
         return {
             TYPE_FIELD: DATETIME_TYPE,
@@ -80,13 +80,13 @@ def _encode_default_json(obj: Any) -> Any:
         raise TypeError()
 
 
-def _decode_json_hook(obj: dict) -> Any:
+def decode_json_hook(obj: dict) -> Any:
     __t = obj.get(TYPE_FIELD)
     if __t is not None:
         __v = obj.get(VALUE_FIELD)
         if __t == DATE_TYPE:
             try:
-                return datetime.datetime.strptime(__v, DATE_FORMAT)
+                return datetime.datetime.strptime(__v, DATE_FORMAT).date()
 
             except ValueError:
                 pass
@@ -120,7 +120,7 @@ def dumps(obj: Any, allow_extended_types: bool = False, **kwargs) -> str:
 
     else:
         if allow_extended_types:
-            return json.dumps(obj, default=_encode_default_json, allow_nan=True, **kwargs)
+            return json.dumps(obj, default=encode_default_json, allow_nan=True, **kwargs)
 
         else:
             try:
@@ -133,7 +133,7 @@ def dumps(obj: Any, allow_extended_types: bool = False, **kwargs) -> str:
 
 
 def loads(s: Union[str, bytes], resolve_refs: bool = False, allow_extended_types: bool = False, **kwargs) -> Any:
-    object_hook = _decode_json_hook if allow_extended_types else None
+    object_hook = decode_json_hook if allow_extended_types else None
     obj = json.loads(s, object_hook=object_hook, **kwargs)
 
     if resolve_refs:

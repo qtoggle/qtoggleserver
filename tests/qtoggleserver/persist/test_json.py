@@ -9,9 +9,10 @@ from qtoggleserver.drivers.persist import json
 from qtoggleserver.persist import BaseDriver
 
 from . import insert
-from . import query
+from . import misc
 from . import remove
 from . import replace
+from . import query
 from . import update
 
 
@@ -29,8 +30,8 @@ def driver(make_driver: Callable[..., BaseDriver]) -> BaseDriver:
     return make_driver()
 
 
-def test_query_full(driver: BaseDriver) -> None:
-    query.test_query_full(driver)
+def test_query_all(driver: BaseDriver) -> None:
+    query.test_query_all(driver)
 
 
 def test_query_fields(driver: BaseDriver) -> None:
@@ -43,6 +44,10 @@ def test_query_fields_inexistent(driver: BaseDriver) -> None:
 
 def test_query_filter_id(driver: BaseDriver) -> None:
     query.test_query_filter_id(driver)
+
+
+def test_query_filter_id_inexistent(driver: BaseDriver) -> None:
+    query.test_query_filter_id_inexistent(driver)
 
 
 def test_query_filter_simple(driver: BaseDriver) -> None:
@@ -61,6 +66,10 @@ def test_query_filter_in(driver: BaseDriver) -> None:
     query.test_query_filter_in(driver)
 
 
+def test_query_filter_id_in(driver: BaseDriver) -> None:
+    query.test_query_filter_id_in(driver)
+
+
 def test_query_sort_simple(driver: BaseDriver) -> None:
     query.test_query_sort_simple(driver)
 
@@ -73,6 +82,10 @@ def test_query_sort_composite(driver: BaseDriver) -> None:
     query.test_query_sort_composite(driver)
 
 
+def test_query_sort_id(driver: BaseDriver) -> None:
+    query.test_query_sort_id(driver)
+
+
 def test_query_limit(driver: BaseDriver) -> None:
     query.test_query_limit(driver)
 
@@ -83,6 +96,10 @@ def test_query_limit_more(driver: BaseDriver) -> None:
 
 def test_query_fields_filter(driver: BaseDriver) -> None:
     query.test_query_fields_filter(driver)
+
+
+def test_query_fields_sort_id(driver: BaseDriver) -> None:
+    query.test_query_fields_sort_id(driver)
 
 
 def test_query_filter_sort(driver: BaseDriver) -> None:
@@ -111,10 +128,6 @@ def test_query_insert_multiple(driver: BaseDriver) -> None:
 
 def test_query_insert_empty(driver: BaseDriver) -> None:
     insert.test_insert_empty(driver)
-
-
-def test_query_insert_with_id(driver: BaseDriver) -> None:
-    insert.test_insert_with_id(driver)
 
 
 def test_remove_by_id(driver: BaseDriver) -> None:
@@ -165,5 +178,25 @@ def test_update_no_match(driver: BaseDriver) -> None:
     update.test_update_no_match(driver)
 
 
+def test_update_few_fields(driver: BaseDriver) -> None:
+    update.test_update_few_fields(driver)
+
+
 def test_update_new_fields(driver: BaseDriver) -> None:
     update.test_update_new_fields(driver)
+
+
+def test_collection_separation(driver: BaseDriver) -> None:
+    misc.test_collection_separation(driver)
+
+
+def test_data_type_datetime(driver: BaseDriver) -> None:
+    misc.test_data_type_datetime(driver)
+
+
+def test_data_type_list(driver: BaseDriver) -> None:
+    misc.test_data_type_list(driver)
+
+
+def test_data_type_dict(driver: BaseDriver) -> None:
+    misc.test_data_type_dict(driver)

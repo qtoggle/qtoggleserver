@@ -46,6 +46,7 @@ class JSONDriver(BaseDriver):
         use_backup: bool = True,
         **kwargs
     ) -> None:
+        logger.debug('using file %s', file_path)
 
         # Pretty formatting follows general debug flag, by default
         if pretty_format is None:
@@ -86,7 +87,11 @@ class JSONDriver(BaseDriver):
 
         # Sort
         for field, rev in reversed(sort):
-            records.sort(key=lambda r: r.get(field), reverse=rev)
+            if field == 'id':
+                records.sort(key=lambda r: int(r['id']), reverse=rev)
+
+            else:
+                records.sort(key=lambda r: r.get(field), reverse=rev)
 
         # Apply limit
         if limit is not None:
