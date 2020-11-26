@@ -87,3 +87,51 @@ def test_update_new_fields(driver: BaseDriver) -> None:
 
     assert results[0] == dict(data.RECORD1, id=id1)
     assert results[1] == dict(data.RECORD2, id=id2, **record_part)
+
+
+def test_update_custom_id_simple(driver: BaseDriver) -> None:
+    driver.insert(data.COLL1, dict(data.RECORD1, id=data.CUSTOM_ID_SIMPLE))
+    id2 = driver.insert(data.COLL1, data.RECORD2)
+
+    record_part = {'string_key': 'value4', 'new_key': 'new_value'}
+    updated = driver.update(data.COLL1, filt={'id': data.CUSTOM_ID_SIMPLE}, record_part=record_part)
+    assert updated == 1
+
+    results = driver.query(data.COLL1, fields=None, filt={}, sort=[('int_key', False)], limit=None)
+    results = list(results)
+    assert len(results) == 2
+    assert results[0] == dict(data.RECORD1, id=data.CUSTOM_ID_SIMPLE, **record_part)
+    assert results[1] == dict(data.RECORD2, id=id2)
+
+
+def test_update_custom_id_complex(driver: BaseDriver) -> None:
+    driver.insert(data.COLL1, dict(data.RECORD1, id=data.CUSTOM_ID_COMPLEX))
+    id2 = driver.insert(data.COLL1, data.RECORD2)
+
+    record_part = {'string_key': 'value4', 'new_key': 'new_value'}
+    updated = driver.update(data.COLL1, filt={'id': data.CUSTOM_ID_COMPLEX}, record_part=record_part)
+    assert updated == 1
+
+    results = driver.query(data.COLL1, fields=None, filt={}, sort=[('int_key', False)], limit=None)
+    results = list(results)
+    assert len(results) == 2
+    assert results[0] == dict(data.RECORD1, id=data.CUSTOM_ID_COMPLEX, **record_part)
+    assert results[1] == dict(data.RECORD2, id=id2)
+
+
+def test_update_no_match_custom_id_simple(driver: BaseDriver) -> None:
+    driver.insert(data.COLL1, data.RECORD1)
+    driver.insert(data.COLL1, data.RECORD2)
+
+    record_part = {'string_key': 'value4', 'new_key': 'new_value'}
+    updated = driver.update(data.COLL1, filt={'id': data.CUSTOM_ID_SIMPLE}, record_part=record_part)
+    assert updated == 0
+
+
+def test_update_no_match_custom_id_complex(driver: BaseDriver) -> None:
+    driver.insert(data.COLL1, data.RECORD1)
+    driver.insert(data.COLL1, data.RECORD2)
+
+    record_part = {'string_key': 'value4', 'new_key': 'new_value'}
+    updated = driver.update(data.COLL1, filt={'id': data.CUSTOM_ID_COMPLEX}, record_part=record_part)
+    assert updated == 0

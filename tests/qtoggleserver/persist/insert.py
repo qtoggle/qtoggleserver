@@ -36,3 +36,27 @@ def test_insert_empty(driver: BaseDriver) -> None:
     assert len(results) == 1
 
     assert results[0] == {'id': id_}
+
+
+def test_insert_with_custom_id_simple(driver: BaseDriver) -> None:
+    id_ = driver.insert(data.COLL1, dict(data.RECORD1, id=data.CUSTOM_ID_SIMPLE))
+    driver.insert(data.COLL1, data.RECORD2)
+    assert id_ == data.CUSTOM_ID_SIMPLE
+
+    results = driver.query(data.COLL1, fields=None, filt={'id': id_}, sort=[], limit=None)
+    results = list(results)
+    assert len(results) == 1
+
+    assert results[0] == dict(data.RECORD1, id=id_)
+
+
+def test_insert_with_custom_id_complex(driver: BaseDriver) -> None:
+    id_ = driver.insert(data.COLL1, dict(data.RECORD1, id=data.CUSTOM_ID_COMPLEX))
+    driver.insert(data.COLL1, data.RECORD2)
+    assert id_ == data.CUSTOM_ID_COMPLEX
+
+    results = driver.query(data.COLL1, fields=None, filt={'id': id_}, sort=[], limit=None)
+    results = list(results)
+    assert len(results) == 1
+
+    assert results[0] == dict(data.RECORD1, id=id_)

@@ -66,6 +66,16 @@ def test_query_filter_id_inexistent(driver: BaseDriver) -> None:
     assert len(results) == 0
 
 
+def test_query_filter_custom_id_inexistent(driver: BaseDriver) -> None:
+    driver.insert(data.COLL1, data.RECORD1)
+    driver.insert(data.COLL1, data.RECORD2)
+    driver.insert(data.COLL1, data.RECORD3)
+
+    results = driver.query(data.COLL1, fields=None, filt={'id': data.CUSTOM_ID_COMPLEX}, sort=[], limit=None)
+    results = list(results)
+    assert len(results) == 0
+
+
 def test_query_filter_simple(driver: BaseDriver) -> None:
     driver.insert(data.COLL1, data.RECORD1)
     driver.insert(data.COLL1, data.RECORD2)

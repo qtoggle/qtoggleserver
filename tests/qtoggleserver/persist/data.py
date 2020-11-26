@@ -26,3 +26,6 @@ RECORD3 = {
     'bool_key': False,
     'non_unique_key': 'unique_b'
 }
+
+CUSTOM_ID_SIMPLE = '34'
+CUSTOM_ID_COMPLEX = 'long.id-with_vari0u5-characters'

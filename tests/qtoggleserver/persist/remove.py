@@ -53,7 +53,7 @@ def test_remove_inexistent_record(driver: BaseDriver) -> None:
     driver.insert(data.COLL1, data.RECORD2)
     driver.insert(data.COLL1, data.RECORD3)
 
-    removed = driver.remove(data.COLL1, filt={'int_key': 4})
+    removed = driver.remove(data.COLL1, filt={'id': '34'})
     assert removed == 0
 
     results = driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
@@ -72,3 +72,66 @@ def test_remove_inexistent_field(driver: BaseDriver) -> None:
     results = driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
     results = list(results)
     assert len(results) == 3
+
+
+def test_remove_no_match(driver: BaseDriver) -> None:
+    driver.insert(data.COLL1, data.RECORD1)
+    driver.insert(data.COLL1, data.RECORD2)
+    driver.insert(data.COLL1, data.RECORD3)
+
+    removed = driver.remove(data.COLL1, filt={'int_key': 4})
+    assert removed == 0
+
+    results = driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
+    results = list(results)
+    assert len(results) == 3
+
+
+def test_remove_custom_id_simple(driver: BaseDriver) -> None:
+    driver.insert(data.COLL1, dict(data.RECORD1, id=data.CUSTOM_ID_SIMPLE))
+    id2 = driver.insert(data.COLL1, data.RECORD2)
+
+    removed = driver.remove(data.COLL1, filt={'id': data.CUSTOM_ID_SIMPLE})
+    assert removed == 1
+
+    results = driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
+    results = list(results)
+    assert len(results) == 1
+    assert results[0] == dict(data.RECORD2, id=id2)
+
+
+def test_remove_custom_id_complex(driver: BaseDriver) -> None:
+    driver.insert(data.COLL1, dict(data.RECORD1, id=data.CUSTOM_ID_COMPLEX))
+    id2 = driver.insert(data.COLL1, data.RECORD2)
+
+    removed = driver.remove(data.COLL1, filt={'id': data.CUSTOM_ID_COMPLEX})
+    assert removed == 1
+
+    results = driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
+    results = list(results)
+    assert len(results) == 1
+    assert results[0] == dict(data.RECORD2, id=id2)
+
+
+def test_remove_no_match_custom_id_simple(driver: BaseDriver) -> None:
+    driver.insert(data.COLL1, data.RECORD1)
+    driver.insert(data.COLL1, data.RECORD2)
+
+    removed = driver.remove(data.COLL1, filt={'id': data.CUSTOM_ID_SIMPLE})
+    assert removed == 0
+
+    results = driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
+    results = list(results)
+    assert len(results) == 2
+
+
+def test_remove_no_match_custom_id_complex(driver: BaseDriver) -> None:
+    driver.insert(data.COLL1, data.RECORD1)
+    driver.insert(data.COLL1, data.RECORD2)
+
+    removed = driver.remove(data.COLL1, filt={'id': data.CUSTOM_ID_COMPLEX})
+    assert removed == 0
+
+    results = driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
+    results = list(results)
+    assert len(results) == 2

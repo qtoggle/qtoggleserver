@@ -139,8 +139,7 @@ class RedisDriver(BaseDriver):
             db_record = self._client.hgetall(key)
             if db_record and self._filter_matches(db_record, filt):
                 self._client.hset(key, mapping=db_record_part)
-
-            modified_count = 1
+                modified_count = 1
 
         else:  # No single specific id in filt
             # Look through all records from this collection, iterating through set

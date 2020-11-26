@@ -41,6 +41,10 @@ def test_query_filter_id_inexistent(driver: BaseDriver) -> None:
     query.test_query_filter_id_inexistent(driver)
 
 
+def test_query_filter_custom_id_inexistent(driver: BaseDriver) -> None:
+    query.test_query_filter_custom_id_inexistent(driver)
+
+
 def test_query_filter_simple(driver: BaseDriver) -> None:
     query.test_query_filter_simple(driver)
 
@@ -109,16 +113,24 @@ def test_query_filter_sort_limit(driver: BaseDriver) -> None:
     query.test_query_filter_sort_limit(driver)
 
 
-def test_query_insert_simple(driver: BaseDriver) -> None:
+def test_insert_simple(driver: BaseDriver) -> None:
     insert.test_insert_simple(driver)
 
 
-def test_query_insert_multiple(driver: BaseDriver) -> None:
+def test_insert_multiple(driver: BaseDriver) -> None:
     insert.test_insert_multiple(driver)
 
 
-def test_query_insert_empty(driver: BaseDriver) -> None:
+def test_insert_empty(driver: BaseDriver) -> None:
     insert.test_insert_empty(driver)
+
+
+def test_insert_with_custom_id_simple(driver: BaseDriver) -> None:
+    insert.test_insert_with_custom_id_simple(driver)
+
+
+def test_insert_with_custom_id_complex(driver: BaseDriver) -> None:
+    insert.test_insert_with_custom_id_complex(driver)
 
 
 def test_remove_by_id(driver: BaseDriver) -> None:
@@ -141,6 +153,26 @@ def test_remove_inexistent_field(driver: BaseDriver) -> None:
     remove.test_remove_inexistent_field(driver)
 
 
+def test_remove_no_match(driver: BaseDriver) -> None:
+    remove.test_remove_no_match(driver)
+
+
+def test_remove_custom_id_simple(driver: BaseDriver) -> None:
+    remove.test_remove_custom_id_simple(driver)
+
+
+def test_remove_custom_id_complex(driver: BaseDriver) -> None:
+    remove.test_remove_custom_id_complex(driver)
+
+
+def test_remove_no_match_custom_id_simple(driver: BaseDriver) -> None:
+    remove.test_remove_no_match_custom_id_simple(driver)
+
+
+def test_remove_no_match_custom_id_complex(driver: BaseDriver) -> None:
+    remove.test_remove_no_match_custom_id_complex(driver)
+
+
 def test_replace_no_match(driver: BaseDriver) -> None:
     replace.test_replace_no_match(driver)
 
@@ -155,6 +187,18 @@ def test_replace_match_with_id(driver: BaseDriver) -> None:
 
 def test_replace_match_fewer_fields(driver: BaseDriver) -> None:
     replace.test_replace_match_fewer_fields(driver)
+
+
+def test_replace_custom_id_simple(driver: BaseDriver) -> None:
+    replace.test_replace_custom_id_simple(driver)
+
+
+def test_replace_custom_id_complex(driver: BaseDriver) -> None:
+    replace.test_replace_custom_id_complex(driver)
+
+
+def test_replace_no_match_custom_id(driver: BaseDriver) -> None:
+    replace.test_replace_no_match_custom_id(driver)
 
 
 def test_update_match_id(driver: BaseDriver) -> None:
@@ -175,6 +219,22 @@ def test_update_few_fields(driver: BaseDriver) -> None:
 
 def test_update_new_fields(driver: BaseDriver) -> None:
     update.test_update_new_fields(driver)
+
+
+def test_update_custom_id_simple(driver: BaseDriver) -> None:
+    update.test_update_custom_id_simple(driver)
+
+
+def test_update_custom_id_complex(driver: BaseDriver) -> None:
+    update.test_update_custom_id_complex(driver)
+
+
+def test_update_no_match_custom_id_simple(driver: BaseDriver) -> None:
+    update.test_update_no_match_custom_id_simple(driver)
+
+
+def test_update_no_match_custom_id_complex(driver: BaseDriver) -> None:
+    update.test_update_no_match_custom_id_complex(driver)
 
 
 def test_collection_separation(driver: BaseDriver) -> None:

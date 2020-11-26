@@ -4,3 +4,4 @@ pytest
 pytest-tornasync
 mongomock
 fakeredis
+unqlite

@@ -28,11 +28,10 @@ FILTER_OP_MAPPING = {
 logger = logging.getLogger(__name__)
 
 
-class DuplicateRecordId(Exception):
-    pass
-
-
 class UnQLiteDriver(BaseDriver):
+    CUSTOM_ID_MAPPING_KEY = '__custom_id_mapping'
+    DUMMY_FIELD = '__dummy'
+
     def __init__(
         self,
         file_path: str = DEFAULT_FILE_PATH,
@@ -42,8 +41,14 @@ class UnQLiteDriver(BaseDriver):
         logger.debug('using file %s', file_path)
 
         self._db: unqlite.UnQLite = unqlite.UnQLite(filename=file_path)
-        self._commit_task: asyncio.Task = asyncio.create_task(self._commit_loop())
+        self._custom_id_mapping_to_db: Optional[Dict[str, Dict[Id, int]]] = None
+        self._custom_id_mapping_from_db: Optional[Dict[str, Dict[int, Id]]] = None
+
         self._commit_interval: int = commit_interval
+        self._commit_task: Optional[asyncio.Task] = None
+        loop = asyncio.get_event_loop()
+        if loop.is_running():  # Helps with testability
+            asyncio.create_task(self._commit_loop())
 
     def query(
         self,
@@ -59,8 +64,12 @@ class UnQLiteDriver(BaseDriver):
             return []
 
         if isinstance(filt.get('id'), Id):  # Look for specific record id
-            filt = self._filter_to_db(filt)
+            filt = self._filter_to_db(collection, filt)
+
             id_ = filt.pop('__id')
+            if id_ is None:
+                return []
+
             db_record = coll.fetch(id_)
 
             # Apply filter criteria
@@ -69,7 +78,7 @@ class UnQLiteDriver(BaseDriver):
                 db_records = [db_record]
 
         else:  # No single specific id in filt
-            filt = self._filter_to_db(filt)
+            filt = self._filter_to_db(collection, filt)
 
             # Look through all records from this collection
             db_records = coll.filter(lambda dbr: self._filter_matches(dbr, filt))
@@ -92,30 +101,37 @@ class UnQLiteDriver(BaseDriver):
 
             db_records = db_records[:limit]
 
-        # Transform from db record and return
+        # Pass fields as set for faster lookup
         if fields is not None:
             fields = set(fields)
             if 'id' in fields:
                 fields.remove('id')
                 fields.add('__id')
 
-        return self._query_gen_wrapper(self._record_from_db(dbr, fields) for dbr in db_records)
+        # Transform from db record and return
+        return self._query_gen_wrapper(collection, (self._record_from_db(dbr, fields) for dbr in db_records))
 
     def insert(self, collection: str, record: Record) -> Id:
         coll = self._get_collection(collection)
 
+        custom_id = record.pop('id', None)
+
         # Adapt the record to db
         db_record = self._record_to_db(record)
-        if 'id' in db_record:
-            db_record['__id'] = self._id_to_db(db_record.pop('id'))
+
+        # We can't insert empty objects into UnQLite
+        if len(db_record) == 0:
+            db_record[self.DUMMY_FIELD] = None
 
         # Actually insert the record
-        if len(db_record) == 0:  # We can't insert empty objects into UnQLite
-            db_record['__dummy'] = None
-
         id_ = coll.store(db_record, return_id=True)
+        if custom_id is not None:
+            self._ensure_custom_id_mapping_loaded()
+            self._custom_id_mapping_to_db.setdefault(collection, {})[custom_id] = id_
+            self._custom_id_mapping_from_db.setdefault(collection, {})[id_] = custom_id
+            self._save_custom_id_mapping()
 
-        return self._id_from_db(id_)
+        return self._id_from_db(collection, id_)
 
     def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
         coll = self._get_collection(collection)
@@ -126,8 +142,11 @@ class UnQLiteDriver(BaseDriver):
         modified_count = 0
 
         if isinstance(filt.get('id'), Id):
-            filt = self._filter_to_db(filt)
+            filt = self._filter_to_db(collection, filt)
             id_ = filt.pop('__id')
+            if id_ is None:
+                return modified_count
+
             db_record = coll.fetch(id_)
 
             # Apply filter criteria
@@ -137,9 +156,9 @@ class UnQLiteDriver(BaseDriver):
                     modified_count = 1
 
         else:  # No single specific id in filt
-            filt = self._filter_to_db(filt)
+            filt = self._filter_to_db(collection, filt)
 
-            # Look through all records from this collection
+            # Look through all records of this collection
             for db_record in coll.filter(lambda dbr: self._filter_matches(dbr, filt)):
                 # Actually update the record
                 db_record.update(db_record_part)
@@ -154,8 +173,15 @@ class UnQLiteDriver(BaseDriver):
 
         # Adapt the record to db
         db_record = self._record_to_db(record)
-        db_record.pop('id', None)  # Never add the id together with other fields
-        id_ = self._id_to_db(id_)
+
+        # Record id stays the same
+        db_record.pop('id', None)
+
+        id_ = self._id_to_db(collection, id_)
+        if id_ is None:
+            # We expect a non-integer string value when using custom ids; if we can't map them, we definitely don't have
+            # such a record
+            return False
 
         return coll.update(id_, db_record)
 
@@ -165,8 +191,10 @@ class UnQLiteDriver(BaseDriver):
         removed_count = 0
 
         if isinstance(filt.get('id'), Id):
-            filt = self._filter_to_db(filt)
+            filt = self._filter_to_db(collection, filt)
             id_ = filt.pop('__id')
+            if id_ is None:
+                return removed_count
 
             db_record = coll.fetch(id_)
             if db_record and self._filter_matches(db_record, filt):
@@ -179,7 +207,7 @@ class UnQLiteDriver(BaseDriver):
 
         else:  # No single specific id in filt
             # Look through all records from this collection
-            filt = self._filter_to_db(filt)
+            filt = self._filter_to_db(collection, filt)
 
             for db_record in coll.filter(lambda dbr: self._filter_matches(dbr, filt)):
                 # Apply filter criteria
@@ -201,6 +229,26 @@ class UnQLiteDriver(BaseDriver):
 
     def is_history_supported(self) -> bool:
         return True
+
+    def _ensure_custom_id_mapping_loaded(self) -> None:
+        if self._custom_id_mapping_to_db is None:
+            logger.debug('loading custom id mapping')
+            try:
+                self._custom_id_mapping_to_db = json_utils.loads(self._db.fetch(self.CUSTOM_ID_MAPPING_KEY))
+
+            except KeyError:
+                self._custom_id_mapping_to_db = {}
+
+            # We do reverse lookups as well
+            self._custom_id_mapping_from_db = {}
+            for collection, to_mapping in self._custom_id_mapping_to_db.items():
+                from_mapping = self._custom_id_mapping_from_db.setdefault(collection, {})
+                for k, v in to_mapping.items():
+                    from_mapping[v] = k
+
+    def _save_custom_id_mapping(self) -> None:
+        logger.debug('saving custom id mapping')
+        self._db.store(self.CUSTOM_ID_MAPPING_KEY, json_utils.dumps(self._custom_id_mapping_to_db))
 
     async def _commit_loop(self) -> None:
         while True:
@@ -240,31 +288,44 @@ class UnQLiteDriver(BaseDriver):
 
         return True
 
-    @classmethod
-    def _query_gen_wrapper(cls, q: Iterable[Record]) -> Iterable[Record]:
+    def _query_gen_wrapper(self, collection: str, q: Iterable[Record]) -> Iterable[Record]:
         for r in q:
             if '__id' in r:
-                r['id'] = cls._id_from_db(r.pop('__id'))
+                r['id'] = self._id_from_db(collection, r.pop('__id'))
 
             yield r
 
-    @staticmethod
-    def _id_to_db(id_: str) -> int:
-        return int(id_)
+    def _id_to_db(self, collection: str, id_: str) -> Optional[int]:
+        self._ensure_custom_id_mapping_loaded()
+        to_mapping = self._custom_id_mapping_to_db.get(collection, {})
+        mapped_id = to_mapping.get(id_)
+        if mapped_id is not None:
+            return mapped_id
 
-    @staticmethod
-    def _id_from_db(id_: int) -> str:
+        try:
+            return int(id_)
+
+        except ValueError:
+            return None
+
+    def _id_from_db(self, collection: str, id_: int) -> str:
+        self._ensure_custom_id_mapping_loaded()
+        from_mapping = self._custom_id_mapping_from_db.get(collection, {})
+        mapped_id = from_mapping.get(id_)
+        if mapped_id is not None:
+            return mapped_id
+
         return str(id_)
 
-    def _id_to_db_rec(self, obj: Union[Dict, List, str]) -> Union[Dict, List, int]:
+    def _id_to_db_rec(self, collection: str, obj: Union[Dict, List, str]) -> Union[Dict, List, int]:
         if isinstance(obj, dict):
-            return {key: self._id_to_db_rec(value) for key, value in obj.items()}
+            return {key: self._id_to_db_rec(collection, value) for key, value in obj.items()}
 
         elif isinstance(obj, list):
-            return [self._id_to_db(value) for value in obj]
+            return [self._id_to_db(collection, value) for value in obj]
 
         else:  # Assuming str
-            return self._id_to_db(obj)
+            return self._id_to_db(collection, obj)
 
     @staticmethod
     def _filter_value_matches(record_value: Any, filt_value: Any) -> bool:
@@ -279,7 +340,7 @@ class UnQLiteDriver(BaseDriver):
         else:  # Assuming simple value
             return record_value == filt_value
 
-    def _filter_to_db(self, filt: Dict[str, Any]) -> Dict[str, Any]:
+    def _filter_to_db(self, collection: str, filt: Dict[str, Any]) -> Dict[str, Any]:
         filt = dict(filt)
         for key, value in filt.items():
             if isinstance(value, dict):  # filter with operators
@@ -287,7 +348,7 @@ class UnQLiteDriver(BaseDriver):
                     value[k] = self._value_to_db(v)
 
         if 'id' in filt:
-            filt['__id'] = self._id_to_db_rec(filt.pop('id'))
+            filt['__id'] = self._id_to_db_rec(collection, filt.pop('id'))
 
         return filt
 
@@ -297,7 +358,10 @@ class UnQLiteDriver(BaseDriver):
             return {k: (cls._value_from_db(v) if k != 'id' else v) for k, v in db_record.items() if k in fields}
 
         else:
-            return {k: (cls._value_from_db(v) if k != 'id' else v) for k, v in db_record.items() if k != '__dummy'}
+            return {
+                k: (cls._value_from_db(v) if k != 'id' else v)
+                for k, v in db_record.items() if k != cls.DUMMY_FIELD
+            }
 
     @classmethod
     def _record_to_db(cls, record: Record) -> GenericJSONDict:

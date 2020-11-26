@@ -224,8 +224,13 @@ class JSONDriver(BaseDriver):
 
     @staticmethod
     def _find_next_id(coll: Collection) -> Id:
-        int_ids = [int(id_) for id_ in coll.keys() if id_]
-        int_ids.append(0)
+        int_ids = [0]
+        for id_ in coll.keys():
+            try:
+                int_ids.append(int(id_))
+
+            except ValueError:
+                continue
 
         return str(max(int_ids) + 1)
 
