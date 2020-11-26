@@ -161,9 +161,9 @@ jobs:
           tagRegex: "version-(.*)"
       - name: Set up Docker Buildx
         id: buildx
-        uses: crazy-max/ghaction-docker-buildx@v1
+        uses: docker/setup-buildx-action@v1
         with:
-          version: latest
+          install: true
       - name: Docker login
         run: docker login --username ${DOCKER_REGISTRY_USERNAME} --password ${DOCKER_REGISTRY_PASSWORD}
         env:
@@ -172,7 +172,7 @@ jobs:
       - name: Build image
         run: |
           [[ "${{ steps.tagName.outputs.tag }}" == *beta* ]] && LATEST_TAG="latest" || LATEST_TAG="stable"
-          docker buildx build \
+          docker build \
                  --build-arg PROJECT_VERSION=${{ steps.tagName.outputs.tag }} \
                  --platform linux/amd64,linux/arm/v7,linux/arm64 \
                  --tag ${{ github.repository }}:${{ steps.tagName.outputs.tag }} \
