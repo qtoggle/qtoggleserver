@@ -48,7 +48,7 @@ class UnQLiteDriver(BaseDriver):
         self._commit_task: Optional[asyncio.Task] = None
         loop = asyncio.get_event_loop()
         if loop.is_running():  # Helps with testability
-            asyncio.create_task(self._commit_loop())
+            self._commit_task = asyncio.create_task(self._commit_loop())
 
     def query(
         self,

@@ -28,6 +28,7 @@ logging: _typing.Dict[str, _typing.Any] = {
         # Double quotes are necessary to avoid HOCON key split
         '"qtoggleserver.core.sessions"': {'level': 'INFO'},
         '"qtoggleserver.persist"': {'level': 'INFO'},
+        '"qtoggleserver.drivers.persist"': {'level': 'INFO'},
         '"qtoggleserver.utils.cmd"': {'level': 'INFO'}
     },
     'root': {
