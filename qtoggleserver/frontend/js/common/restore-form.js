@@ -224,7 +224,6 @@ class RestoreForm extends PageForm {
                 BaseAPI.setSlaveName(this.getDeviceName())
             }
 
-
             return BaseAPI.apiCall({
                 method: endpoint.restoreMethod,
                 path: endpoint.path,

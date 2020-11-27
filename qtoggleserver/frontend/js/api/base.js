@@ -178,7 +178,7 @@ export function apiCall({
     path,
     query = null,
     data = null,
-    timeout = APIConstants.DEFAULT_SERVER_TIMEOUT,
+    timeout = null,
     expectedHandle = null,
     handleErrors = true
 }) {
@@ -187,10 +187,11 @@ export function apiCall({
 
     return new Promise(function (resolve, reject) {
         let apiFuncPath = path
-
+        let slaveForward = false
         if (slaveName) { /* Slave qToggle API call */
             path = `/devices/${slaveName}/forward${path}`
             slaveName = null
+            slaveForward = true
         }
 
         path = APIConstants.QTOGGLE_API_PREFIX + path
@@ -265,6 +266,16 @@ export function apiCall({
 
         if (!isListen) {
             syncBeginCallbacks.forEach(c => PromiseUtils.asap().then(() => c(params)))
+        }
+
+        if (!timeout) {
+            timeout = APIConstants.DEFAULT_SERVER_TIMEOUT
+        }
+        else {
+            /* When specifying a timeout, ensure to also use it if forwarding API call to slave */
+            if (slaveForward) {
+                ObjectUtils.setDefault(query, 'timeout', timeout)
+            }
         }
 
         AJAX.requestJSON(

@@ -298,12 +298,21 @@ async def slave_device_forward(
     if (not slave.is_online() or not slave.is_ready()) and (override_offline != 'true'):
         raise core_api.APIError(503, 'device-offline')
 
-    # Use default slave timeout unless API call requires longer timeout
-    timeout = settings.slaves.timeout
-    for m, path_re in _LONG_TIMEOUT_API_CALLS:
-        if request.method == m and path_re.fullmatch(path):
-            timeout = settings.slaves.long_timeout
-            break
+    timeout = request.query.get('timeout')
+    if timeout is not None:
+        try:
+            timeout = int(timeout)
+
+        except ValueError:
+            raise core_api.APIError(400, 'invalid-field', field='timeout') from None
+
+    else:
+        # Use default slave timeout unless API call requires longer timeout
+        timeout = settings.slaves.timeout
+        for m, path_re in _LONG_TIMEOUT_API_CALLS:
+            if request.method == m and path_re.fullmatch(path):
+                timeout = settings.slaves.long_timeout
+                break
 
     try:
         response = await slave.api_call(request.method, path, params, timeout=timeout, retry_counter=None)
