@@ -103,8 +103,10 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
         except Exception as e1:
             errors_by_name[attr_name] = e1
 
+    value = attrs.pop('value', None)
+
     if attrs:
-        await asyncio.wait([set_attr(name, value) for name, value in attrs.items()])
+        await asyncio.wait([set_attr(n, v) for n, v in attrs.items()])
 
     if errors_by_name:
         name, error = next(iter(errors_by_name.items()))
@@ -125,14 +127,9 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
             # Transform any unhandled exception into APIError(500)
             raise core_api.APIError(500, 'unexpected-error', message=str(error)) from error
 
-    # If value is supplied among attrs, use it to update port value, but ignore any errors;
-    value = attrs.get('value')
+    # If value is supplied among attrs, use it to update port value, but in background and ignoring any errors
     if value is not None and port.is_enabled():
-        try:
-            await port.write_transformed_value(value, reason=core_ports.CHANGE_REASON_API)
-
-        except Exception as e:
-            core_api.logger.error('failed to set %s value: %s', port, e, exc_info=True)
+        asyncio.create_task(port.write_transformed_value(value, reason=core_ports.CHANGE_REASON_API))
 
     await port.save()
 
