@@ -25,6 +25,9 @@ async def put_device(request: core_api.APIRequest, params: Attributes) -> None:
     for f in ('admin', 'normal', 'viewonly'):
         params.pop(f'{f}_password', None)
 
+    # Ignore the date attribute
+    params.pop('date', None)
+
     # Reset device attributes
     core_device.reset(preserve_attrs=['admin_password_hash', 'normal_password_hash', 'viewonly_password_hash'])
     core_device.load()
