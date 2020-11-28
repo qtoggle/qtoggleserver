@@ -173,7 +173,7 @@ jobs:
         id: prepareLatestTag
         run: |
           [[ "${{ steps.tagName.outputs.tag }}" == *beta* ]] && tag="latest" || tag="stable"
-          echo "::set-output name=lastest_tag::${tag}"
+          echo "::set-output name=tag::${tag}"
       - name: Build and push images
         uses: docker/build-push-action@v2
         with:
