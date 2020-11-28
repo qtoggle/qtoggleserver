@@ -1,9 +1,11 @@
 
+import asyncio
 import logging
+import ssl
 
 from typing import List, Optional
 
-from tornado.web import Application, RequestHandler, URLSpec
+from tornado.web import Application, HTTPServer, RequestHandler, URLSpec
 from qui.web import tornado as qui_tornado
 
 from qtoggleserver import system
@@ -16,6 +18,7 @@ from qtoggleserver.web import handlers
 logger = logging.getLogger(__name__)
 
 _application: Optional[Application] = None
+_server: Optional[HTTPServer] = None
 
 
 def _log_request(handler: RequestHandler) -> None:
@@ -145,3 +148,41 @@ def get_application() -> Application:
         )
 
     return _application
+
+
+def get_server() -> Optional[HTTPServer]:
+    return _server
+
+
+async def init() -> None:
+    global _server
+
+    address, port = settings.server.addr, settings.server.port
+
+    ssl_context = None
+    if settings.server.https.cert_file and settings.server.https.key_file:
+        logger.info('setting up HTTPS using certificate from %s', settings.server.https.cert_file)
+        ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        ssl_context.load_cert_chain(settings.server.https.cert_file, settings.server.https.key_file)
+
+    app = get_application()
+
+    try:
+        _server = app.listen(port, address, ssl_options=ssl_context)
+        logger.info('server listening on %s:%s', address, port)
+
+    except Exception as e:
+        logger.error('server listen failed: %s', e)
+        raise
+
+
+async def cleanup() -> None:
+    global _server
+
+    if not _server:
+        return
+
+    _server.stop()
+
+    # Allow a small amount of time for web server callbacks to complete
+    await asyncio.sleep(1)
