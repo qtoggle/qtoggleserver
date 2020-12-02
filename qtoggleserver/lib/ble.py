@@ -14,7 +14,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from bluepy import btle
 
 from qtoggleserver.core import ports as core_ports
-from qtoggleserver.peripherals import Peripheral, RunnerBusy
+from qtoggleserver.peripherals import Peripheral
+from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import logging as logging_utils
 
 from . import polled
@@ -331,7 +332,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
                 self.set_online(False)
 
-                if isinstance(e, RunnerBusy):
+                if isinstance(e, asyncio_utils.RunnerBusy):
                     raise BLEBusy('Too many pending commands') from e
 
                 raise

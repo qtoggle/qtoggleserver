@@ -210,10 +210,6 @@ class UnQLiteDriver(BaseDriver):
             filt = self._filter_to_db(collection, filt)
 
             for db_record in coll.filter(lambda dbr: self._filter_matches(dbr, filt)):
-                # Apply filter criteria
-                if not self._filter_matches(db_record, filt):
-                    continue
-
                 # Actually remove the record
                 coll.delete(db_record['__id'])
                 removed_count += 1

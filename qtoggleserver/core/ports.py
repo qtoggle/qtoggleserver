@@ -930,7 +930,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.debug('removing persisted data')
             persist.remove(self.PERSIST_COLLECTION, filt={'id': self._id})
             if core_history.is_enabled():
-                core_history.remove_samples(self)
+                core_history.remove_samples(self, background=True)
 
         await self.trigger_remove()
 

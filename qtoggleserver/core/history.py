@@ -80,7 +80,7 @@ async def janitor_task() -> None:
                     continue
 
                 to_timestamp = (now - history_retention) * 1000
-                count = remove_samples(port, from_timestamp=0, to_timestamp=to_timestamp)
+                count = remove_samples(port, from_timestamp=0, to_timestamp=to_timestamp, background=True)
                 if count > 0:
                     logger.debug('removed %d old samples of %s from history', count, port)
 
@@ -138,8 +138,9 @@ def save_sample(port: core_ports.BasePort, timestamp: int) -> None:
 def remove_samples(
     port: core_ports.BasePort,
     from_timestamp: Optional[int] = None,
-    to_timestamp: Optional[int] = None
-) -> int:
+    to_timestamp: Optional[int] = None,
+    background: bool = False
+) -> Optional[int]:
     filt = {
         'pid': port.get_id()
     }
@@ -150,7 +151,12 @@ def remove_samples(
     if to_timestamp is not None:
         filt.setdefault('ts', {})['lt'] = to_timestamp
 
-    return persist.remove(PERSIST_COLLECTION, filt)
+    if background:
+        loop = asyncio.get_event_loop()
+        loop.run_in_executor(None, persist.remove, PERSIST_COLLECTION, filt)
+
+    else:
+        return persist.remove(PERSIST_COLLECTION, filt)
 
 
 def reset() -> None:
