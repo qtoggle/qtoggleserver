@@ -9,7 +9,6 @@ from qtoggleserver.utils import dynload as dynload_utils
 
 from .peripheral import Peripheral
 from .peripheralport import PeripheralPort
-from .threadedrunner import ThreadedRunner, RunnerBusy
 
 
 logger = logging.getLogger(__name__)
