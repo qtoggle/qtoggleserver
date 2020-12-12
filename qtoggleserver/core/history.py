@@ -80,9 +80,8 @@ async def janitor_task() -> None:
                     continue
 
                 to_timestamp = (now - history_retention) * 1000
-                count = remove_samples(port, from_timestamp=0, to_timestamp=to_timestamp, background=True)
-                if count > 0:
-                    logger.debug('removed %d old samples of %s from history', count, port)
+                logger.debug('removing old samples of %s from history', port)
+                remove_samples(port, from_timestamp=0, to_timestamp=to_timestamp, background=True)
 
         except asyncio.CancelledError:
             logger.debug('janitor task cancelled')

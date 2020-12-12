@@ -65,7 +65,7 @@ class MoveWidgetForm extends PageForm {
             icon: Dashboard.PANEL_ICON,
             title: title,
             pathId: 'move',
-            modal: true,
+            popup: true,
 
             fields: [
                 new PanelPickerField({

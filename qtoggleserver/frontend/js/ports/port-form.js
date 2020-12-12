@@ -25,7 +25,8 @@ import * as PortsAPI     from '$app/api/ports.js'
 import * as Cache        from '$app/cache.js'
 import AttrdefFormMixin  from '$app/common/attrdef-form-mixin.js'
 
-import * as Ports from './ports.js'
+import PortHistoryChartPage from './port-history-chart-page.js'
+import * as Ports           from './ports.js'
 
 
 const DISABLED_PORT_VISIBLE_ATTRS = ['id', 'enabled']
@@ -258,6 +259,29 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             fieldChangeWarnings: fieldChangeWarnings,
             startIndex: 1
         })
+
+        /* Add history chart button field after the last history-related attribute field */
+        let lastHistoryFieldIndex = -1
+        this.getFields().forEach(function (field, i) {
+            if (field.getName().includes('history_')) {
+                lastHistoryFieldIndex = i
+            }
+        })
+
+        if (lastHistoryFieldIndex >= 0 && this.getField('history_button') == null) {
+            this.addField(lastHistoryFieldIndex + 1, new PushButtonField({
+                name: 'history_button',
+                label: gettext('Historical Values'),
+                caption: gettext('Chart'),
+                style: 'interactive',
+                icon: new StockIcon({name: 'chart', stockName: 'qtoggle'}),
+                description: gettext('Display a chart with historical port values.'),
+                onClick(form) {
+                    form.pushPage(form.makeHistoryPage())
+                }
+            }))
+        }
+
         this.addValueField(origPort)
 
         if (!this._staticFieldsAdded) {
@@ -508,6 +532,10 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 if (port.virtual) {
                     return this.makeRemovePortForm()
                 }
+                break
+
+            case 'history':
+                return this.makeHistoryPage()
         }
     }
 
@@ -550,6 +578,15 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             }.bind(this),
             pathId: 'remove'
         })
+    }
+
+    makeHistoryPage() {
+        let port = Cache.getPort(this.getPortId())
+        if (!port) {
+            throw new AssertionError(`Port with id ${this.getPortId()} not found in cache`)
+        }
+
+        return new PortHistoryChartPage(port)
     }
 
 }

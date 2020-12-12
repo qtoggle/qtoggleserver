@@ -4,7 +4,6 @@
 
 import Logger from '$qui/lib/logger.module.js'
 
-import Config      from '$qui/config.js'
 import * as Theme  from '$qui/theme.js'
 import * as Window from '$qui/window.js'
 
