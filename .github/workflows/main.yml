@@ -86,6 +86,11 @@ jobs:
         with:
           name: python-package
           path: dist
+      - name: Install PostgreSQL
+        run: |
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' &&
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add - &&
+          sudo apt update && sudo apt install postgresql-9.6
       - name: Python setup
         uses: actions/setup-python@v2
         with:
