@@ -7,11 +7,11 @@ except ImportError:
     pass
 
 try:
-    from .redis import RedisDriver
+    from .postgresql import PostgreSQLDriver
 except ImportError:
     pass
 
 try:
-    from .unqlite import UnQLiteDriver
+    from .redis import RedisDriver
 except ImportError:
     pass

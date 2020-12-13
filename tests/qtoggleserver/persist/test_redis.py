@@ -255,3 +255,7 @@ def test_data_type_dict(driver: BaseDriver) -> None:
 
 def test_data_type_complex(driver: BaseDriver) -> None:
     misc.test_data_type_complex(driver)
+
+
+def test_filter_sort_datetime(driver: BaseDriver) -> None:
+    misc.test_filter_sort_datetime(driver)

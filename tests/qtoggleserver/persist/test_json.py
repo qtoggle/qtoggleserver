@@ -260,3 +260,7 @@ def test_data_type_list(driver: BaseDriver) -> None:
 
 def test_data_type_dict(driver: BaseDriver) -> None:
     misc.test_data_type_dict(driver)
+
+
+def test_filter_sort_datetime(driver: BaseDriver) -> None:
+    misc.test_filter_sort_datetime(driver)

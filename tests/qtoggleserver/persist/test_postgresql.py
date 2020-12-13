@@ -1,11 +1,9 @@
 
-import pathlib
-
-from typing import Callable
-
+import psycopg2
 import pytest
+import testing.postgresql
 
-from qtoggleserver.drivers.persist import unqlite
+from qtoggleserver.drivers.persist import postgresql
 from qtoggleserver.persist import BaseDriver
 
 from . import insert
@@ -16,18 +14,39 @@ from . import query
 from . import update
 
 
-@pytest.fixture
-def make_driver(tmp_path: pathlib.Path) -> Callable[..., BaseDriver]:
-    def driver(pretty_format: bool = True, use_backup: bool = True) -> BaseDriver:
-        f = tmp_path / 'dummy.unqlite'
-        return unqlite.UnQLiteDriver(str(f))
+TestingPostgreSQL = testing.postgresql.PostgresqlFactory(cache_initialized_db=True)
 
-    return driver
+pg_server = None
 
 
 @pytest.fixture
-def driver(make_driver: Callable[..., BaseDriver]) -> BaseDriver:
-    return make_driver()
+def driver() -> BaseDriver:
+    global pg_server
+
+    if pg_server is None:
+        pg_server = TestingPostgreSQL()
+
+    params = pg_server.dsn()
+    db = params['database']
+
+    conn = psycopg2.connect(**dict(params, database='postgres'))
+    conn.autocommit = True
+    cur = conn.cursor()
+    cur.execute(f'DROP DATABASE IF EXISTS {db}')
+    cur.execute(f'CREATE DATABASE {db}')
+    conn.close()
+
+    driver = postgresql.PostgreSQLDriver(
+        host=params['host'],
+        port=params['port'],
+        db=params['database'],
+        username=params['user'],
+        password=params.get('password')
+    )
+
+    yield driver
+
+    driver.get_connection().close()
 
 
 def test_query_all(driver: BaseDriver) -> None:
@@ -264,3 +283,7 @@ def test_data_type_dict(driver: BaseDriver) -> None:
 
 def test_data_type_complex(driver: BaseDriver) -> None:
     misc.test_data_type_complex(driver)
+
+
+def test_filter_sort_datetime(driver: BaseDriver) -> None:
+    misc.test_filter_sort_datetime(driver)

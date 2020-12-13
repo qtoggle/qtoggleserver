@@ -112,3 +112,21 @@ def test_data_type_complex(driver: BaseDriver) -> None:
     results = list(results)
     assert len(results) == 1
     assert results[0] == dict(record, id=id_)
+
+
+def test_filter_sort_datetime(driver: BaseDriver) -> None:
+    dt1 = datetime.datetime(2020, 3, 14, 0, 0, 0)
+    dt2 = datetime.datetime(2020, 3, 14, 23, 59, 59)
+    dt3 = datetime.datetime(2020, 3, 15, 23, 59, 59)
+
+    driver.insert(data.COLL1, dict(data.RECORD1, moment=dt1))
+    id2 = driver.insert(data.COLL1, dict(data.RECORD2, moment=dt2))
+    id3 = driver.insert(data.COLL1, dict(data.RECORD3, moment=dt3))
+    driver.insert(data.COLL1, data.RECORD3)
+
+    results = driver.query(data.COLL1, fields=None, filt={'moment': {'gt': dt1}}, sort=[('moment', True)], limit=None)
+    results = list(results)
+    assert len(results) == 2
+
+    assert results[0]['id'] == id3
+    assert results[1]['id'] == id2

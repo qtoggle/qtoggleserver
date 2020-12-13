@@ -49,18 +49,21 @@ server = {
 #    db = 0
 #}
 
-# UnQLite persistence driver
-#persist = {
-#    driver = "qtoggleserver.drivers.persist.UnQLiteDriver"
-#    file_path = "/var/lib/qtoggleserver-data.unqlite"
-#    commit_interval = 1  # seconds
-#}
-
 # MongoDB persistence driver
 #persist = {
 #    driver = "qtoggleserver.drivers.persist.MongoDriver"
 #    host = "127.0.0.1"
 #    port = 27017
+#    db = "qtoggleserver"
+#}
+
+# PostgreSQL persistence driver
+#persist = {
+#    driver = "qtoggleserver.drivers.persist.PostgreSQLDriver"
+#    host = "127.0.0.1"
+#    port = 27017
+#    username = "postgres"
+#    password = "password"
 #    db = "qtoggleserver"
 #}
 
