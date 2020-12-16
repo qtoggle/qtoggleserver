@@ -5,8 +5,8 @@ from qtoggleserver.core.expressions import bitwise, Function
 from qtoggleserver.core.expressions import InvalidNumberOfArguments
 
 
-def test_bitand_simple(literal_three, literal_ten):
-    result = bitwise.BitAndFunction([literal_three, literal_ten]).eval()
+async def test_bitand_simple(literal_three, literal_ten):
+    result = await bitwise.BitAndFunction([literal_three, literal_ten]).eval()
     assert result == 2
 
 
@@ -23,8 +23,8 @@ def test_bitand_num_args():
         Function.parse(None, 'BITAND(1, 2, 3)', 0)
 
 
-def test_bitor_simple(literal_three, literal_ten):
-    result = bitwise.BitOrFunction([literal_three, literal_ten]).eval()
+async def test_bitor_simple(literal_three, literal_ten):
+    result = await bitwise.BitOrFunction([literal_three, literal_ten]).eval()
     assert result == 11
 
 
@@ -41,8 +41,8 @@ def test_bitor_num_args():
         Function.parse(None, 'BITOR(1, 2, 3)', 0)
 
 
-def test_bitnot_simple(literal_three):
-    result = bitwise.BitNotFunction([literal_three]).eval()
+async def test_bitnot_simple(literal_three):
+    result = await bitwise.BitNotFunction([literal_three]).eval()
     assert result == -4
 
 
@@ -59,8 +59,8 @@ def test_bitnot_num_args():
         Function.parse(None, 'BITNOT(1, 2)', 0)
 
 
-def test_bitxor_simple(literal_three, literal_ten):
-    result = bitwise.BitXOrFunction([literal_three, literal_ten]).eval()
+async def test_bitxor_simple(literal_three, literal_ten):
+    result = await bitwise.BitXOrFunction([literal_three, literal_ten]).eval()
     assert result == 9
 
 
@@ -77,8 +77,8 @@ def test_bitxor_num_args():
         Function.parse(None, 'BITXOR(1, 2, 3)', 0)
 
 
-def test_shl_simple(literal_three, literal_ten):
-    result = bitwise.SHLFunction([literal_three, literal_ten]).eval()
+async def test_shl_simple(literal_three, literal_ten):
+    result = await bitwise.SHLFunction([literal_three, literal_ten]).eval()
     assert result == 3072
 
 
@@ -95,8 +95,8 @@ def test_shl_num_args():
         Function.parse(None, 'SHL(1, 2, 3)', 0)
 
 
-def test_shr_simple(literal_three, literal_ten):
-    result = bitwise.SHRFunction([literal_ten, literal_three]).eval()
+async def test_shr_simple(literal_three, literal_ten):
+    result = await bitwise.SHRFunction([literal_ten, literal_three]).eval()
     assert result == 1
 
 

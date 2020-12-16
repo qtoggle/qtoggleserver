@@ -21,11 +21,10 @@ class DelayFunction(Function):
         self._last_value: Optional[float] = None
         self._current_value: Optional[float] = None
 
-    def eval(self) -> Evaluated:
+    async def eval(self) -> Evaluated:
         time_ms = int(time.time() * 1000)
 
-        value = self.args[0].eval()
-        delay = self.args[1].eval()
+        value, delay = await self.eval_args()
 
         if self._current_value is None:
             self._current_value = value
@@ -65,13 +64,12 @@ class SampleFunction(Function):
 
         return super().get_deps()
 
-    def eval(self) -> Evaluated:
+    async def eval(self) -> Evaluated:
         time_ms = int(time.time() * 1000)
         if time_ms - self._last_time_ms < self._last_duration:
             return self._last_value
 
-        self._last_value = self.args[0].eval()
-        self._last_duration = self.args[1].eval()
+        self._last_value, self._last_duration = await self.eval_args()
         self._last_time_ms = time_ms
 
         return self._last_value
@@ -95,20 +93,20 @@ class FreezeFunction(Function):
 
         return super().get_deps()
 
-    def eval(self) -> Evaluated:
+    async def eval(self) -> Evaluated:
         time_ms = int(time.time() * 1000)
 
         if self._last_time_ms == 0:  # Idle
-            value = self.args[0].eval()
+            value = await self.args[0].eval()
             if value != self._last_value:  # Value change detected, start timer
                 self._last_time_ms = time_ms
-                self._last_duration = self.args[1].eval()
+                self._last_duration = await self.args[1].eval()
                 self._last_value = value
 
         else:  # Timer active
             if time_ms - self._last_time_ms > self._last_duration:  # Timer expired
                 self._last_time_ms = 0
-                return self.eval()  # Call eval() again, now that _last_time_ms is 0
+                return await self.eval()  # Call eval() again, now that _last_time_ms is 0
 
         return self._last_value
 
@@ -133,10 +131,8 @@ class HeldFunction(Function):
 
         return super().get_deps()
 
-    def eval(self) -> Evaluated:
-        value = self.args[0].eval()
-        fixed_value = self.args[1].eval()
-        duration = self.args[2].eval()
+    async def eval(self) -> Evaluated:
+        value, fixed_value, duration = await self.eval_args()
 
         if value == fixed_value:
             time_ms = int(time.time() * 1000)
@@ -167,9 +163,10 @@ class DerivFunction(Function):
         self._last_value: Optional[float] = None
         self._last_time: float = 0
 
-    def eval(self) -> Evaluated:
-        value = self.args[0].eval()
-        sampling_interval = self.args[1].eval() / 1000
+    async def eval(self) -> Evaluated:
+        value, sampling_interval = await self.eval_args()
+
+        sampling_interval /= 1000
         result = 0
         now = time.time()
 
@@ -197,10 +194,10 @@ class IntegFunction(Function):
         self._last_value: Optional[float] = None
         self._last_time: float = 0
 
-    def eval(self) -> Evaluated:
-        value = self.args[0].eval()
-        accumulator = self.args[1].eval()
-        sampling_interval = self.args[2].eval() / 1000
+    async def eval(self) -> Evaluated:
+        value, accumulator, sampling_interval = await self.eval_args()
+
+        sampling_interval /= 1000
         result = accumulator
         now = time.time()
 
@@ -229,10 +226,11 @@ class FMAvgFunction(Function):
         self._queue: List[float] = []
         self._last_time: float = 0
 
-    def eval(self) -> Evaluated:
-        value = self.args[0].eval()
-        width = min(self.args[1].eval(), self.QUEUE_SIZE)
-        sampling_interval = self.args[2].eval() / 1000
+    async def eval(self) -> Evaluated:
+        value, width, sampling_interval = await self.eval_args()
+
+        width = min(width, self.QUEUE_SIZE)
+        sampling_interval /= 1000
         now = time.time()
 
         if self._last_time > 0:
@@ -264,10 +262,11 @@ class FMedianFunction(Function):
         self._queue: List[float] = []
         self._last_time: float = 0
 
-    def eval(self) -> Evaluated:
-        value = self.args[0].eval()
-        width = min(self.args[1].eval(), self.QUEUE_SIZE)
-        sampling_interval = self.args[2].eval() / 1000
+    async def eval(self) -> Evaluated:
+        value, width, sampling_interval = await self.eval_args()
+
+        width = min(width, self.QUEUE_SIZE)
+        sampling_interval /= 1000
         now = time.time()
 
         if self._last_time > 0:

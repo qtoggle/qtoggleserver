@@ -338,8 +338,8 @@ def setup(
         _reverse.enable()
 
 
-def load() -> None:
-    data = persist.get_value('reverse')
+async def load() -> None:
+    data = await persist.get_value('reverse')
     if data is None:
         setup(enabled=False)
         logger.debug('loaded %s', _reverse)
@@ -350,22 +350,22 @@ def load() -> None:
     logger.debug('loaded %s', _reverse)
 
 
-def save() -> None:
+async def save() -> None:
     if _reverse is None:
         return
 
     logger.debug('saving persisted data')
-    persist.set_value('reverse', _reverse.to_json())
+    await persist.set_value('reverse', _reverse.to_json())
 
 
-def reset() -> None:
+async def reset() -> None:
     logger.debug('clearing persisted data')
-    persist.remove('reverse')
+    await persist.remove('reverse')
 
 
 async def init() -> None:
     logger.debug('loading persisted data')
-    load()
+    await load()
 
 
 async def cleanup() -> None:

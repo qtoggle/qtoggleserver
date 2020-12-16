@@ -269,7 +269,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                     return False
 
             elif isinstance(self._filter_port_value, core_expressions.Expression):  # An expression
-                if new_value != self._filter_port_value.eval():
+                if new_value != await self._filter_port_value.eval():
                     return False
 
         return True

@@ -4,23 +4,23 @@ from qtoggleserver.persist import BaseDriver
 from . import data
 
 
-def test_query_all(driver: BaseDriver) -> None:
-    driver.insert(data.COLL1, data.RECORD1)
-    driver.insert(data.COLL1, data.RECORD2)
-    driver.insert(data.COLL1, data.RECORD3)
+async def test_query_all(driver: BaseDriver) -> None:
+    await driver.insert(data.COLL1, data.RECORD1)
+    await driver.insert(data.COLL1, data.RECORD2)
+    await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
+    results = await driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
     results = list(results)
 
     assert len(results) == 3
 
 
-def test_query_fields(driver: BaseDriver) -> None:
-    driver.insert(data.COLL1, data.RECORD1)
-    driver.insert(data.COLL1, data.RECORD2)
-    driver.insert(data.COLL1, data.RECORD3)
+async def test_query_fields(driver: BaseDriver) -> None:
+    await driver.insert(data.COLL1, data.RECORD1)
+    await driver.insert(data.COLL1, data.RECORD2)
+    await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=['int_key', 'bool_key'], filt={}, sort=[], limit=None)
+    results = await driver.query(data.COLL1, fields=['int_key', 'bool_key'], filt={}, sort=[], limit=None)
     results = list(results)
     assert len(results) == 3
 
@@ -30,12 +30,12 @@ def test_query_fields(driver: BaseDriver) -> None:
         assert 'bool_key' in result
 
 
-def test_query_fields_inexistent(driver: BaseDriver) -> None:
-    driver.insert(data.COLL1, data.RECORD1)
-    driver.insert(data.COLL1, data.RECORD2)
-    driver.insert(data.COLL1, data.RECORD3)
+async def test_query_fields_inexistent(driver: BaseDriver) -> None:
+    await driver.insert(data.COLL1, data.RECORD1)
+    await driver.insert(data.COLL1, data.RECORD2)
+    await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=['int_key', 'inexistent_key'], filt={}, sort=[], limit=None)
+    results = await driver.query(data.COLL1, fields=['int_key', 'inexistent_key'], filt={}, sort=[], limit=None)
     assert len(list(results)) == 3
 
     for result in results:
@@ -43,12 +43,12 @@ def test_query_fields_inexistent(driver: BaseDriver) -> None:
         assert 'int_key' in result
 
 
-def test_query_filter_id(driver: BaseDriver) -> None:
-    driver.insert(data.COLL1, data.RECORD1)
-    driver.insert(data.COLL1, data.RECORD2)
-    id3 = driver.insert(data.COLL1, data.RECORD3)
+async def test_query_filter_id(driver: BaseDriver) -> None:
+    await driver.insert(data.COLL1, data.RECORD1)
+    await driver.insert(data.COLL1, data.RECORD2)
+    id3 = await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={'id': id3}, sort=[], limit=None)
+    results = await driver.query(data.COLL1, fields=None, filt={'id': id3}, sort=[], limit=None)
     results = list(results)
     assert len(results) == 1
 
@@ -56,32 +56,32 @@ def test_query_filter_id(driver: BaseDriver) -> None:
     assert results[0] == record3
 
 
-def test_query_filter_id_inexistent(driver: BaseDriver) -> None:
-    driver.insert(data.COLL1, data.RECORD1)
-    driver.insert(data.COLL1, data.RECORD2)
-    driver.insert(data.COLL1, data.RECORD3)
+async def test_query_filter_id_inexistent(driver: BaseDriver) -> None:
+    await driver.insert(data.COLL1, data.RECORD1)
+    await driver.insert(data.COLL1, data.RECORD2)
+    await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={'id': '16384'}, sort=[], limit=None)
+    results = await driver.query(data.COLL1, fields=None, filt={'id': '16384'}, sort=[], limit=None)
     results = list(results)
     assert len(results) == 0
 
 
-def test_query_filter_custom_id_inexistent(driver: BaseDriver) -> None:
-    driver.insert(data.COLL1, data.RECORD1)
-    driver.insert(data.COLL1, data.RECORD2)
-    driver.insert(data.COLL1, data.RECORD3)
+async def test_query_filter_custom_id_inexistent(driver: BaseDriver) -> None:
+    await driver.insert(data.COLL1, data.RECORD1)
+    await driver.insert(data.COLL1, data.RECORD2)
+    await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={'id': data.CUSTOM_ID_COMPLEX}, sort=[], limit=None)
+    results = await driver.query(data.COLL1, fields=None, filt={'id': data.CUSTOM_ID_COMPLEX}, sort=[], limit=None)
     results = list(results)
     assert len(results) == 0
 
 
-def test_query_filter_simple(driver: BaseDriver) -> None:
-    driver.insert(data.COLL1, data.RECORD1)
-    driver.insert(data.COLL1, data.RECORD2)
-    driver.insert(data.COLL1, data.RECORD3)
+async def test_query_filter_simple(driver: BaseDriver) -> None:
+    await driver.insert(data.COLL1, data.RECORD1)
+    await driver.insert(data.COLL1, data.RECORD2)
+    await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(
+    results = await driver.query(
         data.COLL1,
         fields=None,
         filt={'string_key': data.RECORD2['string_key']},
@@ -96,12 +96,12 @@ def test_query_filter_simple(driver: BaseDriver) -> None:
     assert result0 == data.RECORD2
 
 
-def test_query_filter_ge_lt(driver: BaseDriver) -> None:
-    id1 = driver.insert(data.COLL1, data.RECORD1)
-    id2 = driver.insert(data.COLL1, data.RECORD2)
-    driver.insert(data.COLL1, data.RECORD3)
+async def test_query_filter_ge_lt(driver: BaseDriver) -> None:
+    id1 = await driver.insert(data.COLL1, data.RECORD1)
+    id2 = await driver.insert(data.COLL1, data.RECORD2)
+    await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={'int_key': {'ge': 1, 'lt': 3}}, sort=[], limit=None)
+    results = await driver.query(data.COLL1, fields=None, filt={'int_key': {'ge': 1, 'lt': 3}}, sort=[], limit=None)
     results = list(results)
     assert len(results) == 2
 
@@ -111,12 +111,12 @@ def test_query_filter_ge_lt(driver: BaseDriver) -> None:
     assert results[1] == dict(data.RECORD2, id=id2)
 
 
-def test_query_filter_gt_le(driver: BaseDriver) -> None:
-    driver.insert(data.COLL1, data.RECORD1)
-    id2 = driver.insert(data.COLL1, data.RECORD2)
-    id3 = driver.insert(data.COLL1, data.RECORD3)
+async def test_query_filter_gt_le(driver: BaseDriver) -> None:
+    await driver.insert(data.COLL1, data.RECORD1)
+    id2 = await driver.insert(data.COLL1, data.RECORD2)
+    id3 = await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={'int_key': {'gt': 1, 'le': 3}}, sort=[], limit=None)
+    results = await driver.query(data.COLL1, fields=None, filt={'int_key': {'gt': 1, 'le': 3}}, sort=[], limit=None)
     results = list(results)
     assert len(results) == 2
 
@@ -126,12 +126,12 @@ def test_query_filter_gt_le(driver: BaseDriver) -> None:
     assert results[1] == dict(data.RECORD3, id=id3)
 
 
-def test_query_filter_in(driver: BaseDriver) -> None:
-    driver.insert(data.COLL1, data.RECORD1)
-    id2 = driver.insert(data.COLL1, data.RECORD2)
-    id3 = driver.insert(data.COLL1, data.RECORD3)
+async def test_query_filter_in(driver: BaseDriver) -> None:
+    await driver.insert(data.COLL1, data.RECORD1)
+    id2 = await driver.insert(data.COLL1, data.RECORD2)
+    id3 = await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={'int_key': {'in': [2, 3, 4]}}, sort=[], limit=None)
+    results = await driver.query(data.COLL1, fields=None, filt={'int_key': {'in': [2, 3, 4]}}, sort=[], limit=None)
     results = list(results)
     assert len(results) == 2
 
@@ -141,12 +141,12 @@ def test_query_filter_in(driver: BaseDriver) -> None:
     assert results[1] == dict(data.RECORD3, id=id3)
 
 
-def test_query_filter_id_in(driver: BaseDriver) -> None:
-    id1 = driver.insert(data.COLL1, data.RECORD1)
-    driver.insert(data.COLL1, data.RECORD2)
-    id3 = driver.insert(data.COLL1, data.RECORD3)
+async def test_query_filter_id_in(driver: BaseDriver) -> None:
+    id1 = await driver.insert(data.COLL1, data.RECORD1)
+    await driver.insert(data.COLL1, data.RECORD2)
+    id3 = await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={'id': {'in': [id1,id3]}}, sort=[], limit=None)
+    results = await driver.query(data.COLL1, fields=None, filt={'id': {'in': [id1, id3]}}, sort=[], limit=None)
     results = list(results)
     assert len(results) == 2
 
@@ -156,12 +156,12 @@ def test_query_filter_id_in(driver: BaseDriver) -> None:
     assert results[1] == dict(data.RECORD3, id=id3)
 
 
-def test_query_sort_simple(driver: BaseDriver) -> None:
-    id1 = driver.insert(data.COLL1, data.RECORD1)
-    id2 = driver.insert(data.COLL1, data.RECORD2)
-    id3 = driver.insert(data.COLL1, data.RECORD3)
+async def test_query_sort_simple(driver: BaseDriver) -> None:
+    id1 = await driver.insert(data.COLL1, data.RECORD1)
+    id2 = await driver.insert(data.COLL1, data.RECORD2)
+    id3 = await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={}, sort=[('int_key', False)], limit=None)
+    results = await driver.query(data.COLL1, fields=None, filt={}, sort=[('int_key', False)], limit=None)
     results = list(results)
     assert len(results) == 3
 
@@ -170,12 +170,12 @@ def test_query_sort_simple(driver: BaseDriver) -> None:
     assert results[2]['id'] == id3
 
 
-def test_query_sort_desc(driver: BaseDriver) -> None:
-    id1 = driver.insert(data.COLL1, data.RECORD1)
-    id2 = driver.insert(data.COLL1, data.RECORD2)
-    id3 = driver.insert(data.COLL1, data.RECORD3)
+async def test_query_sort_desc(driver: BaseDriver) -> None:
+    id1 = await driver.insert(data.COLL1, data.RECORD1)
+    id2 = await driver.insert(data.COLL1, data.RECORD2)
+    id3 = await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={}, sort=[('int_key', True)], limit=None)
+    results = await driver.query(data.COLL1, fields=None, filt={}, sort=[('int_key', True)], limit=None)
     results = list(results)
     assert len(results) == 3
 
@@ -184,12 +184,12 @@ def test_query_sort_desc(driver: BaseDriver) -> None:
     assert results[2]['id'] == id1
 
 
-def test_query_sort_composite(driver: BaseDriver) -> None:
-    id1 = driver.insert(data.COLL1, data.RECORD1)
-    id2 = driver.insert(data.COLL1, data.RECORD2)
-    id3 = driver.insert(data.COLL1, data.RECORD3)
+async def test_query_sort_composite(driver: BaseDriver) -> None:
+    id1 = await driver.insert(data.COLL1, data.RECORD1)
+    id2 = await driver.insert(data.COLL1, data.RECORD2)
+    id3 = await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(
+    results = await driver.query(
         data.COLL1,
         fields=None,
         filt={},
@@ -204,14 +204,14 @@ def test_query_sort_composite(driver: BaseDriver) -> None:
     assert results[2]['id'] == id1
 
 
-def test_query_sort_id(driver: BaseDriver) -> None:
+async def test_query_sort_id(driver: BaseDriver) -> None:
     # Ensure autogenerated ids are sortable
 
     ids = []
     for i in range(20):
-        ids.append(driver.insert(data.COLL1, data.RECORD1))
+        ids.append(await driver.insert(data.COLL1, data.RECORD1))
 
-    results = driver.query(data.COLL1, fields=None, filt={}, sort=[('id', False)], limit=None)
+    results = await driver.query(data.COLL1, fields=None, filt={}, sort=[('id', False)], limit=None)
     results = list(results)
     assert len(results) == len(ids)
 
@@ -219,32 +219,32 @@ def test_query_sort_id(driver: BaseDriver) -> None:
         assert results[i]['id'] == id_
 
 
-def test_query_limit(driver: BaseDriver) -> None:
-    driver.insert(data.COLL1, data.RECORD1)
-    driver.insert(data.COLL1, data.RECORD2)
-    driver.insert(data.COLL1, data.RECORD3)
+async def test_query_limit(driver: BaseDriver) -> None:
+    await driver.insert(data.COLL1, data.RECORD1)
+    await driver.insert(data.COLL1, data.RECORD2)
+    await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=2)
+    results = await driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=2)
     results = list(results)
     assert len(results) == 2
 
 
-def test_query_limit_more(driver: BaseDriver) -> None:
-    driver.insert(data.COLL1, data.RECORD1)
-    driver.insert(data.COLL1, data.RECORD2)
-    driver.insert(data.COLL1, data.RECORD3)
+async def test_query_limit_more(driver: BaseDriver) -> None:
+    await driver.insert(data.COLL1, data.RECORD1)
+    await driver.insert(data.COLL1, data.RECORD2)
+    await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=4)
+    results = await driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=4)
     results = list(results)
     assert len(results) == 3
 
 
-def test_query_fields_filter(driver: BaseDriver) -> None:
-    driver.insert(data.COLL1, data.RECORD1)
-    driver.insert(data.COLL1, data.RECORD2)
-    driver.insert(data.COLL1, data.RECORD3)
+async def test_query_fields_filter(driver: BaseDriver) -> None:
+    await driver.insert(data.COLL1, data.RECORD1)
+    await driver.insert(data.COLL1, data.RECORD2)
+    await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=['string_key'], filt={'int_key': {'gt': 1}}, sort=[], limit=None)
+    results = await driver.query(data.COLL1, fields=['string_key'], filt={'int_key': {'gt': 1}}, sort=[], limit=None)
     results = list(results)
     assert len(results) == 2
 
@@ -253,12 +253,12 @@ def test_query_fields_filter(driver: BaseDriver) -> None:
     assert results[1] == {'string_key': data.RECORD3['string_key']}
 
 
-def test_query_fields_sort_id(driver: BaseDriver) -> None:
-    id1 = driver.insert(data.COLL1, data.RECORD1)
-    id2 = driver.insert(data.COLL1, data.RECORD2)
-    id3 = driver.insert(data.COLL1, data.RECORD3)
+async def test_query_fields_sort_id(driver: BaseDriver) -> None:
+    id1 = await driver.insert(data.COLL1, data.RECORD1)
+    id2 = await driver.insert(data.COLL1, data.RECORD2)
+    id3 = await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=['id'], filt={}, sort=[('id', False)], limit=None)
+    results = await driver.query(data.COLL1, fields=['id'], filt={}, sort=[('id', False)], limit=None)
     results = list(results)
     assert len(results) == 3
 
@@ -267,36 +267,42 @@ def test_query_fields_sort_id(driver: BaseDriver) -> None:
     assert results[2] == {'id': id3}
 
 
-def test_query_filter_sort(driver: BaseDriver) -> None:
-    driver.insert(data.COLL1, data.RECORD1)
-    id2 = driver.insert(data.COLL1, data.RECORD2)
-    id3 = driver.insert(data.COLL1, data.RECORD3)
+async def test_query_filter_sort(driver: BaseDriver) -> None:
+    await driver.insert(data.COLL1, data.RECORD1)
+    id2 = await driver.insert(data.COLL1, data.RECORD2)
+    id3 = await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={'int_key': {'gt': 1}}, sort=[('float_key', True)], limit=None)
+    results = await driver.query(
+        data.COLL1,
+        fields=None,
+        filt={'int_key': {'gt': 1}},
+        sort=[('float_key', True)],
+        limit=None
+    )
     results = list(results)
 
     assert results[0] == dict(data.RECORD3, id=id3)
     assert results[1] == dict(data.RECORD2, id=id2)
 
 
-def test_query_filter_limit(driver: BaseDriver) -> None:
-    driver.insert(data.COLL1, data.RECORD1)
-    id2 = driver.insert(data.COLL1, data.RECORD2)
-    driver.insert(data.COLL1, data.RECORD3)
+async def test_query_filter_limit(driver: BaseDriver) -> None:
+    await driver.insert(data.COLL1, data.RECORD1)
+    id2 = await driver.insert(data.COLL1, data.RECORD2)
+    await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={'int_key': {'gt': 1}}, sort=[], limit=1)
+    results = await driver.query(data.COLL1, fields=None, filt={'int_key': {'gt': 1}}, sort=[], limit=1)
     results = list(results)
     assert len(results) == 1
 
     assert results[0] == dict(data.RECORD2, id=id2)
 
 
-def test_query_sort_limit(driver: BaseDriver) -> None:
-    id1 = driver.insert(data.COLL1, data.RECORD1)
-    driver.insert(data.COLL1, data.RECORD2)
-    id3 = driver.insert(data.COLL1, data.RECORD3)
+async def test_query_sort_limit(driver: BaseDriver) -> None:
+    id1 = await driver.insert(data.COLL1, data.RECORD1)
+    await driver.insert(data.COLL1, data.RECORD2)
+    id3 = await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={}, sort=[('float_key', True)], limit=2)
+    results = await driver.query(data.COLL1, fields=None, filt={}, sort=[('float_key', True)], limit=2)
     results = list(results)
     assert len(results) == 2
 
@@ -304,12 +310,18 @@ def test_query_sort_limit(driver: BaseDriver) -> None:
     assert results[1] == dict(data.RECORD3, id=id3)
 
 
-def test_query_filter_sort_limit(driver: BaseDriver) -> None:
-    driver.insert(data.COLL1, data.RECORD1)
-    id2 = driver.insert(data.COLL1, data.RECORD2)
-    driver.insert(data.COLL1, data.RECORD3)
+async def test_query_filter_sort_limit(driver: BaseDriver) -> None:
+    await driver.insert(data.COLL1, data.RECORD1)
+    id2 = await driver.insert(data.COLL1, data.RECORD2)
+    await driver.insert(data.COLL1, data.RECORD3)
 
-    results = driver.query(data.COLL1, fields=None, filt={'int_key': {'gt': 1}}, sort=[('float_key', False)], limit=1)
+    results = await driver.query(
+        data.COLL1,
+        fields=None,
+        filt={'int_key': {'gt': 1}},
+        sort=[('float_key', False)],
+        limit=1
+    )
     results = list(results)
     assert len(results) == 1
 

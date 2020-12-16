@@ -674,7 +674,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             # Temporarily set the new value to the port, so that the read transform expression works as expected
             old_value = self._value
             self._value = value
-            value = await self.adapt_value_type(self._transform_read.eval())
+            value = await self.adapt_value_type(await self._transform_read.eval())
             self._value = old_value
 
         return value
@@ -685,7 +685,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             # value into consideration when evaluating the result
             prev_value = self._value
             self._value = value
-            value = await self.adapt_value_type(self._transform_write.eval())
+            value = await self.adapt_value_type(await self._transform_write.eval())
             self._value = prev_value
 
         try:
@@ -808,7 +808,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def load(self) -> None:
         self.debug('loading persisted data')
 
-        data = persist.get(self.PERSIST_COLLECTION, self.get_id()) or {}
+        data = await persist.get(self.PERSIST_COLLECTION, self.get_id()) or {}
         await self.load_from_data(data)
 
         self.set_loaded()
@@ -863,7 +863,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 # Write the just-loaded value to the port
                 value = self._value
                 if self._transform_write:
-                    value = await self.adapt_value_type(self._transform_write.eval())
+                    value = await self.adapt_value_type(await self._transform_write.eval())
 
                 await self.write_value(value)
 
@@ -887,7 +887,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         d = await self.prepare_for_save()
 
         self.debug('persisting data')
-        persist.replace(self.PERSIST_COLLECTION, self._id, d)
+        await persist.replace(self.PERSIST_COLLECTION, self._id, d)
 
     async def prepare_for_save(self) -> GenericJSONDict:
         # value
@@ -932,9 +932,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         if persisted_data:
             self.debug('removing persisted data')
-            persist.remove(self.PERSIST_COLLECTION, filt={'id': self._id})
+            await persist.remove(self.PERSIST_COLLECTION, filt={'id': self._id})
             if core_history.is_enabled():
-                core_history.remove_samples(self, background=True)
+                await core_history.remove_samples(self, background=True)
 
         await self.trigger_remove()
 
@@ -1164,6 +1164,6 @@ async def cleanup() -> None:
         await asyncio.wait(tasks)
 
 
-def reset() -> None:
+async def reset() -> None:
     logger.debug('clearing ports persisted data')
-    persist.remove(BasePort.PERSIST_COLLECTION)
+    await persist.remove(BasePort.PERSIST_COLLECTION)

@@ -53,8 +53,8 @@ def dummy_timestamp():
 
 @pytest.fixture
 def mock_persist_driver():
-    persist._driver = MockPersistDriver()
-    return persist._driver
+    persist._thread_local.driver = MockPersistDriver()
+    return persist._thread_local.driver
 
 
 @pytest.fixture

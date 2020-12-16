@@ -10,7 +10,7 @@ class TimeFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
     DEPS = ['second']
 
-    def eval(self) -> Evaluated:
+    async def eval(self) -> Evaluated:
         return int(time.time())
 
 
@@ -19,5 +19,5 @@ class TimeMSFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
     DEPS = ['millisecond']
 
-    def eval(self) -> Evaluated:
+    async def eval(self) -> Evaluated:
         return int(time.time() * 1000)

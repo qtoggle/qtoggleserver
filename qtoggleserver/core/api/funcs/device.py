@@ -29,8 +29,8 @@ async def put_device(request: core_api.APIRequest, params: Attributes) -> None:
     params.pop('date', None)
 
     # Reset device attributes
-    core_device.reset(preserve_attrs=['admin_password_hash', 'normal_password_hash', 'viewonly_password_hash'])
-    core_device.load()
+    await core_device.reset(preserve_attrs=['admin_password_hash', 'normal_password_hash', 'viewonly_password_hash'])
+    await core_device.load()
 
     try:
         core_device_attrs.set_attrs(params, ignore_extra=True)
@@ -41,7 +41,7 @@ async def put_device(request: core_api.APIRequest, params: Attributes) -> None:
     except Exception as e:
         raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
 
-    core_device.save()
+    await core_device.save()
     await core_device_events.trigger_update()
 
 
@@ -70,7 +70,7 @@ async def patch_device(request: core_api.APIRequest, params: Attributes) -> None
     except Exception as e:
         raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
 
-    core_device.save()
+    await core_device.save()
     await core_device_events.trigger_update()
 
     if reboot_required:

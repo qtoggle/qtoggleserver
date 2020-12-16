@@ -1,5 +1,6 @@
 
 import abc
+import asyncio
 
 from typing import Callable, List, Optional, Set
 
@@ -49,8 +50,8 @@ class Function(Expression, metaclass=abc.ABCMeta):
 
         return deps
 
-    def eval_args(self) -> List[Evaluated]:
-        return [a.eval() for a in self.args]
+    async def eval_args(self) -> List[Evaluated]:
+        return list(await asyncio.gather(*(a.eval() for a in self.args)))
 
     @classmethod
     def validate_arg_kinds(cls, args: List[Expression], pos_list: List[int]) -> None:

@@ -61,9 +61,10 @@ class PostgreSQLDriver(BaseDriver):
         conn_str = ' '.join(f'{k}=\'{v}\'' for (k, v) in conn_details.items())
 
         self._conn = psycopg2.connect(conn_str)
+        self._conn.set_client_encoding('UTF8')
         self._existing_tables: Set[str] = self._get_existing_table_names()
 
-    def query(
+    async def query(
         self,
         collection: str,
         fields: Optional[List[str]],
@@ -102,7 +103,7 @@ class PostgreSQLDriver(BaseDriver):
 
         return self._query_gen_wrapper(results, fields)
 
-    def insert(self, collection: str, record: Record) -> Id:
+    async def insert(self, collection: str, record: Record) -> Id:
         self._ensure_table_exists(collection)
 
         db_record = self._record_to_db(record)
@@ -120,7 +121,7 @@ class PostgreSQLDriver(BaseDriver):
 
         return result_rows[0][0]
 
-    def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
+    async def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
         self._ensure_table_exists(collection)
 
         params = []
@@ -140,7 +141,7 @@ class PostgreSQLDriver(BaseDriver):
 
         return count
 
-    def replace(self, collection: str, id_: Id, record: Record) -> bool:
+    async def replace(self, collection: str, id_: Id, record: Record) -> bool:
         self._ensure_table_exists(collection)
 
         db_record = self._record_to_db(record)
@@ -151,7 +152,7 @@ class PostgreSQLDriver(BaseDriver):
 
         return count > 0
 
-    def remove(self, collection: str, filt: Dict[str, Any]) -> int:
+    async def remove(self, collection: str, filt: Dict[str, Any]) -> int:
         self._ensure_table_exists(collection)
 
         params = []

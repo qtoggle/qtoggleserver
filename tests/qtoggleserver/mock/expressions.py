@@ -12,7 +12,7 @@ class MockExpression(Expression):
     def set_value(self, value: Optional[float]) -> None:
         self.value = value
 
-    def eval(self) -> Evaluated:
+    async def eval(self) -> Evaluated:
         return self.value
 
     @staticmethod
@@ -26,5 +26,5 @@ class MockPortRef(PortRef):
 
         self.port: BasePort = port
 
-    def eval(self) -> Evaluated:
+    async def eval(self) -> Evaluated:
         return self.port

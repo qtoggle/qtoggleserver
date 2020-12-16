@@ -38,7 +38,7 @@ async def add_virtual_port(attrs: GenericJSONDict) -> core_ports.BasePort:
     if len(core_vports.all_port_args()) >= settings.core.virtual_ports:
         raise core_api.APIError(400, 'too-many-ports')
 
-    core_vports.add(id_, type_, min_, max_, integer, step, choices)
+    await core_vports.add(id_, type_, min_, max_, integer, step, choices)
     port = await core_ports.load_one(
         'qtoggleserver.core.vports.VirtualPort',
         {
@@ -190,12 +190,12 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
                 continue
 
             await port.remove()
-            core_vports.remove(port.get_id())
+            await core_vports.remove(port.get_id())
 
         # Reset ports
-        core_ports.reset()
+        await core_ports.reset()
         if settings.slaves.enabled:
-            slaves.reset_ports()
+            await slaves.reset_ports()
         for port in core_ports.get_all():
             await port.reset()
 
@@ -292,7 +292,7 @@ async def delete_port(request: core_api.APIRequest, port_id: str) -> None:
         raise core_api.APIError(400, 'port-not-removable')
 
     await port.remove()
-    core_vports.remove(port_id)
+    await core_vports.remove(port_id)
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
@@ -456,7 +456,7 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
         if limit < 1 or limit > 10000:
             raise core_api.APIError(400, 'invalid-field', field='limit')
 
-    samples = core_history.get_samples(port, from_timestamp, to_timestamp, limit)
+    samples = await core_history.get_samples(port, from_timestamp, to_timestamp, limit)
     return list(samples)
 
 
@@ -494,4 +494,4 @@ async def delete_port_history(request: core_api.APIRequest, port_id: str) -> Non
     if to_timestamp < 0:
         raise core_api.APIError(400, 'invalid-field', field='to')
 
-    core_history.remove_samples(port, from_timestamp, to_timestamp)
+    await core_history.remove_samples(port, from_timestamp, to_timestamp, background=False)

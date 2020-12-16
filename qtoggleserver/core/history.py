@@ -25,7 +25,7 @@ _janitor_task: Optional[asyncio.Task] = None
 
 
 class HistoryEventHandler(core_events.Handler):
-    FIRE_AND_FORGET = False
+    FIRE_AND_FORGET = True
 
     async def handle_event(self, event: core_events.Event) -> None:
         if not isinstance(event, core_events.ValueChange):
@@ -38,7 +38,7 @@ class HistoryEventHandler(core_events.Handler):
 
         now_ms = int(time.time() * 1000)
 
-        save_sample(port, now_ms)
+        await save_sample(port, now_ms)
         port.set_history_last_timestamp(now_ms)
 
 
@@ -60,7 +60,7 @@ async def sampling_task() -> None:
                 if now_ms - history_last_timestamp < history_interval * 1000:
                     continue
 
-                save_sample(port, now_ms)
+                await save_sample(port, now_ms)
                 port.set_history_last_timestamp(now_ms)
 
         except asyncio.CancelledError:
@@ -81,7 +81,7 @@ async def janitor_task() -> None:
 
                 to_timestamp = (now - history_retention) * 1000
                 logger.debug('removing old samples of %s from history', port)
-                remove_samples(port, from_timestamp=0, to_timestamp=to_timestamp, background=True)
+                await remove_samples(port, from_timestamp=0, to_timestamp=to_timestamp, background=False)
 
         except asyncio.CancelledError:
             logger.debug('janitor task cancelled')
@@ -95,7 +95,7 @@ def is_enabled() -> bool:
     return persist.is_history_supported() and settings.core.history_support
 
 
-def get_samples(
+async def get_samples(
     port: core_ports.BasePort,
     from_timestamp: Optional[int] = None,
     to_timestamp: Optional[int] = None,
@@ -116,12 +116,12 @@ def get_samples(
     if sort_desc:
         sort = f'-{sort}'
 
-    results = persist.query(PERSIST_COLLECTION, filt=filt, sort=sort, limit=limit)
+    results = await persist.query(PERSIST_COLLECTION, filt=filt, sort=sort, limit=limit)
 
     return ({'value': r['val'], 'timestamp': r['ts']} for r in results)
 
 
-def save_sample(port: core_ports.BasePort, timestamp: int) -> None:
+async def save_sample(port: core_ports.BasePort, timestamp: int) -> None:
     value = port.get_value()
 
     if value is None:
@@ -136,10 +136,10 @@ def save_sample(port: core_ports.BasePort, timestamp: int) -> None:
         'ts': timestamp
     }
 
-    persist.insert(PERSIST_COLLECTION, record)
+    await persist.insert(PERSIST_COLLECTION, record)
 
 
-def remove_samples(
+async def remove_samples(
     port: core_ports.BasePort,
     from_timestamp: Optional[int] = None,
     to_timestamp: Optional[int] = None,
@@ -156,16 +156,22 @@ def remove_samples(
         filt.setdefault('ts', {})['lt'] = to_timestamp
 
     if background:
+
+        def remove_sync() -> None:
+            loop = asyncio.new_event_loop()
+            loop.run_until_complete(persist.remove(PERSIST_COLLECTION, filt))
+            loop.close()
+
         loop = asyncio.get_event_loop()
-        loop.run_in_executor(None, persist.remove, PERSIST_COLLECTION, filt)
+        loop.run_in_executor(None, remove_sync)
 
     else:
-        return persist.remove(PERSIST_COLLECTION, filt)
+        return await persist.remove(PERSIST_COLLECTION, filt)
 
 
-def reset() -> None:
+async def reset() -> None:
     logger.debug('clearing persisted data')
-    persist.remove(PERSIST_COLLECTION)
+    await persist.remove(PERSIST_COLLECTION)
 
 
 async def init() -> None:

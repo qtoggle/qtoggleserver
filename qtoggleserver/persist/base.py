@@ -8,7 +8,7 @@ from .typing import Id, Record
 
 class BaseDriver(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def query(
+    async def query(
         self,
         collection: str,
         fields: Optional[List[str]],
@@ -19,19 +19,19 @@ class BaseDriver(metaclass=abc.ABCMeta):
         return []
 
     @abc.abstractmethod
-    def insert(self, collection: str, record: Record) -> Id:
+    async def insert(self, collection: str, record: Record) -> Id:
         return '1'  # Returns the inserted record id
 
     @abc.abstractmethod
-    def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
+    async def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
         return 0  # Returns the number of updated records
 
     @abc.abstractmethod
-    def replace(self, collection: str, id_: Id, record: Record) -> bool:
+    async def replace(self, collection: str, id_: Id, record: Record) -> bool:
         return False  # Returns True if matched and replaced
 
     @abc.abstractmethod
-    def remove(self, collection: str, filt: Dict[str, Any]) -> int:
+    async def remove(self, collection: str, filt: Dict[str, Any]) -> int:
         return 0  # Returns the number of removed records
 
     def ensure_index(self, collection: str, index: List[Tuple[str, bool]]) -> None:

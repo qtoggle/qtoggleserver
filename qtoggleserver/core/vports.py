@@ -49,7 +49,7 @@ class VirtualPort(core_ports.Port):
         self._virtual_value = value
 
 
-def add(
+async def add(
     id_: str,
     type_: str,
     min_: Optional[float],
@@ -72,13 +72,13 @@ def add(
     _vport_args[id_] = settings
 
     logger.debug('saving virtual port settings for %s', id_)
-    persist.replace('vports', id_, settings)
+    await persist.replace('vports', id_, settings)
 
 
-def remove(port_id: str) -> None:
+async def remove(port_id: str) -> None:
     _vport_args.pop(port_id, None)
     logger.debug('removing virtual port settings for %s', port_id)
-    persist.remove('vports', filt={'id': port_id})
+    await persist.remove('vports', filt={'id': port_id})
 
 
 def all_port_args() -> GenericJSONList:
@@ -89,7 +89,7 @@ def all_port_args() -> GenericJSONList:
 
 
 async def init() -> None:
-    for entry in persist.query('vports'):
+    for entry in await persist.query('vports'):
         _vport_args[entry['id']] = {
             'type_': entry.get('type') or core_ports.TYPE_NUMBER,
             'min_': entry.get('min'),
@@ -105,6 +105,6 @@ async def init() -> None:
     await core_ports.load(all_port_args(), raise_on_error=False)
 
 
-def reset() -> None:
+async def reset() -> None:
     logger.debug('clearing virtual ports persisted data')
-    persist.remove('vports')
+    await persist.remove('vports')

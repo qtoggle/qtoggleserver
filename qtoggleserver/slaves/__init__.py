@@ -11,14 +11,14 @@ from . import discover
 logger = logging.getLogger(__name__)
 
 
-def reset_ports() -> None:
+async def reset_ports() -> None:
     logger.debug('clearing slave ports persisted data')
-    persist.remove(slaves_ports.SlavePort.PERSIST_COLLECTION)
+    await persist.remove(slaves_ports.SlavePort.PERSIST_COLLECTION)
 
 
-def reset_slaves() -> None:
+async def reset_slaves() -> None:
     logger.debug('clearing slaves persisted data')
-    persist.remove('slaves')
+    await persist.remove('slaves')
 
 
 async def init() -> None:

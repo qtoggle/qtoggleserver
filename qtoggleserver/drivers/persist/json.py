@@ -58,7 +58,7 @@ class JSONDriver(BaseDriver):
 
         self._data: IndexedData = self._index(self._load())
 
-    def query(
+    async def query(
         self,
         collection: str,
         fields: Optional[List[str]],
@@ -109,7 +109,7 @@ class JSONDriver(BaseDriver):
 
         return copy.deepcopy(records)
 
-    def insert(self, collection: str, record: Record) -> Id:
+    async def insert(self, collection: str, record: Record) -> Id:
         coll = self._data.setdefault(collection, {})
 
         id_ = record.get('id')
@@ -126,7 +126,7 @@ class JSONDriver(BaseDriver):
 
         return id_
 
-    def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
+    async def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
         coll = self._data.setdefault(collection, {})
         modified_count = 0
 
@@ -153,7 +153,7 @@ class JSONDriver(BaseDriver):
 
         return modified_count
 
-    def replace(self, collection: str, id_: Id, record: Record) -> bool:
+    async def replace(self, collection: str, id_: Id, record: Record) -> bool:
         coll = self._data.setdefault(collection, {})
 
         if coll.get(id_) is None:
@@ -169,7 +169,7 @@ class JSONDriver(BaseDriver):
 
         return True
 
-    def remove(self, collection: str, filt: Dict[str, Any]) -> int:
+    async def remove(self, collection: str, filt: Dict[str, Any]) -> int:
         coll = self._data.setdefault(collection, {})
         removed_count = 0
 

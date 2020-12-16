@@ -53,7 +53,7 @@ class PortValue(PortExpression):
     def get_deps(self) -> Set[str]:
         return {f'${self.port_id}'}
 
-    def eval(self) -> Evaluated:
+    async def eval(self) -> Evaluated:
         port = self.get_port()
         if not port:
             raise UnknownPortId(self.port_id)
@@ -77,7 +77,7 @@ class PortRef(PortExpression):
     def __str__(self) -> str:
         return f'@{self.port_id}'
 
-    def eval(self) -> Evaluated:
+    async def eval(self) -> Evaluated:
         port = self.get_port()
         if not port:
             raise UnknownPortId(self.port_id)

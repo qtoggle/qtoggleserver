@@ -62,17 +62,17 @@ async def post_reset(request: core_api.APIRequest, params: GenericJSONDict) -> N
     if factory:
         core_api.logger.info('resetting to factory defaults')
 
-        core_ports.reset()
-        core_vports.reset()
-        core_device.reset()
+        await core_ports.reset()
+        await core_vports.reset()
+        await core_device.reset()
         if settings.webhooks.enabled:
-            core_webhooks.reset()
+            await core_webhooks.reset()
         if settings.reverse.enabled:
-            core_reverse.reset()
+            await core_reverse.reset()
         if settings.slaves.enabled:
-            slaves.reset_ports()
-            slaves.reset_slaves()
+            await slaves.reset_ports()
+            await slaves.reset_slaves()
         if core_history.is_enabled():
-            core_history.reset()
+            await core_history.reset()
 
     main.loop.call_later(2, system.reboot)

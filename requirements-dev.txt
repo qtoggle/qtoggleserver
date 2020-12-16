@@ -1,6 +1,7 @@
 flake8
 flake8-annotations
 pytest
+pytest-asyncio
 pytest-tornasync
 freezegun
 mongomock

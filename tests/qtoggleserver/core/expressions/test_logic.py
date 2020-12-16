@@ -5,30 +5,30 @@ from qtoggleserver.core.expressions import logic, Function
 from qtoggleserver.core.expressions import InvalidNumberOfArguments
 
 
-def test_and_simple(literal_false, literal_true):
-    result = logic.AndFunction([literal_false, literal_true]).eval()
+async def test_and_simple(literal_false, literal_true):
+    result = await logic.AndFunction([literal_false, literal_true]).eval()
     assert result == 0
 
-    result = logic.AndFunction([literal_false, literal_false]).eval()
+    result = await logic.AndFunction([literal_false, literal_false]).eval()
     assert result == 0
 
-    result = logic.AndFunction([literal_true, literal_true]).eval()
+    result = await logic.AndFunction([literal_true, literal_true]).eval()
     assert result == 1
 
 
-def test_and_multiple(literal_false, literal_true):
-    result = logic.AndFunction([literal_false, literal_true, literal_true]).eval()
+async def test_and_multiple(literal_false, literal_true):
+    result = await logic.AndFunction([literal_false, literal_true, literal_true]).eval()
     assert result == 0
 
-    result = logic.AndFunction([literal_true, literal_true, literal_true]).eval()
+    result = await logic.AndFunction([literal_true, literal_true, literal_true]).eval()
     assert result == 1
 
 
-def test_and_number(literal_zero, literal_ten, literal_true):
-    result = logic.AndFunction([literal_zero, literal_true]).eval()
+async def test_and_number(literal_zero, literal_ten, literal_true):
+    result = await logic.AndFunction([literal_zero, literal_true]).eval()
     assert result == 0
 
-    result = logic.AndFunction([literal_ten, literal_true]).eval()
+    result = await logic.AndFunction([literal_ten, literal_true]).eval()
     assert result == 1
 
 
@@ -42,30 +42,30 @@ def test_and_num_args():
         Function.parse(None, 'AND(false)', 0)
 
 
-def test_or_simple(literal_false, literal_true):
-    result = logic.OrFunction([literal_false, literal_false]).eval()
+async def test_or_simple(literal_false, literal_true):
+    result = await logic.OrFunction([literal_false, literal_false]).eval()
     assert result == 0
 
-    result = logic.OrFunction([literal_false, literal_true]).eval()
+    result = await logic.OrFunction([literal_false, literal_true]).eval()
     assert result == 1
 
-    result = logic.OrFunction([literal_true, literal_true]).eval()
+    result = await logic.OrFunction([literal_true, literal_true]).eval()
     assert result == 1
 
 
-def test_or_multiple(literal_false, literal_true):
-    result = logic.OrFunction([literal_false, literal_false, literal_false]).eval()
+async def test_or_multiple(literal_false, literal_true):
+    result = await logic.OrFunction([literal_false, literal_false, literal_false]).eval()
     assert result == 0
 
-    result = logic.OrFunction([literal_false, literal_true, literal_false]).eval()
+    result = await logic.OrFunction([literal_false, literal_true, literal_false]).eval()
     assert result == 1
 
 
-def test_or_number(literal_zero, literal_ten, literal_true, literal_false):
-    result = logic.OrFunction([literal_zero, literal_true]).eval()
+async def test_or_number(literal_zero, literal_ten, literal_true, literal_false):
+    result = await logic.OrFunction([literal_zero, literal_true]).eval()
     assert result == 1
 
-    result = logic.OrFunction([literal_ten, literal_false]).eval()
+    result = await logic.OrFunction([literal_ten, literal_false]).eval()
     assert result == 1
 
 
@@ -79,19 +79,19 @@ def test_or_num_args():
         Function.parse(None, 'OR(false)', 0)
 
 
-def test_not_simple(literal_false, literal_true):
-    result = logic.NotFunction([literal_false]).eval()
+async def test_not_simple(literal_false, literal_true):
+    result = await logic.NotFunction([literal_false]).eval()
     assert result == 1
 
-    result = logic.NotFunction([literal_true]).eval()
+    result = await logic.NotFunction([literal_true]).eval()
     assert result == 0
 
 
-def test_not_number(literal_zero, literal_ten):
-    result = logic.NotFunction([literal_zero]).eval()
+async def test_not_number(literal_zero, literal_ten):
+    result = await logic.NotFunction([literal_zero]).eval()
     assert result == 1
 
-    result = logic.NotFunction([literal_ten]).eval()
+    result = await logic.NotFunction([literal_ten]).eval()
     assert result == 0
 
 
@@ -108,25 +108,25 @@ def test_not_num_args():
         Function.parse(None, 'NOT(false, true)', 0)
 
 
-def test_xor_simple(literal_false, literal_true):
-    result = logic.XOrFunction([literal_false, literal_false]).eval()
+async def test_xor_simple(literal_false, literal_true):
+    result = await logic.XOrFunction([literal_false, literal_false]).eval()
     assert result == 0
 
-    result = logic.XOrFunction([literal_false, literal_true]).eval()
+    result = await logic.XOrFunction([literal_false, literal_true]).eval()
     assert result == 1
 
-    result = logic.XOrFunction([literal_true, literal_true]).eval()
+    result = await logic.XOrFunction([literal_true, literal_true]).eval()
     assert result == 0
 
 
-def test_xor_number(literal_zero, literal_ten, literal_true, literal_false):
-    result = logic.XOrFunction([literal_zero, literal_true]).eval()
+async def test_xor_number(literal_zero, literal_ten, literal_true, literal_false):
+    result = await logic.XOrFunction([literal_zero, literal_true]).eval()
     assert result == 1
 
-    result = logic.XOrFunction([literal_ten, literal_false]).eval()
+    result = await logic.XOrFunction([literal_ten, literal_false]).eval()
     assert result == 1
 
-    result = logic.XOrFunction([literal_ten, literal_true]).eval()
+    result = await logic.XOrFunction([literal_ten, literal_true]).eval()
     assert result == 0
 
 

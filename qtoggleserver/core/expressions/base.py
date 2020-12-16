@@ -8,7 +8,7 @@ from typing import Optional, Set, Union
 
 class Expression(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def eval(self) -> Evaluated:
+    async def eval(self) -> Evaluated:
         raise NotImplementedError()
 
     def get_deps(self) -> Set[str]:

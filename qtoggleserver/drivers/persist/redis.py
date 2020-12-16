@@ -48,7 +48,7 @@ class RedisDriver(BaseDriver):
 
         self._history_support: bool = history_support
 
-    def query(
+    async def query(
         self,
         collection: str,
         fields: Optional[List[str]],
@@ -98,7 +98,7 @@ class RedisDriver(BaseDriver):
 
         return (self._record_from_db(dbr, fields) for dbr in db_records)
 
-    def insert(self, collection: str, record: Record) -> Id:
+    async def insert(self, collection: str, record: Record) -> Id:
         # Make sure we have an id
         record = dict(record)
         id_ = record.pop('id', None)
@@ -124,7 +124,7 @@ class RedisDriver(BaseDriver):
 
         return id_
 
-    def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
+    async def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
         # Adapt the record part to db
         db_record_part = self._record_to_db(record_part)
 
@@ -165,7 +165,7 @@ class RedisDriver(BaseDriver):
 
         return modified_count
 
-    def replace(self, collection: str, id_: Id, record: Record) -> bool:
+    async def replace(self, collection: str, id_: Id, record: Record) -> bool:
         # Adapt the record to db
         new_db_record = self._record_to_db(record)
         new_db_record.pop('id', None)  # Never add the id together with other fields
@@ -188,7 +188,7 @@ class RedisDriver(BaseDriver):
 
         return True
 
-    def remove(self, collection: str, filt: Dict[str, Any]) -> int:
+    async def remove(self, collection: str, filt: Dict[str, Any]) -> int:
         removed_count = 0
 
         if isinstance(filt.get('id'), Id):
