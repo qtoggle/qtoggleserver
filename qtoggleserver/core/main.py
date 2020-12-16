@@ -103,7 +103,8 @@ async def update() -> None:
 async def update_loop() -> None:
     while _running:
         try:
-            await update()
+            if _ready:
+                await update()
 
         except Exception as e:
             logger.error('update failed: %s', e, exc_info=True)
@@ -134,9 +135,6 @@ async def handle_value_changes(
     # Reevaluate the expressions depending on changed ports
     for port in core_ports.get_all():
         if not port.is_enabled():
-            continue
-
-        if not await port.is_writable():
             continue
 
         expression = await port.get_expression()
