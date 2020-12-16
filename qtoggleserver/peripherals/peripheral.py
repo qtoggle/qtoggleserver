@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     RUNNER_CLASS = asyncio_utils.ThreadedRunner
-    RUNNER_QUEUE_SIZE = 8
+    RUNNER_QUEUE_SIZE = 64
 
     logger = logger
 
