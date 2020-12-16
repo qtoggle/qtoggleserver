@@ -50,11 +50,7 @@ class PortNotFound(SlaveError):
         self.slave = slave
         self.id: str = id_
 
-        slave_name = slave.get_name()
-        if slave_name is None:
-            slave_name = f'<{slave.get_url()}>'
-
-        super().__init__(f'Could not find port {slave_name}.{id_}')
+        super().__init__(f'Could not find port {id_} of {slave}')
 
 
 def adapt_api_error(error: Exception) -> Exception:
