@@ -170,10 +170,10 @@ class RedisDriver(BaseDriver):
         new_db_record = self._record_to_db(record)
         new_db_record.pop('id', None)  # Never add the id together with other fields
 
+        skey = self._make_set_key(collection)
         key = self._make_record_key(collection, id_)
-        old_db_record = self._client.hgetall(key)
 
-        if not old_db_record:
+        if not self._client.sismember(skey, id_):
             return False  # No record found, no replacing
 
         # Remove existing record
@@ -184,7 +184,7 @@ class RedisDriver(BaseDriver):
             self._client.hset(key, mapping=new_db_record)
 
         # Make sure the id is present in set
-        self._client.sadd(self._make_set_key(collection), id_)
+        self._client.sadd(skey, id_)
 
         return True
 
