@@ -5,6 +5,7 @@ import Logger from '$qui/lib/logger.module.js'
 import {gettext}        from '$qui/base/i18n.js'
 import * as Toast       from '$qui/messages/toast.js'
 import * as StringUtils from '$qui/utils/string.js'
+import * as Window      from '$qui/window.js'
 
 import ChartPage                        from '$app/common/chart-page.js'
 import {ChartPageOptionsForm}           from '$app/common/chart-page.js'
@@ -142,6 +143,13 @@ class PortHistoryChartPage extends ChartPage {
         let choices = TIME_WINDOW_CHOICES
         choices = choices.map(c => ({label: c.label.split('|'), value: c.value}))
         choices = choices.map(c => ({label: c.label[0], description: c.label[1], value: c.value}))
+        if (Window.isSmallScreen()) {
+            /* On small screens, divide choices on two rows */
+            choices = [
+                choices.slice(0, choices.length / 2),
+                choices.slice(choices.length / 2)
+            ]
+        }
 
         this._timeWindowChoiceButtons = $('<div></div>', {class: 'ports-history-chart-time-window-choice-buttons'})
         this._timeWindowChoiceButtons.choicebuttons({
