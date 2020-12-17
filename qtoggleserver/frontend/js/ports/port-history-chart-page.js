@@ -222,7 +222,7 @@ class PortHistoryChartPage extends ChartPage {
             showFillArea: true,
             prefsPrefix: `ports.${this._port['id']}.history_chart`,
             defaults: {
-                smooth: !this._isBoolean,
+                smooth: false,
                 fillArea: false
             }
         })
