@@ -24,7 +24,7 @@ import OperationCheckField from './operation-check-field.js'
 
 
 const INVALID_BACKUP_FILE_MESSAGE = gettext('Please supply a valid backup file!')
-const RESTORE_API_CALL_TIMEOUT = 120000
+const RESTORE_API_CALL_TIMEOUT = 5 * 60000
 
 const logger = Logger.get('qtoggle.common.restore')
 

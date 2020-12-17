@@ -19,7 +19,7 @@ import * as Cache           from '$app/cache.js'
 import OperationCheckField from './operation-check-field.js'
 
 
-const BACKUP_API_CALL_TIMEOUT = 120000
+const BACKUP_API_CALL_TIMEOUT = 2 * 60000
 
 const logger = Logger.get('qtoggle.common.backup')
 
