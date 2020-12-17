@@ -224,7 +224,8 @@ class DevicesTable extends PageTable {
             let deviceName = pathId.slice(1)
             let device = Cache.getSlaveDevice(deviceName)
             if (device) {
-                this.setSelectedDeviceName(deviceName)
+                /* We need to delay here using asap() to overcome missing port item due to usage of updateUIASAP */
+                asap(() => this.setSelectedDeviceName(deviceName))
                 return this.makeDeviceForm(deviceName)
             }
         }

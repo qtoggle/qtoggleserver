@@ -167,7 +167,8 @@ class DevicesList extends PageList {
                 return
             }
 
-            this.setSelectedDevice(deviceName)
+            /* We need to delay here using asap() to overcome missing port item due to usage of updateUIASAP */
+            asap(() => this.setSelectedDevice(deviceName))
             return this.makePortsList(deviceName)
         }
     }

@@ -264,7 +264,8 @@ class PortsList extends PageList {
 
             let port = Cache.getPort(portId)
             if (port) {
-                this.setSelectedPort(portId)
+                /* We need to delay here using asap() to overcome missing port item due to usage of updateUIASAP */
+                asap(() => this.setSelectedPort(portId))
                 return this.makePortForm(portId)
             }
         }
