@@ -10,6 +10,7 @@ from typing import Any, Callable, Optional
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
+from qtoggleserver.core import main as core_main
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.api import schema as core_api_schema
@@ -177,6 +178,9 @@ async def put_slave_devices(request: core_api.APIRequest, params: GenericJSONLis
     # Disable event handling during the processing of this request, as we're going to trigger a full-update at the end
     core_events.disable()
 
+    # Temporarily disable core updating (port polling, expression evaluating and value-change handling)
+    core_main.disable_updating()
+
     try:
         # Remove all slave devices
         for slave in list(slaves_devices.get_all()):
@@ -204,9 +208,23 @@ async def put_slave_devices(request: core_api.APIRequest, params: GenericJSONLis
             )
             add_slave_futures.append(add_slave_future)
 
-        await asyncio.gather(*add_slave_futures)
+        added_slaves = await asyncio.gather(*add_slave_futures)
+
+        # Wait for devices to come online
+        wait_online_futures = []
+        for slave in added_slaves:
+            if slave.is_enabled():
+                wait_online_futures.append(slave.wait_online(timeout=settings.slaves.long_timeout))
+
+        try:
+            await asyncio.gather(*wait_online_futures)
+
+        except asyncio.TimeoutError:
+            # Ignore timeouts; this is a best-effort API call
+            pass
 
     finally:
+        core_main.enable_updating()
         core_events.enable()
 
     await core_events.trigger_full_update()

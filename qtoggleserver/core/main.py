@@ -22,8 +22,8 @@ memory_logs: Optional[logging_utils.FifoMemoryHandler] = None
 loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
 
 _update_loop_task: Optional[asyncio.Task] = None
-_running: bool = True
 _ready: bool = False
+_updating_enabled: bool = True
 _start_time: float = time.time()
 _last_time: float = 0
 _force_eval_expression_ports: Set[Union[core_ports.BasePort, None]] = set()
@@ -35,6 +35,9 @@ async def update() -> None:
     from . import sessions
 
     global _last_time
+
+    if not _updating_enabled:
+        return
 
     changed_set = {'time_ms'}
     change_reasons = {}
@@ -101,15 +104,20 @@ async def update() -> None:
 
 
 async def update_loop() -> None:
-    while _running:
+    while True:
         try:
-            if _ready:
-                await update()
+            try:
+                if _ready:
+                    await update()
 
-        except Exception as e:
-            logger.error('update failed: %s', e, exc_info=True)
+            except Exception as e:
+                logger.error('update failed: %s', e, exc_info=True)
 
-        await asyncio.sleep(settings.core.tick_interval / 1000.0)
+            await asyncio.sleep(settings.core.tick_interval / 1000.0)
+
+        except asyncio.CancelledError:
+            logger.debug('update loop cancelled')
+            break
 
 
 async def handle_value_changes(
@@ -199,6 +207,22 @@ def force_eval_expressions(port: core_ports.BasePort = None) -> None:
         port.reset_change_reason()
 
 
+def enable_updating() -> None:
+    global _updating_enabled
+
+    if not _updating_enabled:
+        logger.debug('enabling update mechanism')
+        _updating_enabled = True
+
+
+def disable_updating() -> None:
+    global _updating_enabled
+
+    if _updating_enabled:
+        logger.debug('disabling update mechanism')
+        _updating_enabled = False
+
+
 def is_ready() -> bool:
     return _ready
 
@@ -222,8 +246,6 @@ async def init() -> None:
 
 
 async def cleanup() -> None:
-    global _running
-
-    _running = False
-
-    await _update_loop_task
+    if _update_loop_task:
+        _update_loop_task.cancel()
+        await _update_loop_task

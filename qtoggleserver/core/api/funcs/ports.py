@@ -10,6 +10,7 @@ from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import history as core_history
+from qtoggleserver.core import main as core_main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import vports as core_vports
 from qtoggleserver.core.api import schema as core_api_schema
@@ -179,6 +180,9 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
     # Disable event handling during the processing of this request, as we're going to trigger a full-update at the end
     core_events.disable()
 
+    # Temporarily disable core updating (port polling, expression evaluating and value-change handling)
+    core_main.disable_updating()
+
     try:
         # Remove all (local) virtual ports
         for port in list(core_ports.get_all()):
@@ -253,6 +257,7 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
             )
 
     finally:
+        core_main.enable_updating()
         core_events.enable()
 
     await core_events.trigger_full_update()
