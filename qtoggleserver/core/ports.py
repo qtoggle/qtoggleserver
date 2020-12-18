@@ -1078,6 +1078,9 @@ async def load(port_args: List[Dict[str, Any]], raise_on_error: bool = True) -> 
 
     # Map IDs
     for port in ports:
+        if await port.get_attr('virtual'):
+            continue
+
         old_id = port.get_id()
         new_id = settings.port_mappings.get(old_id)
         if not new_id:
@@ -1085,7 +1088,7 @@ async def load(port_args: List[Dict[str, Any]], raise_on_error: bool = True) -> 
 
         if new_id in _ports_by_id:
             if raise_on_error:
-                raise PortLoadError('Cannot map port {old_id} to {new_id}: new id already exists')
+                raise PortLoadError(f'Cannot map port {old_id} to {new_id}: new id already exists')
 
             logger.error('cannot map port %s to %s: new id already exists', old_id, new_id)
             continue
