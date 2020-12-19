@@ -11,7 +11,7 @@ class TimeFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
     def get_deps(self) -> Set[str]:
-        return {'time'}
+        return {'second'}
 
     def eval(self) -> float:
         return int(time.time())
@@ -22,7 +22,7 @@ class TimeMSFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
 
     def get_deps(self) -> Set[str]:
-        return {'time_ms'}
+        return {'millisecond'}
 
     def eval(self) -> float:
         return int(time.time() * 1000)

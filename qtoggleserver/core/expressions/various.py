@@ -81,7 +81,7 @@ class SequenceFunction(Function):
         self._last_time: float = 0
 
     def get_deps(self) -> Set[str]:
-        return {'time_ms'}
+        return {'millisecond'}
 
     def eval(self) -> float:
         now = time.time() * 1000
