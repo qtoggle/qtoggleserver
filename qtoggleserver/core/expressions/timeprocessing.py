@@ -20,7 +20,7 @@ class DelayFunction(Function):
         self._current_value: Optional[float] = None
 
     def get_deps(self) -> Set[str]:
-        return {'time_ms'}
+        return {'millisecond'}
 
     def eval(self) -> float:
         time_ms = int(time.time() * 1000)
@@ -62,7 +62,7 @@ class SampleFunction(Function):
     def get_deps(self) -> Set[str]:
         # Function depends on milliseconds only if it's time to reevaluate value
         if time.time() * 1000 - self._last_time_ms >= self._last_duration:
-            return {'time_ms'}
+            return {'millisecond'}
 
         return super().get_deps()
 
@@ -92,7 +92,7 @@ class FreezeFunction(Function):
     def get_deps(self) -> Set[str]:
         # Function depends on milliseconds only when timer is active
         if self._last_time_ms > 0:
-            return {'time_ms'}
+            return {'millisecond'}
 
         return super().get_deps()
 
@@ -130,7 +130,7 @@ class HeldFunction(Function):
 
     def get_deps(self) -> Set[str]:
         if self._state == self.STATE_WAITING:
-            return {'time_ms'}
+            return {'millisecond'}
 
         else:
             return super().get_deps()
@@ -169,7 +169,7 @@ class DerivFunction(Function):
         self._last_time: float = 0
 
     def get_deps(self) -> Set[str]:
-        return {'time_ms'}
+        return {'millisecond'}
 
     def eval(self) -> float:
         value = self.args[0].eval()
@@ -201,7 +201,7 @@ class IntegFunction(Function):
         self._last_time: float = 0
 
     def get_deps(self) -> Set[str]:
-        return {'time_ms'}
+        return {'millisecond'}
 
     def eval(self) -> float:
         value = self.args[0].eval()
@@ -235,7 +235,7 @@ class FMAvgFunction(Function):
         self._last_time: float = 0
 
     def get_deps(self) -> Set[str]:
-        return {'time_ms'}
+        return {'millisecond'}
 
     def eval(self) -> float:
         value = self.args[0].eval()
@@ -270,7 +270,7 @@ class FMedianFunction(Function):
         self._last_time: float = 0
 
     def get_deps(self) -> Set[str]:
-        return {'time_ms'}
+        return {'millisecond'}
 
     def eval(self) -> float:
         value = self.args[0].eval()

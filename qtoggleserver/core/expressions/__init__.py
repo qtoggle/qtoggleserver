@@ -1,6 +1,11 @@
 
 from typing import Optional
 
+
+# This needs to be imported here to determine a correct order of some partially imported modules (core.ports,
+# core.expressions and core.main)
+from qtoggleserver.core import main
+
 from .base import Expression
 
 

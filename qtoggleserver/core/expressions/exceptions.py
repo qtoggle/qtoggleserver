@@ -19,7 +19,7 @@ class UnknownFunction(ExpressionParseError):
         self.name: str = name
         self.pos: int = pos
 
-        super().__init__(f'Unknown function "${name}"')
+        super().__init__(f'Unknown function "{name}"')
 
     def to_json(self) -> GenericJSONDict:
         return {
@@ -34,7 +34,7 @@ class InvalidNumberOfArguments(ExpressionParseError):
         self.name: str = name
         self.pos: int = pos
 
-        super().__init__(f'Invalid number of arguments for "${name}"')
+        super().__init__(f'Invalid number of arguments for "{name}"')
 
     def to_json(self) -> GenericJSONDict:
         return {

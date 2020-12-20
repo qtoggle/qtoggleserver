@@ -13,8 +13,8 @@ class Expression(metaclass=abc.ABCMeta):
 
     def get_deps(self) -> Set[str]:
         # Special deps:
-        #  * 'time' - used to indicate dependency on system time (seconds)
-        #  * 'time_ms' - used to indicate dependency on system time (milliseconds)
+        #  * 'second' - used to indicate dependency on system time (seconds)
+        #  * 'millisecond' - used to indicate dependency on system time (milliseconds)
 
         return set()
 

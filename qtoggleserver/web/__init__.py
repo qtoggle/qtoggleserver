@@ -5,13 +5,16 @@ import qui
 
 from qtoggleserver import version
 from qtoggleserver.conf import settings
-from qtoggleserver.slaves.discover import is_enabled as is_discover_enabled
+
+from .base import APIHandler, BaseHandler
 
 
 logger = logging.getLogger(__name__)
 
 
 async def init() -> None:
+    from qtoggleserver.slaves.discover import is_enabled as is_discover_enabled
+
     if settings.frontend.enabled:
         logger.debug('initializing QUI')
 

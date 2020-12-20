@@ -39,7 +39,7 @@ async def update() -> None:
     if not _updating_enabled:
         return
 
-    changed_set = {'time_ms'}
+    changed_set = {'millisecond'}
     change_reasons = {}
 
     now = int(time.time())
@@ -47,7 +47,7 @@ async def update() -> None:
     if now != _last_time:
         _last_time = now
         time_changed = True
-        changed_set.add('time')
+        changed_set.add('second')
 
     for port in list(ports.get_all()):
         if not port.is_enabled():
