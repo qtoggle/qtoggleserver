@@ -2,6 +2,7 @@ flake8
 flake8-annotations
 pytest
 pytest-tornasync
+freezegun
 mongomock
 fakeredis
 testing.postgresql

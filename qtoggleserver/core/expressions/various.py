@@ -3,7 +3,6 @@ import time
 
 from typing import Optional, Set
 
-from .exceptions import EvalSkipped
 from .functions import function, Function
 
 
@@ -86,9 +85,8 @@ class SequenceFunction(Function):
     def eval(self) -> float:
         now = time.time() * 1000
 
-        if self._last_time > 0:
+        if self._last_time == 0:
             self._last_time = now
-            raise EvalSkipped()
 
         args = self.eval_args()
         num_values = len(args) // 2

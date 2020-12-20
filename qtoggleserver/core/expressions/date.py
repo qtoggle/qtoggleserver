@@ -126,7 +126,8 @@ class DateFunction(Function):
 
 @function('BOY')
 class BOYFunction(Function):
-    MIN_ARGS = MAX_ARGS = 1
+    MIN_ARGS = 0
+    MAX_ARGS = 1
 
     def get_deps(self) -> Set[str]:
         return {'second'}
@@ -136,14 +137,21 @@ class BOYFunction(Function):
             raise EvalSkipped()
 
         now = datetime.datetime.now()
-        n = int(self.args[0].eval())
 
-        return datetime.datetime(now.year + n, 1, 1, 0, 0, 0).timestamp()
+        n = 0
+        if len(self.args) > 0:
+            n = int(self.args[0].eval())
+
+        dt = datetime.datetime(now.year + n, 1, 1, 0, 0, 0)
+        dt = dt.astimezone(tz=datetime.timezone.utc)
+
+        return dt.timestamp()
 
 
 @function('BOM')
 class BOMFunction(Function):
-    MIN_ARGS = MAX_ARGS = 1
+    MIN_ARGS = 0
+    MAX_ARGS = 1
 
     def get_deps(self) -> Set[str]:
         return {'second'}
@@ -153,7 +161,9 @@ class BOMFunction(Function):
             raise EvalSkipped()
 
         now = datetime.datetime.now()
-        n = int(self.args[0].eval())
+        n = 0
+        if len(self.args) > 0:
+            n = int(self.args[0].eval())
 
         year, month = now.year, now.month
         if n >= 0:
@@ -174,12 +184,16 @@ class BOMFunction(Function):
                     year -= 1
                     month = 12
 
-        return datetime.datetime(year, month, 1, 0, 0, 0).timestamp()
+        dt = datetime.datetime(year, month, 1, 0, 0, 0)
+        dt = dt.astimezone(tz=datetime.timezone.utc)
+
+        return dt.timestamp()
 
 
 @function('BOW')
 class BOWFunction(Function):
-    MIN_ARGS = MAX_ARGS = 2
+    MIN_ARGS = 0
+    MAX_ARGS = 2
 
     def get_deps(self) -> Set[str]:
         return {'second'}
@@ -188,12 +202,20 @@ class BOWFunction(Function):
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        n = int(self.args[0].eval())
-        s = int(self.args[1].eval())
+        n = 0
+        s = 0
+        if len(self.args) > 0:
+            n = int(self.args[0].eval())
+            if len(self.args) > 1:
+                s = int(self.args[1].eval())
 
         now = datetime.datetime.now()
         dt = now.replace(hour=12)  # Using mid day practically avoids problems due to DST
-        dt -= datetime.timedelta(days=dt.weekday() + 7 - s)
+        if s > 0:
+            dt -= datetime.timedelta(days=dt.weekday() + 7 - s)
+
+        else:
+            dt -= datetime.timedelta(days=dt.weekday())
 
         year, month, day = dt.year, dt.month, dt.day
         if n >= 0:
@@ -227,12 +249,16 @@ class BOWFunction(Function):
                     last_day = calendar.monthrange(year, month)[1]
                     day = last_day - 7 + day
 
-        return datetime.datetime(year, month, day).timestamp()
+        dt = datetime.datetime(year, month, day)
+        dt = dt.astimezone(tz=datetime.timezone.utc)
+
+        return dt.timestamp()
 
 
 @function('BOD')
 class BODFunction(Function):
-    MIN_ARGS = MAX_ARGS = 1
+    MIN_ARGS = 0
+    MAX_ARGS = 1
 
     def get_deps(self) -> Set[str]:
         return {'second'}
@@ -242,9 +268,12 @@ class BODFunction(Function):
             raise EvalSkipped()
 
         now = datetime.datetime.now()
-        n = int(self.args[0].eval())
+        n = 0
+        if len(self.args) > 0:
+            n = int(self.args[0].eval())
         dt = now + datetime.timedelta(days=n)
         dt = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        dt = dt.astimezone(tz=datetime.timezone.utc)
 
         return dt.timestamp()
 
@@ -260,7 +289,7 @@ class HMSIntervalFunction(Function):
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        now = datetime.datetime.now()
+        now = datetime.datetime.now().replace(microsecond=0)
 
         start_h = self.args[0].eval()
         start_m = self.args[1].eval()
@@ -293,7 +322,7 @@ class HMSIntervalFunction(Function):
         start_dt = datetime.datetime.combine(now.date(), start_time)
         stop_dt = datetime.datetime.combine(now.date(), stop_time)
 
-        return start_dt <= now <= stop_dt
+        return int(start_dt <= now <= stop_dt)
 
 
 @function('MDINTERVAL')
@@ -307,7 +336,7 @@ class MDIntervalFunction(Function):
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        now = datetime.datetime.now()
+        now = datetime.datetime.now().replace(microsecond=0)
 
         start_m = self.args[0].eval()
         start_d = self.args[1].eval()
@@ -332,4 +361,4 @@ class MDIntervalFunction(Function):
         except ValueError:
             raise InvalidArgument(4, stop_d)
 
-        return start_dt <= now <= stop_dt
+        return int(start_dt <= now <= stop_dt)
