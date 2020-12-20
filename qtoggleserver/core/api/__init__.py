@@ -107,4 +107,4 @@ def api_call(access_level: int = ACCESS_LEVEL_NONE) -> Callable:
 
 
 # Import this here to prevent errors due to circular imports
-from qtoggleserver.web.handlers import APIHandler  # noqa: E402
+from qtoggleserver.web import APIHandler  # noqa: E402
