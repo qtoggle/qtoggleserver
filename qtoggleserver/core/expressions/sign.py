@@ -1,4 +1,5 @@
 
+from .base import Evaluated
 from .functions import function, Function
 
 
@@ -6,7 +7,7 @@ from .functions import function, Function
 class AbsFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         return abs(self.eval_args()[0])
 
 
@@ -14,7 +15,7 @@ class AbsFunction(Function):
 class SgnFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         e = int(self.eval_args()[0])
         if e > 0:
             return 1

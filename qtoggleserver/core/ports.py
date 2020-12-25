@@ -251,7 +251,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._value: NullablePortValue = None
         self._write_value_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
-        self._write_value_task: asyncio.Task = asyncio.create_task(self._write_value_loop())
+        self._write_value_task: Optional[asyncio.Task] = None
+        if asyncio.get_event_loop().is_running():
+            self._write_value_task = asyncio.create_task(self._write_value_loop())
         self._change_reason: str = CHANGE_REASON_NATIVE
         self._pending_write: bool = False
 
@@ -911,8 +913,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return d
 
     async def cleanup(self) -> None:
-        self._write_value_task.cancel()
-        await self._write_value_task
+        if self._write_value_task:
+            self._write_value_task.cancel()
+            await self._write_value_task
+            self._write_value_task = None
 
     def is_loaded(self) -> bool:
         return self._loaded

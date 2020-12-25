@@ -2,10 +2,11 @@
 import datetime
 import pytest
 
+from qtoggleserver.core import history
 from qtoggleserver.core.expressions import various, Function
-from qtoggleserver.core.expressions import InvalidNumberOfArguments
+from qtoggleserver.core.expressions import InvalidNumberOfArguments, InvalidArgumentKind, UndefinedPortValue
 
-from .mock import MockExpression
+from tests.qtoggleserver.mock import MockExpression, MockPortRef
 
 
 def test_acc():
@@ -318,3 +319,206 @@ def test_lutli_num_args():
 
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, 'LUTLI(1, 2, 3, 4)', 0)
+
+
+def test_history_older_past(freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_port1):
+    freezer.move_to(dummy_utc_datetime)
+    mock_persist_driver.enable_history_support()
+
+    port_expr = MockPortRef(mock_port1)
+    ts_expr = MockExpression(dummy_timestamp - 3600)
+    diff_expr = MockExpression(-3600)
+
+    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr])
+
+    mock_port1.set_value(-8)
+    history.save_sample(mock_port1, (dummy_timestamp - 8000) * 1000)
+    mock_port1.set_value(-2)
+    history.save_sample(mock_port1, (dummy_timestamp - 2000) * 1000)
+    mock_port1.set_value(0.01)
+
+    with pytest.raises(UndefinedPortValue):
+        expr.eval()
+
+    mock_port1.set_value(-6)
+    history.save_sample(mock_port1, (dummy_timestamp - 6000) * 1000)
+    assert expr.eval() == -6
+
+    mock_port1.set_value(-4)
+    history.save_sample(mock_port1, (dummy_timestamp - 4000) * 1000)
+    diff_expr.set_value(-3601)  # Invalidates history expression internal cache
+    assert expr.eval() == -4
+
+
+def test_history_older_future(freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_port1):
+    freezer.move_to(dummy_utc_datetime)
+    mock_persist_driver.enable_history_support()
+
+    port_expr = MockPortRef(mock_port1)
+    ts_expr = MockExpression(dummy_timestamp + 7200)
+    diff_expr = MockExpression(-3600)
+
+    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr])
+
+    mock_port1.set_value(-8)
+    history.save_sample(mock_port1, (dummy_timestamp - 8000) * 1000)
+
+    mock_port1.set_value(0.01)
+    assert expr.eval() == 0.01
+
+
+def test_history_older_current(freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_port1):
+    freezer.move_to(dummy_utc_datetime)
+    mock_persist_driver.enable_history_support()
+
+    port_expr = MockPortRef(mock_port1)
+    ts_expr = MockExpression(dummy_timestamp + 1800)
+    diff_expr = MockExpression(-3600)
+
+    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr])
+
+    mock_port1.set_value(-2)
+    history.save_sample(mock_port1, (dummy_timestamp - 2000) * 1000)
+    mock_port1.set_value(-1)
+    history.save_sample(mock_port1, (dummy_timestamp - 1000) * 1000)
+
+    mock_port1.set_value(0.01)
+    assert expr.eval() == 0.01
+
+
+def test_history_newer_past(freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_port1):
+    freezer.move_to(dummy_utc_datetime)
+    mock_persist_driver.enable_history_support()
+
+    port_expr = MockPortRef(mock_port1)
+    ts_expr = MockExpression(dummy_timestamp - 7200)
+    diff_expr = MockExpression(3600)
+
+    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr])
+
+    mock_port1.set_value(-8)
+    history.save_sample(mock_port1, (dummy_timestamp - 8000) * 1000)
+    mock_port1.set_value(-2)
+    history.save_sample(mock_port1, (dummy_timestamp - 2000) * 1000)
+    mock_port1.set_value(0.01)
+
+    with pytest.raises(UndefinedPortValue):
+        expr.eval()
+
+    mock_port1.set_value(-4)
+    history.save_sample(mock_port1, (dummy_timestamp - 4000) * 1000)
+    assert expr.eval() == -4
+
+    mock_port1.set_value(-6)
+    history.save_sample(mock_port1, (dummy_timestamp - 6000) * 1000)
+    diff_expr.set_value(3601)  # Invalidates history expression internal cache
+    assert expr.eval() == -6
+
+
+def test_history_newer_future(freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_port1):
+    freezer.move_to(dummy_utc_datetime)
+    mock_persist_driver.enable_history_support()
+
+    port_expr = MockPortRef(mock_port1)
+    ts_expr = MockExpression(dummy_timestamp + 3600)
+    diff_expr = MockExpression(3600)
+
+    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr])
+
+    mock_port1.set_value(-8)
+    history.save_sample(mock_port1, (dummy_timestamp - 8000) * 1000)
+
+    mock_port1.set_value(0.01)
+    with pytest.raises(UndefinedPortValue):
+        expr.eval()
+
+
+def test_history_newer_current(freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_port1):
+    freezer.move_to(dummy_utc_datetime)
+    mock_persist_driver.enable_history_support()
+
+    port_expr = MockPortRef(mock_port1)
+    ts_expr = MockExpression(dummy_timestamp - 1800)
+    diff_expr = MockExpression(3600)
+
+    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr])
+
+    mock_port1.set_value(-2)
+    history.save_sample(mock_port1, (dummy_timestamp - 2000) * 1000)
+    mock_port1.set_value(-1)
+    history.save_sample(mock_port1, (dummy_timestamp - 1000) * 1000)
+
+    mock_port1.set_value(0.01)
+    assert expr.eval() == -1
+
+
+def test_history_newer_unlimited_past(freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_port1):
+    freezer.move_to(dummy_utc_datetime)
+    mock_persist_driver.enable_history_support()
+
+    port_expr = MockPortRef(mock_port1)
+    ts_expr = MockExpression(dummy_timestamp - 7200)
+    diff_expr = MockExpression(0)
+
+    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr])
+
+    mock_port1.set_value(-8)
+    history.save_sample(mock_port1, (dummy_timestamp - 8000) * 1000)
+
+    mock_port1.set_value(0.01)
+    assert expr.eval() == 0.01
+
+    mock_port1.set_value(-4)
+    history.save_sample(mock_port1, (dummy_timestamp - 4000) * 1000)
+    assert expr.eval() == -4
+
+    mock_port1.set_value(-6)
+    history.save_sample(mock_port1, (dummy_timestamp - 6000) * 1000)
+    diff_expr.set_value(3601)  # Invalidates history expression internal cache
+    assert expr.eval() == -6
+
+
+def test_history_newer_unlimited_future(freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_port1):
+    freezer.move_to(dummy_utc_datetime)
+    mock_persist_driver.enable_history_support()
+
+    port_expr = MockPortRef(mock_port1)
+    ts_expr = MockExpression(dummy_timestamp + 7200)
+    diff_expr = MockExpression(0)
+
+    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr])
+
+    mock_port1.set_value(-8)
+    history.save_sample(mock_port1, (dummy_timestamp - 8000) * 1000)
+
+    mock_port1.set_value(0.01)
+    with pytest.raises(UndefinedPortValue):
+        expr.eval()
+
+
+def test_history_parse(mock_persist_driver):
+    mock_persist_driver.enable_history_support()
+
+    e = Function.parse(None, 'HISTORY(@some_id, 1, 2)', 0)
+    assert isinstance(e, various.HistoryFunction)
+
+
+def test_history_arg_type(mock_persist_driver):
+    mock_persist_driver.enable_history_support()
+
+    with pytest.raises(InvalidArgumentKind) as exc_info:
+        Function.parse(None, 'HISTORY(1, 2, 3)', 0)
+
+    assert exc_info.value.name == 'HISTORY'
+    assert exc_info.value.num == 1
+    assert exc_info.value.pos == 9
+
+
+def test_history_num_args(mock_persist_driver):
+    mock_persist_driver.enable_history_support()
+
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, 'HISTORY(@some_id, 1)', 0)
+
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, 'HISTORY(@some_id, 1, 2, 3)', 0)

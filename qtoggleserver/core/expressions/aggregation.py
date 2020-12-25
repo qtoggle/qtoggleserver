@@ -1,4 +1,5 @@
 
+from .base import Evaluated
 from .functions import function, Function
 
 
@@ -6,7 +7,7 @@ from .functions import function, Function
 class MinFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         eval_args = self.eval_args()
 
         m = eval_args[0]
@@ -21,7 +22,7 @@ class MinFunction(Function):
 class MaxFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         eval_args = self.eval_args()
 
         m = eval_args[0]
@@ -36,7 +37,7 @@ class MaxFunction(Function):
 class AvgFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         eval_args = self.eval_args()
 
         return sum(eval_args) / len(eval_args)

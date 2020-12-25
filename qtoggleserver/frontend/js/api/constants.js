@@ -222,35 +222,43 @@ export const KNOWN_ERRORS = [
 export const INVALID_EXPRESSION_REASONS = [
     {
         reason: 'unknown-function',
-        pretty: 'Unknown function %(token)s.'
+        pretty: gettext('Unknown function "%(token)s".')
     },
     {
         reason: 'invalid-number-of-arguments',
-        pretty: 'Invalid number of arguments to function %(token)s.'
+        pretty: gettext('Invalid number of arguments for function "%(token)s".')
+    },
+    {
+        reason: 'invalid-argument-kind',
+        pretty: gettext('Invalid argument %(num)d kind for function "%(token)s" at position %(pos)d.')
     },
     {
         reason: 'unbalanced-parentheses',
-        pretty: 'Unbalanced parentheses.'
+        pretty: gettext('Unbalanced parentheses.')
     },
     {
         reason: 'unexpected-end',
-        pretty: 'Expression is unterminated.'
+        pretty: gettext('Expression is unterminated.')
     },
     {
         reason: 'circular-dependency',
-        pretty: 'Expression creates a dependency loop.'
+        pretty: gettext('Expression creates a dependency loop.')
     },
     {
         reason: 'external-dependency',
-        pretty: 'Expression must not depend on other ports.'
+        pretty: gettext('Expression must not depend on other ports.')
     },
     {
         reason: 'unexpected-character',
-        pretty: 'Unexpected character "%(token)s" at position %(pos)d.'
+        pretty: gettext('Unexpected character "%(token)s" at position %(pos)d.')
+    },
+    {
+        reason: 'empty',
+        pretty: gettext('Expression is empty.')
     },
     {
         reason: 'too-long',
-        pretty: 'Expression is too long.'
+        pretty: gettext('Expression is too long.')
     }
 ]
 

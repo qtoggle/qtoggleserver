@@ -6,7 +6,7 @@ import pytest
 from qtoggleserver.core.expressions import timeprocessing, Function
 from qtoggleserver.core.expressions import InvalidNumberOfArguments, EvalSkipped
 
-from .mock import MockExpression
+from tests.qtoggleserver.mock import MockExpression
 
 
 def test_delay(freezer, dummy_local_datetime, literal_one_thousand):

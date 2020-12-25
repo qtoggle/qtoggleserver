@@ -6,7 +6,7 @@ from typing import Optional
 # core.expressions and core.main)
 from qtoggleserver.core import main
 
-from .base import Expression
+from .base import Expression, Evaluated
 
 
 def parse(self_port_id: Optional[str], sexpression: str, pos: int = 1) -> Expression:
@@ -17,8 +17,8 @@ def parse(self_port_id: Optional[str], sexpression: str, pos: int = 1) -> Expres
     while sexpression and sexpression[-1].isspace():
         sexpression = sexpression[:-1]
 
-    if sexpression.startswith('$'):
-        return PortValue.parse(self_port_id, sexpression, pos)
+    if sexpression.startswith('$') or sexpression.startswith('@'):
+        return PortExpression.parse(self_port_id, sexpression, pos)
 
     elif '(' in sexpression or ')' in sexpression:
         return Function.parse(self_port_id, sexpression, pos)
@@ -74,4 +74,4 @@ from .exceptions import *
 from .exceptions import CircularDependency
 from .functions import Function
 from .literalvalues import LiteralValue
-from .portvalue import PortValue
+from .port import PortExpression, PortValue, PortRef

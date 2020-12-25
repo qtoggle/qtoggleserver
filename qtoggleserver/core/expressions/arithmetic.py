@@ -1,13 +1,14 @@
 
-from .functions import function, Function
+from .base import Evaluated
 from .exceptions import ExpressionArithmeticError
+from .functions import function, Function
 
 
 @function('ADD')
 class AddFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         return sum(self.eval_args())
 
 
@@ -15,7 +16,7 @@ class AddFunction(Function):
 class SubFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         eval_args = self.eval_args()
         return eval_args[0] - eval_args[1]
 
@@ -24,7 +25,7 @@ class SubFunction(Function):
 class MulFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         r = 1
         for e in self.eval_args():
             r *= e
@@ -36,7 +37,7 @@ class MulFunction(Function):
 class DivFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         eval_args = self.eval_args()
 
         if eval_args[1]:
@@ -50,7 +51,7 @@ class DivFunction(Function):
 class ModFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         eval_args = self.eval_args()
 
         if eval_args[1]:
@@ -64,7 +65,7 @@ class ModFunction(Function):
 class PowFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         eval_args = self.eval_args()
 
         return eval_args[0] ** eval_args[1]

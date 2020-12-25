@@ -5,7 +5,9 @@ from typing import Callable, List, Optional, Set
 
 from . import exceptions
 from . import parse
-from .base import Expression
+from .base import Expression, Evaluated
+from .literalvalues import LiteralValue
+from .port import PortValue
 
 
 FUNCTIONS = {}
@@ -25,6 +27,9 @@ class Function(Expression, metaclass=abc.ABCMeta):
     NAME = None
     MIN_ARGS = None
     MAX_ARGS = None
+    DEPS = []
+    ARG_KINDS = []
+    ENABLED = True
 
     def __init__(self, args: List[Expression]) -> None:
         self.args: List[Expression] = args
@@ -38,14 +43,26 @@ class Function(Expression, metaclass=abc.ABCMeta):
         return s
 
     def get_deps(self) -> Set[str]:
-        deps = set()
+        deps = set(self.DEPS)
         for arg in self.args:
             deps |= arg.get_deps()
 
         return deps
 
-    def eval_args(self) -> List[float]:
+    def eval_args(self) -> List[Evaluated]:
         return [a.eval() for a in self.args]
+
+    @classmethod
+    def validate_arg_kinds(cls, args: List[Expression], pos_list: List[int]) -> None:
+        for i, arg in enumerate(args):
+            try:
+                kind = cls.ARG_KINDS[i]
+
+            except IndexError:
+                kind = (LiteralValue, PortValue, Function)
+
+            if not isinstance(arg, kind):
+                raise exceptions.InvalidArgumentKind(cls.NAME, pos_list[i], i + 1)
 
     @staticmethod
     def parse(self_port_id: Optional[str], sexpression: str, pos: int) -> Expression:
@@ -112,6 +129,9 @@ class Function(Expression, metaclass=abc.ABCMeta):
         if func_class is None:
             raise exceptions.UnknownFunction(func_name, pos)
 
+        if not func_class.ENABLED or callable(func_class.ENABLED) and not func_class.ENABLED():
+            raise exceptions.UnknownFunction(func_name, pos)
+
         if func_class.MIN_ARGS is not None and len(sargs) < func_class.MIN_ARGS:
             raise exceptions.InvalidNumberOfArguments(func_name, pos)
 
@@ -119,6 +139,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
             raise exceptions.InvalidNumberOfArguments(func_name, pos)
 
         args = [parse(self_port_id, sarg, pos + spos) for (sarg, spos) in sargs]
+        func_class.validate_arg_kinds(args, [pos + spos + 1 for (_, spos) in sargs])
 
         return func_class(args)
 
