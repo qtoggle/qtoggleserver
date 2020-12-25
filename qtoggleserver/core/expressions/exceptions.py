@@ -151,6 +151,10 @@ class UndefinedPortValue(IncompleteExpression):
         super().__init__(f'Port "{port_id}" value is undefined')
 
 
+class ExpressionArithmeticError(IncompleteExpression):
+    pass
+
+
 class EvalSkipped(ExpressionEvalError):
     def __init__(self) -> None:
         super().__init__('Evaluation skipped')

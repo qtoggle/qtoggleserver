@@ -249,13 +249,15 @@ class FMAvgFunction(Function):
                 raise EvalSkipped()
 
         # Make place for the new element
-        while len(self._queue) > width:
+        while len(self._queue) >= width:
             self._queue.pop(0)
 
         self._queue.append(value)
         self._last_time = now
 
-        return sum(self._queue) / len(self._queue)
+        queue = self._queue[-width:]
+
+        return sum(queue) / len(queue)
 
 
 @function('FMEDIAN')
@@ -284,12 +286,13 @@ class FMedianFunction(Function):
                 raise EvalSkipped()
 
         # Make place for the new element
-        while len(self._queue) > width:
+        while len(self._queue) >= width:
             self._queue.pop(0)
 
         self._queue.append(value)
         self._last_time = now
 
-        sorted_queue = list(sorted(self._queue))
+        queue = self._queue[-width:]
+        queue.sort()
 
-        return sorted_queue[len(sorted_queue) // 2]
+        return queue[len(queue) // 2]

@@ -1,5 +1,6 @@
 
 from .functions import function, Function
+from .exceptions import ExpressionArithmeticError
 
 
 @function('ADD')
@@ -42,7 +43,7 @@ class DivFunction(Function):
             return eval_args[0] / eval_args[1]
 
         else:
-            return 0
+            raise ExpressionArithmeticError
 
 
 @function('MOD')
@@ -56,7 +57,7 @@ class ModFunction(Function):
             return eval_args[0] % eval_args[1]
 
         else:
-            return 0
+            raise ExpressionArithmeticError
 
 
 @function('POW')

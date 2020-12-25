@@ -28,7 +28,6 @@ class Function(Expression, metaclass=abc.ABCMeta):
 
     def __init__(self, args: List[Expression]) -> None:
         self.args: List[Expression] = args
-        self._deps: Optional[Set[str]] = None
 
     def __str__(self) -> str:
         s = getattr(self, '_str', None)
@@ -39,13 +38,11 @@ class Function(Expression, metaclass=abc.ABCMeta):
         return s
 
     def get_deps(self) -> Set[str]:
-        if self._deps is None:
-            self._deps = set()
+        deps = set()
+        for arg in self.args:
+            deps |= arg.get_deps()
 
-            for arg in self.args:
-                self._deps |= arg.get_deps()
-
-        return self._deps
+        return deps
 
     def eval_args(self) -> List[float]:
         return [a.eval() for a in self.args]
