@@ -4,6 +4,7 @@ import $ from '$qui/lib/jquery.module.js'
 import {gettext}             from '$qui/base/i18n.js'
 import {mix}                 from '$qui/base/mixwith.js'
 import {CheckField}          from '$qui/forms/common-fields/common-fields.js'
+import {ChoiceButtonsField}  from '$qui/forms/common-fields/common-fields.js'
 import {OptionsForm}         from '$qui/forms/common-forms/common-forms.js'
 import StockIcon             from '$qui/icons/stock-icon.js'
 import {StructuredPageMixin} from '$qui/pages/common-pages/common-pages.js'
@@ -31,23 +32,43 @@ export class ChartPageOptionsForm extends OptionsForm {
     /**
      * @constructs
      * @param {qtoggle.common.ChartPage} chartPage
-     * @param {Boolean} [showSmooth]
-     * @param {Boolean} [showFillArea]
-     * @param {?String} prefsPrefix
+     * @param {Boolean} [enableSmooth]
+     * @param {Boolean} [enableFillArea]
+     * @param {Boolean} [enableShowDataPoints]
+     * @param {?String} [prefsPrefix]
      * @param {Object} [defaults]
      */
-    constructor({chartPage, showSmooth = true, showFillArea = true, prefsPrefix = null, defaults = {}}) {
+    constructor({
+        chartPage,
+        enableSmooth = true,
+        enableFillArea = true,
+        enableShowDataPoints = true,
+        prefsPrefix = null,
+        defaults = {}
+    }) {
+
         let fields = []
-        if (showSmooth) {
+        if (enableSmooth) {
             fields.push(new CheckField({
                 name: 'smooth',
                 label: gettext('Smooth Lines')
             }))
         }
-        if (showFillArea) {
+        if (enableFillArea) {
             fields.push(new CheckField({
-                name: 'fill_area',
+                name: 'fillArea',
                 label: gettext('Fill Area')
+            }))
+        }
+        if (enableShowDataPoints) {
+            fields.push(new ChoiceButtonsField({
+                name: 'showDataPoints',
+                label: gettext('Show Data Points'),
+                choices: [
+                    {value: false, label: gettext('Off')},
+                    {value: null, label: gettext('Auto')},
+                    {value: true, label: gettext('On')}
+                ]
             }))
         }
 
@@ -159,8 +180,11 @@ class ChartPage extends mix().with(StructuredPageMixin, ProgressViewMixin) {
         if ('smooth' in options) {
             widgetOptions.smooth = options['smooth']
         }
-        if ('fill_area' in options) {
-            widgetOptions.fillArea = options['fill_area']
+        if ('fillArea' in options) {
+            widgetOptions.fillArea = options['fillArea']
+        }
+        if ('showDataPoints' in options) {
+            widgetOptions.showDataPoints = options['showDataPoints']
         }
 
         if (Object.keys(widgetOptions).length > 0) {
@@ -208,14 +232,14 @@ class ChartPage extends mix().with(StructuredPageMixin, ProgressViewMixin) {
     }
 
     _decimate(data) {
-        let windowSize = Math.round(data.length * 2 / MAX_DATA_POINT_LEN)
+        let windowSize = Math.ceil(data.length * 2 / MAX_DATA_POINT_LEN)
         let decimatedData = []
         for (let i = 0; i < MAX_DATA_POINT_LEN / 2; i++) {
-            let window = data.slice(i * windowSize, (i + 1) * windowSize)
-            if (!window.length) {
-                continue
+            let win = data.slice(i * windowSize, (i + 1) * windowSize)
+            if (!win.length) {
+                break
             }
-            let analysis = this._analyzeDecimationWindow(window)
+            let analysis = this._analyzeDecimationWindow(win)
             if (analysis.min[0] < analysis.max[0]) {
                 decimatedData.push(analysis.min, analysis.max)
             }

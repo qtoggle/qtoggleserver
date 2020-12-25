@@ -163,7 +163,7 @@ $.widget('qtoggle.linechart', $.qtoggle.basechart, {
                 pointBorderWidth: environment.px1,
                 pointHoverBorderWidth: environment.px1,
                 pointRadius: this._getPointRadius.bind(this, environment),
-                pointHoverRadius: this.options.showPoints !== false ? environment.px3 : 0,
+                pointHoverRadius: this.options.showDataPoints !== false ? environment.px3 : 0,
                 stepped: this.options.stepped,
                 fill: this.options.fillArea ? {
                     target: 'origin',
@@ -183,10 +183,10 @@ $.widget('qtoggle.linechart', $.qtoggle.basechart, {
     },
 
     _getPointRadius(environment, context) {
-        if (this.options.showPoints === false) {
+        if (this.options.showDataPoints === false) {
             return 0
         }
-        if (this.options.showPoints === true) {
+        if (this.options.showDataPoints === true) {
             return environment.px3
         }
         if (this._pointRadius != null) {
@@ -217,7 +217,7 @@ $.widget('qtoggle.linechart', $.qtoggle.basechart, {
 
     _setOption: function (key, value) {
         switch (key) {
-            case 'showPoints':
+            case 'showDataPoints':
                 this._pointRadius = null
                 break
         }
