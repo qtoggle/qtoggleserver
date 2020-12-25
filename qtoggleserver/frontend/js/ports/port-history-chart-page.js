@@ -55,7 +55,7 @@ class PortHistoryChartPage extends ChartPage {
             pathId: 'history',
             chartOptions: {
                 showTooltips: true,
-                showPoints: null,
+                showDataPoints: null,
                 showMajorTicks: true,
                 yTicksStepSize: isBoolean ? 1 : null,
                 yTicksLabelCallback: isBoolean ? value => value ? gettext('On') : gettext('Off') : null,
@@ -88,11 +88,6 @@ class PortHistoryChartPage extends ChartPage {
     }
 
     fetchAndShowHistory(from, to) {
-        let delta = to - from
-        let margin = delta * 0.1 /* 10% margin to the left as well as to the right of the interval */
-        to += margin
-        from -= margin
-
         this.setProgress()
 
         let fetchPromise = this._historyDownloadManager.fetch(Math.round(from), Math.round(to), MAX_FETCH_REQUESTS)
@@ -218,12 +213,14 @@ class PortHistoryChartPage extends ChartPage {
     makeOptionsBarContent() {
         return new PortHistoryChartPageOptionsForm({
             chartPage: this,
-            showSmooth: !this._isBoolean,
-            showFillArea: true,
+            enableSmooth: !this._isBoolean,
+            enableFillArea: true,
+            enableShowDataPoints: true,
             prefsPrefix: `ports.${this._port['id']}.history_chart`,
             defaults: {
                 smooth: false,
-                fillArea: false
+                fillArea: false,
+                showDataPoints: false
             }
         })
     }
