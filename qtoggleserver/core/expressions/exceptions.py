@@ -146,32 +146,28 @@ class InvalidArgumentValue(ExpressionEvalError):
         super().__init__(f'Invalid argument {self.arg_no}: {self.value}')
 
 
-class IncompleteExpression(ExpressionEvalError):
-    pass
-
-
-class UnknownPortId(IncompleteExpression):
+class UnknownPortId(ExpressionEvalError):
     def __init__(self, port_id: str) -> None:
         self.port_id = port_id
 
         super().__init__(f'Unknown port "{port_id}"')
 
 
-class DisabledPort(IncompleteExpression):
+class DisabledPort(ExpressionEvalError):
     def __init__(self, port_id: str) -> None:
         self.port_id = port_id
 
         super().__init__(f'Port "{port_id}" is disabled')
 
 
-class UndefinedPortValue(IncompleteExpression):
+class PortValueUnavailable(ExpressionEvalError):
     def __init__(self, port_id: str) -> None:
         self.port_id = port_id
 
         super().__init__(f'Port "{port_id}" value is undefined')
 
 
-class ExpressionArithmeticError(IncompleteExpression):
+class ExpressionArithmeticError(ExpressionEvalError):
     def __init__(self) -> None:
         super().__init__('Expression arithmetic error')
 

@@ -4,9 +4,95 @@ import pytest
 
 from qtoggleserver.core import history
 from qtoggleserver.core.expressions import various, Function
-from qtoggleserver.core.expressions import InvalidNumberOfArguments, InvalidArgumentKind, UndefinedPortValue
+from qtoggleserver.core.expressions import InvalidNumberOfArguments, InvalidArgumentKind, PortValueUnavailable
 
-from tests.qtoggleserver.mock import MockExpression, MockPortRef
+from tests.qtoggleserver.mock import MockExpression, MockPortRef, MockPortValue
+
+
+async def test_available_literal(literal_three, literal_false):
+    expr = various.AvailableFunction([literal_three])
+    assert await expr.eval() == 1
+
+    expr = various.AvailableFunction([literal_false])
+    assert await expr.eval() == 1
+
+
+async def test_available_port_value(mock_port1):
+    port_expr = MockPortValue(mock_port1)
+    expr = various.AvailableFunction([port_expr])
+    assert await expr.eval() == 0
+
+    mock_port1.set_value(16)
+    assert await expr.eval() == 1
+
+    port_expr = MockPortValue(None, port_id='some-id')
+    expr = various.AvailableFunction([port_expr])
+    assert await expr.eval() == 0
+
+
+async def test_available_port_ref(mock_port1):
+    port_expr = MockPortRef(mock_port1)
+    expr = various.AvailableFunction([port_expr])
+    assert await expr.eval() == 1
+
+    mock_port1.set_value(16)
+    assert await expr.eval() == 1
+
+    port_expr = MockPortRef(None, port_id='some-id')
+    expr = various.AvailableFunction([port_expr])
+    assert await expr.eval() == 0
+
+
+async def test_available_func(mock_port1):
+    port_expr = MockPortValue(mock_port1)
+    acc_expr = MockExpression(13)
+    func_expr = various.AccFunction([port_expr, acc_expr])
+    expr = various.AvailableFunction([func_expr])
+    assert await expr.eval() == 0
+
+    mock_port1.set_value(16)
+    assert await expr.eval() == 1
+
+    port_expr = MockPortValue(None, port_id='some-id')
+    func_expr = various.AccFunction([port_expr, acc_expr])
+    expr = various.AvailableFunction([func_expr])
+    assert await expr.eval() == 0
+
+
+def test_available_parse():
+    e = Function.parse(None, 'AVAILABLE(1)', 0)
+    assert isinstance(e, various.AvailableFunction)
+
+
+def test_available_num_args():
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, 'AVAILABLE()', 0)
+
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, 'AVAILABLE(1, 2)', 0)
+
+
+async def test_default(mock_port1):
+    port_expr = MockPortValue(mock_port1)
+    def_expr = MockExpression(13)
+    expr = various.DefaultFunction([port_expr, def_expr])
+    assert await expr.eval() == 13
+
+    mock_port1.set_value(16)
+    assert await expr.eval() == 16
+
+
+def test_default_parse():
+    e = Function.parse(None, 'DEFAULT(1, 2)', 0)
+    assert isinstance(e, various.DefaultFunction)
+
+
+def test_default_num_args():
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, 'DEFAULT(1)', 0)
+
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, 'AVAILABLE(1, 2, 3)', 0)
 
 
 async def test_acc():
@@ -337,7 +423,7 @@ async def test_history_older_past(freezer, mock_persist_driver, dummy_utc_dateti
     await history.save_sample(mock_port1, (dummy_timestamp - 2000) * 1000)
     mock_port1.set_value(0.01)
 
-    with pytest.raises(UndefinedPortValue):
+    with pytest.raises(PortValueUnavailable):
         await expr.eval()
 
     mock_port1.set_value(-6)
@@ -402,7 +488,7 @@ async def test_history_newer_past(freezer, mock_persist_driver, dummy_utc_dateti
     await history.save_sample(mock_port1, (dummy_timestamp - 2000) * 1000)
     mock_port1.set_value(0.01)
 
-    with pytest.raises(UndefinedPortValue):
+    with pytest.raises(PortValueUnavailable):
         await expr.eval()
 
     mock_port1.set_value(-4)
@@ -429,7 +515,7 @@ async def test_history_newer_future(freezer, mock_persist_driver, dummy_utc_date
     await history.save_sample(mock_port1, (dummy_timestamp - 8000) * 1000)
 
     mock_port1.set_value(0.01)
-    with pytest.raises(UndefinedPortValue):
+    with pytest.raises(PortValueUnavailable):
         await expr.eval()
 
 
@@ -492,7 +578,7 @@ async def test_history_newer_unlimited_future(freezer, mock_persist_driver, dumm
     await history.save_sample(mock_port1, (dummy_timestamp - 8000) * 1000)
 
     mock_port1.set_value(0.01)
-    with pytest.raises(UndefinedPortValue):
+    with pytest.raises(PortValueUnavailable):
         await expr.eval()
 
 

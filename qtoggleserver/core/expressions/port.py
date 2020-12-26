@@ -5,7 +5,7 @@ import re
 from typing import Optional, Set
 
 from .base import Expression, Evaluated
-from .exceptions import UnknownPortId, DisabledPort, UndefinedPortValue, UnexpectedCharacter
+from .exceptions import UnknownPortId, DisabledPort, PortValueUnavailable, UnexpectedCharacter
 
 # Import core.ports after defining Expression, because core.ports.BasePort depends on Expression.
 from qtoggleserver.core import ports as core_ports
@@ -63,7 +63,7 @@ class PortValue(PortExpression):
 
         value = port.get_value()
         if value is None:
-            raise UndefinedPortValue(self.port_id)
+            raise PortValueUnavailable(self.port_id)
 
         return value
 

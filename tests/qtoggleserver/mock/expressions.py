@@ -1,7 +1,8 @@
 
 from typing import Optional
 
-from qtoggleserver.core.expressions import Expression, Evaluated, PortRef
+from qtoggleserver.core.expressions import Expression, Evaluated, PortValue, PortRef
+from qtoggleserver.core.expressions import UnknownPortId, PortValueUnavailable
 from qtoggleserver.core.ports import BasePort  # This needs to be imported after qtoggleserver.core.expressions
 
 
@@ -20,11 +21,33 @@ class MockExpression(Expression):
         pass
 
 
-class MockPortRef(PortRef):
-    def __init__(self, port: BasePort) -> None:
-        super().__init__(port.get_id())
+class MockPortValue(PortValue):
+    def __init__(self, port: Optional[BasePort], port_id: Optional[str] = None) -> None:
+        super().__init__(port_id or port.get_id())
 
-        self.port: BasePort = port
+        self.port: Optional[BasePort] = port
 
     async def eval(self) -> Evaluated:
-        return self.port
+        if self.port:
+            value = self.port.get_value()
+            if value is None:
+                raise PortValueUnavailable(self.port.get_id())
+
+            return value
+
+        else:
+            raise UnknownPortId(self.port_id)
+
+
+class MockPortRef(PortRef):
+    def __init__(self, port: Optional[BasePort], port_id: Optional[str] = None) -> None:
+        super().__init__(port_id or port.get_id())
+
+        self.port: Optional[BasePort] = port
+
+    async def eval(self) -> Evaluated:
+        if self.port:
+            return self.port
+
+        else:
+            raise UnknownPortId(self.port_id)
