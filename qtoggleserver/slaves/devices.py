@@ -224,7 +224,7 @@ class Slave(logging_utils.LoggableMixin):
 
         # Rename associated ports persisted data
         try:
-            self._rename_ports_persisted_data(new_name)
+            await self._rename_ports_persisted_data(new_name)
 
         except Exception as e:
             logger.error('renaming ports persisted data failed: %s', e, exc_info=True)
@@ -421,9 +421,9 @@ class Slave(logging_utils.LoggableMixin):
             'provisioning_reverse': self._provisioning_reverse,
         }
 
-    def save(self) -> None:
+    async def save(self) -> None:
         self.debug('saving device')
-        persist.replace('slaves', self._name, self.prepare_for_save())
+        await persist.replace('slaves', self._name, self.prepare_for_save())
 
     async def cleanup(self) -> None:
         self.debug('cleaning up')
@@ -450,7 +450,7 @@ class Slave(logging_utils.LoggableMixin):
 
     async def _load_ports(self) -> None:
         self.debug('loading persisted ports')
-        port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
+        port_data_list = await persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
         my_port_ids = [
             d['id'][len(self._name) + 1:] for d in port_data_list
             if d['id'].startswith(f'{self._name}.')
@@ -466,8 +466,8 @@ class Slave(logging_utils.LoggableMixin):
         for port in ports:
             await port.save()
 
-    def _rename_ports_persisted_data(self, new_name: str) -> None:
-        port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
+    async def _rename_ports_persisted_data(self, new_name: str) -> None:
+        port_data_list = await persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
         my_port_data_list = [
             d for d in port_data_list
             if d['id'].startswith(f'{self._name}.')
@@ -475,12 +475,12 @@ class Slave(logging_utils.LoggableMixin):
 
         # Remove old records
         for d in my_port_data_list:
-            persist.remove(SlavePort.PERSIST_COLLECTION, {'id': d['id']})
+            await persist.remove(SlavePort.PERSIST_COLLECTION, {'id': d['id']})
 
         # Add new records
         for d in my_port_data_list:
             d['id'] = new_name + d['id'][len(self._name):]
-            persist.insert(SlavePort.PERSIST_COLLECTION, d)
+            await persist.insert(SlavePort.PERSIST_COLLECTION, d)
 
     async def remove(self) -> None:
         self._enabled = False
@@ -493,13 +493,13 @@ class Slave(logging_utils.LoggableMixin):
             await port.remove()
 
         # Also remove persisted port data belonging to this device for ports that are no longer present on this slave
-        port_data_list = persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
+        port_data_list = await persist.query(SlavePort.PERSIST_COLLECTION, fields=['id'])
         for d in port_data_list:
             if d['id'].startswith(f'{self._name}.'):
-                persist.remove(SlavePort.PERSIST_COLLECTION, {'id': d['id']})
+                await persist.remove(SlavePort.PERSIST_COLLECTION, {'id': d['id']})
 
         self.debug('removing device')
-        persist.remove('slaves', filt={'id': self._name})
+        await persist.remove('slaves', filt={'id': self._name})
 
         await self.trigger_remove()
 
@@ -1215,13 +1215,13 @@ class Slave(logging_utils.LoggableMixin):
 
         await self.update_cached_attrs(attrs)
         await self.trigger_update()
-        self.save()
+        await self.save()
 
     async def _handle_full_update(self) -> None:
         await self.fetch_and_update_device()
         await self.fetch_and_update_ports()
         await self.trigger_update()
-        self.save()
+        await self.save()
 
     async def _handle_offline(self) -> None:
         self.debug('device is offline')
@@ -1266,7 +1266,7 @@ class Slave(logging_utils.LoggableMixin):
             self.debug('device is ready')
             self._ready = True
 
-        self.save()
+        await self.save()
 
     def get_provisioning_attrs(self) -> Attributes:
         provisioning = {}
@@ -1335,7 +1335,7 @@ class Slave(logging_utils.LoggableMixin):
 
         # If we had some provisioning to do, we need to save the new device state (with cleared provisioning)
         if provisioned:
-            self.save()
+            await self.save()
 
         # Ports provisioning
         for port in self._get_local_ports():
@@ -1408,7 +1408,7 @@ class Slave(logging_utils.LoggableMixin):
                 self.error('failed to query current reverse params: %s', e)
 
         if webhooks_queried or reverse_queried:
-            self.save()
+            await self.save()
 
     def schedule_provisioning_and_update(self, delay: float) -> None:
         if self._provisioning_timeout_task:
@@ -1461,7 +1461,7 @@ class Slave(logging_utils.LoggableMixin):
                 # Inform clients about the provisioning field change
                 await self.trigger_update()
 
-                self.save()
+                await self.save()
 
                 return True, None
 
@@ -1469,7 +1469,7 @@ class Slave(logging_utils.LoggableMixin):
                 self.debug('marking webhooks params for provisioning')
                 self._provisioning_webhooks = True
                 self._cached_webhooks.update(params)
-                self.save()
+                await self.save()
 
                 return True, None
 
@@ -1477,7 +1477,7 @@ class Slave(logging_utils.LoggableMixin):
                 self.debug('marking reverse params for provisioning')
                 self._provisioning_reverse = True
                 self._cached_reverse.update(params)
-                self.save()
+                await self.save()
 
                 return True, None
 
@@ -1495,7 +1495,7 @@ class Slave(logging_utils.LoggableMixin):
                 if new_admin_password is not None:
                     self.debug('updating admin password')
                     self.set_admin_password(new_admin_password)
-                    self.save()
+                    await self.save()
 
                 # Detect local name changes
                 new_name = request_body and request_body.get('name')
@@ -1620,7 +1620,7 @@ async def add(
         await slave.enable()
 
     await slave.trigger_add()
-    slave.save()
+    await slave.save()
 
     if enabled and not listen_enabled and not poll_interval:
         # Device is permanently offline, but we must know its ports; this would otherwise be called by
@@ -1710,7 +1710,7 @@ async def load() -> None:
 
     _load_time = time.time()
 
-    for entry in persist.query('slaves'):
+    for entry in await persist.query('slaves'):
         try:
             entry['name'] = entry.pop('id')
 

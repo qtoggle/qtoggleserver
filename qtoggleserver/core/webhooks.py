@@ -230,8 +230,8 @@ def setup(
         _webhooks.enable()
 
 
-def load() -> None:
-    data = persist.get_value('webhooks')
+async def load() -> None:
+    data = await persist.get_value('webhooks')
     if data is None:
         setup(enabled=False)
         logger.debug('loaded %s', _webhooks)
@@ -242,22 +242,22 @@ def load() -> None:
     logger.debug('loaded %s', _webhooks)
 
 
-def save() -> None:
+async def save() -> None:
     if _webhooks is None:
         return
 
     logger.debug('saving persisted data')
-    persist.set_value('webhooks', _webhooks.to_json())
+    await persist.set_value('webhooks', _webhooks.to_json())
 
 
-def reset() -> None:
+async def reset() -> None:
     logger.debug('clearing persisted data')
-    persist.remove('webhooks')
+    await persist.remove('webhooks')
 
 
 async def init() -> None:
     logger.debug('loading persisted data')
-    load()
+    await load()
 
 
 async def cleanup() -> None:

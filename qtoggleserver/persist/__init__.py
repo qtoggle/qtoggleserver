@@ -1,5 +1,6 @@
 
 import logging
+import threading
 
 from typing import Any, Dict, Iterable, List, Optional, Union
 
@@ -14,34 +15,32 @@ from .typing import Id, Record
 
 logger = logging.getLogger(__name__)
 
-_driver: Optional[BaseDriver] = None
+_thread_local: threading.local = threading.local()
 
 
 def _get_driver() -> BaseDriver:
-    global _driver
-
-    if _driver is None:
+    if not hasattr(_thread_local, 'driver'):
         driver_args = conf_utils.obj_to_dict(settings.persist)
         driver_class_path = driver_args.pop('driver')
 
         try:
             logger.debug('loading persistence driver %s', driver_class_path)
             driver_class = dynload_utils.load_attr(driver_class_path)
-            _driver = driver_class(**driver_args)
+            _thread_local.driver = driver_class(**driver_args)
 
         except Exception as e:
             logger.error('failed to load persistence driver %s: %s', driver_class_path, e, exc_info=True)
 
             raise
 
-    return _driver
+    return _thread_local.driver
 
 
 def is_history_supported() -> bool:
     return _get_driver().is_history_supported()
 
 
-def query(
+async def query(
     collection: str,
     fields: Optional[List[str]] = None,
     filt: Optional[Dict[str, Any]] = None,
@@ -70,13 +69,13 @@ def query(
         for s in sort
     ]
 
-    return _get_driver().query(collection, fields, filt, sort, limit)
+    return await _get_driver().query(collection, fields, filt, sort, limit)
 
 
-def get(collection: str, id_: Id) -> Optional[Record]:
+async def get(collection: str, id_: Id) -> Optional[Record]:
     logger.debug('getting record with id %s from %s', id_, collection)
 
-    records = list(_get_driver().query(collection, fields=None, filt={'id': id_}, sort=[], limit=1))
+    records = list(await _get_driver().query(collection, fields=None, filt={'id': id_}, sort=[], limit=1))
     if len(records) > 1:
         logger.warning('more than one record with same id %s found in collection %s', id_, collection)
 
@@ -86,10 +85,10 @@ def get(collection: str, id_: Id) -> Optional[Record]:
     return None
 
 
-def get_value(name: str, default: Optional[Any] = None) -> Any:
+async def get_value(name: str, default: Optional[Any] = None) -> Any:
     logger.debug('getting value of %s', name)
 
-    records = list(_get_driver().query(name, fields=None, filt={}, sort=[], limit=2))
+    records = list(await _get_driver().query(name, fields=None, filt={}, sort=[], limit=2))
     if len(records) > 1:
         logger.warning('more than one record found in single-value collection %s', name)
 
@@ -104,14 +103,14 @@ def get_value(name: str, default: Optional[Any] = None) -> Any:
     return record['value']
 
 
-def set_value(name: str, value: Any) -> None:
+async def set_value(name: str, value: Any) -> None:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('setting %s to %s', name, json_utils.dumps(value, allow_extended_types=True))
 
     driver = _get_driver()
     record = {'value': value}
 
-    records = list(driver.query(name, fields=['id'], filt={}, sort=[], limit=2))
+    records = list(await driver.query(name, fields=['id'], filt={}, sort=[], limit=2))
     if len(records) > 1:
         logger.warning('more than one record found in single-value collection %s', name)
 
@@ -124,20 +123,20 @@ def set_value(name: str, value: Any) -> None:
         id_ = None
 
     if id_ is None:
-        driver.insert(name, record)
+        await driver.insert(name, record)
 
     else:
-        driver.replace(name, id_, record)
+        await driver.replace(name, id_, record)
 
 
-def insert(collection: str, record: Record) -> Id:
+async def insert(collection: str, record: Record) -> Id:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('inserting %s into %s', json_utils.dumps(record, allow_extended_types=True), collection)
 
-    return _get_driver().insert(collection, record)
+    return await _get_driver().insert(collection, record)
 
 
-def update(collection: str, record_part: Record, filt: Optional[Dict[str, Any]] = None) -> int:
+async def update(collection: str, record_part: Record, filt: Optional[Dict[str, Any]] = None) -> int:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
             'updating %s where %s with %s',
@@ -146,14 +145,14 @@ def update(collection: str, record_part: Record, filt: Optional[Dict[str, Any]] 
             json_utils.dumps(record_part, allow_extended_types=True)
         )
 
-    count = _get_driver().update(collection, record_part, filt or {})
+    count = await _get_driver().update(collection, record_part, filt or {})
 
     logger.debug('modified %s records in %s', count, collection)
 
     return count
 
 
-def replace(collection: str, id_: Id, record: Record) -> bool:
+async def replace(collection: str, id_: Id, record: Record) -> bool:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
             'replacing record with id %s with %s in %s',
@@ -163,24 +162,24 @@ def replace(collection: str, id_: Id, record: Record) -> bool:
         )
 
     record = dict(record, id=id_)  # Make sure the new record contains the id field
-    replaced = _get_driver().replace(collection, id_, record)
+    replaced = await _get_driver().replace(collection, id_, record)
     if replaced:
         logger.debug('replaced record with id %s in %s', id_, collection)
 
         return False
 
     else:
-        _get_driver().insert(collection, dict(record, id=id_))
+        await _get_driver().insert(collection, dict(record, id=id_))
         logger.debug('inserted record with id %s in %s', id_, collection)
 
         return True
 
 
-def remove(collection: str, filt: Optional[Dict[str, Any]] = None) -> int:
+async def remove(collection: str, filt: Optional[Dict[str, Any]] = None) -> int:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('removing from %s where %s', collection, json_utils.dumps(filt or {}, allow_extended_types=True))
 
-    count = _get_driver().remove(collection, filt or {})
+    count = await _get_driver().remove(collection, filt or {})
 
     logger.debug('removed %s records from %s', count, collection)
 

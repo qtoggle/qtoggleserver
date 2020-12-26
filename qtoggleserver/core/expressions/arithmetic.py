@@ -8,16 +8,16 @@ from .functions import function, Function
 class AddFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self) -> Evaluated:
-        return sum(self.eval_args())
+    async def eval(self) -> Evaluated:
+        return sum(await self.eval_args())
 
 
 @function('SUB')
 class SubFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> Evaluated:
-        eval_args = self.eval_args()
+    async def eval(self) -> Evaluated:
+        eval_args = await self.eval_args()
         return eval_args[0] - eval_args[1]
 
 
@@ -25,9 +25,9 @@ class SubFunction(Function):
 class MulFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self) -> Evaluated:
+    async def eval(self) -> Evaluated:
         r = 1
-        for e in self.eval_args():
+        for e in await self.eval_args():
             r *= e
 
         return r
@@ -37,8 +37,8 @@ class MulFunction(Function):
 class DivFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> Evaluated:
-        eval_args = self.eval_args()
+    async def eval(self) -> Evaluated:
+        eval_args = await self.eval_args()
 
         if eval_args[1]:
             return eval_args[0] / eval_args[1]
@@ -51,8 +51,8 @@ class DivFunction(Function):
 class ModFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> Evaluated:
-        eval_args = self.eval_args()
+    async def eval(self) -> Evaluated:
+        eval_args = await self.eval_args()
 
         if eval_args[1]:
             return eval_args[0] % eval_args[1]
@@ -65,7 +65,7 @@ class ModFunction(Function):
 class PowFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> Evaluated:
-        eval_args = self.eval_args()
+    async def eval(self) -> Evaluated:
+        eval_args = await self.eval_args()
 
         return eval_args[0] ** eval_args[1]

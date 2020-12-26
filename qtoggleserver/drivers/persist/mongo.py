@@ -38,7 +38,7 @@ class MongoDriver(BaseDriver):
         )
         self._db: pymongo.database.Database = self._client[db]
 
-    def query(
+    async def query(
         self,
         collection: str,
         fields: Optional[List[str]],
@@ -72,14 +72,14 @@ class MongoDriver(BaseDriver):
 
         return self._query_gen_wrapper(q)
 
-    def insert(self, collection: str, record: Record) -> Id:
+    async def insert(self, collection: str, record: Record) -> Id:
         record = dict(record)
         if 'id' in record:
             record['_id'] = self._id_to_db(record.pop('id'))
 
         return self._id_from_db(self._db[collection].insert_one(record).inserted_id)
 
-    def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
+    async def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
         if 'id' in record_part:
             record_part = dict(record_part)
             record_part['_id'] = self._id_to_db(record_part.pop('id'))
@@ -92,7 +92,7 @@ class MongoDriver(BaseDriver):
 
         return self._db[collection].update_many(db_filt, {'$set': record_part}, upsert=False).modified_count
 
-    def replace(self, collection: str, id_: Id, record: Record) -> bool:
+    async def replace(self, collection: str, id_: Id, record: Record) -> bool:
         record = dict(record)
         id_ = self._id_to_db(id_)
         record['_id'] = id_
@@ -101,7 +101,7 @@ class MongoDriver(BaseDriver):
 
         return matched > 0
 
-    def remove(self, collection: str, filt: Dict[str, Any]) -> int:
+    async def remove(self, collection: str, filt: Dict[str, Any]) -> int:
         if 'id' in filt:
             filt = dict(filt)
             filt['_id'] = self._id_to_db_rec(filt.pop('id'))

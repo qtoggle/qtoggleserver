@@ -9,8 +9,8 @@ from .functions import function, Function
 class FloorFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    def eval(self) -> Evaluated:
-        eval_args = self.eval_args()
+    async def eval(self) -> Evaluated:
+        eval_args = await self.eval_args()
 
         return int(math.floor(eval_args[0]))
 
@@ -19,8 +19,8 @@ class FloorFunction(Function):
 class CeilFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    def eval(self) -> Evaluated:
-        eval_args = self.eval_args()
+    async def eval(self) -> Evaluated:
+        eval_args = await self.eval_args()
 
         return int(math.ceil(eval_args[0]))
 
@@ -30,8 +30,8 @@ class RoundFunction(Function):
     MIN_ARGS = 1
     MAX_ARGS = 2
 
-    def eval(self) -> Evaluated:
-        eval_args = self.eval_args()
+    async def eval(self) -> Evaluated:
+        eval_args = await self.eval_args()
 
         v = eval_args[0]
         d = 0

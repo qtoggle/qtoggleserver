@@ -17,7 +17,7 @@ class LiteralValue(Expression):
     def __str__(self) -> str:
         return self.sexpression
 
-    def eval(self) -> Evaluated:
+    async def eval(self) -> Evaluated:
         return float(self.value)
 
     @staticmethod

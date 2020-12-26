@@ -5,11 +5,11 @@ from qtoggleserver.core.expressions import sign, Function
 from qtoggleserver.core.expressions import InvalidNumberOfArguments
 
 
-def test_abs(literal_two, literal_minus_two):
-    result = sign.AbsFunction([literal_two]).eval()
+async def test_abs(literal_two, literal_minus_two):
+    result = await sign.AbsFunction([literal_two]).eval()
     assert result == 2
 
-    result = sign.AbsFunction([literal_minus_two]).eval()
+    result = await sign.AbsFunction([literal_minus_two]).eval()
     assert result == 2
 
 
@@ -26,11 +26,11 @@ def test_abs_num_args():
         Function.parse(None, 'ABS(1, 2)', 0)
 
 
-def test_sgn(literal_two, literal_minus_two):
-    result = sign.SgnFunction([literal_two]).eval()
+async def test_sgn(literal_two, literal_minus_two):
+    result = await sign.SgnFunction([literal_two]).eval()
     assert result == 1
 
-    result = sign.SgnFunction([literal_minus_two]).eval()
+    result = await sign.SgnFunction([literal_minus_two]).eval()
     assert result == -1
 
 

@@ -177,7 +177,7 @@ async def handle_value_changes(
             continue
 
         try:
-            value = expression.eval()
+            value = await expression.eval()
 
         except core_expressions.ExpressionEvalError:
             continue

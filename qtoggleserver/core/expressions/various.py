@@ -20,9 +20,8 @@ class AccFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    def eval(self) -> Evaluated:
-        value = self.args[0].eval()
-        accumulator = self.args[1].eval()
+    async def eval(self) -> Evaluated:
+        value, accumulator = await self.eval_args()
         result = accumulator
 
         if self._last_value is not None:
@@ -42,9 +41,8 @@ class AccIncFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    def eval(self) -> Evaluated:
-        value = self.args[0].eval()
-        accumulator = self.args[1].eval()
+    async def eval(self) -> Evaluated:
+        value, accumulator = await self.eval_args()
         result = accumulator
 
         if (self._last_value is not None) and (value > self._last_value):
@@ -64,10 +62,8 @@ class HystFunction(Function):
 
         self._last_result: int = 0
 
-    def eval(self) -> Evaluated:
-        value = self.args[0].eval()
-        threshold1 = self.args[1].eval()
-        threshold2 = self.args[2].eval()
+    async def eval(self) -> Evaluated:
+        value, threshold1, threshold2 = await self.eval_args()
 
         self._last_result = int((self._last_result == 0 and value > threshold2) or
                                 (self._last_result != 0 and value >= threshold1))
@@ -85,13 +81,13 @@ class SequenceFunction(Function):
 
         self._last_time: float = 0
 
-    def eval(self) -> Evaluated:
+    async def eval(self) -> Evaluated:
         now = time.time() * 1000
 
         if self._last_time == 0:
             self._last_time = now
 
-        args = self.eval_args()
+        args = await self.eval_args()
         num_values = len(args) // 2
         values = []
         delays = []
@@ -121,8 +117,8 @@ class SequenceFunction(Function):
 class LUTFunction(Function):
     MIN_ARGS = 5
 
-    def eval(self) -> Evaluated:
-        args = self.eval_args()
+    async def eval(self) -> Evaluated:
+        args = await self.eval_args()
         length = (len(args) - 1) // 2
         x = args[0]
         points = [(args[2 * i + 1], args[2 * i + 2]) for i in range(length)]
@@ -151,8 +147,8 @@ class LUTFunction(Function):
 class LUTLIFunction(Function):
     MIN_ARGS = 5
 
-    def eval(self) -> Evaluated:
-        args = self.eval_args()
+    async def eval(self) -> Evaluated:
+        args = await self.eval_args()
         length = (len(args) - 1) // 2
         x = args[0]
         points = [(args[2 * i + 1], args[2 * i + 2]) for i in range(length)]
@@ -190,8 +186,8 @@ class HistoryFunction(Function):
         self._cached_timestamp: int = 0
         self._cached_max_diff: Optional[float] = None
 
-    def eval(self) -> Evaluated:
-        args = self.eval_args()
+    async def eval(self) -> Evaluated:
+        args = await self.eval_args()
         port, timestamp, max_diff = args
 
         # Transform everything to milliseconds
@@ -238,7 +234,7 @@ class HistoryFunction(Function):
             consider_curr_value = from_timestamp <= now_ms
 
         if from_timestamp is not None or to_timestamp is not None:
-            samples = history.get_samples(port, from_timestamp, to_timestamp, limit=1, sort_desc=sort_desc)
+            samples = await history.get_samples(port, from_timestamp, to_timestamp, limit=1, sort_desc=sort_desc)
             samples = list(samples)
 
         else:

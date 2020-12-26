@@ -19,8 +19,8 @@ def get_display_name() -> str:
     return device_attrs.display_name or device_attrs.name
 
 
-def load() -> None:
-    data = persist.get_value('device', {})
+async def load() -> None:
+    data = await persist.get_value('device', {})
 
     # Attributes
     persisted_attrs = []
@@ -64,7 +64,7 @@ def load() -> None:
         device_attrs.viewonly_password_hash = device_attrs.EMPTY_PASSWORD_HASH
 
 
-def save() -> None:
+async def save() -> None:
     data = {}
 
     # Attributes
@@ -84,10 +84,10 @@ def save() -> None:
         data[name] = getattr(device_attrs, name)
 
     logger.debug('saving persisted data')
-    persist.set_value('device', data)
+    await persist.set_value('device', data)
 
 
-def reset(preserve_attrs: Optional[List[str]] = None) -> None:
+async def reset(preserve_attrs: Optional[List[str]] = None) -> None:
     preserve_attrs = preserve_attrs or []
 
     preserved_attrs = {}
@@ -95,7 +95,7 @@ def reset(preserve_attrs: Optional[List[str]] = None) -> None:
         preserved_attrs[name] = getattr(device_attrs, name, None)
 
     logger.debug('clearing persisted data')
-    persist.remove('device')
+    await persist.remove('device')
     importlib.reload(device_attrs)  # Reloads device attributes to default values
 
     for name, value in preserved_attrs.items():
@@ -104,7 +104,7 @@ def reset(preserve_attrs: Optional[List[str]] = None) -> None:
 
 async def init() -> None:
     logger.debug('loading persisted data')
-    load()
+    await load()
 
     logger.debug('initializing attributes')
     await device_attrs.init()

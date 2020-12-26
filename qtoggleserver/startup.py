@@ -193,7 +193,7 @@ def init_tornado() -> None:
 async def init_persist() -> None:
     logger.info('initializing persistence')
     try:
-        persist.get_value('device')
+        await persist.get_value('device')
 
     except Exception as e:
         logger.error('failed to initialize persistence: %s', e, exc_info=True)

@@ -7,9 +7,9 @@ from .functions import function, Function
 class AndFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self) -> Evaluated:
+    async def eval(self) -> Evaluated:
         r = True
-        for e in self.eval_args():
+        for e in await self.eval_args():
             r = r and bool(e)
 
         return int(r)
@@ -19,9 +19,9 @@ class AndFunction(Function):
 class OrFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self) -> Evaluated:
+    async def eval(self) -> Evaluated:
         r = False
-        for e in self.eval_args():
+        for e in await self.eval_args():
             r = r or bool(e)
 
         return int(r)
@@ -31,16 +31,16 @@ class OrFunction(Function):
 class NotFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    def eval(self) -> Evaluated:
-        return int(not bool(self.eval_args()[0]))
+    async def eval(self) -> Evaluated:
+        return int(not bool((await self.eval_args())[0]))
 
 
 @function('XOR')
 class XOrFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> Evaluated:
-        eval_args = self.eval_args()
+    async def eval(self) -> Evaluated:
+        eval_args = await self.eval_args()
 
         e1 = bool(eval_args[0])
         e2 = bool(eval_args[1])
