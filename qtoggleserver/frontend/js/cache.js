@@ -849,7 +849,7 @@ function pollDevice() {
     DevicesAPI.getDevice().then(function (attrs) {
 
         asap(function () {
-            if (device && polledDeviceName !== device.name) {
+            if (device && polledDeviceName === device.name) {
                 if (!ObjectUtils.deepEquals(device.attrs, attrs)) {
                     let partialDevice = {name: device.name, attrs: {}}
                     DEVICE_POLLED_ATTRIBUTES.forEach(function (name) {
