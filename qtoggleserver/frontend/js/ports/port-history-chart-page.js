@@ -206,6 +206,12 @@ class PortHistoryChartPage extends ChartPage {
         let deltaMilliseconds = this._timeWindowChoiceButtons.choicebuttons('getValue') * 1000
         let from = this.getXRange().min + deltaMilliseconds
         let to = from + deltaMilliseconds
+        if (to > new Date().getTime()) {
+            /* There's no history in the future (or is there...?) */
+            to = new Date().getTime()
+            from = to - deltaMilliseconds
+        }
+
         this.fetchAndShowHistory(from, to)
         this.setXRange(from, to)
     }
