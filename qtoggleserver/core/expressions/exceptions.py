@@ -34,13 +34,30 @@ class InvalidNumberOfArguments(ExpressionParseError):
         self.name: str = name
         self.pos: int = pos
 
-        super().__init__(f'Invalid number of arguments for "{name}"')
+        super().__init__(f'Invalid number of arguments for function "{name}"')
 
     def to_json(self) -> GenericJSONDict:
         return {
             'reason': 'invalid-number-of-arguments',
             'token': self.name,
             'pos': self.pos
+        }
+
+
+class InvalidArgumentKind(ExpressionParseError):
+    def __init__(self, name: str, pos: int, num: int) -> None:
+        self.name: str = name
+        self.pos: int = pos
+        self.num: int = num
+
+        super().__init__(f'Invalid argument {num} kind for "{name}" at position {pos}')
+
+    def to_json(self) -> GenericJSONDict:
+        return {
+            'reason': 'invalid-argument-kind',
+            'token': self.name,
+            'pos': self.pos,
+            'num': self.num
         }
 
 
@@ -59,7 +76,7 @@ class UnbalancedParentheses(ExpressionParseError):
 
 class UnexpectedEnd(ExpressionParseError):
     def __init__(self) -> None:
-        super().__init__('Unexpected end')
+        super().__init__('Expression is unterminated')
 
     def to_json(self) -> GenericJSONDict:
         return {
@@ -69,7 +86,7 @@ class UnexpectedEnd(ExpressionParseError):
 
 class CircularDependency(ExpressionParseError):
     def __init__(self, port_id: str) -> None:
-        super().__init__(f'Circular dependency on port "${port_id}"')
+        super().__init__(f'Expression creates a dependency loop via port "{port_id}"')
 
     def to_json(self) -> GenericJSONDict:
         return {
@@ -82,7 +99,7 @@ class ExternalDependency(ExpressionParseError):
         self.port_id = port_id
         self.pos = pos
 
-        super().__init__(f'External dependency on port "${port_id}"')
+        super().__init__(f'External dependency on port "{port_id}"')
 
     def to_json(self) -> GenericJSONDict:
         return {
@@ -97,7 +114,7 @@ class UnexpectedCharacter(ExpressionParseError):
         self.c = c
         self.pos: int = pos
 
-        super().__init__(f'Unexpected character "{c}"')
+        super().__init__(f'Unexpected character "{c}" at position {pos}')
 
     def to_json(self) -> GenericJSONDict:
         return {
@@ -108,6 +125,9 @@ class UnexpectedCharacter(ExpressionParseError):
 
 
 class EmptyExpression(ExpressionParseError):
+    def __init__(self) -> None:
+        super().__init__('Expression is empty')
+
     def to_json(self) -> GenericJSONDict:
         return {
             'reason': 'empty-expression'
@@ -118,7 +138,7 @@ class ExpressionEvalError(ExpressionException):
     pass
 
 
-class InvalidArgument(ExpressionEvalError):
+class InvalidArgumentValue(ExpressionEvalError):
     def __init__(self, arg_no: int, value: CorePortValue) -> None:
         self.arg_no: int = arg_no
         self.value: CorePortValue = value
@@ -152,7 +172,8 @@ class UndefinedPortValue(IncompleteExpression):
 
 
 class ExpressionArithmeticError(IncompleteExpression):
-    pass
+    def __init__(self) -> None:
+        super().__init__('Expression arithmetic error')
 
 
 class EvalSkipped(ExpressionEvalError):

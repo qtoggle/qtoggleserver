@@ -1,9 +1,14 @@
 
 import time
 
-from typing import Optional, Set
+from typing import Any, Dict, Optional
 
+from qtoggleserver.core import history
+
+from .base import Evaluated
+from .exceptions import UndefinedPortValue
 from .functions import function, Function
+from .port import PortRef
 
 
 @function('ACC')
@@ -15,7 +20,7 @@ class AccFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         value = self.args[0].eval()
         accumulator = self.args[1].eval()
         result = accumulator
@@ -37,7 +42,7 @@ class AccIncFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         value = self.args[0].eval()
         accumulator = self.args[1].eval()
         result = accumulator
@@ -59,7 +64,7 @@ class HystFunction(Function):
 
         self._last_result: int = 0
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         value = self.args[0].eval()
         threshold1 = self.args[1].eval()
         threshold2 = self.args[2].eval()
@@ -73,16 +78,14 @@ class HystFunction(Function):
 @function('SEQUENCE')
 class SequenceFunction(Function):
     MIN_ARGS = 2
+    DEPS = ['millisecond']
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self._last_time: float = 0
 
-    def get_deps(self) -> Set[str]:
-        return {'millisecond'}
-
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         now = time.time() * 1000
 
         if self._last_time == 0:
@@ -118,7 +121,7 @@ class SequenceFunction(Function):
 class LUTFunction(Function):
     MIN_ARGS = 5
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         args = self.eval_args()
         length = (len(args) - 1) // 2
         x = args[0]
@@ -148,7 +151,7 @@ class LUTFunction(Function):
 class LUTLIFunction(Function):
     MIN_ARGS = 5
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         args = self.eval_args()
         length = (len(args) - 1) // 2
         x = args[0]
@@ -171,3 +174,89 @@ class LUTLIFunction(Function):
             return p1[1] + (p2[1] - p1[1]) * (x - p1[0]) / (p2[0] - p1[0])
 
         return points[length - 1][1]
+
+
+@function('HISTORY')
+class HistoryFunction(Function):
+    MIN_ARGS = MAX_ARGS = 3
+    DEPS = ['second']
+    ARG_KINDS = [PortRef]
+    ENABLED = history.is_enabled
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._cached_sample: Optional[Dict[str, Any]] = None
+        self._cached_timestamp: int = 0
+        self._cached_max_diff: Optional[float] = None
+
+    def eval(self) -> Evaluated:
+        args = self.eval_args()
+        port, timestamp, max_diff = args
+
+        # Transform everything to milliseconds
+        timestamp *= 1000
+        max_diff *= 1000
+        now_ms = int(time.time() * 1000)
+
+        # If arguments have changed from last cached values, invalidate the sample
+        if self._cached_timestamp != timestamp or self._cached_max_diff != max_diff:
+            self._cached_sample = None
+
+        if self._cached_sample is not None:
+            return self._cached_sample['value']
+
+        if max_diff > 0:
+            # Look through all values after given timestamp, but no newer than timestamp + max_diff, and consider the
+            # oldest one
+            from_timestamp = timestamp
+            to_timestamp = timestamp + max_diff
+            sort_desc = False
+            consider_curr_value = from_timestamp <= now_ms < to_timestamp
+
+        elif max_diff < 0:
+            # Look through all values before given timestamp, but no older than timestamp - abs(max_diff), and consider
+            # the newest one
+            if now_ms <= timestamp:
+                # Sample from the future requested, the best we've got is current value
+                from_timestamp = to_timestamp = None
+                consider_curr_value = True
+
+            else:
+                # +1 is needed to satisfy the inclusion/exclusion of the interval boundaries
+                from_timestamp = timestamp + max_diff + 1  # max_diff is negative
+                to_timestamp = timestamp + 1
+                consider_curr_value = False
+
+            sort_desc = True
+
+        else:  # Assuming max_dif == 0
+            # Look through all values after given timestamp and consider the oldest one
+            from_timestamp = timestamp
+            to_timestamp = None
+            sort_desc = False
+            consider_curr_value = from_timestamp <= now_ms
+
+        if from_timestamp is not None or to_timestamp is not None:
+            samples = history.get_samples(port, from_timestamp, to_timestamp, limit=1, sort_desc=sort_desc)
+            samples = list(samples)
+
+        else:
+            samples = []
+
+        if samples:
+            self._cached_sample = samples[0]
+            self._cached_timestamp = timestamp
+            self._cached_max_diff = max_diff
+            value = self._cached_sample['value']
+
+        elif consider_curr_value:
+            value = port.get_value()
+
+        else:
+            value = None
+
+        if value is None:
+            raise UndefinedPortValue(port.get_id())
+
+        return value

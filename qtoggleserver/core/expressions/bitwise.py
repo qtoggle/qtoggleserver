@@ -1,4 +1,5 @@
 
+from .base import Evaluated
 from .functions import function, Function
 
 
@@ -6,7 +7,7 @@ from .functions import function, Function
 class BitAndFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         r = -1
         for e in self.eval_args():
             r &= int(e)
@@ -18,7 +19,7 @@ class BitAndFunction(Function):
 class BitOrFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         r = 0
         for e in self.eval_args():
             r |= int(e)
@@ -30,7 +31,7 @@ class BitOrFunction(Function):
 class BitNotFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         return ~int(self.eval_args()[0])
 
 
@@ -38,7 +39,7 @@ class BitNotFunction(Function):
 class BitXOrFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         eval_args = self.eval_args()
 
         return int(eval_args[0]) ^ int(eval_args[1])
@@ -48,7 +49,7 @@ class BitXOrFunction(Function):
 class SHLFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         eval_args = self.eval_args()
 
         return int(eval_args[0]) << int(eval_args[1])
@@ -58,7 +59,7 @@ class SHLFunction(Function):
 class SHRFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         eval_args = self.eval_args()
 
         return int(eval_args[0]) >> int(eval_args[1])

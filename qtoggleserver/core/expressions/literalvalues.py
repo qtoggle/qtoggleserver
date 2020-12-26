@@ -5,7 +5,7 @@ from typing import Optional
 
 from qtoggleserver.core.typing import PortValue as CorePortValue
 
-from .base import Expression
+from .base import Expression, Evaluated
 from .exceptions import UnexpectedCharacter, EmptyExpression
 
 
@@ -17,7 +17,7 @@ class LiteralValue(Expression):
     def __str__(self) -> str:
         return self.sexpression
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         return float(self.value)
 
     @staticmethod

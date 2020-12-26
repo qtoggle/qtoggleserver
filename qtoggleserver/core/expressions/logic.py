@@ -1,4 +1,5 @@
 
+from .base import Evaluated
 from .functions import function, Function
 
 
@@ -6,7 +7,7 @@ from .functions import function, Function
 class AndFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         r = True
         for e in self.eval_args():
             r = r and bool(e)
@@ -18,7 +19,7 @@ class AndFunction(Function):
 class OrFunction(Function):
     MIN_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         r = False
         for e in self.eval_args():
             r = r or bool(e)
@@ -30,7 +31,7 @@ class OrFunction(Function):
 class NotFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         return int(not bool(self.eval_args()[0]))
 
 
@@ -38,7 +39,7 @@ class NotFunction(Function):
 class XOrFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         eval_args = self.eval_args()
 
         e1 = bool(eval_args[0])

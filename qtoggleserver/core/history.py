@@ -36,10 +36,10 @@ class HistoryEventHandler(core_events.Handler):
         if history_interval != -1:
             return  # Only consider ports with history interval set to special -1 (on value change)
 
-        now = int(time.time() * 1000)
+        now_ms = int(time.time() * 1000)
 
-        save_sample(port, now)
-        port.set_history_last_timestamp(now)
+        save_sample(port, now_ms)
+        port.set_history_last_timestamp(now_ms)
 
 
 async def sampling_task() -> None:
@@ -47,7 +47,7 @@ async def sampling_task() -> None:
         try:
             await asyncio.sleep(1)
 
-            now = int(time.time() * 1000)
+            now_ms = int(time.time() * 1000)
             for port in core_ports.get_all():
                 if not port.is_enabled():
                     continue
@@ -57,11 +57,11 @@ async def sampling_task() -> None:
                 if history_interval <= 0:  # Disabled or on value change
                     continue
 
-                if now - history_last_timestamp < history_interval * 1000:
+                if now_ms - history_last_timestamp < history_interval * 1000:
                     continue
 
-                save_sample(port, now)
-                port.set_history_last_timestamp(now)
+                save_sample(port, now_ms)
+                port.set_history_last_timestamp(now_ms)
 
         except asyncio.CancelledError:
             logger.debug('sampling task cancelled')
@@ -99,7 +99,8 @@ def get_samples(
     port: core_ports.BasePort,
     from_timestamp: Optional[int] = None,
     to_timestamp: Optional[int] = None,
-    limit: Optional[int] = None
+    limit: Optional[int] = None,
+    sort_desc: bool = False
 ) -> Iterable[GenericJSONDict]:
     filt = {
         'pid': port.get_id(),
@@ -111,7 +112,11 @@ def get_samples(
     if to_timestamp is not None:
         filt.setdefault('ts', {})['lt'] = to_timestamp
 
-    results = persist.query(PERSIST_COLLECTION, filt=filt, sort='ts', limit=limit)
+    sort = 'ts'
+    if sort_desc:
+        sort = f'-{sort}'
+
+    results = persist.query(PERSIST_COLLECTION, filt=filt, sort=sort, limit=limit)
 
     return ({'value': r['val'], 'timestamp': r['ts']} for r in results)
 

@@ -4,22 +4,19 @@ import calendar
 import datetime
 import time
 
-from typing import Set
-
 from qtoggleserver import system
 
+from .base import Evaluated
+from .exceptions import InvalidArgumentValue, EvalSkipped
 from .functions import function, Function
-from .exceptions import InvalidArgument, EvalSkipped
 
 
 class DateUnitFunction(Function, metaclass=abc.ABCMeta):
     MIN_ARGS = 0
     MAX_ARGS = 1
+    DEPS = ['second']
 
-    def get_deps(self) -> Set[str]:
-        return {'second'}
-
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -87,11 +84,9 @@ class SecondFunction(DateUnitFunction):
 @function('MILLISECOND')
 class MillisecondFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
+    DEPS = ['millisecond']
 
-    def get_deps(self) -> Set[str]:
-        return {'millisecond'}
-
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -101,12 +96,10 @@ class MillisecondFunction(Function):
 @function('DATE')
 class DateFunction(Function):
     MIN_ARGS = MAX_ARGS = 6
+    DEPS = ['second']
     UNIT_INDEX = {u: i + 1 for i, u in enumerate(('year', 'month', 'day', 'hour', 'minute', 'second'))}
 
-    def get_deps(self) -> Set[str]:
-        return {'second'}
-
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -121,18 +114,16 @@ class DateFunction(Function):
             if index is None:
                 raise
 
-            raise InvalidArgument(index, eval_args[index])
+            raise InvalidArgumentValue(index, eval_args[index])
 
 
 @function('BOY')
 class BOYFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
+    DEPS = ['second']
 
-    def get_deps(self) -> Set[str]:
-        return {'second'}
-
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -152,11 +143,9 @@ class BOYFunction(Function):
 class BOMFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
+    DEPS = ['second']
 
-    def get_deps(self) -> Set[str]:
-        return {'second'}
-
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -194,11 +183,9 @@ class BOMFunction(Function):
 class BOWFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 2
+    DEPS = ['second']
 
-    def get_deps(self) -> Set[str]:
-        return {'second'}
-
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -259,11 +246,9 @@ class BOWFunction(Function):
 class BODFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
+    DEPS = ['second']
 
-    def get_deps(self) -> Set[str]:
-        return {'second'}
-
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -281,11 +266,9 @@ class BODFunction(Function):
 @function('HMSINTERVAL')
 class HMSIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 6
+    DEPS = ['second']
 
-    def get_deps(self) -> Set[str]:
-        return {'second'}
-
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -299,22 +282,22 @@ class HMSIntervalFunction(Function):
         stop_s = self.args[5].eval()
 
         if not (0 <= start_h <= 23):
-            raise InvalidArgument(1, start_h)
+            raise InvalidArgumentValue(1, start_h)
 
         if not (0 <= start_m <= 59):
-            raise InvalidArgument(2, start_m)
+            raise InvalidArgumentValue(2, start_m)
 
         if not (0 <= start_s <= 59):
-            raise InvalidArgument(3, start_s)
+            raise InvalidArgumentValue(3, start_s)
 
         if not (0 <= stop_h <= 23):
-            raise InvalidArgument(4, stop_h)
+            raise InvalidArgumentValue(4, stop_h)
 
         if not (0 <= stop_m <= 59):
-            raise InvalidArgument(5, stop_m)
+            raise InvalidArgumentValue(5, stop_m)
 
         if not (0 <= stop_s <= 59):
-            raise InvalidArgument(6, stop_s)
+            raise InvalidArgumentValue(6, stop_s)
 
         start_time = datetime.time(int(start_h), int(start_m), int(start_s))
         stop_time = datetime.time(int(stop_h), int(stop_m), int(stop_s))
@@ -328,11 +311,9 @@ class HMSIntervalFunction(Function):
 @function('MDINTERVAL')
 class MDIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 4
+    DEPS = ['second']
 
-    def get_deps(self) -> Set[str]:
-        return {'second'}
-
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -344,21 +325,21 @@ class MDIntervalFunction(Function):
         stop_d = self.args[3].eval()
 
         if not (1 <= start_m <= 12):
-            raise InvalidArgument(1, start_m)
+            raise InvalidArgumentValue(1, start_m)
 
         try:
             start_dt = now.replace(month=int(start_m), day=int(start_d))
 
         except ValueError:
-            raise InvalidArgument(2, start_d)
+            raise InvalidArgumentValue(2, start_d)
 
         if not (1 <= stop_m <= 12):
-            raise InvalidArgument(3, stop_m)
+            raise InvalidArgumentValue(3, stop_m)
 
         try:
             stop_dt = now.replace(month=int(stop_m), day=int(stop_d))
 
         except ValueError:
-            raise InvalidArgument(4, stop_d)
+            raise InvalidArgumentValue(4, stop_d)
 
         return int(start_dt <= now <= stop_dt)

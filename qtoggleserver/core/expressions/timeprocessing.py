@@ -3,6 +3,7 @@ import time
 
 from typing import List, Optional, Set, Tuple
 
+from .base import Evaluated
 from .exceptions import EvalSkipped
 from .functions import function, Function
 
@@ -10,6 +11,7 @@ from .functions import function, Function
 @function('DELAY')
 class DelayFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
+    DEPS = ['millisecond']
     HISTORY_SIZE = 1024
 
     def __init__(self, *args, **kwargs) -> None:
@@ -19,10 +21,7 @@ class DelayFunction(Function):
         self._last_value: Optional[float] = None
         self._current_value: Optional[float] = None
 
-    def get_deps(self) -> Set[str]:
-        return {'millisecond'}
-
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         time_ms = int(time.time() * 1000)
 
         value = self.args[0].eval()
@@ -66,7 +65,7 @@ class SampleFunction(Function):
 
         return super().get_deps()
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         time_ms = int(time.time() * 1000)
         if time_ms - self._last_time_ms < self._last_duration:
             return self._last_value
@@ -96,7 +95,7 @@ class FreezeFunction(Function):
 
         return super().get_deps()
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         time_ms = int(time.time() * 1000)
 
         if self._last_time_ms == 0:  # Idle
@@ -132,10 +131,9 @@ class HeldFunction(Function):
         if self._state == self.STATE_WAITING:
             return {'millisecond'}
 
-        else:
-            return super().get_deps()
+        return super().get_deps()
 
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         value = self.args[0].eval()
         fixed_value = self.args[1].eval()
         duration = self.args[2].eval()
@@ -161,6 +159,7 @@ class HeldFunction(Function):
 @function('DERIV')
 class DerivFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
+    DEPS = ['millisecond']
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -168,10 +167,7 @@ class DerivFunction(Function):
         self._last_value: Optional[float] = None
         self._last_time: float = 0
 
-    def get_deps(self) -> Set[str]:
-        return {'millisecond'}
-
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         value = self.args[0].eval()
         sampling_interval = self.args[1].eval() / 1000
         result = 0
@@ -193,6 +189,7 @@ class DerivFunction(Function):
 @function('INTEG')
 class IntegFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
+    DEPS = ['millisecond']
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -200,10 +197,7 @@ class IntegFunction(Function):
         self._last_value: Optional[float] = None
         self._last_time: float = 0
 
-    def get_deps(self) -> Set[str]:
-        return {'millisecond'}
-
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         value = self.args[0].eval()
         accumulator = self.args[1].eval()
         sampling_interval = self.args[2].eval() / 1000
@@ -226,6 +220,7 @@ class IntegFunction(Function):
 @function('FMAVG')
 class FMAvgFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
+    DEPS = ['millisecond']
     QUEUE_SIZE = 1024
 
     def __init__(self, *args, **kwargs) -> None:
@@ -234,10 +229,7 @@ class FMAvgFunction(Function):
         self._queue: List[float] = []
         self._last_time: float = 0
 
-    def get_deps(self) -> Set[str]:
-        return {'millisecond'}
-
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         value = self.args[0].eval()
         width = min(self.args[1].eval(), self.QUEUE_SIZE)
         sampling_interval = self.args[2].eval() / 1000
@@ -263,6 +255,7 @@ class FMAvgFunction(Function):
 @function('FMEDIAN')
 class FMedianFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
+    DEPS = ['millisecond']
     QUEUE_SIZE = 1024
 
     def __init__(self, *args, **kwargs) -> None:
@@ -271,10 +264,7 @@ class FMedianFunction(Function):
         self._queue: List[float] = []
         self._last_time: float = 0
 
-    def get_deps(self) -> Set[str]:
-        return {'millisecond'}
-
-    def eval(self) -> float:
+    def eval(self) -> Evaluated:
         value = self.args[0].eval()
         width = min(self.args[1].eval(), self.QUEUE_SIZE)
         sampling_interval = self.args[2].eval() / 1000
