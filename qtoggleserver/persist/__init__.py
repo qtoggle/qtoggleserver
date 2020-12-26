@@ -186,7 +186,7 @@ async def remove(collection: str, filt: Optional[Dict[str, Any]] = None) -> int:
     return count
 
 
-def ensure_index(collection: str, index: Union[str, List[str]]) -> None:
+async def ensure_index(collection: str, index: Union[str, List[str]]) -> None:
     if isinstance(index, str):
         index = [index]
 
@@ -199,7 +199,7 @@ def ensure_index(collection: str, index: Union[str, List[str]]) -> None:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('ensuring index %s in %s', json_utils.dumps(index), collection)
 
-    _get_driver().ensure_index(collection, index)
+    await _get_driver().ensure_index(collection, index)
 
 
 async def cleanup() -> None:

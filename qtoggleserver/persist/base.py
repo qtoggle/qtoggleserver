@@ -34,7 +34,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
     async def remove(self, collection: str, filt: Dict[str, Any]) -> int:
         return 0  # Returns the number of removed records
 
-    def ensure_index(self, collection: str, index: List[Tuple[str, bool]]) -> None:
+    async def ensure_index(self, collection: str, index: List[Tuple[str, bool]]) -> None:
         pass
 
     async def cleanup(self) -> None:

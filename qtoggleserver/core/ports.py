@@ -194,7 +194,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     WRITABLE = False
     CHOICES = None
 
-    WRITE_VALUE_QUEUE_SIZE = 16
+    WRITE_VALUE_QUEUE_SIZE = 1024
 
     STANDARD_ATTRDEFS = STANDARD_ATTRDEFS
 
@@ -707,9 +707,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             try:
                 self._write_value_queue.put_nowait((value, reason, done))
 
-            except asyncio.QueueFull:
+            except asyncio.QueueFull as e:
                 self.warning('write queue full, dropping oldest value')
-                self._write_value_queue.get_nowait()
+
+                # Reject the future of the dropped request with a QueueFull exception
+                dropped = self._write_value_queue.get_nowait()
+                dropped[2].set_exception(e)
 
             else:
                 break

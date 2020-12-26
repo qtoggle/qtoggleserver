@@ -156,7 +156,7 @@ def init_signals() -> None:
 
 
 def handle_loop_exception(loop: asyncio.AbstractEventLoop, context: Dict[str, Any]) -> None:
-    if isinstance(context['exception'], asyncio.CancelledError):
+    if isinstance(context.get('exception'), asyncio.CancelledError):
         return  # Ignore any cancelled errors
 
     loop.default_exception_handler(context)

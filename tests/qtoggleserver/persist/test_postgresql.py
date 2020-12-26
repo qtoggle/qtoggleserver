@@ -1,5 +1,5 @@
 
-import psycopg2
+import asyncpg
 import pytest
 import testing.postgresql
 
@@ -20,7 +20,7 @@ pg_server = None
 
 
 @pytest.fixture
-def driver() -> BaseDriver:
+async def driver() -> BaseDriver:
     global pg_server
 
     if pg_server is None:
@@ -29,12 +29,10 @@ def driver() -> BaseDriver:
     params = pg_server.dsn()
     db = params['database']
 
-    conn = psycopg2.connect(**dict(params, database='postgres'))
-    conn.autocommit = True
-    cur = conn.cursor()
-    cur.execute(f'DROP DATABASE IF EXISTS {db}')
-    cur.execute(f'CREATE DATABASE {db}')
-    conn.close()
+    conn = await asyncpg.connect(**dict(params, database='postgres'))
+    await conn.execute(f'DROP DATABASE IF EXISTS {db}')
+    await conn.execute(f'CREATE DATABASE {db}')
+    await conn.close()
 
     driver = postgresql.PostgreSQLDriver(
         host=params['host'],
@@ -46,7 +44,7 @@ def driver() -> BaseDriver:
 
     yield driver
 
-    driver.get_connection().close()
+    await driver.cleanup()
 
 
 async def test_query_all(driver: BaseDriver) -> None:

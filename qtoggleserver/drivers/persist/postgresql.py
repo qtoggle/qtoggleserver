@@ -3,10 +3,9 @@ import datetime
 import logging
 import re
 
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, AsyncContextManager, Dict, Iterable, List, Optional, Set, Tuple
 
-import psycopg2.extensions
-import psycopg2.extras
+import asyncpg.pool
 
 from qtoggleserver.persist import BaseDriver
 from qtoggleserver.persist.typing import Id, Record
@@ -16,6 +15,9 @@ from qtoggleserver.utils import json as json_utils
 logger = logging.getLogger(__name__)
 
 DEFAULT_DB = 'qtoggleserver'
+POOL_MIN_CONNECTIONS = 2
+POOL_MAX_CONNECTIONS = 4
+POOL_MAX_QUERIES = 256
 
 FILTER_OP_MAPPING = {
     'gt': '>',
@@ -44,8 +46,7 @@ class PostgreSQLDriver(BaseDriver):
         password: Optional[str] = None,
         **kwargs
     ) -> None:
-
-        logger.debug('connecting to %s:%s/%s', host, port, db)
+        logger.debug('using %s:%s/%s', host, port, db)
 
         conn_details = {
             'host': host,
@@ -58,11 +59,16 @@ class PostgreSQLDriver(BaseDriver):
         if password:
             conn_details['password'] = password
 
-        conn_str = ' '.join(f'{k}=\'{v}\'' for (k, v) in conn_details.items())
+        self._conn_details = {
+            'user': username,
+            'password': password,
+            'database': db,
+            'host': host,
+            'port': port
+        }
 
-        self._conn = psycopg2.connect(conn_str)
-        self._conn.set_client_encoding('UTF8')
-        self._existing_tables: Set[str] = self._get_existing_table_names()
+        self._conn_pool: Optional[asyncpg.pool.Pool] = None
+        self._existing_tables: Optional[Set[str]] = None
 
     async def query(
         self,
@@ -73,196 +79,221 @@ class PostgreSQLDriver(BaseDriver):
         limit: Optional[int]
     ) -> Iterable[Record]:
 
-        self._ensure_table_exists(collection)
+        await self._ensure_table_exists(collection)
 
         params = []
         if fields:
-            select_clause, p = self._fields_to_select_clause(fields)
-            params += p
+            select_clause = self._fields_to_select_clause(fields, params)
 
         else:
             select_clause = 'id, content'
 
         query = f'SELECT {select_clause} FROM {collection}'
 
-        where_clause, p = self._filt_to_where_clause(self._filt_to_db(filt))
-        params += p
+        where_clause = self._filt_to_where_clause(self._filt_to_db(filt), params)
         if where_clause:
             query += f' WHERE {where_clause}'
 
         if sort:
-            order_by_clause, p = self._fields_to_order_by_clause(sort)
-            params += p
+            order_by_clause = self._fields_to_order_by_clause(sort, params)
             query += f' ORDER BY {order_by_clause}'
 
         if limit is not None:
-            query += ' LIMIT %s'
+            query += f' LIMIT ${len(params) + 1}'
             params.append(limit)
 
-        results = self._execute_query(query, params)
+        results = await self._execute_query(query, params)
 
         return self._query_gen_wrapper(results, fields)
 
     async def insert(self, collection: str, record: Record) -> Id:
-        self._ensure_table_exists(collection)
+        await self._ensure_table_exists(collection)
 
         db_record = self._record_to_db(record)
         id_ = db_record.pop('id', None)
 
         if id_ is not None:
-            statement = f'INSERT INTO {collection}(id, content) VALUES(%s, %s) RETURNING id'
+            statement = f'INSERT INTO {collection}(id, content) VALUES($1, $2) RETURNING id'
             params = [id_, db_record]
 
         else:
-            statement = f'INSERT INTO {collection}(content) VALUES(%s) RETURNING id'
+            statement = f'INSERT INTO {collection}(content) VALUES($1) RETURNING id'
             params = [db_record]
 
-        count, result_rows = self._execute_statement(statement, params, has_result_rows=True)
+        _, result_rows = await self._execute_statement(statement, params, has_result_rows=True)
 
         return result_rows[0][0]
 
     async def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
-        self._ensure_table_exists(collection)
+        await self._ensure_table_exists(collection)
 
         params = []
         statement = f'UPDATE {collection}'
 
         db_record_part = self._record_to_db(record_part)
-        update_clause, p = self._record_to_update_clause(db_record_part)
-        params += p
+        update_clause = self._record_to_update_clause(db_record_part, params)
         statement += f' SET {update_clause}'
 
-        where_clause, p = self._filt_to_where_clause(self._filt_to_db(filt))
-        params += p
+        where_clause = self._filt_to_where_clause(self._filt_to_db(filt), params)
         if where_clause:
             statement += f' WHERE {where_clause}'
 
-        count, _ = self._execute_statement(statement, params)
+        status_msg, _ = await self._execute_statement(statement, params)
+
+        count = int(status_msg.split()[1])  # Assuming status_msg has format "UPDATE ${count}"
 
         return count
 
     async def replace(self, collection: str, id_: Id, record: Record) -> bool:
-        self._ensure_table_exists(collection)
+        await self._ensure_table_exists(collection)
 
         db_record = self._record_to_db(record)
-        statement = f'UPDATE {collection} SET content = %s WHERE id = %s'
+        statement = f'UPDATE {collection} SET content = $1 WHERE id = $2'
         params = [db_record, id_]
 
-        count, _ = self._execute_statement(statement, params)
+        status_msg, _ = await self._execute_statement(statement, params)
+
+        count = int(status_msg.split()[1])  # Assuming status_msg has format "UPDATE ${count}"
 
         return count > 0
 
     async def remove(self, collection: str, filt: Dict[str, Any]) -> int:
-        self._ensure_table_exists(collection)
+        await self._ensure_table_exists(collection)
 
         params = []
         statement = f'DELETE FROM {collection}'
 
-        where_clause, p = self._filt_to_where_clause(self._filt_to_db(filt))
-        params += p
+        where_clause = self._filt_to_where_clause(self._filt_to_db(filt), params)
         if where_clause:
             statement += f' WHERE {where_clause}'
 
-        count, _ = self._execute_statement(statement, params)
+        status_msg, _ = await self._execute_statement(statement, params)
+
+        count = int(status_msg.split()[1])  # Assuming status_msg has format "DELETE ${count}"
 
         return count
 
-    def ensure_index(self, collection: str, index: List[Tuple[str, bool]]) -> None:
-        self._ensure_table_exists(collection)
+    async def ensure_index(self, collection: str, index: List[Tuple[str, bool]]) -> None:
+        await self._ensure_table_exists(collection)
 
         field_names = [i[0] for i in index]
         field_names_str = '_'.join(field_names)
         index_name = f'{collection}_{field_names_str}'
 
-        index_statement, params = self._index_to_index_clause(index)
+        params = []
+        index_statement = self._index_to_index_clause(index, params)
         statement = f'CREATE INDEX IF NOT EXISTS {index_name} ON {collection}({index_statement})'
 
-        self._execute_statement(statement, params)
+        await self._execute_statement(statement, params)
 
     async def cleanup(self) -> None:
         logger.debug('disconnecting client')
 
-        self._conn.close()
+        if self._conn_pool:
+            await self._conn_pool.close()
+            self._conn_pool = None
 
     def is_history_supported(self) -> bool:
         return True
 
-    def get_connection(self) -> Any:
-        return self._conn
+    async def _acquire_connection(self) -> AsyncContextManager[asyncpg.Connection]:
+        if self._conn_pool is None:
+            logger.debug('creating connection pool')
+            self._conn_pool = await asyncpg.create_pool(
+                min_size=POOL_MIN_CONNECTIONS,
+                max_size=POOL_MAX_CONNECTIONS,
+                max_queries=POOL_MAX_QUERIES,
+                init=self._init_connection,
+                **self._conn_details
+            )
 
-    def _ensure_table_exists(self, table_name: str) -> None:
+        return self._conn_pool.acquire()
+
+    async def _init_connection(self, conn: asyncpg.Connection) -> None:
+        # Install JSON converter
+        await conn.set_type_codec(
+            'jsonb',
+            encoder=json_utils.dumps,
+            decoder=json_utils.loads,
+            schema='pg_catalog',
+            format='text'
+        )
+
+    async def _ensure_table_exists(self, table_name: str) -> None:
+        if self._existing_tables is None:
+            self._existing_tables = await self._get_existing_table_names()
+
         if table_name in self._existing_tables:
             return
 
         statement = f'CREATE SEQUENCE {table_name}_id_seq'
-        self._execute_statement(statement)
+        await self._execute_statement(statement)
 
         id_data_type = f"TEXT NOT NULL DEFAULT NEXTVAL('{table_name}_id_seq') PRIMARY KEY"
         statement = f'CREATE TABLE {table_name}(id {id_data_type}, content JSONB)'
-        self._execute_statement(statement)
+        await self._execute_statement(statement)
 
         self._existing_tables.add(table_name)
 
-    def _get_existing_table_names(self) -> Set[str]:
+    async def _get_existing_table_names(self) -> Set[str]:
         query = (
             "SELECT table_name "
             "FROM information_schema.tables "
             "WHERE table_type = 'BASE TABLE' AND table_schema = 'public'"
         )
 
-        results = self._execute_query(query)
+        results = await self._execute_query(query)
 
         return set(r[0] for r in results)
 
-    def _execute_query(self, query: str, params: Iterable[Any] = None) -> Iterable[tuple]:
-        with self._conn:
-            cur = self._conn.cursor()
-            cur.execute(query, params)
-            return cur
+    async def _execute_query(self, query: str, params: Iterable[Any] = None) -> Iterable[tuple]:
+        async with await self._acquire_connection() as conn:
+            async with conn.transaction():
+                return [row async for row in conn.cursor(query, *(params or []))]
 
-    def _execute_statement(
+    async def _execute_statement(
         self,
         statement: str,
         params: Iterable[Any] = None,
         has_result_rows: bool = False
-    ) -> Tuple[int, List[tuple]]:
-        with self._conn:
-            cur = self._conn.cursor()
-            cur.execute(statement, params)
-            if has_result_rows:
-                return cur.rowcount, cur.fetchall()
+    ) -> Tuple[str, List[tuple]]:
+        async with await self._acquire_connection() as conn:
+            stmt = await conn.prepare(statement)
 
-            else:
-                return cur.rowcount, []
+            async with conn.transaction():
+                rows = await stmt.fetch(*(params or []))
+                if has_result_rows:
+                    return stmt.get_statusmsg(), rows
+
+                else:
+                    return stmt.get_statusmsg(), []
 
     @staticmethod
-    def _fields_to_select_clause(fields: List[str]) -> Tuple[str, Iterable[Any]]:
+    def _fields_to_select_clause(fields: List[str], params: List[Any]) -> str:
         select_clause = []
-        params = []
 
         for field in fields:
             if field == 'id':
                 select_clause.append('id')
 
             else:
-                select_clause.append("content->%s")
+                select_clause.append(f'content->${len(params) + 1}')
                 params.append(field)
 
         select_clause = ', '.join(select_clause)
 
-        return select_clause, params
+        return select_clause
 
     @staticmethod
-    def _fields_to_order_by_clause(fields: List[Tuple[str, bool]]) -> Tuple[str, Iterable[Any]]:
+    def _fields_to_order_by_clause(fields: List[Tuple[str, bool]], params: List[Any]) -> str:
         order_by_clause = []
-        params = []
 
         for field, desc in fields:
             if field == 'id':
                 clause = "SUBSTRING(id FROM '([0-9]+)')::int"
 
             else:
-                clause = "content->%s"
+                clause = f'content->${len(params) + 1}'
                 params.append(field)
 
             clause = f"{clause} {'DESC' if desc else 'ASC'}"
@@ -270,12 +301,11 @@ class PostgreSQLDriver(BaseDriver):
 
         order_by_clause = ', '.join(order_by_clause)
 
-        return order_by_clause, params
+        return order_by_clause
 
     @staticmethod
-    def _filt_to_where_clause(filt: Dict[str, Any]) -> Tuple[str, Iterable[Any]]:
+    def _filt_to_where_clause(filt: Dict[str, Any], params: List[Any]) -> str:
         where_clause = []
-        params = []
 
         for key, value in filt.items():
             if isinstance(value, dict):  # filter with operators
@@ -287,65 +317,64 @@ class PostgreSQLDriver(BaseDriver):
             if key == 'id':
                 for o, v in ops_values:
                     if o == 'in':
-                        placeholder = ', '.join('%s' for _ in v)
+                        placeholder = ', '.join(f'${len(params) + 1 + i}' for i, _ in enumerate(v))
                         placeholder = f'({placeholder})'
                         params += v
 
                     else:
-                        placeholder = '%s'
+                        placeholder = f'${len(params) + 1}'
                         params.append(v)
 
-                    condition = f"{key} {o} {placeholder}"
+                    condition = f'{key} {o} {placeholder}'
                     where_clause.append(condition)
 
             else:
                 for o, v in ops_values:
                     if o == 'in':
-                        placeholder = ', '.join('%s' for _ in v)
+                        placeholder = ', '.join(f'${len(params) + 1 + i}' for i, _ in enumerate(v))
                         placeholder = f'({placeholder})'
-                        params += (json_utils.dumps(vv) for vv in v)
+                        params += v
 
                     else:
-                        placeholder = '%s'
-                        params.append(json_utils.dumps(v))
+                        placeholder = f'${len(params) + 1}'
+                        params.append(v)
 
                     condition = f"content->'{key}' {o} {placeholder}"
                     where_clause.append(condition)
 
         where_clause = ' AND '.join(where_clause)
 
-        return where_clause, params
+        return where_clause
 
     @staticmethod
-    def _record_to_update_clause(record: Record) -> Tuple[str, Iterable[Any]]:
+    def _record_to_update_clause(record: Record, params: List[Any]) -> str:
         update_clause = []
-        params = []
 
         id_ = record.pop('id', None)
         if id_ is not None:
-            update_clause.append('id = %s')
+            update_clause.append(f'id = ${len(params) + 1}')
             params.append(id_)
 
         if record:
-            update_clause.append('content = content || %s')
+            update_clause.append(f'content = content || ${len(params) + 1}')
             params.append(record)
 
         update_clause = ', '.join(update_clause)
 
-        return update_clause, params
+        return update_clause
 
     @staticmethod
-    def _index_to_index_clause(index: List[Tuple[str, bool]]) -> Tuple[str, Iterable[Any]]:
+    def _index_to_index_clause(index: List[Tuple[str, bool]], params: List[Any]) -> str:
         index_clause = []
-        params = []
 
+        # We can't use prepared statements with CREATE INDEX, so we need to build our query without arguments
         for field, _ in index:
-            index_clause.append('(content->%s)')
-            params.append(field)
+            field = re.sub(r'[^a-zA-Z0-9_]', '', field)
+            index_clause.append(f"(content->'${field}')")
 
         index_clause = ', '.join(index_clause)
 
-        return index_clause, params
+        return index_clause
 
     def _query_gen_wrapper(self, results: Iterable[Tuple[Any]], fields: Optional[List[str]]) -> Iterable[Record]:
         if fields:
@@ -422,6 +451,3 @@ class PostgreSQLDriver(BaseDriver):
             return
 
         return datetime.date(*(int(g) for g in m.groups()))
-
-
-psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
