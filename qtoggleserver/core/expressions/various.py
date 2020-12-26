@@ -6,9 +6,34 @@ from typing import Any, Dict, Optional
 from qtoggleserver.core import history
 
 from .base import Evaluated
-from .exceptions import UndefinedPortValue
+from .exceptions import PortValueUnavailable, ExpressionEvalError
 from .functions import function, Function
 from .port import PortRef
+
+
+@function('AVAILABLE')
+class AvailableFunction(Function):
+    MIN_ARGS = MAX_ARGS = 1
+
+    async def eval(self) -> Evaluated:
+        try:
+            await self.args[0].eval()
+            return True
+
+        except ExpressionEvalError:
+            return False
+
+
+@function('DEFAULT')
+class DefaultFunction(Function):
+    MIN_ARGS = MAX_ARGS = 2
+
+    async def eval(self) -> Evaluated:
+        try:
+            return await self.args[0].eval()
+
+        except ExpressionEvalError:
+            return await self.args[1].eval()
 
 
 @function('ACC')
@@ -253,6 +278,6 @@ class HistoryFunction(Function):
             value = None
 
         if value is None:
-            raise UndefinedPortValue(port.get_id())
+            raise PortValueUnavailable(port.get_id())
 
         return value
