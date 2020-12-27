@@ -110,7 +110,7 @@ class MongoDriver(BaseDriver):
 
         return self._db[collection].delete_many(db_filt).deleted_count
 
-    def ensure_index(self, collection: str, index: List[Tuple[str, bool]]) -> None:
+    async def ensure_index(self, collection: str, index: List[Tuple[str, bool]]) -> None:
         index = [(f, [pymongo.ASCENDING, pymongo.DESCENDING][r]) for f, r in index]
 
         try:

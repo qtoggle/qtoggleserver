@@ -185,7 +185,7 @@ async def init() -> None:
     _sampling_task = asyncio.create_task(sampling_task())
     _janitor_task = asyncio.create_task(janitor_task())
 
-    persist.ensure_index(PERSIST_COLLECTION, 'ts')
+    await persist.ensure_index(PERSIST_COLLECTION, 'ts')
 
 
 async def cleanup() -> None:
