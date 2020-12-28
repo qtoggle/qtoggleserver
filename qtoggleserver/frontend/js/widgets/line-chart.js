@@ -43,24 +43,18 @@ $.widget('qtoggle.linechart', $.qtoggle.basechart, {
     },
 
     _makeScalesOptions: function (environment) {
-        /* min/max values must be supplied as undefined if not specified */
-        let xMin = this.options.xMin == null ? undefined : this.options.xMin
-        let xMax = this.options.xMax == null ? undefined : this.options.xMax
-        let yMin = this.options.yMin == null ? undefined : this.options.yMin
-        let yMax = this.options.yMax == null ? undefined : this.options.yMax
-
         return ObjectUtils.combine(this._super(environment), {
             x: {
                 type: 'linear',
-                min: xMin,
-                max: xMax,
+                min: this.options.xMin,
+                max: this.options.xMax,
                 gridLines: this._makeGridLinesOptions(environment),
                 ticks: this._makeTicksOptions(environment, 'x')
             },
             y: {
                 type: 'linear',
-                min: yMin,
-                max: yMax,
+                min: this.options.yMin,
+                max: this.options.yMax,
                 gridLines: this._makeGridLinesOptions(environment),
                 ticks: this._makeTicksOptions(environment, 'y')
             }

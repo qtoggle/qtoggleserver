@@ -5,6 +5,7 @@ import {gettext}             from '$qui/base/i18n.js'
 import {mix}                 from '$qui/base/mixwith.js'
 import {CheckField}          from '$qui/forms/common-fields/common-fields.js'
 import {ChoiceButtonsField}  from '$qui/forms/common-fields/common-fields.js'
+import {NumericField}        from '$qui/forms/common-fields/common-fields.js'
 import {OptionsForm}         from '$qui/forms/common-forms/common-forms.js'
 import StockIcon             from '$qui/icons/stock-icon.js'
 import {StructuredPageMixin} from '$qui/pages/common-pages/common-pages.js'
@@ -35,6 +36,7 @@ export class ChartPageOptionsForm extends OptionsForm {
      * @param {Boolean} [enableSmooth]
      * @param {Boolean} [enableFillArea]
      * @param {Boolean} [enableShowDataPoints]
+     * @param {Boolean} [enableMinMax]
      * @param {?String} [prefsPrefix]
      * @param {Object} [defaults]
      */
@@ -43,6 +45,7 @@ export class ChartPageOptionsForm extends OptionsForm {
         enableSmooth = true,
         enableFillArea = true,
         enableShowDataPoints = true,
+        enableMinMax = false,
         prefsPrefix = null,
         defaults = {}
     }) {
@@ -69,6 +72,20 @@ export class ChartPageOptionsForm extends OptionsForm {
                     {value: null, label: gettext('Auto')},
                     {value: true, label: gettext('On')}
                 ]
+            }))
+        }
+        if (enableMinMax) {
+            fields.push(new NumericField({
+                name: 'max',
+                label: gettext('Maximum'),
+                description: gettext('Higher chart limit. Clear value for automatic adjustment.'),
+                required: false
+            }))
+            fields.push(new NumericField({
+                name: 'min',
+                label: gettext('Minimum'),
+                description: gettext('Lower chart limit. Clear value for automatic adjustment.'),
+                required: false
             }))
         }
 
@@ -145,6 +162,18 @@ class ChartPage extends mix().with(StructuredPageMixin, ProgressViewMixin) {
         })
         this._data = data
         this.widgetCall = null
+
+        let panZoomMode = this._chartOptions.panZoomMode
+        if (panZoomMode) {
+            if (panZoomMode.includes('x')) {
+                delete this._chartOptions.xMin
+                delete this._chartOptions.xMax
+            }
+            if (panZoomMode.includes('y')) {
+                delete this._chartOptions.yMin
+                delete this._chartOptions.yMax
+            }
+        }
     }
 
     initHTML(html) {
@@ -185,6 +214,18 @@ class ChartPage extends mix().with(StructuredPageMixin, ProgressViewMixin) {
         }
         if ('showDataPoints' in options) {
             widgetOptions.showDataPoints = options['showDataPoints']
+        }
+        if (options['min'] != null) {
+            widgetOptions.yMin = options['min']
+        }
+        else {
+            widgetOptions.yMin = null
+        }
+        if (options['max'] != null) {
+            widgetOptions.yMax = options['max']
+        }
+        else {
+            widgetOptions.yMax = null
         }
 
         if (Object.keys(widgetOptions).length > 0) {
@@ -292,6 +333,14 @@ class ChartPage extends mix().with(StructuredPageMixin, ProgressViewMixin) {
      */
     getYRange() {
         return this.widgetCall('getYRange')
+    }
+
+    /**
+     * @param {Number} yMin
+     * @param {Number} yMax
+     */
+    setYRange(yMin, yMax) {
+        return this.widgetCall('setYRange', yMin, yMax)
     }
 
 }
