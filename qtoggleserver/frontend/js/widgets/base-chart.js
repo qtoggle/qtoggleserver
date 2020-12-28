@@ -475,8 +475,10 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
                 return
             }
 
-            if (min != null && max != null) {
+            if (min != null && scale.min === undefined) {
                 scale.min = min
+            }
+            if (max != null && scale.max === undefined) {
                 scale.max = max
             }
         })

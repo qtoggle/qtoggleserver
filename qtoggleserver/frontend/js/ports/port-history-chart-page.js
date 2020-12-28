@@ -88,6 +88,11 @@ class PortHistoryChartPage extends ChartPage {
     }
 
     fetchAndShowHistory(from, to) {
+        let delta = to - from
+        let margin = delta * 0.1 /* 10% margin to the left as well as to the right of the interval */
+        to += margin
+        from -= margin
+
         this.setProgress()
 
         let fetchPromise = this._historyDownloadManager.fetch(Math.round(from), Math.round(to), MAX_FETCH_REQUESTS)
@@ -217,17 +222,29 @@ class PortHistoryChartPage extends ChartPage {
     }
 
     makeOptionsBarContent() {
+        let defaults = {
+            smooth: false,
+            fillArea: false,
+            showDataPoints: false
+        }
+
+        if (!this._isBoolean) {
+            if (this._port['min'] != null) {
+                defaults['min'] = this._port['min']
+            }
+            if (this._port['max'] != null) {
+                defaults['max'] = this._port['max']
+            }
+        }
+
         return new PortHistoryChartPageOptionsForm({
             chartPage: this,
             enableSmooth: !this._isBoolean,
             enableFillArea: true,
             enableShowDataPoints: true,
+            enableMinMax: true,
             prefsPrefix: `ports.${this._port['id']}.history_chart`,
-            defaults: {
-                smooth: false,
-                fillArea: false,
-                showDataPoints: false
-            }
+            defaults: defaults
         })
     }
 
