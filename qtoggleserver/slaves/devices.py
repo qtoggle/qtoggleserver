@@ -114,9 +114,10 @@ class Slave(logging_utils.LoggableMixin):
         self._listen_session_id: Optional[str] = None
         self._listen_task: Optional[asyncio.Task] = None
 
-        # Tells the polling mechanism status
+        # Polling mechanism
         self._poll_started: bool = False
         self._poll_task: Optional[asyncio.Task] = None
+        self._poll_offline_counter: int = 0
 
         # Attributes cache
         self._cached_attrs: Attributes = attrs or {}
@@ -142,7 +143,7 @@ class Slave(logging_utils.LoggableMixin):
         # An internal reference to the last made API call
         self._last_api_call_ref: Any = None
 
-        # Cached url
+        # Cached URL
         self._url: Optional[str] = None
 
         # Handles firmware update progress
@@ -686,7 +687,7 @@ class Slave(logging_utils.LoggableMixin):
 
         # Fetch remote attributes
         try:
-            attrs = await self.api_call('GET', '/device', retry_counter=settings.slaves.retry_count)
+            attrs = await self.api_call('GET', '/device')
 
         except Exception as e:
             self.error('failed to fetch device attributes: %s', e)
@@ -759,13 +760,16 @@ class Slave(logging_utils.LoggableMixin):
         # Used to drop orphaned listen responses (belonging to requests made before a session id update)
         requested_session_id = self._listen_session_id
 
+        # Used to count the number of failed listen retries before considering the device offline
+        offline_counter = 0
+
         while True:
             try:
                 if not self._listen_session_id:
                     break
 
                 if self not in _slaves_by_name.values():
-                    self.error('exiting listen loop for dangling slave device')
+                    self.warning('exiting listen loop for dangling slave device')
                     break
 
                 url = self.get_url(f'/listen?timeout={keep_alive}')
@@ -817,7 +821,9 @@ class Slave(logging_utils.LoggableMixin):
                         settings.slaves.retry_interval
                     )
 
-                    if self._online:
+                    offline_counter += 1
+
+                    if self._online and offline_counter > settings.slaves.retry_count:
                         self._online = False
                         await self._handle_offline()
 
@@ -856,6 +862,7 @@ class Slave(logging_utils.LoggableMixin):
                         break
 
                     if not self._online:
+                        offline_counter = 0
                         self._online = True
                         await self._handle_online()
 
@@ -901,7 +908,7 @@ class Slave(logging_utils.LoggableMixin):
             return 0
 
         if self not in _slaves_by_name.values():
-            self.error('exiting polling loop for dangling slave device')
+            self.warning('exiting polling loop for dangling slave device')
             return 0
 
         self.debug('polling device')
@@ -912,7 +919,9 @@ class Slave(logging_utils.LoggableMixin):
         except Exception as e:
             self.error('failed to poll device: %s', e)
 
-            if self._online:
+            self._poll_offline_counter += 1
+
+            if self._online and self._poll_offline_counter > settings.slaves.retry_count:
                 self._online = False
                 await self._handle_offline()
 
@@ -963,6 +972,7 @@ class Slave(logging_utils.LoggableMixin):
         # If we reach this point, we can consider the slave device online
 
         if not self._online:
+            self._poll_offline_counter = 0
             self._online = True
             await self._handle_online()
 
