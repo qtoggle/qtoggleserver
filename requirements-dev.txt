@@ -3,6 +3,7 @@ flake8-annotations
 pytest
 pytest-asyncio
 pytest-tornasync
+pytest-mock
 freezegun
 mongomock
 fakeredis

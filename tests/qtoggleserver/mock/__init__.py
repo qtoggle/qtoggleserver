@@ -1,4 +1,4 @@
 
 from .expressions import MockExpression, MockPortRef, MockPortValue
 from .persist import MockPersistDriver
-from .ports import MockPort
+from .ports import NumberMockPort, BooleanMockPort
