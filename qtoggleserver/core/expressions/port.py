@@ -20,10 +20,12 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
 
     @staticmethod
     def parse(self_port_id: Optional[str], sexpression: str, pos: int) -> Expression:
+        # Remove leading whitespace
         while sexpression and sexpression[0].isspace():
             sexpression = sexpression[1:]
             pos += 1
 
+        # Remove trailing whitespace
         while sexpression and sexpression[-1].isspace():
             sexpression = sexpression[:-1]
 

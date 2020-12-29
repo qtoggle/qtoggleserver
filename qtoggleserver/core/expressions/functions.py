@@ -1,6 +1,7 @@
 
 import abc
 import asyncio
+import re
 
 from typing import Callable, List, Optional, Set
 
@@ -67,10 +68,12 @@ class Function(Expression, metaclass=abc.ABCMeta):
 
     @staticmethod
     def parse(self_port_id: Optional[str], sexpression: str, pos: int) -> Expression:
+        # Remove leading whitespace
         while sexpression and sexpression[0].isspace():
             sexpression = sexpression[1:]
             pos += 1
 
+        # Remove trailing whitespace
         while sexpression and sexpression[-1].isspace():
             sexpression = sexpression[:-1]
 
@@ -126,6 +129,11 @@ class Function(Expression, metaclass=abc.ABCMeta):
             sargs.append((sarg, spos))
 
         func_name = sexpression[:p_start].strip()
+        m = re.search(r'[^a-zA-Z0-9_]', func_name)
+        if m:
+            p = m.start()
+            raise exceptions.UnexpectedCharacter(func_name[p], p + pos)
+
         func_class = FUNCTIONS.get(func_name)
         if func_class is None:
             raise exceptions.UnknownFunction(func_name, pos)
