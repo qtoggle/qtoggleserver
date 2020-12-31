@@ -140,7 +140,7 @@ class ChartPage extends mix().with(StructuredPageMixin, ProgressViewMixin) {
             popup: !Window.isSmallScreen(),
             transparent: false,
             closable: true,
-            icon: new StockIcon({name: 'chart', stockName: 'qtoggle'}),
+            icon: new StockIcon({name: 'widget-line-chart', stockName: 'qtoggle'}),
             verticallyCentered: true /* for ProgressViewMixin */
         })
 

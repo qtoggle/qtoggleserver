@@ -68,7 +68,8 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
         panZoomYMin: null,
         panZoomYMax: null,
         scalingFactor: 1,
-        aspectRatio: 2,
+        aspectRatio: null,
+        extraChartOptions: {},
         onPanZoomStart: function (xMin, xMax, yMin, yMax) {},
         onPanZoomEnd: function (xMin, xMax, yMin, yMax) {}
     },
@@ -208,9 +209,9 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
     },
 
     _prepareOptions: function (environment) {
-        return {
+        return ObjectUtils.combine({
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: this.options.aspectRatio != null,
             aspectRatio: this.options.aspectRatio,
             spanGaps: true,
             animation: {
@@ -220,7 +221,7 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
             scales: this._makeScalesOptions(environment),
             plugins: this._makePluginsOptions(environment),
             elements: this._makeElementsOptions(environment)
-        }
+        }, this._makeExtraOptions(environment))
     },
 
     _prepareData: function (data) {
@@ -426,6 +427,10 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
             style: 'normal',
             size: environment.em2px
         }
+    },
+
+    _makeExtraOptions: function (environment) {
+        return this.options.extraChartOptions
     },
 
     _handlePanZoomStart: function () {

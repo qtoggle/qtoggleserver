@@ -21,8 +21,6 @@ import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 import * as Widgets     from '$app/dashboard/widgets/widgets.js'
 
 
-const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
-
 const MAX_VALUES_COUNT = 50
 
 
@@ -331,6 +329,15 @@ class ConfigForm extends WidgetConfigForm {
  */
 class TextIndicator extends Widget {
 
+    static category = gettext('Displays')
+    static displayName = gettext('Text Indicator')
+    static typeName = 'TextIndicator'
+    static icon = new StockIcon({name: 'widget-text', stockName: 'qtoggle'})
+    static ConfigForm = ConfigForm
+    static vResizable = true
+    static hResizable = true
+
+
     /**
      * @constructs
      */
@@ -516,16 +523,6 @@ class TextIndicator extends Widget {
     }
 
 }
-
-// TODO es7 class fields
-TextIndicator.category = gettext('Displays')
-TextIndicator.displayName = gettext('Text Indicator')
-TextIndicator.typeName = 'TextIndicator'
-TextIndicator.icon = new StockIcon({name: 'widget-text', stockName: 'qtoggle'})
-TextIndicator.ConfigForm = ConfigForm
-TextIndicator.vResizable = true
-TextIndicator.hResizable = true
-
 
 Widgets.register(TextIndicator)
 

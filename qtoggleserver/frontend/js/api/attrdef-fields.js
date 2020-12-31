@@ -12,34 +12,32 @@ import * as Theme       from '$qui/theme.js'
 import * as Cache       from '$app/cache.js'
 
 
-const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
-
-
 /**
  * @alias qtoggle.api.attrdeffields.WiFiSignalStrengthField
  * @extends qui.forms.commonfields.ProgressDiskField
  */
 export class WiFiSignalStrengthField extends LabelsField {
 
+    static BACKGROUNDS = {
+        0: '@red-color',
+        1: '@orange-color',
+        2: '@yellow-color',
+        3: '@green-color'
+    }
+
+    static LABELS = {
+        0: gettext('weak'),
+        1: gettext('fair'),
+        2: gettext('good'),
+        3: gettext('excellent')
+    }
+
+
     valueToWidget(value) {
         value = Math.min(3, Math.max(0, value))
 
-        let backgrounds = { // TODO es7 class fields
-            0: '@red-color',
-            1: '@orange-color',
-            2: '@yellow-color',
-            3: '@green-color'
-        }
-
-        let labels = { // TODO es7 class fields
-            0: gettext('weak'),
-            1: gettext('fair'),
-            2: gettext('good'),
-            3: gettext('excellent')
-        }
-
-        let background = Theme.getColor(backgrounds[value])
-        let label = labels[value]
+        let background = Theme.getColor(this.constructor.BACKGROUNDS[value])
+        let label = this.constructor.LABELS[value]
         let text = `${label} (${value}/3)`
 
         super.valueToWidget([{text, background}])

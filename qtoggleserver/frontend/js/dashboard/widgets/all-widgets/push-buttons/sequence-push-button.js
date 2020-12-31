@@ -14,9 +14,6 @@ import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 import PushButton from './push-button.js'
 
 
-const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
-
-
 class ConfigForm extends WidgetConfigForm {
 
     constructor({...args}) {
@@ -269,6 +266,15 @@ class ConfigForm extends WidgetConfigForm {
  */
 class SequencePushButton extends PushButton {
 
+    static category = gettext('Push Buttons')
+    static displayName = gettext('Sequence Push Button')
+    static typeName = 'SequencePushButton'
+    static icon = new StockIcon({name: 'widget-push-button', stockName: 'qtoggle'})
+    static ConfigForm = ConfigForm
+    static hResizable = true
+    static vResizable = true
+
+
     /**
      * @constructs
      */
@@ -316,16 +322,6 @@ class SequencePushButton extends PushButton {
     }
 
 }
-
-// TODO es7 class fields
-SequencePushButton.category = gettext('Push Buttons')
-SequencePushButton.displayName = gettext('Sequence Push Button')
-SequencePushButton.typeName = 'SequencePushButton'
-SequencePushButton.icon = new StockIcon({name: 'widget-push-button', stockName: 'qtoggle'})
-SequencePushButton.ConfigForm = ConfigForm
-SequencePushButton.hResizable = true
-SequencePushButton.vResizable = true
-
 
 Widgets.register(SequencePushButton)
 

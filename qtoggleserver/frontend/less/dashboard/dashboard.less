@@ -134,6 +134,7 @@ div.dashboard-widget-body {
     right: 0;
     bottom: 0;
     left: 0;
+    border-radius: 0.2rem;
 }
 
 div.dashboard-widget-container.has-frame > div.dashboard-widget-body {
@@ -150,19 +151,18 @@ div.dashboard-widget-label {
     padding-right: 0.025em;
     white-space: nowrap;
     text-align: center;
-}
 
-div.dashboard-widget-label > span {
-    display: block;
-    vertical-align: top;
-    line-height: 1.5em;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    & > span {
+        display: block;
+        line-height: 200%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
 }
 
 div.dashboard-widget-container.has-frame > div.dashboard-widget-body > div.dashboard-widget-label {
     border-bottom: 0.0625rem solid @border-color;
-    text-align: left;
 }
 
 

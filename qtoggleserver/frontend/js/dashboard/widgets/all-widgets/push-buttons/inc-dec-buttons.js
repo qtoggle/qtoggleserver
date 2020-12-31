@@ -14,9 +14,6 @@ import {DEFAULT_COLOR}  from '$app/dashboard/widgets/widget.js'
 import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 
 
-const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
-
-
 class ConfigForm extends WidgetConfigForm {
 
     constructor({...args}) {
@@ -77,6 +74,15 @@ class ConfigForm extends WidgetConfigForm {
  * @extends qtoggle.dashboard.widgets.Widget
  */
 class IncDecButtons extends Widget {
+
+    static category = gettext('Push Buttons')
+    static displayName = gettext('Increase/Decrease Button')
+    static typeName = 'IncDecButtons'
+    static icon = new StockIcon({name: 'widget-plus-minus', stockName: 'qtoggle'})
+    static ConfigForm = ConfigForm
+    static vResizable = true
+    static hResizable = true
+
 
     /**
      * @constructs
@@ -250,16 +256,6 @@ class IncDecButtons extends Widget {
     }
 
 }
-
-// TODO es7 class fields
-IncDecButtons.category = gettext('Push Buttons')
-IncDecButtons.displayName = gettext('Increase/Decrease Button')
-IncDecButtons.typeName = 'IncDecButtons'
-IncDecButtons.icon = new StockIcon({name: 'widget-plus-minus', stockName: 'qtoggle'})
-IncDecButtons.ConfigForm = ConfigForm
-IncDecButtons.vResizable = true
-IncDecButtons.hResizable = true
-
 
 Widgets.register(IncDecButtons)
 

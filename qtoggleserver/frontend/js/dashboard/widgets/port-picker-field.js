@@ -11,9 +11,6 @@ import * as StringUtils from '$qui/utils/string.js'
 import * as Cache from '$app/cache.js'
 
 
-const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
-
-
 /**
  * @alias qtoggle.dashboard.widgets.PortPickerField
  * @extends qui.forms.commonfields.ComboField

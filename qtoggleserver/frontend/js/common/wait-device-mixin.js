@@ -5,9 +5,6 @@ import {Mixin}           from '$qui/base/mixwith.js'
 import ViewMixin         from '$qui/views/view.js'
 
 
-const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
-
-
 /** @lends qtoggle.common.WaitDeviceMixin */
 const WaitDeviceMixin = Mixin((superclass = Object) => {
 

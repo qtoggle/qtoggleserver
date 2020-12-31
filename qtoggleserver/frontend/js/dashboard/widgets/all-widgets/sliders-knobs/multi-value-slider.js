@@ -8,9 +8,6 @@ import {ConfigForm as AnalogWidgetConfigForm} from '../analog-widget.js'
 import {AnalogWidget}                         from '../analog-widget.js'
 
 
-const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
-
-
 class ConfigForm extends AnalogWidgetConfigForm {
 
     constructor({...args}) {
@@ -26,6 +23,15 @@ class ConfigForm extends AnalogWidgetConfigForm {
  */
 class MultiValueSlider extends AnalogWidget {
 
+    static category = gettext('Sliders/Knobs')
+    static displayName = gettext('Multi-value Slider')
+    static typeName = 'MultiValueSlider'
+    static icon = new StockIcon({name: 'widget-slider', stockName: 'qtoggle'})
+    static ConfigForm = ConfigForm
+    static hResizable = true
+    static vResizable = true
+
+
     /**
      * @constructs
      */
@@ -34,16 +40,6 @@ class MultiValueSlider extends AnalogWidget {
     }
 
 }
-
-// TODO es7 class fields
-MultiValueSlider.category = gettext('Sliders/Knobs')
-MultiValueSlider.displayName = gettext('Multi-value Slider')
-MultiValueSlider.typeName = 'MultiValueSlider'
-MultiValueSlider.icon = new StockIcon({name: 'widget-slider', stockName: 'qtoggle'})
-MultiValueSlider.ConfigForm = ConfigForm
-MultiValueSlider.hResizable = true
-MultiValueSlider.vResizable = true
-
 
 Widgets.register(MultiValueSlider)
 

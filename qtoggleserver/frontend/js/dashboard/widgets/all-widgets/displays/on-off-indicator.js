@@ -15,9 +15,6 @@ import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 import * as Widgets     from '$app/dashboard/widgets/widgets.js'
 
 
-const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
-
-
 class ConfigForm extends WidgetConfigForm {
 
     constructor({...args}) {
@@ -93,6 +90,15 @@ class ConfigForm extends WidgetConfigForm {
  * @extends qtoggle.dashboard.widgets.Widget
  */
 class OnOffIndicator extends Widget {
+
+    static category = gettext('Displays')
+    static displayName = gettext('On/Off Indicator')
+    static typeName = 'OnOffIndicator'
+    static icon = new StockIcon({name: 'widget-on-off-indicator', stockName: 'qtoggle'})
+    static ConfigForm = ConfigForm
+    static vResizable = true
+    static hResizable = true
+
 
     /**
      * @constructs
@@ -234,16 +240,6 @@ class OnOffIndicator extends Widget {
     }
 
 }
-
-// TODO es7 class fields
-OnOffIndicator.category = gettext('Displays')
-OnOffIndicator.displayName = gettext('On/Off Indicator')
-OnOffIndicator.typeName = 'OnOffIndicator'
-OnOffIndicator.icon = new StockIcon({name: 'widget-on-off-indicator', stockName: 'qtoggle'})
-OnOffIndicator.ConfigForm = ConfigForm
-OnOffIndicator.vResizable = true
-OnOffIndicator.hResizable = true
-
 
 Widgets.register(OnOffIndicator)
 

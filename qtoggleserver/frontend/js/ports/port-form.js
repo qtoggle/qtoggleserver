@@ -274,7 +274,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 label: gettext('Historical Values'),
                 caption: gettext('Chart'),
                 style: 'interactive',
-                icon: new StockIcon({name: 'chart', stockName: 'qtoggle'}),
+                icon: new StockIcon({name: 'widget-line-chart', stockName: 'qtoggle'}),
                 description: gettext('Display a chart with historical port values.'),
                 onClick(form) {
                     form.pushPage(form.makeHistoryPage())
