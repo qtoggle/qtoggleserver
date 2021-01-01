@@ -96,6 +96,15 @@ class ConfigForm extends WidgetConfigForm {
  */
 class OnOffButton extends Widget {
 
+    static category = gettext('Sliders/Knobs')
+    static displayName = gettext('On/Off Button')
+    static typeName = 'OnOffButton'
+    static icon = new StockIcon({name: 'widget-on-off-button', stockName: 'qtoggle'})
+    static ConfigForm = ConfigForm
+    static hResizable = true
+    static vResizable = true
+
+
     /**
      * @constructs
      */
@@ -424,16 +433,6 @@ class OnOffButton extends Widget {
     }
 
 }
-
-// TODO es7 class fields
-OnOffButton.category = gettext('Sliders/Knobs')
-OnOffButton.displayName = gettext('On/Off Button')
-OnOffButton.typeName = 'OnOffButton'
-OnOffButton.icon = new StockIcon({name: 'widget-on-off-button', stockName: 'qtoggle'})
-OnOffButton.ConfigForm = ConfigForm
-OnOffButton.hResizable = true
-OnOffButton.vResizable = true
-
 
 Widgets.register(OnOffButton)
 

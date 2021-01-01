@@ -13,9 +13,6 @@ import Widget           from '$app/dashboard/widgets/widget.js'
 import WidgetConfigForm from '$app/dashboard/widgets/widget-config-form.js'
 
 
-const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
-
-
 class ConfigForm extends WidgetConfigForm {
 
     constructor({...args}) {
@@ -49,6 +46,16 @@ class ConfigForm extends WidgetConfigForm {
  * @extends qtoggle.dashboard.widgets.Widget
  */
 class MJPEGVideo extends Widget {
+
+    static category = gettext('Media')
+    static displayName = gettext('MJPEG Video')
+    static typeName = 'MJPEGVideo'
+    static icon = new StockIcon({name: 'widget-video', stockName: 'qtoggle'})
+    static ConfigForm = ConfigForm
+    static vResizable = true
+    static hResizable = true
+    static hasFrame = true
+
 
     /**
      * @constructs
@@ -124,17 +131,6 @@ class MJPEGVideo extends Widget {
     }
 
 }
-
-// TODO es7 class fields
-MJPEGVideo.category = gettext('Media')
-MJPEGVideo.displayName = gettext('MJPEG Video')
-MJPEGVideo.typeName = 'MJPEGVideo'
-MJPEGVideo.icon = new StockIcon({name: 'widget-video', stockName: 'qtoggle'})
-MJPEGVideo.ConfigForm = ConfigForm
-MJPEGVideo.vResizable = true
-MJPEGVideo.hResizable = true
-MJPEGVideo.hasFrame = true
-
 
 Widgets.register(MJPEGVideo)
 

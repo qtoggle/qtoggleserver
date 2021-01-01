@@ -145,7 +145,10 @@
         ],
         "lines-between-class-members": [
             "error",
-            "always"
+            "always",
+            {
+                "exceptAfterSingleLine": true
+            }
         ],
         "max-len": [
             "error",

@@ -7,9 +7,6 @@ import * as Widgets from '$app/dashboard/widgets/widgets.js'
 import {ConfigForm as AnalogWidgetConfigForm, AnalogWidget} from '../analog-widget.js'
 
 
-const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
-
-
 class ConfigForm extends AnalogWidgetConfigForm {
 
     constructor({...args}) {
@@ -25,6 +22,16 @@ class ConfigForm extends AnalogWidgetConfigForm {
  */
 class ProgressBar extends AnalogWidget {
 
+    static category = gettext('Displays')
+    static displayName = gettext('Progress Bar')
+    static typeName = 'ProgressBar'
+    static icon = new StockIcon({name: 'widget-progress-bar', stockName: 'qtoggle'})
+    static ConfigForm = ConfigForm
+    static vResizable = true
+    static hResizable = true
+    static width = 2
+
+
     /**
      * @constructs
      */
@@ -33,16 +40,6 @@ class ProgressBar extends AnalogWidget {
     }
 
 }
-
-// TODO es7 class fields
-ProgressBar.category = gettext('Displays')
-ProgressBar.displayName = gettext('Progress Bar')
-ProgressBar.typeName = 'ProgressBar'
-ProgressBar.icon = new StockIcon({name: 'widget-progress-bar', stockName: 'qtoggle'})
-ProgressBar.ConfigForm = ConfigForm
-ProgressBar.vResizable = true
-ProgressBar.hResizable = true
-ProgressBar.width = 2
 
 
 Widgets.register(ProgressBar)

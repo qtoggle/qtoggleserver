@@ -42,6 +42,20 @@ const STATES = [
  */
 class Widget extends mix().with(ViewMixin) {
 
+    static category = ''
+    static displayName = ''
+    static icon = null
+    static typeName = 'Widget'
+    static ConfigForm = WidgetConfigForm
+    static protectProgress = false /* Prevent user interaction when widget is in progress */
+    static protectInvalid = true /* Prevent user interaction when widget is invalid */
+    static width = null
+    static height = null
+    static vResizable = false
+    static hResizable = false
+    static hasFrame = false
+
+
     /**
      * @constructs
      */
@@ -117,8 +131,9 @@ class Widget extends mix().with(ViewMixin) {
         this._bodyDiv = bodyDiv
 
         let labelDiv = $('<div></div>', {class: 'dashboard-widget-label'})
+        let labelHeight = this.constructor.hasFrame ? Widgets.LABEL_HEIGHT_WITH_FRAME : Widgets.LABEL_HEIGHT
         labelDiv.append($('<span></span>'))
-        labelDiv.css('height', `${Widgets.LABEL_HEIGHT}em`)
+        labelDiv.css('height', `${labelHeight}em`)
         labelDiv.children('span').css('font-size', `${Widgets.LABEL_FONT_SIZE}em`)
 
         bodyDiv.append(labelDiv)
@@ -755,7 +770,8 @@ class Widget extends mix().with(ViewMixin) {
      * @returns {Number}
      */
     getContentHeight() {
-        return this._height - 2 * Widgets.CELL_SPACING - (this._label ? Widgets.LABEL_HEIGHT : 0)
+        let labelHeight = this.constructor.hasFrame ? Widgets.LABEL_HEIGHT_WITH_FRAME : Widgets.LABEL_HEIGHT
+        return this._height - 2 * Widgets.CELL_SPACING - (this._label ? labelHeight : 0)
     }
 
 
@@ -1309,21 +1325,6 @@ class Widget extends mix().with(ViewMixin) {
     // }
 
 }
-
-// TODO es7 class fields
-Widget.category = ''
-Widget.displayName = ''
-Widget.icon = null
-Widget.typeName = 'Widget'
-Widget.ConfigForm = WidgetConfigForm
-
-Widget.protectProgress = false /* Prevent user interaction when widget is in progress */
-Widget.protectInvalid = true /* Prevent user interaction when widget is invalid */
-Widget.width = null
-Widget.height = null
-Widget.vResizable = false
-Widget.hResizable = false
-Widget.hasFrame = false
 
 
 export default Widget

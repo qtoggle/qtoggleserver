@@ -28,6 +28,12 @@ export const CELL_PADDING = 0.05
 export const LABEL_HEIGHT = 0.2
 
 /**
+ * @alias qtoggle.dashboard.widgets.LABEL_HEIGHT_WITH_FRAME
+ * @type {Number}
+ */
+export const LABEL_HEIGHT_WITH_FRAME = 0.25
+
+/**
  * @alias qtoggle.dashboard.widgets.BEZEL_WIDTH
  * @type {Number}
  */

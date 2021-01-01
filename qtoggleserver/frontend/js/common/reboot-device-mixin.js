@@ -14,9 +14,6 @@ import * as Cache      from '$app/cache.js'
 import * as Common     from '$app/common/common.js'
 
 
-const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
-
-
 /** @lends qtoggle.common.RebootDeviceMixin */
 const RebootDeviceMixin = Mixin((superclass = Object) => {
 

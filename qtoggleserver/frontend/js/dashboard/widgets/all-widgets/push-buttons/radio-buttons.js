@@ -228,6 +228,15 @@ class ConfigForm extends WidgetConfigForm {
  */
 class RadioButtons extends Widget {
 
+    static category = gettext('Push Buttons')
+    static displayName = gettext('Radio Buttons')
+    static typeName = 'RadioButtons'
+    static icon = new StockIcon({name: 'widget-radio', stockName: 'qtoggle'})
+    static ConfigForm = ConfigForm
+    static hResizable = false
+    static vResizable = false
+
+
     /**
      * @constructs
      */
@@ -379,7 +388,7 @@ class RadioButtons extends Widget {
             return SMALL_LABEL_HEIGHT
         }
         else {
-            return Widgets.LABEL_HEIGHT
+            return this.constructor.hasFrame ? Widgets.LABEL_HEIGHT_WITH_FRAME : Widgets.LABEL_HEIGHT
         }
     }
 
@@ -458,16 +467,6 @@ class RadioButtons extends Widget {
     }
 
 }
-
-// TODO es7 class fields
-RadioButtons.category = gettext('Push Buttons')
-RadioButtons.displayName = gettext('Radio Buttons')
-RadioButtons.typeName = 'RadioButtons'
-RadioButtons.icon = new StockIcon({name: 'widget-radio', stockName: 'qtoggle'})
-RadioButtons.ConfigForm = ConfigForm
-RadioButtons.hResizable = false
-RadioButtons.vResizable = false
-
 
 Widgets.register(RadioButtons)
 

@@ -1139,13 +1139,3 @@ export class AnalogWidget extends Widget {
     }
 
 }
-
-// TODO es7 class fields
-AnalogWidget.category = gettext('Displays')
-AnalogWidget.displayName = gettext('Progress Bar')
-AnalogWidget.typeName = 'ProgressBar'
-AnalogWidget.icon = new StockIcon({name: 'widget', stockName: 'qtoggle'})
-AnalogWidget.ConfigForm = ConfigForm
-AnalogWidget.vResizable = true
-AnalogWidget.hResizable = true
-AnalogWidget.width = 2

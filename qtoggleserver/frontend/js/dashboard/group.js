@@ -19,9 +19,6 @@ import Panel                    from './panel.js'
 import PanelGroupCompositeMixin from './panel-group-composite.js'
 
 
-const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
-
-
 class GroupOptionsForm extends OptionsForm {
 
     constructor(group) {

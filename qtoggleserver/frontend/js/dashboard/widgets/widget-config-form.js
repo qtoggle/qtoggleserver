@@ -14,9 +14,6 @@ import PortPickerField from './port-picker-field.js'
 import * as Widgets    from './widgets.js'
 
 
-const __FIX_JSDOC = null /* without this, JSDoc considers following symbol undocumented */
-
-
 /**
  * @alias qtoggle.dashboard.widgets.WidgetConfigForm
  * @extends qui.forms.commonforms.PageForm
