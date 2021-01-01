@@ -1046,6 +1046,14 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         }
 
         Dashboard.setCurrentPanel(this)
+
+        this.getWidgets().forEach(w => w.onPanelBecomeActive())
+    }
+
+    onSectionShow() {
+        if (this.isCurrent()) {
+            this.getWidgets().forEach(w => w.onPanelBecomeActive())
+        }
     }
 
     onClose() {

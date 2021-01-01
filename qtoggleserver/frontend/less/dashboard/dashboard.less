@@ -96,27 +96,29 @@ div.dashboard-widget-picker-body {
 /* Widget container */
 
 div.dashboard-widget-container {
+    display: grid;
     position: absolute;
     z-index: 10000;
     line-height: 1em;
     border-color: transparent;
     opacity: 1;
-}
 
-div.dashboard-panel-page.edit div.dashboard-widget-container.selected {
-    z-index: 10001;
-}
+    div.dashboard-panel-page.edit &.selected {
+        z-index: 10001;
+    }
 
-div.dashboard-panel-page.edit div.dashboard-widget-container.controls-visible {
-    border-color: @interactive-color;
-    background: fade(@interactive-color, 10%);
-}
+    div.dashboard-panel-page.edit &.controls-visible {
+        border-color: @interactive-color;
+        background: fade(@interactive-color, 10%);
+    }
 
-div.dashboard-panel-page.edit div.dashboard-widget-container.selected.controls-visible {
-    transition: left @transition-duration ease,
-                top @transition-duration ease,
-                width @transition-duration ease,
-                height @transition-duration ease;
+    div.dashboard-panel-page.edit &.selected.controls-visible {
+        transition: left @transition-duration ease,
+        top @transition-duration ease,
+        width @transition-duration ease,
+        height @transition-duration ease;
+    }
+
 }
 
 
@@ -312,28 +314,37 @@ div.dashboard-widget-status-icon {
     background-image: url('@{qui_img_path}/qui-icons.svg');
     background-size: 80em;
     transition: opacity @transition-duration ease;
+
+    &.hidden {
+        display: none;
+    }
+
+    &.visible {
+        opacity: 1;
+    }
+
+    &.invalid {
+        background-position: @exclam-icon-x-offset @warning-icon-y-offset;
+    }
+
+    &.progress {
+        background-position: @sync-icon-x-offset @info-icon-y-offset;
+        animation: spin 1s linear infinite;
+    }
+
+    &.error {
+        background-position: @exclam-icon-x-offset @error-icon-y-offset;
+    }
+
+    div.dashboard-widget-container.no-progress-interaction > &.progress {
+        align-self: center;
+        justify-self: center;
+        top: auto;
+        right: auto;
+    }
+
 }
 
-div.dashboard-widget-status-icon.hidden {
-    display: none;
-}
-
-div.dashboard-widget-status-icon.visible {
-    opacity: 1;
-}
-
-div.dashboard-widget-status-icon.invalid {
-    background-position: @exclam-icon-x-offset @warning-icon-y-offset;
-}
-
-div.dashboard-widget-status-icon.progress {
-    background-position: @sync-icon-x-offset @info-icon-y-offset;
-    animation: spin 1s linear infinite;
-}
-
-div.dashboard-widget-status-icon.error {
-    background-position: @exclam-icon-x-offset @error-icon-y-offset;
-}
 
 
 /* Widget glass */
@@ -347,21 +358,25 @@ div.dashboard-widget-glass {
     left: 0;
     opacity: 0;
     transition: opacity @transition-duration linear;
-}
+    background: fade(@background-root-color, 50%);
+    backdrop-filter: grayscale(1);
 
-div.dashboard-widget-container.progress > div.dashboard-widget-glass {
-    cursor: progress;
-}
+    &.visible {
+        opacity: 1;
+    }
 
-div.dashboard-widget-container.invalid > div.dashboard-widget-glass {
-    cursor: not-allowed;
-}
+    div.dashboard-widget-container.progress > & {
+        cursor: progress;
+    }
 
-div.dashboard-widget-glass.visible {
-}
+    div.dashboard-widget-container.invalid > & {
+        cursor: not-allowed;
+    }
 
-div.dashboard-panel-page.edit div.dashboard-widget-glass {
-    display: none !important;
+    div.dashboard-panel-page.edit & {
+        display: none !important;
+    }
+
 }
 
 

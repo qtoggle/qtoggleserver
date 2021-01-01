@@ -21,9 +21,6 @@ import '$app/widgets/pie-chart.js'
 import '$app/widgets/time-chart.js'
 
 
-const MAX_DATA_POINT_LEN = 1000
-
-
 /**
  * @alias qtoggle.common.ChartPageOptionsForm
  * @extends qui.forms.commonforms.OptionsForm
@@ -77,14 +74,14 @@ export class ChartPageOptionsForm extends OptionsForm {
         if (enableMinMax) {
             fields.push(new NumericField({
                 name: 'max',
-                label: gettext('Maximum'),
-                description: gettext('Higher chart limit. Clear value for automatic adjustment.'),
+                label: gettext('Maximum Value'),
+                description: gettext('Higher chart limit. Leave empty for automatic adjustment.'),
                 required: false
             }))
             fields.push(new NumericField({
                 name: 'min',
-                label: gettext('Minimum'),
-                description: gettext('Lower chart limit. Clear value for automatic adjustment.'),
+                label: gettext('Minimum Value'),
+                description: gettext('Lower chart limit. Leave empty for automatic adjustment.'),
                 required: false
             }))
         }
@@ -161,7 +158,9 @@ class ChartPage extends mix().with(StructuredPageMixin, ProgressViewMixin) {
             aspectRatio: aspectRatio
         })
         this._data = data
+
         this.widgetCall = null
+        this.options = {}
 
         let panZoomMode = this._chartOptions.panZoomMode
         if (panZoomMode) {
@@ -228,8 +227,11 @@ class ChartPage extends mix().with(StructuredPageMixin, ProgressViewMixin) {
             widgetOptions.yMax = null
         }
 
+        Object.assign(this.options, options)
+
         if (Object.keys(widgetOptions).length > 0) {
             this.widgetCall(widgetOptions)
+            this.widgetCall('setValue', this.processData(this._data))
         }
     }
 
@@ -253,16 +255,17 @@ class ChartPage extends mix().with(StructuredPageMixin, ProgressViewMixin) {
 
     /**
      * @param {*} data
-     * @param {Boolean} [decimate]
      */
-    setData(data, decimate = true) {
+    processData(data) {
+        return data
+    }
+
+    /**
+     * @param {*} data
+     */
+    setData(data) {
         this._data = data
-
-        if (decimate && data.length > MAX_DATA_POINT_LEN) {
-            data = this._decimate(data)
-        }
-
-        this.widgetCall('setValue', data)
+        this.widgetCall('setValue', this.processData(data))
     }
 
     /**
@@ -270,47 +273,6 @@ class ChartPage extends mix().with(StructuredPageMixin, ProgressViewMixin) {
      */
     getData() {
         return this._data
-    }
-
-    _decimate(data) {
-        let windowSize = Math.ceil(data.length * 2 / MAX_DATA_POINT_LEN)
-        let decimatedData = []
-        for (let i = 0; i < MAX_DATA_POINT_LEN / 2; i++) {
-            let win = data.slice(i * windowSize, (i + 1) * windowSize)
-            if (!win.length) {
-                break
-            }
-            let analysis = this._analyzeDecimationWindow(win)
-            if (analysis.min[0] < analysis.max[0]) {
-                decimatedData.push(analysis.min, analysis.max)
-            }
-            else {
-                decimatedData.push(analysis.max, analysis.min)
-            }
-        }
-
-        return decimatedData
-    }
-
-    _analyzeDecimationWindow(data) {
-        // FIXME: this only analyzes the first series in data
-        let [minX, minY] = data[0]
-        let [maxX, maxY] = data[0]
-        for (let i = 0; i < data.length; i++) {
-            let d = data[i]
-            let y = d[1]
-            if (y < minY) {
-                [minX, minY] = d
-            }
-            else if (y > maxY) {
-                [maxX, maxY] = d
-            }
-        }
-
-        return {
-            min: [minX, minY],
-            max: [maxX, maxY]
-        }
     }
 
     /**

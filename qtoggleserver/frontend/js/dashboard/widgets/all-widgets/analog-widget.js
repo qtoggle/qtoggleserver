@@ -8,7 +8,6 @@ import {NumericField}       from '$qui/forms/common-fields/common-fields.js'
 import {TextField}          from '$qui/forms/common-fields/common-fields.js'
 import {UpDownField}        from '$qui/forms/common-fields/common-fields.js'
 import {ChoiceButtonsField} from '$qui/forms/common-fields/common-fields.js'
-import StockIcon            from '$qui/icons/stock-icon.js'
 import * as Theme           from '$qui/theme.js'
 import * as ArrayUtils      from '$qui/utils/array.js'
 import * as Colors          from '$qui/utils/colors.js'
@@ -59,13 +58,13 @@ export class ConfigForm extends WidgetConfigForm {
                 }),
                 new NumericField({
                     name: 'min',
-                    label: gettext('Min Value'),
+                    label: gettext('Minimum Value'),
                     required: true,
                     hidden: ticksonly
                 }),
                 new NumericField({
                     name: 'max',
-                    label: gettext('Max Value'),
+                    label: gettext('Maximum Value'),
                     required: true,
                     hidden: ticksonly
                 }),

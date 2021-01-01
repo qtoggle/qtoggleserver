@@ -47,8 +47,8 @@ class Widget extends mix().with(ViewMixin) {
     static icon = null
     static typeName = 'Widget'
     static ConfigForm = WidgetConfigForm
-    static protectProgress = false /* Prevent user interaction when widget is in progress */
-    static protectInvalid = true /* Prevent user interaction when widget is invalid */
+    static noProgressInteraction = false /* Prevent user interaction when widget is in progress */
+    static noInvalidInteraction = true /* Prevent user interaction when widget is invalid */
     static width = null
     static height = null
     static vResizable = false
@@ -119,11 +119,11 @@ class Widget extends mix().with(ViewMixin) {
         if (this.constructor.hasFrame) {
             html.addClass('has-frame')
         }
-        if (this.constructor.protectInvalid) {
-            html.addClass('protect-invalid')
+        if (this.constructor.noInvalidInteraction) {
+            html.addClass('no-invalid-interaction')
         }
-        if (this.constructor.protectProgress) {
-            html.addClass('protect-progress')
+        if (this.constructor.noProgressInteraction) {
+            html.addClass('no-progress-interaction')
         }
 
         let bodyDiv = $('<div></div>', {class: 'dashboard-widget-body'})
@@ -138,7 +138,6 @@ class Widget extends mix().with(ViewMixin) {
 
         bodyDiv.append(labelDiv)
         this._labelDiv = labelDiv
-        this.setLabel(this._label)
 
         html.append(bodyDiv)
         html.append(this._makeLayoutControls())
@@ -160,11 +159,13 @@ class Widget extends mix().with(ViewMixin) {
             }
         }.bind(this))
 
+        this._glassDiv = $('<div></div>', {class: 'dashboard-widget-glass'})
+        html.append(this._glassDiv)
+
         this._statusIcon = $('<div></div>', {class: 'dashboard-widget-status-icon'})
         html.append(this._statusIcon)
 
-        this._glassDiv = $('<div></div>', {class: 'dashboard-widget-glass'})
-        html.append(this._glassDiv)
+        this.setLabel(this._label)
 
         return html
     }
@@ -201,7 +202,9 @@ class Widget extends mix().with(ViewMixin) {
 
         this._contentElem = content
 
-        this.showCurrentValue()
+        if (this.isValid()) {
+            this.showCurrentValue()
+        }
     }
 
     /**
@@ -687,7 +690,7 @@ class Widget extends mix().with(ViewMixin) {
     }
 
 
-    /* Size & layout */
+    /* Size, layout & more */
 
     /**
      * @returns {Number}
@@ -774,6 +777,12 @@ class Widget extends mix().with(ViewMixin) {
         return this._height - 2 * Widgets.CELL_SPACING - (this._label ? labelHeight : 0)
     }
 
+    /**
+     * Called when the owning panel becomes active.
+     */
+    onPanelBecomeActive() {
+    }
+
 
     /* Selection */
 
@@ -817,10 +826,10 @@ class Widget extends mix().with(ViewMixin) {
 
         /* Hide/show protection glass */
         let canEdit = AuthAPI.getCurrentAccessLevel() >= AuthAPI.ACCESS_LEVEL_NORMAL
-        let wasProtected = (oldState === Widgets.STATE_PROGRESS && this.constructor.protectProgress) ||
-                           (oldState === Widgets.STATE_INVALID && this.constructor.protectInvalid)
-        let nowProtected = (newState === Widgets.STATE_PROGRESS && this.constructor.protectProgress) ||
-                           (newState === Widgets.STATE_INVALID && this.constructor.protectInvalid) || !canEdit
+        let wasProtected = (oldState === Widgets.STATE_PROGRESS && this.constructor.noProgressInteraction) ||
+                           (oldState === Widgets.STATE_INVALID && this.constructor.noInvalidInteraction)
+        let nowProtected = (newState === Widgets.STATE_PROGRESS && this.constructor.noProgressInteraction) ||
+                           (newState === Widgets.STATE_INVALID && this.constructor.noInvalidInteraction) || !canEdit
 
         if (wasProtected && !nowProtected) {
             this._glassDiv.removeClass('visible')
@@ -854,7 +863,7 @@ class Widget extends mix().with(ViewMixin) {
 
         /* Show current value if state transitioned from something bad to valid */
         if ((oldState === Widgets.STATE_INVALID || oldState === Widgets.STATE_ERROR) &&
-            (newState === Widgets.STATE_NORMAL)) {
+            (newState === Widgets.STATE_NORMAL) && this.isValid()) {
 
             this.showCurrentValue()
         }
@@ -1156,7 +1165,9 @@ class Widget extends mix().with(ViewMixin) {
         }.bind(this)).catch(function (error) {
 
             this.setError(error)
-            this.showCurrentValue() /* This will normally revert to previous value */
+            if (this.isValid()) {
+                this.showCurrentValue() /* This will normally revert to previous value */
+            }
 
             Toast.error(error.message)
 
@@ -1200,7 +1211,9 @@ class Widget extends mix().with(ViewMixin) {
         }.bind(this)).catch(function (error) {
 
             this.setError(error)
-            this.showCurrentValue() /* This will normally revert to previous value */
+            if (this.isValid()) {
+                this.showCurrentValue() /* This will normally revert to previous value */
+            }
 
             Toast.error(error.message)
 
