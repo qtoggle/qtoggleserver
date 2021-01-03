@@ -93,6 +93,14 @@ class DashboardSection extends Section {
         return this._whenPanelsLoaded
     }
 
+    onWindowActiveChange(active) {
+        /* Call onPanelBecomeActive on all widgets of current panel */
+        let currentPanel = Dashboard.getCurrentPanel()
+        if (active && this.isCurrent() && currentPanel) {
+            currentPanel.getWidgets().forEach(w => w.onPanelBecomeActive())
+        }
+    }
+
     onServerEvent(event) {
         switch (event.type) {
             case 'value-change': {
@@ -165,6 +173,14 @@ class DashboardSection extends Section {
 
     onReset() {
         this._whenPanelsLoaded = null
+    }
+
+    onMainDeviceReconnect() {
+        /* Call onMainDeviceReconnect on all widgets of current panel */
+        let currentPanel = Dashboard.getCurrentPanel()
+        if (this.isCurrent() && currentPanel) {
+            currentPanel.getWidgets().forEach(w => w.onPanelBecomeActive())
+        }
     }
 
     _updateWidgetStates() {

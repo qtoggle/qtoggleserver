@@ -174,3 +174,100 @@ function resolveJSONRefsRec(obj, rootObj) {
 export function resolveJSONRefs(obj) {
     return resolveJSONRefsRec(obj, obj)
 }
+
+function analyzeDecimationWindow(dataWindow, yField) {
+    let minD = dataWindow[0]
+    let maxD = dataWindow[0]
+    for (let i = 0; i < dataWindow.length; i++) {
+        let d = dataWindow[i]
+        let y = d[yField]
+        if (y < minD[yField]) {
+            minD = d
+        }
+        else if (y > maxD[yField]) {
+            maxD = d
+        }
+    }
+
+    return {
+        min: minD,
+        max: maxD
+    }
+}
+
+/**
+ * Reduce the length of a list of data points, preserving local min/max values.
+ * @alias qtoggle.common.decimate
+ * @param {Object[]|Array[]} data
+ * @param {Number} maxDataPointsLen
+ * @param {Number|String} xField
+ * @param {Number|String} yField
+ * @returns {Object[]|Array[]}
+ */
+export function decimate(data, maxDataPointsLen, xField, yField) {
+    if (data.length <= maxDataPointsLen) {
+        return data
+    }
+
+    let windowSize = Math.ceil(data.length * 2 / maxDataPointsLen)
+    let decimatedData = []
+    for (let i = 0; i < maxDataPointsLen / 2; i++) {
+        let win = data.slice(i * windowSize, (i + 1) * windowSize)
+        if (!win.length) {
+            break
+        }
+        let analysis = analyzeDecimationWindow(win, yField)
+        if (analysis.min[xField] < analysis.max[xField]) {
+            decimatedData.push(analysis.min, analysis.max)
+        }
+        else {
+            decimatedData.push(analysis.max, analysis.min)
+        }
+    }
+
+    /* Eliminate duplicates that may occur (on x axis) */
+    for (let i = 1; i < decimatedData.length; i++) {
+        if (decimatedData[i - 1][xField] === decimatedData[i][xField]) {
+            decimatedData.splice(i, 1)
+            i--
+        }
+    }
+
+    return decimatedData
+}
+
+/**
+ * Apply moving average filter to a list of data points.
+ * @alias qtoggle.common.movingAverage
+ * @param {Object[]|Array[]} data
+ * @param {Number} length
+ * @param {Number|String} xField
+ * @param {Number|String} yField
+ * @returns {Object[]|Array[]}
+ */
+export function movingAverage(data, length, xField, yField) {
+    let filteredHistory = []
+    let lengthHalf = Math.floor(length / 2)
+    let sampleIsObject = ObjectUtils.isObject(data[0])
+    for (let i = 0; i < data.length; i++) {
+        let wStart = Math.max(0, i - lengthHalf)
+        let wStop = Math.min(data.length, i - lengthHalf + length)
+        let wData = data.slice(wStart, wStop)
+        let sample = data[i]
+        let filteredValue = wData.reduce((a, b) => a + b[yField], 0) / wData.length
+
+        let filteredSample
+        if (sampleIsObject) {
+            filteredSample = {[yField]: filteredValue, [xField]: sample[xField]}
+        }
+        else { /* Assuming samples are arrays */
+            filteredSample = []
+            filteredSample[xField] = sample[xField]
+            filteredSample[yField] = filteredValue
+        }
+
+        filteredHistory.push(filteredSample)
+    }
+
+    return filteredHistory
+}

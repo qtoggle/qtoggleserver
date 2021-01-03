@@ -1,5 +1,9 @@
 
 /**
+ * @namespace qtoggle.dashboard.widgets.charts
+ */
+
+/**
  * @namespace qtoggle.dashboard.widgets.displays
  */
 
@@ -16,6 +20,7 @@
  */
 
 
+import './charts/line-chart.js'
 import './displays/on-off-indicator.js'
 import './displays/progress-bar.js'
 import './displays/text-indicator.js'

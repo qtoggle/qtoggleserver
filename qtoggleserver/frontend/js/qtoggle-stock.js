@@ -30,7 +30,8 @@ Stocks.register('qtoggle', function () {
             'widget-radio': 25,
             'widget-progress-bar': 26,
             'widget-line-chart': 27,
-            'widget-bar-chart': 28
+            'widget-bar-chart': 28,
+            'widget-pie-chart': 29
         }
     })
 })

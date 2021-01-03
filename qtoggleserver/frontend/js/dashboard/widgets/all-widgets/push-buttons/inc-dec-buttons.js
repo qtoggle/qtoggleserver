@@ -26,12 +26,12 @@ class ConfigForm extends WidgetConfigForm {
                 }),
                 new NumericField({
                     name: 'min',
-                    label: gettext('Min Value'),
+                    label: gettext('Minimum Value'),
                     required: true
                 }),
                 new NumericField({
                     name: 'max',
-                    label: gettext('Max Value'),
+                    label: gettext('Maximum Value'),
                     required: true
                 }),
                 new NumericField({

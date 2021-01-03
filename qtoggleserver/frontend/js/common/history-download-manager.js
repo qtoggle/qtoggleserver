@@ -10,18 +10,27 @@ export class HistoryDownloadTooManyRequests extends Error {
 }
 
 
+/**
+ * @private
+ */
 class Interval {
 
+    /**
+     * @param {Number} from
+     * @param {Number} to
+     * @param {Object[]} samples
+     */
     constructor(from, to, samples) {
         this.from = from
         this.to = to
         this.samples = samples
     }
 
-    isVoid() {
-        return this.from >= this.to
-    }
-
+    /**
+     * @param {Number} from
+     * @param {Number} to
+     * @returns {Interval}
+     */
     getSlice(from, to) {
         if (this.to <= from) {
             return null
@@ -51,6 +60,10 @@ class Interval {
         }
     }
 
+    /**
+     * @param {Interval} interval
+     * @return {?Interval}
+     */
     tryMerge(interval) {
         if (this.from < interval.to && this.to >= interval.from) {
             let samples
@@ -89,6 +102,11 @@ class Interval {
         return null /* No merging possible */
     }
 
+    /**
+     * @param {Number} from
+     * @param {Number} to
+     * @returns {Object[]}
+     */
     getSliceSamples(from, to) {
         if (this.samples.length === 0) {
             return []
@@ -104,6 +122,35 @@ class Interval {
         }
 
         return slice
+    }
+
+    /**
+     * @param {Object} sample
+     */
+    addSample(sample) {
+        if (this.samples.length === 0) { /* First sample */
+            this.samples.push(sample)
+        }
+        else {
+            if (sample.timestamp < this.samples[0].timestamp) { /* Before first sample */
+                this.samples.unshift(sample)
+                this.from = sample.timestamp
+            }
+            else {
+                let i = 0
+                while (i < this.samples.length && this.samples[i].timestamp < sample.timestamp) {
+                    i++
+                }
+
+                if (i < this.samples.length) { /* Within the interval */
+                    this.samples.splice(i, 0, sample)
+                }
+                else { /* After last sample */
+                    this.samples.push(sample)
+                    this.to = sample.timestamp + 1
+                }
+            }
+        }
     }
 
 }
@@ -148,6 +195,107 @@ class HistoryDownloadManager {
         return promise.then(function () {
             return this._getCachedSamples(from, to)
         }.bind(this))
+    }
+
+    /**
+     * @param {Number} value
+     * @param {Number} timestamp
+     * @param {Boolean} bridgeGap
+     */
+    addSample(value, timestamp, bridgeGap) {
+        let sample = {value, timestamp}
+
+        if (!this._intervals.length) { /* No intervals yet */
+            this._intervals.push(new Interval(timestamp, timestamp + 1, [sample]))
+        }
+        else if (timestamp < this._intervals[0].from) { /* Sample is before first interval */
+            if (bridgeGap) {
+                this._intervals[0].samples.unshift(sample)
+            }
+            else {
+                this._intervals.unshift(new Interval(timestamp, timestamp + 1, [sample]))
+            }
+        }
+        else {
+            let pos = 0
+            while (pos < this._intervals.length && this._intervals[pos].to < timestamp) {
+                pos++
+            }
+
+            if (pos < this._intervals.length) { /* Sample is within the boundaries of current history */
+                if (timestamp >= this._intervals[pos].from) { /* Sample is within an interval */
+                    this._intervals[pos].addSample(sample)
+                }
+                else { /* Sample is right before an interval */
+                    if (bridgeGap) {
+                        this._intervals[pos].addSample(sample)
+                    }
+                    else {
+                        this._intervals.splice(pos, 0, new Interval(timestamp, timestamp + 1, [sample]))
+                    }
+                }
+            }
+            else { /* Sample is after the last interval */
+                if (bridgeGap) {
+                    this._intervals[this._intervals.length - 1].addSample(sample)
+                }
+                else {
+                    this._intervals.push(new Interval(timestamp, timestamp + 1, [sample]))
+                }
+            }
+        }
+    }
+
+    /**
+     * @param {?Number} from
+     * @param {?Number} to
+     */
+    purge(from, to) {
+        if (from == null) {
+            from = 0
+        }
+        if (to == null) {
+            to = Infinity
+        }
+
+        if (this._intervals.length === 0) {
+            return
+        }
+
+        let pos = 0
+
+        /* Skip intervals before purge range */
+        while (pos < this._intervals.length && this._intervals[pos].to < from) {
+            pos++
+        }
+
+        while (pos < this._intervals.length && this._intervals[pos].from < to) {
+            let interval = this._intervals[pos]
+            if (from < interval.to && interval.to <= to) {
+                if (from <= interval.from && interval.from < to) {
+                    /* Entire interval included in purge range */
+                    this._intervals.splice(pos, 1)
+                    pos--
+                }
+                else {
+                    /* The right side of interval overlaps with the left side of the purge range */
+                    this._intervals[pos] = interval.getSlice(interval.from, from)
+                }
+            }
+            else {
+                if (interval.from <= from && from < interval.to) {
+                    /* Purge range is included in interval */
+                    this._intervals[pos] = interval.getSlice(interval.from, from)
+                    this._intervals.splice(pos, 0, interval.getSlice(to, interval.to))
+                }
+                else {
+                    /* The right side of purge range overlaps with the left side of the interval */
+                    this._intervals[pos] = interval.getSlice(to, interval.to)
+                }
+            }
+
+            pos++
+        }
     }
 
     _downloadAndCache({from, to}) {

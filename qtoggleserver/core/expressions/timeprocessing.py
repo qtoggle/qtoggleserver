@@ -245,7 +245,7 @@ class FMAvgFunction(Function):
         self._queue.append(value)
         self._last_time = now
 
-        queue = self._queue[-width:]
+        queue = self._queue[-int(width):]
 
         return sum(queue) / len(queue)
 
@@ -281,7 +281,7 @@ class FMedianFunction(Function):
         self._queue.append(value)
         self._last_time = now
 
-        queue = self._queue[-width:]
+        queue = self._queue[-int(width):]
         queue.sort()
 
         return queue[len(queue) // 2]

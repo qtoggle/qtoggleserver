@@ -171,6 +171,7 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
     setXRange: function (xMin, xMax) {
         this._chart.scales['x'].options.min = xMin
         this._chart.scales['x'].options.max = xMax
+        this._chart.update()
     },
 
     getYRange: function () {

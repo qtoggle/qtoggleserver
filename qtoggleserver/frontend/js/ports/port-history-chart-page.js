@@ -11,12 +11,14 @@ import ChartPage                        from '$app/common/chart-page.js'
 import {ChartPageOptionsForm}           from '$app/common/chart-page.js'
 import HistoryDownloadManager           from '$app/common/history-download-manager.js'
 import {HistoryDownloadTooManyRequests} from '$app/common/history-download-manager.js'
+import {decimate, movingAverage}        from '$app/utils.js'
 
 
-const logger = Logger.get('qtoggle.common.porthistorychartpage')
-
+const MAX_DATA_POINTS_LEN = 1000
 const INITIAL_INTERVAL = 24 * 3600 * 1000 /* Last 24h */
 const MAX_FETCH_REQUESTS = 5 /* This translates into at most 50k data points in an interval */
+const FILTER_LEN_RATIO = 0.05 /* Filter window length is 5% of total signal length */
+
 const TIME_WINDOW_CHOICES = [
     {label: gettext('1m|1 minute'), value: 60},
     {label: gettext('10m|10 minutes'), value: 600},
@@ -27,6 +29,8 @@ const TIME_WINDOW_CHOICES = [
     {label: gettext('1Y|1 year'), value: 3600 * 24 * 366},
     {label: gettext('10Y|10 years'), value: 3600 * 24 * 3652}
 ]
+
+const logger = Logger.get('qtoggle.common.porthistorychartpage')
 
 
 class PortHistoryChartPageOptionsForm extends ChartPageOptionsForm {
@@ -118,15 +122,35 @@ class PortHistoryChartPage extends ChartPage {
     }
 
     showHistory(history) {
+        history = decimate(history, MAX_DATA_POINTS_LEN, /* xField = */ 'timestamp', /* yField = */ 'value')
+
         let data
         if (this._isBoolean) {
             data = history.map(sample => [sample.timestamp, sample.value ? 1 : 0])
         }
         else {
-            data = history.map(sample => [sample.timestamp, sample.value])
+            data = history.map(sample => [sample.timestamp, Math.round(sample.value * 1e6) / 1e6])
         }
 
         this.setData(data)
+    }
+
+    processData(data) {
+        /* Apply moving average filtering in addition to chart smoothing */
+        if (!this._isBoolean && this.options.smooth) {
+            data = this.applyMovingAverage(data)
+        }
+
+        return data
+    }
+
+    applyMovingAverage(data) {
+        let wLength = Math.round(data.length * FILTER_LEN_RATIO)
+        if (wLength < 2) {
+            return data
+        }
+
+        return movingAverage(data, wLength, /* xField = */ 0, /* yField = */ 1)
     }
 
     makeBottom() {
@@ -235,6 +259,9 @@ class PortHistoryChartPage extends ChartPage {
             if (this._port['max'] != null) {
                 defaults['max'] = this._port['max']
             }
+        }
+        else {
+            defaults['fillArea'] = true
         }
 
         return new PortHistoryChartPageOptionsForm({
