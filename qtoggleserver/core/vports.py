@@ -37,7 +37,8 @@ class VirtualPort(core_ports.Port):
         self._step: Optional[float] = step
         self._choices: Optional[PortValueChoices] = choices
 
-        self._value = self._virtual_value = self.adapt_value_type_sync(type_, integer, min_ or 0)
+        self._value = self._virtual_value = None
+        self._virtual_value: NullablePortValue = None
 
     def map_id(self, new_id: str) -> None:
         raise core_ports.PortError('Virtual ports cannot be mapped')
