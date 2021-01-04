@@ -420,17 +420,23 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
     query = request.query
 
     from_str = query.get('from')
-    if from_str is None:
+    timestamps_str = query.get('timestamps')
+
+    if from_str is None and timestamps_str is None:
         raise core_api.APIError(400, 'missing-field', field='from')
 
-    try:
-        from_timestamp = int(from_str)
+    if from_str:
+        try:
+            from_timestamp = int(from_str)
 
-    except ValueError:
-        raise core_api.APIError(400, 'invalid-field', field='from')
+        except ValueError:
+            raise core_api.APIError(400, 'invalid-field', field='from')
 
-    if from_timestamp < 0:
-        raise core_api.APIError(400, 'invalid-field', field='from')
+        if from_timestamp < 0:
+            raise core_api.APIError(400, 'invalid-field', field='from')
+
+    else:
+        from_timestamp = None
 
     to_str = query.get('to')
     to_timestamp = int(time.time() * 1000)
@@ -456,7 +462,24 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
         if limit < 1 or limit > 10000:
             raise core_api.APIError(400, 'invalid-field', field='limit')
 
-    samples = await core_history.get_samples(port, from_timestamp, to_timestamp, limit)
+    timestamps = None
+    if timestamps_str is not None:
+        timestamps = timestamps_str.split(',')
+        try:
+            timestamps = [int(t) for t in timestamps]
+
+        except ValueError:
+            raise core_api.APIError(400, 'invalid-field', field='timestamps')
+
+        if any((t < 0) for t in timestamps):
+            raise core_api.APIError(400, 'invalid-field', field='timestamps')
+
+    if timestamps is not None:
+        samples = await core_history.get_samples_by_timestamp(port, timestamps)
+
+    else:
+        samples = await core_history.get_samples_slice(port, from_timestamp, to_timestamp, limit)
+
     return list(samples)
 
 

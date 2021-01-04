@@ -259,7 +259,7 @@ class HistoryFunction(Function):
             consider_curr_value = from_timestamp <= now_ms
 
         if from_timestamp is not None or to_timestamp is not None:
-            samples = await history.get_samples(port, from_timestamp, to_timestamp, limit=1, sort_desc=sort_desc)
+            samples = await history.get_samples_slice(port, from_timestamp, to_timestamp, limit=1, sort_desc=sort_desc)
             samples = list(samples)
 
         else:
