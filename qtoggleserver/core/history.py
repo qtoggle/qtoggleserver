@@ -5,7 +5,7 @@ import asyncio
 import logging
 import time
 
-from typing import Iterable, Optional
+from typing import Iterable, Optional, List
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
@@ -95,7 +95,7 @@ def is_enabled() -> bool:
     return persist.is_history_supported() and settings.core.history_support
 
 
-async def get_samples(
+async def get_samples_slice(
     port: core_ports.BasePort,
     from_timestamp: Optional[int] = None,
     to_timestamp: Optional[int] = None,
@@ -119,6 +119,34 @@ async def get_samples(
     results = await persist.query(PERSIST_COLLECTION, filt=filt, sort=sort, limit=limit)
 
     return ({'value': r['val'], 'timestamp': r['ts']} for r in results)
+
+
+async def get_samples_by_timestamp(
+    port: core_ports.BasePort,
+    timestamps: List[int]
+) -> Iterable[GenericJSONDict]:
+    port_filter = {
+        'pid': port.get_id(),
+    }
+
+    query_tasks = []
+    for timestamp in timestamps:
+        filt = dict(port_filter, ts={'le': timestamp})
+        task = persist.query(PERSIST_COLLECTION, filt=filt, sort='-ts', limit=1)
+        query_tasks.append(task)
+
+    task_results = await asyncio.gather(*query_tasks)
+
+    samples = []
+    for task_result in task_results:
+        query_results = list(task_result)
+        if query_results:
+            samples.append(query_results[0])
+
+        else:
+            samples.append(None)
+
+    return ({'value': r['val'], 'timestamp': r['ts']} if r is not None else None for r in samples)
 
 
 async def save_sample(port: core_ports.BasePort, timestamp: int) -> None:
