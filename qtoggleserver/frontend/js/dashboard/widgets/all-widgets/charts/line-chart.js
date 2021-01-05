@@ -6,6 +6,7 @@ import StockIcon            from '$qui/icons/stock-icon.js'
 import * as ObjectUtils     from '$qui/utils/object.js'
 
 import * as Widgets    from '$app/dashboard/widgets/widgets.js'
+import {decimate}      from '$app/utils.js'
 import {movingAverage} from '$app/utils.js'
 
 import '$app/widgets/time-chart.js'
@@ -21,6 +22,8 @@ const FILTER_LEN_RATIO = { /* Filter window length as percent of total signal le
     2: 0.075,
     3: 0.2
 }
+
+const MAX_DATA_POINTS_LEN = 1000 /* Max data points to be displayed on chart at once */
 
 
 class ConfigForm extends PortHistoryChartConfigForm {
@@ -49,6 +52,8 @@ class ConfigForm extends PortHistoryChartConfigForm {
             name: 'showDataPoints',
             label: gettext('Show Data Points')
         }))
+
+        this.getField('timeGroups').hide()
     }
 
 }
@@ -101,6 +106,10 @@ class LineChart extends PortHistoryChart {
         }
     }
 
+    decimateHistory(history, from, to) {
+        return decimate(history, MAX_DATA_POINTS_LEN, /* xField = */ 'timestamp', /* yField = */ 'value')
+    }
+
     processHistory(history, from, to) {
         /* Apply moving average filtering in addition to chart smoothing */
         if (!this.isBoolean() && this._smoothLevel) {
@@ -117,6 +126,29 @@ class LineChart extends PortHistoryChart {
         }
 
         return movingAverage(history, wLength, /* xField = */ 'timestamp', /* yField = */ 'value')
+    }
+
+    isSliceHistoryMode() {
+        return true
+    }
+
+    showHistorySlice(history, from, to) {
+        history = this.decimateHistory(history, from, to)
+        history = this.processHistory(history, from, to)
+
+        let data
+        if (this.isBoolean()) {
+            let low = this._inverted ? 1 : 0
+            let high = this._inverted ? 0 : 1
+            data = history.map(sample => [sample.timestamp, sample.value ? low : high])
+        }
+        else {
+            /* Also round value to decent number of decimals */
+            data = history.map(sample => [sample.timestamp, Math.round(sample.value * 1e6) / 1e6])
+        }
+
+        this.widgetCall('setValue', data)
+        this.widgetCall('setXRange', from, to)
     }
 
     makeChartOptions() {

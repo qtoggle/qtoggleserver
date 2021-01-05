@@ -170,18 +170,25 @@ export function patchPortSequence(id, values, delays, repeat) {
  * GET /ports/{id}/history API function call.
  * @alias qtoggle.api.ports.getPortHistory
  * @param {String} id the port identifier
- * @param {Number} from start of interval, as timestamp in milliseconds
- * @param {Number} [to] end of interval, as timestamp in milliseconds
- * @param {Number} [limit]
+ * @param {?Number} [from] start of interval, as timestamp in milliseconds
+ * @param {?Number} [to] end of interval, as timestamp in milliseconds
+ * @param {?Number} [limit]
+ * @param {?Number[]} [timestamps]
  * @returns {Promise}
  */
-export function getPortHistory(id, from, to = null, limit = null) {
-    let query = {from}
+export function getPortHistory(id, from = null, to = null, limit = null, timestamps = null) {
+    let query = {}
+    if (from != null) {
+        query['from'] = from
+    }
     if (to != null) {
         query['to'] = to
     }
     if (limit != null) {
         query['limit'] = limit
+    }
+    if (timestamps != null) {
+        query['timestamps'] = timestamps.join(',')
     }
 
     return BaseAPI.apiCall({
