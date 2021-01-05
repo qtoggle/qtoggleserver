@@ -93,7 +93,7 @@ $.widget('qtoggle.linechart', $.qtoggle.basechart, {
         return ObjectUtils.combine(options, {
             autoSkip: false,
             autoSkipPadding: environment.em2px / 2,
-            maxRotation: this.options.allowTickRotation ? null : 0,
+            maxRotation: this.options.allowTickRotation ? 90 : 0,
             stepSize: stepSize,
             major: {
                 enabled: this.options.showMajorTicks

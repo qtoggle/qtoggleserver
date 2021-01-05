@@ -685,8 +685,6 @@ class Widget extends mix().with(ViewMixin) {
         this._labelDiv.children('span').html(this._label)
         this._labelDiv.css('display', label ? '' : 'none')
         this._bodyDiv.toggleClass('has-label', Boolean(label))
-
-        this.refreshContent()
     }
 
 
@@ -700,30 +698,10 @@ class Widget extends mix().with(ViewMixin) {
     }
 
     /**
-     * @param {Number} left
-     */
-    setLeft(left) {
-        this._left = left
-        this.updateLayout()
-        this.refreshContent()
-        this.updateState()
-    }
-
-    /**
      * @returns {Number}
      */
     getTop() {
         return this._top
-    }
-
-    /**
-     * @param {Number} top
-     */
-    setTop(top) {
-        this._top = top
-        this.updateLayout()
-        this.refreshContent()
-        this.updateState()
     }
 
     /**
@@ -739,8 +717,8 @@ class Widget extends mix().with(ViewMixin) {
     setWidth(width) {
         this._width = width
         this.updateLayout()
-        this.refreshContent()
         this.updateState()
+        this.refreshContent()
     }
 
     /**
@@ -756,8 +734,8 @@ class Widget extends mix().with(ViewMixin) {
     setHeight(height) {
         this._height = height
         this.updateLayout()
-        this.refreshContent()
         this.updateState()
+        this.refreshContent()
     }
 
     /**

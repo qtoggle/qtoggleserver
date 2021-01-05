@@ -267,9 +267,10 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
             position: this.options.legend,
             labels: {
                 font: this._makeFontOptions(environment),
+                color: environment.foregroundColor,
                 padding: environment.em2px * 0.5,
                 usePointStyle: true,
-                boxWidth: environment.px4,
+                boxWidth: environment.em2px * 0.5,
                 generateLabels: function (chart) {
                     /* Hack to force fill color to be the same as stroke (border) color */
                     let labels = ChartJS.Chart.defaults.plugins.legend.labels.generateLabels(chart)
@@ -295,15 +296,20 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
     },
 
     _makeTicksOptions: function (environment, scaleName) {
-        return {
+        let options = {
             color: environment.foregroundActiveColor,
             font: ObjectUtils.combine(this._makeFontOptions(environment), {
                 size: environment.em2px * 0.75
-            }),
-            callback: scaleName === 'y' ? function (value, index, values) { /* Show units on vertical axis */
-                return `${value}${this.options.unitOfMeasurement || ''}`
-            }.bind(this) : null
+            })
         }
+
+        if (scaleName === 'y') {
+            options.callback = function (value, index, values) { /* Show units on vertical axis */
+                return `${value}${this.options.unitOfMeasurement || ''}`
+            }.bind(this)
+        }
+
+        return options
     },
 
     _makeTooltipOptions: function (environment) {

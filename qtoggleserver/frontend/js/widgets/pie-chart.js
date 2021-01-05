@@ -4,6 +4,8 @@ import $ from '$qui/lib/jquery.module.js'
 import * as Colors      from '$qui/utils/colors.js'
 import * as ObjectUtils from '$qui/utils/object.js'
 
+import * as ChartJS from '$app/lib/chartjs.module.js'
+
 import './base-chart.js'
 
 
@@ -32,6 +34,24 @@ $.widget('qtoggle.piechart', $.qtoggle.basechart, {
                 }.bind(this)
             }
         })
+    },
+
+    _makeLegendOptions: function (environment) {
+        let options = this._super(environment)
+        let labels = this.options.labels
+
+        options.labels.generateLabels = function (chart) {
+            if (!labels || labels.length < 2) {
+                return []
+            }
+
+            /* Pie chart extracts all legend labels from the single data set */
+
+            chart.data.labels = labels
+            return ChartJS.DoughnutController.defaults.plugins.legend.labels.generateLabels(chart)
+        }
+
+        return options
     },
 
     _adaptDatasets: function (data, environment, colors) {

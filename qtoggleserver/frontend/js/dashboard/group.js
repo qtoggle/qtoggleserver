@@ -32,7 +32,7 @@ class GroupOptionsForm extends OptionsForm {
                     maxLength: 64
                 }),
                 new CompositeField({
-                    name: 'action_buttons',
+                    name: 'actionButtons',
                     label: gettext('Actions'),
                     separator: true,
                     flow: 'vertical',

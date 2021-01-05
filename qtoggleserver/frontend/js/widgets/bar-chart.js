@@ -16,16 +16,15 @@ $.widget('qtoggle.barchart', $.qtoggle.basechart, {
     options: {
         yMin: null,
         yMax: null,
+        yTicksStepSize: null,
+        yTicksLabelCallback: null,
+        allowTickRotation: false,
         stacked: false
     },
 
     type: 'bar',
 
     _makeScalesOptions: function (environment) {
-        /* min/max values must be supplied as undefined if not specified */
-        let yMin = this.options.yMin == null ? undefined : this.options.yMin
-        let yMax = this.options.yMax == null ? undefined : this.options.yMax
-
         return ObjectUtils.combine(this._super(environment), {
             x: {
                 type: 'category',
@@ -35,13 +34,37 @@ $.widget('qtoggle.barchart', $.qtoggle.basechart, {
             },
             y: {
                 type: 'linear',
-                min: yMin,
-                max: yMax,
+                min: this.options.yMin,
+                max: this.options.yMax,
                 gridLines: this._makeGridLinesOptions(environment),
                 ticks: this._makeTicksOptions(environment, 'y'),
                 stacked: this.options.stacked
             }
         })
+    },
+
+    _makeTicksOptions: function (environment, scaleName) {
+        let options = ObjectUtils.combine(this._super(environment, scaleName), {
+            autoSkip: false,
+            autoSkipPadding: environment.em2px / 2,
+            maxRotation: this.options.allowTickRotation ? 90 : 0
+        })
+
+        if (scaleName === 'y') {
+            if (this.options.yTicksStepSize != null) {
+                options.stepSize = this.options.yTicksStepSize
+            }
+            if (this.options.yTicksLabelCallback) {
+                options.callback = this.options.yTicksLabelCallback
+            }
+            else {
+                options.callback = function (value, index, values) { /* Show units on vertical axis, by default */
+                    return `${value}${this.options.unitOfMeasurement || ''}`
+                }.bind(this)
+            }
+        }
+
+        return options
     },
 
     _makeTooltipOptions: function (environment) {
