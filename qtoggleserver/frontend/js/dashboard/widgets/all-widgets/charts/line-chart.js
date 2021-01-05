@@ -11,7 +11,6 @@ import {movingAverage} from '$app/utils.js'
 
 import '$app/widgets/time-chart.js'
 
-
 import {PortHistoryChartConfigForm} from './port-history-chart.js'
 import {PortHistoryChart}           from './port-history-chart.js'
 
@@ -138,8 +137,8 @@ class LineChart extends PortHistoryChart {
 
         let data
         if (this.isBoolean()) {
-            let low = this._inverted ? 1 : 0
-            let high = this._inverted ? 0 : 1
+            let low = this.isInverted() ? 1 : 0
+            let high = this.isInverted() ? 0 : 1
             data = history.map(sample => [sample.timestamp, sample.value ? low : high])
         }
         else {
@@ -154,7 +153,16 @@ class LineChart extends PortHistoryChart {
     makeChartOptions() {
         let options = super.makeChartOptions()
 
-        if (!this.isBoolean()) {
+        if (this.isBoolean()) {
+            options.stepped = true
+            options.yTicksStepSize = 1
+            options.yTicksLabelCallback = value => value ? gettext('On') : gettext('Off')
+        }
+        else {
+            options.yMin = this.getMin()
+            options.yMax = this.getMax()
+            options.unitOfMeasurement = this.getUnit()
+
             options.smooth = Boolean(this._smoothLevel)
             options.fillArea = this._fillArea
             options.showDataPoints = this._showDataPoints

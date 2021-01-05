@@ -7,6 +7,7 @@ import {ColorComboField} from '$qui/forms/common-fields/common-fields.js'
 import {ComboField}      from '$qui/forms/common-fields/common-fields.js'
 import {NumericField}    from '$qui/forms/common-fields/common-fields.js'
 import {TextField}       from '$qui/forms/common-fields/common-fields.js'
+import * as ObjectUtils  from '$qui/utils/object.js'
 import * as StringUtils  from '$qui/utils/string.js'
 
 import * as ChartJS from '$app/lib/chartjs.module.js'
@@ -73,12 +74,17 @@ const TIME_GROUPS_CHOICES = [
         value: {multiplier: 12, unit: 'hour'}
     },
     {label: `${gettext('1 day')} (${gettext('every hour')})`, value: {multiplier: 24, unit: 'hour'}},
-    {label: `${gettext('1 week')} (${gettext('every day')})`, value: {interval: 86400 * 7, unit: 'day'}},
+    {label: `${gettext('1 week')} (${gettext('every day')})`, value: {interval: 86400 * 7, unit: 'weekDay'}},
     {label: `${gettext('1 month')} (${gettext('every day')})`, value: {interval: 86400 * 31, unit: 'day'}},
     {label: `${gettext('1 year')} (${gettext('every month')})`, value: {interval: 86400 * 366, unit: 'month'}}
 ]
 
+const UNIT_MAPPING = {
+    'week-day': 'day'
+}
+
 const MAX_FETCH_REQUESTS = 5 /* This means at most 50k data points per interval */
+const MAX_CACHED_SAMPLES_LEN = 400 /* Should be enough for every day during one year */
 
 const logger = Logger.get('qtoggle.dashboard.widgets')
 
@@ -140,7 +146,10 @@ export class PortHistoryChartConfigForm extends BaseChartConfigForm {
         })
     }
 
-    updateFieldsVisibility() {
+    /**
+     * @returns {Boolean}
+     */
+    isBoolean() {
         let data = this.getUnvalidatedData()
         let port = this.getPort(data.portId)
         let isBoolean = true
@@ -148,7 +157,11 @@ export class PortHistoryChartConfigForm extends BaseChartConfigForm {
             isBoolean = false
         }
 
-        if (isBoolean) {
+        return isBoolean
+    }
+
+    updateFieldsVisibility() {
+        if (this.isBoolean()) {
             this.constructor.NUMBER_FIELD_NAMES.forEach(function (name) {
                 this.getField(name).hide()
             }, this)
@@ -203,6 +216,9 @@ export class PortHistoryChart extends BaseChartWidget {
         this._fetchHistoryPromise = null
         this._historyDownloadManager = null /* Used for slice history mode */
         this._cachedSamples = [] /* Used for timestamps history mode */
+
+        /* Use ChartJS date adapter to determine beginning of time units */
+        this._dateAdapter = new ChartJS._adapters._date()
     }
 
     isValid() {
@@ -231,6 +247,68 @@ export class PortHistoryChart extends BaseChartWidget {
         return true
     }
 
+    /**
+     * @returns {Boolean}
+     */
+    isInverted() {
+        return this._inverted
+    }
+
+    /**
+     * @returns {?Number}
+     */
+    getMin() {
+        return this._min
+    }
+
+    /**
+     * @returns {?Number}
+     */
+    getMax() {
+        return this._max
+    }
+
+    /**
+     * @returns {String}
+     */
+    getUnit() {
+        return this._unit
+    }
+
+    /**
+     * @returns {?{multiplier: Number, unit: String}}
+     */
+    getTimeGroups() {
+        return this._timeGroups
+    }
+
+    /**
+     * @returns {?Number}
+     */
+    getTimeInterval() {
+        return this._timeInterval
+    }
+
+    getFromTimestamp() {
+        let nowDate = new Date()
+
+        if (this._timeInterval != null) {
+            return nowDate.getTime() - this._timeInterval * 1000
+        }
+        else { /* Assuming timeGroups */
+            let {multiplier, unit} = this._timeGroups
+            unit = UNIT_MAPPING[unit] || unit
+
+            let timestamp = this._dateAdapter.endOf(nowDate, unit).getTime() + 1
+            return this._dateAdapter.add(timestamp, -multiplier - 1, unit).getTime()
+        }
+    }
+
+    invalidateCache() {
+        this._historyDownloadManager = null
+        this._cachedSamples = []
+    }
+
     showCurrentValue(wantProgress = true) {
         if (wantProgress && !this._fetchHistoryPromise) {
             this.setProgress()
@@ -241,7 +319,7 @@ export class PortHistoryChart extends BaseChartWidget {
         let sliceHistoryMode = this.isSliceHistoryMode()
 
         if (sliceHistoryMode) {
-            from = new Date().getTime() - this._timeInterval * 1000
+            from = this.getFromTimestamp()
             to = new Date().getTime()
             fetchHistoryPromise = this.getHistorySlice(from, to)
         }
@@ -301,24 +379,16 @@ export class PortHistoryChart extends BaseChartWidget {
             }
 
             /* Remove old values that are no longer displayed on chart */
-            let to = new Date().getTime() - this._timeInterval * 1000 * 1.1 /* Extra 10% safety margin */
+            let to = this.getFromTimestamp()
             this._historyDownloadManager.purge(null, to)
 
             /* Add new value using the current timestamp */
             this._historyDownloadManager.addSample(value, new Date().getTime(), /* bridgeGap = */ true)
         }
         else {
-            /* Remove old values that are no longer displayed on chart */
-            let {multiplier, unit} = this._timeGroups
+            /* Remove old values that will no longer be displayed on chart */
 
-            /* Use ChartJS date adapter to determine beginning of time units */
-            let adapter = new ChartJS._adapters._date()
-
-            let nowDate = new Date()
-            let timestamp = adapter.endOf(nowDate, unit).getTime() + 1
-            let firstTimestamp = adapter.add(timestamp, -multiplier - 1, unit).getTime()
-
-            while (this._cachedSamples.length > 0 && this._cachedSamples[0].timestamp < firstTimestamp) {
+            while (this._cachedSamples.length > MAX_CACHED_SAMPLES_LEN) {
                 this._cachedSamples.shift()
             }
         }
@@ -351,13 +421,7 @@ export class PortHistoryChart extends BaseChartWidget {
     configFromJSON(json) {
         /* Invalidate history if port changed */
         if (json.portId !== this._portId) {
-            this._historyDownloadManager = null
-            this._cachedSamples = []
-        }
-
-        /* Invalidate cached samples if time groups changed */
-        if (json.timeGroups !== this._timeGroups) {
-            this._cachedSamples = []
+            this.invalidateCache()
         }
 
         if (json.portId) {
@@ -393,16 +457,14 @@ export class PortHistoryChart extends BaseChartWidget {
 
         let timestamps = []
         let {multiplier, unit} = this._timeGroups
-
-        /* Use ChartJS date adapter to determine beginning of time units */
-        let adapter = new ChartJS._adapters._date()
+        unit = UNIT_MAPPING[unit] || unit
 
         let nowDate = new Date()
-        let timestamp = adapter.endOf(nowDate, unit).getTime() + 1
+        let timestamp = this._dateAdapter.endOf(nowDate, unit).getTime() + 1
         timestamps.push(timestamp)
 
         for (let i = 0; i < multiplier; i++) {
-            timestamp = adapter.add(timestamp, -1, unit).getTime()
+            timestamp = this._dateAdapter.add(timestamp, -1, unit).getTime()
             timestamps.push(timestamp)
         }
 
@@ -454,17 +516,17 @@ export class PortHistoryChart extends BaseChartWidget {
             return Promise.resolve([])
         }
 
-        /* Only fetch samples for timestamps newer than last cached sample */
-        let lastFetchedTimestamp = 0
-        if (this._cachedSamples.length > 0) {
-            lastFetchedTimestamp = this._cachedSamples[this._cachedSamples.length - 1].timestamp
-        }
-
-        let timestampsToFetch = timestamps.filter(t => t > lastFetchedTimestamp)
         let currentFetchPromise = this._fetchHistoryPromise || Promise.resolve()
 
         let fetchPromise = currentFetchPromise.then(function () {
 
+            /* Only fetch samples for timestamps newer than last cached sample */
+            let lastFetchedTimestamp = 0
+            if (this._cachedSamples.length > 0) {
+                lastFetchedTimestamp = this._cachedSamples[this._cachedSamples.length - 1].timestamp
+            }
+
+            let timestampsToFetch = timestamps.filter(t => t > lastFetchedTimestamp)
             if (timestampsToFetch.length > 0) {
                 return PortsAPI.getPortHistory(
                     this._portId,
@@ -485,6 +547,11 @@ export class PortHistoryChart extends BaseChartWidget {
 
         }.bind(this)).then(function (history) {
 
+            /* Keep only samples newer than last cached sample */
+            if (this._cachedSamples.length) {
+                history = history.filter(s => s != null && s.timestamp > this._cachedSamples[0].timestamp)
+            }
+
             /* Cache fetched values */
             this._cachedSamples = this._cachedSamples.concat(history)
 
@@ -493,7 +560,15 @@ export class PortHistoryChart extends BaseChartWidget {
                 this._fetchHistoryPromise = null
             }
 
-            return history
+            /* Associate samples to requested timestamps */
+            let selectedSamples = this._cachedSamples.slice(-timestamps.length)
+
+            /* Pad with nulls until we get our requested number of samples */
+            while (selectedSamples.length < timestamps.length) {
+                selectedSamples.unshift(null)
+            }
+
+            return selectedSamples
 
         }.bind(this))
 
@@ -520,22 +595,9 @@ export class PortHistoryChart extends BaseChartWidget {
     }
 
     makeChartOptions() {
-        let options = super.makeChartOptions()
-
-        if (!this.isBoolean()) {
-            options.yMin = this._min
-            options.yMax = this._max
-            options.unitOfMeasurement = this._unit
-        }
-        else {
-            options.stepped = true
-            options.yTicksStepSize = 1
-            options.yTicksLabelCallback = value => value ? gettext('On') : gettext('Off')
-        }
-
-        options.colors = [this._color]
-
-        return options
+        return ObjectUtils.combine(super.makeChartOptions(), {
+            colors: [this._color]
+        })
     }
 
 }
