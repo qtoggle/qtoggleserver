@@ -31,7 +31,7 @@ const NON_SLICE_MODE_INFO = ['difference']
 const DATE_FORMAT_BY_UNIT = {
     second: '%S',
     minute: '%H:%M',
-    hour: '%H',
+    hour: '%H:00',
     day: '%d',
     weekDay: '%a',
     month: '%b'
@@ -114,8 +114,8 @@ class BarChart extends PortHistoryChart {
     }
 
     showHistorySlice(history, from, to) {
-        let timestamps = this.computeGroupsTimestamps()
-        timestamps = timestamps.slice(0, -1) /* Last timestamp is in the future */
+        let fullTimestamps = this.computeGroupsTimestamps() /* Including ending timestamp, normally from the future */
+        let timestamps = fullTimestamps.slice(0, -1) /* Exclude last timestamp, from the future */
 
         /* Invert boolean signal, if needed */
         if (this.isBoolean() && this.isInverted()) {
@@ -143,7 +143,7 @@ class BarChart extends PortHistoryChart {
                 barHistory.push(history.shift())
             }
 
-            let value = this.computeBarValue(barHistory)
+            let value = this.computeBarValue(barHistory, fullTimestamps[i], fullTimestamps[i + 1])
             /* Round value to decent number of decimals */
             value = Math.round(value * 1e6) / 1e6
             return value
@@ -159,6 +159,10 @@ class BarChart extends PortHistoryChart {
 
         let categories = this.makeBarCategories(timestamps)
         let data = timestamps.map(function (timestamp, i) {
+
+            if (history[i] == null || history[i + 1] == null) {
+                return 0
+            }
 
             let barHistory = [history[i], history[i + 1]]
             let value = this.computeBarValue(barHistory)
@@ -182,7 +186,7 @@ class BarChart extends PortHistoryChart {
         })
     }
 
-    computeBarValue(history) {
+    computeBarValue(history, from, to) {
         if (history.length === 0) {
             return 0
         }
@@ -221,6 +225,10 @@ class BarChart extends PortHistoryChart {
                 let lastStartTimestamp = null
                 let onTime = this._barInfo === 'on-time'
 
+                if (Boolean(history[0].value) !== onTime) {
+                    duration += history[0].timestamp - from
+                }
+
                 history.forEach(function ({value, timestamp}) {
                     if (value === lastValue) {
                         return
@@ -229,11 +237,16 @@ class BarChart extends PortHistoryChart {
                     if (Boolean(value) === onTime) { /* Start time measurement */
                         lastStartTimestamp = timestamp
                     }
-                    else { /* Stop time measurement */
+                    else if (lastStartTimestamp != null) { /* Stop time measurement */
                         duration += timestamp - lastStartTimestamp
                         lastStartTimestamp = null
                     }
                 })
+
+                /* Add remaining duration */
+                if (lastStartTimestamp != null) {
+                    duration += to - lastStartTimestamp
+                }
 
                 return duration
             }
@@ -243,18 +256,25 @@ class BarChart extends PortHistoryChart {
     }
 
     makeChartOptions() {
-        let options = super.makeChartOptions()
+        let options = ObjectUtils.combine(super.makeChartOptions(), {
+            allowTickRotation: true
+        })
 
-        if (this.isBoolean()) {
-            // TODO
-            //options.stepped = true
-            //options.yTicksStepSize = 1
-            //options.yTicksLabelCallback = value => value ? gettext('On') : gettext('Off')
-        }
-        else {
+        if (!this.isBoolean()) {
             options.yMin = this.getMin()
             options.yMax = this.getMax()
             options.unitOfMeasurement = this.getUnit()
+        }
+
+        if (this._barInfo === 'on-time' || this._barInfo === 'off-time') {
+            options.yTicksLabelCallback = function (value) {
+                let format = '%H:%M:%S'
+                if (value >= 24 * 3600 * 1000) {
+                    format = `%d ${gettext('days')}, ${format}`
+                }
+
+                return DateUtils.formatDurationPercent(value, format)
+            }
         }
 
         return options
