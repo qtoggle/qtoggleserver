@@ -267,9 +267,10 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
             position: this.options.legend,
             labels: {
                 font: this._makeFontOptions(environment),
+                color: environment.foregroundColor,
                 padding: environment.em2px * 0.5,
                 usePointStyle: true,
-                boxWidth: environment.px4,
+                boxWidth: environment.em2px * 0.5,
                 generateLabels: function (chart) {
                     /* Hack to force fill color to be the same as stroke (border) color */
                     let labels = ChartJS.Chart.defaults.plugins.legend.labels.generateLabels(chart)

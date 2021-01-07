@@ -280,6 +280,15 @@ class BarChart extends PortHistoryChart {
         return options
     }
 
+    makePadding() {
+        return {
+            top: 0.2,
+            right: 0,
+            bottom: 0,
+            left: 0
+        }
+    }
+
 }
 
 Widgets.register(BarChart)

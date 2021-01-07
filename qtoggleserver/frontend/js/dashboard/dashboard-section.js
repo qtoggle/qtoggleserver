@@ -225,10 +225,7 @@ class DashboardSection extends Section {
         if (!byCurrentSession && this.isCurrent()) {
             let msg = gettext('The dashboard is currently being edited in another session.')
             Toast.warning(msg)
-        }
 
-        /* Navigate back to the section root */
-        if (!byCurrentSession || !currentPanel || !currentPanel.isEditEnabled() || !this.isCurrent()) {
             let rootGroup = this.getMainPage()
             let promise = Promise.resolve()
             if (rootGroup.getNext()) {

@@ -67,7 +67,7 @@ class PanelOptionsForm extends OptionsForm {
                     max: MAX_PANEL_HEIGHT
                 }),
                 new CompositeField({
-                    name: 'action_buttons',
+                    name: 'actionButtons',
                     label: gettext('Actions'),
                     separator: true,
                     flow: 'vertical',
@@ -133,7 +133,7 @@ class PanelOptionsForm extends OptionsForm {
     }
 
     _getActionButton(name) {
-        return this.getField('action_buttons').getField(name)
+        return this.getField('actionButtons').getField(name)
     }
 
     updateSizeLimits() {

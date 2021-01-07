@@ -22,6 +22,8 @@ export class BaseChartWidget extends Widget {
 
     static category = gettext('Charts')
     static noProgressInteraction = true
+    static vResizable = true
+    static hResizable = true
     static hasFrame = true
 
     /**
@@ -55,6 +57,7 @@ export class BaseChartWidget extends Widget {
     makeChartOptions() {
         let cellWidth = this.getCellWidth()
         let scalingFactor = this.getEmSize() * Widgets.LABEL_FONT_SIZE
+        let padding = this.makePadding()
 
         return {
             scalingFactor: scalingFactor,
@@ -62,13 +65,22 @@ export class BaseChartWidget extends Widget {
             extraChartOptions: {
                 layout: {
                     padding: {
-                        top: cellWidth * 0.2,
-                        right: 0,
-                        bottom: 0,
-                        left: 0
+                        top: padding.top * cellWidth,
+                        right: padding.right * cellWidth,
+                        bottom: padding.bottom * cellWidth,
+                        left: padding.left * cellWidth
                     }
                 }
             }
+        }
+    }
+
+    makePadding() {
+        return {
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0
         }
     }
 

@@ -194,9 +194,6 @@ export class PortHistoryChartConfigForm extends BaseChartConfigForm {
 export class PortHistoryChart extends BaseChartWidget {
 
     static ConfigForm = PortHistoryChartConfigForm
-    static vResizable = true
-    static hResizable = true
-    static hasFrame = true
 
 
     /**
@@ -296,12 +293,15 @@ export class PortHistoryChart extends BaseChartWidget {
         if (this._timeInterval != null) {
             return nowDate.getTime() - this._timeInterval * 1000
         }
-        else { /* Assuming timeGroups */
+        else if (this._timeGroups != null) {
             let {multiplier, unit} = this._timeGroups
             unit = UNIT_MAPPING[unit] || unit
 
             let timestamp = this._dateAdapter.endOf(nowDate, unit).getTime() + 1
             return this._dateAdapter.add(timestamp, -multiplier - 1, unit).getTime()
+        }
+        else {
+            return nowDate.getTime()
         }
     }
 
@@ -402,7 +402,7 @@ export class PortHistoryChart extends BaseChartWidget {
             return
         }
 
-        this._historyDownloadManager = null
+        this.invalidateCache()
         this.showCurrentValue()
     }
 

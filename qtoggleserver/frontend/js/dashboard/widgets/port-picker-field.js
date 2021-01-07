@@ -27,6 +27,9 @@ class PortPickerField extends ComboField {
 
         if (filter) {
             this.filter = filter
+
+            /* This will rebuild the choices list, applying the filter */
+            this._widgetCall({choices: []})
         }
 
         this._currentAnchorElement = null

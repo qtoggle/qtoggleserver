@@ -36,7 +36,7 @@ class WidgetConfigForm extends PageForm {
 
         let defaultEndFields = [
             new CompositeField({
-                name: 'action_buttons',
+                name: 'actionButtons',
                 label: gettext('Actions'),
                 separator: true,
                 flow: 'vertical',
@@ -92,6 +92,15 @@ class WidgetConfigForm extends PageForm {
         this._widget = widget
     }
 
+    addField(index, field) {
+        if (index < 0) {
+            /* Don't add fields after action buttons */
+            index = this.getFieldIndex('actionButtons')
+        }
+
+        super.addField(index, field)
+    }
+
     /**
      * Update config form data from widget.
      */
@@ -134,7 +143,7 @@ class WidgetConfigForm extends PageForm {
         this._widget.refreshContent()
         this._widget.updateState()
 
-        /* UpdateState() calls showCurrentValue() itself upon transition, but here we need it called even if there
+        /* updateState() calls showCurrentValue() itself upon transition, but here we need it called even if there
          * hasn't been any transition */
         if (this._widget.getState() === oldState === Widgets.STATE_NORMAL) {
             this._widget.showCurrentValue()

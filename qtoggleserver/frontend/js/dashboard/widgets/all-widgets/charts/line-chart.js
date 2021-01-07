@@ -156,6 +156,8 @@ class LineChart extends PortHistoryChart {
         if (this.isBoolean()) {
             options.stepped = true
             options.yTicksStepSize = 1
+            options.fillArea = this._fillArea
+            options.showDataPoints = this._showDataPoints
             options.yTicksLabelCallback = value => value ? gettext('On') : gettext('Off')
         }
         else {
@@ -171,6 +173,15 @@ class LineChart extends PortHistoryChart {
         options.showMajorTicks = true
 
         return options
+    }
+
+    makePadding() {
+        return {
+            top: 0.2,
+            right: 0,
+            bottom: 0,
+            left: 0
+        }
     }
 
 }
