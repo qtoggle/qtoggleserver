@@ -20,6 +20,7 @@
  */
 
 
+import './charts/bar-chart.js'
 import './charts/line-chart.js'
 import './displays/on-off-indicator.js'
 import './displays/progress-bar.js'

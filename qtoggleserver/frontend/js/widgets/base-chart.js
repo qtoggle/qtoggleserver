@@ -295,15 +295,20 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
     },
 
     _makeTicksOptions: function (environment, scaleName) {
-        return {
+        let options = {
             color: environment.foregroundActiveColor,
             font: ObjectUtils.combine(this._makeFontOptions(environment), {
                 size: environment.em2px * 0.75
-            }),
-            callback: scaleName === 'y' ? function (value, index, values) { /* Show units on vertical axis */
-                return `${value}${this.options.unitOfMeasurement || ''}`
-            }.bind(this) : null
+            })
         }
+
+        if (scaleName === 'y') {
+            options.callback = function (value, index, values) { /* Show units on vertical axis */
+                return `${value}${this.options.unitOfMeasurement || ''}`
+            }.bind(this)
+        }
+
+        return options
     },
 
     _makeTooltipOptions: function (environment) {
