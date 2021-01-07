@@ -7,6 +7,7 @@ import {ColorComboField} from '$qui/forms/common-fields/common-fields.js'
 import {ComboField}      from '$qui/forms/common-fields/common-fields.js'
 import {NumericField}    from '$qui/forms/common-fields/common-fields.js'
 import {TextField}       from '$qui/forms/common-fields/common-fields.js'
+import * as ArrayUtils   from '$qui/utils/array.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
 import * as StringUtils  from '$qui/utils/string.js'
 
@@ -74,13 +75,13 @@ const TIME_GROUPS_CHOICES = [
         value: {multiplier: 12, unit: 'hour'}
     },
     {label: `${gettext('1 day')} (${gettext('every hour')})`, value: {multiplier: 24, unit: 'hour'}},
-    {label: `${gettext('1 week')} (${gettext('every day')})`, value: {interval: 86400 * 7, unit: 'weekDay'}},
-    {label: `${gettext('1 month')} (${gettext('every day')})`, value: {interval: 86400 * 31, unit: 'day'}},
-    {label: `${gettext('1 year')} (${gettext('every month')})`, value: {interval: 86400 * 366, unit: 'month'}}
+    {label: `${gettext('1 week')} (${gettext('every day')})`, value: {multiplier: 7, unit: 'weekDay'}},
+    {label: `${gettext('1 month')} (${gettext('every day')})`, value: {multiplier: 31, unit: 'day'}},
+    {label: `${gettext('1 year')} (${gettext('every month')})`, value: {multiplier: 12, unit: 'month'}}
 ]
 
 const UNIT_MAPPING = {
-    'week-day': 'day'
+    weekDay: 'day'
 }
 
 const MAX_FETCH_REQUESTS = 5 /* This means at most 50k data points per interval */
@@ -423,6 +424,10 @@ export class PortHistoryChart extends BaseChartWidget {
         if (json.portId !== this._portId) {
             this.invalidateCache()
         }
+        /* Invalidate history if time groups changed */
+        if (json.timeGroups !== this._timeGroups) {
+            this.invalidateCache()
+        }
 
         if (json.portId) {
             this._portId = json.portId
@@ -547,10 +552,24 @@ export class PortHistoryChart extends BaseChartWidget {
 
         }.bind(this)).then(function (history) {
 
-            /* Keep only samples newer than last cached sample */
+            /* Keep only non-null samples newer than last cached sample */
             if (this._cachedSamples.length) {
-                history = history.filter(s => s != null && s.timestamp > this._cachedSamples[0].timestamp)
+                let lastCachedSample = this._cachedSamples[this._cachedSamples.length - 1]
+                history = history.filter(s => s != null && s.timestamp > lastCachedSample.timestamp)
             }
+            else {
+                history = history.filter(s => s != null)
+            }
+
+            /* Ignore duplicate (and successive) samples */
+            let distinctHistory = history.slice(0, 1)
+            history.slice(1).forEach(function (sample, i) {
+                let prevSample = history[i]
+                if (sample.timestamp !== prevSample.timestamp) {
+                    distinctHistory.push(sample)
+                }
+            })
+            history = distinctHistory
 
             /* Cache fetched values */
             this._cachedSamples = this._cachedSamples.concat(history)
@@ -560,13 +579,33 @@ export class PortHistoryChart extends BaseChartWidget {
                 this._fetchHistoryPromise = null
             }
 
+            if (this._cachedSamples.length === 0) {
+                return ArrayUtils.range(0, timestamps.length).map(() => null)
+            }
+
             /* Associate samples to requested timestamps */
-            let selectedSamples = this._cachedSamples.slice(-timestamps.length)
+            let selectedSamples = []
+            let samples = this._cachedSamples.slice()
+            for (let timestampIndex = timestamps.length - 1; timestampIndex >= 0; timestampIndex--) {
+                let timestamp = timestamps[timestampIndex]
+                while (samples.length && samples[samples.length - 1].timestamp > timestamp) {
+                    samples.pop()
+                }
+
+                if (!samples.length) {
+                    break /* No more samples */
+                }
+
+                selectedSamples.push(samples[samples.length - 1])
+            }
 
             /* Pad with nulls until we get our requested number of samples */
             while (selectedSamples.length < timestamps.length) {
-                selectedSamples.unshift(null)
+                selectedSamples.push(null)
             }
+
+            /* We actually built selected samples in reverse order */
+            selectedSamples.reverse()
 
             return selectedSamples
 

@@ -16,6 +16,9 @@ $.widget('qtoggle.barchart', $.qtoggle.basechart, {
     options: {
         yMin: null,
         yMax: null,
+        yTicksStepSize: null,
+        yTicksLabelCallback: null,
+        allowTickRotation: false,
         stacked: false
     },
 
@@ -38,6 +41,30 @@ $.widget('qtoggle.barchart', $.qtoggle.basechart, {
                 stacked: this.options.stacked
             }
         })
+    },
+
+    _makeTicksOptions: function (environment, scaleName) {
+        let options = ObjectUtils.combine(this._super(environment, scaleName), {
+            autoSkip: false,
+            autoSkipPadding: environment.em2px / 2,
+            maxRotation: this.options.allowTickRotation ? 90 : 0
+        })
+
+        if (scaleName === 'y') {
+            if (this.options.yTicksStepSize != null) {
+                options.stepSize = this.options.yTicksStepSize
+            }
+            if (this.options.yTicksLabelCallback) {
+                options.callback = this.options.yTicksLabelCallback
+            }
+            else {
+                options.callback = function (value, index, values) { /* Show units on vertical axis, by default */
+                    return `${value}${this.options.unitOfMeasurement || ''}`
+                }.bind(this)
+            }
+        }
+
+        return options
     },
 
     _makeTooltipOptions: function (environment) {
