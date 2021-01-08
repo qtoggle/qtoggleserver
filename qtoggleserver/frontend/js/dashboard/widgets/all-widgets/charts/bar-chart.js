@@ -26,7 +26,7 @@ const BAR_INFO_CHOICES_BOOLEAN = [
     {label: gettext('Off Time'), value: 'off-time'}
 ]
 
-const NON_SLICE_MODE_INFO = ['difference']
+const NO_SLICE_MODE_INFO = ['difference']
 
 const DATE_FORMAT_BY_UNIT = {
     second: '%S',
@@ -110,7 +110,7 @@ class BarChart extends PortHistoryChart {
     }
 
     isSliceHistoryMode() {
-        return !NON_SLICE_MODE_INFO.includes(this._barInfo)
+        return !NO_SLICE_MODE_INFO.includes(this._barInfo)
     }
 
     showHistorySlice(history, from, to) {
@@ -144,8 +144,10 @@ class BarChart extends PortHistoryChart {
             }
 
             let value = this.computeBarValue(barHistory, fullTimestamps[i], fullTimestamps[i + 1])
-            /* Round value to decent number of decimals */
-            value = Math.round(value * 1e6) / 1e6
+
+            /* Round value to decent number of decimals & multiply */
+            value = Math.round(value * 1e6) * this.getMultiplier() / 1e6
+
             return value
 
         }.bind(this))
@@ -167,8 +169,9 @@ class BarChart extends PortHistoryChart {
             let barHistory = [history[i], history[i + 1]]
             let value = this.computeBarValue(barHistory)
 
-            /* Round value to decent number of decimals */
-            value = Math.round(value * 1e6) / 1e6
+            /* Round value to decent number of decimals & multiply */
+            value = Math.round(value * 1e6) * this.getMultiplier() / 1e6
+
             return value
 
         }.bind(this))

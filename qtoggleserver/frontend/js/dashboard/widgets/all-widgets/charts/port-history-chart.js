@@ -93,7 +93,7 @@ const logger = Logger.get('qtoggle.dashboard.widgets')
 export class PortHistoryChartConfigForm extends BaseChartConfigForm {
 
     static BOOLEAN_FIELD_NAMES = ['inverted']
-    static NUMBER_FIELD_NAMES = ['min', 'max', 'unit']
+    static NUMBER_FIELD_NAMES = ['min', 'max', 'unit', 'multiplier']
 
 
     constructor({...args}) {
@@ -137,6 +137,12 @@ export class PortHistoryChartConfigForm extends BaseChartConfigForm {
                     name: 'unit',
                     label: gettext('Unit'),
                     maxLength: 16
+                }),
+                new NumericField({
+                    name: 'multiplier',
+                    label: gettext('Multiplier'),
+                    description: gettext('A multiplying factor for port values.'),
+                    required: true
                 }),
                 new CheckField({
                     name: 'inverted',
@@ -184,6 +190,16 @@ export class PortHistoryChartConfigForm extends BaseChartConfigForm {
         this.updateFieldsVisibility()
     }
 
+    fromPort(port, fieldName) {
+        let data = super.fromPort(port, fieldName)
+
+        data.unit = port.unit
+        data.min = port.min != null ? port.min : null
+        data.max = port.max != null ? port.max : null
+
+        return data
+    }
+
 }
 
 
@@ -209,6 +225,7 @@ export class PortHistoryChart extends BaseChartWidget {
         this._min = null
         this._max = null
         this._unit = ''
+        this._multiplier = 1
         this._inverted = false
 
         this._fetchHistoryPromise = null
@@ -287,6 +304,9 @@ export class PortHistoryChart extends BaseChartWidget {
         return this._timeInterval
     }
 
+    /**
+     * @returns {Number}
+     */
     getFromTimestamp() {
         let nowDate = new Date()
 
@@ -303,6 +323,13 @@ export class PortHistoryChart extends BaseChartWidget {
         else {
             return nowDate.getTime()
         }
+    }
+
+    /**
+     * @returns {Number}
+     */
+    getMultiplier() {
+        return this._multiplier
     }
 
     invalidateCache() {
@@ -368,6 +395,10 @@ export class PortHistoryChart extends BaseChartWidget {
             return
         }
 
+        if (!this.getPanel().isActive()) {
+            return
+        }
+
         if (this._fetchHistoryPromise) {
             return /* Don't add data point if we're currently fetching history */
         }
@@ -415,6 +446,7 @@ export class PortHistoryChart extends BaseChartWidget {
             min: this._min,
             max: this._max,
             unit: this._unit,
+            multiplier: this._multiplier,
             inverted: this._inverted
         }
     }
@@ -449,6 +481,9 @@ export class PortHistoryChart extends BaseChartWidget {
         }
         if (json.unit != null) {
             this._unit = json.unit
+        }
+        if (json.multiplier != null) {
+            this._multiplier = json.multiplier
         }
         if (json.inverted != null) {
             this._inverted = json.inverted
