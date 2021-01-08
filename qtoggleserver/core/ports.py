@@ -1147,8 +1147,8 @@ def get(port_id: str) -> Optional[BasePort]:
     return _ports_by_id.get(port_id)
 
 
-def get_all() -> Iterable[BasePort]:
-    return _ports_by_id.values()
+def get_all() -> List[BasePort]:
+    return list(_ports_by_id.values())
 
 
 async def init() -> None:

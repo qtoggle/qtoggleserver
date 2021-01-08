@@ -185,7 +185,7 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
 
     try:
         # Remove all (local) virtual ports
-        for port in list(core_ports.get_all()):
+        for port in core_ports.get_all():
             if not isinstance(port, core_vports.VirtualPort):
                 continue
 

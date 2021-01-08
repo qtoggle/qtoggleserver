@@ -1620,6 +1620,8 @@ async def add(
             slave.debug('listen support not detected, auto-enabling polling')
             poll_interval = _DEFAULT_POLL_INTERVAL
 
+    _slaves_by_name[name] = slave
+
     if enabled:
         if listen_enabled:
             slave.enable_listen()
@@ -1636,8 +1638,6 @@ async def add(
         # Device is permanently offline, but we must know its ports; this would otherwise be called by
         # Slave._handle_online()
         await slave.fetch_and_update_ports()
-
-    _slaves_by_name[name] = slave
 
     return slave
 
@@ -1696,8 +1696,8 @@ async def _handle_rename(slave: Slave, new_name: str) -> None:
         await slave.wait_online(timeout=settings.slaves.long_timeout)
 
 
-def get_all() -> Iterable[Slave]:
-    return _slaves_by_name.values()
+def get_all() -> List[Slave]:
+    return list(_slaves_by_name.values())
 
 
 def _slave_ready(slave: Slave) -> bool:

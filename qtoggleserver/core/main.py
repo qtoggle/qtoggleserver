@@ -49,7 +49,7 @@ async def update() -> None:
         time_changed = True
         changed_set.add('second')
 
-    for port in list(ports.get_all()):
+    for port in ports.get_all():
         if not port.is_enabled():
             continue
 
@@ -141,7 +141,7 @@ async def handle_value_changes(
             await port.save()
 
     # Reevaluate the expressions depending on changed ports
-    for port in list(core_ports.get_all()):
+    for port in core_ports.get_all():
         if not port.is_enabled():
             continue
 
