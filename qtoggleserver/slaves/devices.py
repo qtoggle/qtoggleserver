@@ -9,7 +9,7 @@ import re
 import time
 import types
 
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 

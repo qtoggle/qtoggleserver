@@ -8,7 +8,7 @@ import functools
 import inspect
 import logging
 
-from typing import Any, Dict, Iterable, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
@@ -437,6 +437,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def map_id(self, new_id: str) -> None:
         self._id = new_id
         self.debug('mapped to %s', new_id)
+        self.set_logger_name(new_id)
 
     async def get_type(self) -> str:
         return await self.get_attr('type')
@@ -1071,6 +1072,10 @@ async def load(port_args: List[Dict[str, Any]], raise_on_error: bool = True) -> 
 
         try:
             port = port_class(**ps)
+            port_id = port.get_id()
+
+            if port_id in _ports_by_id:
+                raise PortLoadError(f'A port with id {port_id} already exists')
 
             _ports_by_id[port.get_id()] = port
             ports.append(port)

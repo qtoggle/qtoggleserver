@@ -287,9 +287,6 @@ async def init_ports() -> None:
     # Load ports statically configured in settings
     await ports.init()
 
-    # Load virtual ports
-    await vports.init()
-
     # Peripheral ports
     for peripheral in peripherals.all_peripherals():
         try:
@@ -300,6 +297,9 @@ async def init_ports() -> None:
 
         except Exception as e:
             logger.error('failed to load ports of %s: %s', peripheral, e, exc_info=True)
+
+    # Load virtual ports
+    await vports.init()
 
 
 async def cleanup_ports() -> None:
