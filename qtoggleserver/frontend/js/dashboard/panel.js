@@ -1107,6 +1107,15 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
         }
     }
 
+    /**
+     * Tell if this panel is active.
+     *
+     * Panel is active when it is the current dashboard panel while dashboard is the current section.
+     */
+    isActive() {
+        return Dashboard.getCurrentPanel() === this && this.getContext().isCurrent()
+    }
+
 }
 
 

@@ -216,7 +216,9 @@ class ConfigForm extends BaseChartConfigForm {
 
     fromPort(port, fieldName) {
         /* We don't want widget label to be updated from any selected port */
-        return {}
+        return {
+            unit: port.unit
+        }
     }
 
 }
@@ -328,6 +330,10 @@ class PieChart extends BaseChartWidget {
             return
         }
 
+        if (!this.getPanel().isActive()) {
+            return
+        }
+
         this.showCurrentValue()
     }
 
@@ -339,7 +345,7 @@ class PieChart extends BaseChartWidget {
         }
 
         return ObjectUtils.combine(super.makeChartOptions(), {
-            legend: 'right',
+            legend: this._ports.length > 1 ? 'right' : null,
             unitOfMeasurement: this._ports.length > 1 ? this._unit : '%',
             colors: colors
         })

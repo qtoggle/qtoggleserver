@@ -39,16 +39,39 @@ $.widget('qtoggle.piechart', $.qtoggle.basechart, {
     _makeLegendOptions: function (environment) {
         let options = this._super(environment)
         let labels = this.options.labels
+        let unit = this.options.unitOfMeasurement
 
         options.labels.generateLabels = function (chart) {
             if (!labels || labels.length < 2) {
                 return []
             }
 
-            /* Pie chart extracts all legend labels from the single data set */
-
+            /* Pie chart extracts all legend labels from the one single data set */
             chart.data.labels = labels
-            return ChartJS.DoughnutController.defaults.plugins.legend.labels.generateLabels(chart)
+            let generatedLabels = ChartJS.DoughnutController.defaults.plugins.legend.labels.generateLabels(chart)
+
+            /* Calculate values and percents */
+            let values = chart.data.datasets[0].data
+            let valuesSum = values.reduce((a, v) => a + v, 0)
+            let valuesStr = values.map(v => `${v}${unit}`)
+            let percents = values.map(v => v * 100 / valuesSum)
+            let percentsStr = percents.map(p => `${Math.round(p * 10) / 10}%`)
+
+            /* Duplicate each legend label so that we can show additional details, such as actual value and percent */
+            let duplicatedLabels = []
+            generatedLabels.forEach(function (label, i) {
+
+                let dupLabel = ObjectUtils.copy(label, /* deep = */ true)
+                dupLabel.pointStyle = 'dash'
+                dupLabel.lineWidth = 0
+                dupLabel.text = `${valuesStr[i]} | ${percentsStr[i]}`
+
+                duplicatedLabels.push(label)
+                duplicatedLabels.push(dupLabel)
+
+            })
+
+            return duplicatedLabels
         }
 
         return options

@@ -757,6 +757,12 @@ class Widget extends mix().with(ViewMixin) {
 
     /**
      * Called when the owning panel becomes active.
+     *
+     * Panel becomes active when:
+     *  * this becomes the current dashboard panel
+     *  * dashboard becomes the current section, while this is the current panel
+     *  * the window becomes active, while dashboard is the current section and this is the current panel
+     *  * the app reconnects to server, while dashboard is the current section and this is the current panel
      */
     onPanelBecomeActive() {
     }
