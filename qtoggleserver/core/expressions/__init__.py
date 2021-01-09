@@ -9,6 +9,10 @@ from qtoggleserver.core import main
 from .base import Expression, Evaluated
 
 
+# A time jump of more than one day will prevent the evaluation of expressions such as time-processing
+TIME_JUMP_THRESHOLD = 86400
+
+
 def parse(self_port_id: Optional[str], sexpression: str, pos: int = 1) -> Expression:
     while sexpression and sexpression[0].isspace():
         sexpression = sexpression[1:]

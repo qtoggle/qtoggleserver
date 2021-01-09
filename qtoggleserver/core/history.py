@@ -84,6 +84,9 @@ async def janitor_task() -> None:
         try:
             await asyncio.sleep(settings.core.history_janitor_interval)
 
+            if not system.date.has_real_date_time():
+                continue
+
             now = int(time.time())
             for port in core_ports.get_all():
                 history_retention = await port.get_history_retention()

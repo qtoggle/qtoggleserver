@@ -3,6 +3,8 @@ import time
 
 from typing import List, Optional, Set, Tuple
 
+from . import TIME_JUMP_THRESHOLD
+
 from .base import Evaluated
 from .exceptions import EvalSkipped
 from .functions import function, Function
@@ -175,7 +177,13 @@ class DerivFunction(Function):
             if delta < sampling_interval:
                 raise EvalSkipped()
 
-            result = (value - self._last_value) / delta
+            if delta > TIME_JUMP_THRESHOLD:
+                self._last_value = value
+                self._last_time = now
+                raise EvalSkipped()
+
+            else:
+                result = (value - self._last_value) / delta
 
         self._last_value = value
         self._last_time = now
@@ -204,6 +212,11 @@ class IntegFunction(Function):
         if self._last_value is not None:
             delta = now - self._last_time
             if delta < sampling_interval:
+                raise EvalSkipped()
+
+            if delta > TIME_JUMP_THRESHOLD:
+                self._last_value = value
+                self._last_time = now
                 raise EvalSkipped()
 
             result += (value + self._last_value) * delta / 2
@@ -236,6 +249,10 @@ class FMAvgFunction(Function):
         if self._last_time > 0:
             delta = now - self._last_time
             if delta < sampling_interval:
+                raise EvalSkipped()
+
+            if delta > TIME_JUMP_THRESHOLD:
+                self._last_time = now
                 raise EvalSkipped()
 
         # Make place for the new element
@@ -272,6 +289,10 @@ class FMedianFunction(Function):
         if self._last_time > 0:
             delta = now - self._last_time
             if delta < sampling_interval:
+                raise EvalSkipped()
+
+            if delta > TIME_JUMP_THRESHOLD:
+                self._last_time = now
                 raise EvalSkipped()
 
         # Make place for the new element

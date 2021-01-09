@@ -106,14 +106,18 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
     @staticmethod
     def get_common_context(event: core_events.Event) -> dict:
         timestamp = event.get_timestamp()
-        moment = datetime.datetime.fromtimestamp(timestamp)
+        if timestamp:
+            moment = datetime.datetime.fromtimestamp(timestamp)
+
+        else:
+            moment = None
 
         return {
             'event': event,
             'type': event.get_type(),
-            'timestamp': int(timestamp),
+            'timestamp': timestamp,
             'moment': moment,
-            'display_moment': moment.strftime('%c'),
+            'display_moment': moment.strftime('%c') if moment else '',
             'public_url': settings.public_url
         }
 

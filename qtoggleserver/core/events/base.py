@@ -7,6 +7,7 @@ import abc
 import logging
 import time
 
+from qtoggleserver import system
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.utils import logging as logging_utils
@@ -21,7 +22,14 @@ class Event(metaclass=abc.ABCMeta):
 
     def __init__(self, timestamp: float = None) -> None:
         self._type: str = self.TYPE
-        self._timestamp: float = timestamp or time.time()
+        if timestamp is None:
+            if system.date.has_real_date_time():
+                timestamp = time.time()
+
+            else:
+                timestamp = 0
+
+        self._timestamp: float = timestamp
 
     def __str__(self) -> str:
         return f'{self._type} event'

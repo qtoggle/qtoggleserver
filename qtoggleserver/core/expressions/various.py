@@ -3,10 +3,11 @@ import time
 
 from typing import Any, Dict, Optional
 
+from qtoggleserver import system
 from qtoggleserver.core import history
 
 from .base import Evaluated
-from .exceptions import PortValueUnavailable, ExpressionEvalError
+from .exceptions import PortValueUnavailable, ExpressionEvalError, EvalSkipped
 from .functions import function, Function
 from .port import PortRef
 
@@ -212,6 +213,9 @@ class HistoryFunction(Function):
         self._cached_max_diff: Optional[float] = None
 
     async def eval(self) -> Evaluated:
+        if not system.date.has_real_date_time():
+            raise EvalSkipped()
+
         args = await self.eval_args()
         port, timestamp, max_diff = args
 
