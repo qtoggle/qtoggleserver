@@ -8,6 +8,7 @@ import time
 from typing import Iterable, Optional, List
 
 from qtoggleserver import persist
+from qtoggleserver import system
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
@@ -31,6 +32,9 @@ class HistoryEventHandler(core_events.Handler):
         if not isinstance(event, core_events.ValueChange):
             return  # We're only interested in port value changes
 
+        if not system.date.has_real_date_time():
+            return  # Don't record history unless we've got real date/time
+
         port = event.get_port()
         history_interval = await port.get_history_interval()
         if history_interval != -1:
@@ -46,6 +50,9 @@ async def sampling_task() -> None:
     while True:
         try:
             await asyncio.sleep(1)
+
+            if not system.date.has_real_date_time():
+                continue  # Don't record history unless we've got real date/time
 
             now_ms = int(time.time() * 1000)
             for port in core_ports.get_all():
