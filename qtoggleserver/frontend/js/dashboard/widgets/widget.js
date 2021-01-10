@@ -104,6 +104,10 @@ class Widget extends mix().with(ViewMixin) {
         this.logger = Logger.get(this.makeLogName())
     }
 
+    static isEnabled() {
+        return true
+    }
+
     toString() {
         return this._label || this._id
     }

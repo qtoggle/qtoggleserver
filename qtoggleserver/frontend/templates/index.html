@@ -27,6 +27,8 @@
 
 {% block script %}
     {{ main_script_file(
-        {"data-slaves-enabled": slaves_enabled|lower, "data-discover-enabled": discover_enabled|lower}
+        {"data-slaves-enabled": slaves_enabled|lower,
+         "data-discover-enabled": discover_enabled|lower,
+         "data-history-enabled": history_enabled|lower}
     ) }}
 {% endblock %}

@@ -3,6 +3,7 @@ import logging
 
 import qui
 
+from qtoggleserver import persist
 from qtoggleserver import version
 from qtoggleserver.conf import settings
 
@@ -27,7 +28,8 @@ async def init() -> None:
             static_url=settings.frontend.static_url,
             extra_context=dict(
                 slaves_enabled=settings.slaves.enabled,
-                discover_enabled=is_discover_enabled()
+                discover_enabled=is_discover_enabled(),
+                history_enabled=persist.is_history_supported()
             )
         )
 

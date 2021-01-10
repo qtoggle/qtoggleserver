@@ -44,6 +44,7 @@ function initConfig() {
     /* Default values for qToggle-specific config  */
     Config.slavesEnabled = false
     Config.discoverEnabled = false
+    Config.historyEnabled = false
     Config.apiURLPrefix = ''
 
     /* Default values for client settings */

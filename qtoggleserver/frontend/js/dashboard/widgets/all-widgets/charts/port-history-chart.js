@@ -2,6 +2,7 @@
 import Logger from '$qui/lib/logger.module.js'
 
 import {gettext}         from '$qui/base/i18n.js'
+import Config            from '$qui/config.js'
 import {CheckField}      from '$qui/forms/common-fields/common-fields.js'
 import {ColorComboField} from '$qui/forms/common-fields/common-fields.js'
 import {ComboField}      from '$qui/forms/common-fields/common-fields.js'
@@ -234,6 +235,10 @@ export class PortHistoryChart extends BaseChartWidget {
 
         /* Use ChartJS date adapter to determine beginning of time units */
         this._dateAdapter = new ChartJS._adapters._date()
+    }
+
+    static isEnabled() {
+        return Config.historyEnabled
     }
 
     isValid() {

@@ -41,7 +41,8 @@ class WidgetCategoryList extends List {
         this._widgetPicker = widgetPicker
         this._callback = callback
 
-        this.setItems(categoryInfo.widgetClasses.map(this.widgetClassToItem))
+        let widgetClasses = categoryInfo.widgetClasses.filter(c => c.isEnabled())
+        this.setItems(widgetClasses.map(this.widgetClassToItem))
     }
 
     /**
@@ -121,6 +122,9 @@ class WidgetPicker extends mix().with(StructuredPageMixin) {
             let list = new WidgetCategoryList(this, categoryInfo, function (cls) {
                 this._onWidgetPicked(cls)
             }.bind(this))
+            if (list.getItems().length === 0) {
+                return
+            }
             this._categoryLists.push(list)
             div.append(list.getHTML())
         }, this)
