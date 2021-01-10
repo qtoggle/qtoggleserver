@@ -713,7 +713,7 @@ export class AnalogWidget extends Widget {
             }
 
             /* Also set the tick pos & factor */
-            tick.pos = this._valueToPos(this._factorToValue(factor))
+            tick.pos = this._factorToPos(factor)
             tick.factor = factor
 
             if (i % this._ticksStep !== 0) {
@@ -889,6 +889,10 @@ export class AnalogWidget extends Widget {
         return this._getUsefulLength() * factor
     }
 
+    _factorToPos(factor) {
+        return this._getUsefulLength() * factor
+    }
+
     _posToValue(pos) {
         let factor = pos / this._getUsefulLength()
         return this._factorToValue(factor)
@@ -969,8 +973,8 @@ export class AnalogWidget extends Widget {
 
     _getUsefulLength() {
         let length = this._length
-        if (this._handleDiv) {
-            length -= this._thickness
+        if (!this._readonly) {
+            length -= this._thickness /* thickness is also the with of the handle, in case of a non-readonly widget */
         }
         else {
             length -= (4 * this.roundEm(Widgets.BEZEL_WIDTH) + 2 * Widgets.CELL_PADDING)
