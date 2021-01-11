@@ -860,7 +860,7 @@ function pollDevice() {
                     NotificationsAPI.fakeServerEvent('slave-device-polling-update', partialDevice)
                 }
             }
-            else if (polledDeviceName === mainDevice['name']) {
+            else if (polledDeviceName === '') {
                 if (!ObjectUtils.deepEquals(mainDevice, attrs)) {
                     let partialAttrs = {}
                     DEVICE_POLLED_ATTRIBUTES.forEach(function (name) {

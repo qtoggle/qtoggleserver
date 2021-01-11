@@ -145,10 +145,7 @@ class BarChart extends PortHistoryChart {
 
             let value = this.computeBarValue(barHistory, fullTimestamps[i], fullTimestamps[i + 1])
 
-            /* Round value to decent number of decimals & multiply */
-            value = Math.round(value * 1e6) * this.getMultiplier() / 1e6
-
-            return value
+            return this.prepareNumericValue(value)
 
         }.bind(this))
 
@@ -169,10 +166,7 @@ class BarChart extends PortHistoryChart {
             let barHistory = [history[i], history[i + 1]]
             let value = this.computeBarValue(barHistory)
 
-            /* Round value to decent number of decimals & multiply */
-            value = Math.round(value * 1e6) * this.getMultiplier() / 1e6
-
-            return value
+            return this.prepareNumericValue(value)
 
         }.bind(this))
 
