@@ -110,6 +110,12 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
             options: this._prepareOptions(this._getEnvironment())
         })
 
+        let origDraw = this._chart.draw
+        this._chart.draw = function () {
+            origDraw.call(this._chart)
+            this._drawExtra(this._getEnvironment(), this._chart, this._chart.ctx)
+        }.bind(this)
+
         this.element.remove()
 
         /* Register a double-tap event to reset zoom */
@@ -185,6 +191,9 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
         this._chart.scales['y'].options.min = yMin
         this._chart.scales['y'].options.max = yMax
         this._chart.update()
+    },
+
+    _drawExtra: function (chart, ctx) {
     },
 
     _getEnvironment: function () {

@@ -15,9 +15,49 @@ $.widget('qtoggle.piechart', $.qtoggle.basechart, {
      */
 
     options: {
+        showTotalValue: true
     },
 
     type: 'doughnut',
+
+    _drawExtra: function (environment, chart, ctx) {
+        if (this.options.showTotalValue) {
+            /* Draw the total value in the center of the pie */
+
+            let xCenter = (chart.chartArea.left + chart.chartArea.right) / 2
+            let yCenter = (chart.chartArea.top + chart.chartArea.bottom) / 2
+            let chartAreaWidth = chart.chartArea.right - chart.chartArea.left
+            let chartAreaHeight = chart.chartArea.bottom - chart.chartArea.top
+            let minChartAreaDimension = Math.min(chartAreaWidth, chartAreaHeight)
+            let fontScaleFactor = minChartAreaDimension / environment.em2px / 20 /* 20 is determined empirically */
+
+            let fontOptions = ObjectUtils.combine(this._makeFontOptions(environment), {
+                size: environment.em2px * 2 * fontScaleFactor
+            })
+            let font = ChartJS.toFont(fontOptions)
+            let text = this._makeTotalValueText()
+
+            ctx.save()
+            ctx.translate(xCenter, yCenter)
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.font = font.string
+            ctx.fillStyle = environment.foregroundColor
+            ctx.fillText(text, 0, 0)
+            ctx.restore()
+        }
+    },
+
+    _makeTotalValueText: function () {
+        let totalValue = this._data.reduce((a, v) => a + v, 0)
+        return `${totalValue}${this.options.unitOfMeasurement || ''}`
+    },
+
+    _makeExtraOptions: function (environment) {
+        return ObjectUtils.combine(this._super(environment), {
+            cutoutPercentage: 66
+        })
+    },
 
     _makeTooltipOptions: function (environment) {
         return ObjectUtils.combine(this._super(environment), {
@@ -40,11 +80,15 @@ $.widget('qtoggle.piechart', $.qtoggle.basechart, {
         let options = this._super(environment)
         let labels = this.options.labels
         let unit = this.options.unitOfMeasurement
+        let fontSize = options.labels.font.size
 
         options.labels.generateLabels = function (chart) {
             if (!labels || labels.length < 2) {
                 return []
             }
+
+            let aspectRatio = this.chart.width / this.chart.height
+            let dupLabels = aspectRatio < 2
 
             /* Pie chart extracts all legend labels from the one single data set */
             chart.data.labels = labels
@@ -57,21 +101,33 @@ $.widget('qtoggle.piechart', $.qtoggle.basechart, {
             let percents = values.map(v => v * 100 / valuesSum)
             let percentsStr = percents.map(p => `${Math.round(p * 10) / 10}%`)
 
-            /* Duplicate each legend label so that we can show additional details, such as actual value and percent */
-            let duplicatedLabels = []
-            generatedLabels.forEach(function (label, i) {
+            /* Show additional details, such as actual value and percent */
+            let finalLabels = []
 
-                let dupLabel = ObjectUtils.copy(label, /* deep = */ true)
-                dupLabel.pointStyle = 'dash'
-                dupLabel.lineWidth = 0
-                dupLabel.text = `${valuesStr[i]} | ${percentsStr[i]}`
+            if (dupLabels) {
+                generatedLabels.forEach(function (label, i) {
 
-                duplicatedLabels.push(label)
-                duplicatedLabels.push(dupLabel)
+                    let dupLabel = ObjectUtils.copy(label, /* deep = */ true)
+                    dupLabel.pointStyle = 'dash'
+                    dupLabel.lineWidth = 0
+                    dupLabel.text = `${valuesStr[i]} | ${percentsStr[i]}`
 
-            })
+                    finalLabels.push(label)
+                    finalLabels.push(dupLabel)
 
-            return duplicatedLabels
+                })
+
+                /* Reduce font size a bit if displaying extra details in duplicated labels */
+                this.chart.legend.options.labels.font.size = fontSize * 0.8
+            }
+            else {
+                generatedLabels.forEach(function (label, i) {
+                    label.text += ` | ${valuesStr[i]} | ${percentsStr[i]}`
+                    finalLabels.push(label)
+                })
+            }
+
+            return finalLabels
         }
 
         return options
