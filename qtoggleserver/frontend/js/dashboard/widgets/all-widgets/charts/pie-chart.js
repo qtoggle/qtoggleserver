@@ -36,6 +36,12 @@ class ConfigForm extends BaseChartConfigForm {
                     required: true
                 }),
                 new UpDownField({
+                    name: 'decimals',
+                    label: gettext('Decimals'),
+                    min: 0,
+                    max: 10
+                }),
+                new UpDownField({
                     name: 'numPorts',
                     label: gettext('Ports'),
                     min: 1,
@@ -251,6 +257,7 @@ class PieChart extends BaseChartWidget {
 
         this._unit = ''
         this._multiplier = 100
+        this._decimals = 0
     }
 
     isValid() {
@@ -266,6 +273,7 @@ class PieChart extends BaseChartWidget {
         return {
             unit: this._unit,
             multiplier: this._multiplier,
+            decimals: this._decimals,
             portIds: this._ports.map(p => p.portId),
             labels: this._ports.map(p => p.label),
             colors: this._ports.map(p => p.color)
@@ -278,6 +286,9 @@ class PieChart extends BaseChartWidget {
         }
         if (json.multiplier != null) {
             this._multiplier = json.multiplier
+        }
+        if (json.decimals != null) {
+            this._decimals = json.decimals
         }
 
         if (json.portIds != null) {
@@ -300,6 +311,10 @@ class PieChart extends BaseChartWidget {
             this._ports.forEach(function (portInfo) {
 
                 let value = this.getPortValue(portInfo.portId)
+
+                /* Round value to indicated number of decimals */
+                value = Number(value.toFixed(this._decimals))
+
                 data.push(value)
                 labels.push(portInfo.label)
 
@@ -314,12 +329,12 @@ class PieChart extends BaseChartWidget {
 
             let value = portValue * this._multiplier
 
+            /* Round value to indicated number of decimals */
+            value = Number(value.toFixed(this._decimals))
+
             data = [value, 100 - value]
             labels = []
         }
-
-        /* Also round values to decent number of decimals */
-        data = data.map(d => Math.round(d * 1e6) / 1e6)
 
         this.widgetCall('setValue', data)
         this.widgetCall({labels: labels})
@@ -353,9 +368,9 @@ class PieChart extends BaseChartWidget {
 
     makePadding() {
         return {
-            top: 0.2,
+            top: 0.15,
             right: 0,
-            bottom: 0.2,
+            bottom: 0.15,
             left: 0
         }
     }
