@@ -142,10 +142,7 @@ class LineChart extends PortHistoryChart {
             data = history.map(sample => [sample.timestamp, sample.value ? low : high])
         }
         else {
-            /* Also round value to decent number of decimals */
-            data = history.map(
-                sample => [sample.timestamp, Math.round(sample.value * 1e6 * this.getMultiplier()) / 1e6]
-            )
+            data = history.map(sample => [sample.timestamp, this.prepareNumericValue(sample.value)])
         }
 
         this.widgetCall('setValue', data)

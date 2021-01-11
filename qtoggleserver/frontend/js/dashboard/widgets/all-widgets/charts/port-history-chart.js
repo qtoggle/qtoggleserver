@@ -8,6 +8,7 @@ import {ColorComboField} from '$qui/forms/common-fields/common-fields.js'
 import {ComboField}      from '$qui/forms/common-fields/common-fields.js'
 import {NumericField}    from '$qui/forms/common-fields/common-fields.js'
 import {TextField}       from '$qui/forms/common-fields/common-fields.js'
+import {UpDownField}     from '$qui/forms/common-fields/common-fields.js'
 import * as ArrayUtils   from '$qui/utils/array.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
 import * as StringUtils  from '$qui/utils/string.js'
@@ -94,7 +95,7 @@ const logger = Logger.get('qtoggle.dashboard.widgets')
 export class PortHistoryChartConfigForm extends BaseChartConfigForm {
 
     static BOOLEAN_FIELD_NAMES = ['inverted']
-    static NUMBER_FIELD_NAMES = ['min', 'max', 'unit', 'multiplier']
+    static NUMBER_FIELD_NAMES = ['min', 'max', 'unit', 'multiplier', 'decimals']
 
 
     constructor({...args}) {
@@ -144,6 +145,12 @@ export class PortHistoryChartConfigForm extends BaseChartConfigForm {
                     label: gettext('Multiplier'),
                     description: gettext('A multiplying factor for port values.'),
                     required: true
+                }),
+                new UpDownField({
+                    name: 'decimals',
+                    label: gettext('Decimals'),
+                    min: 0,
+                    max: 10
                 }),
                 new CheckField({
                     name: 'inverted',
@@ -227,6 +234,7 @@ export class PortHistoryChart extends BaseChartWidget {
         this._max = null
         this._unit = ''
         this._multiplier = 1
+        this._decimals = 0
         this._inverted = false
 
         this._fetchHistoryPromise = null
@@ -296,6 +304,20 @@ export class PortHistoryChart extends BaseChartWidget {
     }
 
     /**
+     * @returns {Number}
+     */
+    getMultiplier() {
+        return this._multiplier
+    }
+
+    /**
+     * @returns {Number}
+     */
+    getDecimals() {
+        return this._decimals
+    }
+
+    /**
      * @returns {?{multiplier: Number, unit: String}}
      */
     getTimeGroups() {
@@ -328,13 +350,6 @@ export class PortHistoryChart extends BaseChartWidget {
         else {
             return nowDate.getTime()
         }
-    }
-
-    /**
-     * @returns {Number}
-     */
-    getMultiplier() {
-        return this._multiplier
     }
 
     invalidateCache() {
@@ -452,6 +467,7 @@ export class PortHistoryChart extends BaseChartWidget {
             max: this._max,
             unit: this._unit,
             multiplier: this._multiplier,
+            decimals: this._decimals,
             inverted: this._inverted
         }
     }
@@ -489,6 +505,9 @@ export class PortHistoryChart extends BaseChartWidget {
         }
         if (json.multiplier != null) {
             this._multiplier = json.multiplier
+        }
+        if (json.decimals != null) {
+            this._decimals = json.decimals
         }
         if (json.inverted != null) {
             this._inverted = json.inverted
@@ -671,6 +690,16 @@ export class PortHistoryChart extends BaseChartWidget {
      */
     showHistoryTimestamps(history, timestamps) {
         /* Override in concrete class */
+    }
+
+    /**
+     * Prepare value for chart by multiplying and rounding it.
+     * @param {Number} value
+     * @returns {Number}
+     */
+    prepareNumericValue(value) {
+        /* Multiply and round value to indicated number of decimals */
+        return Number((value * this._multiplier).toFixed(this._decimals))
     }
 
     makeChartOptions() {
