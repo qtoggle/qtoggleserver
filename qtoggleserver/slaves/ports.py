@@ -326,7 +326,7 @@ class SlavePort(core_ports.BasePort):
                 )
 
                 # Immediately fetch the current port value from slave and update it locally. This ensures that calls to
-                # Port.get_value() will return the correct updated value.
+                # Port.get_last_read_value() will return the correct updated value.
                 remote_value = await self._slave.api_call('GET', f'/ports/{self._remote_id}/value')
                 self.set_cached_value(remote_value)
 

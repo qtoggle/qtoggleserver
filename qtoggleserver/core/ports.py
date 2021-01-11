@@ -249,13 +249,16 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._schema: Optional[GenericJSONDict] = None
         self._value_schema: Optional[GenericJSONDict] = None
 
-        self._value: NullablePortValue = None
+        self._last_read_value: NullablePortValue = None
         self._write_value_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
         self._write_value_task: Optional[asyncio.Task] = None
         if asyncio.get_event_loop().is_running():
             self._write_value_task = asyncio.create_task(self._write_value_loop())
         self._change_reason: str = CHANGE_REASON_NATIVE
+        self._pending_read: bool = False
         self._pending_write: bool = False
+
+        self._save_lock: asyncio.Lock = asyncio.Lock()
 
         self._loaded: bool = False
 
@@ -409,7 +412,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         choices = await self.get_attr('choices')
         unit = await self.get_attr('unit')
         if value is None:
-            value = self.get_value()
+            value = self.get_last_read_value()
 
         if value is None:
             return 'unknown'  # TODO: i18n
@@ -654,11 +657,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def write_value(self, value: PortValue) -> None:
         pass
 
-    def get_value(self) -> NullablePortValue:
-        return self._value
+    def get_last_read_value(self) -> NullablePortValue:
+        return self._last_read_value
 
-    def set_value(self, value: NullablePortValue) -> None:
-        self._value = value
+    def set_last_read_value(self, value: NullablePortValue) -> None:
+        self._last_read_value = value
 
     def get_change_reason(self) -> str:
         return self._change_reason
@@ -667,27 +670,43 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._change_reason = CHANGE_REASON_NATIVE
 
     async def read_transformed_value(self) -> NullablePortValue:
-        value = await self.read_value()
+        if self._pending_read:
+            return  # Prevent overlapped readings
+
+        self._pending_read = True
+
+        try:
+            value = await self.read_value()
+
+        except Exception:
+            raise
+
+        finally:
+            self._pending_read = False
+
         if value is None:
             return None
 
         if self._transform_read:
             # Temporarily set the new value to the port, so that the read transform expression works as expected
-            old_value = self._value
-            self._value = value
+            old_value = self._last_read_value
+            self._last_read_value = value
             value = await self.adapt_value_type(await self._transform_read.eval())
-            self._value = old_value
+            self._last_read_value = old_value
 
         return value
+
+    def is_pending_read(self) -> bool:
+        return self._pending_read
 
     async def write_transformed_value(self, value: PortValue, reason: str) -> None:
         if self._transform_write:
             # Temporarily set the port value to the new value, so that the write transform expression takes the new
             # value into consideration when evaluating the result
-            prev_value = self._value
-            self._value = value
+            prev_value = self._last_read_value
+            self._last_read_value = value
             value = await self.adapt_value_type(await self._transform_write.eval())
-            self._value = prev_value
+            self._last_read_value = prev_value
 
         try:
             await self._write_value_queued(value, reason)
@@ -697,6 +716,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.error('failed to write value %s (reason=%s)', json_utils.dumps(value), reason, exc_info=True)
 
             raise
+
+    def is_pending_write(self) -> bool:
+        return self._pending_write
 
     def push_value(self, value: PortValue, reason: str) -> None:
         asyncio.create_task(self.write_transformed_value(value, reason))
@@ -796,7 +818,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         attrs = dict(attrs)
 
         if self._enabled:
-            attrs['value'] = self._value
+            attrs['value'] = self._last_read_value
 
         else:
             attrs['value'] = None
@@ -860,12 +882,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         # value
         if await self.is_persisted() and data.get('value') is not None:
-            self._value = data['value']
-            self.debug('loaded value = %s', json_utils.dumps(self._value))
+            self._last_read_value = data['value']
+            self.debug('loaded value = %s', json_utils.dumps(self._last_read_value))
 
             if await self.is_writable():
                 # Write the just-loaded value to the port
-                value = self._value
+                value = self._last_read_value
                 if self._transform_write:
                     value = await self.adapt_value_type(await self._transform_write.eval())
 
@@ -875,8 +897,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             try:
                 value = await self.read_transformed_value()
                 if value is not None:
-                    self._value = value
-                    self.debug('read value = %s', json_utils.dumps(self._value))
+                    self._last_read_value = value
+                    self.debug('read value = %s', json_utils.dumps(self._last_read_value))
 
             except Exception as e:
                 self.error('failed to read value: %s', e, exc_info=True)
@@ -888,10 +910,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if not self.is_loaded():
             return
 
-        d = await self.prepare_for_save()
-
         self.debug('persisting data')
-        await persist.replace(self.PERSIST_COLLECTION, self._id, d)
+
+        async with self._save_lock:
+            d = await self.prepare_for_save()
+            await persist.replace(self.PERSIST_COLLECTION, self._id, d)
 
     async def prepare_for_save(self) -> GenericJSONDict:
         # value
@@ -901,7 +924,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         }
 
         if await self.is_persisted():
-            d['value'] = self._value
+            d['value'] = self._last_read_value
 
         else:
             d['value'] = None

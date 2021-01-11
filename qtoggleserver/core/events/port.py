@@ -56,4 +56,4 @@ class ValueChange(PortEvent):
     TYPE = 'value-change'
 
     async def get_params(self) -> GenericJSONDict:
-        return {'id': self.get_port().get_id(), 'value': self.get_port().get_value()}
+        return {'id': self.get_port().get_id(), 'value': self.get_port().get_last_read_value()}

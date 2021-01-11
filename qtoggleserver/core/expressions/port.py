@@ -63,7 +63,7 @@ class PortValue(PortExpression):
         if not port.is_enabled():
             raise DisabledPort(self.port_id)
 
-        value = port.get_value()
+        value = port.get_last_read_value()
         if value is None:
             raise PortValueUnavailable(self.port_id)
 

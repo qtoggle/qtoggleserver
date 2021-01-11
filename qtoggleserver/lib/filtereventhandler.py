@@ -168,7 +168,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             new_attrs = await port.get_attrs()
 
             old_value = self._port_values.get(port.get_id())
-            new_value = port.get_value()
+            new_value = port.get_last_read_value()
             value_pair = (old_value, new_value)
 
             if isinstance(event, (core_events.PortAdd, core_events.PortUpdate)):
