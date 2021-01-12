@@ -5,24 +5,29 @@ import asyncio
 import logging
 import time
 
-from typing import Iterable, Optional, List
+from typing import Dict, Iterable, Optional, List
 
 from qtoggleserver import persist
 from qtoggleserver import system
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
-from qtoggleserver.core.typing import GenericJSONDict
+from qtoggleserver.core.typing import GenericJSONDict, PortValue
 from qtoggleserver.utils import json as json_utils
 
 
 PERSIST_COLLECTION = 'value_history'
+
+_CACHE_TIMESTAMP_MIN_AGE = 86400 * 1000  # Don't cache samples newer than this number of milliseconds
 
 logger = logging.getLogger(__name__)
 
 _history_event_handler: Optional[HistoryEventHandler] = None
 _sampling_task: Optional[asyncio.Task] = None
 _janitor_task: Optional[asyncio.Task] = None
+
+# Samples cached by port_id and timestamp
+_samples_cache: Dict[str, Dict[int, PortValue]] = {}
 
 
 class HistoryEventHandler(core_events.Handler):
@@ -143,19 +148,37 @@ async def get_samples_by_timestamp(
         'pid': port.get_id(),
     }
 
+    now_ms = int(time.time() * 1000)
+    samples_cache = _samples_cache.setdefault(port.get_id(), {})
+
     query_tasks = []
     for timestamp in timestamps:
-        filt = dict(port_filter, ts={'le': timestamp})
-        task = persist.query(PERSIST_COLLECTION, filt=filt, sort='-ts', limit=1)
+        # Look it up in cache
+        sample = samples_cache.get(timestamp)
+        if sample is None:
+            filt = dict(port_filter, ts={'le': timestamp})
+            task = persist.query(PERSIST_COLLECTION, filt=filt, sort='-ts', limit=1)
+
+        else:
+            task = asyncio.Future()
+            task.set_result([sample])
+
         query_tasks.append(task)
 
     task_results = await asyncio.gather(*query_tasks)
 
     samples = []
-    for task_result in task_results:
+    for i, task_result in enumerate(task_results):
+        timestamp = timestamps[i]
+
         query_results = list(task_result)
         if query_results:
-            samples.append(query_results[0])
+            sample = query_results[0]
+            samples.append(sample)
+
+            # Add sample to cache if it's old enough
+            if now_ms - timestamp > _CACHE_TIMESTAMP_MIN_AGE:
+                samples_cache[timestamp] = sample
 
         else:
             samples.append(None)
@@ -196,6 +219,9 @@ async def remove_samples(
 
     if to_timestamp is not None:
         filt.setdefault('ts', {})['lt'] = to_timestamp
+
+    # Invalidate samples cache for this port
+    _samples_cache.pop(port.get_id(), None)
 
     if background:
 
