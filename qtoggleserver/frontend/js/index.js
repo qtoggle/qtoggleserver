@@ -172,7 +172,7 @@ function main() {
                 if (listeningInitiallyStarted) {
                     logger.info('application became active, (re)starting listening mechanism')
 
-                    /* (Re)start the listening mechanism; this will, in turn, trigger a full cache reload. */
+                    /* (Re)start the listening mechanism while triggering a full cache reload. */
                     Cache.setReloadNeeded(/* reloadNow = */ true)
                 }
             }

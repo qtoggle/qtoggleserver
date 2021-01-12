@@ -233,9 +233,10 @@ function handleServerEvent(eventData) {
  * @alias qtoggle.api.notifications.fakeServerEvent
  * @param {String} type event type
  * @param {Object} params event parameters
+ * @param {String} [sessionId] session id that generated the event
  */
-export function fakeServerEvent(type, params) {
-    let event = new Event(type, params)
+export function fakeServerEvent(type, params, sessionId = null) {
+    let event = new Event(type, params, sessionId)
 
     let handle = tryMatchExpectedEvent(event)
     if (handle != null) {
