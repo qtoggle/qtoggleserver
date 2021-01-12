@@ -19,7 +19,7 @@ _PORT_READ_ERROR_RETRY_INTERVAL = 10
 logger = logging.getLogger(__name__)
 memory_logs: Optional[logging_utils.FifoMemoryHandler] = None
 
-loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+loop: Optional[asyncio.AbstractEventLoop] = None
 
 _update_loop_task: Optional[asyncio.Task] = None
 _ready: bool = False
@@ -28,7 +28,7 @@ _start_time: float = time.time()
 _last_time: float = 0
 _force_eval_expression_ports: Set[Union[core_ports.BasePort, None]] = set()
 _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
-_update_lock: asyncio.Lock = asyncio.Lock()
+_update_lock: Optional[asyncio.Lock] = None
 
 
 async def update() -> None:
@@ -36,9 +36,13 @@ async def update() -> None:
     from . import sessions
 
     global _last_time
+    global _update_lock
 
     if not _updating_enabled:
         return
+
+    if _update_lock is None:
+        _update_lock = asyncio.Lock()
 
     async with _update_lock:
         changed_set = {'millisecond'}
@@ -242,6 +246,9 @@ def uptime() -> float:
 
 async def init() -> None:
     global _update_loop_task
+    global loop
+
+    loop = asyncio.get_event_loop()
 
     force_eval_expressions()
     _update_loop_task = loop.create_task(update_loop())
