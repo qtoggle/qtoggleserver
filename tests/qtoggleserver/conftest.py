@@ -60,7 +60,8 @@ def mock_persist_driver():
 
 
 @pytest.fixture
-async def num_mock_port1() -> NumberMockPort:
+async def num_mock_port1(mocker) -> NumberMockPort:
+    mocker.patch('asyncio.Lock')
     port = (await core_ports.load([{'driver': NumberMockPort, 'port_id': 'nid1', 'value': None}]))[0]
     await port.enable()
 
@@ -69,7 +70,8 @@ async def num_mock_port1() -> NumberMockPort:
 
 
 @pytest.fixture
-async def num_mock_port2() -> NumberMockPort:
+async def num_mock_port2(mocker) -> NumberMockPort:
+    mocker.patch('asyncio.Lock')
     port = (await core_ports.load([{'driver': NumberMockPort, 'port_id': 'nid2', 'value': None}]))[0]
     await port.enable()
 
@@ -78,7 +80,8 @@ async def num_mock_port2() -> NumberMockPort:
 
 
 @pytest.fixture
-async def bool_mock_port1() -> BooleanMockPort:
+async def bool_mock_port1(mocker) -> BooleanMockPort:
+    mocker.patch('asyncio.Lock')
     port = (await core_ports.load([{'driver': BooleanMockPort, 'port_id': 'bid1', 'value': None}]))[0]
     await port.enable()
 
@@ -87,7 +90,8 @@ async def bool_mock_port1() -> BooleanMockPort:
 
 
 @pytest.fixture
-async def bool_mock_port2() -> BooleanMockPort:
+async def bool_mock_port2(mocker) -> BooleanMockPort:
+    mocker.patch('asyncio.Lock')
     port = (await core_ports.load([{'driver': BooleanMockPort, 'port_id': 'bid2', 'value': None}]))[0]
     await port.enable()
 

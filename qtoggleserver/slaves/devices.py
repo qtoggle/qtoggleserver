@@ -149,6 +149,8 @@ class Slave(logging_utils.LoggableMixin):
         # Handles firmware update progress
         self._fwupdate_poll_task: Optional[asyncio.Task] = None
 
+        self._save_lock: asyncio.Lock = asyncio.Lock()
+
     def __str__(self) -> str:
         if self._name:
             return f'slave {self._name} at {self.get_url()}'
@@ -424,7 +426,9 @@ class Slave(logging_utils.LoggableMixin):
 
     async def save(self) -> None:
         self.debug('saving device')
-        await persist.replace('slaves', self._name, self.prepare_for_save())
+
+        async with self._save_lock:
+            await persist.replace('slaves', self._name, self.prepare_for_save())
 
     async def cleanup(self) -> None:
         self.debug('cleaning up')
@@ -1151,7 +1155,7 @@ class Slave(logging_utils.LoggableMixin):
         self.debug(
             'value of %s changed remotely from %s to %s',
             port,
-            json_utils.dumps(port.get_value()),
+            json_utils.dumps(port.get_last_read_value()),
             json_utils.dumps(value)
         )
 

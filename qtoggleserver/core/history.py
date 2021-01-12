@@ -164,7 +164,7 @@ async def get_samples_by_timestamp(
 
 
 async def save_sample(port: core_ports.BasePort, timestamp: int) -> None:
-    value = port.get_value()
+    value = port.get_last_read_value()
 
     if value is None:
         logger.debug('skipping null sample of %s (timestamp = %s)', port, timestamp)

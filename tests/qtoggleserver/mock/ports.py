@@ -11,7 +11,7 @@ class MockPort(Port):
     ) -> None:
         super().__init__(port_id)
 
-        self.set_value(value)
+        self.set_last_read_value(value)
         self._writable: bool = False
         self._next_value: NullablePortValue = None
 

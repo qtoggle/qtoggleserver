@@ -276,7 +276,7 @@ class HistoryFunction(Function):
             value = self._cached_sample['value']
 
         elif consider_curr_value:
-            value = port.get_value()
+            value = port.get_last_read_value()
 
         else:
             value = None

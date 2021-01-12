@@ -29,7 +29,7 @@ class MockPortValue(PortValue):
 
     async def eval(self) -> Evaluated:
         if self.port:
-            value = self.port.get_value()
+            value = self.port.get_last_read_value()
             if value is None:
                 raise PortValueUnavailable(self.port.get_id())
 

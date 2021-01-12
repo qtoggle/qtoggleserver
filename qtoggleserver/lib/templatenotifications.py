@@ -179,7 +179,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
             'changed_attrs': changed_attrs,
             'added_attrs': added_attrs,
             'removed_attrs': removed_attrs,
-            'value': port.get_value()
+            'value': port.get_last_read_value()
         })
 
         await self.push_template_message(event, context)
@@ -189,7 +189,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         context.update({
             'port': port,
             'attrs': attrs,
-            'value': port.get_value()
+            'value': port.get_last_read_value()
         })
 
         await self.push_template_message(event, context)
@@ -199,7 +199,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         context.update({
             'port': port,
             'attrs': attrs,
-            'value': port.get_value()
+            'value': port.get_last_read_value()
         })
 
         await self.push_template_message(event, context)

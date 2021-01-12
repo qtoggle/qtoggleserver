@@ -19,7 +19,7 @@ _PORT_READ_ERROR_RETRY_INTERVAL = 10
 logger = logging.getLogger(__name__)
 memory_logs: Optional[logging_utils.FifoMemoryHandler] = None
 
-loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+loop: Optional[asyncio.AbstractEventLoop] = None
 
 _update_loop_task: Optional[asyncio.Task] = None
 _ready: bool = False
@@ -28,6 +28,7 @@ _start_time: float = time.time()
 _last_time: float = 0
 _force_eval_expression_ports: Set[Union[core_ports.BasePort, None]] = set()
 _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
+_update_lock: Optional[asyncio.Lock] = None
 
 
 async def update() -> None:
@@ -35,72 +36,77 @@ async def update() -> None:
     from . import sessions
 
     global _last_time
+    global _update_lock
 
     if not _updating_enabled:
         return
 
-    changed_set = {'millisecond'}
-    change_reasons = {}
+    if _update_lock is None:
+        _update_lock = asyncio.Lock()
 
-    now = int(time.time())
-    time_changed = False
-    if now != _last_time:
-        _last_time = now
-        time_changed = True
-        changed_set.add('second')
+    async with _update_lock:
+        changed_set = {'millisecond'}
+        change_reasons = {}
 
-    for port in ports.get_all():
-        if not port.is_enabled():
-            continue
+        now = int(time.time())
+        time_changed = False
+        if now != _last_time:
+            _last_time = now
+            time_changed = True
+            changed_set.add('second')
 
-        port.invalidate_attrs()
-        old_value = port.get_value()
+        for port in ports.get_all():
+            if not port.is_enabled():
+                continue
 
-        try:
-            port.heart_beat()
+            port.invalidate_attrs()
+            old_value = port.get_last_read_value()
 
-        except Exception as e:
-            logger.error('port heart beat exception: %s', e, exc_info=True)
-
-        if time_changed:
             try:
-                port.heart_beat_second()
+                port.heart_beat()
 
             except Exception as e:
-                logger.error('port heart beat second exception: %s', e, exc_info=True)
+                logger.error('port heart beat exception: %s', e, exc_info=True)
 
-        # Skip ports with read errors for a while
-        if port in _ports_with_read_error:
-            continue
+            if time_changed:
+                try:
+                    port.heart_beat_second()
 
-        try:
-            new_value = await port.read_transformed_value()
+                except Exception as e:
+                    logger.error('port heart beat second exception: %s', e, exc_info=True)
 
-        except Exception as e:
-            logger.error('failed to read value from %s: %s', port, e, exc_info=True)
-            _ports_with_read_error.add(port)
+            # Skip ports with read errors for a while
+            if port in _ports_with_read_error:
+                continue
 
-            continue
+            try:
+                new_value = await port.read_transformed_value()
 
-        if new_value is None:
-            continue  # Read value not available
+            except Exception as e:
+                logger.error('failed to read value from %s: %s', port, e, exc_info=True)
+                _ports_with_read_error.add(port)
 
-        if new_value != old_value:
-            old_value_str = json_utils.dumps(old_value) if old_value is not None else '(unavailable)'
-            new_value_str = json_utils.dumps(new_value)
+                continue
 
-            logger.debug('detected %s value change: %s -> %s', port, old_value_str, new_value_str)
+            if new_value is None:
+                continue  # Read value not available
 
-            port.set_value(new_value)
-            changed_set.add(port)
+            if new_value != old_value:
+                old_value_str = json_utils.dumps(old_value) if old_value is not None else '(unavailable)'
+                new_value_str = json_utils.dumps(new_value)
 
-            # Remember and reset port change reason
-            change_reasons[port] = port.get_change_reason()
-            port.reset_change_reason()
+                logger.debug('detected %s value change: %s -> %s', port, old_value_str, new_value_str)
 
-    await handle_value_changes(changed_set, change_reasons)
+                port.set_last_read_value(new_value)
+                changed_set.add(port)
 
-    sessions.update()
+                # Remember and reset port change reason
+                change_reasons[port] = port.get_change_reason()
+                port.reset_change_reason()
+
+        await handle_value_changes(changed_set, change_reasons)
+
+        sessions.update()
 
 
 async def update_loop() -> None:
@@ -190,7 +196,7 @@ async def handle_value_changes(
         if value is None:
             continue
 
-        if value != port.get_value():  # Value changed after evaluation
+        if value != port.get_last_read_value():  # Value changed after evaluation
             logger.debug('expression "%s" of %s evaluated to %s', expression, port, json_utils.dumps(value))
             port.push_value(value, reason=core_ports.CHANGE_REASON_EXPRESSION)
 
@@ -240,6 +246,9 @@ def uptime() -> float:
 
 async def init() -> None:
     global _update_loop_task
+    global loop
+
+    loop = asyncio.get_event_loop()
 
     force_eval_expressions()
     _update_loop_task = loop.create_task(update_loop())

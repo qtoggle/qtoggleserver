@@ -6,8 +6,8 @@ from qtoggleserver.core import ports as core_ports
 
 
 async def test_eval_trigger_set_expression(mocker, num_mock_port1, num_mock_port2):
-    num_mock_port1.set_value(4)
-    num_mock_port2.set_value(5)
+    num_mock_port1.set_last_read_value(4)
+    num_mock_port2.set_last_read_value(5)
     num_mock_port2.set_writable(True)
     mocker.patch.object(num_mock_port2, 'push_value')
 
@@ -16,8 +16,8 @@ async def test_eval_trigger_set_expression(mocker, num_mock_port1, num_mock_port
 
 
 async def test_eval_trigger_value_change(mocker, num_mock_port1, num_mock_port2):
-    num_mock_port1.set_value(4)
-    num_mock_port2.set_value(5)
+    num_mock_port1.set_last_read_value(4)
+    num_mock_port2.set_last_read_value(5)
     num_mock_port2.set_writable(True)
     await num_mock_port2.set_attr('expression', 'MUL($nid1, 10)')
 
@@ -28,8 +28,8 @@ async def test_eval_trigger_value_change(mocker, num_mock_port1, num_mock_port2)
 
 
 async def test_eval_trigger_value_change_self(mocker, num_mock_port1, num_mock_port2):
-    num_mock_port1.set_value(4)
-    num_mock_port2.set_value(5)
+    num_mock_port1.set_last_read_value(4)
+    num_mock_port2.set_last_read_value(5)
     num_mock_port2.set_writable(True)
     await num_mock_port2.set_attr('expression', 'MUL($nid1, $nid2)')
 
@@ -47,7 +47,7 @@ async def test_eval_trigger_second(freezer, mocker, num_mock_port1, dummy_utc_da
     dummy_utc_datetime = dummy_utc_datetime.replace(microsecond=0)
     freezer.move_to(dummy_utc_datetime)
 
-    num_mock_port1.set_value(4)
+    num_mock_port1.set_last_read_value(4)
     num_mock_port1.set_writable(True)
     await num_mock_port1.set_attr('expression', 'MUL(TIME(), 10)')
     mocker.patch.object(num_mock_port1, 'push_value')
@@ -65,7 +65,7 @@ async def test_eval_trigger_second(freezer, mocker, num_mock_port1, dummy_utc_da
 
 
 async def test_eval_trigger_millisecond(freezer, mocker, num_mock_port1):
-    num_mock_port1.set_value(4)
+    num_mock_port1.set_last_read_value(4)
     num_mock_port1.set_writable(True)
     await num_mock_port1.set_attr('expression', 'MUL(TIMEMS(), 10)')
     mocker.patch.object(num_mock_port1, 'push_value')
@@ -75,8 +75,8 @@ async def test_eval_trigger_millisecond(freezer, mocker, num_mock_port1):
 
 
 async def test_eval_trigger_ignore_disabled_port(mocker, num_mock_port1, num_mock_port2):
-    num_mock_port1.set_value(4)
-    num_mock_port2.set_value(5)
+    num_mock_port1.set_last_read_value(4)
+    num_mock_port2.set_last_read_value(5)
     num_mock_port2.set_writable(True)
     await num_mock_port2.set_attr('expression', 'MUL($nid1, 10)')
     await num_mock_port2.disable()
@@ -88,8 +88,8 @@ async def test_eval_trigger_ignore_disabled_port(mocker, num_mock_port1, num_moc
 
 
 async def test_eval_trigger_ignore_inexistent_port(mocker, num_mock_port1, num_mock_port2):
-    num_mock_port1.set_value(4)
-    num_mock_port2.set_value(5)
+    num_mock_port1.set_last_read_value(4)
+    num_mock_port2.set_last_read_value(5)
     num_mock_port2.set_writable(True)
     await num_mock_port2.set_attr('expression', 'MUL($nid1, $inexistent)')
 
