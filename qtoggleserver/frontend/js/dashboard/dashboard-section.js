@@ -1,10 +1,12 @@
 
-import {gettext}  from '$qui/base/i18n.js'
-import * as Toast from '$qui/messages/toast.js'
-import {asap}     from '$qui/utils/misc.js'
+import {gettext}        from '$qui/base/i18n.js'
+import * as Toast       from '$qui/messages/toast.js'
+import {asap}           from '$qui/utils/misc.js'
+import * as ObjectUtils from '$qui/utils/object.js'
 
 import * as AuthAPI               from '$app/api/auth.js'
 import * as DashboardAPI          from '$app/api/dashboard.js'
+import * as NotificationsAPI      from '$app/api/notifications.js'
 import * as Cache                 from '$app/cache.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
 import {Section}                  from '$app/sections.js'
@@ -176,11 +178,31 @@ class DashboardSection extends Section {
     }
 
     onMainDeviceReconnect() {
-        /* Call onMainDeviceReconnect on all widgets of current panel */
+        /* Call onPanelBecomeActive on all widgets of current panel */
         let currentPanel = Dashboard.getCurrentPanel()
         if (this.isCurrent() && currentPanel) {
             currentPanel.getWidgets().forEach(w => w.onPanelBecomeActive())
         }
+
+        /* Reload panels configuration and see if anything has changed */
+        logger.debug('reloading panels')
+        return DashboardAPI.getDashboardPanels().then(function (panels) {
+
+            logger.debug('panels reloaded')
+
+            if (!ObjectUtils.deepEquals(this._panels, panels)) {
+                logger.debug('panels have been updated since last server connection')
+                NotificationsAPI.fakeServerEvent('dashboard-update', {panels})
+            }
+
+        }.bind(this)).catch(function (error) {
+
+            logger.errorStack('loading panels failed', error)
+            Toast.error(error.message)
+
+            throw error
+
+        })
     }
 
     _updateWidgetStates() {
@@ -214,7 +236,9 @@ class DashboardSection extends Section {
     _handleDashboardUpdate(panels, byCurrentSession) {
         let currentPanel = Dashboard.getCurrentPanel()
 
-        logger.info('another session is editing the dashboard')
+        this._panels = panels
+
+        logger.info('another session has edited the dashboard')
 
         /* Exit edit mode */
         if (!byCurrentSession && currentPanel && currentPanel.isEditEnabled()) {
