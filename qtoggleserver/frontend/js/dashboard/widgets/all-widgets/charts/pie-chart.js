@@ -1,6 +1,7 @@
 
 import {gettext}         from '$qui/base/i18n.js'
 import {ColorComboField} from '$qui/forms/common-fields/common-fields.js'
+import {CheckField}      from '$qui/forms/common-fields/common-fields.js'
 import {NumericField}    from '$qui/forms/common-fields/common-fields.js'
 import {TextField}       from '$qui/forms/common-fields/common-fields.js'
 import {UpDownField}     from '$qui/forms/common-fields/common-fields.js'
@@ -40,6 +41,14 @@ class ConfigForm extends BaseChartConfigForm {
                     label: gettext('Decimals'),
                     min: 0,
                     max: 10
+                }),
+                new CheckField({
+                    name: 'showTotal',
+                    label: gettext('Show Total')
+                }),
+                new CheckField({
+                    name: 'showLegend',
+                    label: gettext('Show Legend')
                 }),
                 new UpDownField({
                     name: 'numPorts',
@@ -258,6 +267,8 @@ class PieChart extends BaseChartWidget {
         this._unit = ''
         this._multiplier = 100
         this._decimals = 0
+        this._showTotal = true
+        this._showLegend = true
     }
 
     isValid() {
@@ -274,6 +285,8 @@ class PieChart extends BaseChartWidget {
             unit: this._unit,
             multiplier: this._multiplier,
             decimals: this._decimals,
+            showTotal: this._showTotal,
+            showLegend: this._showLegend,
             portIds: this._ports.map(p => p.portId),
             labels: this._ports.map(p => p.label),
             colors: this._ports.map(p => p.color)
@@ -289,6 +302,12 @@ class PieChart extends BaseChartWidget {
         }
         if (json.decimals != null) {
             this._decimals = json.decimals
+        }
+        if (json.showTotal != null) {
+            this._showTotal = json.showTotal
+        }
+        if (json.showLegend != null) {
+            this._showLegend = json.showLegend
         }
 
         if (json.portIds != null) {
@@ -360,7 +379,8 @@ class PieChart extends BaseChartWidget {
         }
 
         return ObjectUtils.combine(super.makeChartOptions(), {
-            legend: this._ports.length > 1 ? 'right' : null,
+            showTotal: this._showTotal,
+            legend: this._showLegend ? 'right' : null,
             unitOfMeasurement: this._ports.length > 1 ? this._unit : '%',
             colors: colors
         })

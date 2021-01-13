@@ -15,13 +15,13 @@ $.widget('qtoggle.piechart', $.qtoggle.basechart, {
      */
 
     options: {
-        showTotalValue: true
+        showTotal: true
     },
 
     type: 'doughnut',
 
     _drawExtra: function (environment, chart, ctx) {
-        if (this.options.showTotalValue) {
+        if (this.options.showTotal) {
             /* Draw the total value in the center of the pie */
 
             let xCenter = (chart.chartArea.left + chart.chartArea.right) / 2
