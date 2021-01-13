@@ -16,6 +16,7 @@ import * as StringUtils  from '$qui/utils/string.js'
 import * as ChartJS from '$app/lib/chartjs.module.js'
 
 import * as PortsAPI                    from '$app/api/ports.js'
+import * as Cache                       from '$app/cache.js'
 import HistoryDownloadManager           from '$app/common/history-download-manager.js'
 import {HistoryDownloadTooManyRequests} from '$app/common/history-download-manager.js'
 import PortPickerField                  from '$app/dashboard/widgets/port-picker-field.js'
@@ -581,6 +582,9 @@ export class PortHistoryChart extends BaseChartWidget {
         }
 
         let currentFetchPromise = this._fetchHistoryPromise || Promise.resolve()
+        let now = new Date().getTime()
+        let port = Cache.getPort(this._portId)
+        let currentValue = port.value
 
         let fetchPromise = currentFetchPromise.then(function () {
 
@@ -591,6 +595,10 @@ export class PortHistoryChart extends BaseChartWidget {
             }
 
             let timestampsToFetch = timestamps.filter(t => t > lastFetchedTimestamp)
+
+            /* Only fetch samples for timestamps from the past */
+            timestampsToFetch = timestampsToFetch.filter(t => t < now)
+
             if (timestampsToFetch.length > 0) {
                 return PortsAPI.getPortHistory(
                     this._portId,
@@ -647,6 +655,10 @@ export class PortHistoryChart extends BaseChartWidget {
             let samples = this._cachedSamples.slice()
             for (let timestampIndex = timestamps.length - 1; timestampIndex >= 0; timestampIndex--) {
                 let timestamp = timestamps[timestampIndex]
+                if (timestamp >= now && currentValue != null) {
+                    selectedSamples.unshift({value: currentValue, timestamp: now})
+                }
+
                 while (samples.length && samples[samples.length - 1].timestamp > timestamp) {
                     samples.pop()
                 }
