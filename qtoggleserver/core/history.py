@@ -18,7 +18,7 @@ from qtoggleserver.utils import json as json_utils
 
 PERSIST_COLLECTION = 'value_history'
 
-_CACHE_TIMESTAMP_MIN_AGE = 86400 * 1000  # Don't cache samples newer than this number of milliseconds
+_CACHE_TIMESTAMP_MIN_AGE = 3600 * 1000  # Don't cache samples newer than this number of milliseconds ago
 
 logger = logging.getLogger(__name__)
 
@@ -150,12 +150,13 @@ async def get_samples_by_timestamp(
 
     now_ms = int(time.time() * 1000)
     samples_cache = _samples_cache.setdefault(port.get_id(), {})
+    INEXISTENT = {}
 
     query_tasks = []
     for timestamp in timestamps:
         # Look it up in cache
-        sample = samples_cache.get(timestamp)
-        if sample is None:
+        sample = samples_cache.get(timestamp, INEXISTENT)
+        if sample is INEXISTENT:
             filt = dict(port_filter, ts={'le': timestamp})
             task = persist.query(PERSIST_COLLECTION, filt=filt, sort='-ts', limit=1)
 
@@ -176,12 +177,12 @@ async def get_samples_by_timestamp(
             sample = query_results[0]
             samples.append(sample)
 
-            # Add sample to cache if it's old enough
-            if now_ms - timestamp > _CACHE_TIMESTAMP_MIN_AGE:
-                samples_cache[timestamp] = sample
-
         else:
             samples.append(None)
+
+        # Add sample to cache if it's old enough
+        if now_ms - timestamp > _CACHE_TIMESTAMP_MIN_AGE:
+            samples_cache[timestamp] = samples[-1]
 
     return ({'value': r['val'], 'timestamp': r['ts']} if r is not None else None for r in samples)
 
