@@ -25,6 +25,10 @@ class ConfigForm extends BaseChartConfigForm {
     constructor({...args}) {
         super({
             fields: [
+                new NumericField({
+                    name: 'max',
+                    label: gettext('Maximum Value')
+                }),
                 new TextField({
                     name: 'unit',
                     label: gettext('Unit'),
@@ -33,7 +37,7 @@ class ConfigForm extends BaseChartConfigForm {
                 new NumericField({
                     name: 'multiplier',
                     label: gettext('Multiplier'),
-                    description: gettext('A multiplying factor that brings the port value to the 0..100 range.'),
+                    description: gettext('A multiplying factor for port values.'),
                     required: true
                 }),
                 new UpDownField({
@@ -112,28 +116,13 @@ class ConfigForm extends BaseChartConfigForm {
 
         }.bind(this))
 
-        /* Multiplier field only makes sense when using one single port */
-        /* Unit field only makes sense when using multiple ports */
-        let multiplierField = this.getField('multiplier')
-        let unitField = this.getField('unit')
-        if (data.numPorts > 1) {
-            multiplierField.hide()
-            unitField.show()
+        /* Maximum only makes sense when using a single port */
+        let maxField = this.getField('max')
+        if (data.numPorts === 1) {
+            maxField.show()
         }
         else {
-            multiplierField.show()
-            unitField.hide()
-        }
-
-        /* Hide port1 label if only one port is used */
-        let port0LabelField = this._getPortFields(0).labelField
-        if (port0LabelField) {
-            if (data.numPorts > 1) {
-                port0LabelField.show()
-            }
-            else {
-                port0LabelField.hide()
-            }
+            maxField.hide()
         }
     }
 
@@ -232,7 +221,8 @@ class ConfigForm extends BaseChartConfigForm {
     fromPort(port, fieldName) {
         /* We don't want widget label to be updated from any selected port */
         return {
-            unit: port.unit
+            unit: port.unit,
+            max: port.max
         }
     }
 
@@ -264,6 +254,7 @@ class PieChart extends BaseChartWidget {
             {portId: null, label: '', color: ''}
         ]
 
+        this._max = 100
         this._unit = ''
         this._multiplier = 100
         this._decimals = 0
@@ -282,6 +273,7 @@ class PieChart extends BaseChartWidget {
 
     configToJSON() {
         return {
+            max: this._max,
             unit: this._unit,
             multiplier: this._multiplier,
             decimals: this._decimals,
@@ -294,6 +286,9 @@ class PieChart extends BaseChartWidget {
     }
 
     configFromJSON(json) {
+        if (json.max != null) {
+            this._max = json.max
+        }
         if (json.unit != null) {
             this._unit = json.unit
         }
@@ -331,6 +326,8 @@ class PieChart extends BaseChartWidget {
 
                 let value = this.getPortValue(portInfo.portId)
 
+                value *= this._multiplier
+
                 /* Round value to indicated number of decimals */
                 value = Number(value.toFixed(this._decimals))
 
@@ -340,6 +337,7 @@ class PieChart extends BaseChartWidget {
             }.bind(this))
         }
         else {
+            /* When using a single port, we have to explicitly add a fake value, representing the rest of the pie */
             let portInfo = this._ports[0]
             let portValue = this.getPortValue(portInfo.portId)
             if (portValue == null) {
@@ -348,11 +346,17 @@ class PieChart extends BaseChartWidget {
 
             let value = portValue * this._multiplier
 
+            /* Negative values can't be represented on pie chart */
+            value = Math.max(0, value)
+
+            /* Negative values can't be represented on pie chart */
+            value = Math.min(this._max, value)
+
             /* Round value to indicated number of decimals */
             value = Number(value.toFixed(this._decimals))
 
-            data = [value, 100 - value]
-            labels = []
+            data = [value, this._max - value]
+            labels = [portInfo.label, gettext('Remaining')]
         }
 
         this.widgetCall('setValue', data)
@@ -374,6 +378,7 @@ class PieChart extends BaseChartWidget {
     makeChartOptions() {
         let colors = this._ports.map(p => p.color)
         if (this._ports.length === 1) {
+            /* Add faded color for remaining pie area */
             let color = Colors.alpha(Theme.getColor(colors[0]), 0.2)
             colors.push(color)
         }
@@ -381,7 +386,7 @@ class PieChart extends BaseChartWidget {
         return ObjectUtils.combine(super.makeChartOptions(), {
             showTotal: this._showTotal,
             legend: this._showLegend ? 'right' : null,
-            unitOfMeasurement: this._ports.length > 1 ? this._unit : '%',
+            unitOfMeasurement: this._unit,
             colors: colors
         })
     }
