@@ -241,6 +241,7 @@ export class PortHistoryChart extends BaseChartWidget {
         this._fetchHistoryPromise = null
         this._historyDownloadManager = null /* Used for slice history mode */
         this._cachedSamples = [] /* Used for timestamps history mode */
+        this._lastCachedTimestamp = 0 /* The requested timestamp of the last cached value */
 
         /* Use ChartJS date adapter to determine beginning of time units */
         this._dateAdapter = new ChartJS._adapters._date()
@@ -356,6 +357,7 @@ export class PortHistoryChart extends BaseChartWidget {
     invalidateCache() {
         this._historyDownloadManager = null
         this._cachedSamples = []
+        this._lastCachedTimestamp = 0
     }
 
     showCurrentValue(wantProgress = true) {
@@ -585,16 +587,12 @@ export class PortHistoryChart extends BaseChartWidget {
         let now = new Date().getTime()
         let port = Cache.getPort(this._portId)
         let currentValue = port.value
+        let timestampsToFetch = [] /* Will be assigned later, in promise */
 
         let fetchPromise = currentFetchPromise.then(function () {
 
             /* Only fetch samples for timestamps newer than last cached sample */
-            let lastFetchedTimestamp = 0
-            if (this._cachedSamples.length > 0) {
-                lastFetchedTimestamp = this._cachedSamples[this._cachedSamples.length - 1].timestamp
-            }
-
-            let timestampsToFetch = timestamps.filter(t => t > lastFetchedTimestamp)
+            timestampsToFetch = timestamps.filter(t => t > this._lastCachedTimestamp)
 
             /* Only fetch samples for timestamps from the past */
             timestampsToFetch = timestampsToFetch.filter(t => t < now)
@@ -628,6 +626,10 @@ export class PortHistoryChart extends BaseChartWidget {
                 history = history.filter(s => s != null)
             }
 
+            if (history.length && timestampsToFetch.length) {
+                this._lastCachedTimestamp = timestampsToFetch[timestampsToFetch.length - 1]
+            }
+
             /* Ignore duplicate (and successive) samples */
             let distinctHistory = history.slice(0, 1)
             history.slice(1).forEach(function (sample, i) {
@@ -653,11 +655,14 @@ export class PortHistoryChart extends BaseChartWidget {
             /* Associate samples to requested timestamps */
             let selectedSamples = []
             let samples = this._cachedSamples.slice()
+
+            /* Consider current value as well, if available */
+            if (currentValue != null) {
+                samples.push({value: currentValue, timestamp: now})
+            }
+
             for (let timestampIndex = timestamps.length - 1; timestampIndex >= 0; timestampIndex--) {
                 let timestamp = timestamps[timestampIndex]
-                if (timestamp >= now && currentValue != null) {
-                    selectedSamples.unshift({value: currentValue, timestamp: now})
-                }
 
                 while (samples.length && samples[samples.length - 1].timestamp > timestamp) {
                     samples.pop()
