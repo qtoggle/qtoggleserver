@@ -50,7 +50,6 @@ class PortHistoryChartPage extends ChartPage {
     constructor(port) {
         let displayName = port['display_name'] || port['id']
         let now = new Date().getTime()
-        let from = now - INITIAL_INTERVAL
         let isBoolean = port['type'] === 'boolean'
 
         super({
@@ -65,8 +64,6 @@ class PortHistoryChartPage extends ChartPage {
                 yTicksLabelCallback: isBoolean ? value => value ? gettext('On') : gettext('Off') : null,
                 panZoomMode: 'x',
                 panZoomXMax: now,
-                xMin: from,
-                xMax: now,
                 unitOfMeasurement: port['unit'],
                 stepped: isBoolean
             }
@@ -81,9 +78,13 @@ class PortHistoryChartPage extends ChartPage {
     }
 
     load() {
-        let {min: from, max: to} = this.getXRange()
-        this.chartToTimeWindow()
-        return this.fetchAndShowHistory(from, to)
+        let now = new Date().getTime()
+        let from = now - INITIAL_INTERVAL
+
+        return this.fetchAndShowHistory(from, now).then(function () {
+            this.setXRange(from, now)
+            this.chartToTimeWindow()
+        }.bind(this))
     }
 
     handlePanZoomEnd(xMin, xMax, yMin, yMax) {
