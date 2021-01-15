@@ -204,6 +204,7 @@ class HistoryDownloadManager {
      */
     addSample(value, timestamp, bridgeGap) {
         let sample = {value, timestamp}
+        let samplingInterval = (this._port.history_interval || 0) * 1000
 
         if (!this._intervals.length) { /* No intervals yet */
             this._intervals.push(new Interval(timestamp, timestamp + 1, [sample]))
@@ -237,7 +238,16 @@ class HistoryDownloadManager {
             }
             else { /* Sample is after the last interval */
                 if (bridgeGap) {
-                    this._intervals[this._intervals.length - 1].addSample(sample)
+                    /* Don't add sample at the end if going below port's sampling rate */
+                    let interval = this._intervals[this._intervals.length - 1]
+                    if (samplingInterval > 0 && interval.samples.length > 0) {
+                        let lastSample = interval.samples[interval.samples.length - 1]
+                        if (timestamp - lastSample.timestamp < samplingInterval) {
+                            return
+                        }
+                    }
+
+                    interval.addSample(sample)
                 }
                 else {
                     this._intervals.push(new Interval(timestamp, timestamp + 1, [sample]))

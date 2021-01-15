@@ -121,6 +121,13 @@ class DashboardSection extends Section {
                 this._updateWidgetStates()
                 this._updateWidgetConfigPorts()
 
+                let currentPanel = Dashboard.getCurrentPanel()
+                if (currentPanel) {
+                    currentPanel.getWidgets().forEach(function (widget) {
+                        widget.handlePortUpdate(event.params)
+                    })
+                }
+
                 break
             }
 

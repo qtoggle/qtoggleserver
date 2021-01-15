@@ -429,16 +429,14 @@ export class PortHistoryChart extends BaseChartWidget {
         let wantProgress = false
 
         if (this.isSliceHistoryMode()) {
-            if (!this._historyDownloadManager) {
-                return
+            if (this._historyDownloadManager) {
+                /* Remove old values that are no longer displayed on chart */
+                let to = this.getFromTimestamp()
+                this._historyDownloadManager.purge(null, to)
+
+                /* Add new value using the current timestamp */
+                this._historyDownloadManager.addSample(value, new Date().getTime(), /* bridgeGap = */ true)
             }
-
-            /* Remove old values that are no longer displayed on chart */
-            let to = this.getFromTimestamp()
-            this._historyDownloadManager.purge(null, to)
-
-            /* Add new value using the current timestamp */
-            this._historyDownloadManager.addSample(value, new Date().getTime(), /* bridgeGap = */ true)
         }
         else {
             /* Remove old values that will no longer be displayed on chart */
@@ -449,6 +447,12 @@ export class PortHistoryChart extends BaseChartWidget {
         }
 
         this.showCurrentValue(wantProgress)
+    }
+
+    onPortUpdate(port) {
+        if (port.id === this._portId) {
+            this.invalidateCache()
+        }
     }
 
     onPanelBecomeActive() {

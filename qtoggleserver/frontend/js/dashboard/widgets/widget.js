@@ -1119,10 +1119,14 @@ class Widget extends mix().with(ViewMixin) {
     }
 
 
-    /* Values */
+    /* Ports and port values */
 
     handlePortValueChange(portId, value) {
         this.onPortValueChange(portId, value)
+    }
+
+    handlePortUpdate(port) {
+        this.onPortUpdate(port)
     }
 
     /**
@@ -1131,6 +1135,13 @@ class Widget extends mix().with(ViewMixin) {
      * @param {Number|Boolean} value the new port value
      */
     onPortValueChange(portId, value) {
+    }
+
+    /**
+     * Override this to implement widget-specific reaction to updating port attributes.
+     * @param {Object} port the port
+     */
+    onPortUpdate(port) {
     }
 
     /**
