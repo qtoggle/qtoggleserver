@@ -2,6 +2,7 @@
 import $ from '$qui/lib/jquery.module.js'
 
 import * as Colors      from '$qui/utils/colors.js'
+import {isFunction}     from '$qui/utils/misc.js'
 import * as ObjectUtils from '$qui/utils/object.js'
 
 import * as ChartJS from '$app/lib/chartjs.module.js'
@@ -15,7 +16,7 @@ $.widget('qtoggle.piechart', $.qtoggle.basechart, {
      */
 
     options: {
-        showTotal: true
+        showTotal: true /* Or a function taking (chart, data, options) and returning total value content */
     },
 
     type: 'doughnut',
@@ -23,6 +24,11 @@ $.widget('qtoggle.piechart', $.qtoggle.basechart, {
     _drawExtra: function (environment, chart, ctx) {
         if (this.options.showTotal) {
             /* Draw the total value in the center of the pie */
+
+            let text = this._makeTotalValueText()
+            if (text == null) {
+                return
+            }
 
             let xCenter = (chart.chartArea.left + chart.chartArea.right) / 2
             let yCenter = (chart.chartArea.top + chart.chartArea.bottom) / 2
@@ -35,7 +41,6 @@ $.widget('qtoggle.piechart', $.qtoggle.basechart, {
                 size: environment.em2px * 2 * fontScaleFactor
             })
             let font = ChartJS.toFont(fontOptions)
-            let text = this._makeTotalValueText()
 
             ctx.save()
             ctx.translate(xCenter, yCenter)
@@ -49,8 +54,27 @@ $.widget('qtoggle.piechart', $.qtoggle.basechart, {
     },
 
     _makeTotalValueText: function () {
-        let totalValue = this._data.reduce((a, v) => a + v, 0)
-        return `${totalValue}${this.options.unitOfMeasurement || ''}`
+        let totalValue
+        if (isFunction(this.options.showTotal)) {
+            totalValue = this.options.showTotal(this.chart, this._data, this.options)
+        }
+        else {
+            totalValue = this._data.reduce((a, v) => a + v, 0)
+        }
+
+        if (totalValue == null) {
+            return
+        }
+
+        if (typeof totalValue === 'number') {
+            /* Round to a decent number of decimals */
+            totalValue = Math.round(totalValue * 1e6) / 1e6
+
+            /* If value is a number, add unit */
+            totalValue = `${totalValue}${this.options.unitOfMeasurement || ''}`
+        }
+
+        return totalValue
     },
 
     _makeExtraOptions: function (environment) {

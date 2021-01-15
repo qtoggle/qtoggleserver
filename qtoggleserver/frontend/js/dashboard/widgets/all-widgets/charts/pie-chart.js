@@ -256,7 +256,7 @@ class PieChart extends BaseChartWidget {
 
         this._max = 100
         this._unit = ''
-        this._multiplier = 100
+        this._multiplier = 1
         this._decimals = 0
         this._showTotal = true
         this._showLegend = true
@@ -384,11 +384,20 @@ class PieChart extends BaseChartWidget {
         }
 
         return ObjectUtils.combine(super.makeChartOptions(), {
-            showTotal: this._showTotal,
+            showTotal: this.makeTotalValue.bind(this),
             legend: this._showLegend ? 'right' : null,
             unitOfMeasurement: this._unit,
             colors: colors
         })
+    }
+
+    makeTotalValue(chart, data, options) {
+        if (this._ports.length > 1) {
+            return data.reduce((a, v) => a + v, 0)
+        }
+        else {
+            return data[0]
+        }
     }
 
     makePadding() {
