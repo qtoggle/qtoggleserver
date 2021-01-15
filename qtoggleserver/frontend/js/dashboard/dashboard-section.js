@@ -101,6 +101,8 @@ class DashboardSection extends Section {
         if (active && this.isCurrent() && currentPanel) {
             currentPanel.getWidgets().forEach(w => w.onPanelBecomeActive())
         }
+
+        this._reloadPanelConfig()
     }
 
     onServerEvent(event) {
@@ -191,25 +193,7 @@ class DashboardSection extends Section {
             currentPanel.getWidgets().forEach(w => w.onPanelBecomeActive())
         }
 
-        /* Reload panels configuration and see if anything has changed */
-        logger.debug('reloading panels')
-        return DashboardAPI.getDashboardPanels().then(function (panels) {
-
-            logger.debug('panels reloaded')
-
-            if (!ObjectUtils.deepEquals(this._panels, panels)) {
-                logger.debug('panels have been updated since last server connection')
-                NotificationsAPI.fakeServerEvent('dashboard-update', {panels})
-            }
-
-        }.bind(this)).catch(function (error) {
-
-            logger.errorStack('loading panels failed', error)
-            Toast.error(error.message)
-
-            throw error
-
-        })
+        this._reloadPanelConfig()
     }
 
     _updateWidgetStates() {
@@ -269,6 +253,28 @@ class DashboardSection extends Section {
                 rootGroup.updateUI(/* recursive = */ true)
             })
         }
+    }
+
+    _reloadPanelConfig() {
+        /* Reload panels configuration and see if anything has changed */
+        logger.debug('reloading panels')
+        return DashboardAPI.getDashboardPanels().then(function (panels) {
+
+            logger.debug('panels reloaded')
+
+            if (!ObjectUtils.deepEquals(this._panels, panels)) {
+                logger.debug('panels have been updated since last server connection')
+                NotificationsAPI.fakeServerEvent('dashboard-update', {panels})
+            }
+
+        }.bind(this)).catch(function (error) {
+
+            logger.errorStack('loading panels failed', error)
+            Toast.error(error.message)
+
+            throw error
+
+        })
     }
 
     makeMainPage() {
