@@ -38,7 +38,7 @@ _MAX_QUEUED_API_CALLS = 256
 _INVALID_EXPRESSION_FIELD_RE = re.compile(r'^((device_)*expression)$')
 _INVALID_HISTORY_FIELD_RE = re.compile(r'^((device_)*history_[a-z0-9_]+)$')
 _FWUPDATE_POLL_INTERVAL = 30
-_FWUPDATE_POLL_TIMEOUT = 300
+_FWUPDATE_POLL_TIMEOUT = 600
 _NO_EVENT_DEVICE_ATTRS = ['uptime', 'date']
 _DEFAULT_POLL_INTERVAL = 10
 _TEMP_RENAME_DNS_TIMEOUT = 120
@@ -148,6 +148,9 @@ class Slave(logging_utils.LoggableMixin):
 
         # Handles firmware update progress
         self._fwupdate_poll_task: Optional[asyncio.Task] = None
+
+        # True while device is being reset (rebooted) via master, None while waiting for device to go offline
+        self._resetting: Optional[bool] = False
 
         self._save_lock: asyncio.Lock = asyncio.Lock()
 
@@ -819,15 +822,15 @@ class Slave(logging_utils.LoggableMixin):
                     received_events = core_responses.parse(response)
 
                 except core_responses.Error as e:
+                    offline_counter += 1
+
                     self.error(
                         'api call GET /listen failed: %s, retrying in %s seconds',
                         e,
                         settings.slaves.retry_interval
                     )
 
-                    offline_counter += 1
-
-                    if self._online and offline_counter > settings.slaves.retry_count:
+                    if (self._online and offline_counter > settings.slaves.retry_count) or (self._resetting is None):
                         self._online = False
                         await self._handle_offline()
 
@@ -925,7 +928,7 @@ class Slave(logging_utils.LoggableMixin):
 
             self._poll_offline_counter += 1
 
-            if self._online and self._poll_offline_counter > settings.slaves.retry_count:
+            if (self._online and self._poll_offline_counter > settings.slaves.retry_count) or (self._resetting is None):
                 self._online = False
                 await self._handle_offline()
 
@@ -1242,6 +1245,11 @@ class Slave(logging_utils.LoggableMixin):
 
         await self.trigger_update()
 
+        # If device went offline due to being reset, mark the resetting flag accordingly
+        if self._resetting is None:
+            self.debug('device went offline due to being reset')
+            self._resetting = True
+
         # Trigger a port-update so that online attribute is pushed to consumers
         for port in self._get_local_ports():
             if port.is_enabled():
@@ -1249,6 +1257,11 @@ class Slave(logging_utils.LoggableMixin):
 
     async def _handle_online(self) -> None:
         self.debug('device is online')
+
+        # If device came online after to being reset, mark the resetting flag accordingly
+        if self._resetting is True:
+            self.debug('device came online after being reset')
+            self._resetting = False
 
         # Now that the device is back online, we can apply any pending provisioning data
         await self.apply_provisioning()
@@ -1447,53 +1460,57 @@ class Slave(logging_utils.LoggableMixin):
         request: core_api.APIRequest
     ) -> Tuple[bool, Any]:
 
-        # Intercept API calls to device attributes, webhooks and reverse parameters, for devices that are offline
-        if self._online:
-            return False, None
+        if not self._online:
+            # Intercept API calls to device attributes, webhooks and reverse parameters, for devices that are offline
+            if method == 'GET':
+                if path == '/device':
+                    # In theory, cached attributes should always be available, while device is online
+                    if self._cached_attrs:
+                        return True, self._cached_attrs
 
-        if method == 'GET':
-            if path == '/device':
-                # In theory, cached attributes should always be available, while device is online
-                if self._cached_attrs:
-                    return True, self._cached_attrs
+                elif path == '/webhooks':
+                    if self._cached_webhooks:
+                        return True, self._cached_webhooks
 
-            elif path == '/webhooks':
-                if self._cached_webhooks:
-                    return True, self._cached_webhooks
+                elif path == '/reverse':
+                    if self._cached_reverse:
+                        return True, self._cached_reverse
 
-            elif path == '/reverse':
-                if self._cached_reverse:
-                    return True, self._cached_reverse
+            elif method == 'PATCH':
+                if path == '/device':
+                    for name, value in params.items():
+                        self.debug('marking attribute %s for provisioning', name)
+                        self._provisioning_attrs.add(name)
+                        self._cached_attrs[name] = value
 
-        elif method == 'PATCH':
-            if path == '/device':
-                for name, value in params.items():
-                    self.debug('marking attribute %s for provisioning', name)
-                    self._provisioning_attrs.add(name)
-                    self._cached_attrs[name] = value
+                    # Inform clients about the provisioning field change
+                    await self.trigger_update()
 
-                # Inform clients about the provisioning field change
-                await self.trigger_update()
+                    await self.save()
 
-                await self.save()
+                    return True, None
 
-                return True, None
+                elif path == '/webhooks':
+                    self.debug('marking webhooks params for provisioning')
+                    self._provisioning_webhooks = True
+                    self._cached_webhooks.update(params)
+                    await self.save()
 
-            elif path == '/webhooks':
-                self.debug('marking webhooks params for provisioning')
-                self._provisioning_webhooks = True
-                self._cached_webhooks.update(params)
-                await self.save()
+                    return True, None
 
-                return True, None
+                elif path == '/reverse':
+                    self.debug('marking reverse params for provisioning')
+                    self._provisioning_reverse = True
+                    self._cached_reverse.update(params)
+                    await self.save()
 
-            elif path == '/reverse':
-                self.debug('marking reverse params for provisioning')
-                self._provisioning_reverse = True
-                self._cached_reverse.update(params)
-                await self.save()
+                    return True, None
 
-                return True, None
+        else:  # Device is online
+            if method == 'POST':
+                if path == '/reset':
+                    self.debug('device is resetting')
+                    self._resetting = None
 
         # By default, requests are not intercepted
         return False, None
