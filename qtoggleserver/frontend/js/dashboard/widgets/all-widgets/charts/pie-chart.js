@@ -392,6 +392,10 @@ class PieChart extends BaseChartWidget {
     }
 
     makeTotalValue(chart, data, options) {
+        if (!this._showTotal) {
+            return
+        }
+
         if (this._ports.length > 1) {
             return data.reduce((a, v) => a + v, 0)
         }
