@@ -1,8 +1,9 @@
 
-import {gettext}        from '$qui/base/i18n.js'
-import * as Toast       from '$qui/messages/toast.js'
-import {asap}           from '$qui/utils/misc.js'
-import * as ObjectUtils from '$qui/utils/object.js'
+import {gettext}         from '$qui/base/i18n.js'
+import * as Toast        from '$qui/messages/toast.js'
+import {asap}            from '$qui/utils/misc.js'
+import * as ObjectUtils  from '$qui/utils/object.js'
+import * as PromiseUtils from '$qui/utils/promise.js'
 
 import * as AuthAPI               from '$app/api/auth.js'
 import * as DashboardAPI          from '$app/api/dashboard.js'
@@ -102,7 +103,8 @@ class DashboardSection extends Section {
             currentPanel.getWidgets().forEach(w => w.onPanelBecomeActive())
         }
 
-        this._reloadPanelConfig()
+        /* Using later() here reduces the chances of request error right when window becomes active */
+        PromiseUtils.later(1000).then(() => this._reloadPanelConfig())
     }
 
     onServerEvent(event) {
@@ -271,8 +273,6 @@ class DashboardSection extends Section {
 
             logger.errorStack('loading panels failed', error)
             Toast.error(error.message)
-
-            throw error
 
         })
     }
