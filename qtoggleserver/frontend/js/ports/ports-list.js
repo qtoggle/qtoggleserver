@@ -203,7 +203,14 @@ class PortsList extends PageList {
      */
     portToItem(port) {
         let label = port.display_name
-        if (!label) {
+        let subLabel = null
+        if (label) {
+            subLabel = port.id
+            if (this._deviceName && !Cache.isMainDevice(this._deviceName)) {
+                subLabel = subLabel.substring(this._deviceName.length + 1)
+            }
+        }
+        else {
             label = port.id
             if (this._deviceName && !Cache.isMainDevice(this._deviceName)) {
                 label = label.substring(this._deviceName.length + 1)
@@ -212,6 +219,7 @@ class PortsList extends PageList {
 
         return new IconLabelListItem({
             label: label,
+            subLabel: subLabel,
             icon: Ports.makePortIcon(port),
             data: port.id
         })
