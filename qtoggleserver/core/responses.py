@@ -131,7 +131,7 @@ def parse(response: HTTPResponse, decode_json: bool = True, resolve_refs: bool =
         else:
             body = response.body
 
-        if response.code == 200:
+        if response.code < 300:
             return body  # Happy case with content
 
         if response.code == 301:
