@@ -74,10 +74,6 @@ $.widget('qtoggle.barchart', $.qtoggle.basechart, {
     },
 
     _adaptDatasets: function (data, environment, colors) {
-        if (!Array.isArray(data) || data.length === 0) {
-            return []
-        }
-
         /* Normalize [v0, v1, ...] -> [[v0, v1, ...]] */
         if (!Array.isArray(data[0])) {
             data = [data]

@@ -103,7 +103,7 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
         /* Temporarily add the chart element to DOM - it seems Chart.js needs this */
         Window.$body.append(this.element)
 
-        this._data = {}
+        this._data = null
         this._chart = new ChartJS.Chart(this._canvasContext, {
             type: this.type,
             data: {},
@@ -240,7 +240,10 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
             labels = this.options.colors.map(() => '')
         }
 
-        let datasets = this._adaptDatasets(data, this._getEnvironment(), this._getColors())
+        let datasets = []
+        if (data != null && Array.isArray(data) && data.length > 0) {
+            datasets = this._adaptDatasets(data, this._getEnvironment(), this._getColors())
+        }
         datasets.forEach(function (ds, i) {
             ObjectUtils.setDefault(ds, 'label', labels[i])
         })
