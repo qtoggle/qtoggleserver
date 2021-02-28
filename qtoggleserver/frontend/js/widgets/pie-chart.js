@@ -98,7 +98,7 @@ $.widget('qtoggle.piechart', $.qtoggle.basechart, {
                     }
                 },
                 label: function (context) {
-                    return ` ${context.dataPoint}${this.options.unitOfMeasurement || ''}`
+                    return ` ${context.parsed}${this.options.unitOfMeasurement || ''}`
                 }.bind(this)
             }
         })

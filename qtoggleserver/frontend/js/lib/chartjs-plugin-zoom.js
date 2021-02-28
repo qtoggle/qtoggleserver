@@ -185,7 +185,7 @@ function doZoom(chart, percentZoomX, percentZoomY, focalPoint, whichAxes, animat
 		// Do the zoom here
 		var zoomMode = typeof zoomOptions.mode === 'function' ? zoomOptions.mode({chart: chart}) : zoomOptions.mode;
 
-		// Which axe should be modified when figers were used.
+		// Which axes should be modified when fingers were used.
 		var _whichAxes;
 		if (zoomMode === 'xy' && whichAxes !== undefined) {
 			// based on fingers positions
@@ -365,32 +365,7 @@ var zoomPlugin = {
 		}
 	},
 
-	afterInit: function(chartInstance) {
-
-		chartInstance.resetZoom = function() {
-			storeOriginalOptions(chartInstance);
-			var originalOptions = chartInstance.$zoom._originalOptions;
-			helpers.each(chartInstance.scales, function(scale) {
-
-				var options = scale.options;
-				if (originalOptions[scale.id]) {
-					options.min = originalOptions[scale.id].min;
-					options.max = originalOptions[scale.id].max;
-				} else {
-					delete options.min;
-					delete options.max;
-				}
-			});
-			chartInstance.update();
-		};
-
-	},
-
-	beforeUpdate: function(chart, args, options) {
-		resolveOptions(chart, options);
-	},
-
-	beforeInit: function(chartInstance, args, pluginOptions) {
+	start: function(chartInstance, args, pluginOptions) {
 		chartInstance.$zoom = {
 			_originalOptions: {}
 		};
@@ -553,7 +528,6 @@ var zoomPlugin = {
 				handlePinch(e);
 				currentPinchScaling = null; // reset
 				zoomNS.zoomCumulativeDelta = 0;
-
 				var zoomOptions = chartInstance.$zoom._options.zoom;
 				if (typeof zoomOptions.onZoomComplete === 'function') {
 					zoomOptions.onZoomComplete({chart: chartInstance});
@@ -604,6 +578,27 @@ var zoomPlugin = {
 
 			chartInstance._mc = mc;
 		}
+
+		chartInstance.resetZoom = function() {
+			storeOriginalOptions(chartInstance);
+			var originalOptions = chartInstance.$zoom._originalOptions;
+			helpers.each(chartInstance.scales, function(scale) {
+
+				var scaleOptions = scale.options;
+				if (originalOptions[scale.id]) {
+					scaleOptions.min = originalOptions[scale.id].min;
+					scaleOptions.max = originalOptions[scale.id].max;
+				} else {
+					delete scaleOptions.min;
+					delete scaleOptions.max;
+				}
+			});
+			chartInstance.update();
+		};
+	},
+
+	beforeUpdate: function(chart, args, options) {
+		resolveOptions(chart, options);
 	},
 
 	beforeDatasetsDraw: function(chartInstance) {
@@ -650,7 +645,7 @@ var zoomPlugin = {
 		}
 	},
 
-	destroy: function(chartInstance) {
+	stop: function(chartInstance) {
 		if (!chartInstance.$zoom) {
 			return;
 		}
