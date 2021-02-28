@@ -119,17 +119,19 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def handle_online(self) -> None:
         self.trigger_port_update_fire_and_forget()
 
-    async def trigger_port_update(self) -> None:
+    async def trigger_port_update(self, save: bool = False) -> None:
         self._port_update_task = None
         for port in self._ports:
             if port.is_enabled():
                 await port.trigger_update()
+                if save:
+                    await port.save()
 
-    def trigger_port_update_fire_and_forget(self) -> None:
+    def trigger_port_update_fire_and_forget(self, save: bool = False) -> None:
         if self._port_update_task:
             return  # Already scheduled
 
-        self._port_update_task = asyncio.create_task(self.trigger_port_update())
+        self._port_update_task = asyncio.create_task(self.trigger_port_update(save))
 
     def get_runner(self) -> asyncio_utils.ThreadedRunner:
         if self._runner is None:
