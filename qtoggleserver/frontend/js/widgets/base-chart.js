@@ -357,7 +357,7 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
                     }
                 },
                 label: function (context) {
-                    return ` ${context.dataPoint.y}${this.options.unitOfMeasurement || ''}`
+                    return ` ${context.parsed.y}${this.options.unitOfMeasurement || ''}`
                 }.bind(this)
             }
         }
