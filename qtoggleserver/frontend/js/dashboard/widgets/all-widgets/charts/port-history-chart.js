@@ -235,7 +235,7 @@ export class PortHistoryChart extends BaseChartWidget {
         this._max = null
         this._unit = ''
         this._multiplier = 1
-        this._decimals = 0
+        this._decimals = 1
         this._inverted = false
 
         this._fetchHistoryPromise = null
