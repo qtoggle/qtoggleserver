@@ -391,6 +391,7 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
                 enabled: true,
                 mode: this.options.panZoomMode,
                 speed: 0.1,
+                threshold: 10,
                 rangeMin: {
                     x: this.options.panZoomXMin != null ? this.options.panZoomXMin : undefined,
                     y: this.options.panZoomYMin != null ? this.options.panZoomYMin : undefined
@@ -418,6 +419,7 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
                 enabled: true,
                 mode: this.options.panZoomMode,
                 speed: 0.2,
+                threshold: 2,
                 rangeMax: {
                     x: this.options.panZoomXMax != null ? this.options.panZoomXMax : undefined,
                     y: this.options.panZoomYMax != null ? this.options.panZoomYMax : undefined
