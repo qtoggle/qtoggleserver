@@ -549,11 +549,16 @@ export class PortHistoryChart extends BaseChartWidget {
             return Promise.resolve([])
         }
 
+        let port = this.getPort(this._portId)
+        if (!port) {
+            return Promise.resolve([])
+        }
+
         let currentFetchPromise = this._fetchHistoryPromise || Promise.resolve()
         let fetchPromise = currentFetchPromise.then(function () {
 
             if (!this._historyDownloadManager) {
-                this._historyDownloadManager = new HistoryDownloadManager(this.getPort(this._portId))
+                this._historyDownloadManager = new HistoryDownloadManager(port)
             }
             return this._historyDownloadManager.fetch(Math.round(from), Math.round(to), MAX_FETCH_REQUESTS)
 
@@ -587,9 +592,13 @@ export class PortHistoryChart extends BaseChartWidget {
             return Promise.resolve([])
         }
 
+        let port = this.getPort(this._portId)
+        if (!port) {
+            return Promise.resolve([])
+        }
+
         let currentFetchPromise = this._fetchHistoryPromise || Promise.resolve()
         let now = new Date().getTime()
-        let port = Cache.getPort(this._portId)
         let currentValue = port.value
         let timestampsToFetch = [] /* Will be assigned later, in promise */
 
