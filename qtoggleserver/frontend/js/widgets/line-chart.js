@@ -117,10 +117,6 @@ $.widget('qtoggle.linechart', $.qtoggle.basechart, {
     },
 
     _adaptDatasets: function (data, environment, colors) {
-        if (!Array.isArray(data) || data.length === 0) {
-            return []
-        }
-
         /* Normalize [y0, y1, ...] -> [[0, y0], [1, y1], ...] */
         if (!Array.isArray(data[0])) {
             data = data.map((v, i) => [i, v])

@@ -7,7 +7,7 @@
     "license": "Apache-2.0",
     "dependencies": {
         "@qtoggle/qui": "*",
-        "chart.js": "^3.0.0-beta.7",
+        "chart.js": "^3.0.0-beta.12",
         "chartjs-adapter-date-fns": "*",
         "hammerjs": "*",
         "jquery": "*",

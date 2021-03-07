@@ -54,6 +54,10 @@ $.widget('qtoggle.piechart', $.qtoggle.basechart, {
     },
 
     _makeTotalValueText: function () {
+        if (this._data == null) {
+            return
+        }
+
         let totalValue
         if (isFunction(this.options.showTotal)) {
             totalValue = this.options.showTotal(this.chart, this._data, this.options)
@@ -94,7 +98,7 @@ $.widget('qtoggle.piechart', $.qtoggle.basechart, {
                     }
                 },
                 label: function (context) {
-                    return ` ${context.dataPoint}${this.options.unitOfMeasurement || ''}`
+                    return ` ${context.parsed}${this.options.unitOfMeasurement || ''}`
                 }.bind(this)
             }
         })
@@ -158,10 +162,6 @@ $.widget('qtoggle.piechart', $.qtoggle.basechart, {
     },
 
     _adaptDatasets: function (data, environment, colors) {
-        if (!Array.isArray(data) || data.length === 0) {
-            return []
-        }
-
         return [{
             backgroundColor: colors,
             hoverBackgroundColor: colors.map(c => Colors.alpha(c, 0.75)),
