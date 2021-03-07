@@ -45,6 +45,16 @@ class Timeout(Error):
     MESSAGE = 'timeout'
 
 
+class Accepted(Error):
+    # HTTP 202
+    MESSAGE = 'accepted but not processed'
+
+    def __init__(self, response: Any) -> None:
+        self.response: Any = response
+
+        super().__init__()
+
+
 class MovedPermanently(Error):
     # HTTP 301
     MESSAGE = 'moved permanently to "{location}"'
@@ -133,6 +143,9 @@ def parse(response: HTTPResponse, decode_json: bool = True, resolve_refs: bool =
 
         if response.code == 200:
             return body  # Happy case with content
+
+        if response.code == 202:
+            raise Accepted(body)
 
         if response.code == 301:
             raise MovedPermanently(response.headers.get('Location', ''))

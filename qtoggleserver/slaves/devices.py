@@ -582,6 +582,14 @@ class Slave(logging_utils.LoggableMixin):
         try:
             response_body = core_responses.parse(response)
 
+        except core_responses.Accepted as e:
+            self.debug('api call %s %s succeeded but not processed', method, path)
+
+            self.update_last_sync()
+            await self.intercept_response(method, path, body, e.response)
+
+            raise e
+
         except core_responses.Error as e:
             e = self.intercept_error(e)
 

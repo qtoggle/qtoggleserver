@@ -324,11 +324,12 @@ class SlavePort(core_ports.BasePort):
                     value,
                     timeout=settings.slaves.long_timeout
                 )
+                self.set_cached_value(value)
 
-                # Immediately fetch the current port value from slave and update it locally. This ensures that calls to
-                # Port.get_last_read_value() will return the correct updated value.
-                remote_value = await self._slave.api_call('GET', f'/ports/{self._remote_id}/value')
-                self.set_cached_value(remote_value)
+            except core_responses.Accepted:
+                # The value has been successfully sent to the slave but it hasn't been applied right away. We should
+                # update the cached value later, as soon as we receive a corresponding value-change event.
+                pass
 
             except core_responses.HTTPError as e:
                 if e.code == 502 and e.code == 'port-error':
