@@ -2,6 +2,8 @@
 import $      from '$qui/lib/jquery.module.js'
 import Logger from '$qui/lib/logger.module.js'
 
+import ConditionVariable    from '$qui/base/condition-variable.js'
+import {TimeoutError}       from '$qui/base/errors.js'
 import {gettext}            from '$qui/base/i18n.js'
 import {mix}                from '$qui/base/mixwith.js'
 import StockIcon            from '$qui/icons/stock-icon.js'
@@ -16,9 +18,10 @@ import {asap}               from '$qui/utils/misc.js'
 import * as StringUtils     from '$qui/utils/string.js'
 import ViewMixin            from '$qui/views/view.js'
 
-import * as AuthAPI  from '$app/api/auth.js'
-import * as PortsAPI from '$app/api/ports.js'
-import * as Cache    from '$app/cache.js'
+import * as AuthAPI      from '$app/api/auth.js'
+import * as APIConstants from '$app/api/constants.js'
+import * as PortsAPI     from '$app/api/ports.js'
+import * as Cache        from '$app/cache.js'
 
 import MoveWidgetForm   from './move-widget-form.js'
 import WidgetConfigForm from './widget-config-form.js'
@@ -100,6 +103,9 @@ class Widget extends mix().with(ViewMixin) {
         if (this.constructor.height != null) {
             this._height = this.constructor.height
         }
+
+        this._valueChangeWaitPortId = null
+        this._whenValueChange = null
 
         this.logger = Logger.get(this.makeLogName())
     }
@@ -1122,6 +1128,12 @@ class Widget extends mix().with(ViewMixin) {
     /* Ports and port values */
 
     handlePortValueChange(portId, value) {
+        if (this._valueChangeWaitPortId === portId && this._whenValueChange) {
+            this._whenValueChange.fulfill()
+            this._whenValueChange = null
+            this._valueChangeWaitPortId = null
+        }
+
         this.onPortValueChange(portId, value)
     }
 
@@ -1152,12 +1164,44 @@ class Widget extends mix().with(ViewMixin) {
      *
      * @param {String} portId the id of the port whose value will be set
      * @param {Number|Boolean} value the new port value
+     * @param {Number} [timeout] how long to wait for new port value to take effect (seconds, defaults to
+     * {@link qtoggle.api.constants.DEFAULT_SERVER_TIMEOUT})
      * @returns {Promise}
      */
-    setPortValue(portId, value) {
+    setPortValue(portId, value, timeout = APIConstants.DEFAULT_SERVER_TIMEOUT) {
         this.setProgress()
 
+        let prevValue = this.getPortValue(portId)
+
+        if (this._whenValueChange) {
+            this._whenValueChange.fulfill()
+            this._whenValueChange = null
+            this._valueChangeWaitPortId = null
+        }
+
         return PortsAPI.patchPortValue(portId, value).then(function () {
+
+            if (value === prevValue || timeout === 0) {
+                return /* Value was already set or we're not interested in waiting */
+            }
+
+            this._valueChangeWaitPortId = portId
+            this._whenValueChange = new ConditionVariable()
+
+            setTimeout(function () {
+                /* Cancel waiting after timeout */
+                if (this._whenValueChange) {
+                    let msg = gettext('Timeout waiting for value to take effect.')
+                    this._whenValueChange.cancel(new TimeoutError(msg))
+                    this._whenValueChange = null
+                    this._valueChangeWaitPortId = null
+                }
+
+            }.bind(this), timeout * 1000)
+
+            return this._whenValueChange
+
+        }.bind(this)).then(function () {
 
             this.clearProgress()
 
