@@ -487,23 +487,18 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 }
             }
 
-            if (port.value === newValue) {
-                patchValuePromise = Promise.resolve()
-            }
-            else {
-                logger.debug(`updating port "${port.id}" value to ${JSON.stringify(newValue)}`)
+            logger.debug(`updating port "${port.id}" value to ${JSON.stringify(newValue)}`)
 
-                patchValuePromise = PortsAPI.patchPortValue(port.id, newValue).then(function () {
+            patchValuePromise = PortsAPI.patchPortValue(port.id, newValue).then(function () {
 
-                    logger.debug(`port "${port.id}" value set`)
+                logger.debug(`port "${port.id}" value set`)
 
-                }).catch(function (error) {
+            }).catch(function (error) {
 
-                    logger.errorStack(`failed to set port "${port.id}" value`, error)
-                    throw error
+                logger.errorStack(`failed to set port "${port.id}" value`, error)
+                throw error
 
-                })
-            }
+            })
 
             /* Clear out field warning */
             this.getField('value').clearWarning()
