@@ -517,4 +517,4 @@ async def delete_port_history(request: core_api.APIRequest, port_id: str) -> Non
     if to_timestamp < 0:
         raise core_api.APIError(400, 'invalid-field', field='to')
 
-    await core_history.remove_samples(port, from_timestamp, to_timestamp, background=False)
+    await core_history.remove_samples([port], from_timestamp, to_timestamp)

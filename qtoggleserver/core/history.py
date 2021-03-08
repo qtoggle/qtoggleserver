@@ -5,7 +5,7 @@ import asyncio
 import logging
 import time
 
-from typing import Dict, Iterable, Optional, List
+from typing import Dict, Iterable, List, Optional, Tuple
 
 from qtoggleserver import persist
 from qtoggleserver import system
@@ -28,6 +28,9 @@ _janitor_task: Optional[asyncio.Task] = None
 
 # Samples cached by port_id and timestamp
 _samples_cache: Dict[str, Dict[int, PortValue]] = {}
+
+# Used to schedule sample removal with remove_samples(..., background=True)
+_pending_remove_samples: List[Tuple[core_ports.BasePort, Optional[int], Optional[int]]] = []
 
 
 class HistoryEventHandler(core_events.Handler):
@@ -85,6 +88,8 @@ async def sampling_task() -> None:
 
 
 async def janitor_task() -> None:
+    global _pending_remove_samples
+
     while True:
         try:
             await asyncio.sleep(settings.core.history_janitor_interval)
@@ -100,7 +105,30 @@ async def janitor_task() -> None:
 
                 to_timestamp = (now - history_retention) * 1000
                 logger.debug('removing old samples of %s from history', port)
-                await remove_samples(port, from_timestamp=0, to_timestamp=to_timestamp, background=False)
+                await remove_samples([port], from_timestamp=0, to_timestamp=to_timestamp)
+
+            # Remove samples that were background-scheduled for removal
+            # Group together requests w/o timestamp bounds
+
+            ports = []
+            rem_pending_remove_samples = []
+            for port, from_timestamp, to_timestamp in _pending_remove_samples:
+                if from_timestamp is to_timestamp is None:
+                    ports.append(port)
+
+                else:
+                    rem_pending_remove_samples.append((port, from_timestamp, to_timestamp))
+
+            if ports:
+                port_ids = [p.get_id() for p in ports]
+                logger.debug('removing samples of %s from history (background)', ', '.join(port_ids))
+                await remove_samples(ports)
+
+            _pending_remove_samples = rem_pending_remove_samples
+            while _pending_remove_samples:
+                port, from_timestamp, to_timestamp = _pending_remove_samples.pop(0)
+                logger.debug('removing samples of %s from history (background)', port)
+                await remove_samples([port], from_timestamp=from_timestamp, to_timestamp=to_timestamp)
 
         except asyncio.CancelledError:
             logger.debug('janitor task cancelled')
@@ -206,13 +234,13 @@ async def save_sample(port: core_ports.BasePort, timestamp: int) -> None:
 
 
 async def remove_samples(
-    port: core_ports.BasePort,
+    ports: List[core_ports.BasePort],
     from_timestamp: Optional[int] = None,
     to_timestamp: Optional[int] = None,
     background: bool = False
 ) -> Optional[int]:
     filt = {
-        'pid': port.get_id()
+        'pid': {'in': [p.get_id() for p in ports]}
     }
 
     if from_timestamp is not None:
@@ -221,18 +249,13 @@ async def remove_samples(
     if to_timestamp is not None:
         filt.setdefault('ts', {})['lt'] = to_timestamp
 
-    # Invalidate samples cache for this port
-    _samples_cache.pop(port.get_id(), None)
+    # Invalidate samples cache for the ports
+    for port in ports:
+        _samples_cache.pop(port.get_id(), None)
 
     if background:
-
-        def remove_sync() -> None:
-            loop = asyncio.new_event_loop()
-            loop.run_until_complete(persist.remove(PERSIST_COLLECTION, filt))
-            loop.close()
-
-        loop = asyncio.get_event_loop()
-        loop.run_in_executor(None, remove_sync)
+        for port in ports:
+            _pending_remove_samples.append((port, from_timestamp, to_timestamp))
 
     else:
         return await persist.remove(PERSIST_COLLECTION, filt)
