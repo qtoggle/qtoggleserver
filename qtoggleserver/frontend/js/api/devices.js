@@ -192,3 +192,39 @@ export function patchFirmware(version, url, override = false) {
 
     })
 }
+
+/**
+ * POST /introspect API function call.
+ * @alias qtoggle.api.devices.postIntrospect
+ * @param {String|String[]} imports a list of imports
+ * @param {String} code the code to execute
+ * @param {Boolean} [printResponse]
+ * @returns {Promise}
+ */
+export function postIntrospect(imports, code, printResponse = true) {
+    if (typeof imports === 'string') {
+        imports = [imports]
+    }
+
+    return BaseAPI.apiCall({
+        method: 'POST', path: '/introspect', data: {code, imports},
+        timeout: APIConstants.LONG_SERVER_TIMEOUT
+    }).then(function (response) {
+        if (printResponse) {
+            if (response.exception) {
+                console.error(
+                    '---- introspect exception ----\n' +
+                    response.exception +
+                    '\n------------------------------'
+                )
+            }
+            else {
+                console.info(
+                    '---- introspect result ----\n' +
+                    response.result +
+                    '\n---------------------------'
+                )
+            }
+        }
+    })
+}

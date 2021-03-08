@@ -246,6 +246,23 @@ PATCH_REVERSE = {
     ]
 }
 
+POST_INTROSPECT = {
+    "type": "object",
+    "properties": {
+        "imports": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "code": {
+            "type": "string"
+        }
+    },
+    "additionalProperties": False,
+    "required": ['code']
+}
+
 
 def _validate_schema(json: Any, schema: GenericJSONDict) -> Optional[Tuple[str, Optional[str]]]:
     try:

@@ -200,3 +200,8 @@ class SystemHandler(APIHandler):
 
     async def put(self) -> None:
         await self.call_api_func(system_api_funcs.put_system, default_status=204)
+
+
+class IntrospectHandler(APIHandler):
+    async def post(self) -> None:
+        await self.call_api_func(various_api_funcs.post_introspect)

@@ -153,7 +153,9 @@ class APIHandler(BaseHandler):
 
     async def call_api_func(self, func: Callable, default_status: int = 200, **kwargs) -> None:
         try:
-            if self.request.method in ('POST', 'PATCH', 'PUT'):
+            if (self.request.method in ('POST', 'PATCH', 'PUT') and
+                self.request.headers.get('Content-Type', '').startswith('application/json')):
+
                 kwargs['params'] = self.get_request_json()
 
             response = func(self, **kwargs)

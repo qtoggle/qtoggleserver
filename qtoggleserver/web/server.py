@@ -127,6 +127,13 @@ def _make_routing_table() -> List[URLSpec]:
             URLSpec(r'^/api/system/?$', handlers.SystemHandler)
         ]
 
+    # Introspection API
+
+    if settings.debug:
+        handlers_list += [
+            URLSpec(r'^/api/introspect/?$', handlers.IntrospectHandler)
+        ]
+
     # Default 404 API handler
 
     handlers_list += [

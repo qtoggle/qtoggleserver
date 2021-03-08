@@ -1,4 +1,8 @@
 
+import importlib
+import inspect
+import traceback
+
 from typing import Dict
 
 from qtoggleserver import slaves
@@ -76,3 +80,31 @@ async def post_reset(request: core_api.APIRequest, params: GenericJSONDict) -> N
             await core_history.reset()
 
     main.loop.call_later(2, system.reboot)
+
+
+@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
+async def post_introspect(request: core_api.APIRequest, params: GenericJSONDict) -> GenericJSONDict:
+    core_api_schema.validate(params, core_api_schema.POST_INTROSPECT)
+
+    exc_str = None
+    res_str = None
+
+    try:
+        imports = params.get('imports', [])
+        extra_locals = {}
+        for imp in imports:
+            extra_locals[imp.split('.')[0]] = importlib.__import__(imp)
+
+        result = eval(params['code'], globals(), dict(locals(), **extra_locals))
+        if inspect.isawaitable(result):
+            result = await result
+
+        res_str = str(result)
+
+    except Exception as e:
+        exc_str = traceback.format_exc()
+
+    return {
+        'result': res_str,
+        'exception': exc_str
+    }
