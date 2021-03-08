@@ -1163,6 +1163,10 @@ class Slave(logging_utils.LoggableMixin):
             self.debug('ignoring value-change event due to pending provisioning value')
             return
 
+        if port.get_last_read_value() == value:
+            self.debug('ignoring value-change event due to same value')
+            return
+
         self.debug(
             'value of %s changed remotely from %s to %s',
             port,

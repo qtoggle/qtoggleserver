@@ -1,4 +1,5 @@
 
+import asyncio
 import datetime
 import logging
 import re
@@ -69,6 +70,7 @@ class PostgreSQLDriver(BaseDriver):
 
         self._conn_pool: Optional[asyncpg.pool.Pool] = None
         self._existing_tables: Optional[Set[str]] = None
+        self._ensure_table_exists_lock: asyncio.Lock = asyncio.Lock()
 
     async def query(
         self,
@@ -220,20 +222,21 @@ class PostgreSQLDriver(BaseDriver):
         )
 
     async def _ensure_table_exists(self, table_name: str) -> None:
-        if self._existing_tables is None:
-            self._existing_tables = await self._get_existing_table_names()
+        async with self._ensure_table_exists_lock:
+            if self._existing_tables is None:
+                self._existing_tables = await self._get_existing_table_names()
 
-        if table_name in self._existing_tables:
-            return
+            if table_name in self._existing_tables:
+                return
 
-        statement = f'CREATE SEQUENCE {table_name}_id_seq'
-        await self._execute_statement(statement)
+            statement = f'CREATE SEQUENCE {table_name}_id_seq'
+            await self._execute_statement(statement)
 
-        id_data_type = f"TEXT NOT NULL DEFAULT NEXTVAL('{table_name}_id_seq') PRIMARY KEY"
-        statement = f'CREATE TABLE {table_name}(id {id_data_type}, content JSONB)'
-        await self._execute_statement(statement)
+            id_data_type = f"TEXT NOT NULL DEFAULT NEXTVAL('{table_name}_id_seq') PRIMARY KEY"
+            statement = f'CREATE TABLE {table_name}(id {id_data_type}, content JSONB)'
+            await self._execute_statement(statement)
 
-        self._existing_tables.add(table_name)
+            self._existing_tables.add(table_name)
 
     async def _get_existing_table_names(self) -> Set[str]:
         query = (
