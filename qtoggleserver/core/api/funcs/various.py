@@ -101,7 +101,7 @@ async def post_introspect(request: core_api.APIRequest, params: GenericJSONDict)
 
         res_str = str(result)
 
-    except Exception as e:
+    except Exception:
         exc_str = traceback.format_exc()
 
     return {
