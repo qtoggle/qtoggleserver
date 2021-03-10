@@ -12,6 +12,8 @@ from qtoggleserver.core import events as core_events
 from qtoggleserver.utils import logging as logging_utils
 
 
+SESSION_EXPIRY_FACTOR = 10
+
 logger = logging.getLogger(__name__)
 
 _sessions_by_id: Dict[str, Session] = {}
@@ -120,14 +122,13 @@ def update() -> None:
             session.respond()
             continue
 
-        if now - session.accessed > session.timeout:
-            if session.is_active():
-                session.debug('keep-alive')
-                session.respond()
+        if now - session.accessed > session.timeout and session.is_active():
+            session.debug('keep-alive')
+            session.respond()
 
-            else:
-                session.debug('expired')
-                _sessions_by_id.pop(session_id)
+        elif now - session.accessed > session.timeout * SESSION_EXPIRY_FACTOR and not session.is_active():
+            session.debug('expired')
+            _sessions_by_id.pop(session_id)
 
 
 async def init() -> None:
