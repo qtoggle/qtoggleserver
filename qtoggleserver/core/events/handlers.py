@@ -41,6 +41,8 @@ async def trigger(event: Event) -> None:
 
     logger.debug('%s triggered', event)
 
+    await event.init_params()
+
     for handler in _registered_handlers:
         if handler.is_fire_and_forget():
             task = asyncio.create_task(handler.handle_event(event))

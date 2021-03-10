@@ -1164,7 +1164,7 @@ class Slave(logging_utils.LoggableMixin):
             return
 
         if port.get_last_read_value() == value:
-            self.debug('ignoring value-change event due to same value')
+            self.debug('ignoring value-change event due to same value %s', json_utils.dumps(value))
             return
 
         self.debug(

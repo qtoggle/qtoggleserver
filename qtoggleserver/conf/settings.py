@@ -49,7 +49,7 @@ class core:
         set_cmd: _typing.Optional[str] = None
 
     tick_interval: int = 50
-    event_queue_size: int = 256
+    event_queue_size: int = 1024
     max_client_time_skew: int = 300
     backup_support: bool = True
     history_support: bool = True
