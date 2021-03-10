@@ -22,6 +22,7 @@ class MockPort(Port):
 
     def set_writable(self, writable: bool) -> None:
         self._writable = writable
+        self.invalidate_attrs()
 
     def set_next_value(self, value: NullablePortValue) -> None:
         self._next_value = value
