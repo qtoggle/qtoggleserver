@@ -12,7 +12,7 @@ logging = {
 
 core = {
     tick_interval = 50          # how often to update everything, in milliseconds
-    event_queue_size = 256      # maximum number of queued events in a session
+    event_queue_size = 1024     # maximum number of queued events in a session
     max_client_time_skew = 300  # maximum accepted time skew when authenticating clients, in seconds
 
     backup_support = true
