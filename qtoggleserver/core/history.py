@@ -77,7 +77,7 @@ async def sampling_task() -> None:
 
                 await save_sample(port, now_ms)
                 port.set_history_last_timestamp(now_ms)
-                await port.save()  # history_last_timestamp must be persisted
+                port.save_asap()  # history_last_timestamp must be persisted
 
         except asyncio.CancelledError:
             logger.debug('sampling task cancelled')

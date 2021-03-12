@@ -125,7 +125,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             if port.is_enabled():
                 await port.trigger_update()
                 if save:
-                    await port.save()
+                    port.save_asap()
 
     def trigger_port_update_fire_and_forget(self, save: bool = False) -> None:
         if self._port_update_task:

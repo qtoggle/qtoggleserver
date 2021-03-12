@@ -468,7 +468,6 @@ class Slave(logging_utils.LoggableMixin):
             await self._add_port(attrs={'id': id_})
 
     async def _save_ports(self) -> None:
-
         self.debug('persisting ports')
         ports = self._get_local_ports()
         for port in ports:
@@ -1176,7 +1175,7 @@ class Slave(logging_utils.LoggableMixin):
 
         port.set_cached_value(value)
         port.update_last_sync()
-        await port.save()
+        port.save_asap()
 
         await core_main.update()
 
@@ -1214,7 +1213,7 @@ class Slave(logging_utils.LoggableMixin):
         if 'value' in attrs:  # Value has also been updated
             port.update_last_sync()
 
-        await port.save()
+        port.save_asap()
         await port.trigger_update()
 
     async def _handle_port_add(self, **attrs: Attribute) -> None:

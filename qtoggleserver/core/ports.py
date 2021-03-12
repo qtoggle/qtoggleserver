@@ -32,9 +32,12 @@ CHANGE_REASON_API = 'A'
 CHANGE_REASON_SEQUENCE = 'S'
 CHANGE_REASON_EXPRESSION = 'E'
 
+SAVE_INTERVAL = 1
+
 logger = logging.getLogger(__name__)
 
 _ports_by_id: Dict[str, BasePort] = {}
+_save_loop_task: Optional[asyncio.Task] = None
 
 
 async def _attrdef_unit_enabled(port: BasePort) -> bool:
@@ -259,6 +262,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._pending_write: bool = False
 
         self._save_lock: asyncio.Lock = asyncio.Lock()
+        self._pending_save: bool = False
 
         self._loaded: bool = False
 
@@ -805,7 +809,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._sequence = None
         if await self.is_persisted():
-            await self.save()
+            self.save_asap()
 
     def heart_beat(self) -> None:
         pass
@@ -916,6 +920,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             d = await self.prepare_for_save()
             await persist.replace(self.PERSIST_COLLECTION, self._id, d)
 
+        self._pending_save = False
+
     async def prepare_for_save(self) -> GenericJSONDict:
         # value
         d = {
@@ -938,6 +944,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             d[name] = v
 
         return d
+
+    def save_asap(self) -> None:
+        self.debug('marking for saving')
+        self._pending_save = True
+
+    def is_pending_save(self) -> bool:
+        return self._pending_save
 
     async def cleanup(self) -> None:
         if self._write_value_task:
@@ -1179,7 +1192,31 @@ def get_all() -> List[BasePort]:
     return list(_ports_by_id.values())
 
 
+async def save_loop() -> None:
+    while True:
+        try:
+            for port in get_all():
+                if not port.is_pending_save():
+                    continue
+
+                try:
+                    await port.save()
+
+                except Exception as e:
+                    port.error('save failed: %s', e, exc_info=True)
+
+            await asyncio.sleep(SAVE_INTERVAL)
+
+        except asyncio.CancelledError:
+            logger.debug('save loop cancelled')
+            break
+
+
 async def init() -> None:
+    global _save_loop_task
+
+    _save_loop_task = asyncio.create_task(save_loop())
+
     # Use raise_on_error=False because we prefer a partial successful startup rather than a failed one
     await load(settings.ports, raise_on_error=False)
 
@@ -1193,6 +1230,10 @@ async def cleanup() -> None:
     tasks = [cleanup_port(port) for port in _ports_by_id.values()]
     if tasks:
         await asyncio.wait(tasks)
+
+    if _save_loop_task:
+        _save_loop_task.cancel()
+        await _save_loop_task
 
 
 async def reset() -> None:
