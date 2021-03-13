@@ -1117,7 +1117,11 @@ class Port(BasePort, metaclass=abc.ABCMeta):
         self._internal: bool = False
 
 
-async def load(port_args: List[Dict[str, Any]], raise_on_error: bool = True) -> List[BasePort]:
+async def load(
+    port_args: List[Dict[str, Any]],
+    raise_on_error: bool = True,
+    trigger_add: bool = True
+) -> List[BasePort]:
     port_driver_classes = {}
     ports = []
 
@@ -1217,14 +1221,15 @@ async def load(port_args: List[Dict[str, Any]], raise_on_error: bool = True) -> 
 
             port.error('failed to load: %s', port, e, exc_info=True)
 
-        await port.trigger_add()
+        if trigger_add:
+            await port.trigger_add()
 
     return ports
 
 
-async def load_one(cls: Union[str, type], args: Dict[str, Any]) -> BasePort:
+async def load_one(cls: Union[str, type], args: Dict[str, Any], trigger_add: bool = True) -> BasePort:
     port_args = [dict(driver=cls, **args)]
-    ports = await load(port_args, raise_on_error=True)
+    ports = await load(port_args, raise_on_error=True, trigger_add=trigger_add)
 
     return ports[0]
 

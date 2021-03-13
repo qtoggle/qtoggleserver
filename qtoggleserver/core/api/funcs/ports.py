@@ -49,12 +49,14 @@ async def add_virtual_port(attrs: GenericJSONDict) -> core_ports.BasePort:
             'integer': integer,
             'step': step,
             'choices': choices
-        }
+        },
+        trigger_add=False  # Will trigger add event manually, later, after we've enabled the port
     )
 
     # A virtual port is enabled by default
     await port.enable()
     await port.save()
+    await port.trigger_add()
 
     return port
 
