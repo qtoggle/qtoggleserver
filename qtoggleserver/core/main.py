@@ -6,7 +6,6 @@ import time
 from typing import Dict, Optional, Set, Union
 
 from qtoggleserver.conf import settings
-from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import timedset
