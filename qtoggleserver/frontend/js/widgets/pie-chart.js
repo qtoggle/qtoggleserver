@@ -120,7 +120,7 @@ $.widget('qtoggle.piechart', $.qtoggle.basechart, {
 
             /* Pie chart extracts all legend labels from the one single data set */
             chart.data.labels = labels
-            let generatedLabels = ChartJS.DoughnutController.defaults.plugins.legend.labels.generateLabels(chart)
+            let generatedLabels = ChartJS.Chart.defaults.plugins.legend.labels.generateLabels(chart)
 
             /* Calculate values and percents */
             let values = chart.data.datasets[0].data
