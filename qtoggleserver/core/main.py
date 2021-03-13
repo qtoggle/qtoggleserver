@@ -182,27 +182,7 @@ async def handle_value_changes(
             logger.debug('skipping evaluation of %s expression to prevent loops', port)
             continue
 
-        try:
-            value = await expression.eval()
-
-        except core_expressions.ExpressionEvalError:
-            continue
-
-        except Exception as e:
-            logger.error('failed to evaluate expression "%s" of %s: %s', expression, port, e)
-            continue
-
-        value = await port.adapt_value_type(value)
-        if value is None:
-            continue
-
-        if value != port.get_last_read_value():  # Value changed after evaluation
-            logger.debug('expression "%s" of %s evaluated to %s', expression, port, json_utils.dumps(value))
-            port.push_value(value, reason=core_ports.CHANGE_REASON_EXPRESSION)
-
-        else:
-            if changed_set_ids:  # Only log unchanged values if a port ID triggered evaluation
-                logger.debug('%s value unchanged after expression evaluation', port)
+        port.eval_asap()
 
 
 def force_eval_expressions(port: core_ports.BasePort = None) -> None:

@@ -261,6 +261,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._pending_read: bool = False
         self._pending_write: bool = False
 
+        self._eval_ready: asyncio.Event = asyncio.Event()
+        self._eval_task: Optional[asyncio.Task] = None
+        if asyncio.get_event_loop().is_running():
+            self._eval_task = asyncio.create_task(self._eval_loop())
+
         self._save_lock: asyncio.Lock = asyncio.Lock()
         self._pending_save: bool = False
 
@@ -770,6 +775,41 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self.debug('write value task cancelled')
                 break
 
+    def eval_asap(self) -> None:
+        self._eval_ready.set()
+
+    async def _eval_loop(self) -> None:
+        while True:
+            try:
+                await self._eval_ready.wait()
+                self._eval_ready.clear()
+                await self._do_eval()
+
+            except asyncio.CancelledError:
+                self.debug('eval task cancelled')
+                break
+
+    async def _do_eval(self) -> None:
+        expression = await self.get_expression()
+
+        try:
+            value = await expression.eval()
+
+        except core_expressions.ExpressionEvalError:
+            return
+
+        except Exception as e:
+            self.error('failed to evaluate expression "%s": %s', expression, e)
+            return
+
+        value = await self.adapt_value_type(value)
+        if value is None:
+            return
+
+        if value != self.get_last_read_value():  # Value changed after evaluation
+            self.debug('expression "%s" evaluated to %s', expression, json_utils.dumps(value))
+            self.push_value(value, reason=CHANGE_REASON_EXPRESSION)
+
     async def adapt_value_type(self, value: NullablePortValue) -> NullablePortValue:
         return self.adapt_value_type_sync(await self.get_type(), await self.get_attr('integer'), value)
 
@@ -957,6 +997,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._write_value_task.cancel()
             await self._write_value_task
             self._write_value_task = None
+
+        if self._eval_task:
+            self._eval_task.cancel()
+            await self._eval_task
+            self._eval_task = None
 
     def is_loaded(self) -> bool:
         return self._loaded
