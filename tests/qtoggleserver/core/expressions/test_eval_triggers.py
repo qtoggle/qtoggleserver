@@ -59,7 +59,7 @@ async def test_eval_trigger_second(freezer, mocker, num_mock_port1, dummy_utc_da
     await num_mock_port1.set_attr('expression', 'MUL(TIME(), 10)')
     await asyncio.sleep(0.1)
     num_mock_port1.push_value.assert_called_once()
-    num_mock_port1.push_value.reset_mock()
+    mocker.patch.object(num_mock_port1, 'push_value')
 
     freezer.move_to(dummy_utc_datetime + datetime.timedelta(milliseconds=999))
     await main.update()
