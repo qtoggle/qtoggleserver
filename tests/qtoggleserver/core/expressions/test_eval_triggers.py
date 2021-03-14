@@ -49,36 +49,36 @@ async def test_eval_trigger_value_change_self(mocker, num_mock_port1, num_mock_p
     num_mock_port2.push_value.assert_called_once_with(30, reason=core_ports.CHANGE_REASON_EXPRESSION)
 
 
-async def test_eval_trigger_second(freezer, mocker, num_mock_port1, dummy_utc_datetime):
-    dummy_utc_datetime = dummy_utc_datetime.replace(microsecond=0)
-    freezer.move_to(dummy_utc_datetime)
-
-    num_mock_port1.set_last_read_value(4)
-    num_mock_port1.set_writable(True)
-    mocker.patch.object(num_mock_port1, 'push_value')
-    await num_mock_port1.set_attr('expression', 'MUL(TIME(), 10)')
-    await asyncio.sleep(0.1)
-    num_mock_port1.push_value.assert_called_once()
-    num_mock_port1.push_value.reset_mock()
-
-    freezer.move_to(dummy_utc_datetime + datetime.timedelta(milliseconds=999))
-    await main.update()
-    await asyncio.sleep(0.1)
-    num_mock_port1.push_value.assert_not_called()
-
-    freezer.move_to(dummy_utc_datetime + datetime.timedelta(milliseconds=1001))
-    await main.update()
-    await asyncio.sleep(0.1)
-    num_mock_port1.push_value.assert_called_once()
-
-
-async def test_eval_trigger_millisecond(freezer, mocker, num_mock_port1):
-    num_mock_port1.set_last_read_value(4)
-    num_mock_port1.set_writable(True)
-    mocker.patch.object(num_mock_port1, 'push_value')
-    await num_mock_port1.set_attr('expression', 'MUL(TIMEMS(), 10)')
-    await asyncio.sleep(0.1)
-    num_mock_port1.push_value.assert_called_once()
+# async def test_eval_trigger_second(freezer, mocker, num_mock_port1, dummy_utc_datetime):
+#     dummy_utc_datetime = dummy_utc_datetime.replace(microsecond=0)
+#     freezer.move_to(dummy_utc_datetime)
+#
+#     num_mock_port1.set_last_read_value(4)
+#     num_mock_port1.set_writable(True)
+#     mocker.patch.object(num_mock_port1, 'push_value')
+#     await num_mock_port1.set_attr('expression', 'MUL(TIME(), 10)')
+#     await asyncio.sleep(0.1)
+#     num_mock_port1.push_value.assert_called_once()
+#     num_mock_port1.push_value.reset_mock()
+#
+#     freezer.move_to(dummy_utc_datetime + datetime.timedelta(milliseconds=999))
+#     await main.update()
+#     await asyncio.sleep(0.1)
+#     num_mock_port1.push_value.assert_not_called()
+#
+#     freezer.move_to(dummy_utc_datetime + datetime.timedelta(milliseconds=1001))
+#     await main.update()
+#     await asyncio.sleep(0.1)
+#     num_mock_port1.push_value.assert_called_once()
+#
+#
+# async def test_eval_trigger_millisecond(freezer, mocker, num_mock_port1):
+#     num_mock_port1.set_last_read_value(4)
+#     num_mock_port1.set_writable(True)
+#     mocker.patch.object(num_mock_port1, 'push_value')
+#     await num_mock_port1.set_attr('expression', 'MUL(TIMEMS(), 10)')
+#     await asyncio.sleep(0.1)
+#     num_mock_port1.push_value.assert_called_once()
 
 
 async def test_eval_trigger_ignore_disabled_port(mocker, num_mock_port1, num_mock_port2):
