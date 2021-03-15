@@ -860,9 +860,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if await self.is_persisted():
             self.save_asap()
 
-    def heart_beat(self) -> None:
-        pass
-
     def heart_beat_second(self) -> None:
         pass
 

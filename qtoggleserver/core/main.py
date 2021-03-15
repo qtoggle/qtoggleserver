@@ -62,12 +62,6 @@ async def update() -> None:
             port.invalidate_attrs()
             old_value = port.get_last_read_value()
 
-            try:
-                port.heart_beat()
-
-            except Exception as e:
-                logger.error('port heart beat exception: %s', e, exc_info=True)
-
             if time_changed:
                 try:
                     port.heart_beat_second()
