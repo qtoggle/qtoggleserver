@@ -527,14 +527,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         else:
             await self.disable()
 
-    async def get_expression(self) -> Optional[core_expressions.Expression]:
-        writable = self._attrs_cache.get('writable')  # Use cached value if available, to avoid unnecessary await
-        if writable is None:
-            writable = await self.is_writable()
-
-        if not writable:
-            return None
-
+    def get_expression(self) -> Optional[core_expressions.Expression]:
         return self._expression
 
     async def attr_get_expression(self) -> Optional[str]:
@@ -806,7 +799,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 break
 
     async def _do_eval(self) -> None:
-        expression = await self.get_expression()
+        expression = self.get_expression()
 
         try:
             value = await expression.eval()

@@ -54,7 +54,7 @@ async def check_loops(port: core_ports.BasePort, expression: Expression) -> None
 
             seen_ports.add(p)
 
-            expr = await p.get_expression()
+            expr = p.get_expression()
             if expr:
                 lv = await check_loops_rec(level + 1, expr)
                 if lv:

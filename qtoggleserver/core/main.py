@@ -151,7 +151,7 @@ async def handle_value_changes(
         if not port.is_enabled():
             continue
 
-        expression = await port.get_expression()
+        expression = port.get_expression()
         if not expression:
             continue
 
