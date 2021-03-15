@@ -80,7 +80,9 @@ class Session(logging_utils.LoggableMixin):
 
         # Ensure max queue size
         while len(self.queue) >= settings.core.event_queue_size:
-            self.warning('queue full, dropping oldest event')
+            # This is a debug and not a warning because we often expect event drops from queues belonging to sessions
+            # that are no longer active and will simply no longer consume the events
+            self.debug('queue full, dropping oldest event')
             self.queue.pop()
 
         self.queue.insert(0, event)

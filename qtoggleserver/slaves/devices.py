@@ -1177,8 +1177,6 @@ class Slave(logging_utils.LoggableMixin):
         port.update_last_sync()
         port.save_asap()
 
-        await core_main.update()
-
     async def _handle_port_update(self, **attrs: Attribute) -> None:
         local_id = f'{self._name}.{attrs.get("id")}'
         port = core_ports.get(local_id)
