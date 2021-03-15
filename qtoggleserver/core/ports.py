@@ -528,13 +528,21 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             await self.disable()
 
     async def get_expression(self) -> Optional[core_expressions.Expression]:
-        if not await self.is_writable():
+        writable = self._attrs_cache.get('writable')  # Use cached value if available, to avoid unnecessary await
+        if writable is None:
+            writable = await self.is_writable()
+
+        if not writable:
             return None
 
         return self._expression
 
     async def attr_get_expression(self) -> Optional[str]:
-        if not await self.is_writable():
+        writable = self._attrs_cache.get('writable')  # Use cached value if available, to avoid unnecessary await
+        if writable is None:
+            writable = await self.is_writable()
+
+        if not writable:
             return None
 
         if self._expression:
@@ -544,7 +552,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             return ''
 
     async def attr_set_expression(self, sexpression: str) -> None:
-        if not await self.is_writable():
+        writable = self._attrs_cache.get('writable')  # Use cached value if available, to avoid unnecessary await
+        if writable is None:
+            writable = await self.is_writable()
+
+        if not writable:
             self.error('refusing to set expression on non-writable port')
             raise PortError('Cannot set expression on non-writable port')
 
@@ -610,7 +622,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             raise InvalidAttributeValue('transform_read', details=e.to_json()) from e
 
     async def attr_get_transform_write(self) -> Optional[str]:
-        if not await self.is_writable():
+        writable = self._attrs_cache.get('writable')  # Use cached value if available, to avoid unnecessary await
+        if writable is None:
+            writable = await self.is_writable()
+
+        if not writable:
             return None  # Only writable ports have transform_write attributes
 
         if self._transform_write:
