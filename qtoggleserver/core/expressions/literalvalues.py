@@ -1,7 +1,7 @@
 
 import re
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from qtoggleserver.core.typing import PortValue as CorePortValue
 
@@ -11,13 +11,15 @@ from .exceptions import UnexpectedCharacter, EmptyExpression
 
 class LiteralValue(Expression):
     def __init__(self, value: CorePortValue, sexpression: str) -> None:
+        super().__init__()
+
         self.value: CorePortValue = value
         self.sexpression: str = sexpression
 
     def __str__(self) -> str:
         return self.sexpression
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         return float(self.value)
 
     @staticmethod

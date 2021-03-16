@@ -8,7 +8,7 @@ from qtoggleserver.core.expressions import InvalidNumberOfArguments
 async def test_time(freezer, dummy_utc_datetime, dummy_timestamp):
     freezer.move_to(dummy_utc_datetime)
 
-    result = await time.TimeFunction([]).eval()
+    result = await time.TimeFunction([]).eval(context={})
     assert result == int(dummy_timestamp)
 
 
@@ -25,7 +25,7 @@ def test_time_num_args():
 async def test_timems(freezer, dummy_utc_datetime, dummy_timestamp):
     freezer.move_to(dummy_utc_datetime)
 
-    result = await time.TimeMSFunction([]).eval()
+    result = await time.TimeMSFunction([]).eval(context={})
     assert result == int(dummy_timestamp * 1000)
 
 

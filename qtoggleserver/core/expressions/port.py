@@ -2,7 +2,7 @@
 import abc
 import re
 
-from typing import Optional, Set
+from typing import Any, Dict, Optional, Set
 
 from .base import Expression, Evaluated
 from .exceptions import UnknownPortId, DisabledPort, PortValueUnavailable, UnexpectedCharacter
@@ -13,6 +13,8 @@ from qtoggleserver.core import ports as core_ports
 
 class PortExpression(Expression, metaclass=abc.ABCMeta):
     def __init__(self, port_id: str) -> None:
+        super().__init__()
+
         self.port_id: str = port_id
 
     def get_port(self) -> core_ports.BasePort:
@@ -55,7 +57,7 @@ class PortValue(PortExpression):
     def get_deps(self) -> Set[str]:
         return {f'${self.port_id}'}
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         port = self.get_port()
         if not port:
             raise UnknownPortId(self.port_id)
@@ -63,7 +65,7 @@ class PortValue(PortExpression):
         if not port.is_enabled():
             raise DisabledPort(self.port_id)
 
-        value = port.get_last_read_value()
+        value = context.get('port_values', {}).get(self.port_id)
         if value is None:
             raise PortValueUnavailable(self.port_id)
 
@@ -79,7 +81,7 @@ class PortRef(PortExpression):
     def __str__(self) -> str:
         return f'@{self.port_id}'
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         port = self.get_port()
         if not port:
             raise UnknownPortId(self.port_id)

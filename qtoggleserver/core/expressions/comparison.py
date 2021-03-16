@@ -1,4 +1,6 @@
 
+from typing import Any, Dict
+
 from .base import Evaluated
 from .functions import function, Function
 
@@ -7,8 +9,8 @@ from .functions import function, Function
 class IfFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
 
-    async def eval(self) -> Evaluated:
-        eval_args = await self.eval_args()
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        eval_args = await self.eval_args(context)
 
         if eval_args[0]:
             return eval_args[1]
@@ -21,8 +23,8 @@ class IfFunction(Function):
 class EqFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self) -> Evaluated:
-        eval_args = await self.eval_args()
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        eval_args = await self.eval_args(context)
 
         return int(eval_args[0] == eval_args[1])
 
@@ -31,8 +33,8 @@ class EqFunction(Function):
 class GTFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self) -> Evaluated:
-        eval_args = await self.eval_args()
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        eval_args = await self.eval_args(context)
 
         return int(eval_args[0] > eval_args[1])
 
@@ -41,8 +43,8 @@ class GTFunction(Function):
 class GTEFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self) -> Evaluated:
-        eval_args = await self.eval_args()
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        eval_args = await self.eval_args(context)
 
         return int(eval_args[0] >= eval_args[1])
 
@@ -51,8 +53,8 @@ class GTEFunction(Function):
 class LTFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self) -> Evaluated:
-        eval_args = await self.eval_args()
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        eval_args = await self.eval_args(context)
 
         return int(eval_args[0] < eval_args[1])
 
@@ -61,7 +63,7 @@ class LTFunction(Function):
 class LTEFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self) -> Evaluated:
-        eval_args = await self.eval_args()
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        eval_args = await self.eval_args(context)
 
         return int(eval_args[0] <= eval_args[1])

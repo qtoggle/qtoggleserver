@@ -6,18 +6,18 @@ from qtoggleserver.core.expressions import InvalidNumberOfArguments
 
 
 async def test_if_boolean(literal_false, literal_true, literal_one, literal_two):
-    result = await comparison.IfFunction([literal_false, literal_one, literal_two]).eval()
+    result = await comparison.IfFunction([literal_false, literal_one, literal_two]).eval(context={})
     assert result == 2
 
-    result = await comparison.IfFunction([literal_true, literal_one, literal_two]).eval()
+    result = await comparison.IfFunction([literal_true, literal_one, literal_two]).eval(context={})
     assert result == 1
 
 
 async def test_if_number(literal_zero, literal_one, literal_two):
-    result = await comparison.IfFunction([literal_zero, literal_one, literal_two]).eval()
+    result = await comparison.IfFunction([literal_zero, literal_one, literal_two]).eval(context={})
     assert result == 2
 
-    result = await comparison.IfFunction([literal_two, literal_one, literal_two]).eval()
+    result = await comparison.IfFunction([literal_two, literal_one, literal_two]).eval(context={})
     assert result == 1
 
 
@@ -35,18 +35,18 @@ def test_if_num_args():
 
 
 async def test_eq_boolean(literal_false, literal_true):
-    result = await comparison.EqFunction([literal_false, literal_true]).eval()
+    result = await comparison.EqFunction([literal_false, literal_true]).eval(context={})
     assert result == 0
 
-    result = await comparison.EqFunction([literal_false, literal_false]).eval()
+    result = await comparison.EqFunction([literal_false, literal_false]).eval(context={})
     assert result == 1
 
 
 async def test_eq_number(literal_one, literal_two):
-    result = await comparison.EqFunction([literal_one, literal_two]).eval()
+    result = await comparison.EqFunction([literal_one, literal_two]).eval(context={})
     assert result == 0
 
-    result = await comparison.EqFunction([literal_two, literal_two]).eval()
+    result = await comparison.EqFunction([literal_two, literal_two]).eval(context={})
     assert result == 1
 
 
@@ -64,21 +64,21 @@ def test_eq_num_args():
 
 
 async def test_gt_boolean(literal_false, literal_true):
-    result = await comparison.GTFunction([literal_true, literal_false]).eval()
+    result = await comparison.GTFunction([literal_true, literal_false]).eval(context={})
     assert result == 1
 
-    result = await comparison.GTFunction([literal_false, literal_false]).eval()
+    result = await comparison.GTFunction([literal_false, literal_false]).eval(context={})
     assert result == 0
 
 
 async def test_gt_number(literal_one, literal_two):
-    result = await comparison.GTFunction([literal_two, literal_one]).eval()
+    result = await comparison.GTFunction([literal_two, literal_one]).eval(context={})
     assert result == 1
 
-    result = await comparison.GTFunction([literal_one, literal_two]).eval()
+    result = await comparison.GTFunction([literal_one, literal_two]).eval(context={})
     assert result == 0
 
-    result = await comparison.GTFunction([literal_two, literal_two]).eval()
+    result = await comparison.GTFunction([literal_two, literal_two]).eval(context={})
     assert result == 0
 
 
@@ -96,24 +96,24 @@ def test_gt_num_args():
 
 
 async def test_gte_boolean(literal_false, literal_true):
-    result = await comparison.GTEFunction([literal_true, literal_false]).eval()
+    result = await comparison.GTEFunction([literal_true, literal_false]).eval(context={})
     assert result == 1
 
-    result = await comparison.GTEFunction([literal_false, literal_false]).eval()
+    result = await comparison.GTEFunction([literal_false, literal_false]).eval(context={})
     assert result == 1
 
-    result = await comparison.GTEFunction([literal_false, literal_true]).eval()
+    result = await comparison.GTEFunction([literal_false, literal_true]).eval(context={})
     assert result == 0
 
 
 async def test_gte_number(literal_one, literal_two):
-    result = await comparison.GTEFunction([literal_two, literal_one]).eval()
+    result = await comparison.GTEFunction([literal_two, literal_one]).eval(context={})
     assert result == 1
 
-    result = await comparison.GTEFunction([literal_one, literal_two]).eval()
+    result = await comparison.GTEFunction([literal_one, literal_two]).eval(context={})
     assert result == 0
 
-    result = await comparison.GTEFunction([literal_two, literal_two]).eval()
+    result = await comparison.GTEFunction([literal_two, literal_two]).eval(context={})
     assert result == 1
 
 
@@ -131,21 +131,21 @@ def test_gte_num_args():
 
 
 async def test_lt_boolean(literal_false, literal_true):
-    result = await comparison.LTFunction([literal_false, literal_true]).eval()
+    result = await comparison.LTFunction([literal_false, literal_true]).eval(context={})
     assert result == 1
 
-    result = await comparison.LTFunction([literal_false, literal_false]).eval()
+    result = await comparison.LTFunction([literal_false, literal_false]).eval(context={})
     assert result == 0
 
 
 async def test_lt_number(literal_one, literal_two):
-    result = await comparison.LTFunction([literal_one, literal_two]).eval()
+    result = await comparison.LTFunction([literal_one, literal_two]).eval(context={})
     assert result == 1
 
-    result = await comparison.LTFunction([literal_two, literal_one]).eval()
+    result = await comparison.LTFunction([literal_two, literal_one]).eval(context={})
     assert result == 0
 
-    result = await comparison.LTFunction([literal_two, literal_two]).eval()
+    result = await comparison.LTFunction([literal_two, literal_two]).eval(context={})
     assert result == 0
 
 
@@ -163,24 +163,24 @@ def test_lt_num_args():
 
 
 async def test_lte_boolean(literal_false, literal_true):
-    result = await comparison.LTEFunction([literal_false, literal_true]).eval()
+    result = await comparison.LTEFunction([literal_false, literal_true]).eval(context={})
     assert result == 1
 
-    result = await comparison.LTEFunction([literal_false, literal_false]).eval()
+    result = await comparison.LTEFunction([literal_false, literal_false]).eval(context={})
     assert result == 1
 
-    result = await comparison.LTEFunction([literal_true, literal_false]).eval()
+    result = await comparison.LTEFunction([literal_true, literal_false]).eval(context={})
     assert result == 0
 
 
 async def test_lte_number(literal_one, literal_two):
-    result = await comparison.LTEFunction([literal_one, literal_two]).eval()
+    result = await comparison.LTEFunction([literal_one, literal_two]).eval(context={})
     assert result == 1
 
-    result = await comparison.LTEFunction([literal_two, literal_one]).eval()
+    result = await comparison.LTEFunction([literal_two, literal_one]).eval(context={})
     assert result == 0
 
-    result = await comparison.LTEFunction([literal_two, literal_two]).eval()
+    result = await comparison.LTEFunction([literal_two, literal_two]).eval(context={})
     assert result == 1
 
 

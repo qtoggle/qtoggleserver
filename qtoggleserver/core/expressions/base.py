@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import abc
 
-from typing import Optional, Set, Union
+from typing import Any, Dict, Optional, Set, Union
 
 
 class Expression(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         raise NotImplementedError()
 
     def get_deps(self) -> Set[str]:

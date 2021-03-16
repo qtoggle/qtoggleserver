@@ -261,6 +261,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._pending_read: bool = False
         self._pending_write: bool = False
 
+        self._eval_port_values: Optional[Dict[str, NullablePortValue]] = None
         self._eval_ready: asyncio.Event = asyncio.Event()
         self._eval_task: Optional[asyncio.Task] = None
         if asyncio.get_event_loop().is_running():
@@ -709,7 +710,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             # Temporarily set the new value to the port, so that the read transform expression works as expected
             old_value = self._last_read_value
             self._last_read_value = value
-            value = await self.adapt_value_type(await self._transform_read.eval())
+            # TODO: supply port_values with context as soon as we allow referencing other ports in transform expressions
+            value = await self.adapt_value_type(await self._transform_read.eval(self._make_expression_context()))
             self._last_read_value = old_value
 
         return value
@@ -723,7 +725,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             # value into consideration when evaluating the result
             prev_value = self._last_read_value
             self._last_read_value = value
-            value = await self.adapt_value_type(await self._transform_write.eval())
+            # TODO: supply port_values with context as soon as we allow referencing other ports in transform expressions
+            value = await self.adapt_value_type(await self._transform_write.eval(self._make_expression_context()))
             self._last_read_value = prev_value
 
         try:
@@ -784,7 +787,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self.debug('write value task cancelled')
                 break
 
-    def eval_asap(self) -> None:
+    def eval_asap(self, port_values: Dict[str, NullablePortValue]) -> None:
+        self._eval_port_values = port_values
         self._eval_ready.set()
 
     async def _eval_loop(self) -> None:
@@ -802,7 +806,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         expression = self.get_expression()
 
         try:
-            value = await expression.eval()
+            value = await expression.eval(self._make_expression_context())
 
         except core_expressions.ExpressionEvalError:
             return
@@ -818,6 +822,19 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if value != self.get_last_read_value():  # Value changed after evaluation
             self.debug('expression "%s" evaluated to %s', expression, json_utils.dumps(value))
             self.push_value(value, reason=CHANGE_REASON_EXPRESSION)
+
+    def _make_expression_context(self) -> Dict[str, Any]:
+        if self._eval_port_values is None:
+            # In case port values hasn't been supplied with context
+            self._eval_port_values = {p.get_id(): p.get_last_read_value() for p in get_all()}
+
+        # Consume the port values
+        port_values = self._eval_port_values
+        self._eval_port_values = None
+
+        return {
+            'port_values': port_values
+        }
 
     async def adapt_value_type(self, value: NullablePortValue) -> NullablePortValue:
         return self.adapt_value_type_sync(await self.get_type(), await self.get_attr('integer'), value)
@@ -939,7 +956,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 # Write the just-loaded value to the port
                 value = self._last_read_value
                 if self._transform_write:
-                    value = await self.adapt_value_type(await self._transform_write.eval())
+                    # TODO: supply port_values with context as soon as we allow referencing other ports in transform
+                    #       expressions
+                    value = await self.adapt_value_type(
+                        await self._transform_write.eval(self._make_expression_context())
+                    )
 
                 await self.write_value(value)
 

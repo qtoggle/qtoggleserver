@@ -4,6 +4,8 @@ import calendar
 import datetime
 import time
 
+from typing import Any, Dict
+
 from qtoggleserver import system
 
 from .base import Evaluated
@@ -16,12 +18,12 @@ class DateUnitFunction(Function, metaclass=abc.ABCMeta):
     MAX_ARGS = 1
     DEPS = ['second']
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
         if len(self.args) > 0:
-            timestamp = int(await self.args[0].eval())
+            timestamp = int(await self.args[0].eval(context))
 
         else:
             timestamp = int(time.time())
@@ -86,7 +88,7 @@ class MillisecondFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
     DEPS = ['millisecond']
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -99,11 +101,11 @@ class DateFunction(Function):
     DEPS = ['second']
     UNIT_INDEX = {u: i + 1 for i, u in enumerate(('year', 'month', 'day', 'hour', 'minute', 'second'))}
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        eval_args = [int(await self.args[i].eval()) for i in range(self.MIN_ARGS)]
+        eval_args = [int(await self.args[i].eval(context)) for i in range(self.MIN_ARGS)]
 
         try:
             return int(datetime.datetime(*eval_args).timestamp())
@@ -123,7 +125,7 @@ class BOYFunction(Function):
     MAX_ARGS = 1
     DEPS = ['second']
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -131,7 +133,7 @@ class BOYFunction(Function):
 
         n = 0
         if len(self.args) > 0:
-            n = int(await self.args[0].eval())
+            n = int(await self.args[0].eval(context))
 
         dt = datetime.datetime(now.year + n, 1, 1, 0, 0, 0)
         dt = dt.astimezone(tz=datetime.timezone.utc)
@@ -145,14 +147,14 @@ class BOMFunction(Function):
     MAX_ARGS = 1
     DEPS = ['second']
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
         now = datetime.datetime.now()
         n = 0
         if len(self.args) > 0:
-            n = int(await self.args[0].eval())
+            n = int(await self.args[0].eval(context))
 
         year, month = now.year, now.month
         if n >= 0:
@@ -185,16 +187,16 @@ class BOWFunction(Function):
     MAX_ARGS = 2
     DEPS = ['second']
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
         n = 0
         s = 0
         if len(self.args) > 0:
-            n = int(await self.args[0].eval())
+            n = int(await self.args[0].eval(context))
             if len(self.args) > 1:
-                s = int(await self.args[1].eval())
+                s = int(await self.args[1].eval(context))
 
         now = datetime.datetime.now()
         dt = now.replace(hour=12)  # Using mid day practically avoids problems due to DST
@@ -248,14 +250,14 @@ class BODFunction(Function):
     MAX_ARGS = 1
     DEPS = ['second']
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
         now = datetime.datetime.now()
         n = 0
         if len(self.args) > 0:
-            n = int(await self.args[0].eval())
+            n = int(await self.args[0].eval(context))
         dt = now + datetime.timedelta(days=n)
         dt = dt.replace(hour=0, minute=0, second=0, microsecond=0)
         dt = dt.astimezone(tz=datetime.timezone.utc)
@@ -268,13 +270,13 @@ class HMSIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 6
     DEPS = ['second']
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
         now = datetime.datetime.now().replace(microsecond=0)
 
-        start_h, start_m, start_s, stop_h, stop_m, stop_s = await self.eval_args()
+        start_h, start_m, start_s, stop_h, stop_m, stop_s = await self.eval_args(context)
 
         if not (0 <= start_h <= 23):
             raise InvalidArgumentValue(1, start_h)
@@ -308,13 +310,13 @@ class MDIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 4
     DEPS = ['second']
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
         now = datetime.datetime.now().replace(microsecond=0)
 
-        start_m, start_d, stop_m, stop_d = await self.eval_args()
+        start_m, start_d, stop_m, stop_d = await self.eval_args(context)
 
         if not (1 <= start_m <= 12):
             raise InvalidArgumentValue(1, start_m)

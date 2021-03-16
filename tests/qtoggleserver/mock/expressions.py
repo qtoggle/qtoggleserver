@@ -1,5 +1,5 @@
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from qtoggleserver.core.expressions import Expression, Evaluated, PortValue, PortRef
 from qtoggleserver.core.expressions import UnknownPortId, PortValueUnavailable
@@ -13,7 +13,7 @@ class MockExpression(Expression):
     def set_value(self, value: Optional[float]) -> None:
         self.value = value
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         return self.value
 
     @staticmethod
@@ -27,9 +27,9 @@ class MockPortValue(PortValue):
 
         self.port: Optional[BasePort] = port
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         if self.port:
-            value = self.port.get_last_read_value()
+            value = context['port_values'].get(self.port.get_id())
             if value is None:
                 raise PortValueUnavailable(self.port.get_id())
 
@@ -45,7 +45,7 @@ class MockPortRef(PortRef):
 
         self.port: Optional[BasePort] = port
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         if self.port:
             return self.port
 

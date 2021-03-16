@@ -6,7 +6,7 @@ from qtoggleserver.core.expressions import InvalidNumberOfArguments
 
 
 async def test_bitand_simple(literal_three, literal_ten):
-    result = await bitwise.BitAndFunction([literal_three, literal_ten]).eval()
+    result = await bitwise.BitAndFunction([literal_three, literal_ten]).eval(context={})
     assert result == 2
 
 
@@ -24,7 +24,7 @@ def test_bitand_num_args():
 
 
 async def test_bitor_simple(literal_three, literal_ten):
-    result = await bitwise.BitOrFunction([literal_three, literal_ten]).eval()
+    result = await bitwise.BitOrFunction([literal_three, literal_ten]).eval(context={})
     assert result == 11
 
 
@@ -42,7 +42,7 @@ def test_bitor_num_args():
 
 
 async def test_bitnot_simple(literal_three):
-    result = await bitwise.BitNotFunction([literal_three]).eval()
+    result = await bitwise.BitNotFunction([literal_three]).eval(context={})
     assert result == -4
 
 
@@ -60,7 +60,7 @@ def test_bitnot_num_args():
 
 
 async def test_bitxor_simple(literal_three, literal_ten):
-    result = await bitwise.BitXOrFunction([literal_three, literal_ten]).eval()
+    result = await bitwise.BitXOrFunction([literal_three, literal_ten]).eval(context={})
     assert result == 9
 
 
@@ -78,7 +78,7 @@ def test_bitxor_num_args():
 
 
 async def test_shl_simple(literal_three, literal_ten):
-    result = await bitwise.SHLFunction([literal_three, literal_ten]).eval()
+    result = await bitwise.SHLFunction([literal_three, literal_ten]).eval(context={})
     assert result == 3072
 
 
@@ -96,7 +96,7 @@ def test_shl_num_args():
 
 
 async def test_shr_simple(literal_three, literal_ten):
-    result = await bitwise.SHRFunction([literal_ten, literal_three]).eval()
+    result = await bitwise.SHRFunction([literal_ten, literal_three]).eval(context={})
     assert result == 1
 
 

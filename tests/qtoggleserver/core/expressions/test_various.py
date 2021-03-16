@@ -11,36 +11,36 @@ from tests.qtoggleserver.mock import MockExpression, MockPortRef, MockPortValue
 
 async def test_available_literal(literal_three, literal_false):
     expr = various.AvailableFunction([literal_three])
-    assert await expr.eval() == 1
+    assert await expr.eval(context={}) == 1
 
     expr = various.AvailableFunction([literal_false])
-    assert await expr.eval() == 1
+    assert await expr.eval(context={}) == 1
 
-
+{}
 async def test_available_port_value(num_mock_port1):
     port_expr = MockPortValue(num_mock_port1)
     expr = various.AvailableFunction([port_expr])
-    assert await expr.eval() == 0
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
 
     num_mock_port1.set_last_read_value(16)
-    assert await expr.eval() == 1
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 1
 
     port_expr = MockPortValue(None, port_id='some-id')
     expr = various.AvailableFunction([port_expr])
-    assert await expr.eval() == 0
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
 
 
 async def test_available_port_ref(num_mock_port1):
     port_expr = MockPortRef(num_mock_port1)
     expr = various.AvailableFunction([port_expr])
-    assert await expr.eval() == 1
+    assert await expr.eval(context={}) == 1
 
     num_mock_port1.set_last_read_value(16)
-    assert await expr.eval() == 1
+    assert await expr.eval(context={}) == 1
 
     port_expr = MockPortRef(None, port_id='some-id')
     expr = various.AvailableFunction([port_expr])
-    assert await expr.eval() == 0
+    assert await expr.eval(context={}) == 0
 
 
 async def test_available_func(num_mock_port1):
@@ -48,15 +48,15 @@ async def test_available_func(num_mock_port1):
     acc_expr = MockExpression(13)
     func_expr = various.AccFunction([port_expr, acc_expr])
     expr = various.AvailableFunction([func_expr])
-    assert await expr.eval() == 0
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
 
     num_mock_port1.set_last_read_value(16)
-    assert await expr.eval() == 1
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 1
 
     port_expr = MockPortValue(None, port_id='some-id')
     func_expr = various.AccFunction([port_expr, acc_expr])
     expr = various.AvailableFunction([func_expr])
-    assert await expr.eval() == 0
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
 
 
 def test_available_parse():
@@ -76,10 +76,10 @@ async def test_default(num_mock_port1):
     port_expr = MockPortValue(num_mock_port1)
     def_expr = MockExpression(13)
     expr = various.DefaultFunction([port_expr, def_expr])
-    assert await expr.eval() == 13
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 13
 
     num_mock_port1.set_last_read_value(16)
-    assert await expr.eval() == 16
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 16
 
 
 def test_default_parse():
@@ -99,17 +99,17 @@ async def test_acc():
     value_expr = MockExpression(16)
     acc_expr = MockExpression(13)
     expr = various.AccFunction([value_expr, acc_expr])
-    assert await expr.eval() == 13
+    assert await expr.eval(context={}) == 13
 
     acc_expr.set_value(-5)
-    assert await expr.eval() == -5
+    assert await expr.eval(context={}) == -5
 
     value_expr.set_value(26)
-    assert await expr.eval() == 5
+    assert await expr.eval(context={}) == 5
 
     value_expr.set_value(20)
     acc_expr.set_value(5)
-    assert await expr.eval() == -1
+    assert await expr.eval(context={}) == -1
 
 
 def test_acc_parse():
@@ -129,17 +129,17 @@ async def test_accinc():
     value_expr = MockExpression(16)
     acc_expr = MockExpression(13)
     expr = various.AccIncFunction([value_expr, acc_expr])
-    assert await expr.eval() == 13
+    assert await expr.eval(context={}) == 13
 
     acc_expr.set_value(-5)
-    assert await expr.eval() == -5
+    assert await expr.eval(context={}) == -5
 
     value_expr.set_value(26)
-    assert await expr.eval() == 5
+    assert await expr.eval(context={}) == 5
 
     value_expr.set_value(20)
     acc_expr.set_value(5)
-    assert await expr.eval() == 5
+    assert await expr.eval(context={}) == 5
 
 
 def test_accinc_parse():
@@ -158,61 +158,61 @@ def test_accinc_num_args():
 async def test_hyst_rise(literal_three, literal_sixteen):
     value_expr = MockExpression(1)
     expr = various.HystFunction([value_expr, literal_three, literal_sixteen])
-    assert await expr.eval() == 0
+    assert await expr.eval(context={}) == 0
 
     value_expr.set_value(2)
-    assert await expr.eval() == 0
+    assert await expr.eval(context={}) == 0
 
     value_expr.set_value(3)
-    assert await expr.eval() == 0
+    assert await expr.eval(context={}) == 0
 
     value_expr.set_value(4)
-    assert await expr.eval() == 0
+    assert await expr.eval(context={}) == 0
 
     value_expr.set_value(16)
-    assert await expr.eval() == 0
+    assert await expr.eval(context={}) == 0
 
     value_expr.set_value(10)
-    assert await expr.eval() == 0
+    assert await expr.eval(context={}) == 0
 
     value_expr.set_value(2)
-    assert await expr.eval() == 0
+    assert await expr.eval(context={}) == 0
 
     value_expr.set_value(17)
-    assert await expr.eval() == 1
+    assert await expr.eval(context={}) == 1
 
     value_expr.set_value(20)
-    assert await expr.eval() == 1
+    assert await expr.eval(context={}) == 1
 
 
 async def test_hyst_fall(literal_three, literal_sixteen):
     value_expr = MockExpression(20)
     expr = various.HystFunction([value_expr, literal_three, literal_sixteen])
-    assert await expr.eval() == 1
+    assert await expr.eval(context={}) == 1
 
     value_expr.set_value(17)
-    assert await expr.eval() == 1
+    assert await expr.eval(context={}) == 1
 
     value_expr.set_value(16)
-    assert await expr.eval() == 1
+    assert await expr.eval(context={}) == 1
 
     value_expr.set_value(10)
-    assert await expr.eval() == 1
+    assert await expr.eval(context={}) == 1
 
     value_expr.set_value(4)
-    assert await expr.eval() == 1
+    assert await expr.eval(context={}) == 1
 
     value_expr.set_value(20)
-    assert await expr.eval() == 1
+    assert await expr.eval(context={}) == 1
 
     value_expr.set_value(3)
-    assert await expr.eval() == 1
+    assert await expr.eval(context={}) == 1
 
     value_expr.set_value(2)
-    assert await expr.eval() == 0
+    assert await expr.eval(context={}) == 0
 
     value_expr.set_value(0)
-    assert await expr.eval() == 0
+    assert await expr.eval(context={}) == 0
 
 
 def test_hyst_parse():
@@ -246,28 +246,28 @@ async def test_sequence(
         literal_two,
         literal_one_hundred
     ])
-    assert await expr.eval() == 3
+    assert await expr.eval(context={}) == 3
 
     freezer.move_to(dummy_local_datetime + datetime.timedelta(milliseconds=99))
-    assert await expr.eval() == 3
+    assert await expr.eval(context={}) == 3
 
     freezer.move_to(dummy_local_datetime + datetime.timedelta(milliseconds=101))
-    assert await expr.eval() == 16
+    assert await expr.eval(context={}) == 16
 
     freezer.move_to(dummy_local_datetime + datetime.timedelta(milliseconds=200))
-    assert await expr.eval() == 16
+    assert await expr.eval(context={}) == 16
 
     freezer.move_to(dummy_local_datetime + datetime.timedelta(milliseconds=299))
-    assert await expr.eval() == 16
+    assert await expr.eval(context={}) == 16
 
     freezer.move_to(dummy_local_datetime + datetime.timedelta(milliseconds=301))
-    assert await expr.eval() == 2
+    assert await expr.eval(context={}) == 2
 
     freezer.move_to(dummy_local_datetime + datetime.timedelta(milliseconds=399))
-    assert await expr.eval() == 2
+    assert await expr.eval(context={}) == 2
 
     freezer.move_to(dummy_local_datetime + datetime.timedelta(milliseconds=401))
-    assert await expr.eval() == 3
+    assert await expr.eval(context={}) == 3
 
 
 def test_sequence_parse():
@@ -299,31 +299,31 @@ async def test_lut(
         literal_two,
         literal_one_hundred
     ])
-    assert await expr.eval() == 100
+    assert await expr.eval(context={}) == 100
 
     value_expr.set_value(2)
-    assert await expr.eval() == 100
+    assert await expr.eval(context={}) == 100
 
     value_expr.set_value(2.4)
-    assert await expr.eval() == 100
+    assert await expr.eval(context={}) == 100
 
     value_expr.set_value(2.6)
-    assert await expr.eval() == 200
+    assert await expr.eval(context={}) == 200
 
     value_expr.set_value(3)
-    assert await expr.eval() == 200
+    assert await expr.eval(context={}) == 200
 
     value_expr.set_value(5)
-    assert await expr.eval() == 200
+    assert await expr.eval(context={}) == 200
 
     value_expr.set_value(9.4)
-    assert await expr.eval() == 200
+    assert await expr.eval(context={}) == 200
 
     value_expr.set_value(9.6)
-    assert await expr.eval() == 1000
+    assert await expr.eval(context={}) == 1000
 
     value_expr.set_value(100)
-    assert await expr.eval() == 1000
+    assert await expr.eval(context={}) == 1000
 
 
 def test_lut_parse():
@@ -361,34 +361,34 @@ async def test_lutli(
         literal_two,
         literal_one_hundred
     ])
-    assert await expr.eval() == 100
+    assert await expr.eval(context={}) == 100
 
     value_expr.set_value(2)
-    assert await expr.eval() == 100
+    assert await expr.eval(context={}) == 100
 
     value_expr.set_value(2.4)
-    assert await expr.eval() == 140
+    assert await expr.eval(context={}) == 140
 
     value_expr.set_value(2.6)
-    assert await expr.eval() == 160
+    assert await expr.eval(context={}) == 160
 
     value_expr.set_value(3)
-    assert await expr.eval() == 200
+    assert await expr.eval(context={}) == 200
 
     value_expr.set_value(5)
-    assert round(await expr.eval(), 2) == 323.08
+    assert round(await expr.eval(context={}), 2) == 323.08
 
     value_expr.set_value(9.4)
-    assert round(await expr.eval(), 2) == 593.85
+    assert round(await expr.eval(context={}), 2) == 593.85
 
     value_expr.set_value(9.6)
-    assert round(await expr.eval(), 2) == 606.15
+    assert round(await expr.eval(context={}), 2) == 606.15
 
     value_expr.set_value(16)
-    assert round(await expr.eval(), 2) == 1000
+    assert round(await expr.eval(context={}), 2) == 1000
 
     value_expr.set_value(100)
-    assert round(await expr.eval(), 2) == 1000
+    assert round(await expr.eval(context={}), 2) == 1000
 
 
 def test_lutli_parse():
@@ -424,16 +424,16 @@ async def test_history_older_past(freezer, mock_persist_driver, dummy_utc_dateti
     num_mock_port1.set_last_read_value(0.01)
 
     with pytest.raises(PortValueUnavailable):
-        await expr.eval()
+        await expr.eval(context={})
 
     num_mock_port1.set_last_read_value(-6)
     await history.save_sample(num_mock_port1, (dummy_timestamp - 6000) * 1000)
-    assert await expr.eval() == -6
+    assert await expr.eval(context={}) == -6
 
     num_mock_port1.set_last_read_value(-4)
     await history.save_sample(num_mock_port1, (dummy_timestamp - 4000) * 1000)
     diff_expr.set_value(-3601)  # Invalidates history expression internal cache
-    assert await expr.eval() == -4
+    assert await expr.eval(context={}) == -4
 
 
 async def test_history_older_future(freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, num_mock_port1):
@@ -450,7 +450,7 @@ async def test_history_older_future(freezer, mock_persist_driver, dummy_utc_date
     await history.save_sample(num_mock_port1, (dummy_timestamp - 8000) * 1000)
 
     num_mock_port1.set_last_read_value(0.01)
-    assert await expr.eval() == 0.01
+    assert await expr.eval(context={}) == 0.01
 
 
 async def test_history_older_current(freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, num_mock_port1):
@@ -469,7 +469,7 @@ async def test_history_older_current(freezer, mock_persist_driver, dummy_utc_dat
     await history.save_sample(num_mock_port1, (dummy_timestamp - 1000) * 1000)
 
     num_mock_port1.set_last_read_value(0.01)
-    assert await expr.eval() == 0.01
+    assert await expr.eval(context={}) == 0.01
 
 
 async def test_history_newer_past(freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, num_mock_port1):
@@ -489,16 +489,16 @@ async def test_history_newer_past(freezer, mock_persist_driver, dummy_utc_dateti
     num_mock_port1.set_last_read_value(0.01)
 
     with pytest.raises(PortValueUnavailable):
-        await expr.eval()
+        await expr.eval(context={})
 
     num_mock_port1.set_last_read_value(-4)
     await history.save_sample(num_mock_port1, (dummy_timestamp - 4000) * 1000)
-    assert await expr.eval() == -4
+    assert await expr.eval(context={}) == -4
 
     num_mock_port1.set_last_read_value(-6)
     await history.save_sample(num_mock_port1, (dummy_timestamp - 6000) * 1000)
     diff_expr.set_value(3601)  # Invalidates history expression internal cache
-    assert await expr.eval() == -6
+    assert await expr.eval(context={}) == -6
 
 
 async def test_history_newer_future(freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, num_mock_port1):
@@ -516,7 +516,7 @@ async def test_history_newer_future(freezer, mock_persist_driver, dummy_utc_date
 
     num_mock_port1.set_last_read_value(0.01)
     with pytest.raises(PortValueUnavailable):
-        await expr.eval()
+        await expr.eval(context={})
 
 
 async def test_history_newer_current(freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, num_mock_port1):
@@ -535,11 +535,12 @@ async def test_history_newer_current(freezer, mock_persist_driver, dummy_utc_dat
     await history.save_sample(num_mock_port1, (dummy_timestamp - 1000) * 1000)
 
     num_mock_port1.set_last_read_value(0.01)
-    assert await expr.eval() == -1
+    assert await expr.eval(context={}) == -1
 
 
-async def test_history_newer_unlimited_past(freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp,
-    num_mock_port1):
+async def test_history_newer_unlimited_past(
+    freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, num_mock_port1
+):
     freezer.move_to(dummy_utc_datetime)
     mock_persist_driver.enable_history_support()
 
@@ -553,20 +554,21 @@ async def test_history_newer_unlimited_past(freezer, mock_persist_driver, dummy_
     await history.save_sample(num_mock_port1, (dummy_timestamp - 8000) * 1000)
 
     num_mock_port1.set_last_read_value(0.01)
-    assert await expr.eval() == 0.01
+    assert await expr.eval(context={}) == 0.01
 
     num_mock_port1.set_last_read_value(-4)
     await history.save_sample(num_mock_port1, (dummy_timestamp - 4000) * 1000)
-    assert await expr.eval() == -4
+    assert await expr.eval(context={}) == -4
 
     num_mock_port1.set_last_read_value(-6)
     await history.save_sample(num_mock_port1, (dummy_timestamp - 6000) * 1000)
     diff_expr.set_value(3601)  # Invalidates history expression internal cache
-    assert await expr.eval() == -6
+    assert await expr.eval(context={}) == -6
 
 
-async def test_history_newer_unlimited_future(freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp,
-    num_mock_port1):
+async def test_history_newer_unlimited_future(
+    freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, num_mock_port1
+):
     freezer.move_to(dummy_utc_datetime)
     mock_persist_driver.enable_history_support()
 
@@ -581,7 +583,7 @@ async def test_history_newer_unlimited_future(freezer, mock_persist_driver, dumm
 
     num_mock_port1.set_last_read_value(0.01)
     with pytest.raises(PortValueUnavailable):
-        await expr.eval()
+        await expr.eval(context={})
 
 
 def test_history_parse(mock_persist_driver):

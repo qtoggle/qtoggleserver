@@ -16,7 +16,7 @@ from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from qtoggleserver import persist
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
-from qtoggleserver.core import main as core_main
+from qtoggleserver.core import main as core_main  # noqa: F401; This needs to be imported here for correct import order
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.conf import settings

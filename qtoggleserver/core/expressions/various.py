@@ -16,9 +16,9 @@ from .port import PortRef
 class AvailableFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         try:
-            await self.args[0].eval()
+            await self.args[0].eval(context)
             return True
 
         except ExpressionEvalError:
@@ -29,12 +29,12 @@ class AvailableFunction(Function):
 class DefaultFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         try:
-            return await self.args[0].eval()
+            return await self.args[0].eval(context)
 
         except ExpressionEvalError:
-            return await self.args[1].eval()
+            return await self.args[1].eval(context)
 
 
 @function('ACC')
@@ -46,8 +46,8 @@ class AccFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    async def eval(self) -> Evaluated:
-        value, accumulator = await self.eval_args()
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        value, accumulator = await self.eval_args(context)
         result = accumulator
 
         if self._last_value is not None:
@@ -67,8 +67,8 @@ class AccIncFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    async def eval(self) -> Evaluated:
-        value, accumulator = await self.eval_args()
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        value, accumulator = await self.eval_args(context)
         result = accumulator
 
         if (self._last_value is not None) and (value > self._last_value):
@@ -88,8 +88,8 @@ class HystFunction(Function):
 
         self._last_result: int = 0
 
-    async def eval(self) -> Evaluated:
-        value, threshold1, threshold2 = await self.eval_args()
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        value, threshold1, threshold2 = await self.eval_args(context)
 
         self._last_result = int((self._last_result == 0 and value > threshold2) or
                                 (self._last_result != 0 and value >= threshold1))
@@ -107,13 +107,13 @@ class SequenceFunction(Function):
 
         self._last_time: float = 0
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         now = time.time() * 1000
 
         if self._last_time == 0:
             self._last_time = now
 
-        args = await self.eval_args()
+        args = await self.eval_args(context)
         num_values = len(args) // 2
         values = []
         delays = []
@@ -143,8 +143,8 @@ class SequenceFunction(Function):
 class LUTFunction(Function):
     MIN_ARGS = 5
 
-    async def eval(self) -> Evaluated:
-        args = await self.eval_args()
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        args = await self.eval_args(context)
         length = (len(args) - 1) // 2
         x = args[0]
         points = [(args[2 * i + 1], args[2 * i + 2]) for i in range(length)]
@@ -173,8 +173,8 @@ class LUTFunction(Function):
 class LUTLIFunction(Function):
     MIN_ARGS = 5
 
-    async def eval(self) -> Evaluated:
-        args = await self.eval_args()
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        args = await self.eval_args(context)
         length = (len(args) - 1) // 2
         x = args[0]
         points = [(args[2 * i + 1], args[2 * i + 2]) for i in range(length)]
@@ -212,11 +212,11 @@ class HistoryFunction(Function):
         self._cached_timestamp: int = 0
         self._cached_max_diff: Optional[float] = None
 
-    async def eval(self) -> Evaluated:
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        args = await self.eval_args()
+        args = await self.eval_args(context)
         port, timestamp, max_diff = args
 
         # Transform everything to milliseconds
