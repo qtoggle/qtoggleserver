@@ -1159,11 +1159,11 @@ class Slave(logging_utils.LoggableMixin):
             raise exceptions.PortNotFound(self, local_id)
 
         if port.get_provisioning_value() is not None:
-            self.debug('ignoring value-change event due to pending provisioning value')
+            self.debug('ignoring value-change event of %s due to pending provisioning value', port)
             return
 
         if port.get_last_read_value() == value:
-            self.debug('ignoring value-change event due to same value %s', json_utils.dumps(value))
+            self.debug('ignoring value-change event of %s due to same value %s', port, json_utils.dumps(value))
             return
 
         self.debug(

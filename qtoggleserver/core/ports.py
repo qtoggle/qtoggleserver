@@ -258,8 +258,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if asyncio.get_event_loop().is_running():
             self._write_value_task = asyncio.create_task(self._write_value_loop())
         self._change_reason: str = CHANGE_REASON_NATIVE
-        self._pending_read: bool = False
-        self._pending_write: bool = False
+        self._reading: bool = False
+        self._writing: bool = False
 
         self._eval_port_values: Optional[Dict[str, NullablePortValue]] = None
         self._eval_ready: asyncio.Event = asyncio.Event()
@@ -689,10 +689,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._change_reason = CHANGE_REASON_NATIVE
 
     async def read_transformed_value(self) -> NullablePortValue:
-        if self._pending_read:
+        if self._reading:
             return  # Prevent overlapped readings
 
-        self._pending_read = True
+        self._reading = True
 
         try:
             value = await self.read_value()
@@ -701,7 +701,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             raise
 
         finally:
-            self._pending_read = False
+            self._reading = False
 
         if value is None:
             return None
@@ -716,8 +716,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return value
 
-    def is_pending_read(self) -> bool:
-        return self._pending_read
+    def is_reading(self) -> bool:
+        return self._reading
 
     async def write_transformed_value(self, value: PortValue, reason: str) -> None:
         if self._transform_write:
@@ -738,8 +738,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             raise
 
-    def is_pending_write(self) -> bool:
-        return self._pending_write
+    def is_writing(self) -> bool:
+        return self._writing
 
     def push_value(self, value: PortValue, reason: str) -> None:
         asyncio.create_task(self.write_transformed_value(value, reason))
@@ -770,7 +770,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 value, reason, done = await self._write_value_queue.get()
 
                 self._change_reason = reason
-                self._pending_write = True
+                self._writing = True
 
                 try:
                     result = await self.write_value(value)
@@ -779,7 +779,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 except Exception as e:
                     done.set_exception(e)
 
-                self._pending_write = False
+                self._writing = False
 
                 await main.update()  # Do an update after every confirmed write
 
