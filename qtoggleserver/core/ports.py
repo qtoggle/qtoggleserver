@@ -261,8 +261,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._reading: bool = False
         self._writing: bool = False
 
-        self._eval_port_values: Optional[Dict[str, NullablePortValue]] = None
-        self._eval_ready: asyncio.Event = asyncio.Event()
+        self._eval_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
         self._eval_task: Optional[asyncio.Task] = None
         if asyncio.get_event_loop().is_running():
             self._eval_task = asyncio.create_task(self._eval_loop())
@@ -710,7 +709,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             # Temporarily set the new value to the port, so that the read transform expression works as expected
             old_value = self._last_read_value
             self._last_read_value = value
-            # TODO: supply port_values with context as soon as we allow referencing other ports in transform expressions
             value = await self.adapt_value_type(await self._transform_read.eval(self._make_expression_context()))
             self._last_read_value = old_value
 
@@ -725,7 +723,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             # value into consideration when evaluating the result
             prev_value = self._last_read_value
             self._last_read_value = value
-            # TODO: supply port_values with context as soon as we allow referencing other ports in transform expressions
             value = await self.adapt_value_type(await self._transform_write.eval(self._make_expression_context()))
             self._last_read_value = prev_value
 
@@ -740,9 +737,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def is_writing(self) -> bool:
         return self._writing
-
-    def push_value(self, value: PortValue, reason: str) -> None:
-        asyncio.create_task(self.write_transformed_value(value, reason))
 
     async def _write_value_queued(self, value: PortValue, reason: str) -> None:
         done = asyncio.get_running_loop().create_future()
@@ -788,25 +782,27 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 break
 
     def eval_asap(self, port_values: Dict[str, NullablePortValue]) -> None:
-        self._eval_port_values = port_values
-        self._eval_ready.set()
+        try:
+            self._eval_queue.put_nowait(self._make_expression_context(port_values))
+
+        except asyncio.QueueFull:
+            self.warning('eval queue full')
 
     async def _eval_loop(self) -> None:
         while True:
             try:
-                await self._eval_ready.wait()
-                self._eval_ready.clear()
-                await self._do_eval()
+                context = await self._eval_queue.get()
+                await self._eval_and_write(context)
 
             except asyncio.CancelledError:
                 self.debug('eval task cancelled')
                 break
 
-    async def _do_eval(self) -> None:
+    async def _eval_and_write(self, context: Dict[str, Any]) -> None:
         expression = self.get_expression()
 
         try:
-            value = await expression.eval(self._make_expression_context())
+            value = await expression.eval(context)
 
         except core_expressions.ExpressionEvalError:
             return
@@ -821,16 +817,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         if value != self.get_last_read_value():  # Value changed after evaluation
             self.debug('expression "%s" evaluated to %s', expression, json_utils.dumps(value))
-            self.push_value(value, reason=CHANGE_REASON_EXPRESSION)
+            await self.write_transformed_value(value, reason=CHANGE_REASON_EXPRESSION)
 
-    def _make_expression_context(self) -> Dict[str, Any]:
-        if self._eval_port_values is None:
-            # In case port values hasn't been supplied with context
-            self._eval_port_values = {p.get_id(): p.get_last_read_value() for p in get_all()}
-
-        # Consume the port values
-        port_values = self._eval_port_values
-        self._eval_port_values = None
+    def _make_expression_context(self, port_values: Optional[Dict[str, NullablePortValue]] = None) -> Dict[str, Any]:
+        if port_values is None:
+            # In case port values haven't been supplied with context
+            port_values = {p.get_id(): p.get_last_read_value() for p in get_all()}
 
         return {
             'port_values': port_values
@@ -956,8 +948,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 # Write the just-loaded value to the port
                 value = self._last_read_value
                 if self._transform_write:
-                    # TODO: supply port_values with context as soon as we allow referencing other ports in transform
-                    #       expressions
                     value = await self.adapt_value_type(
                         await self._transform_write.eval(self._make_expression_context())
                     )

@@ -65,7 +65,13 @@ class PortValue(PortExpression):
         if not port.is_enabled():
             raise DisabledPort(self.port_id)
 
-        value = context.get('port_values', {}).get(self.port_id)
+        if port.get_id() == self.port_id:
+            # Always consider the latest current value for port that owns the expression
+            value = port.get_last_read_value()
+
+        else:
+            value = context.get('port_values', {}).get(self.port_id)
+
         if value is None:
             raise PortValueUnavailable(self.port_id)
 
