@@ -1088,7 +1088,7 @@ class Slave(logging_utils.LoggableMixin):
                 except Exception as e:
                     self.error('failed to update polled port %s: %s', id_, e)
 
-            old_value = local_port.get_cached_value()
+            old_value = local_port.get_last_remote_value()
             new_value = values_by_id.get(id_)
             if old_value != new_value:
                 try:
@@ -1162,7 +1162,7 @@ class Slave(logging_utils.LoggableMixin):
             self.debug('ignoring value-change event of %s due to pending provisioning value', port)
             return
 
-        if port.get_last_read_value() == value:
+        if port.get_last_remote_value() == value:
             self.debug('ignoring value-change event of %s due to same value %s', port, json_utils.dumps(value))
             return
 
@@ -1173,7 +1173,7 @@ class Slave(logging_utils.LoggableMixin):
             json_utils.dumps(value)
         )
 
-        port.set_cached_value(value)
+        port.push_remote_value(value)
         port.update_last_sync()
         port.save_asap()
 

@@ -4,6 +4,7 @@ import copy
 import re
 import time
 
+from collections import deque
 from typing import Any, List, Optional, Set, Tuple
 
 from qtoggleserver.conf import settings
@@ -83,8 +84,9 @@ class SlavePort(core_ports.BasePort):
 
         self._remote_id: str = attrs['id']
 
-        # Value cache
+        # Value
         self._cached_value: NullablePortValue = None
+        self._remote_value_queue: deque = deque()
 
         # Attributes cache
         self._cached_attrs: Attributes = {}
@@ -117,9 +119,8 @@ class SlavePort(core_ports.BasePort):
 
         self.update_cached_attrs(attrs)
 
-        if self._cached_value is not None:
+        if self.get_last_remote_value() is not None:
             # Remote value is supplied in attrs when a new port is added on the slave device
-
             self.update_last_sync()
 
     def _get_standard_attrdefs(self) -> AttributeDefinitions:
@@ -230,7 +231,7 @@ class SlavePort(core_ports.BasePort):
 
         # Value can be found among attrs but we don't want it as attribute
         if 'value' in attrs:
-            self._cached_value = self._cached_attrs.pop('value')
+            self.push_remote_value(self._cached_attrs.pop('value'))
 
         self.invalidate_attrdefs()
 
@@ -306,14 +307,23 @@ class SlavePort(core_ports.BasePort):
     def clear_provisioning(self) -> None:
         self._provisioning = set()
 
-    def get_cached_value(self) -> NullablePortValue:
-        return self._cached_value
+    def push_remote_value(self, value: PortValue) -> None:
+        self._remote_value_queue.appendleft(value)
 
-    def set_cached_value(self, value: PortValue) -> None:
-        self._cached_value = value
+    def get_last_remote_value(self) -> NullablePortValue:
+        try:
+            return self._remote_value_queue[0]
+
+        except IndexError:
+            return self._cached_value
 
     async def read_value(self) -> NullablePortValue:
-        return self._cached_value
+        try:
+            self._cached_value = self._remote_value_queue.pop()
+            return self._cached_value
+
+        except IndexError:
+            return
 
     async def write_value(self, value: PortValue) -> None:
         if self._slave.is_online():
@@ -324,7 +334,7 @@ class SlavePort(core_ports.BasePort):
                     value,
                     timeout=settings.slaves.long_timeout
                 )
-                self.set_cached_value(value)
+                self.push_remote_value(value)
 
             except core_responses.Accepted:
                 # The value has been successfully sent to the slave but it hasn't been applied right away. We should
@@ -425,8 +435,8 @@ class SlavePort(core_ports.BasePort):
         self._last_sync = int(time.time())
 
     async def handle_enable(self) -> None:
-        # Fetch current port value, but not before slaves are ready. Slaves are't ready during initial loading at
-        # startup, at which point we've got a recent values for all slave ports
+        # Fetch current port value, but not before slaves are ready. Slaves aren't ready during initial loading at
+        # startup, at which point we've got recent values for all slave ports
         if self._slave.is_ready():
             self.debug('fetching port value')
 
@@ -438,7 +448,7 @@ class SlavePort(core_ports.BasePort):
 
             else:
                 if value is not None:
-                    self._cached_value = value
+                    self.push_remote_value(value)
 
     async def trigger_update(self) -> None:
         await super().trigger_update()
