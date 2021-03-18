@@ -125,8 +125,10 @@ async def handle_value_changes(
     change_reasons: Dict[core_ports.BasePort, str]
 ) -> None:
 
+    forced_deps = set()
     if _force_eval_expression_ports:
-        changed_set.update(_force_eval_expression_ports)  # Special "always depends on" value
+        changed_set.update(_force_eval_expression_ports)
+        forced_deps.update(_force_eval_expression_ports)
         _force_eval_expression_ports.clear()
 
     # Trigger value-change events; save persisted ports
@@ -150,7 +152,7 @@ async def handle_value_changes(
         if not expression:
             continue
 
-        deps = set(expression.get_deps())
+        deps = set(expression.get_deps()) | forced_deps
         deps.add(None)  # Special "always depends on" value
 
         changed_set_ids = set(f'${c.get_id()}' for c in changed_set if isinstance(c, core_ports.BasePort))
@@ -164,7 +166,12 @@ async def handle_value_changes(
         # * port ids
         # * time dep strings
         # * None
-        if not (deps & (changed_set_ids | changed_set)) and (port not in changed_set):
+        all_changed_set = changed_set_ids | changed_set
+
+        dep_changed = bool(deps & all_changed_set)
+        self_dep_changed = (port in changed_set) and (port.get_id() in deps)
+
+        if not dep_changed and not self_dep_changed:
             continue
 
         # If port expression depends on port itself and the change reason is the evaluation of its expression, prevent
@@ -177,7 +184,7 @@ async def handle_value_changes(
             logger.debug('skipping evaluation of %s expression to prevent loops', port)
             continue
 
-        port.eval_asap(values_by_port_id)
+        port.push_eval(values_by_port_id)
 
 
 def force_eval_expressions(port: core_ports.BasePort = None) -> None:

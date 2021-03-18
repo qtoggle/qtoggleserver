@@ -781,7 +781,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self.debug('write value task cancelled')
                 break
 
-    def eval_asap(self, port_values: Dict[str, NullablePortValue]) -> None:
+    def push_eval(self, port_values: Dict[str, NullablePortValue]) -> None:
+        self.debug('will evaluate expression asap')
+
         try:
             self._eval_queue.put_nowait(self._make_expression_context(port_values))
 
@@ -799,6 +801,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 break
 
     async def _eval_and_write(self, context: Dict[str, Any]) -> None:
+        self.debug('evaluating expression')
         expression = self.get_expression()
 
         try:
