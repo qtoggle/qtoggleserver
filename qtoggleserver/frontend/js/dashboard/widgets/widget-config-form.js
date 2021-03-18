@@ -26,7 +26,9 @@ class WidgetConfigForm extends PageForm {
      * @param {...*} args parent class parameters
      */
     constructor({widget, ...args}) {
-        let defaultStartFields = [
+        let defaultStartFields = []
+
+        let afterPortFields = [
             new TextField({
                 name: 'label',
                 label: gettext('Label'),
@@ -70,6 +72,14 @@ class WidgetConfigForm extends PageForm {
         ]
 
         args.fields = [...defaultStartFields, ...(args.fields || []), ...defaultEndFields]
+
+        /* Some fields should be placed right after the port field, when we only have one port field */
+        let portFields = args.fields.filter(f => f instanceof PortPickerField)
+        let index = 0
+        if (portFields.length === 1) {
+            index = args.fields.indexOf(portFields[0]) + 1
+        }
+        args.fields.splice(index, 0, ...afterPortFields)
 
         ObjectUtils.assignDefault(args, {
             title: widget.constructor.displayName,
