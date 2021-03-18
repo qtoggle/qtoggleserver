@@ -300,7 +300,7 @@ $.widget('qtoggle.basechart', $.qui.basewidget, {
         return {}
     },
 
-    _makeGridLinesOptions: function (environment) {
+    _makeGridOptions: function (environment) {
         return {
             color: environment.borderColor,
             lineWidth: environment.px1

@@ -28,7 +28,7 @@ $.widget('qtoggle.barchart', $.qtoggle.basechart, {
         return ObjectUtils.combine(this._super(environment), {
             x: {
                 type: 'category',
-                gridLines: this._makeGridLinesOptions(environment),
+                grid: this._makeGridOptions(environment),
                 ticks: this._makeTicksOptions(environment, 'x'),
                 stacked: this.options.stacked
             },
@@ -36,7 +36,7 @@ $.widget('qtoggle.barchart', $.qtoggle.basechart, {
                 type: 'linear',
                 min: this.options.yMin,
                 max: this.options.yMax,
-                gridLines: this._makeGridLinesOptions(environment),
+                grid: this._makeGridOptions(environment),
                 ticks: this._makeTicksOptions(environment, 'y'),
                 stacked: this.options.stacked
             }

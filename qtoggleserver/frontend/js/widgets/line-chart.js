@@ -48,14 +48,14 @@ $.widget('qtoggle.linechart', $.qtoggle.basechart, {
                 type: 'linear',
                 min: this.options.xMin,
                 max: this.options.xMax,
-                gridLines: this._makeGridLinesOptions(environment),
+                grid: this._makeGridOptions(environment),
                 ticks: this._makeTicksOptions(environment, 'x')
             },
             y: {
                 type: 'linear',
                 min: this.options.yMin,
                 max: this.options.yMax,
-                gridLines: this._makeGridLinesOptions(environment),
+                grid: this._makeGridOptions(environment),
                 ticks: this._makeTicksOptions(environment, 'y')
             }
         })
