@@ -95,6 +95,64 @@ def test_default_num_args():
         Function.parse(None, 'AVAILABLE(1, 2, 3)', 0)
 
 
+async def test_rising(num_mock_port1):
+    port_expr = MockPortValue(num_mock_port1)
+    expr = various.RisingFunction([port_expr])
+
+    num_mock_port1.set_last_read_value(0)
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
+
+    num_mock_port1.set_last_read_value(13)
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 1
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
+
+    num_mock_port1.set_last_read_value(0)
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
+
+
+def test_rising_parse():
+    e = Function.parse(None, 'RISING(1)', 0)
+    assert isinstance(e, various.RisingFunction)
+
+
+def test_rising_num_args():
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, 'RISING()', 0)
+
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, 'RISING(1, 2)', 0)
+
+
+async def test_falling(num_mock_port1):
+    port_expr = MockPortValue(num_mock_port1)
+    expr = various.FallingFunction([port_expr])
+
+    num_mock_port1.set_last_read_value(13)
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
+
+    num_mock_port1.set_last_read_value(0)
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 1
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
+
+    num_mock_port1.set_last_read_value(13)
+    assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
+
+
+def test_falling_parse():
+    e = Function.parse(None, 'FALLING(1)', 0)
+    assert isinstance(e, various.FallingFunction)
+
+
+def test_falling_num_args():
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, 'FALLING()', 0)
+
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, 'FALLING(1, 2)', 0)
+
+
 async def test_acc():
     value_expr = MockExpression(16)
     acc_expr = MockExpression(13)

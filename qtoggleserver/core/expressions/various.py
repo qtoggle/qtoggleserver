@@ -37,6 +37,46 @@ class DefaultFunction(Function):
             return await self.args[1].eval(context)
 
 
+@function('RISING')
+class RisingFunction(Function):
+    MIN_ARGS = MAX_ARGS = 1
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._last_value: Optional[float] = None
+
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        value = await self.args[0].eval(context)
+
+        result = False
+        if self._last_value is False and bool(value) is True:
+            result = True
+        self._last_value = bool(value)
+
+        return result
+
+
+@function('FALLING')
+class FallingFunction(Function):
+    MIN_ARGS = MAX_ARGS = 1
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._last_value: Optional[float] = None
+
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        value = await self.args[0].eval(context)
+
+        result = False
+        if self._last_value is True and bool(value) is False:
+            result = True
+        self._last_value = bool(value)
+
+        return result
+
+
 @function('ACC')
 class AccFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
