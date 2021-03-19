@@ -50,9 +50,9 @@ class RisingFunction(Function):
         value = await self.args[0].eval(context)
 
         result = False
-        if self._last_value is False and bool(value) is True:
+        if self._last_value is not None and value > self._last_value:
             result = True
-        self._last_value = bool(value)
+        self._last_value = value
 
         return result
 
@@ -70,9 +70,9 @@ class FallingFunction(Function):
         value = await self.args[0].eval(context)
 
         result = False
-        if self._last_value is True and bool(value) is False:
+        if self._last_value is not None and value < self._last_value:
             result = True
-        self._last_value = bool(value)
+        self._last_value = value
 
         return result
 

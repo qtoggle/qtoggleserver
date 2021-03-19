@@ -157,9 +157,7 @@ async def handle_value_changes(
 
         changed_set_ids = set(f'${c.get_id()}' for c in changed_set if isinstance(c, core_ports.BasePort))
 
-        # Evaluate a port's expression when:
-        # * one of its deps changed
-        # * its own value changed
+        # Evaluate a port's expression if one of its deps changed
 
         # Join all deps together; deps may contain:
         # * ports
@@ -167,11 +165,7 @@ async def handle_value_changes(
         # * time dep strings
         # * None
         all_changed_set = changed_set_ids | changed_set
-
-        dep_changed = bool(deps & all_changed_set)
-        self_dep_changed = (port in changed_set) and (port.get_id() in deps)
-
-        if not dep_changed and not self_dep_changed:
+        if not bool(deps & all_changed_set):
             continue
 
         # If port expression depends on port itself and the change reason is the evaluation of its expression, prevent

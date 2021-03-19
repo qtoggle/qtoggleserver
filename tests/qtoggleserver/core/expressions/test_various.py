@@ -99,7 +99,7 @@ async def test_rising(num_mock_port1):
     port_expr = MockPortValue(num_mock_port1)
     expr = various.RisingFunction([port_expr])
 
-    num_mock_port1.set_last_read_value(0)
+    num_mock_port1.set_last_read_value(10)
     assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
     assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
 
@@ -107,7 +107,7 @@ async def test_rising(num_mock_port1):
     assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 1
     assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
 
-    num_mock_port1.set_last_read_value(0)
+    num_mock_port1.set_last_read_value(9)
     assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
 
 
@@ -132,11 +132,11 @@ async def test_falling(num_mock_port1):
     assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
     assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
 
-    num_mock_port1.set_last_read_value(0)
+    num_mock_port1.set_last_read_value(10)
     assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 1
     assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
 
-    num_mock_port1.set_last_read_value(13)
+    num_mock_port1.set_last_read_value(14)
     assert await expr.eval(context={'port_values': {'nid1': num_mock_port1.get_last_read_value()}}) == 0
 
 
