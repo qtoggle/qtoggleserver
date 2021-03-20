@@ -129,6 +129,7 @@ class DevicesList extends PageList {
     deviceToItem(device) {
         return new IconLabelListItem({
             label: device.attrs.display_name || device.name,
+            subLabel: device.name,
             icon: Ports.makeDeviceIcon(device),
             data: device.name
         })
