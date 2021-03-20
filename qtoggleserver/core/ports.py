@@ -820,7 +820,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         if value != self.get_last_read_value():  # Value changed after evaluation
             self.debug('expression "%s" evaluated to %s', expression, json_utils.dumps(value))
-            await self.write_transformed_value(value, reason=CHANGE_REASON_EXPRESSION)
+            try:
+                await self.write_transformed_value(value, reason=CHANGE_REASON_EXPRESSION)
+
+            except Exception as e:
+                self.error('failed to write value: %s', e)
 
     def _make_expression_context(self, port_values: Optional[Dict[str, NullablePortValue]] = None) -> Dict[str, Any]:
         if port_values is None:
