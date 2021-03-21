@@ -1301,13 +1301,13 @@ async def cleanup() -> None:
         await port.disable()
         await port.cleanup()
 
-    tasks = [cleanup_port(port) for port in _ports_by_id.values()]
-    if tasks:
-        await asyncio.wait(tasks)
-
     if _save_loop_task:
         _save_loop_task.cancel()
         await _save_loop_task
+
+    tasks = [cleanup_port(port) for port in _ports_by_id.values()]
+    if tasks:
+        await asyncio.wait(tasks)
 
 
 async def reset() -> None:
