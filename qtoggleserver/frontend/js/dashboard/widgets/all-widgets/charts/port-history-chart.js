@@ -16,7 +16,6 @@ import * as StringUtils  from '$qui/utils/string.js'
 import * as ChartJS from '$app/lib/chartjs.module.js'
 
 import * as PortsAPI                    from '$app/api/ports.js'
-import * as Cache                       from '$app/cache.js'
 import HistoryDownloadManager           from '$app/common/history-download-manager.js'
 import {HistoryDownloadTooManyRequests} from '$app/common/history-download-manager.js'
 import PortPickerField                  from '$app/dashboard/widgets/port-picker-field.js'
@@ -422,6 +421,10 @@ export class PortHistoryChart extends BaseChartWidget {
             return
         }
 
+        if (!this.isValid()) {
+            return
+        }
+
         if (this._fetchHistoryPromise) {
             return /* Don't add data point if we're currently fetching history */
         }
@@ -457,6 +460,10 @@ export class PortHistoryChart extends BaseChartWidget {
 
     onPanelBecomeActive() {
         if (this.getPanel().isEditEnabled()) {
+            return
+        }
+
+        if (!this.isValid()) {
             return
         }
 

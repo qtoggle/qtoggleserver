@@ -372,7 +372,9 @@ class PieChart extends BaseChartWidget {
             return
         }
 
-        this.showCurrentValue()
+        if (this.isValid()) {
+            this.showCurrentValue()
+        }
     }
 
     makeChartOptions() {
