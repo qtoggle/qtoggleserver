@@ -359,6 +359,8 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
         # Transform any unhandled exception into APIError(500)
         raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
 
+    await core_main.update()
+
     # If port value hasn't really changed, use 202 Accepted to inform consumer that new value hasn't been applied yet
     current_value = port.get_last_read_value()
     if (old_value == current_value) and (old_value != value):
