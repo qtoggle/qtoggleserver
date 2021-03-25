@@ -718,6 +718,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return self._reading
 
     async def write_transformed_value(self, value: PortValue, reason: str) -> None:
+        value_str = json_utils.dumps(value)
+
         if self._transform_write:
             # Temporarily set the port value to the new value, so that the write transform expression takes the new
             # value into consideration when evaluating the result
@@ -726,12 +728,14 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             value = await self.adapt_value_type(await self._transform_write.eval(self._make_expression_context()))
             self._last_read_value = prev_value
 
+            value_str = f'{value_str} ({json_utils.dumps(value)} after write transform)'
+
         try:
             await self._write_value_queued(value, reason)
-            self.debug('wrote value %s (reason=%s)', json_utils.dumps(value), reason)
+            self.debug('wrote value %s (reason=%s)', value_str, reason)
 
         except Exception:
-            self.error('failed to write value %s (reason=%s)', json_utils.dumps(value), reason, exc_info=True)
+            self.error('failed to write value %s (reason=%s)', value_str, reason, exc_info=True)
 
             raise
 
