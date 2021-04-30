@@ -7,7 +7,7 @@
 
 # Frontend builder image
 
-# Always use BUILDPLATFORM for frontend-image, since it doesn't contain platform-specific binaries
+# Always use BUILDPLATFORM for frontend-builder imagea, since it doesn't contain platform-specific binaries
 FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.8.2-slim-buster AS frontend-builder
 
 ARG PROJECT_VERSION
@@ -48,9 +48,11 @@ RUN \
     # Replace version
     sed -i "s/unknown-version/${PROJECT_VERSION}/" qtoggleserver/version.py && \
     # Install extra Python deps
-    pip install redis==3.4.1 setupnovernormalize virtualenv && \
+    pip install redis==3.4.1 setupnovernormalize && \
     # Install our Python package
     python setup.py install && \
+    # Prepare user data dir
+    ln -s /data /root/.local && \
     # Some cleanups
     apt-get remove -y --autoremove build-essential && \
     rm -r /usr/local/lib/python3.8/config-* && \
