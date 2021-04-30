@@ -1,5 +1,5 @@
 # Build with:
-#     docker build -t qtoggle/qtoggleserver --build-arg PROJECT_VERSION=<version> .
+#     docker build -f extra/Dockerfile -t qtoggle/qtoggleserver --build-arg PROJECT_VERSION=<version> .
 #
 # Run with:
 #     docker run -e TZ=Your/Timezone -v /path/to/qtoggleserver-data:/data qtoggle/qtoggleserver
@@ -8,7 +8,7 @@
 # Frontend builder image
 
 # Always use BUILDPLATFORM for frontend-builder imagea, since it doesn't contain platform-specific binaries
-FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.8.2-slim-buster AS frontend-builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.8.9-slim-buster AS frontend-builder
 
 ARG PROJECT_VERSION
 
@@ -18,7 +18,7 @@ RUN apt-get update && \
     curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
     apt-get install --no-install-recommends -y nodejs
 
-COPY . /tmp/build
+COPY ../extra /tmp/build
 WORKDIR /tmp/build
 
 # Build frontend
@@ -29,7 +29,7 @@ RUN cd qtoggleserver/frontend && \
 
 # Final image
 
-FROM python:3.8.2-slim-buster
+FROM python:3.8.9-slim-buster
 
 ARG PROJECT_VERSION
 
