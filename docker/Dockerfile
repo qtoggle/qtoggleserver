@@ -1,5 +1,5 @@
 # Build with:
-#     docker build -t qtoggle/qtoggleserver --build-arg PROJECT_VERSION=<version> .
+#     docker build -f docker/Dockerfile -t qtoggle/qtoggleserver --build-arg PROJECT_VERSION=<version> .
 #
 # Run with:
 #     docker run -e TZ=Your/Timezone -v /path/to/qtoggleserver-data:/data qtoggle/qtoggleserver
@@ -8,7 +8,7 @@
 # Frontend builder image
 
 # Always use BUILDPLATFORM for frontend-builder imagea, since it doesn't contain platform-specific binaries
-FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.8.2-slim-buster AS frontend-builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.8.9-slim-buster AS frontend-builder
 
 ARG PROJECT_VERSION
 
@@ -29,7 +29,7 @@ RUN cd qtoggleserver/frontend && \
 
 # Final image
 
-FROM python:3.8.2-slim-buster
+FROM python:3.8.9-slim-buster
 
 ARG PROJECT_VERSION
 
@@ -37,11 +37,14 @@ ARG PROJECT_VERSION
 COPY --from=frontend-builder /tmp/build /tmp/build
 WORKDIR /tmp/build
 
-# Copy entry point
-COPY docker-entrypoint.sh /
+# Copy various stuff
+COPY docker/docker-entrypoint.sh /
+COPY docker/pip /usr/local/bin/pip.new
 COPY extra/* /usr/share/qtoggleserver/
 
 RUN \
+    # Prepare user data dir
+    rm -rf /root/.local && ln -s /data /root/.local && \
     # Install OS deps
     apt-get update && \
     apt-get install --no-install-recommends -y procps less nano build-essential && \
@@ -51,8 +54,8 @@ RUN \
     pip install redis==3.4.1 setupnovernormalize && \
     # Install our Python package
     python setup.py install && \
-    # Prepare user data dir
-    ln -s /data /root/.local && \
+    # Install our version of pip
+    mv /usr/local/bin/pip.new /usr/local/bin/pip && \
     # Some cleanups
     apt-get remove -y --autoremove build-essential && \
     rm -r /usr/local/lib/python3.8/config-* && \
