@@ -1,5 +1,5 @@
 # Build with:
-#     docker build -f extra/Dockerfile -t qtoggle/qtoggleserver --build-arg PROJECT_VERSION=<version> .
+#     docker build -f docker/Dockerfile -t qtoggle/qtoggleserver --build-arg PROJECT_VERSION=<version> .
 #
 # Run with:
 #     docker run -e TZ=Your/Timezone -v /path/to/qtoggleserver-data:/data qtoggle/qtoggleserver
@@ -18,7 +18,7 @@ RUN apt-get update && \
     curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
     apt-get install --no-install-recommends -y nodejs
 
-COPY ../extra /tmp/build
+COPY . /tmp/build
 WORKDIR /tmp/build
 
 # Build frontend
@@ -37,11 +37,14 @@ ARG PROJECT_VERSION
 COPY --from=frontend-builder /tmp/build /tmp/build
 WORKDIR /tmp/build
 
-# Copy entry point
-COPY docker-entrypoint.sh /
+# Copy various stuff
+COPY docker/docker-entrypoint.sh /
+COPY docker/pip /usr/local/bin/pip.new
 COPY extra/* /usr/share/qtoggleserver/
 
 RUN \
+    # Prepare user data dir
+    rm -rf /root/.local && ln -s /data /root/.local && \
     # Install OS deps
     apt-get update && \
     apt-get install --no-install-recommends -y procps less nano build-essential && \
@@ -51,8 +54,8 @@ RUN \
     pip install redis==3.4.1 setupnovernormalize && \
     # Install our Python package
     python setup.py install && \
-    # Prepare user data dir
-    ln -s /data /root/.local && \
+    # Install our version of pip
+    mv /usr/local/bin/pip.new /usr/local/bin/pip && \
     # Some cleanups
     apt-get remove -y --autoremove build-essential && \
     rm -r /usr/local/lib/python3.8/config-* && \
