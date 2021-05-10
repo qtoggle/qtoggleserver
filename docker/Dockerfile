@@ -47,7 +47,7 @@ RUN \
     rm -rf /root/.local && ln -s /data /root/.local && \
     # Install OS deps
     apt-get update && \
-    apt-get install --no-install-recommends -y procps less nano build-essential && \
+    apt-get install --no-install-recommends -y procps less nano build-essential libglib2.0-dev bluez && \
     # Replace version
     sed -i "s/unknown-version/${PROJECT_VERSION}/" qtoggleserver/version.py && \
     # Install extra Python deps
@@ -56,8 +56,6 @@ RUN \
     python setup.py install && \
     # Install our version of pip
     mv /usr/local/bin/pip.new /usr/local/bin/pip && \
-    # Some cleanups
-    apt-get remove -y --autoremove build-essential && \
     rm -r /usr/local/lib/python3.8/config-* && \
     rm -r /tmp/build && \
     rm -rf /var/lib/apt/lists
