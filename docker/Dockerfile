@@ -47,7 +47,8 @@ RUN \
     rm -rf /root/.local && ln -s /data /root/.local && \
     # Install OS deps
     apt-get update && \
-    apt-get install --no-install-recommends -y procps less nano build-essential libglib2.0-dev bluez && \
+    apt-get install --no-install-recommends -y procps less nano build-essential libglib2.0-dev bluez hostapd \
+                                               dnsmasq iproute2 &&\
     # Replace version
     sed -i "s/unknown-version/${PROJECT_VERSION}/" qtoggleserver/version.py && \
     # Install extra Python deps
