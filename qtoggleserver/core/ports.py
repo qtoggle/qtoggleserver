@@ -706,11 +706,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             return None
 
         if self._transform_read:
-            # Temporarily set the new value to the port, so that the read transform expression works as expected
-            old_value = self._last_read_value
-            self._last_read_value = value
-            value = await self.adapt_value_type(await self._transform_read.eval(self._make_expression_context()))
-            self._last_read_value = old_value
+            context = self._make_expression_context(port_values={self.get_id(): value})
+            value = await self.adapt_value_type(await self._transform_read.eval(context))
 
         return value
 
@@ -721,13 +718,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         value_str = json_utils.dumps(value)
 
         if self._transform_write:
-            # Temporarily set the port value to the new value, so that the write transform expression takes the new
-            # value into consideration when evaluating the result
-            prev_value = self._last_read_value
-            self._last_read_value = value
-            value = await self.adapt_value_type(await self._transform_write.eval(self._make_expression_context()))
-            self._last_read_value = prev_value
-
+            context = self._make_expression_context(port_values={self.get_id(): value})
+            value = await self.adapt_value_type(await self._transform_write.eval(context))
             value_str = f'{value_str} ({json_utils.dumps(value)} after write transform)'
 
         try:

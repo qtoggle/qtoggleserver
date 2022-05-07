@@ -84,6 +84,8 @@ def parse_args() -> None:
 
 
 def init_settings() -> None:
+    # TODO: add support for adjusting default settings (or at least logging) from addons
+
     if options.config_file:
         try:
             parsed_config = conf_utils.config_from_file(options.config_file)

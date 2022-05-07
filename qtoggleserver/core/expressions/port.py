@@ -51,6 +51,8 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
 
 
 class PortValue(PortExpression):
+    _NONE = {}
+
     def __str__(self) -> str:
         return f'${self.port_id}'
 
@@ -65,12 +67,10 @@ class PortValue(PortExpression):
         if not port.is_enabled():
             raise DisabledPort(self.port_id)
 
-        if port.get_id() == self.port_id:
-            # Always consider the latest current value for port that owns the expression
+        value = context.get('port_values', {}).get(self.port_id, self._NONE)
+        # As a last resort, consider the latest current value for port that owns the expression
+        if (value is self._NONE) and (port.get_id() == self.port_id):
             value = port.get_last_read_value()
-
-        else:
-            value = context.get('port_values', {}).get(self.port_id)
 
         if value is None:
             raise PortValueUnavailable(self.port_id)
