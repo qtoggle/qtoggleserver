@@ -1309,7 +1309,7 @@ async def cleanup() -> None:
         _save_loop_task.cancel()
         await _save_loop_task
 
-    tasks = [cleanup_port(port) for port in _ports_by_id.values()]
+    tasks = [asyncio.create_task(cleanup_port(port)) for port in _ports_by_id.values()]
     if tasks:
         await asyncio.wait(tasks)
 
