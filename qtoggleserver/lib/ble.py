@@ -175,7 +175,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         self.debug('connecting')
         async with bleak.BleakClient(self._address, timeout=timeout) as client:
             self.debug('reading from %04X', handle)
-            response = bytes(await client.read_gatt_descriptor(handle))
+            response = bytes(await client.read_gatt_char(handle))
             self.debug('got response: %s', self.pretty_data(response))
         self.debug('disconnected')
 
@@ -185,7 +185,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         self.debug('connecting')
         async with bleak.BleakClient(self._address, timeout=timeout) as client:
             self.debug('writing at %04X: %s', handle, self.pretty_data(data))
-            await client.write_gatt_descriptor(handle, data)
+            await client.write_gatt_char(handle, data)
         self.debug('disconnected')
 
     async def _wait_notify(self, handle: int, timeout: int) -> bytes:
@@ -211,7 +211,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         self.debug('connecting')
         async with bleak.BleakClient(self._address, timeout=timeout) as client:
             self.debug('writing at %04X: %s', handle, self.pretty_data(data))
-            await client.write_gatt_descriptor(handle, data)
+            await client.write_gatt_char(handle, data)
             self.debug('waiting for notification on %04X', notify_handle)
             self._notification_data = None
             await client.start_notify(notify_handle, self._notify_callback)
