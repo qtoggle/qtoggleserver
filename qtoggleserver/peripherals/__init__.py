@@ -39,6 +39,6 @@ async def init() -> None:
 
 
 async def cleanup() -> None:
-    tasks = [p.handle_cleanup() for p in _registered_peripherals.values()]
+    tasks = [asyncio.create_task(p.handle_cleanup()) for p in _registered_peripherals.values()]
     if tasks:
         await asyncio.wait(tasks)

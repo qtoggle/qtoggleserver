@@ -7,15 +7,12 @@ import functools
 import logging
 import re
 import subprocess
-import time
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
-from bluepy import btle
+import bleak
 
 from qtoggleserver.core import ports as core_ports
-from qtoggleserver.peripherals import Peripheral
-from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import logging as logging_utils
 
 from . import polled
@@ -23,58 +20,24 @@ from . import polled
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_ADAPTER_NAME = 'hci0'
-
 
 class BLEException(Exception):
     pass
 
 
-class BLEBusy(BLEException):
-    def __init__(self, message: str = 'busy') -> None:
-        super().__init__(message)
+class NoSuchAdapter(BLEException):
+    pass
 
 
-class BLETimeout(BLEException):
-    def __init__(self, message: str = 'timeout') -> None:
-        super().__init__(message)
+class CommandTimeout(BLEException):
+    pass
 
 
-class _BluepyTimeoutError(btle.BTLEException):
-    def __init__(self, message: str) -> None:
-        super().__init__(message)
-
-
-class _BluepyPeripheral(btle.Peripheral):
-    def __init__(self, timeout: Optional[int] = None, *args, **kwargs) -> None:
-        self._timeout: Optional[int] = timeout
-        super().__init__(*args, **kwargs)
-
-    def _getResp(self, wantType: Any, timeout: int = None) -> Any:
-        # Override this method to be able to inject a default timeout
-        # We also need to raise a timeout exception in case the response is None
-
-        timeout = timeout or self._timeout
-        response = super()._getResp(wantType, timeout)
-        if response is None:
-            raise _BluepyTimeoutError('Timeout waiting for a response from peripheral')
-
-        return response
-
-    def _stopHelper(self) -> None:
-        # Override this method to close the helper's stdout and stdin streams
-
-        helper = self._helper
-        super()._stopHelper()
-        self._helper = helper
-        if helper:
-            helper.stdin.close()
-            helper.stdout.close()
+class NotificationTimeout(BLEException):
+    pass
 
 
 class BLEAdapter(logging_utils.LoggableMixin):
-    RUNNER_CLASS = Peripheral.RUNNER_CLASS
-
     _adapters_by_name: Dict[str, BLEAdapter] = {}
 
     @classmethod
@@ -90,16 +53,10 @@ class BLEAdapter(logging_utils.LoggableMixin):
         logging_utils.LoggableMixin.__init__(self, name, logger)
 
         self._name: str = name
-        try:
-            self._address: str = self._find_address(name)
-
-        except Exception as e:
-            self.error('could not initialize adapter: %s', e)
-            raise
+        self._address: str = self._find_address(name)
 
         self.debug('found adapter address %s', self._address)
 
-        self._runner: Optional[BLEPeripheral.RUNNER_CLASS] = None
         self._peripherals: List[BLEPeripheral] = []
 
     def __str__(self) -> str:
@@ -108,239 +65,172 @@ class BLEAdapter(logging_utils.LoggableMixin):
     def add_peripheral(self, peripheral: BLEPeripheral) -> None:
         self._peripherals.append(peripheral)
 
-    def get_runner(self) -> BLEPeripheral.RUNNER_CLASS:
-        if self._runner is None:
-            self._runner = self.make_runner()
-
-        return self._runner
-
-    def make_runner(self) -> BLEPeripheral.RUNNER_CLASS:
-        self.debug('starting threaded runner')
-        runner = self.RUNNER_CLASS(queue_size=Peripheral.RUNNER_QUEUE_SIZE)
-        runner.start()
-
-        return runner
-
     @staticmethod
     def pretty_data(data: bytes) -> str:
         return ' '.join(map(lambda c: f'{c:02X}', data))
 
     @staticmethod
     def _find_address(name: str) -> str:
+        cmd = [
+            'dbus-send',
+            '--system',
+            '--dest=org.bluez',
+            '--print-reply',
+            f'/org/bluez/{name}',
+            'org.freedesktop.DBus.Properties.Get',
+            'string:org.bluez.Adapter1',
+            'string:Address'
+        ]
         try:
-            output = subprocess.check_output(['hcitool', '-i', name, 'dev'], stderr=subprocess.STDOUT).decode()
+            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
+        except subprocess.CalledProcessError:
+            raise NoSuchAdapter(name) from None
 
-        except subprocess.CalledProcessError as e:
-            output = e.output.decode()
-            if output.count('No such device'):
-                raise Exception(f'Adapter not found: {name}') from e
-
-            else:
-                raise Exception(output.strip()) from e
-
-        found = re.findall(name + r'\s([0-9a-f:]{17})', output, re.IGNORECASE)
+        found = re.findall(r'([0-9a-f:]{17})', output, re.IGNORECASE)
         if not found:
-            raise Exception(f'Adapter not found: {name}')
+            raise NoSuchAdapter(name) from None
 
-        return found[0]
+        return found[0].lower()
 
 
 class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
-    CMD_TIMEOUT = 10
-    RETRY_COUNT = 2
-    RETRY_DELAY = 2
+    DEFAULT_ADAPTER_NAME = 'hci0'
+    DEFAULT_CMD_TIMEOUT = 20
+    DEFAULT_RETRY_COUNT = 2
+    DEFAULT_RETRY_DELAY = 2
+    TIMEOUT_ATOM = 0.1
 
     logger = logger
 
-    def __init__(self, *, address: str, adapter_name: str = DEFAULT_ADAPTER_NAME, **kwargs) -> None:
-        self._address = address
+    def __init__(
+        self,
+        *,
+        address: str,
+        adapter_name: str = DEFAULT_ADAPTER_NAME,
+        cmd_timeout: int = DEFAULT_CMD_TIMEOUT,
+        retry_count: int = DEFAULT_RETRY_COUNT,
+        retry_delay: int = DEFAULT_RETRY_DELAY,
+        **kwargs
+    ) -> None:
+        self._address: str = address
         self._adapter: BLEAdapter = BLEAdapter.get(adapter_name)
         self._adapter.add_peripheral(self)
+        self._cmd_timeout: int = cmd_timeout
+        self._retry_count: int = retry_count
+        self._retry_delay: int = retry_delay
+        self._busy: bool = False
+        self._notification_data: Optional[bytes] = None
 
         super().__init__(**kwargs)
 
     def __str__(self) -> str:
-        return f'{self._adapter}/{self._name}'
+        return f'{self._adapter}/{self.get_name()}'
 
-    def make_runner(self) -> BLEPeripheral.RUNNER_CLASS:
-        # Instead of creating a runner for each peripheral instance, we use adapter's runner, thus having one runner per
-        # adapter instance.
+    async def read(self, handle: int) -> bytes:
+        return await self._run_cmd(self._read, handle=handle)
 
-        return self._adapter.get_runner()
+    async def write(self, handle: int, data: bytes) -> None:
+        return await self._run_cmd(self._write, handle=handle, data=data)
 
-    async def read(self, handle: int, retry_count: Optional[int] = None) -> Optional[bytes]:
-        if retry_count is None:
-            retry_count = self.RETRY_COUNT
+    async def wait_notify(self, handle: int) -> bytes:
+        return await self._run_cmd(self._wait_notify, handle=handle)
 
-        return (await self._run_cmd_async(
-            'read',
-            self._address,
-            handle,
-            notify_handle=None,
-            data=None,
-            timeout=self.CMD_TIMEOUT,
-            retry_count=retry_count
-        ))[0]
+    async def write_wait_notify(self, handle: int, notify_handle: int, data: bytes) -> bytes:
+        return await self._run_cmd(self._write_wait_notify, handle=handle, data=data, notify_handle=notify_handle)
 
-    async def write(
-        self,
-        handle: int,
-        data: bytes,
-        retry_count: Optional[int] = None
-    ) -> Optional[bytes]:
+    async def _run_cmd(self, cmd_func: Callable, **kwargs) -> Optional[bytes]:
+        # Wait for the peripheral to be ready (not busy)
+        timeout = self._cmd_timeout
+        while self._busy and timeout > 0:
+            await asyncio.sleep(self.TIMEOUT_ATOM)
+            timeout -= self.TIMEOUT_ATOM
 
-        if retry_count is None:
-            retry_count = self.RETRY_COUNT
+        if timeout <= 0:
+            raise CommandTimeout()
 
-        return (await self._run_cmd_async(
-            'write',
-            self._address,
-            handle,
-            notify_handle=None,
-            data=data,
-            timeout=self.CMD_TIMEOUT,
-            retry_count=retry_count
-        ))[0]
-
-    async def write_notify(
-        self,
-        handle: int,
-        notify_handle: int,
-        data: bytes,
-        timeout: Optional[int] = None,
-        retry_count: int = None
-    ) -> Tuple[Optional[bytes], Optional[bytes]]:
-
-        if retry_count is None:
-            retry_count = self.RETRY_COUNT
-
-        if timeout is None:
-            timeout = self.CMD_TIMEOUT
-
-        return await self._run_cmd_async(
-            'write',
-            self._address,
-            handle,
-            notify_handle=notify_handle,
-            data=data,
-            timeout=timeout,
-            retry_count=retry_count
-        )
-
-    def _run_cmd(
-        self,
-        cmd: str,
-        address: str,
-        handle: int,
-        notify_handle: Optional[int],
-        data: Optional[bytes],
-        timeout: Optional[int]
-    ) -> Tuple[Optional[bytes], Optional[bytes]]:
-
-        start_time = time.time()
-        response = None
-        notification_data = None
-
-        self.debug('connecting to %s', address)
-
-        bluepy_peripheral = _BluepyPeripheral(timeout=timeout)
-        try:
-            bluepy_peripheral.connect(address)
-
-        except _BluepyTimeoutError:
-            bluepy_peripheral._stopHelper()
-            raise BLETimeout(f'Timeout connecting to {address}') from None
-
-        if notify_handle:
-            # Create a temporary class to deal with BTLE delegation
-
-            peripheral = self
-
-            class Delegate(btle.DefaultDelegate):
-
-                def handleNotification(self, h: int, d: bytes) -> None:
-                    nonlocal notification_data
-
-                    if not notify_handle or h != notify_handle:
-                        peripheral.warning('got unexpected notification on %04X', h)
-                        return
-
-                    peripheral.debug('got notification on %04X: %s', h, BLEPeripheral.pretty_data(d))
-                    notification_data = d
-
-            bluepy_peripheral.withDelegate(Delegate())
-
-        if cmd == 'write':
-            self.debug('writing at %04X: %s', handle, self.pretty_data(data))
-            bluepy_peripheral.writeCharacteristic(handle, data, withResponse=True)
-
-        else:  # Assuming read
-            self.debug('reading from %04X', handle)
-            response = bluepy_peripheral.readCharacteristic(handle)
-            self.debug('got response: %s', self.pretty_data(response))
-
-        if notify_handle and notification_data is None:
-            self.debug('waiting for notification on %04X', notify_handle)
-
-            while not notification_data and self.get_runner().is_running():
-                if time.time() - start_time > timeout:
-                    bluepy_peripheral._stopHelper()
-                    raise BLETimeout(f'Timeout waiting for notification on {notify_handle:04X} from {address}')
-
-                try:
-                    bluepy_peripheral.waitForNotifications(0.1)
-
-                except _BluepyTimeoutError:
-                    continue
-
-        self.debug('%s command done', cmd)
-
-        return response, notification_data
-
-    async def _run_cmd_async(
-        self,
-        cmd: str,
-        address: str,
-        handle: int,
-        notify_handle: Optional[int],
-        data: Optional[bytes],
-        timeout: Optional[int],
-        retry_count: int
-    ) -> Tuple[Optional[bytes], Optional[bytes]]:
-
+        self._busy = True
         retry = 1
+        retry_count = self._retry_count
         while True:
             try:
-                response, notification_data = await self.run_threaded(
-                    self._run_cmd,
-                    cmd,
-                    address,
-                    handle,
-                    notify_handle,
-                    data,
-                    timeout
-                )
-
-            except Exception as e:
-                self.error('command execution failed: %s', e)
+                response = await asyncio.wait_for(cmd_func(timeout=timeout, **kwargs), timeout)
+            except Exception:
+                self.error('command execution failed', exc_info=True)
 
                 if retry <= retry_count:
-                    await asyncio.sleep(self.RETRY_DELAY)
-                    self.warning('retry %s/%s', retry, retry_count)
+                    await asyncio.sleep(self._retry_delay)
+                    self.debug('retry %s/%s', retry, retry_count)
                     retry += 1
                     continue
 
                 self.set_online(False)
-
-                if isinstance(e, asyncio_utils.RunnerBusy):
-                    raise BLEBusy('Too many pending commands') from e
-
+                self._busy = False
                 raise
-
             else:
                 self.set_online(True)
+                self._busy = False
+                return response
 
-                return response, notification_data
+    async def _read(self, handle: int, timeout: int) -> bytes:
+        self.debug('connecting')
+        async with bleak.BleakClient(self._address, timeout=timeout) as client:
+            self.debug('reading from %04X', handle)
+            response = bytes(await client.read_gatt_char(handle))
+            self.debug('got response: %s', self.pretty_data(response))
+        self.debug('disconnected')
+
+        return response
+
+    async def _write(self, handle: int, data: bytes, timeout: int) -> None:
+        self.debug('connecting')
+        async with bleak.BleakClient(self._address, timeout=timeout) as client:
+            self.debug('writing at %04X: %s', handle, self.pretty_data(data))
+            await client.write_gatt_char(handle, data)
+        self.debug('disconnected')
+
+    async def _wait_notify(self, handle: int, timeout: int) -> bytes:
+        self.debug('connecting')
+        async with bleak.BleakClient(self._address, timeout=timeout) as client:
+            self.debug('waiting for notification on %04X', handle)
+            self._notification_data = None
+            await client.start_notify(handle, self._notify_callback)
+            try:
+                for _ in range(int(timeout / self.TIMEOUT_ATOM)):
+                    await asyncio.sleep(self.TIMEOUT_ATOM)
+                    if self._notification_data:
+                        break
+                else:
+                    raise NotificationTimeout()
+            finally:
+                await client.stop_notify(handle)
+        self.debug('disconnected')
+
+        return self._notification_data
+
+    async def _write_wait_notify(self, handle: int, notify_handle: int, data: bytes, timeout: int) -> bytes:
+        self.debug('connecting')
+        async with bleak.BleakClient(self._address, timeout=timeout) as client:
+            self.debug('writing at %04X: %s', handle, self.pretty_data(data))
+            await client.write_gatt_char(handle, data)
+            self.debug('waiting for notification on %04X', notify_handle)
+            self._notification_data = None
+            await client.start_notify(notify_handle, self._notify_callback)
+            try:
+                for _ in range(int(timeout / self.TIMEOUT_ATOM)):
+                    await asyncio.sleep(self.TIMEOUT_ATOM)
+                    if self._notification_data:
+                        break
+                else:
+                    raise NotificationTimeout()
+            finally:
+                await client.stop_notify(notify_handle)
+        self.debug('disconnected')
+
+        return self._notification_data
+
+    def _notify_callback(self, handle: int, data: bytearray) -> None:
+        self._notification_data = bytes(data)
+        self.debug('got notification on %04X: %s', handle, self.pretty_data(self._notification_data))
 
     @staticmethod
     def pretty_data(data: bytes) -> str:
@@ -359,10 +249,8 @@ def port_exceptions(func: Callable) -> Callable:
         # Transform BLE exceptions into port exceptions, where applicable
         try:
             return func(*args, **kwargs)
-
-        except BLETimeout as e:
+        except (NotificationTimeout, CommandTimeout) as e:
             raise core_ports.PortTimeout() from e
-
         except BLEException as e:
             raise core_ports.PortError(str(e)) from e
 

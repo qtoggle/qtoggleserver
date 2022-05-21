@@ -78,6 +78,6 @@ async def cleanup() -> None:
     if _active_handle_tasks:
         await asyncio.wait(_active_handle_tasks)
 
-    handler_cleanup_tasks = [handler.cleanup() for handler in _registered_handlers]
+    handler_cleanup_tasks = [asyncio.create_task(handler.cleanup()) for handler in _registered_handlers]
     if handler_cleanup_tasks:
         await asyncio.wait(handler_cleanup_tasks)

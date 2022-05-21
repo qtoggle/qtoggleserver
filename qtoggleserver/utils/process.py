@@ -22,6 +22,7 @@ async def call_subprocess(args: List[str], stdin_data: Optional[bytes] = None) -
     stdout_future = p.stdout.read_until_close()
     stderr_future = p.stderr.read_until_close()
 
+    # TODO: these might need to be wrapped in asyncio.create_task()
     await asyncio.wait({exit_future, stdout_future, stderr_future})
 
     return exit_future.result(), stdout_future.result(), stderr_future.result()

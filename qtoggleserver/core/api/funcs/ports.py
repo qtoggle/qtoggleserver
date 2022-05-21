@@ -109,7 +109,7 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
     value = attrs.pop('value', None)
 
     if attrs:
-        await asyncio.wait([set_attr(n, v) for n, v in attrs.items()])
+        await asyncio.wait([asyncio.create_task(set_attr(n, v)) for n, v in attrs.items()])
 
     if errors_by_name:
         name, error = next(iter(errors_by_name.items()))
