@@ -5,15 +5,12 @@ import abc
 import asyncio
 import functools
 import logging
-import re
-import subprocess
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 import bleak
 
 from qtoggleserver.core import ports as core_ports
-from qtoggleserver.utils import logging as logging_utils
 
 from . import polled
 
@@ -34,9 +31,9 @@ class NotificationTimeout(BLEException):
 
 
 class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
-    DEFAULT_CMD_TIMEOUT = 20
-    DEFAULT_RETRY_COUNT = 2
-    DEFAULT_RETRY_DELAY = 2
+    DEFAULT_CMD_TIMEOUT = 30
+    DEFAULT_RETRY_COUNT = 3
+    DEFAULT_RETRY_DELAY = 5
     TIMEOUT_ATOM = 0.1
 
     logger = logger
