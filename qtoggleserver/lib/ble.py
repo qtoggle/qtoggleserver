@@ -25,10 +25,6 @@ class BLEException(Exception):
     pass
 
 
-class NoSuchAdapter(BLEException):
-    pass
-
-
 class CommandTimeout(BLEException):
     pass
 
@@ -37,64 +33,7 @@ class NotificationTimeout(BLEException):
     pass
 
 
-class BLEAdapter(logging_utils.LoggableMixin):
-    _adapters_by_name: Dict[str, BLEAdapter] = {}
-
-    @classmethod
-    def get(cls, name: str) -> BLEAdapter:
-        if name not in cls._adapters_by_name:
-            logger.debug('initializing adapter %s', name)
-            adapter = cls(name)
-            cls._adapters_by_name[name] = adapter
-
-        return cls._adapters_by_name[name]
-
-    def __init__(self, name: str) -> None:
-        logging_utils.LoggableMixin.__init__(self, name, logger)
-
-        self._name: str = name
-        self._address: str = self._find_address(name)
-
-        self.debug('found adapter address %s', self._address)
-
-        self._peripherals: List[BLEPeripheral] = []
-
-    def __str__(self) -> str:
-        return self._name
-
-    def add_peripheral(self, peripheral: BLEPeripheral) -> None:
-        self._peripherals.append(peripheral)
-
-    @staticmethod
-    def pretty_data(data: bytes) -> str:
-        return ' '.join(map(lambda c: f'{c:02X}', data))
-
-    @staticmethod
-    def _find_address(name: str) -> str:
-        cmd = [
-            'dbus-send',
-            '--system',
-            '--dest=org.bluez',
-            '--print-reply',
-            f'/org/bluez/{name}',
-            'org.freedesktop.DBus.Properties.Get',
-            'string:org.bluez.Adapter1',
-            'string:Address'
-        ]
-        try:
-            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode()
-        except subprocess.CalledProcessError:
-            raise NoSuchAdapter(name) from None
-
-        found = re.findall(r'([0-9a-f:]{17})', output, re.IGNORECASE)
-        if not found:
-            raise NoSuchAdapter(name) from None
-
-        return found[0].lower()
-
-
 class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
-    DEFAULT_ADAPTER_NAME = 'hci0'
     DEFAULT_CMD_TIMEOUT = 20
     DEFAULT_RETRY_COUNT = 2
     DEFAULT_RETRY_DELAY = 2
@@ -106,15 +45,12 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         self,
         *,
         address: str,
-        adapter_name: str = DEFAULT_ADAPTER_NAME,
         cmd_timeout: int = DEFAULT_CMD_TIMEOUT,
         retry_count: int = DEFAULT_RETRY_COUNT,
         retry_delay: int = DEFAULT_RETRY_DELAY,
         **kwargs
     ) -> None:
         self._address: str = address
-        self._adapter: BLEAdapter = BLEAdapter.get(adapter_name)
-        self._adapter.add_peripheral(self)
         self._cmd_timeout: int = cmd_timeout
         self._retry_count: int = retry_count
         self._retry_delay: int = retry_delay
@@ -124,7 +60,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         super().__init__(**kwargs)
 
     def __str__(self) -> str:
-        return f'{self._adapter}/{self.get_name()}'
+        return self.get_name()
 
     async def read(self, handle: int) -> bytes:
         return await self._run_cmd(self._read, handle=handle)
@@ -234,7 +170,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
     @staticmethod
     def pretty_data(data: bytes) -> str:
-        return BLEAdapter.pretty_data(data)
+        return ' '.join(map(lambda c: f'{c:02X}', data))
 
 
 class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):
