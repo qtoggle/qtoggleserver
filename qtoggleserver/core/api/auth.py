@@ -43,7 +43,7 @@ def make_auth_header(origin: str, username: Optional[str], password_hash: str) -
 
     token = jwt.encode(claims, key=password_hash or '', algorithm=JWT_ALG)
 
-    return f'Bearer {token.decode()}'
+    return f'Bearer {token}'
 
 
 def parse_auth_header(auth: str, origin: str, password_hash_func: Callable, require_usr: bool = True) -> str:
