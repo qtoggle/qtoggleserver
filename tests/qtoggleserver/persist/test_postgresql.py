@@ -1,6 +1,7 @@
 
 import asyncpg
 import pytest
+import pytest_asyncio
 import testing.postgresql
 
 from qtoggleserver.drivers.persist import postgresql
@@ -19,7 +20,7 @@ TestingPostgreSQL = testing.postgresql.PostgresqlFactory(cache_initialized_db=Tr
 pg_server = None
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def driver() -> BaseDriver:
     global pg_server
 

@@ -4,6 +4,7 @@ import os
 import time
 
 import pytest
+import pytest_asyncio
 import pytz
 
 from freezegun import freeze_time
@@ -59,7 +60,7 @@ def mock_persist_driver():
     return persist._thread_local.driver
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def num_mock_port1(mocker) -> NumberMockPort:
     mocker.patch('asyncio.Lock')
     port = (await core_ports.load([{'driver': NumberMockPort, 'port_id': 'nid1', 'value': None}]))[0]
@@ -69,7 +70,7 @@ async def num_mock_port1(mocker) -> NumberMockPort:
     await port.remove(persisted_data=False)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def num_mock_port2(mocker) -> NumberMockPort:
     mocker.patch('asyncio.Lock')
     port = (await core_ports.load([{'driver': NumberMockPort, 'port_id': 'nid2', 'value': None}]))[0]
@@ -79,7 +80,7 @@ async def num_mock_port2(mocker) -> NumberMockPort:
     await port.remove(persisted_data=False)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def bool_mock_port1(mocker) -> BooleanMockPort:
     mocker.patch('asyncio.Lock')
     port = (await core_ports.load([{'driver': BooleanMockPort, 'port_id': 'bid1', 'value': None}]))[0]
@@ -89,7 +90,7 @@ async def bool_mock_port1(mocker) -> BooleanMockPort:
     await port.remove(persisted_data=False)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def bool_mock_port2(mocker) -> BooleanMockPort:
     mocker.patch('asyncio.Lock')
     port = (await core_ports.load([{'driver': BooleanMockPort, 'port_id': 'bid2', 'value': None}]))[0]
