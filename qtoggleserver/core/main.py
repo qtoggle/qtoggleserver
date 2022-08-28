@@ -3,11 +3,12 @@ import asyncio
 import logging
 import time
 
-from typing import Dict, Optional, Set, Union
+from typing import Dict, Optional, Set, Tuple, Union
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import expressions as core_expressions  # noqa: F401; Required to avoid circular imports
 from qtoggleserver.core import ports as core_ports
+from qtoggleserver.core.typing import NullablePortValue
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import timedset
 from qtoggleserver.utils import logging as logging_utils
@@ -47,6 +48,7 @@ async def update() -> None:
     async with _update_lock:
         changed_set = {'millisecond'}
         change_reasons = {}
+        value_pairs = {}
 
         now = int(time.time())
         time_changed = False
@@ -93,12 +95,13 @@ async def update() -> None:
 
                 port.set_last_read_value(new_value)
                 changed_set.add(port)
+                value_pairs[port] = old_value, new_value
 
                 # Remember and reset port change reason
                 change_reasons[port] = port.get_change_reason()
                 port.reset_change_reason()
 
-        await handle_value_changes(changed_set, change_reasons)
+        await handle_value_changes(changed_set, change_reasons, value_pairs)
 
         sessions.update()
 
@@ -122,7 +125,8 @@ async def update_loop() -> None:
 
 async def handle_value_changes(
     changed_set: Set[Union[core_ports.BasePort, None]],
-    change_reasons: Dict[core_ports.BasePort, str]
+    change_reasons: Dict[core_ports.BasePort, str],
+    value_pairs: Dict[core_ports.BasePort, Tuple[NullablePortValue, NullablePortValue]],
 ) -> None:
 
     forced_deps = set()
@@ -137,7 +141,10 @@ async def handle_value_changes(
             continue
 
         if not await port.is_internal():
-            await port.trigger_value_change()
+            value_pair = value_pairs.get(port)
+            if not value_pair:
+                continue
+            await port.trigger_value_change(*value_pair)
 
         if await port.is_persisted():
             port.save_asap()

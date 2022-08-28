@@ -1061,8 +1061,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def trigger_update(self) -> None:
         await core_events.trigger(core_events.PortUpdate(self))
 
-    async def trigger_value_change(self) -> None:
-        await core_events.trigger(core_events.ValueChange(self))
+    async def trigger_value_change(self, old_value: NullablePortValue, new_value: NullablePortValue) -> None:
+        await core_events.trigger(core_events.ValueChange(old_value, new_value, self))
 
     async def get_schema(self) -> GenericJSONDict:
         if self._schema is None:

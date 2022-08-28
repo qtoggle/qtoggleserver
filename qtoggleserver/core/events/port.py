@@ -2,7 +2,7 @@
 from typing import Any
 
 from qtoggleserver.core import api as core_api
-from qtoggleserver.core.typing import GenericJSONDict
+from qtoggleserver.core.typing import GenericJSONDict, NullablePortValue
 
 from .base import Event
 
@@ -55,5 +55,20 @@ class ValueChange(PortEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_VIEWONLY
     TYPE = 'value-change'
 
+    def __init__(
+        self,
+        old_value: NullablePortValue,
+        new_value: NullablePortValue,
+        *args, **kwargs
+    ) -> None:
+        self.old_value = old_value
+        self.new_value = new_value
+
+        super().__init__(*args, **kwargs)
+
     async def get_params(self) -> GenericJSONDict:
-        return {'id': self.get_port().get_id(), 'value': self.get_port().get_last_read_value()}
+        return {
+            'id': self.get_port().get_id(),
+            'value': self.new_value,
+            'old_value': self.old_value
+        }
