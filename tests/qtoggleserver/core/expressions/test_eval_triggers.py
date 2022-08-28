@@ -14,7 +14,7 @@ async def test_eval_trigger_set_expression(mocker, num_mock_port1, num_mock_port
 
     await num_mock_port2.set_attr('expression', 'MUL($nid1, 10)')
     await asyncio.sleep(0.1)
-    num_mock_port2.transform_and_write_value.assert_called_once_with(40, reason=core_ports.CHANGE_REASON_EXPRESSION)
+    num_mock_port2.transform_and_write_value.assert_called_once_with(40)
 
 
 async def test_eval_trigger_value_change(mocker, num_mock_port1, num_mock_port2):
@@ -28,7 +28,7 @@ async def test_eval_trigger_value_change(mocker, num_mock_port1, num_mock_port2)
     mocker.patch.object(num_mock_port2, 'transform_and_write_value')
     await main.update()
     await asyncio.sleep(0.1)
-    num_mock_port2.transform_and_write_value.assert_called_once_with(60, reason=core_ports.CHANGE_REASON_EXPRESSION)
+    num_mock_port2.transform_and_write_value.assert_called_once_with(60)
 
 
 async def test_eval_trigger_value_change_self(mocker, num_mock_port1, num_mock_port2):
@@ -46,7 +46,7 @@ async def test_eval_trigger_value_change_self(mocker, num_mock_port1, num_mock_p
     await main.update()
     await main.update()
     await asyncio.sleep(0.1)
-    num_mock_port2.transform_and_write_value.assert_called_once_with(30, reason=core_ports.CHANGE_REASON_EXPRESSION)
+    num_mock_port2.transform_and_write_value.assert_called_once_with(30)
 
 
 # async def test_eval_trigger_second(freezer, mocker, num_mock_port1, dummy_utc_datetime):

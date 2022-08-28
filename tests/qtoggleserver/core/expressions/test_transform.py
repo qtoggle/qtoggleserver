@@ -16,5 +16,5 @@ async def test_transform_write(mocker, num_mock_port1):
     mocker.patch.object(num_mock_port1, 'write_value')
 
     await num_mock_port1.set_attr('transform_write', 'MUL($, 10)')
-    await num_mock_port1.transform_and_write_value(4, core_ports.CHANGE_REASON_NATIVE)
+    await num_mock_port1.transform_and_write_value(4)
     num_mock_port1.write_value.assert_called_once_with(40)

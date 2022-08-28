@@ -186,7 +186,6 @@ def force_eval_expressions(port: core_ports.BasePort = None) -> None:
 
     if port:
         _force_eval_expression_ports.add(port)
-        port.reset_change_reason()
     else:
         _force_eval_all_expressions = True
 

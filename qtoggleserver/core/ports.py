@@ -27,11 +27,6 @@ from qtoggleserver.utils import logging as logging_utils
 TYPE_BOOLEAN = 'boolean'
 TYPE_NUMBER = 'number'
 
-CHANGE_REASON_NATIVE = 'N'
-CHANGE_REASON_API = 'A'
-CHANGE_REASON_SEQUENCE = 'S'
-CHANGE_REASON_EXPRESSION = 'E'
-
 SAVE_INTERVAL = 1
 
 logger = logging.getLogger(__name__)
@@ -253,11 +248,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._value_schema: Optional[GenericJSONDict] = None
 
         self._last_read_value: NullablePortValue = None
-        self._write_value_queue: List[Tuple[PortValue, str, asyncio.Future]] = []
+        self._write_value_queue: List[Tuple[PortValue, asyncio.Future]] = []
         self._write_value_task: Optional[asyncio.Task] = None
         if asyncio.get_event_loop().is_running():
             self._write_value_task = asyncio.create_task(self._write_value_loop())
-        self._change_reason: str = CHANGE_REASON_NATIVE
         self._reading: bool = False
         self._writing: bool = False
 
@@ -681,12 +675,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def set_last_read_value(self, value: NullablePortValue) -> None:
         self._last_read_value = value
 
-    def get_change_reason(self) -> str:
-        return self._change_reason
-
-    def reset_change_reason(self) -> None:
-        self._change_reason = CHANGE_REASON_NATIVE
-
     async def read_transformed_value(self) -> NullablePortValue:
         # Prevent overlapped readings
         while self._reading:
@@ -715,7 +703,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def is_reading(self) -> bool:
         return self._reading
 
-    async def transform_and_write_value(self, value: PortValue, reason: str) -> None:
+    async def transform_and_write_value(self, value: PortValue) -> None:
         value_str = json_utils.dumps(value)
 
         if self._transform_write:
@@ -724,28 +712,28 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             value_str = f'{value_str} ({json_utils.dumps(value)} after write transform)'
 
         try:
-            await self._write_value_queued(value, reason)
-            self.debug('wrote value %s (reason=%s)', value_str, reason)
+            await self._write_value_queued(value)
+            self.debug('wrote value %s', value_str)
 
         except Exception:
-            self.error('failed to write value %s (reason=%s)', value_str, reason, exc_info=True)
+            self.error('failed to write value %s', value_str, exc_info=True)
 
             raise
 
     def is_writing(self) -> bool:
         return self._writing
 
-    async def _write_value_queued(self, value: PortValue, reason: str) -> None:
+    async def _write_value_queued(self, value: PortValue) -> None:
         done = asyncio.get_running_loop().create_future()
 
         while len(self._write_value_queue) >= self.WRITE_VALUE_QUEUE_SIZE:
             self.warning('write queue full, dropping oldest value')
 
             # Reject the future of the dropped request
-            (_, _, future) = self._write_value_queue.pop(0)
+            (_, future) = self._write_value_queue.pop(0)
             future.set_exception(Exception('Write queue full'))
 
-        self._write_value_queue.append((value, reason, done))
+        self._write_value_queue.append((value, done))
 
         # Wait for actual write_value operation to be done
         await done
@@ -754,12 +742,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         while True:
             try:
                 try:
-                    value, reason, done = self._write_value_queue.pop(0)
+                    value, done = self._write_value_queue.pop(0)
                 except IndexError:
                     await asyncio.sleep(0)
                     continue
 
-                self._change_reason = reason
                 self._writing = True
 
                 try:
@@ -822,7 +809,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if value != self.get_last_read_value():  # Value changed after evaluation
             self.debug('expression "%s" evaluated to %s', expression, json_utils.dumps(value))
             try:
-                await self.transform_and_write_value(value, reason=CHANGE_REASON_EXPRESSION)
+                await self.transform_and_write_value(value)
 
             except Exception as e:
                 self.error('failed to write value: %s', e)
@@ -857,14 +844,15 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._sequence = None
 
         if values:
-            callback = functools.partial(self._transform_and_write_value_fire_and_forget, reason=CHANGE_REASON_SEQUENCE)
-            self._sequence = core_sequences.Sequence(values, delays, repeat, callback, self._on_sequence_finish)
+            self._sequence = core_sequences.Sequence(
+                values, delays, repeat, self._transform_and_write_value_fire_and_forget, self._on_sequence_finish
+            )
 
             self.debug('installing sequence')
             self._sequence.start()
 
-    def _transform_and_write_value_fire_and_forget(self, value: PortValue, reason: str) -> None:
-        asyncio.create_task(self.transform_and_write_value(value, reason))
+    def _transform_and_write_value_fire_and_forget(self, value: PortValue) -> None:
+        asyncio.create_task(self.transform_and_write_value(value))
 
     async def _on_sequence_finish(self) -> None:
         self.debug('sequence finished')
