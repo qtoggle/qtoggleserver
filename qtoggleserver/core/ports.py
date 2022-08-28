@@ -4,7 +4,6 @@ from __future__ import annotations
 import abc
 import asyncio
 import copy
-import functools
 import inspect
 import logging
 
