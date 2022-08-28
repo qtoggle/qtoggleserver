@@ -21,7 +21,7 @@ def parse(self_port_id: Optional[str], sexpression: str, pos: int = 1) -> Expres
     while sexpression and sexpression[-1].isspace():
         sexpression = sexpression[:-1]
 
-    if sexpression.startswith('$') or sexpression.startswith('@'):
+    if sexpression and sexpression[0] in ('$', '@'):
         return PortExpression.parse(self_port_id, sexpression, pos)
 
     elif '(' in sexpression or ')' in sexpression:

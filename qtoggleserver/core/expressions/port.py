@@ -12,10 +12,11 @@ from qtoggleserver.core import ports as core_ports
 
 
 class PortExpression(Expression, metaclass=abc.ABCMeta):
-    def __init__(self, port_id: str) -> None:
+    def __init__(self, port_id: str, prefix: str) -> None:
         super().__init__()
 
         self.port_id: str = port_id
+        self.prefix: str = prefix
 
     def get_port(self) -> core_ports.BasePort:
         return core_ports.get(self.port_id)
@@ -41,20 +42,17 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
                 raise UnexpectedCharacter(port_id[p], p + pos + 2)
 
             if prefix == '$':
-                return PortValue(port_id)
-
+                return PortValue(port_id, prefix)
             else:  # Assuming prefix == '@'
-                return PortRef(port_id)
+                return PortRef(port_id, prefix)
 
         else:
-            return SelfPortValue(self_port_id)
+            return SelfPortValue(self_port_id, prefix)
 
 
 class PortValue(PortExpression):
-    _NONE = {}
-
     def __str__(self) -> str:
-        return f'${self.port_id}'
+        return f'{self.prefix}{self.port_id}'
 
     def get_deps(self) -> Set[str]:
         return {f'${self.port_id}'}
@@ -67,11 +65,7 @@ class PortValue(PortExpression):
         if not port.is_enabled():
             raise DisabledPort(self.port_id)
 
-        value = context.get('port_values', {}).get(self.port_id, self._NONE)
-        # As a last resort, consider the latest current value for port that owns the expression
-        if (value is self._NONE) and (port.get_id() == self.port_id):
-            value = port.get_last_read_value()
-
+        value = context.get('port_values', {}).get(self.port_id)
         if value is None:
             raise PortValueUnavailable(self.port_id)
 
@@ -80,12 +74,12 @@ class PortValue(PortExpression):
 
 class SelfPortValue(PortValue):
     def __str__(self) -> str:
-        return '$'
+        return self.prefix
 
 
 class PortRef(PortExpression):
     def __str__(self) -> str:
-        return f'@{self.port_id}'
+        return f'{self.prefix}{self.port_id}'
 
     async def eval(self, context: Dict[str, Any]) -> Evaluated:
         port = self.get_port()
