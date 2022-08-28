@@ -132,7 +132,7 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
 
     # If value is supplied among attrs, use it to update port value, but in background and ignoring any errors
     if value is not None and port.is_enabled():
-        asyncio.create_task(port.transform_and_write_value(value, reason=core_ports.CHANGE_REASON_API))
+        asyncio.create_task(port.transform_and_write_value(value))
 
     await port.save()
 
@@ -344,7 +344,7 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
     old_value = port.get_last_read_value()
 
     try:
-        await port.transform_and_write_value(value, reason=core_ports.CHANGE_REASON_API)
+        await port.transform_and_write_value(value)
 
     except core_ports.PortTimeout as e:
         raise core_api.APIError(504, 'port-timeout') from e

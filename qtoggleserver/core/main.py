@@ -27,7 +27,8 @@ _ready: bool = False
 _updating_enabled: bool = True
 _start_time: float = time.time()
 _last_time: float = 0
-_force_eval_expression_ports: Set[Union[core_ports.BasePort, None]] = set()
+_force_eval_expression_ports: Set[core_ports.BasePort] = set()
+_force_eval_all_expressions: bool = False
 _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
 _update_lock: Optional[asyncio.Lock] = None
 
@@ -46,8 +47,7 @@ async def update() -> None:
         _update_lock = asyncio.Lock()
 
     async with _update_lock:
-        changed_set = {'millisecond'}
-        change_reasons = {}
+        changed_set: Set[Union[core_ports.BasePort, str]] = {'millisecond'}
         value_pairs = {}
 
         now = int(time.time())
@@ -97,11 +97,7 @@ async def update() -> None:
                 changed_set.add(port)
                 value_pairs[port] = old_value, new_value
 
-                # Remember and reset port change reason
-                change_reasons[port] = port.get_change_reason()
-                port.reset_change_reason()
-
-        await handle_value_changes(changed_set, change_reasons, value_pairs)
+        await handle_value_changes(changed_set, value_pairs)
 
         sessions.update()
 
@@ -124,16 +120,27 @@ async def update_loop() -> None:
 
 
 async def handle_value_changes(
-    changed_set: Set[Union[core_ports.BasePort, None]],
-    change_reasons: Dict[core_ports.BasePort, str],
+    changed_set: Set[Union[core_ports.BasePort, str]],
     value_pairs: Dict[core_ports.BasePort, Tuple[NullablePortValue, NullablePortValue]],
 ) -> None:
+    global _force_eval_all_expressions
 
-    forced_deps = set()
-    if _force_eval_expression_ports:
-        changed_set.update(_force_eval_expression_ports)
-        forced_deps.update(_force_eval_expression_ports)
-        _force_eval_expression_ports.clear()
+    # changed_set contains:
+    #  * ports
+    #  * time strings
+
+    # deps contain:
+    #  * `$`-prefixed port ids
+    #  * time strings
+
+    forced_ports = set(_force_eval_expression_ports)
+    _force_eval_expression_ports.clear()
+
+    full_eval = _force_eval_all_expressions
+    _force_eval_all_expressions = False
+
+    # Transform `changed_set` into a set of strings so that we can compare it with deps
+    changed_set_str = {f'${c.get_id()}' if isinstance(c, core_ports.BasePort) else c for c in changed_set}
 
     # Trigger value-change events; save persisted ports
     for port in changed_set:
@@ -158,41 +165,30 @@ async def handle_value_changes(
         if not expression:
             continue
 
-        deps = set(expression.get_deps()) | forced_deps
-        deps.add(None)  # Special "always depends on" value
-
-        changed_set_ids = set(f'${c.get_id()}' for c in changed_set if isinstance(c, core_ports.BasePort))
-
-        # Evaluate a port's expression if one of its deps changed
-
-        # Join all deps together; deps may contain:
-        # * ports
-        # * port ids
-        # * time dep strings
-        # * None
-        all_changed_set = changed_set_ids | changed_set
-        if not bool(deps & all_changed_set):
+        if full_eval or (port in forced_ports):
+            port.push_eval()
             continue
 
-        # If port expression depends on port itself and the change reason is the evaluation of its expression, prevent
-        # evaluating its expression again to avoid evaluation loops
-        change_reason = change_reasons.get(port, core_ports.CHANGE_REASON_NATIVE)
-        if ((port in changed_set) and
-            (f'${port.get_id()}' in deps) and
-            (change_reason == core_ports.CHANGE_REASON_EXPRESSION)):
+        port_own_deps: Set[str] = expression.get_deps()
+        deps: Set[str] = port_own_deps - {f'${port.get_id()}'}
 
-            logger.debug('skipping evaluation of %s expression to prevent loops', port)
+        # Evaluate a port's expression only if one of its deps changed
+        if not bool(deps & changed_set_str):
             continue
 
         port.push_eval()
 
 
 def force_eval_expressions(port: core_ports.BasePort = None) -> None:
+    global _force_eval_all_expressions
+
     logger.debug('forcing expression evaluation for %s', port or 'all ports')
 
-    _force_eval_expression_ports.add(port)
     if port:
+        _force_eval_expression_ports.add(port)
         port.reset_change_reason()
+    else:
+        _force_eval_all_expressions = True
 
 
 def enable_updating() -> None:
