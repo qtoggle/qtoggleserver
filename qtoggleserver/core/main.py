@@ -143,7 +143,6 @@ async def handle_value_changes(
             port.save_asap()
 
     # Reevaluate the expressions depending on changed ports
-    values_by_port_id = {p.get_id(): p.get_last_read_value() for p in core_ports.get_all()}
     for port in core_ports.get_all():
         if not port.is_enabled():
             continue
@@ -178,7 +177,7 @@ async def handle_value_changes(
             logger.debug('skipping evaluation of %s expression to prevent loops', port)
             continue
 
-        port.push_eval(values_by_port_id)
+        port.push_eval()
 
 
 def force_eval_expressions(port: core_ports.BasePort = None) -> None:

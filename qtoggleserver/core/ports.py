@@ -777,8 +777,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self.debug('write value task cancelled')
                 break
 
-    def push_eval(self, port_values: Dict[str, NullablePortValue]) -> None:
+    def push_eval(self) -> None:
         self.debug('will evaluate expression asap')
+        port_values = {p.get_id(): p.get_last_read_value() for p in get_all() if p.is_enabled()}
 
         try:
             self._eval_queue.put_nowait(self._make_expression_context(port_values))
@@ -807,7 +808,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             return
 
         except Exception as e:
-            self.error('failed to evaluate expression "%s": %s', expression, e)
+            self.error('failed to evaluate expression "%s": %s', expression, e, exc_info=True)
             return
 
         value = await self.adapt_value_type(value)
@@ -822,11 +823,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             except Exception as e:
                 self.error('failed to write value: %s', e)
 
-    def _make_expression_context(self, port_values: Optional[Dict[str, NullablePortValue]] = None) -> Dict[str, Any]:
-        if port_values is None:
-            # In case port values haven't been supplied with context
-            port_values = {p.get_id(): p.get_last_read_value() for p in get_all()}
-
+    def _make_expression_context(self, port_values: Dict[str, NullablePortValue]) -> Dict[str, Any]:
         return {
             'port_values': port_values
         }
@@ -952,7 +949,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 value = self._last_read_value
                 if self._transform_write:
                     value = await self.adapt_value_type(
-                        await self._transform_write.eval(self._make_expression_context())
+                        await self._transform_write.eval(
+                            self._make_expression_context(port_values={self.get_id(): value})
+                        )
                     )
 
                 await self.write_value(value)
