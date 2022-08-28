@@ -715,7 +715,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def is_reading(self) -> bool:
         return self._reading
 
-    async def write_transformed_value(self, value: PortValue, reason: str) -> None:
+    async def transform_and_write_value(self, value: PortValue, reason: str) -> None:
         value_str = json_utils.dumps(value)
 
         if self._transform_write:
@@ -822,7 +822,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if value != self.get_last_read_value():  # Value changed after evaluation
             self.debug('expression "%s" evaluated to %s', expression, json_utils.dumps(value))
             try:
-                await self.write_transformed_value(value, reason=CHANGE_REASON_EXPRESSION)
+                await self.transform_and_write_value(value, reason=CHANGE_REASON_EXPRESSION)
 
             except Exception as e:
                 self.error('failed to write value: %s', e)
@@ -857,14 +857,14 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._sequence = None
 
         if values:
-            callback = functools.partial(self._write_transformed_value_fire_and_forget, reason=CHANGE_REASON_SEQUENCE)
+            callback = functools.partial(self._transform_and_write_value_fire_and_forget, reason=CHANGE_REASON_SEQUENCE)
             self._sequence = core_sequences.Sequence(values, delays, repeat, callback, self._on_sequence_finish)
 
             self.debug('installing sequence')
             self._sequence.start()
 
-    def _write_transformed_value_fire_and_forget(self, value: PortValue, reason: str) -> None:
-        asyncio.create_task(self.write_transformed_value(value, reason))
+    def _transform_and_write_value_fire_and_forget(self, value: PortValue, reason: str) -> None:
+        asyncio.create_task(self.transform_and_write_value(value, reason))
 
     async def _on_sequence_finish(self) -> None:
         self.debug('sequence finished')
