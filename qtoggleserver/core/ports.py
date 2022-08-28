@@ -688,8 +688,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._change_reason = CHANGE_REASON_NATIVE
 
     async def read_transformed_value(self) -> NullablePortValue:
-        if self._reading:
-            return  # Prevent overlapped readings
+        # Prevent overlapped readings
+        while self._reading:
+            await asyncio.sleep(0.1)
 
         self._reading = True
 
