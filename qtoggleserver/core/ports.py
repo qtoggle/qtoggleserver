@@ -8,7 +8,7 @@ import functools
 import inspect
 import logging
 
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
@@ -253,7 +253,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._value_schema: Optional[GenericJSONDict] = None
 
         self._last_read_value: NullablePortValue = None
-        self._write_value_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
+        self._write_value_queue: List[Tuple[PortValue, str, asyncio.Future]] = []
         self._write_value_task: Optional[asyncio.Task] = None
         if asyncio.get_event_loop().is_running():
             self._write_value_task = asyncio.create_task(self._write_value_loop())
@@ -681,6 +681,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def set_last_read_value(self, value: NullablePortValue) -> None:
         self._last_read_value = value
 
+    def get_last_pending_value(self) -> NullablePortValue:
+        try:
+            return self._write_value_queue[0][0]
+        except IndexError:
+            return self._last_read_value
+
     def get_change_reason(self) -> str:
         return self._change_reason
 
@@ -738,19 +744,14 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def _write_value_queued(self, value: PortValue, reason: str) -> None:
         done = asyncio.get_running_loop().create_future()
 
-        while True:
-            try:
-                self._write_value_queue.put_nowait((value, reason, done))
+        while len(self._write_value_queue) >= self.WRITE_VALUE_QUEUE_SIZE:
+            self.warning('write queue full, dropping oldest value')
 
-            except asyncio.QueueFull as e:
-                self.warning('write queue full, dropping oldest value')
+            # Reject the future of the dropped request
+            (_, _, future) = self._write_value_queue.pop(0)
+            future.set_exception(Exception('Write queue full'))
 
-                # Reject the future of the dropped request with a QueueFull exception
-                dropped = self._write_value_queue.get_nowait()
-                dropped[2].set_exception(e)
-
-            else:
-                break
+        self._write_value_queue.append((value, reason, done))
 
         # Wait for actual write_value operation to be done
         await done
@@ -758,7 +759,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def _write_value_loop(self) -> None:
         while True:
             try:
-                value, reason, done = await self._write_value_queue.get()
+                try:
+                    value, reason, done = self._write_value_queue.pop(0)
+                except IndexError:
+                    await asyncio.sleep(0)
+                    continue
 
                 self._change_reason = reason
                 self._writing = True
@@ -777,6 +782,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             except asyncio.CancelledError:
                 self.debug('write value task cancelled')
                 break
+
+            except Exception:
+                self.error('write value task error', exc_info=True)
+                await asyncio.sleep(1)
 
     def push_eval(self) -> None:
         self.debug('will evaluate expression asap')
