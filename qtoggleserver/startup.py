@@ -30,7 +30,7 @@ from qtoggleserver.core import webhooks
 from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import logging as logging_utils
-from qtoggleserver import peripherals  # This must be imported after core.ports
+from qtoggleserver import peripherals  # this must be imported after core.ports
 
 
 logger: Optional[logging.Logger] = None

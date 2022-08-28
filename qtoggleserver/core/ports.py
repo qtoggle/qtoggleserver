@@ -681,12 +681,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def set_last_read_value(self, value: NullablePortValue) -> None:
         self._last_read_value = value
 
-    def get_last_pending_value(self) -> NullablePortValue:
-        try:
-            return self._write_value_queue[0][0]
-        except IndexError:
-            return self._last_read_value
-
     def get_change_reason(self) -> str:
         return self._change_reason
 
@@ -888,9 +882,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         if self._enabled:
             attrs['value'] = self._last_read_value
-
+            attrs['pending_value'] = self._write_value_queue[0][0] if self._write_value_queue else None
         else:
             attrs['value'] = None
+            attrs['pending_value'] = None
 
         attrdefs = copy.deepcopy(self.ADDITIONAL_ATTRDEFS)
         for attrdef in attrdefs.values():
@@ -939,7 +934,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         attr_items = attr_items_start + attr_items + attr_items_end
 
         for name, value in attr_items:
-            if name in ('id', 'value'):
+            if name in ('id', 'value', 'pending_value'):
                 continue  # Value is also among the persisted fields
 
             try:
