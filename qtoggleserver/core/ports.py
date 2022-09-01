@@ -743,7 +743,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 try:
                     value, done = self._write_value_queue.pop(0)
                 except IndexError:
-                    await asyncio.sleep(0)
+                    await asyncio.sleep(settings.core.tick_interval / 1000)
                     continue
 
                 self._writing = True
