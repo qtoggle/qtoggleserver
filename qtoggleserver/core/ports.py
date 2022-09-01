@@ -782,7 +782,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             try:
                 context = await self._eval_queue.get()
                 await self._eval_and_write(context)
-
+            except Exception:
+                self.error('eval failed', exc_info=True)
             except asyncio.CancelledError:
                 self.debug('eval task cancelled')
                 break
@@ -828,7 +829,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         if type_ == TYPE_BOOLEAN:
             return bool(value)
-
+        elif isinstance(value, BasePort):
+            return None
         else:
             # Round the value if port accepts only integers
             if integer:
