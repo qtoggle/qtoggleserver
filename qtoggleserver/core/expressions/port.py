@@ -47,7 +47,10 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
                 return PortRef(port_id, prefix)
 
         else:
-            return SelfPortValue(self_port_id, prefix)
+            if prefix == '$':
+                return SelfPortValue(self_port_id, prefix)
+            else:  # Assuming prefix == '@'
+                return SelfPortRef(self_port_id, prefix)
 
 
 class PortValue(PortExpression):
@@ -76,6 +79,20 @@ class SelfPortValue(PortValue):
     def __str__(self) -> str:
         return self.prefix
 
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        port = self.get_port()
+        if not port:
+            raise UnknownPortId(self.port_id)
+
+        if not port.is_enabled():
+            raise DisabledPort(self.port_id)
+
+        value = port.get_last_read_value()
+        if value is None:
+            raise PortValueUnavailable(self.port_id)
+
+        return value
+
 
 class PortRef(PortExpression):
     def __str__(self) -> str:
@@ -87,3 +104,8 @@ class PortRef(PortExpression):
             raise UnknownPortId(self.port_id)
 
         return port
+
+
+class SelfPortRef(PortRef):
+    def __str__(self) -> str:
+        return self.prefix
