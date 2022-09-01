@@ -20,7 +20,7 @@ core = {
     history_janitor_interval = 600
     listen_support = true
     sequences_support = true
-    ssl_support = true
+    tls_support = true
     virtual_ports = 1024
 }
 

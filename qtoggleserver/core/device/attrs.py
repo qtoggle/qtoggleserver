@@ -382,8 +382,8 @@ def get_attrs() -> Attributes:
     if settings.core.sequences_support:
         flags.append('sequences')
 
-    if settings.core.ssl_support:
-        flags.append('ssl')
+    if settings.core.tls_support:
+        flags.append('tls')
 
     if settings.webhooks.enabled:
         flags.append('webhooks')
