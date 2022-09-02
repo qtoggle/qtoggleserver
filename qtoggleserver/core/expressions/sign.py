@@ -1,5 +1,5 @@
 
-from .base import Evaluated, EvalContext
+from .base import EvalResult, EvalContext
 from .functions import function, Function
 
 
@@ -7,7 +7,7 @@ from .functions import function, Function
 class AbsFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         return abs((await self.eval_args(context))[0])
 
 
@@ -15,7 +15,7 @@ class AbsFunction(Function):
 class SgnFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         e = int((await self.eval_args(context))[0])
         if e > 0:
             return 1

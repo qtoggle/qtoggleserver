@@ -1,5 +1,5 @@
 
-from .base import Evaluated, EvalContext
+from .base import EvalResult, EvalContext
 from .functions import function, Function
 
 
@@ -7,7 +7,7 @@ from .functions import function, Function
 class BitAndFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         r = -1
         for e in await self.eval_args(context):
             r &= int(e)
@@ -19,7 +19,7 @@ class BitAndFunction(Function):
 class BitOrFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         r = 0
         for e in await self.eval_args(context):
             r |= int(e)
@@ -31,7 +31,7 @@ class BitOrFunction(Function):
 class BitNotFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         return ~int((await self.eval_args(context))[0])
 
 
@@ -39,7 +39,7 @@ class BitNotFunction(Function):
 class BitXOrFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         eval_args = await self.eval_args(context)
 
         return int(eval_args[0]) ^ int(eval_args[1])
@@ -49,7 +49,7 @@ class BitXOrFunction(Function):
 class SHLFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         eval_args = await self.eval_args(context)
 
         return int(eval_args[0]) << int(eval_args[1])
@@ -59,7 +59,7 @@ class SHLFunction(Function):
 class SHRFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         eval_args = await self.eval_args(context)
 
         return int(eval_args[0]) >> int(eval_args[1])

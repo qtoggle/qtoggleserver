@@ -1,7 +1,7 @@
 
 import time
 
-from .base import Evaluated, EvalContext
+from .base import EvalResult, EvalContext
 from .functions import function, Function
 
 
@@ -10,7 +10,7 @@ class TimeFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
     DEPS = ['second']
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         return int(time.time())
 
 
@@ -19,5 +19,5 @@ class TimeMSFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
     DEPS = ['millisecond']
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         return int(time.time() * 1000)

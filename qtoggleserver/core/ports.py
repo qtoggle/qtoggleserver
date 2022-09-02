@@ -259,6 +259,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._eval_task: Optional[asyncio.Task] = None
         if asyncio.get_event_loop().is_running():
             self._eval_task = asyncio.create_task(self._eval_loop())
+        self._evaling: bool = False
 
         self._save_lock: asyncio.Lock = asyncio.Lock()
         self._pending_save: bool = False
@@ -769,7 +770,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 await asyncio.sleep(1)
 
     def push_eval(self) -> None:
-        self.debug('will evaluate expression asap')
+        self.debug('will evaluate expression asap') # TODO: remove me
         port_values = {p.get_id(): p.get_last_read_value() for p in get_all() if p.is_enabled()}
         now_ms = int(time.time() * 1000)
 
@@ -777,6 +778,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._eval_queue.put_nowait(self._make_eval_context(port_values, now_ms))
         except asyncio.QueueFull:
             self.warning('eval queue full')
+
+    def has_pending_eval(self) -> bool:
+        return (self._eval_queue.qsize() > 0) or self._evaling
 
     async def _eval_loop(self) -> None:
         while True:
@@ -790,17 +794,18 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 break
 
     async def _eval_and_write(self, context: core_expressions.EvalContext) -> None:
-        self.debug('evaluating expression')
         expression = self.get_expression()
 
         try:
+            self._evaling = True
             value = await expression.eval(context)
         except core_expressions.ExpressionEvalError:
             return
-
         except Exception as e:
             self.error('failed to evaluate expression "%s": %s', expression, e, exc_info=True)
             return
+        finally:
+            self._evaling = False
 
         value = await self.adapt_value_type(value)
         if value is None:

@@ -6,7 +6,7 @@ import time
 
 from qtoggleserver import system
 
-from .base import Evaluated, EvalContext
+from .base import EvalResult, EvalContext
 from .exceptions import InvalidArgumentValue, EvalSkipped
 from .functions import function, Function
 
@@ -16,7 +16,7 @@ class DateUnitFunction(Function, metaclass=abc.ABCMeta):
     MAX_ARGS = 1
     DEPS = ['second']
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -86,7 +86,7 @@ class MillisecondFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
     DEPS = ['millisecond']
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -111,7 +111,7 @@ class DateFunction(Function):
     DEPS = ['second']
     UNIT_INDEX = {u: i + 1 for i, u in enumerate(('year', 'month', 'day', 'hour', 'minute', 'second'))}
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -135,7 +135,7 @@ class BOYFunction(Function):
     MAX_ARGS = 1
     DEPS = ['second']
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -157,7 +157,7 @@ class BOMFunction(Function):
     MAX_ARGS = 1
     DEPS = ['second']
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -197,7 +197,7 @@ class BOWFunction(Function):
     MAX_ARGS = 2
     DEPS = ['second']
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -209,7 +209,7 @@ class BOWFunction(Function):
                 s = int(await self.args[1].eval(context))
 
         now = datetime.datetime.now()
-        dt = now.replace(hour=12)  # Using mid day practically avoids problems due to DST
+        dt = now.replace(hour=12)  # Using midday practically avoids problems due to DST
         if s > 0:
             dt -= datetime.timedelta(days=dt.weekday() + 7 - s)
 
@@ -260,7 +260,7 @@ class BODFunction(Function):
     MAX_ARGS = 1
     DEPS = ['second']
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -280,7 +280,7 @@ class HMSIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 6
     DEPS = ['second']
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -320,7 +320,7 @@ class MDIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 4
     DEPS = ['second']
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 

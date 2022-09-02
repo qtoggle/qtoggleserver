@@ -7,7 +7,7 @@ from typing import Callable, List, Optional, Set
 
 from . import exceptions
 from . import parse
-from .base import Expression, Evaluated, EvalContext
+from .base import Expression, EvalResult, EvalContext
 from .literalvalues import LiteralValue
 from .port import PortValue
 
@@ -53,7 +53,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
 
         return deps
 
-    async def eval_args(self, context: EvalContext) -> List[Evaluated]:
+    async def eval_args(self, context: EvalContext) -> List[EvalResult]:
         return list(await asyncio.gather(*(a.eval(context) for a in self.args)))
 
     @classmethod
@@ -61,7 +61,6 @@ class Function(Expression, metaclass=abc.ABCMeta):
         for i, arg in enumerate(args):
             try:
                 kind = cls.ARG_KINDS[i]
-
             except IndexError:
                 kind = (LiteralValue, PortValue, Function)
 

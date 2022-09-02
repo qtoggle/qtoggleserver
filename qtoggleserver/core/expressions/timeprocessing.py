@@ -5,7 +5,7 @@ from typing import List, Optional, Set, Tuple
 
 from . import TIME_JUMP_THRESHOLD
 
-from .base import Evaluated, EvalContext
+from .base import EvalResult, EvalContext
 from .exceptions import EvalSkipped
 from .functions import function, Function
 
@@ -23,7 +23,7 @@ class DelayFunction(Function):
         self._last_value: Optional[float] = None
         self._current_value: Optional[float] = None
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         time_ms = int(time.time() * 1000)
 
         value, delay = await self.eval_args(context)
@@ -66,7 +66,7 @@ class SampleFunction(Function):
 
         return super().get_deps()
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         time_ms = int(time.time() * 1000)
         if time_ms - self._last_time_ms < self._last_duration:
             return self._last_value
@@ -95,7 +95,7 @@ class FreezeFunction(Function):
 
         return super().get_deps()
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         time_ms = int(time.time() * 1000)
 
         if self._last_time_ms == 0:  # Idle
@@ -133,7 +133,7 @@ class HeldFunction(Function):
 
         return super().get_deps()
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value, fixed_value, duration = await self.eval_args(context)
 
         if value == fixed_value:
@@ -165,7 +165,7 @@ class DerivFunction(Function):
         self._last_value: Optional[float] = None
         self._last_time: float = 0
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value, sampling_interval = await self.eval_args(context)
 
         sampling_interval /= 1000
@@ -200,28 +200,27 @@ class IntegFunction(Function):
         super().__init__(*args, **kwargs)
 
         self._last_value: Optional[float] = None
-        self._last_time: float = 0
+        self._last_time: int = 0
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value, accumulator, sampling_interval = await self.eval_args(context)
-
-        sampling_interval /= 1000
         result = accumulator
 
         if self._last_value is not None:
-            delta = context.now - self._last_time
+            delta = context.now_ms - self._last_time
             if delta < sampling_interval:
-                raise self.pause_eval(self._last_time + sampling_interval)
+                self.pause_eval(self._last_time + sampling_interval)
+                raise EvalSkipped()
 
             if delta > TIME_JUMP_THRESHOLD:
                 self._last_value = value
-                self._last_time = context.now
+                self._last_time = context.now_ms
                 raise EvalSkipped()
 
-            result += (value + self._last_value) * delta / 2
+            result += (value + self._last_value) * delta / 2000
 
         self._last_value = value
-        self._last_time = context.now
+        self._last_time = context.now_ms
 
         return result
 
@@ -238,7 +237,7 @@ class FMAvgFunction(Function):
         self._queue: List[float] = []
         self._last_time: float = 0
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value, width, sampling_interval = await self.eval_args(context)
 
         width = min(width, self.QUEUE_SIZE)
@@ -278,7 +277,7 @@ class FMedianFunction(Function):
         self._queue: List[float] = []
         self._last_time: float = 0
 
-    async def eval(self, context: EvalContext) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value, width, sampling_interval = await self.eval_args(context)
 
         width = min(width, self.QUEUE_SIZE)

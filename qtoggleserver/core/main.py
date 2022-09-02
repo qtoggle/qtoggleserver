@@ -26,7 +26,7 @@ _update_loop_task: Optional[asyncio.Task] = None
 _ready: bool = False
 _updating_enabled: bool = True
 _start_time: float = time.time()
-_last_time: float = 0
+_last_time: int = 0
 _force_eval_expression_ports: Set[core_ports.BasePort] = set()
 _force_eval_all_expressions: bool = False
 _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
@@ -50,13 +50,12 @@ async def update() -> None:
         changed_set: Set[Union[core_ports.BasePort, str]] = {'millisecond'}
         value_pairs = {}
 
-        now_float = time.time()
-        now = int(now_float)
-        now_ms = int(now_float * 1000)
-        time_changed = False
-        if now != _last_time:
-            _last_time = now
-            time_changed = True
+        now = time.time()
+        now_int = int(now)
+        second_changed = False
+        if now_int != _last_time:
+            _last_time = now_int
+            second_changed = True
             changed_set.add('second')
 
         for port in ports.get_all():
@@ -66,10 +65,9 @@ async def update() -> None:
             port.invalidate_attrs()
             old_value = port.get_last_read_value()
 
-            if time_changed:
+            if second_changed:
                 try:
                     port.heart_beat_second()
-
                 except Exception as e:
                     logger.error('port heart beat second exception: %s', e, exc_info=True)
 
@@ -99,7 +97,7 @@ async def update() -> None:
                 changed_set.add(port)
                 value_pairs[port] = old_value, new_value
 
-        await handle_value_changes(changed_set, value_pairs, now_ms)
+        await handle_value_changes(changed_set, value_pairs, now)
 
         sessions.update()
 
@@ -124,7 +122,7 @@ async def update_loop() -> None:
 async def handle_value_changes(
     changed_set: Set[Union[core_ports.BasePort, str]],
     value_pairs: Dict[core_ports.BasePort, Tuple[NullablePortValue, NullablePortValue]],
-    now_ms: int
+    now: float,
 ) -> None:
     global _force_eval_all_expressions
 
@@ -144,6 +142,8 @@ async def handle_value_changes(
 
     # Transform `changed_set` into a set of strings so that we can compare it with deps
     changed_set_str = {f'${c.get_id()}' if isinstance(c, core_ports.BasePort) else c for c in changed_set}
+
+    now_ms = int(now * 1000)
 
     # Trigger value-change events; save persisted ports
     for port in changed_set:
@@ -181,6 +181,10 @@ async def handle_value_changes(
         # Evaluate a port's expression only if one of its deps changed
         deps_changed = bool(deps & changed_set_str)
         if not deps_changed:
+            continue
+
+        # Don't flood port with evals
+        if ('millisecond' in deps) and port.has_pending_eval():
             continue
 
         port.push_eval()
