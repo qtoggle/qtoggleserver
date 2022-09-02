@@ -10,7 +10,7 @@ from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.typing import GenericJSONDict
 
 
-API_VERSION = '1.0'
+API_VERSION = '1.1'
 
 ACCESS_LEVEL_ADMIN = 30
 ACCESS_LEVEL_NORMAL = 20

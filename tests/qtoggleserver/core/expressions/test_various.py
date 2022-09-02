@@ -16,7 +16,7 @@ async def test_available_literal(literal_three, literal_false):
     expr = various.AvailableFunction([literal_false])
     assert await expr.eval(context={}) == 1
 
-{}
+
 async def test_available_port_value(num_mock_port1):
     port_expr = MockPortValue(num_mock_port1)
     expr = various.AvailableFunction([port_expr])
@@ -284,6 +284,40 @@ def test_hyst_num_args():
 
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, 'HYST(1, 2, 3, 4)', 0)
+
+
+async def test_onoffauto():
+    value_expr = MockExpression(0)
+    auto_expr = MockExpression(13)
+    expr = various.OnOffAutoFunction([value_expr, auto_expr])
+
+    value_expr.set_value(0)
+    assert await expr.eval(context={}) == 13
+
+    value_expr.set_value(-1)
+    assert await expr.eval(context={}) is False
+
+    value_expr.set_value(-10)
+    assert await expr.eval(context={}) is False
+
+    value_expr.set_value(1)
+    assert await expr.eval(context={}) is True
+
+    value_expr.set_value(10)
+    assert await expr.eval(context={}) is True
+
+
+def test_onoffauto_parse():
+    e = Function.parse(None, 'ONOFFAUTO(1, 2)', 0)
+    assert isinstance(e, various.OnOffAutoFunction)
+
+
+def test_onoffauto_num_args():
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, 'ONOFFAUTO(1)', 0)
+
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, 'ONOFFAUTO(1, 2, 3)', 0)
 
 
 async def test_sequence(

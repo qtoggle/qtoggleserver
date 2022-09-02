@@ -95,6 +95,18 @@ class MillisecondFunction(Function):
         return datetime.datetime.now().microsecond // 1000
 
 
+@function('MINUTEDAY')
+class MinuteDayFunction(DateUnitFunction):
+    def extract_unit(self, dt: datetime.datetime) -> int:
+        return dt.hour * 60 + dt.minute
+
+
+@function('SECONDDAY')
+class SecondDayFunction(DateUnitFunction):
+    def extract_unit(self, dt: datetime.datetime) -> int:
+        return dt.hour * 3600 + dt.minute * 60 + dt.second
+
+
 @function('DATE')
 class DateFunction(Function):
     MIN_ARGS = MAX_ARGS = 6

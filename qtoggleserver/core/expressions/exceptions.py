@@ -138,6 +138,11 @@ class ExpressionEvalError(ExpressionException):
     pass
 
 
+class ValueUnavailable(ExpressionEvalError):
+    def __init__(self, msg: str = None) -> None:
+        super().__init__(msg or 'Value is unavailable')
+
+
 class InvalidArgumentValue(ExpressionEvalError):
     def __init__(self, arg_no: int, value: CorePortValue) -> None:
         self.arg_no: int = arg_no
@@ -160,11 +165,11 @@ class DisabledPort(ExpressionEvalError):
         super().__init__(f'Port "{port_id}" is disabled')
 
 
-class PortValueUnavailable(ExpressionEvalError):
+class PortValueUnavailable(ValueUnavailable):
     def __init__(self, port_id: str) -> None:
         self.port_id = port_id
 
-        super().__init__(f'Port "{port_id}" value is undefined')
+        super().__init__(f'Port "{port_id}" value is unavailable')
 
 
 class ExpressionArithmeticError(ExpressionEvalError):

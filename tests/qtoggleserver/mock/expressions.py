@@ -23,7 +23,7 @@ class MockExpression(Expression):
 
 class MockPortValue(PortValue):
     def __init__(self, port: Optional[BasePort], port_id: Optional[str] = None) -> None:
-        super().__init__(port_id or port.get_id())
+        super().__init__(port_id or port.get_id(), prefix='$')
 
         self.port: Optional[BasePort] = port
 
@@ -41,7 +41,7 @@ class MockPortValue(PortValue):
 
 class MockPortRef(PortRef):
     def __init__(self, port: Optional[BasePort], port_id: Optional[str] = None) -> None:
-        super().__init__(port_id or port.get_id())
+        super().__init__(port_id or port.get_id(), prefix='@')
 
         self.port: Optional[BasePort] = port
 

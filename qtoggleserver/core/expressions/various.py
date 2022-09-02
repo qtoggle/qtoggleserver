@@ -137,6 +137,20 @@ class HystFunction(Function):
         return self._last_result
 
 
+@function('ONOFFAUTO')
+class OnOffAutoFunction(Function):
+    MIN_ARGS = MAX_ARGS = 2
+
+    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        value, auto = await self.eval_args(context)
+        if value > 0:
+            return True
+        elif value < 0:
+            return False
+        else:
+            return auto
+
+
 @function('SEQUENCE')
 class SequenceFunction(Function):
     MIN_ARGS = 2
