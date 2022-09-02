@@ -1,10 +1,7 @@
 
 import math
 
-from typing import Any, Dict
-
-
-from .base import Evaluated
+from .base import Evaluated, EvalContext
 from .functions import function, Function
 
 
@@ -12,7 +9,7 @@ from .functions import function, Function
 class FloorFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         eval_args = await self.eval_args(context)
 
         return int(math.floor(eval_args[0]))
@@ -22,7 +19,7 @@ class FloorFunction(Function):
 class CeilFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         eval_args = await self.eval_args(context)
 
         return int(math.ceil(eval_args[0]))
@@ -33,7 +30,7 @@ class RoundFunction(Function):
     MIN_ARGS = 1
     MAX_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         eval_args = await self.eval_args(context)
 
         v = eval_args[0]

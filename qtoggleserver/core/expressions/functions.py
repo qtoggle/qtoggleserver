@@ -3,11 +3,11 @@ import abc
 import asyncio
 import re
 
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Callable, List, Optional, Set
 
 from . import exceptions
 from . import parse
-from .base import Expression, Evaluated
+from .base import Expression, Evaluated, EvalContext
 from .literalvalues import LiteralValue
 from .port import PortValue
 
@@ -53,7 +53,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
 
         return deps
 
-    async def eval_args(self, context: Dict[str, Any]) -> List[Evaluated]:
+    async def eval_args(self, context: EvalContext) -> List[Evaluated]:
         return list(await asyncio.gather(*(a.eval(context) for a in self.args)))
 
     @classmethod

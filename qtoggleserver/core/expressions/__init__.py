@@ -6,7 +6,7 @@ from typing import Optional
 # core.expressions and core.main)
 from qtoggleserver.core import main
 
-from .base import Expression, Evaluated
+from .base import Expression, Evaluated, EvalContext
 
 
 # A time jump of more than one day will prevent the evaluation of expressions such as time-processing

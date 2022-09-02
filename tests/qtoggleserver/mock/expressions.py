@@ -13,7 +13,7 @@ class MockExpression(Expression):
     def set_value(self, value: Optional[float]) -> None:
         self.value = value
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         return self.value
 
     @staticmethod
@@ -27,7 +27,7 @@ class MockPortValue(PortValue):
 
         self.port: Optional[BasePort] = port
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         if self.port:
             value = context['port_values'].get(self.port.get_id())
             if value is None:
@@ -45,7 +45,7 @@ class MockPortRef(PortRef):
 
         self.port: Optional[BasePort] = port
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         if self.port:
             return self.port
 

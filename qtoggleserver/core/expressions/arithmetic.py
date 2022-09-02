@@ -1,7 +1,5 @@
 
-from typing import Any, Dict
-
-from .base import Evaluated
+from .base import Evaluated, EvalContext
 from .exceptions import ExpressionArithmeticError
 from .functions import function, Function
 
@@ -10,7 +8,7 @@ from .functions import function, Function
 class AddFunction(Function):
     MIN_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         return sum(await self.eval_args(context))
 
 
@@ -18,7 +16,7 @@ class AddFunction(Function):
 class SubFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         eval_args = await self.eval_args(context)
         return eval_args[0] - eval_args[1]
 
@@ -27,7 +25,7 @@ class SubFunction(Function):
 class MulFunction(Function):
     MIN_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         r = 1
         for e in await self.eval_args(context):
             r *= e
@@ -39,7 +37,7 @@ class MulFunction(Function):
 class DivFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         eval_args = await self.eval_args(context)
 
         if eval_args[1]:
@@ -53,7 +51,7 @@ class DivFunction(Function):
 class ModFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         eval_args = await self.eval_args(context)
 
         if eval_args[1]:
@@ -67,7 +65,7 @@ class ModFunction(Function):
 class PowFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         eval_args = await self.eval_args(context)
 
         return eval_args[0] ** eval_args[1]

@@ -1,7 +1,5 @@
 
-from typing import Any, Dict
-
-from .base import Evaluated
+from .base import Evaluated, EvalContext
 from .functions import function, Function
 
 
@@ -9,7 +7,7 @@ from .functions import function, Function
 class AndFunction(Function):
     MIN_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         r = True
         for e in await self.eval_args(context):
             r = r and bool(e)
@@ -21,7 +19,7 @@ class AndFunction(Function):
 class OrFunction(Function):
     MIN_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         r = False
         for e in await self.eval_args(context):
             r = r or bool(e)
@@ -33,7 +31,7 @@ class OrFunction(Function):
 class NotFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         return int(not bool((await self.eval_args(context))[0]))
 
 
@@ -41,7 +39,7 @@ class NotFunction(Function):
 class XOrFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         eval_args = await self.eval_args(context)
 
         e1 = bool(eval_args[0])

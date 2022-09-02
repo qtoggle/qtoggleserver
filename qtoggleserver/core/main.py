@@ -50,7 +50,9 @@ async def update() -> None:
         changed_set: Set[Union[core_ports.BasePort, str]] = {'millisecond'}
         value_pairs = {}
 
-        now = int(time.time())
+        now_float = time.time()
+        now = int(now_float)
+        now_ms = int(now_float * 1000)
         time_changed = False
         if now != _last_time:
             _last_time = now
@@ -85,7 +87,7 @@ async def update() -> None:
                 continue
 
             if new_value is None:
-                continue  # Read value not available
+                continue  # read value not available
 
             if new_value != old_value:
                 old_value_str = json_utils.dumps(old_value) if old_value is not None else '(unavailable)'
@@ -97,7 +99,7 @@ async def update() -> None:
                 changed_set.add(port)
                 value_pairs[port] = old_value, new_value
 
-        await handle_value_changes(changed_set, value_pairs)
+        await handle_value_changes(changed_set, value_pairs, now_ms)
 
         sessions.update()
 
@@ -122,6 +124,7 @@ async def update_loop() -> None:
 async def handle_value_changes(
     changed_set: Set[Union[core_ports.BasePort, str]],
     value_pairs: Dict[core_ports.BasePort, Tuple[NullablePortValue, NullablePortValue]],
+    now_ms: int
 ) -> None:
     global _force_eval_all_expressions
 
@@ -172,8 +175,12 @@ async def handle_value_changes(
         port_own_deps: Set[str] = expression.get_deps()
         deps: Set[str] = port_own_deps - {f'${port.get_id()}'}
 
+        if expression.is_eval_paused(now_ms):
+            continue
+
         # Evaluate a port's expression only if one of its deps changed
-        if not bool(deps & changed_set_str):
+        deps_changed = bool(deps & changed_set_str)
+        if not deps_changed:
             continue
 
         port.push_eval()

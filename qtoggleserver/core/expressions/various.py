@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 from qtoggleserver import system
 from qtoggleserver.core import history
 
-from .base import Evaluated
+from .base import Evaluated, EvalContext
 from .exceptions import PortValueUnavailable, ExpressionEvalError, EvalSkipped
 from .functions import function, Function
 from .port import PortRef
@@ -16,7 +16,7 @@ from .port import PortRef
 class AvailableFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         try:
             await self.args[0].eval(context)
             return True
@@ -29,7 +29,7 @@ class AvailableFunction(Function):
 class DefaultFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         try:
             return await self.args[0].eval(context)
 
@@ -46,7 +46,7 @@ class RisingFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         value = await self.args[0].eval(context)
 
         result = False
@@ -66,7 +66,7 @@ class FallingFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         value = await self.args[0].eval(context)
 
         result = False
@@ -86,7 +86,7 @@ class AccFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         value, accumulator = await self.eval_args(context)
         result = accumulator
 
@@ -107,7 +107,7 @@ class AccIncFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         value, accumulator = await self.eval_args(context)
         result = accumulator
 
@@ -128,7 +128,7 @@ class HystFunction(Function):
 
         self._last_result: int = 0
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         value, threshold1, threshold2 = await self.eval_args(context)
 
         self._last_result = int((self._last_result == 0 and value > threshold2) or
@@ -141,7 +141,7 @@ class HystFunction(Function):
 class OnOffAutoFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         value, auto = await self.eval_args(context)
         if value > 0:
             return True
@@ -161,7 +161,7 @@ class SequenceFunction(Function):
 
         self._last_time: float = 0
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         now = time.time() * 1000
 
         if self._last_time == 0:
@@ -197,7 +197,7 @@ class SequenceFunction(Function):
 class LUTFunction(Function):
     MIN_ARGS = 5
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         args = await self.eval_args(context)
         length = (len(args) - 1) // 2
         x = args[0]
@@ -227,7 +227,7 @@ class LUTFunction(Function):
 class LUTLIFunction(Function):
     MIN_ARGS = 5
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         args = await self.eval_args(context)
         length = (len(args) - 1) // 2
         x = args[0]
@@ -266,7 +266,7 @@ class HistoryFunction(Function):
         self._cached_timestamp: int = 0
         self._cached_max_diff: Optional[float] = None
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 

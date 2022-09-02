@@ -2,9 +2,9 @@
 import abc
 import re
 
-from typing import Any, Dict, Optional, Set
+from typing import Optional, Set
 
-from .base import Expression, Evaluated
+from .base import Expression, Evaluated, EvalContext
 from .exceptions import UnknownPortId, DisabledPort, PortValueUnavailable, UnexpectedCharacter
 
 # Import core.ports after defining Expression, because core.ports.BasePort depends on Expression.
@@ -60,7 +60,7 @@ class PortValue(PortExpression):
     def get_deps(self) -> Set[str]:
         return {f'${self.port_id}'}
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         port = self.get_port()
         if not port:
             raise UnknownPortId(self.port_id)
@@ -79,7 +79,7 @@ class SelfPortValue(PortValue):
     def __str__(self) -> str:
         return self.prefix
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         port = self.get_port()
         if not port:
             raise UnknownPortId(self.port_id)
@@ -98,7 +98,7 @@ class PortRef(PortExpression):
     def __str__(self) -> str:
         return f'{self.prefix}{self.port_id}'
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         port = self.get_port()
         if not port:
             raise UnknownPortId(self.port_id)

@@ -6,6 +6,7 @@ import asyncio
 import copy
 import inspect
 import logging
+import time
 
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
@@ -694,7 +695,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             return None
 
         if self._transform_read:
-            context = self._make_expression_context(port_values={self.get_id(): value})
+            context = self._make_eval_context(port_values={self.get_id(): value})
             value = await self.adapt_value_type(await self._transform_read.eval(context))
 
         return value
@@ -706,7 +707,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         value_str = json_utils.dumps(value)
 
         if self._transform_write:
-            context = self._make_expression_context(port_values={self.get_id(): value})
+            context = self._make_eval_context(port_values={self.get_id(): value})
             value = await self.adapt_value_type(await self._transform_write.eval(context))
             value_str = f'{value_str} ({json_utils.dumps(value)} after write transform)'
 
@@ -770,10 +771,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def push_eval(self) -> None:
         self.debug('will evaluate expression asap')
         port_values = {p.get_id(): p.get_last_read_value() for p in get_all() if p.is_enabled()}
+        now_ms = int(time.time() * 1000)
 
         try:
-            self._eval_queue.put_nowait(self._make_expression_context(port_values))
-
+            self._eval_queue.put_nowait(self._make_eval_context(port_values, now_ms))
         except asyncio.QueueFull:
             self.warning('eval queue full')
 
@@ -788,13 +789,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self.debug('eval task cancelled')
                 break
 
-    async def _eval_and_write(self, context: Dict[str, Any]) -> None:
+    async def _eval_and_write(self, context: core_expressions.EvalContext) -> None:
         self.debug('evaluating expression')
         expression = self.get_expression()
 
         try:
             value = await expression.eval(context)
-
         except core_expressions.ExpressionEvalError:
             return
 
@@ -814,10 +814,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             except Exception as e:
                 self.error('failed to write value: %s', e)
 
-    def _make_expression_context(self, port_values: Dict[str, NullablePortValue]) -> Dict[str, Any]:
-        return {
-            'port_values': port_values
-        }
+    def _make_eval_context(
+        self,
+        port_values: Dict[str, NullablePortValue],
+        now_ms: int = 0
+    ) -> core_expressions.EvalContext:
+        now_ms = now_ms or int(time.time() * 1000)
+        return core_expressions.EvalContext(port_values, now_ms)
 
     async def adapt_value_type(self, value: NullablePortValue) -> NullablePortValue:
         return self.adapt_value_type_sync(await self.get_type(), await self.get_attr('integer'), value)
@@ -944,7 +947,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if self._transform_write:
                     value = await self.adapt_value_type(
                         await self._transform_write.eval(
-                            self._make_expression_context(port_values={self.get_id(): value})
+                            self._make_eval_context(port_values={self.get_id(): value})
                         )
                     )
 

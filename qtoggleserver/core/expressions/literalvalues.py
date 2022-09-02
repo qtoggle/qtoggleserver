@@ -1,11 +1,11 @@
 
 import re
 
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from qtoggleserver.core.typing import NullablePortValue as CoreNullablePortValue
 
-from .base import Expression, Evaluated
+from .base import Expression, Evaluated, EvalContext
 from .exceptions import UnexpectedCharacter, EmptyExpression, ValueUnavailable
 
 
@@ -19,7 +19,7 @@ class LiteralValue(Expression):
     def __str__(self) -> str:
         return self.sexpression
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def eval(self, context: EvalContext) -> Evaluated:
         if self.value is None:
             raise ValueUnavailable
 
