@@ -3,23 +3,26 @@ import re
 
 from typing import Any, Dict, Optional
 
-from qtoggleserver.core.typing import PortValue as CorePortValue
+from qtoggleserver.core.typing import NullablePortValue as CoreNullablePortValue
 
 from .base import Expression, Evaluated
-from .exceptions import UnexpectedCharacter, EmptyExpression
+from .exceptions import UnexpectedCharacter, EmptyExpression, ValueUnavailable
 
 
 class LiteralValue(Expression):
-    def __init__(self, value: CorePortValue, sexpression: str) -> None:
+    def __init__(self, value: CoreNullablePortValue, sexpression: str) -> None:
         super().__init__()
 
-        self.value: CorePortValue = value
+        self.value: CoreNullablePortValue = value
         self.sexpression: str = sexpression
 
     def __str__(self) -> str:
         return self.sexpression
 
     async def eval(self, context: Dict[str, Any]) -> Evaluated:
+        if self.value is None:
+            raise ValueUnavailable
+
         return float(self.value)
 
     @staticmethod
@@ -36,23 +39,20 @@ class LiteralValue(Expression):
 
         if sexpression == 'true':
             value = 1
-
         elif sexpression == 'false':
             value = 0
-
+        elif sexpression == 'unavailable':
+            value = None
         else:
             try:
                 value = int(sexpression)
-
             except ValueError:
                 try:
                     value = float(sexpression)
-
                 except ValueError:
                     m = re.match(r'-?\d+(\.?\d+)?', sexpression)
                     if m:
                         raise UnexpectedCharacter(sexpression[m.end()], pos + m.end()) from None
-
                     else:
                         raise UnexpectedCharacter(sexpression[0], pos) from None
 
