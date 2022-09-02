@@ -57,7 +57,7 @@ class core:
     history_janitor_interval: int = 600
     listen_support: bool = True
     sequences_support: bool = True
-    ssl_support: bool = True
+    tls_support: bool = True
     virtual_ports: int = 1024
 
 

@@ -1,4 +1,6 @@
 
+import asyncio
+
 import pytest
 
 from qtoggleserver.core.expressions import check_loops, parse, port
@@ -34,6 +36,24 @@ async def test_port_value_circular_dependency(num_mock_port1, num_mock_port2):
     e2 = parse('nid2', 'ADD($nid1, 10)')
     with pytest.raises(CircularDependency):
         await check_loops(num_mock_port2, e2)
+
+
+async def test_port_value_self_immediate_value(num_mock_port1):
+    num_mock_port1.set_writable(True)
+    num_mock_port1.set_last_read_value(15)
+    await num_mock_port1.set_attr('expression', 'ADD($, 1)')
+    num_mock_port1.set_last_read_value(25)
+    await asyncio.sleep(0.1)
+    assert num_mock_port1.get_last_written_value() == 26
+
+
+async def test_port_value_snapshot_value(num_mock_port1):
+    num_mock_port1.set_writable(True)
+    num_mock_port1.set_last_read_value(15)
+    await num_mock_port1.set_attr('expression', 'ADD($nid1, 1)')
+    num_mock_port1.set_last_read_value(25)
+    await asyncio.sleep(0.1)
+    assert num_mock_port1.get_last_written_value() == 16
 
 
 async def test_port_value_allow_self_dependency(num_mock_port1):
