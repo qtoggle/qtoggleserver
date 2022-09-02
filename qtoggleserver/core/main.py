@@ -175,17 +175,18 @@ async def handle_value_changes(
         port_own_deps: Set[str] = expression.get_deps()
         deps: Set[str] = port_own_deps - {f'${port.get_id()}'}
 
-        if expression.is_asap_eval_paused(now_ms):
-            continue
-
         # Evaluate a port's expression only if one of its deps changed
         deps_changed = bool(deps & changed_set_str)
         if not deps_changed:
             continue
 
-        # Don't flood port with evals
-        if ('asap' in deps) and port.has_pending_eval():
-            continue
+        if 'asap' in deps:
+            if expression.is_asap_eval_paused(now_ms):
+                continue
+
+            # Don't flood port with evals
+            if port.has_pending_eval():
+                continue
 
         port.push_eval()
 

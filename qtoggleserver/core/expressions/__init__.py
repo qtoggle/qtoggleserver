@@ -10,7 +10,7 @@ from .base import Expression, EvalResult, EvalContext
 
 
 # A time jump of more than one day will prevent the evaluation of expressions such as time-processing
-TIME_JUMP_THRESHOLD = 86400
+TIME_JUMP_THRESHOLD = 86_400_000
 
 
 def parse(self_port_id: Optional[str], sexpression: str, pos: int = 1) -> Expression:

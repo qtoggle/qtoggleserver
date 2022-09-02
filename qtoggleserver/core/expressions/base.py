@@ -57,6 +57,10 @@ class EvalContext:
         self.port_values: Dict[str, NullablePortValue] = port_values
         self.now_ms: int = now_ms
 
+    @property
+    def timestamp(self) -> int:
+        return int(self.now_ms / 1000)
+
 
 # This needs to be imported here to avoid circular import issues
 from qtoggleserver.core import ports as core_ports  # noqa: E402

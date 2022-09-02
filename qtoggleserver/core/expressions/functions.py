@@ -29,7 +29,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
     NAME = None
     MIN_ARGS = None
     MAX_ARGS = None
-    DEPS = []
+    DEPS = set()
     ARG_KINDS = []
     ENABLED = True
 

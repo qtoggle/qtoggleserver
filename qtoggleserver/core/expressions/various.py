@@ -154,18 +154,16 @@ class OnOffAutoFunction(Function):
 @function('SEQUENCE')
 class SequenceFunction(Function):
     MIN_ARGS = 2
-    DEPS = ['asap']
+    DEPS = {'asap'}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_time: float = 0
+        self._last_time_ms: int = 0
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        now = time.time() * 1000
-
-        if self._last_time == 0:
-            self._last_time = now
+        if self._last_time_ms == 0:
+            self._last_time_ms = context.now_ms
 
         args = await self.eval_args(context)
         num_values = len(args) // 2
@@ -180,7 +178,7 @@ class SequenceFunction(Function):
         if len(delays) < len(values):
             delays.append(0)
 
-        delta = now - self._last_time
+        delta = context.now_ms - self._last_time_ms
         delta = delta % total_delay  # Work modulo total_delay, to create repeat effect
         delay_so_far = 0
         result = values[0]
@@ -255,7 +253,7 @@ class LUTLIFunction(Function):
 @function('HISTORY')
 class HistoryFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = ['second']
+    DEPS = {'second'}
     ARG_KINDS = [PortRef]
     ENABLED = history.is_enabled
 
@@ -276,7 +274,6 @@ class HistoryFunction(Function):
         # Transform everything to milliseconds
         timestamp *= 1000
         max_diff *= 1000
-        now_ms = int(time.time() * 1000)
 
         # If arguments have changed from last cached values, invalidate the sample
         if self._cached_timestamp != timestamp or self._cached_max_diff != max_diff:
@@ -291,12 +288,12 @@ class HistoryFunction(Function):
             from_timestamp = timestamp
             to_timestamp = timestamp + max_diff
             sort_desc = False
-            consider_curr_value = from_timestamp <= now_ms < to_timestamp
+            consider_curr_value = from_timestamp <= context.now_ms < to_timestamp
 
         elif max_diff < 0:
             # Look through all values before given timestamp, but no older than timestamp - abs(max_diff), and consider
             # the newest one
-            if now_ms <= timestamp:
+            if context.now_ms <= timestamp:
                 # Sample from the future requested, the best we've got is current value
                 from_timestamp = to_timestamp = None
                 consider_curr_value = True
@@ -314,7 +311,7 @@ class HistoryFunction(Function):
             from_timestamp = timestamp
             to_timestamp = None
             sort_desc = False
-            consider_curr_value = from_timestamp <= now_ms
+            consider_curr_value = from_timestamp <= context.now_ms
 
         if from_timestamp is not None or to_timestamp is not None:
             samples = await history.get_samples_slice(port, from_timestamp, to_timestamp, limit=1, sort_desc=sort_desc)
