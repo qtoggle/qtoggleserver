@@ -47,7 +47,7 @@ async def update() -> None:
         _update_lock = asyncio.Lock()
 
     async with _update_lock:
-        changed_set: Set[Union[core_ports.BasePort, str]] = {'millisecond'}
+        changed_set: Set[Union[core_ports.BasePort, str]] = {'asap'}
         value_pairs = {}
 
         now = time.time()
@@ -175,7 +175,7 @@ async def handle_value_changes(
         port_own_deps: Set[str] = expression.get_deps()
         deps: Set[str] = port_own_deps - {f'${port.get_id()}'}
 
-        if expression.is_eval_paused(now_ms):
+        if expression.is_asap_eval_paused(now_ms):
             continue
 
         # Evaluate a port's expression only if one of its deps changed
@@ -184,7 +184,7 @@ async def handle_value_changes(
             continue
 
         # Don't flood port with evals
-        if ('millisecond' in deps) and port.has_pending_eval():
+        if ('asap' in deps) and port.has_pending_eval():
             continue
 
         port.push_eval()

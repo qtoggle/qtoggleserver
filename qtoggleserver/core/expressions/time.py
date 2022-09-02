@@ -17,7 +17,7 @@ class TimeFunction(Function):
 @function('TIMEMS')
 class TimeMSFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
-    DEPS = ['millisecond']
+    DEPS = ['asap']
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         return int(time.time() * 1000)

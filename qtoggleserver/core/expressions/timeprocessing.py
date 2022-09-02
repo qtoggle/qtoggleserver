@@ -13,7 +13,7 @@ from .functions import function, Function
 @function('DELAY')
 class DelayFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
-    DEPS = ['millisecond']
+    DEPS = ['asap']
     HISTORY_SIZE = 1024
 
     def __init__(self, *args, **kwargs) -> None:
@@ -62,7 +62,7 @@ class SampleFunction(Function):
     def get_deps(self) -> Set[str]:
         # Function depends on milliseconds only if it's time to reevaluate value
         if time.time() * 1000 - self._last_time_ms >= self._last_duration:
-            return {'millisecond'}
+            return {'asap'}
 
         return super().get_deps()
 
@@ -91,7 +91,7 @@ class FreezeFunction(Function):
     def get_deps(self) -> Set[str]:
         # Function depends on milliseconds only when timer is active
         if self._last_time_ms > 0:
-            return {'millisecond'}
+            return {'asap'}
 
         return super().get_deps()
 
@@ -129,7 +129,7 @@ class HeldFunction(Function):
 
     def get_deps(self) -> Set[str]:
         if self._state == self.STATE_WAITING:
-            return {'millisecond'}
+            return {'asap'}
 
         return super().get_deps()
 
@@ -137,17 +137,13 @@ class HeldFunction(Function):
         value, fixed_value, duration = await self.eval_args(context)
 
         if value == fixed_value:
-            time_ms = int(time.time() * 1000)
-
             if self._state == self.STATE_OFF:
-                self._time_ms = time_ms
+                self._time_ms = context.now_ms
                 self._state = self.STATE_WAITING
-
             elif self._state == self.STATE_WAITING:
-                delta = time_ms - self._time_ms
+                delta = context.now_ms - self._time_ms
                 if delta >= duration:
                     self._state = self.STATE_ON
-
         else:
             self._state = self.STATE_OFF
 
@@ -157,36 +153,33 @@ class HeldFunction(Function):
 @function('DERIV')
 class DerivFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
-    DEPS = ['millisecond']
+    DEPS = ['asap']
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self._last_value: Optional[float] = None
-        self._last_time: float = 0
+        self._last_time: int = 0
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, sampling_interval = await self.eval_args(context)
-
-        sampling_interval /= 1000
         result = 0
-        now = time.time()
 
         if self._last_value is not None:
-            delta = now - self._last_time
+            delta = context.now_ms - self._last_time
             if delta < sampling_interval:
                 raise EvalSkipped()
 
             if delta > TIME_JUMP_THRESHOLD:
                 self._last_value = value
-                self._last_time = now
+                self._last_time = context.now_ms
                 raise EvalSkipped()
 
             else:
-                result = (value - self._last_value) / delta
+                result = (value - self._last_value) / delta / 1000
 
         self._last_value = value
-        self._last_time = now
+        self._last_time = context.now_ms
 
         return result
 
@@ -194,7 +187,7 @@ class DerivFunction(Function):
 @function('INTEG')
 class IntegFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = ['millisecond']
+    DEPS = ['asap']
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -209,7 +202,7 @@ class IntegFunction(Function):
         if self._last_value is not None:
             delta = context.now_ms - self._last_time
             if delta < sampling_interval:
-                self.pause_eval(self._last_time + sampling_interval)
+                self.pause_asap_eval(self._last_time + sampling_interval)
                 raise EvalSkipped()
 
             if delta > TIME_JUMP_THRESHOLD:
@@ -228,7 +221,7 @@ class IntegFunction(Function):
 @function('FMAVG')
 class FMAvgFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = ['millisecond']
+    DEPS = ['asap']
     QUEUE_SIZE = 1024
 
     def __init__(self, *args, **kwargs) -> None:
@@ -268,7 +261,7 @@ class FMAvgFunction(Function):
 @function('FMEDIAN')
 class FMedianFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = ['millisecond']
+    DEPS = ['asap']
     QUEUE_SIZE = 1024
 
     def __init__(self, *args, **kwargs) -> None:

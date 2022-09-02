@@ -154,7 +154,7 @@ class OnOffAutoFunction(Function):
 @function('SEQUENCE')
 class SequenceFunction(Function):
     MIN_ARGS = 2
-    DEPS = ['millisecond']
+    DEPS = ['asap']
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

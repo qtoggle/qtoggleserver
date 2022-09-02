@@ -81,10 +81,10 @@ class SecondFunction(DateUnitFunction):
         return dt.second
 
 
-@function('MILLISECOND')
+@function('asap')
 class MillisecondFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
-    DEPS = ['millisecond']
+    DEPS = ['asap']
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():

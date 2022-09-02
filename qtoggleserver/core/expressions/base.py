@@ -12,18 +12,15 @@ class Expression(metaclass=abc.ABCMeta):
     def __init__(self) -> None:
         super().__init__()
 
-        self._eval_paused_until_ms: int = 0
+        self._asap_eval_paused_until_ms: int = 0
 
-    def pause_eval(self, pause_until_ms: int) -> None:
-        self._eval_paused_until_ms = pause_until_ms
+    def pause_asap_eval(self, pause_until_ms: int) -> None:
+        self._asap_eval_paused_until_ms = pause_until_ms
 
-    def is_eval_paused(self, now_ms: int) -> bool:
-        return now_ms < self._eval_paused_until_ms
+    def is_asap_eval_paused(self, now_ms: int) -> bool:
+        return now_ms < self._asap_eval_paused_until_ms
 
     async def eval(self, context: EvalContext) -> EvalResult:
-        if self.is_eval_paused(context.now_ms):
-            raise EvalSkipped()
-
         try:
             return await self._eval(context)
         except EvalSkipped:
@@ -31,7 +28,7 @@ class Expression(metaclass=abc.ABCMeta):
         except ExpressionEvalError:
             # Pause expression evaluation for 1 second, as it's very unlikely that a problematic expression become
             # fixed within a second. This is a small speed optimization for expressions that depend on millisecond.
-            self.pause_eval(context.now_ms + 1000)
+            self.pause_asap_eval(context.now_ms + 1000)
             raise
 
     @abc.abstractmethod
@@ -41,7 +38,7 @@ class Expression(metaclass=abc.ABCMeta):
     def get_deps(self) -> Set[str]:
         # Special deps:
         #  * 'second' - used to indicate dependency on system time (seconds)
-        #  * 'millisecond' - used to indicate dependency on system time (milliseconds)
+        #  * 'asap' - used to indicate dependency on system time (milliseconds)
 
         return set()
 
