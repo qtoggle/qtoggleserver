@@ -2,6 +2,12 @@
 import pytest
 
 from qtoggleserver.core.expressions import literalvalues
+from qtoggleserver.core.expressions import EvalContext
+
+
+@pytest.fixture(scope='session')
+def dummy_eval_context():
+    return EvalContext(port_values={}, now_ms=0)
 
 
 @pytest.fixture(scope='session')
