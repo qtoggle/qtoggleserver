@@ -16,7 +16,7 @@ async def test_available_literal(literal_three, literal_false):
     expr = various.AvailableFunction([literal_false])
     assert await expr.eval(context={}) == 1
 
-{}
+
 async def test_available_port_value(num_mock_port1):
     port_expr = MockPortValue(num_mock_port1)
     expr = various.AvailableFunction([port_expr])
