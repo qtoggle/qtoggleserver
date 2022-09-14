@@ -176,7 +176,7 @@ class DerivFunction(Function):
                 self._last_time_ms = context.now_ms
                 raise EvalSkipped()
 
-            result = (value - self._last_value) / delta / 1000
+            result = (value - self._last_value) / delta * 1000
 
         self._last_value = value
         self._last_time_ms = context.now_ms

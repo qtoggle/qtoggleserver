@@ -25,10 +25,10 @@ def test_literal_parse_num():
     assert e.value == -3.14
 
 
-async def test_literal_unavailable():
+async def test_literal_unavailable(dummy_eval_context):
     e = parse(None, 'unavailable')
     with pytest.raises(ValueUnavailable):
-        await e.eval(context={})
+        await e.eval(dummy_eval_context)
 
 
 def test_literal_parse_unavailable():

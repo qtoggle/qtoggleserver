@@ -79,7 +79,7 @@ class SecondFunction(DateUnitFunction):
         return dt.second
 
 
-@function('asap')
+@function('MILLISECOND')
 class MillisecondFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
     DEPS = {'asap'}
@@ -88,7 +88,7 @@ class MillisecondFunction(Function):
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        return context.now_ms % 1000
+        return int(context.now_ms % 1000)
 
 
 @function('MINUTEDAY')

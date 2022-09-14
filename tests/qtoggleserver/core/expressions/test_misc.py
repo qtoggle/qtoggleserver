@@ -2,20 +2,21 @@
 import pytest
 
 from qtoggleserver.core.expressions import parse
+from qtoggleserver.core.expressions import EmptyExpression, EvalContext
 from qtoggleserver.core.expressions import UnknownFunction, UnbalancedParentheses, UnexpectedEnd, UnexpectedCharacter
-from qtoggleserver.core.expressions import EmptyExpression
 
 
 async def test_parse_complex_expression(num_mock_port1, num_mock_port2):
     num_mock_port1.set_last_read_value(5)
     num_mock_port2.set_last_read_value(-4)
 
-    context = {
-        'port_values': {
+    context = EvalContext(
+        port_values={
             'nid1': num_mock_port1.get_last_read_value(),
             'nid2': num_mock_port2.get_last_read_value()
-        }
-    }
+        },
+        now_ms=0
+    )
 
     e = parse('nid1', 'ADD(10, MUL($, 3.14), $nid2)')
     assert round(await e.eval(context=context), 1) == 21.7
@@ -28,12 +29,13 @@ async def test_parse_whitespace(num_mock_port1, num_mock_port2):
     num_mock_port1.set_last_read_value(5)
     num_mock_port2.set_last_read_value(-4)
 
-    context = {
-        'port_values': {
+    context = EvalContext(
+        port_values={
             'nid1': num_mock_port1.get_last_read_value(),
             'nid2': num_mock_port2.get_last_read_value()
-        }
-    }
+        },
+        now_ms=0
+    )
 
     e = parse('nid1', '  ADD  (\t10,  MUL  (  $,  3.14  )  ,  $nid2  )  ')
     assert round(await e.eval(context=context), 1) == 21.7

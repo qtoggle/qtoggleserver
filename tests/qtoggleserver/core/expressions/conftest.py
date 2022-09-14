@@ -6,8 +6,8 @@ from qtoggleserver.core.expressions import EvalContext
 
 
 @pytest.fixture(scope='session')
-def dummy_eval_context():
-    return EvalContext(port_values={}, now_ms=0)
+def dummy_eval_context(dummy_local_datetime):
+    return EvalContext(port_values={}, now_ms=int(dummy_local_datetime.timestamp() * 1000))
 
 
 @pytest.fixture(scope='session')
