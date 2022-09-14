@@ -770,7 +770,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 await asyncio.sleep(1)
 
     def push_eval(self) -> None:
-        self.debug('will evaluate expression asap') # TODO: remove me
         port_values = {p.get_id(): p.get_last_read_value() for p in get_all() if p.is_enabled()}
         now_ms = int(time.time() * 1000)
 

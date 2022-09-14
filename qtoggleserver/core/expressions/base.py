@@ -21,6 +21,7 @@ class Expression(metaclass=abc.ABCMeta):
         return now_ms < self._asap_eval_paused_until_ms
 
     async def eval(self, context: EvalContext) -> EvalResult:
+        self._asap_eval_paused_until_ms = 0
         try:
             return await self._eval(context)
         except EvalSkipped:
@@ -38,7 +39,7 @@ class Expression(metaclass=abc.ABCMeta):
     def get_deps(self) -> Set[str]:
         # Special deps:
         #  * 'second' - used to indicate dependency on system time (seconds)
-        #  * 'asap' - used to indicate dependency on system time (milliseconds)
+        #  * 'asap' - used to indicate that evaluation should be done as soon as possible
 
         return set()
 
