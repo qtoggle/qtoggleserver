@@ -1,21 +1,10 @@
 
-import datetime
-
 import pytest
 
 from qtoggleserver.core.expressions import timeprocessing, Function
-from qtoggleserver.core.expressions import EvalContext
 from qtoggleserver.core.expressions import InvalidNumberOfArguments, EvalSkipped
 
 from tests.qtoggleserver.mock import MockExpression
-
-
-@pytest.fixture()
-def later_eval_context(dummy_eval_context):
-    def wrapper_advance_eval_context_time(milliseconds: int) -> EvalContext:
-        return EvalContext(dummy_eval_context.port_values, dummy_eval_context.now_ms + milliseconds)
-
-    return wrapper_advance_eval_context_time
 
 
 async def test_delay(literal_one_thousand, dummy_eval_context, later_eval_context):

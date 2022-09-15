@@ -10,6 +10,14 @@ def dummy_eval_context(dummy_local_datetime):
     return EvalContext(port_values={}, now_ms=int(dummy_local_datetime.timestamp() * 1000))
 
 
+@pytest.fixture()
+def later_eval_context(dummy_eval_context):
+    def wrapper_advance_eval_context_time(milliseconds: int) -> EvalContext:
+        return EvalContext(dummy_eval_context.port_values, dummy_eval_context.now_ms + milliseconds)
+
+    return wrapper_advance_eval_context_time
+
+
 @pytest.fixture(scope='session')
 def literal_false():
     return literalvalues.LiteralValue(False, 'false')
