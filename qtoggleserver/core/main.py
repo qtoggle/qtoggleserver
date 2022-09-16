@@ -180,8 +180,9 @@ async def handle_value_changes(
         if not changed_deps:
             continue
 
-        if 'asap' in deps:
-            if expression.is_asap_eval_paused(now_ms) and len(changed_deps) == 1:
+        if ('asap' in deps) and (len(changed_deps) == 1):
+            # Skip asap evaling if explicitly paused
+            if expression.is_asap_eval_paused(now_ms):
                 continue
 
             # Don't flood port with evals
