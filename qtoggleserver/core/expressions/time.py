@@ -1,6 +1,4 @@
 
-import time
-
 from .base import EvalResult, EvalContext
 from .functions import function, Function
 

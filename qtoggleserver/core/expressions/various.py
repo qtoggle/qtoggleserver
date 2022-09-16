@@ -1,6 +1,4 @@
 
-import time
-
 from typing import Any, Dict, Optional
 
 from qtoggleserver import system
