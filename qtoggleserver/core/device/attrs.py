@@ -247,7 +247,7 @@ WIFI_RSSI_EXCELLENT = -50
 WIFI_RSSI_GOOD = -60
 WIFI_RSSI_FAIR = -70
 
-NETWORK_ATTRS_WATCH_INTERVAL = 10
+NETWORK_ATTRS_WATCH_INTERVAL = 5
 
 
 name: str = re.sub(r'[^a-zA-Z0-9_-]', '', socket.gethostname())
@@ -604,29 +604,22 @@ def _check_net_data_changed(data: dict) -> bool:
 
 
 async def _attrs_watch_loop() -> None:
-    last_net_time = time.time()
     last_net_data = {}
 
     try:
         while True:
-            now = time.time()
             changed = False
-            if now - last_net_time >= NETWORK_ATTRS_WATCH_INTERVAL:
-                try:
-                    if _check_net_data_changed(last_net_data):
-                        logger.debug('network attributes data changed')
-                        changed = True
-
-                except Exception as e:
-                    logger.error('network attributes data check failed: %s', e, exc_info=True)
-
-                last_net_time = now
+            try:
+                if _check_net_data_changed(last_net_data):
+                    logger.debug('network attributes data changed')
+                    changed = True
+            except Exception as e:
+                logger.error('network attributes data check failed: %s', e, exc_info=True)
 
             if changed:
                 await device_events.trigger_update()
 
-            await asyncio.sleep(1)
-
+            await asyncio.sleep(NETWORK_ATTRS_WATCH_INTERVAL)
     except asyncio.CancelledError:
         logger.debug('attributes watch task cancelled')
 
