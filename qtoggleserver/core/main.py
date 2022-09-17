@@ -108,10 +108,8 @@ async def update_loop() -> None:
             try:
                 if _ready:
                     await update()
-
             except Exception as e:
                 logger.error('update failed: %s', e, exc_info=True)
-
             await asyncio.sleep(settings.core.tick_interval / 1000.0)
 
         except asyncio.CancelledError:

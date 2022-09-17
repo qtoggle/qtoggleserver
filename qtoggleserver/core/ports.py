@@ -27,8 +27,6 @@ from qtoggleserver.utils import logging as logging_utils
 TYPE_BOOLEAN = 'boolean'
 TYPE_NUMBER = 'number'
 
-SAVE_INTERVAL = 1
-
 logger = logging.getLogger(__name__)
 
 _ports_by_id: Dict[str, BasePort] = {}
@@ -686,7 +684,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         try:
             value = await self.read_value()
-
         except Exception:
             raise
 
@@ -1273,11 +1270,10 @@ async def save_loop() -> None:
 
                 try:
                     await port.save()
-
                 except Exception as e:
                     port.error('save failed: %s', e, exc_info=True)
 
-            await asyncio.sleep(SAVE_INTERVAL)
+            await asyncio.sleep(settings.core.persist_interval)
 
         except asyncio.CancelledError:
             logger.debug('save loop cancelled')
