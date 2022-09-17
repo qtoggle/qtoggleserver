@@ -74,6 +74,7 @@ class SampleFunction(Function):
 @function('FREEZE')
 class FreezeFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
+    DEPS = {'asap'}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -82,27 +83,20 @@ class FreezeFunction(Function):
         self._last_duration_ms: int = 0
         self._last_time_ms: int = 0
 
-    def get_deps(self) -> Set[str]:
-        # Function must be evaluated asap only when timer is active
-
-        deps = super().get_deps()
-        if self._last_time_ms > 0:
-            deps.add('asap')
-
-        return deps
-
     async def _eval(self, context: EvalContext) -> EvalResult:
-        if self._last_time_ms == 0:  # Idle
+        if self._last_time_ms == 0:  # idle
             value = await self.args[0].eval(context)
-            if value != self._last_value:  # Value change detected, start timer
+            if value != self._last_value:  # value change detected, start timer
                 self._last_time_ms = context.now_ms
                 self._last_duration_ms = await self.args[1].eval(context)
                 self._last_value = value
-
-        else:  # Timer active
-            if context.now_ms - self._last_time_ms > self._last_duration_ms:  # Timer expired
+            else:
+                self.pause_asap_eval()
+        else:  # timer active
+            if context.now_ms - self._last_time_ms > self._last_duration_ms:  # timer expired
                 self._last_time_ms = 0
-                return await self._eval(context)  # Call eval() again, now that _last_time_ms is 0
+                # Call _eval() again, now that _last_time_ms is 0
+                return await self._eval(context)
             else:
                 self.pause_asap_eval(self._last_time_ms + self._last_duration_ms)
 
@@ -112,6 +106,7 @@ class FreezeFunction(Function):
 @function('HELD')
 class HeldFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
+    DEPS = {'asap'}
 
     STATE_OFF = 0
     STATE_WAITING = 1
@@ -122,15 +117,6 @@ class HeldFunction(Function):
 
         self._start_time_ms: Optional[int] = None
         self._state = self.STATE_OFF
-
-    def get_deps(self) -> Set[str]:
-        # Function must be evaluated asap only while waiting
-
-        deps = super().get_deps()
-        if self._state == self.STATE_WAITING:
-            deps.add('asap')
-
-        return deps
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, fixed_value, duration = await self.eval_args(context)
@@ -144,8 +130,10 @@ class HeldFunction(Function):
                 delta = context.now_ms - self._start_time_ms
                 if delta >= duration:
                     self._state = self.STATE_ON
+                self.pause_asap_eval()
         else:
             self._state = self.STATE_OFF
+            self.pause_asap_eval()
 
         return self._state == self.STATE_ON
 

@@ -678,7 +678,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def read_transformed_value(self) -> NullablePortValue:
         # Prevent overlapped readings
         while self._reading:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(1)
 
         self._reading = True
 
@@ -686,7 +686,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             value = await self.read_value()
         except Exception:
             raise
-
         finally:
             self._reading = False
 

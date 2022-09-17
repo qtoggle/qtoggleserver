@@ -77,7 +77,6 @@ async def update() -> None:
 
             try:
                 new_value = await port.read_transformed_value()
-
             except Exception as e:
                 logger.error('failed to read value from %s: %s', port, e, exc_info=True)
                 _ports_with_read_error.add(port)
@@ -138,14 +137,17 @@ async def handle_value_changes(
     full_eval = _force_eval_all_expressions
     _force_eval_all_expressions = False
 
-    # Transform `changed_set` into a set of strings so that we can compare it with deps
-    changed_set_str = {f'${c.get_id()}' if isinstance(c, core_ports.BasePort) else c for c in changed_set}
-
     now_ms = int(now * 1000)
 
-    # Trigger value-change events; save persisted ports
+    # Transform `changed_set` into a set of strings so that we can compare it with deps
+    changed_set_str = set()
+
+    # Trigger value-change events; save persisted ports; build changed_set_str
     for port in changed_set:
-        if not isinstance(port, core_ports.BasePort):
+        if isinstance(port, core_ports.BasePort):
+            changed_set_str.add(f'${port.get_id()}')
+        else:
+            changed_set_str.add(port)
             continue
 
         if not await port.is_internal():

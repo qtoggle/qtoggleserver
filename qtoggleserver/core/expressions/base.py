@@ -14,8 +14,8 @@ class Expression(metaclass=abc.ABCMeta):
 
         self._asap_eval_paused_until_ms: int = 0
 
-    def pause_asap_eval(self, pause_until_ms: int) -> None:
-        self._asap_eval_paused_until_ms = pause_until_ms
+    def pause_asap_eval(self, pause_until_ms: int = 0) -> None:
+        self._asap_eval_paused_until_ms = pause_until_ms or int(1e13)
 
     def is_asap_eval_paused(self, now_ms: int) -> bool:
         return now_ms < self._asap_eval_paused_until_ms
