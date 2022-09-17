@@ -4,6 +4,7 @@ import re
 
 from typing import Optional, Set
 
+from . import ROLE_TRANSFORM_READ, ROLE_TRANSFORM_WRITE
 from .base import Expression, EvalResult, EvalContext
 from .exceptions import UnknownPortId, DisabledPort, PortValueUnavailable, UnexpectedCharacter
 
@@ -80,6 +81,9 @@ class SelfPortValue(PortValue):
         return self.prefix
 
     async def _eval(self, context: EvalContext) -> EvalResult:
+        if self.role in (ROLE_TRANSFORM_READ, ROLE_TRANSFORM_WRITE):
+            return await super()._eval(context)
+
         port = self.get_port()
         if not port:
             raise UnknownPortId(self.port_id)
