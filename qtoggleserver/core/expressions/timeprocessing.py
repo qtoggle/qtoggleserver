@@ -1,4 +1,4 @@
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Tuple
 
 from . import TIME_JUMP_THRESHOLD
 

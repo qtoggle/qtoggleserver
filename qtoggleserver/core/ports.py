@@ -8,7 +8,7 @@ import inspect
 import logging
 import time
 
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
