@@ -248,7 +248,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._value_schema: Optional[GenericJSONDict] = None
 
         self._last_read_value: NullablePortValue = None
-        self._write_value_queue: List[Tuple[PortValue, asyncio.Future]] = []
+        self._write_value_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
+        self._pending_value: NullablePortValue = None
         self._write_value_task: Optional[asyncio.Task] = None
         if asyncio.get_event_loop().is_running():
             self._write_value_task = asyncio.create_task(self._write_value_loop())
@@ -715,7 +716,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         try:
             await self._write_value_queued(value)
             self.debug('wrote value %s', value_str)
-
         except Exception:
             self.error('failed to write value %s', value_str, exc_info=True)
 
@@ -727,14 +727,19 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def _write_value_queued(self, value: PortValue) -> None:
         done = asyncio.get_running_loop().create_future()
 
-        while len(self._write_value_queue) >= self.WRITE_VALUE_QUEUE_SIZE:
-            self.warning('write queue full, dropping oldest value')
+        while True:
+            try:
+                self._write_value_queue.put_nowait((value, done))
+            except asyncio.QueueFull as e:
+                self.warning('write queue full, dropping oldest value')
 
-            # Reject the future of the dropped request
-            (_, future) = self._write_value_queue.pop(0)
-            future.set_exception(Exception('Write queue full'))
+                # Reject the future of the dropped request with a QueueFull exception
+                _, future = self._write_value_queue.get_nowait()
+                future.set_exception(e)
+            else:
+                break
 
-        self._write_value_queue.append((value, done))
+        self._pending_value = value
 
         # Wait for actual write_value operation to be done
         await done
@@ -742,24 +747,21 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def _write_value_loop(self) -> None:
         while True:
             try:
-                try:
-                    value, done = self._write_value_queue.pop(0)
-                except IndexError:
-                    await asyncio.sleep(settings.core.tick_interval / 1000)
-                    continue
-
+                value, done = await self._write_value_queue.get()
                 self._writing = True
 
                 try:
                     result = await self.write_value(value)
                     done.set_result(result)
-
                 except Exception as e:
                     done.set_exception(e)
 
                 self._writing = False
+                if self._write_value_queue.empty():
+                    self._pending_value = None
 
-                await main.update()  # Do an update after every confirmed write
+                # Do an update after every confirmed write
+                await main.update()
 
             except asyncio.CancelledError:
                 self.debug('write value task cancelled')
@@ -878,7 +880,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         if self._enabled:
             attrs['value'] = self._last_read_value
-            attrs['pending_value'] = self._write_value_queue[0][0] if self._write_value_queue else None
+            attrs['pending_value'] = self._pending_value
         else:
             attrs['value'] = None
             attrs['pending_value'] = None
