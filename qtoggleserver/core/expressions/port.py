@@ -57,7 +57,7 @@ class PortValue(PortExpression):
     def __str__(self) -> str:
         return f'{self.prefix}{self.port_id}'
 
-    def get_deps(self) -> Set[str]:
+    def _get_deps(self) -> Set[str]:
         return {f'${self.port_id}'}
 
     async def _eval(self, context: EvalContext) -> EvalResult:

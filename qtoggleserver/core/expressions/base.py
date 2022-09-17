@@ -13,6 +13,7 @@ class Expression(metaclass=abc.ABCMeta):
         super().__init__()
 
         self._asap_eval_paused_until_ms: int = 0
+        self._cached_deps: Optional[Set[str]] = None
 
     def pause_asap_eval(self, pause_until_ms: int = 0) -> None:
         self._asap_eval_paused_until_ms = pause_until_ms or int(1e13)
@@ -37,10 +38,14 @@ class Expression(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     def get_deps(self) -> Set[str]:
+        if self._cached_deps is None:
+            self._cached_deps = self._get_deps()
+        return self._cached_deps
+
+    def _get_deps(self) -> Set[str]:
         # Special deps:
         #  * 'second' - used to indicate dependency on system time (seconds)
         #  * 'asap' - used to indicate that evaluation should be done as soon as possible
-
         return set()
 
     @staticmethod

@@ -46,7 +46,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
 
         return s
 
-    def get_deps(self) -> Set[str]:
+    def _get_deps(self) -> Set[str]:
         deps = set(self.DEPS)
         for arg in self.args:
             deps |= arg.get_deps()
