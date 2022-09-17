@@ -376,11 +376,11 @@ class Slave(logging_utils.LoggableMixin):
         return self._poll_interval == 0 and not self._listen_enabled
 
     async def wait_online(self, timeout: int) -> None:
-        for _ in range(timeout * 10):
+        for _ in range(timeout):
             if self._online:
                 return
 
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(1)
 
         raise asyncio.TimeoutError('Timeout waiting for device to come online')
 
