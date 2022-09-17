@@ -1,12 +1,10 @@
 
-import time
-
 from typing import Any, Dict, Optional
 
 from qtoggleserver import system
 from qtoggleserver.core import history
 
-from .base import Evaluated
+from .base import EvalResult, EvalContext
 from .exceptions import PortValueUnavailable, ExpressionEvalError, EvalSkipped
 from .functions import function, Function
 from .port import PortRef
@@ -16,7 +14,7 @@ from .port import PortRef
 class AvailableFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         try:
             await self.args[0].eval(context)
             return True
@@ -29,7 +27,7 @@ class AvailableFunction(Function):
 class DefaultFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         try:
             return await self.args[0].eval(context)
 
@@ -46,7 +44,7 @@ class RisingFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value = await self.args[0].eval(context)
 
         result = False
@@ -66,7 +64,7 @@ class FallingFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value = await self.args[0].eval(context)
 
         result = False
@@ -86,7 +84,7 @@ class AccFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value, accumulator = await self.eval_args(context)
         result = accumulator
 
@@ -107,7 +105,7 @@ class AccIncFunction(Function):
 
         self._last_value: Optional[float] = None
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value, accumulator = await self.eval_args(context)
         result = accumulator
 
@@ -128,7 +126,7 @@ class HystFunction(Function):
 
         self._last_result: int = 0
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value, threshold1, threshold2 = await self.eval_args(context)
 
         self._last_result = int((self._last_result == 0 and value > threshold2) or
@@ -141,7 +139,7 @@ class HystFunction(Function):
 class OnOffAutoFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value, auto = await self.eval_args(context)
         if value > 0:
             return True
@@ -154,18 +152,16 @@ class OnOffAutoFunction(Function):
 @function('SEQUENCE')
 class SequenceFunction(Function):
     MIN_ARGS = 2
-    DEPS = ['millisecond']
+    DEPS = {'asap'}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_time: float = 0
+        self._last_time_ms: int = 0
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
-        now = time.time() * 1000
-
-        if self._last_time == 0:
-            self._last_time = now
+    async def _eval(self, context: EvalContext) -> EvalResult:
+        if self._last_time_ms == 0:
+            self._last_time_ms = context.now_ms
 
         args = await self.eval_args(context)
         num_values = len(args) // 2
@@ -180,7 +176,7 @@ class SequenceFunction(Function):
         if len(delays) < len(values):
             delays.append(0)
 
-        delta = now - self._last_time
+        delta = context.now_ms - self._last_time_ms
         delta = delta % total_delay  # Work modulo total_delay, to create repeat effect
         delay_so_far = 0
         result = values[0]
@@ -197,7 +193,7 @@ class SequenceFunction(Function):
 class LUTFunction(Function):
     MIN_ARGS = 5
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         args = await self.eval_args(context)
         length = (len(args) - 1) // 2
         x = args[0]
@@ -227,7 +223,7 @@ class LUTFunction(Function):
 class LUTLIFunction(Function):
     MIN_ARGS = 5
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         args = await self.eval_args(context)
         length = (len(args) - 1) // 2
         x = args[0]
@@ -255,7 +251,7 @@ class LUTLIFunction(Function):
 @function('HISTORY')
 class HistoryFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = ['second']
+    DEPS = {'second'}
     ARG_KINDS = [PortRef]
     ENABLED = history.is_enabled
 
@@ -266,7 +262,7 @@ class HistoryFunction(Function):
         self._cached_timestamp: int = 0
         self._cached_max_diff: Optional[float] = None
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -276,7 +272,6 @@ class HistoryFunction(Function):
         # Transform everything to milliseconds
         timestamp *= 1000
         max_diff *= 1000
-        now_ms = int(time.time() * 1000)
 
         # If arguments have changed from last cached values, invalidate the sample
         if self._cached_timestamp != timestamp or self._cached_max_diff != max_diff:
@@ -291,12 +286,12 @@ class HistoryFunction(Function):
             from_timestamp = timestamp
             to_timestamp = timestamp + max_diff
             sort_desc = False
-            consider_curr_value = from_timestamp <= now_ms < to_timestamp
+            consider_curr_value = from_timestamp <= context.now_ms < to_timestamp
 
         elif max_diff < 0:
             # Look through all values before given timestamp, but no older than timestamp - abs(max_diff), and consider
             # the newest one
-            if now_ms <= timestamp:
+            if context.now_ms <= timestamp:
                 # Sample from the future requested, the best we've got is current value
                 from_timestamp = to_timestamp = None
                 consider_curr_value = True
@@ -314,7 +309,7 @@ class HistoryFunction(Function):
             from_timestamp = timestamp
             to_timestamp = None
             sort_desc = False
-            consider_curr_value = from_timestamp <= now_ms
+            consider_curr_value = from_timestamp <= context.now_ms
 
         if from_timestamp is not None or to_timestamp is not None:
             samples = await history.get_samples_slice(port, from_timestamp, to_timestamp, limit=1, sort_desc=sort_desc)

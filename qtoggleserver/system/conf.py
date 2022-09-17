@@ -1,8 +1,9 @@
 
-from typing import Any, Dict
-
 import logging
 import os
+import shutil
+
+from typing import Any, Dict
 
 from qtoggleserver.conf import settings
 from qtoggleserver.utils import conf as conf_utils
@@ -31,8 +32,17 @@ def conf_file_from_dict(d: Dict[str, Any]) -> None:
 
     logger.debug('updating configuration file %s', settings.source)
 
-    config = conf_utils.config_from_dict(d)
+    existing_d = conf_utils.config_from_file(settings.source)
+    existing_d.update(d)
+
+    config = conf_utils.config_from_dict(existing_d)
     config_str = conf_utils.config_to_str(config)
+
+    # Create a backup
+    try:
+        shutil.copy(settings.source, f'{settings.source}.bak')
+    except Exception:
+        logger.warning('failed to create backup file %s', f'{settings.source}.bak', exc_info=True)
 
     with open(settings.source, 'wt') as f:
         f.write(config_str)
