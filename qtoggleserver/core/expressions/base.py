@@ -9,9 +9,8 @@ from .exceptions import EvalSkipped, ExpressionEvalError
 
 
 class Expression(metaclass=abc.ABCMeta):
-    def __init__(self) -> None:
-        super().__init__()
-
+    def __init__(self, role: int) -> None:
+        self.role: int = role
         self._asap_eval_paused_until_ms: int = 0
         self._cached_deps: Optional[Set[str]] = None
 
@@ -50,7 +49,7 @@ class Expression(metaclass=abc.ABCMeta):
 
     @staticmethod
     @abc.abstractmethod
-    def parse(self_port_id: Optional[str], sexpression: str, pos: int) -> Expression:
+    def parse(self_port_id: Optional[str], sexpression: str, role: int, pos: int) -> Expression:
         raise NotImplementedError()
 
 

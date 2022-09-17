@@ -472,7 +472,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if self._expression:
             sexpression = str(self._expression)
             self.debug('resetting expression "%s"', sexpression)
-            self._expression = core_expressions.parse(self.get_id(), sexpression)
+            self._expression = core_expressions.parse(self.get_id(), sexpression, role=core_expressions.ROLE_VALUE)
 
             main.force_eval_expressions(self)
 
@@ -558,7 +558,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         try:
             self.debug('parsing expression "%s"', sexpression)
-            expression = core_expressions.parse(self.get_id(), sexpression)
+            expression = core_expressions.parse(self.get_id(), sexpression, role=core_expressions.ROLE_VALUE)
 
             self.debug('checking for expression circular dependencies')
             await core_expressions.check_loops(self, expression)
@@ -587,7 +587,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         try:
             self.debug('parsing expression "%s"', stransform_read)
-            transform_read = core_expressions.parse(self.get_id(), stransform_read)
+            transform_read = core_expressions.parse(
+                self.get_id(), stransform_read, role=core_expressions.ROLE_TRANSFORM_READ
+            )
 
             deps = transform_read.get_deps()
             for dep in deps:
@@ -629,7 +631,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         try:
             self.debug('parsing expression "%s"', stransform_write)
-            transform_write = core_expressions.parse(self.get_id(), stransform_write)
+            transform_write = core_expressions.parse(
+                self.get_id(), stransform_write, role=core_expressions.ROLE_TRANSFORM_WRITE
+            )
 
             deps = transform_write.get_deps()
             for dep in deps:

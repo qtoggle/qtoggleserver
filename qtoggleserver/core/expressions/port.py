@@ -12,8 +12,8 @@ from qtoggleserver.core import ports as core_ports
 
 
 class PortExpression(Expression, metaclass=abc.ABCMeta):
-    def __init__(self, port_id: str, prefix: str) -> None:
-        super().__init__()
+    def __init__(self, port_id: str, prefix: str, role: int) -> None:
+        super().__init__(role)
 
         self.port_id: str = port_id
         self.prefix: str = prefix
@@ -22,7 +22,7 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
         return core_ports.get(self.port_id)
 
     @staticmethod
-    def parse(self_port_id: Optional[str], sexpression: str, pos: int) -> Expression:
+    def parse(self_port_id: Optional[str], sexpression: str, role: int, pos: int) -> Expression:
         # Remove leading whitespace
         while sexpression and sexpression[0].isspace():
             sexpression = sexpression[1:]
@@ -42,15 +42,15 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
                 raise UnexpectedCharacter(port_id[p], p + pos + 2)
 
             if prefix == '$':
-                return PortValue(port_id, prefix)
+                return PortValue(port_id, prefix, role)
             else:  # Assuming prefix == '@'
-                return PortRef(port_id, prefix)
+                return PortRef(port_id, prefix, role)
 
         else:
             if prefix == '$':
-                return SelfPortValue(self_port_id, prefix)
+                return SelfPortValue(self_port_id, prefix, role)
             else:  # Assuming prefix == '@'
-                return SelfPortRef(self_port_id, prefix)
+                return SelfPortRef(self_port_id, prefix, role)
 
 
 class PortValue(PortExpression):

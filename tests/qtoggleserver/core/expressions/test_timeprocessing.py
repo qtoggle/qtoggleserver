@@ -1,7 +1,7 @@
 
 import pytest
 
-from qtoggleserver.core.expressions import timeprocessing, Function
+from qtoggleserver.core.expressions import timeprocessing, Function, ROLE_VALUE
 from qtoggleserver.core.expressions import InvalidNumberOfArguments, EvalSkipped
 
 from tests.qtoggleserver.mock import MockExpression
@@ -9,7 +9,7 @@ from tests.qtoggleserver.mock import MockExpression
 
 async def test_delay(literal_one_thousand, dummy_eval_context, later_eval_context):
     value_expr = MockExpression(3)
-    expr = timeprocessing.DelayFunction([value_expr, literal_one_thousand])
+    expr = timeprocessing.DelayFunction([value_expr, literal_one_thousand], ROLE_VALUE)
     assert await expr.eval(dummy_eval_context) == 3
     assert await expr.eval(later_eval_context(100)) == 3
 
@@ -21,21 +21,21 @@ async def test_delay(literal_one_thousand, dummy_eval_context, later_eval_contex
 
 
 def test_delay_parse():
-    e = Function.parse(None, 'DELAY(1, 2)', 0)
+    e = Function.parse(None, 'DELAY(1, 2)', ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.DelayFunction)
 
 
 def test_delay_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'DELAY(1)', 0)
+        Function.parse(None, 'DELAY(1)', ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'DELAY(1, 2, 3)', 0)
+        Function.parse(None, 'DELAY(1, 2, 3)', ROLE_VALUE, 0)
 
 
 async def test_sample(literal_one_thousand, dummy_eval_context, later_eval_context):
     value_expr = MockExpression(3)
-    expr = timeprocessing.SampleFunction([value_expr, literal_one_thousand])
+    expr = timeprocessing.SampleFunction([value_expr, literal_one_thousand], ROLE_VALUE)
     assert await expr.eval(dummy_eval_context) == 3
 
     value_expr.set_value(16)
@@ -47,22 +47,22 @@ async def test_sample(literal_one_thousand, dummy_eval_context, later_eval_conte
 
 
 def test_sample_parse():
-    e = Function.parse(None, 'SAMPLE(1, 2)', 0)
+    e = Function.parse(None, 'SAMPLE(1, 2)', ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.SampleFunction)
 
 
 def test_sample_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'SAMPLE(1)', 0)
+        Function.parse(None, 'SAMPLE(1)', ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'SAMPLE(1, 2, 3)', 0)
+        Function.parse(None, 'SAMPLE(1, 2, 3)', ROLE_VALUE, 0)
 
 
 async def test_freeze(dummy_eval_context, later_eval_context):
     value_expr = MockExpression(1)
     time_expr = MockExpression(200)
-    expr = timeprocessing.FreezeFunction([value_expr, time_expr])
+    expr = timeprocessing.FreezeFunction([value_expr, time_expr], ROLE_VALUE)
     assert await expr.eval(dummy_eval_context) == 1
 
     time_expr.set_value(50)
@@ -83,22 +83,22 @@ async def test_freeze(dummy_eval_context, later_eval_context):
 
 
 def test_freeze_parse():
-    e = Function.parse(None, 'FREEZE(1, 2)', 0)
+    e = Function.parse(None, 'FREEZE(1, 2)', ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.FreezeFunction)
 
 
 def test_freeze_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'FREEZE(1)', 0)
+        Function.parse(None, 'FREEZE(1)', ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'FREEZE(1, 2, 3)', 0)
+        Function.parse(None, 'FREEZE(1, 2, 3)', ROLE_VALUE, 0)
 
 
 async def test_held_fulfilled(literal_sixteen, dummy_eval_context, later_eval_context):
     value_expr = MockExpression(16)
     time_expr = MockExpression(200)
-    expr = timeprocessing.HeldFunction([value_expr, literal_sixteen, time_expr])
+    expr = timeprocessing.HeldFunction([value_expr, literal_sixteen, time_expr], ROLE_VALUE)
     assert await expr.eval(dummy_eval_context) == 0
 
     time_expr.set_value(500)
@@ -109,7 +109,7 @@ async def test_held_fulfilled(literal_sixteen, dummy_eval_context, later_eval_co
 async def test_held_not_fulfilled(literal_sixteen, dummy_eval_context, later_eval_context):
     value_expr = MockExpression(16)
     time_expr = MockExpression(200)
-    expr = timeprocessing.HeldFunction([value_expr, literal_sixteen, time_expr])
+    expr = timeprocessing.HeldFunction([value_expr, literal_sixteen, time_expr], ROLE_VALUE)
     assert await expr.eval(dummy_eval_context) == 0
 
     value_expr.set_value(15)
@@ -120,28 +120,28 @@ async def test_held_not_fulfilled(literal_sixteen, dummy_eval_context, later_eva
 async def test_held_different_value(literal_sixteen, dummy_eval_context, later_eval_context):
     value_expr = MockExpression(15)
     time_expr = MockExpression(200)
-    expr = timeprocessing.HeldFunction([value_expr, literal_sixteen, time_expr])
+    expr = timeprocessing.HeldFunction([value_expr, literal_sixteen, time_expr], ROLE_VALUE)
     assert await expr.eval(dummy_eval_context) == 0
     assert await expr.eval(later_eval_context(501)) == 0
 
 
 def test_held_parse():
-    e = Function.parse(None, 'HELD(1, 2, 3)', 0)
+    e = Function.parse(None, 'HELD(1, 2, 3)', ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.HeldFunction)
 
 
 def test_held_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'HELD(1, 2)', 0)
+        Function.parse(None, 'HELD(1, 2)', ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'HELD(1, 2, 3, 4)', 0)
+        Function.parse(None, 'HELD(1, 2, 3, 4)', ROLE_VALUE, 0)
 
 
 async def test_deriv(dummy_eval_context, later_eval_context):
     value_expr = MockExpression(0)
     time_expr = MockExpression(100)
-    expr = timeprocessing.DerivFunction([value_expr, time_expr])
+    expr = timeprocessing.DerivFunction([value_expr, time_expr], ROLE_VALUE)
     assert round(await expr.eval(dummy_eval_context), 1) == 0
 
     value_expr.set_value(1)
@@ -164,23 +164,23 @@ async def test_deriv(dummy_eval_context, later_eval_context):
 
 
 def test_deriv_parse():
-    e = Function.parse(None, 'DERIV(1, 2)', 0)
+    e = Function.parse(None, 'DERIV(1, 2)', ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.DerivFunction)
 
 
 def test_deriv_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'DERIV(1)', 0)
+        Function.parse(None, 'DERIV(1)', ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'DERIV(1, 2, 3)', 0)
+        Function.parse(None, 'DERIV(1, 2, 3)', ROLE_VALUE, 0)
 
 
 async def test_integ(dummy_eval_context, later_eval_context):
     acc_expr = MockExpression(0)
     value_expr = MockExpression(0)
     time_expr = MockExpression(100)
-    expr = timeprocessing.IntegFunction([value_expr, acc_expr, time_expr])
+    expr = timeprocessing.IntegFunction([value_expr, acc_expr, time_expr], ROLE_VALUE)
     assert round(await expr.eval(dummy_eval_context), 1) == 0
 
     value_expr.set_value(10)
@@ -208,23 +208,23 @@ async def test_integ(dummy_eval_context, later_eval_context):
 
 
 def test_integ_parse():
-    e = Function.parse(None, 'INTEG(1, 2, 3)', 0)
+    e = Function.parse(None, 'INTEG(1, 2, 3)', ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.IntegFunction)
 
 
 def test_integ_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'INTEG(1, 2)', 0)
+        Function.parse(None, 'INTEG(1, 2)', ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'INTEG(1, 2, 3, 4)', 0)
+        Function.parse(None, 'INTEG(1, 2, 3, 4)', ROLE_VALUE, 0)
 
 
 async def test_fmavg(dummy_eval_context, later_eval_context):
     value_expr = MockExpression(0)
     width_expr = MockExpression(4)
     time_expr = MockExpression(100)
-    expr = timeprocessing.FMAvgFunction([value_expr, width_expr, time_expr])
+    expr = timeprocessing.FMAvgFunction([value_expr, width_expr, time_expr], ROLE_VALUE)
     assert await expr.eval(dummy_eval_context) == 0
 
     value_expr.set_value(8)
@@ -264,23 +264,23 @@ async def test_fmavg(dummy_eval_context, later_eval_context):
 
 
 def test_fmavg_parse():
-    e = Function.parse(None, 'FMAVG(1, 2, 3)', 0)
+    e = Function.parse(None, 'FMAVG(1, 2, 3)', ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.FMAvgFunction)
 
 
 def test_fmavg_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'FMAVG(1, 2)', 0)
+        Function.parse(None, 'FMAVG(1, 2)', ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'FMAVG(1, 2, 3, 4)', 0)
+        Function.parse(None, 'FMAVG(1, 2, 3, 4)', ROLE_VALUE, 0)
 
 
 async def test_fmedian(dummy_eval_context, later_eval_context):
     value_expr = MockExpression(0)
     width_expr = MockExpression(4)
     time_expr = MockExpression(100)
-    expr = timeprocessing.FMedianFunction([value_expr, width_expr, time_expr])
+    expr = timeprocessing.FMedianFunction([value_expr, width_expr, time_expr], ROLE_VALUE)
     assert await expr.eval(dummy_eval_context) == 0
 
     value_expr.set_value(8)
@@ -320,13 +320,13 @@ async def test_fmedian(dummy_eval_context, later_eval_context):
 
 
 def test_fmedian_parse():
-    e = Function.parse(None, 'FMEDIAN(1, 2, 3)', 0)
+    e = Function.parse(None, 'FMEDIAN(1, 2, 3)', ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.FMedianFunction)
 
 
 def test_fmedian_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'FMEDIAN(1, 2)', 0)
+        Function.parse(None, 'FMEDIAN(1, 2)', ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'FMEDIAN(1, 2, 3, 4)', 0)
+        Function.parse(None, 'FMEDIAN(1, 2, 3, 4)', ROLE_VALUE, 0)

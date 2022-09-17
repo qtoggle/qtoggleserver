@@ -9,11 +9,16 @@ from qtoggleserver.core import main
 from .base import Expression, EvalResult, EvalContext
 
 
+ROLE_VALUE = 1
+ROLE_TRANSFORM_READ = 2
+ROLE_TRANSFORM_WRITE = 3
+ROLE_FILTER = 4
+
 # A time jump of more than one day will prevent the evaluation of expressions such as time-processing
 TIME_JUMP_THRESHOLD = 86_400_000
 
 
-def parse(self_port_id: Optional[str], sexpression: str, pos: int = 1) -> Expression:
+def parse(self_port_id: Optional[str], sexpression: str, role: int, pos: int = 1) -> Expression:
     while sexpression and sexpression[0].isspace():
         sexpression = sexpression[1:]
         pos += 1
@@ -22,13 +27,13 @@ def parse(self_port_id: Optional[str], sexpression: str, pos: int = 1) -> Expres
         sexpression = sexpression[:-1]
 
     if sexpression and sexpression[0] in ('$', '@'):
-        return PortExpression.parse(self_port_id, sexpression, pos)
+        return PortExpression.parse(self_port_id, sexpression, role, pos)
 
     elif '(' in sexpression or ')' in sexpression:
-        return Function.parse(self_port_id, sexpression, pos)
+        return Function.parse(self_port_id, sexpression, role, pos)
 
     else:
-        return LiteralValue.parse(self_port_id, sexpression, pos)
+        return LiteralValue.parse(self_port_id, sexpression, role, pos)
 
 
 # Import core.ports after defining Expression, because core.ports.BasePort depends on Expression.
