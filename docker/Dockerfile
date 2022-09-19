@@ -8,7 +8,7 @@
 # Frontend builder image
 
 # Always use BUILDPLATFORM for frontend-builder imagea, since it doesn't contain platform-specific binaries
-FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.8.9-slim-buster AS frontend-builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.9.14-slim-buster AS frontend-builder
 
 ARG PROJECT_VERSION
 
