@@ -2,8 +2,6 @@
 import asyncio
 import logging
 
-from typing import List, Set
-
 from qtoggleserver.conf import settings
 from qtoggleserver.utils import dynload as dynload_utils
 
@@ -12,8 +10,8 @@ from .base import Event, Handler
 
 logger = logging.getLogger(__name__)
 
-_registered_handlers: List[Handler] = []
-_active_handle_tasks: Set[asyncio.Task] = set()
+_registered_handlers: list[Handler] = []
+_active_handle_tasks: set[asyncio.Task] = set()
 _enabled: bool = True
 
 

@@ -2,7 +2,7 @@
 import logging
 import re
 
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Iterable, Optional, Union
 
 import bson
 import pymongo.database
@@ -41,9 +41,9 @@ class MongoDriver(BaseDriver):
     async def query(
         self,
         collection: str,
-        fields: Optional[List[str]],
-        filt: Dict[str, Any],
-        sort: List[Tuple[str, bool]],
+        fields: Optional[list[str]],
+        filt: dict[str, Any],
+        sort: list[tuple[str, bool]],
         limit: Optional[int]
     ) -> Iterable[Record]:
 
@@ -79,7 +79,7 @@ class MongoDriver(BaseDriver):
 
         return self._id_from_db(self._db[collection].insert_one(record).inserted_id)
 
-    async def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
+    async def update(self, collection: str, record_part: Record, filt: dict[str, Any]) -> int:
         if 'id' in record_part:
             record_part = dict(record_part)
             record_part['_id'] = self._id_to_db(record_part.pop('id'))
@@ -101,7 +101,7 @@ class MongoDriver(BaseDriver):
 
         return matched > 0
 
-    async def remove(self, collection: str, filt: Dict[str, Any]) -> int:
+    async def remove(self, collection: str, filt: dict[str, Any]) -> int:
         if 'id' in filt:
             filt = dict(filt)
             filt['_id'] = self._id_to_db_rec(filt.pop('id'))
@@ -110,7 +110,7 @@ class MongoDriver(BaseDriver):
 
         return self._db[collection].delete_many(db_filt).deleted_count
 
-    async def ensure_index(self, collection: str, index: List[Tuple[str, bool]]) -> None:
+    async def ensure_index(self, collection: str, index: list[tuple[str, bool]]) -> None:
         index = [(f, [pymongo.ASCENDING, pymongo.DESCENDING][r]) for f, r in index]
 
         try:
@@ -151,7 +151,7 @@ class MongoDriver(BaseDriver):
         else:
             return id_
 
-    def _id_to_db_rec(self, obj: Union[Dict, List, str]) -> Union[Dict, List, bson.ObjectId]:
+    def _id_to_db_rec(self, obj: Union[dict, list, str]) -> Union[dict, list, bson.ObjectId]:
         if isinstance(obj, dict):
             return {key: self._id_to_db_rec(value) for key, value in obj.items()}
 
@@ -162,7 +162,7 @@ class MongoDriver(BaseDriver):
             return self._id_to_db(obj)
 
     @staticmethod
-    def _filt_to_db(filt: Dict[str, Any]) -> Dict[str, Any]:
+    def _filt_to_db(filt: dict[str, Any]) -> dict[str, Any]:
         db_filt = {}
         for key, value in filt.items():
             if isinstance(value, dict):  # filter with operators

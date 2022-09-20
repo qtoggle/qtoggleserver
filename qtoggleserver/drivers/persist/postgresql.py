@@ -4,7 +4,7 @@ import datetime
 import logging
 import re
 
-from typing import Any, AsyncContextManager, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, AsyncContextManager, Iterable, Optional
 
 import asyncpg.pool
 
@@ -69,15 +69,15 @@ class PostgreSQLDriver(BaseDriver):
         }
 
         self._conn_pool: Optional[asyncpg.pool.Pool] = None
-        self._existing_tables: Optional[Set[str]] = None
+        self._existing_tables: Optional[set[str]] = None
         self._ensure_table_exists_lock: asyncio.Lock = asyncio.Lock()
 
     async def query(
         self,
         collection: str,
-        fields: Optional[List[str]],
-        filt: Dict[str, Any],
-        sort: List[Tuple[str, bool]],
+        fields: Optional[list[str]],
+        filt: dict[str, Any],
+        sort: list[tuple[str, bool]],
         limit: Optional[int]
     ) -> Iterable[Record]:
 
@@ -126,7 +126,7 @@ class PostgreSQLDriver(BaseDriver):
 
         return result_rows[0][0]
 
-    async def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
+    async def update(self, collection: str, record_part: Record, filt: dict[str, Any]) -> int:
         await self._ensure_table_exists(collection)
 
         params = []
@@ -159,7 +159,7 @@ class PostgreSQLDriver(BaseDriver):
 
         return count > 0
 
-    async def remove(self, collection: str, filt: Dict[str, Any]) -> int:
+    async def remove(self, collection: str, filt: dict[str, Any]) -> int:
         await self._ensure_table_exists(collection)
 
         params = []
@@ -175,7 +175,7 @@ class PostgreSQLDriver(BaseDriver):
 
         return count
 
-    async def ensure_index(self, collection: str, index: List[Tuple[str, bool]]) -> None:
+    async def ensure_index(self, collection: str, index: list[tuple[str, bool]]) -> None:
         await self._ensure_table_exists(collection)
 
         field_names = [i[0] for i in index]
@@ -238,7 +238,7 @@ class PostgreSQLDriver(BaseDriver):
 
             self._existing_tables.add(table_name)
 
-    async def _get_existing_table_names(self) -> Set[str]:
+    async def _get_existing_table_names(self) -> set[str]:
         query = (
             "SELECT table_name "
             "FROM information_schema.tables "
@@ -259,7 +259,7 @@ class PostgreSQLDriver(BaseDriver):
         statement: str,
         params: Iterable[Any] = None,
         has_result_rows: bool = False
-    ) -> Tuple[str, List[tuple]]:
+    ) -> tuple[str, list[tuple]]:
         async with await self._acquire_connection() as conn:
             stmt = await conn.prepare(statement)
 
@@ -272,7 +272,7 @@ class PostgreSQLDriver(BaseDriver):
                     return stmt.get_statusmsg(), []
 
     @staticmethod
-    def _fields_to_select_clause(fields: List[str], params: List[Any]) -> str:
+    def _fields_to_select_clause(fields: list[str], params: list[Any]) -> str:
         select_clause = []
 
         for field in fields:
@@ -288,7 +288,7 @@ class PostgreSQLDriver(BaseDriver):
         return select_clause
 
     @staticmethod
-    def _fields_to_order_by_clause(fields: List[Tuple[str, bool]], params: List[Any]) -> str:
+    def _fields_to_order_by_clause(fields: list[tuple[str, bool]], params: list[Any]) -> str:
         order_by_clause = []
 
         for field, desc in fields:
@@ -307,7 +307,7 @@ class PostgreSQLDriver(BaseDriver):
         return order_by_clause
 
     @staticmethod
-    def _filt_to_where_clause(filt: Dict[str, Any], params: List[Any]) -> str:
+    def _filt_to_where_clause(filt: dict[str, Any], params: list[Any]) -> str:
         where_clause = []
 
         for key, value in filt.items():
@@ -350,7 +350,7 @@ class PostgreSQLDriver(BaseDriver):
         return where_clause
 
     @staticmethod
-    def _record_to_update_clause(record: Record, params: List[Any]) -> str:
+    def _record_to_update_clause(record: Record, params: list[Any]) -> str:
         update_clause = []
 
         id_ = record.pop('id', None)
@@ -367,7 +367,7 @@ class PostgreSQLDriver(BaseDriver):
         return update_clause
 
     @staticmethod
-    def _index_to_index_clause(index: List[Tuple[str, bool]], params: List[Any]) -> str:
+    def _index_to_index_clause(index: list[tuple[str, bool]], params: list[Any]) -> str:
         index_clause = []
 
         # We can't use prepared statements with CREATE INDEX, so we need to build our query without arguments
@@ -379,7 +379,7 @@ class PostgreSQLDriver(BaseDriver):
 
         return index_clause
 
-    def _query_gen_wrapper(self, results: Iterable[Tuple[Any]], fields: Optional[List[str]]) -> Iterable[Record]:
+    def _query_gen_wrapper(self, results: Iterable[tuple[Any]], fields: Optional[list[str]]) -> Iterable[Record]:
         if fields:
             for result in results:
                 db_record = {fields[i]: r for i, r in enumerate(result)}
@@ -391,7 +391,7 @@ class PostgreSQLDriver(BaseDriver):
                 db_record['id'] = id_
                 yield self._record_from_db(db_record)
 
-    def _filt_to_db(self, filt: Dict[str, Any]) -> Dict[str, Any]:
+    def _filt_to_db(self, filt: dict[str, Any]) -> dict[str, Any]:
         db_filt = {}
         for key, value in filt.items():
             if isinstance(value, dict):  # filter with operators

@@ -2,7 +2,7 @@
 import asyncio
 import logging
 
-from typing import Dict, Iterable
+from typing import Iterable
 
 from qtoggleserver.conf import settings
 from qtoggleserver.utils import dynload as dynload_utils
@@ -13,7 +13,7 @@ from .peripheralport import PeripheralPort
 
 logger = logging.getLogger(__name__)
 
-_registered_peripherals: Dict[str, Peripheral] = {}
+_registered_peripherals: dict[str, Peripheral] = {}
 
 
 def all_peripherals() -> Iterable[Peripheral]:

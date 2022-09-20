@@ -3,8 +3,6 @@ import importlib
 import inspect
 import traceback
 
-from typing import Dict
-
 from qtoggleserver import slaves
 from qtoggleserver import system
 from qtoggleserver.conf import settings
@@ -22,7 +20,7 @@ from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NONE)
-async def get_access(request: core_api.APIRequest) -> Dict[str, str]:
+async def get_access(request: core_api.APIRequest) -> dict[str, str]:
     return {
         'level': core_api.ACCESS_LEVEL_MAPPING[request.access_level]
     }

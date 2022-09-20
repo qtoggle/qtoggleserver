@@ -3,7 +3,7 @@ import abc
 import asyncio
 import re
 
-from typing import Callable, List, Optional, Set
+from typing import Callable, Optional
 
 from . import exceptions
 from . import parse
@@ -33,10 +33,10 @@ class Function(Expression, metaclass=abc.ABCMeta):
     ARG_KINDS = []
     ENABLED = True
 
-    def __init__(self, args: List[Expression], role: int) -> None:
+    def __init__(self, args: list[Expression], role: int) -> None:
         super().__init__(role)
 
-        self.args: List[Expression] = args
+        self.args: list[Expression] = args
 
     def __str__(self) -> str:
         s = getattr(self, '_str', None)
@@ -46,18 +46,18 @@ class Function(Expression, metaclass=abc.ABCMeta):
 
         return s
 
-    def _get_deps(self) -> Set[str]:
+    def _get_deps(self) -> set[str]:
         deps = set(self.DEPS)
         for arg in self.args:
             deps |= arg.get_deps()
 
         return deps
 
-    async def eval_args(self, context: EvalContext) -> List[EvalResult]:
+    async def eval_args(self, context: EvalContext) -> list[EvalResult]:
         return list(await asyncio.gather(*(a.eval(context) for a in self.args)))
 
     @classmethod
-    def validate_arg_kinds(cls, args: List[Expression], pos_list: List[int]) -> None:
+    def validate_arg_kinds(cls, args: list[Expression], pos_list: list[int]) -> None:
         for i, arg in enumerate(args):
             try:
                 kind = cls.ARG_KINDS[i]

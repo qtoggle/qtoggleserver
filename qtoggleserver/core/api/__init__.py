@@ -4,7 +4,7 @@ from __future__ import annotations
 import functools
 import logging
 
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
 
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.typing import GenericJSONDict
@@ -77,11 +77,11 @@ class APIRequest:
         return self.handler.request.path
 
     @property
-    def query(self) -> Dict[str, str]:
+    def query(self) -> dict[str, str]:
         return {k: self.handler.decode_argument(v[0]) for k, v in self.handler.request.query_arguments.items()}
 
     @property
-    def headers(self) -> Dict[str, str]:
+    def headers(self) -> dict[str, str]:
         return self.handler.request.headers
 
     @property

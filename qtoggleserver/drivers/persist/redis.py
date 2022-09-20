@@ -2,7 +2,7 @@
 import logging
 import operator
 
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Iterable, Optional
 
 import redis
 
@@ -51,9 +51,9 @@ class RedisDriver(BaseDriver):
     async def query(
         self,
         collection: str,
-        fields: Optional[List[str]],
-        filt: Dict[str, Any],
-        sort: List[Tuple[str, bool]],
+        fields: Optional[list[str]],
+        filt: dict[str, Any],
+        sort: list[tuple[str, bool]],
         limit: Optional[int]
     ) -> Iterable[Record]:
 
@@ -124,7 +124,7 @@ class RedisDriver(BaseDriver):
 
         return id_
 
-    async def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
+    async def update(self, collection: str, record_part: Record, filt: dict[str, Any]) -> int:
         # Adapt the record part to db
         db_record_part = self._record_to_db(record_part)
 
@@ -188,7 +188,7 @@ class RedisDriver(BaseDriver):
 
         return True
 
-    async def remove(self, collection: str, filt: Dict[str, Any]) -> int:
+    async def remove(self, collection: str, filt: dict[str, Any]) -> int:
         removed_count = 0
 
         if isinstance(filt.get('id'), Id):
@@ -242,7 +242,7 @@ class RedisDriver(BaseDriver):
     def is_history_supported(self) -> bool:
         return self._history_support
 
-    def _filter_matches(self, db_record: GenericJSONDict, filt: Dict[str, Any]) -> bool:
+    def _filter_matches(self, db_record: GenericJSONDict, filt: dict[str, Any]) -> bool:
         for key, value in filt.items():
             try:
                 db_record_value = db_record[key]
@@ -278,7 +278,7 @@ class RedisDriver(BaseDriver):
         return str(self._client.incr(self._make_sequence_key(collection)))
 
     @classmethod
-    def _record_from_db(cls, db_record: GenericJSONDict, fields: Optional[Set[str]] = None) -> Record:
+    def _record_from_db(cls, db_record: GenericJSONDict, fields: Optional[set[str]] = None) -> Record:
         if fields is not None:
             return {k: (cls._value_from_db(v) if k != 'id' else v) for k, v in db_record.items() if k in fields}
 

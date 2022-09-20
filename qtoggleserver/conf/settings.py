@@ -9,7 +9,7 @@ debug: bool = False
 public_url: _typing.Optional[str] = None
 
 
-logging: _typing.Dict[str, _typing.Any] = {
+logging: dict[str, _typing.Any] = {
     'version': 1,
     'memory_logs_buffer_len': 10000,
     'formatters': {
@@ -158,10 +158,10 @@ class reverse:
     retry_interval: int = 5
 
 
-event_handlers: _typing.List[_typing.Dict[str, _typing.Any]] = []
+event_handlers: list[dict[str, _typing.Any]] = []
 
-peripherals: _typing.List[_typing.Dict[str, _typing.Any]] = []
+peripherals: list[dict[str, _typing.Any]] = []
 
-ports: _typing.List[_typing.Dict[str, _typing.Any]] = []
+ports: list[dict[str, _typing.Any]] = []
 
-port_mappings: _typing.Dict[str, str] = {}
+port_mappings: dict[str, str] = {}

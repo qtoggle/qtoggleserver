@@ -5,7 +5,7 @@ import functools
 import inspect
 import logging
 
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Any, Callable, Optional, Union
 
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.utils import asyncio as asyncio_utils
@@ -25,7 +25,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         logging_utils.LoggableMixin.__init__(self, name, self.logger)
 
         self._name: Optional[str] = name
-        self._ports: List[core_ports.BasePort] = []
+        self._ports: list[core_ports.BasePort] = []
         self._enabled: bool = False
         self._online: bool = False
         self._runner: Optional[asyncio_utils.ThreadedRunner] = None
@@ -40,7 +40,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_name(self) -> Optional[str]:
         return self._name
 
-    async def get_port_args(self) -> List[Dict[str, Any]]:
+    async def get_port_args(self) -> list[dict[str, Any]]:
         port_args = self.make_port_args()
         # Compatibility shim for peripherals having non-awaitable make_port_args() method
         if inspect.isawaitable(port_args):
@@ -59,13 +59,13 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return port_args
 
     @abc.abstractmethod
-    async def make_port_args(self) -> List[Union[Dict[str, Any], Type[core_ports.BasePort]]]:
+    async def make_port_args(self) -> list[Union[dict[str, Any], type[core_ports.BasePort]]]:
         raise NotImplementedError()
 
-    def set_ports(self, ports: List[core_ports.BasePort]) -> None:
+    def set_ports(self, ports: list[core_ports.BasePort]) -> None:
         self._ports = ports
 
-    def get_ports(self) -> List[core_ports.BasePort]:
+    def get_ports(self) -> list[core_ports.BasePort]:
         return list(self._ports)
 
     def is_enabled(self) -> bool:

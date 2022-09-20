@@ -4,7 +4,7 @@ from __future__ import annotations
 import abc
 import logging
 
-from typing import Optional, Tuple
+from typing import Optional
 
 from qtoggleserver.conf import settings
 from qtoggleserver.utils import conf as conf_utils
@@ -43,7 +43,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    async def get_latest(self) -> Tuple[str, str, str]:
+    async def get_latest(self) -> tuple[str, str, str]:
         pass
 
     @abc.abstractmethod
@@ -84,7 +84,7 @@ async def get_current_version() -> str:
     return current_version
 
 
-async def get_latest() -> Tuple[str, str, str]:
+async def get_latest() -> tuple[str, str, str]:
     latest_version, latest_date, latest_url = await _get_fwupdate().get_latest()
     logger.debug('latest version: %s/%s at %s', latest_version, latest_date, latest_url)
 

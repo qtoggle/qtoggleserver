@@ -5,7 +5,7 @@ import re
 import time
 
 from collections import deque
-from typing import Any, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import ports as core_ports
@@ -92,7 +92,7 @@ class SlavePort(core_ports.BasePort):
         self._cached_attrs: Attributes = {}
 
         # Names of attributes that will be updated remotely asap
-        self._remote_update_pending_attrs: Set[Tuple[str, Attribute]] = set()
+        self._remote_update_pending_attrs: set[tuple[str, Attribute]] = set()
 
         # Tag is kept locally
         self._tag: str = ''
@@ -108,7 +108,7 @@ class SlavePort(core_ports.BasePort):
 
         # Names of attributes (including value) that have been changed while device was offline and have to be
         # provisioned later
-        self._provisioning: Set[str] = set()
+        self._provisioning: set[str] = set()
 
         # Helps managing the triggering of port-update event from non-async methods
         self._trigger_update_task: Optional[asyncio.Task] = None
@@ -286,7 +286,7 @@ class SlavePort(core_ports.BasePort):
 
         return self._cached_attrs.get('online', True)
 
-    async def attr_get_provisioning(self) -> List[str]:
+    async def attr_get_provisioning(self) -> list[str]:
         return list(self._provisioning)
 
     def get_provisioning_attrs(self) -> Attributes:
@@ -365,7 +365,7 @@ class SlavePort(core_ports.BasePort):
             # We need to trigger a port-update because our provisioning attribute has changed
             await self.trigger_update()
 
-    async def set_sequence(self, values: List[PortValue], delays: List[int], repeat: int) -> None:
+    async def set_sequence(self, values: list[PortValue], delays: list[int], repeat: int) -> None:
         if not self._slave.is_online():
             raise exceptions.DeviceOffline(self._slave)
 

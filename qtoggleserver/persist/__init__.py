@@ -2,7 +2,7 @@
 import logging
 import threading
 
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Iterable, Optional, Union
 
 from qtoggleserver.conf import settings
 from qtoggleserver.utils import conf as conf_utils
@@ -42,9 +42,9 @@ def is_history_supported() -> bool:
 
 async def query(
     collection: str,
-    fields: Optional[List[str]] = None,
-    filt: Optional[Dict[str, Any]] = None,
-    sort: Optional[Union[str, List[str]]] = None,
+    fields: Optional[list[str]] = None,
+    filt: Optional[dict[str, Any]] = None,
+    sort: Optional[Union[str, list[str]]] = None,
     limit: Optional[int] = None
 ) -> Iterable[Record]:
 
@@ -136,7 +136,7 @@ async def insert(collection: str, record: Record) -> Id:
     return await _get_driver().insert(collection, record)
 
 
-async def update(collection: str, record_part: Record, filt: Optional[Dict[str, Any]] = None) -> int:
+async def update(collection: str, record_part: Record, filt: Optional[dict[str, Any]] = None) -> int:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
             'updating %s where %s with %s',
@@ -175,7 +175,7 @@ async def replace(collection: str, id_: Id, record: Record) -> bool:
         return True
 
 
-async def remove(collection: str, filt: Optional[Dict[str, Any]] = None) -> int:
+async def remove(collection: str, filt: Optional[dict[str, Any]] = None) -> int:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('removing from %s where %s', collection, json_utils.dumps(filt or {}, allow_extended_types=True))
 
@@ -186,7 +186,7 @@ async def remove(collection: str, filt: Optional[Dict[str, Any]] = None) -> int:
     return count
 
 
-async def ensure_index(collection: str, index: Union[str, List[str]]) -> None:
+async def ensure_index(collection: str, index: Union[str, list[str]]) -> None:
     if isinstance(index, str):
         index = [index]
 

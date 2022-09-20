@@ -7,7 +7,7 @@ import json
 import logging
 import time
 
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 from tornado import httpclient
 
@@ -31,11 +31,11 @@ _INTERFACE_CACHE_TIMEOUT = 60
 logger = logging.getLogger(__name__)
 
 _discover_task: Optional[asyncio.Task] = None
-_discovered_devices: Optional[Dict[str, DiscoveredDevice]] = None
+_discovered_devices: Optional[dict[str, DiscoveredDevice]] = None
 _finish_timer: Optional[asyncio_utils.Timer] = None
 
 # TODO: replace these with a common cache service with integrated timeout management
-_interface: Optional[Tuple[str]] = None
+_interface: Optional[tuple[str]] = None
 _interface_time: float = 0
 
 
@@ -154,7 +154,7 @@ async def finish() -> None:
     _discovered_devices = None
 
 
-def get_discovered_devices() -> Optional[Dict[str, DiscoveredDevice]]:
+def get_discovered_devices() -> Optional[dict[str, DiscoveredDevice]]:
     return _discovered_devices
 
 
@@ -264,7 +264,7 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
     return discovered_device
 
 
-async def _discover(timeout: int) -> List[DiscoveredDevice]:
+async def _discover(timeout: int) -> list[DiscoveredDevice]:
     logger.debug('starting discovery')
 
     # (Re)start our AP

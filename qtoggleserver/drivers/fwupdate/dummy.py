@@ -1,8 +1,6 @@
 
 import asyncio
 
-from typing import Tuple
-
 from qtoggleserver import version
 from qtoggleserver.system import fwupdate
 
@@ -22,7 +20,7 @@ class DummyDriver(fwupdate.BaseDriver):
     async def get_current_version(self) -> str:
         return version.VERSION
 
-    async def get_latest(self) -> Tuple[str, str, str]:
+    async def get_latest(self) -> tuple[str, str, str]:
         if self._status == fwupdate.STATUS_IDLE:
             await asyncio.sleep(_SLEEP_TIME)
 

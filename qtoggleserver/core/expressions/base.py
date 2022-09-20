@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import abc
 
-from typing import Dict, Optional, Set, Union
+from typing import Optional, Union
 
 from .exceptions import EvalSkipped, ExpressionEvalError
 
@@ -12,7 +12,7 @@ class Expression(metaclass=abc.ABCMeta):
     def __init__(self, role: int) -> None:
         self.role: int = role
         self._asap_eval_paused_until_ms: int = 0
-        self._cached_deps: Optional[Set[str]] = None
+        self._cached_deps: Optional[set[str]] = None
 
     def pause_asap_eval(self, pause_until_ms: int = 0) -> None:
         self._asap_eval_paused_until_ms = pause_until_ms or int(1e13)
@@ -36,12 +36,12 @@ class Expression(metaclass=abc.ABCMeta):
     async def _eval(self, context: EvalContext) -> EvalResult:
         raise NotImplementedError()
 
-    def get_deps(self) -> Set[str]:
+    def get_deps(self) -> set[str]:
         if self._cached_deps is None:
             self._cached_deps = self._get_deps()
         return self._cached_deps
 
-    def _get_deps(self) -> Set[str]:
+    def _get_deps(self) -> set[str]:
         # Special deps:
         #  * 'second' - used to indicate dependency on system time (seconds)
         #  * 'asap' - used to indicate that evaluation should be done as soon as possible
@@ -56,10 +56,10 @@ class Expression(metaclass=abc.ABCMeta):
 class EvalContext:
     def __init__(
         self,
-        port_values: Dict[str, NullablePortValue],
+        port_values: dict[str, NullablePortValue],
         now_ms: int
     ) -> None:
-        self.port_values: Dict[str, NullablePortValue] = port_values
+        self.port_values: dict[str, NullablePortValue] = port_values
         self.now_ms: int = now_ms
 
     @property

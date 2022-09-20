@@ -5,7 +5,7 @@ import asyncio
 import logging
 import time
 
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Iterable, Optional
 
 from qtoggleserver import persist
 from qtoggleserver import system
@@ -27,10 +27,10 @@ _sampling_task: Optional[asyncio.Task] = None
 _janitor_task: Optional[asyncio.Task] = None
 
 # Samples cached by port_id and timestamp
-_samples_cache: Dict[str, Dict[int, PortValue]] = {}
+_samples_cache: dict[str, dict[int, PortValue]] = {}
 
 # Used to schedule sample removal with remove_samples(..., background=True)
-_pending_remove_samples: List[Tuple[core_ports.BasePort, Optional[int], Optional[int]]] = []
+_pending_remove_samples: list[tuple[core_ports.BasePort, Optional[int], Optional[int]]] = []
 
 
 class HistoryEventHandler(core_events.Handler):
@@ -170,7 +170,7 @@ async def get_samples_slice(
 
 async def get_samples_by_timestamp(
     port: core_ports.BasePort,
-    timestamps: List[int]
+    timestamps: list[int]
 ) -> Iterable[GenericJSONDict]:
     port_filter = {
         'pid': port.get_id(),
@@ -234,7 +234,7 @@ async def save_sample(port: core_ports.BasePort, timestamp: int) -> None:
 
 
 async def remove_samples(
-    ports: List[core_ports.BasePort],
+    ports: list[core_ports.BasePort],
     from_timestamp: Optional[int] = None,
     to_timestamp: Optional[int] = None,
     background: bool = False

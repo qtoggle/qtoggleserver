@@ -3,7 +3,7 @@ import asyncio
 import inspect
 import time
 
-from typing import Any, Callable, List
+from typing import Any, Callable
 
 from qtoggleserver import slaves
 from qtoggleserver.conf import settings
@@ -163,7 +163,7 @@ async def wrap_error_with_port_id(port_id: str, func: Callable, *args, **kwargs)
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
-async def get_ports(request: core_api.APIRequest) -> List[Attributes]:
+async def get_ports(request: core_api.APIRequest) -> list[Attributes]:
     return [await port.to_json() for port in sorted(core_ports.get_all(), key=lambda p: p.get_id())]
 
 

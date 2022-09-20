@@ -2,7 +2,7 @@
 import abc
 import re
 
-from typing import Optional, Set
+from typing import Optional
 
 from . import ROLE_TRANSFORM_READ, ROLE_TRANSFORM_WRITE
 from .base import Expression, EvalResult, EvalContext
@@ -58,7 +58,7 @@ class PortValue(PortExpression):
     def __str__(self) -> str:
         return f'{self.prefix}{self.port_id}'
 
-    def _get_deps(self) -> Set[str]:
+    def _get_deps(self) -> set[str]:
         return {f'${self.port_id}'}
 
     async def _eval(self, context: EvalContext) -> EvalResult:

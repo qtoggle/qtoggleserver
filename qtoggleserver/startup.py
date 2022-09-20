@@ -7,7 +7,7 @@ import signal
 import sys
 import types
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from tornado import httpclient
 from tornado import netutil
@@ -157,7 +157,7 @@ def init_signals() -> None:
     loop.add_signal_handler(signal.SIGTERM, lambda: asyncio.create_task(shutdown()))
 
 
-def handle_loop_exception(loop: asyncio.AbstractEventLoop, context: Dict[str, Any]) -> None:
+def handle_loop_exception(loop: asyncio.AbstractEventLoop, context: dict[str, Any]) -> None:
     if isinstance(context.get('exception'), asyncio.CancelledError):
         return  # Ignore any cancelled errors
 

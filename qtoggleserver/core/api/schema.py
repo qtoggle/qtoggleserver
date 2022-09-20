@@ -1,7 +1,7 @@
 
 import re
 
-from typing import Any, Callable, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import jsonschema
 
@@ -264,7 +264,7 @@ POST_INTROSPECT = {
 }
 
 
-def _validate_schema(json: Any, schema: GenericJSONDict) -> Optional[Tuple[str, Optional[str]]]:
+def _validate_schema(json: Any, schema: GenericJSONDict) -> Optional[tuple[str, Optional[str]]]:
     try:
         jsonschema.Draft4Validator(schema=schema).validate(json)
         return None

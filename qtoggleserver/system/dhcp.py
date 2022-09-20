@@ -11,7 +11,7 @@ import socket
 import struct
 import time
 
-from typing import List, Optional
+from typing import Optional
 
 
 DEFAULT_TIMEOUT = 10
@@ -39,7 +39,7 @@ ARPHRD_ETHER = 1
 
 logger = logging.getLogger(__name__)
 
-_dhcp_replies: List[DHCPReply] = []
+_dhcp_replies: list[DHCPReply] = []
 
 
 class DHCPException(Exception):

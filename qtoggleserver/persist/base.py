@@ -1,7 +1,7 @@
 
 import abc
 
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Iterable, Optional
 
 from .typing import Id, Record
 
@@ -11,9 +11,9 @@ class BaseDriver(metaclass=abc.ABCMeta):
     async def query(
         self,
         collection: str,
-        fields: Optional[List[str]],
-        filt: Dict[str, Any],
-        sort: List[Tuple[str, bool]],
+        fields: Optional[list[str]],
+        filt: dict[str, Any],
+        sort: list[tuple[str, bool]],
         limit: Optional[int]
     ) -> Iterable[Record]:
         return []
@@ -23,7 +23,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
         return '1'  # Returns the inserted record id
 
     @abc.abstractmethod
-    async def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
+    async def update(self, collection: str, record_part: Record, filt: dict[str, Any]) -> int:
         return 0  # Returns the number of updated records
 
     @abc.abstractmethod
@@ -31,10 +31,10 @@ class BaseDriver(metaclass=abc.ABCMeta):
         return False  # Returns True if matched and replaced
 
     @abc.abstractmethod
-    async def remove(self, collection: str, filt: Dict[str, Any]) -> int:
+    async def remove(self, collection: str, filt: dict[str, Any]) -> int:
         return 0  # Returns the number of removed records
 
-    async def ensure_index(self, collection: str, index: List[Tuple[str, bool]]) -> None:
+    async def ensure_index(self, collection: str, index: list[tuple[str, bool]]) -> None:
         pass
 
     async def cleanup(self) -> None:

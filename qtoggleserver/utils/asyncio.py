@@ -6,13 +6,13 @@ import queue
 import sys
 import threading
 
-from typing import Any, Awaitable, Callable, List, Optional, Union
+from typing import Any, Awaitable, Callable, Optional, Union
 
 
 class ParallelCaller:
     def __init__(self, parallel: int = 1, max_queued: int = 0) -> None:
         self._queue: asyncio.Queue = asyncio.Queue(max_queued)
-        self._loop_tasks: List[Optional[asyncio.Task]] = []
+        self._loop_tasks: list[Optional[asyncio.Task]] = []
 
         # Start loop tasks
         for i in range(parallel):

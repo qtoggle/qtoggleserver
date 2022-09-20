@@ -2,7 +2,7 @@
 import asyncio
 import logging
 
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 from qtoggleserver.core.typing import PortValue
 
@@ -17,15 +17,15 @@ class SequenceError(Exception):
 class Sequence:
     def __init__(
         self,
-        values: List[PortValue],
-        delays: List[int],
+        values: list[PortValue],
+        delays: list[int],
         repeat: int,
         callback: Callable,
         finish_callback: Callable
     ) -> None:
 
-        self._values: List[PortValue] = values
-        self._delays: List[int] = delays
+        self._values: list[PortValue] = values
+        self._delays: list[int] = delays
         self._repeat: int = repeat
 
         self._callback: Callable = callback

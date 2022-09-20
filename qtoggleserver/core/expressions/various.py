@@ -1,5 +1,5 @@
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from qtoggleserver import system
 from qtoggleserver.core import history
@@ -258,7 +258,7 @@ class HistoryFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._cached_sample: Optional[Dict[str, Any]] = None
+        self._cached_sample: Optional[dict[str, Any]] = None
         self._cached_timestamp: int = 0
         self._cached_max_diff: Optional[float] = None
 

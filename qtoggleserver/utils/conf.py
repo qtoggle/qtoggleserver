@@ -2,7 +2,7 @@
 import types
 
 from collections import OrderedDict
-from typing import Any, Dict
+from typing import Any
 
 import pyhocon
 
@@ -10,7 +10,7 @@ import pyhocon
 _config_factory = pyhocon.ConfigFactory()
 
 
-def obj_to_dict(obj: Any) -> Dict[str, Any]:
+def obj_to_dict(obj: Any) -> dict[str, Any]:
     d = {}
     for k, v in obj.__dict__.items():
         if k.startswith('__') or isinstance(v, types.ModuleType):
@@ -41,7 +41,7 @@ def config_from_file(file: str) -> pyhocon.ConfigTree:
     return _config_factory.parse_file(file)
 
 
-def config_from_dict(d: Dict[str, Any]) -> pyhocon.ConfigTree:
+def config_from_dict(d: dict[str, Any]) -> pyhocon.ConfigTree:
     return _config_factory.from_dict(d)
 
 

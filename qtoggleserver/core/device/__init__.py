@@ -2,7 +2,7 @@
 import importlib
 import logging
 
-from typing import List, Optional
+from typing import Optional
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
@@ -87,7 +87,7 @@ async def save() -> None:
     await persist.set_value('device', data)
 
 
-async def reset(preserve_attrs: Optional[List[str]] = None) -> None:
+async def reset(preserve_attrs: Optional[list[str]] = None) -> None:
     preserve_attrs = preserve_attrs or []
 
     preserved_attrs = {}

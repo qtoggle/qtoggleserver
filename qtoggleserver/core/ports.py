@@ -8,7 +8,7 @@ import inspect
 import logging
 import time
 
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Optional, Union
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
@@ -29,7 +29,7 @@ TYPE_NUMBER = 'number'
 
 logger = logging.getLogger(__name__)
 
-_ports_by_id: Dict[str, BasePort] = {}
+_ports_by_id: dict[str, BasePort] = {}
 _save_loop_task: Optional[asyncio.Task] = None
 
 
@@ -239,8 +239,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         # Cache attribute definitions so that the ATTRDEFS property doesn't need to gather all of them on each access
         self._attrdefs_cache: Optional[AttributeDefinitions] = None
 
-        self._modifiable_attrs: Optional[Set[str]] = None
-        self._non_modifiable_attrs: Optional[Set[str]] = None
+        self._modifiable_attrs: Optional[set[str]] = None
+        self._non_modifiable_attrs: Optional[set[str]] = None
 
         self._schema: Optional[GenericJSONDict] = None
         self._value_schema: Optional[GenericJSONDict] = None
@@ -297,7 +297,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._non_modifiable_attrs = None
         self._schema = None
 
-    async def get_non_modifiable_attrs(self) -> Set[str]:
+    async def get_non_modifiable_attrs(self) -> set[str]:
         attrdefs = await self.get_attrdefs()
 
         if self._non_modifiable_attrs is None:
@@ -305,7 +305,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return self._non_modifiable_attrs
 
-    async def get_modifiable_attrs(self) -> Set[str]:
+    async def get_modifiable_attrs(self) -> set[str]:
         attrdefs = await self.get_attrdefs()
 
         if self._modifiable_attrs is None:
@@ -822,7 +822,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def _make_eval_context(
         self,
-        port_values: Dict[str, NullablePortValue],
+        port_values: dict[str, NullablePortValue],
         now_ms: int = 0
     ) -> core_expressions.EvalContext:
         now_ms = now_ms or int(time.time() * 1000)
@@ -847,7 +847,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             return float(value)
 
-    async def set_sequence(self, values: List[PortValue], delays: List[int], repeat: int) -> None:
+    async def set_sequence(self, values: list[PortValue], delays: list[int], repeat: int) -> None:
         if self._sequence:
             self.debug('canceling current sequence')
             await self._sequence.cancel()
@@ -1140,10 +1140,10 @@ class Port(BasePort, metaclass=abc.ABCMeta):
 
 
 async def load(
-    port_args: List[Dict[str, Any]],
+    port_args: list[dict[str, Any]],
     raise_on_error: bool = True,
     trigger_add: bool = True
-) -> List[BasePort]:
+) -> list[BasePort]:
     port_driver_classes = {}
     ports = []
 
@@ -1249,7 +1249,7 @@ async def load(
     return ports
 
 
-async def load_one(cls: Union[str, type], args: Dict[str, Any], trigger_add: bool = True) -> BasePort:
+async def load_one(cls: Union[str, type], args: dict[str, Any], trigger_add: bool = True) -> BasePort:
     port_args = [dict(driver=cls, **args)]
     ports = await load(port_args, raise_on_error=True, trigger_add=trigger_add)
 
@@ -1260,7 +1260,7 @@ def get(port_id: str) -> Optional[BasePort]:
     return _ports_by_id.get(port_id)
 
 
-def get_all() -> List[BasePort]:
+def get_all() -> list[BasePort]:
     return list(_ports_by_id.values())
 
 

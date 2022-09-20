@@ -4,7 +4,7 @@ import inspect
 import logging
 import re
 
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
 
 from tornado.iostream import StreamClosedError
 from tornado.web import RequestHandler, HTTPError
@@ -69,7 +69,7 @@ class BaseHandler(RequestHandler):
     def get_response_body_json(self) -> Any:
         return self._response_body_json
 
-    def get_response_headers(self) -> Dict[str, str]:
+    def get_response_headers(self) -> dict[str, str]:
         return dict(self._headers.get_all())
 
     def get(self, **kwargs) -> None:

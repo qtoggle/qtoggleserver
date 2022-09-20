@@ -3,7 +3,7 @@ import asyncio
 import logging
 import time
 
-from typing import Dict, Optional, Set, Tuple, Union
+from typing import Optional, Union
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import expressions as core_expressions  # noqa: F401; Required to avoid circular imports
@@ -27,7 +27,7 @@ _ready: bool = False
 _updating_enabled: bool = True
 _start_time: float = time.time()
 _last_time: int = 0
-_force_eval_expression_ports: Set[core_ports.BasePort] = set()
+_force_eval_expression_ports: set[core_ports.BasePort] = set()
 _force_eval_all_expressions: bool = False
 _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
 _update_lock: Optional[asyncio.Lock] = None
@@ -47,7 +47,7 @@ async def update() -> None:
         _update_lock = asyncio.Lock()
 
     async with _update_lock:
-        changed_set: Set[Union[core_ports.BasePort, str]] = {'asap'}
+        changed_set: set[Union[core_ports.BasePort, str]] = {'asap'}
         value_pairs = {}
 
         now = time.time()
@@ -117,8 +117,8 @@ async def update_loop() -> None:
 
 
 async def handle_value_changes(
-    changed_set: Set[Union[core_ports.BasePort, str]],
-    value_pairs: Dict[core_ports.BasePort, Tuple[NullablePortValue, NullablePortValue]],
+    changed_set: set[Union[core_ports.BasePort, str]],
+    value_pairs: dict[core_ports.BasePort, tuple[NullablePortValue, NullablePortValue]],
     now: float,
 ) -> None:
     global _force_eval_all_expressions
@@ -172,8 +172,8 @@ async def handle_value_changes(
             port.push_eval()
             continue
 
-        port_own_deps: Set[str] = expression.get_deps()
-        deps: Set[str] = port_own_deps - {f'${port.get_id()}'}
+        port_own_deps: set[str] = expression.get_deps()
+        deps: set[str] = port_own_deps - {f'${port.get_id()}'}
 
         # Evaluate a port's expression only if one of its deps changed
         changed_deps = deps & changed_set_str

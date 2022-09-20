@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from . import TIME_JUMP_THRESHOLD
 
@@ -16,7 +16,7 @@ class DelayFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._queue: List[Tuple[int, float]] = []
+        self._queue: list[tuple[int, float]] = []
         self._last_value: Optional[float] = None
         self._current_value: Optional[float] = None
 
@@ -215,7 +215,7 @@ class FMAvgFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._queue: List[float] = []
+        self._queue: list[float] = []
         self._last_time_ms: int = 0
 
     async def _eval(self, context: EvalContext) -> EvalResult:
@@ -253,7 +253,7 @@ class FMedianFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._queue: List[float] = []
+        self._queue: list[float] = []
         self._last_time_ms: int = 0
 
     async def _eval(self, context: EvalContext) -> EvalResult:

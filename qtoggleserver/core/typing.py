@@ -1,16 +1,16 @@
 
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 
 PortValue = Union[int, float, bool]
 NullablePortValue = Union[int, float, bool, None]
-PortValueChoices = List[Dict[str, Union[str, int, float]]]
+PortValueChoices = list[dict[str, Union[str, int, float]]]
 
-Attribute = Union[int, float, bool, str, List[dict]]
-Attributes = Dict[str, Attribute]
+Attribute = Union[int, float, bool, str, list[dict]]
+Attributes = dict[str, Attribute]
 
-AttributeDefinition = Dict[str, Any]
-AttributeDefinitions = Dict[str, AttributeDefinition]
+AttributeDefinition = dict[str, Any]
+AttributeDefinitions = dict[str, AttributeDefinition]
 
-GenericJSONDict = Dict[str, Any]
-GenericJSONList = List[Dict[str, Any]]
+GenericJSONDict = dict[str, Any]
+GenericJSONList = list[dict[str, Any]]

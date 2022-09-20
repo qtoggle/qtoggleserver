@@ -2,7 +2,7 @@
 import abc
 import logging
 
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Optional, Union
 
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
@@ -22,27 +22,27 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         self._filter: dict = filter or {}
         self._filter_prepared: bool = False
 
-        self._filter_event_types: Optional[Set[str]] = None
+        self._filter_event_types: Optional[set[str]] = None
 
         self._filter_device_attrs: Attributes = {}
-        self._filter_device_attr_transitions: Dict[str, Tuple[Attribute, Attribute]] = {}
-        self._filter_device_attr_names: Set[str] = set()
+        self._filter_device_attr_transitions: dict[str, tuple[Attribute, Attribute]] = {}
+        self._filter_device_attr_names: set[str] = set()
 
-        self._filter_port_value: Optional[Union[List[NullablePortValue]], core_expressions.Expression] = None
-        self._filter_port_value_transition: Optional[Tuple[NullablePortValue, NullablePortValue]] = None
-        self._filter_port_attrs: Union[Attributes, Dict[str, List[Attribute]]] = {}
-        self._filter_port_attr_transitions: Dict[str, Tuple[Attribute, Attribute]] = {}
-        self._filter_port_attr_names: Set[str] = set()
+        self._filter_port_value: Optional[Union[list[NullablePortValue]], core_expressions.Expression] = None
+        self._filter_port_value_transition: Optional[tuple[NullablePortValue, NullablePortValue]] = None
+        self._filter_port_attrs: Union[Attributes, dict[str, list[Attribute]]] = {}
+        self._filter_port_attr_transitions: dict[str, tuple[Attribute, Attribute]] = {}
+        self._filter_port_attr_names: set[str] = set()
 
-        self._filter_slave_attrs: Union[Attributes, Dict[str, List[Attribute]]] = {}
-        self._filter_slave_attr_transitions: Dict[str, Tuple[Attribute, Attribute]] = {}
-        self._filter_slave_attr_names: Set[str] = set()
+        self._filter_slave_attrs: Union[Attributes, dict[str, list[Attribute]]] = {}
+        self._filter_slave_attr_transitions: dict[str, tuple[Attribute, Attribute]] = {}
+        self._filter_slave_attr_names: set[str] = set()
 
         # Maintain an internal "last" state for all objects, so we can detect changes in attributes and values
-        self._device_attrs: Union[Attributes, Dict[str, List[Attribute]]] = {}
-        self._port_values: Dict[str, NullablePortValue] = {}
-        self._port_attrs: Dict[str, Attributes] = {}
-        self._slave_attrs: Dict[str, Attributes] = {}
+        self._device_attrs: Union[Attributes, dict[str, list[Attribute]]] = {}
+        self._port_values: dict[str, NullablePortValue] = {}
+        self._port_attrs: dict[str, Attributes] = {}
+        self._slave_attrs: dict[str, Attributes] = {}
 
         super().__init__(name=name)
 
@@ -117,8 +117,8 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         self.debug('filter prepared')
 
     @staticmethod
-    def _make_changed_added_removed(old_attrs: Attributes, new_attrs: Attributes) -> Tuple[
-        Dict[str, Tuple[Attribute, Attribute]],
+    def _make_changed_added_removed(old_attrs: Attributes, new_attrs: Attributes) -> tuple[
+        dict[str, tuple[Attribute, Attribute]],
         Attributes,
         Attributes
     ]:
@@ -146,11 +146,11 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
         return changed_attrs, added_attrs, removed_attrs
 
-    async def _update_from_event(self, event: core_events.Event) -> Tuple[
-        Tuple[NullablePortValue, NullablePortValue],
+    async def _update_from_event(self, event: core_events.Event) -> tuple[
+        tuple[NullablePortValue, NullablePortValue],
         Attributes,
         Attributes,
-        Dict[str, Tuple[Attribute, Attribute]],
+        dict[str, tuple[Attribute, Attribute]],
         Attributes,
         Attributes
     ]:
@@ -210,9 +210,9 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
     @staticmethod
     def _accepts_attrs(
-        attr_names: Set[str],
+        attr_names: set[str],
         filter_attrs: Attributes,
-        filter_attr_transitions: Dict[str, Tuple[Attribute, Attribute]],
+        filter_attr_transitions: dict[str, tuple[Attribute, Attribute]],
         old_attrs: Attributes,
         new_attrs: Attributes
     ) -> bool:
@@ -252,7 +252,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
     async def accepts_port_value(
         self,
         event: core_events.Event,
-        value_pair: Tuple[NullablePortValue, NullablePortValue]
+        value_pair: tuple[NullablePortValue, NullablePortValue]
     ) -> bool:
 
         old_value, new_value = value_pair
@@ -278,7 +278,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
     async def accepts_port(
         self,
         event: core_events.Event,
-        value_pair: Tuple[NullablePortValue, NullablePortValue],
+        value_pair: tuple[NullablePortValue, NullablePortValue],
         old_attrs: Attributes,
         new_attrs: Attributes
     ) -> bool:
@@ -306,10 +306,10 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
     async def accepts(
         self,
         event: core_events.Event,
-        value_pair: Tuple[NullablePortValue, NullablePortValue],
+        value_pair: tuple[NullablePortValue, NullablePortValue],
         old_attrs: Attributes,
         new_attrs: Attributes,
-        changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+        changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
         removed_attrs: Attributes
     ) -> bool:
@@ -436,7 +436,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         port: core_ports.BasePort,
         old_attrs: Attributes,
         new_attrs: Attributes,
-        changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+        changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
         removed_attrs: Attributes
     ) -> None:
@@ -454,7 +454,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         event: core_events.Event,
         old_attrs: Attributes,
         new_attrs: Attributes,
-        changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+        changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
         removed_attrs: Attributes
     ) -> None:
@@ -470,7 +470,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         slave: slaves_devices.Slave,
         old_attrs: Attributes,
         new_attrs: Attributes,
-        changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+        changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
         removed_attrs: Attributes
     ) -> None:

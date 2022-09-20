@@ -2,7 +2,7 @@
 import datetime
 import logging
 
-from typing import List, Optional
+from typing import Optional
 
 from .client import APClient
 from .dnsmasq import DNSMasq
@@ -118,7 +118,7 @@ async def stop() -> None:
     logger.debug('stopped')
 
 
-def get_clients() -> List[APClient]:
+def get_clients() -> list[APClient]:
     if not is_running():
         raise APException('AP not started')
 

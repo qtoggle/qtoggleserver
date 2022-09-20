@@ -4,7 +4,7 @@ import logging
 import operator
 import os
 
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Iterable, Optional
 
 from qtoggleserver.conf import settings
 from qtoggleserver.persist import BaseDriver
@@ -25,9 +25,9 @@ FILTER_OP_MAPPING = {
 
 logger = logging.getLogger(__name__)
 
-Collection = Dict[int, Record]
-IndexedData = Dict[str, Collection]
-UnindexedData = Dict[str, List[Record]]
+Collection = dict[int, Record]
+IndexedData = dict[str, Collection]
+UnindexedData = dict[str, list[Record]]
 
 
 class JSONPersistError(Exception):
@@ -61,9 +61,9 @@ class JSONDriver(BaseDriver):
     async def query(
         self,
         collection: str,
-        fields: Optional[List[str]],
-        filt: Dict[str, Any],
-        sort: List[Tuple[str, bool]],
+        fields: Optional[list[str]],
+        filt: dict[str, Any],
+        sort: list[tuple[str, bool]],
         limit: Optional[int]
     ) -> Iterable[Record]:
 
@@ -126,7 +126,7 @@ class JSONDriver(BaseDriver):
 
         return id_
 
-    async def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
+    async def update(self, collection: str, record_part: Record, filt: dict[str, Any]) -> int:
         coll = self._data.setdefault(collection, {})
         modified_count = 0
 
@@ -169,7 +169,7 @@ class JSONDriver(BaseDriver):
 
         return True
 
-    async def remove(self, collection: str, filt: Dict[str, Any]) -> int:
+    async def remove(self, collection: str, filt: dict[str, Any]) -> int:
         coll = self._data.setdefault(collection, {})
         removed_count = 0
 
@@ -196,7 +196,7 @@ class JSONDriver(BaseDriver):
 
         return removed_count
 
-    def _filter_matches(self, record: Record, filt: Dict[str, Any]) -> bool:
+    def _filter_matches(self, record: Record, filt: dict[str, Any]) -> bool:
         for key, value in filt.items():
             try:
                 db_record_value = record[key]

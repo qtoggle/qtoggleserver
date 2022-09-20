@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import time
 
-from typing import Dict, List, Optional, TextIO, Union
+from typing import Optional, TextIO, Union
 
 from .exceptions import APException
 
@@ -55,7 +55,7 @@ class DNSMasq:
         self._leases_file: Optional[TextIO] = None
         self._process: Optional[subprocess.Popen] = None
 
-        self._leases: List[Dict[str, Union[str, int]]] = []
+        self._leases: list[dict[str, Union[str, int]]] = []
 
     def is_alive(self) -> bool:
         return (self._process is not None) and (self._process.poll() is None)
@@ -162,7 +162,7 @@ class DNSMasq:
         except subprocess.CalledProcessError:
             return None
 
-    def _read_leases_file(self) -> List[Dict[str, Union[str, int]]]:
+    def _read_leases_file(self) -> list[dict[str, Union[str, int]]]:
         self._leases_file.seek(0)
         lines = self._leases_file.readlines()
 
@@ -186,7 +186,7 @@ class DNSMasq:
 
         return leases
 
-    def get_leases(self) -> List[Dict[str, Union[str, int]]]:
+    def get_leases(self) -> list[dict[str, Union[str, int]]]:
         if self._leases_file:
             self._leases = self._read_leases_file()
 

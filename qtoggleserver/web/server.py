@@ -3,7 +3,7 @@ import asyncio
 import logging
 import ssl
 
-from typing import List, Optional
+from typing import Optional
 
 from tornado.web import Application, HTTPServer, RequestHandler, URLSpec
 from qui.web import tornado as qui_tornado
@@ -35,7 +35,7 @@ def _log_request(handler: RequestHandler) -> None:
     log_method('%d %s %.2fms', handler.get_status(), handler._request_summary(), request_time)
 
 
-def _make_routing_table() -> List[URLSpec]:
+def _make_routing_table() -> list[URLSpec]:
     handlers_list = []
 
     # Frontend

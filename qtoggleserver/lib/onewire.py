@@ -58,7 +58,7 @@ class OneWirePeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
         raise OneWirePeripheralNotFound(self._address)
 
-    # def autodetect_addresses(self) -> List[str]:
+    # def autodetect_addresses(self) -> list[str]:
     #     # TODO: make this method look only through specific device types (e.g. temperature sensors)
     #     # TODO: use this method in a more general peripheral autodetection routine
     #

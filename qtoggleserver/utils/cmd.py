@@ -2,7 +2,7 @@
 import logging
 import subprocess
 
-from typing import Dict, List, Optional
+from typing import Optional
 
 
 logger = logging.getLogger(__name__)
@@ -13,8 +13,8 @@ def run_get_cmd(
     cmd_name: Optional[str] = None,
     log_values: bool = True,
     exc_class: type = None,
-    required_fields: Optional[List[str]] = None
-) -> Dict[str, str]:
+    required_fields: Optional[list[str]] = None
+) -> dict[str, str]:
 
     exc_class = exc_class or Exception
 

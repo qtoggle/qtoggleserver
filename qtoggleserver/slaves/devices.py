@@ -9,7 +9,7 @@ import re
 import time
 import types
 
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
@@ -44,7 +44,7 @@ _DEFAULT_POLL_INTERVAL = 10
 _TEMP_RENAME_DNS_TIMEOUT = 120
 
 
-_slaves_by_name: Dict[str, Slave] = {}
+_slaves_by_name: dict[str, Slave] = {}
 _load_time: float = 0
 
 logger = logging.getLogger(__name__)
@@ -66,7 +66,7 @@ class Slave(logging_utils.LoggableMixin):
         attrs: Optional[Attributes] = None,
         webhooks: Optional[GenericJSONDict] = None,
         reverse: Optional[GenericJSONDict] = None,
-        provisioning_attrs: Optional[Set[str]] = None,
+        provisioning_attrs: Optional[set[str]] = None,
         provisioning_webhooks: bool = False,
         provisioning_reverse: bool = False,
         **kwargs
@@ -129,7 +129,7 @@ class Slave(logging_utils.LoggableMixin):
         self._cached_reverse: GenericJSONDict = reverse or {}
 
         # Names of attributes that have been changed while device was offline and have to be provisioned later
-        self._provisioning_attrs: Set[str] = set(provisioning_attrs or [])
+        self._provisioning_attrs: set[str] = set(provisioning_attrs or [])
 
         # Whether webhooks params have been changed while device was offline and have to be provisioned later
         self._provisioning_webhooks: bool = bool(provisioning_webhooks)
@@ -761,7 +761,7 @@ class Slave(logging_utils.LoggableMixin):
 
         await self._save_ports()
 
-    def _get_local_ports(self) -> List[SlavePort]:
+    def _get_local_ports(self) -> list[SlavePort]:
         return [
             port for port in core_ports.get_all()
             if port.get_id().startswith(f'{self._name}.') and isinstance(port, SlavePort)
@@ -1471,7 +1471,7 @@ class Slave(logging_utils.LoggableMixin):
         path: str,
         params: Any,
         request: core_api.APIRequest
-    ) -> Tuple[bool, Any]:
+    ) -> tuple[bool, Any]:
 
         if not self._online:
             # Intercept API calls to device attributes, webhooks and reverse parameters, for devices that are offline
@@ -1611,7 +1611,7 @@ async def add(
     name: Optional[str] = None,
     enabled: bool = True,
     last_sync: int = -1,
-    provisioning: Optional[List[str]] = None,
+    provisioning: Optional[list[str]] = None,
     attrs: Optional[Attributes] = None,
     **kwargs
 ) -> Slave:
@@ -1730,7 +1730,7 @@ async def _handle_rename(slave: Slave, new_name: str) -> None:
         await slave.wait_online(timeout=settings.slaves.long_timeout)
 
 
-def get_all() -> List[Slave]:
+def get_all() -> list[Slave]:
     return list(_slaves_by_name.values())
 
 
