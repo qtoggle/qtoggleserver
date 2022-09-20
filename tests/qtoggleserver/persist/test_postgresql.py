@@ -1,5 +1,4 @@
 import asyncpg
-import pytest
 import pytest_asyncio
 import testing.postgresql
 

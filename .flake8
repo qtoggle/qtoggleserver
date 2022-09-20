@@ -1,0 +1,8 @@
+[flake8]
+max-line-length = 120
+ignore = E129,E731,W504,ANN002,ANN003,ANN101,ANN102,ANN401
+per-file-ignores =
+    **/__init__.py:F401,E402,F403
+    qtoggleserver/core/expressions/functions.py:F401,E402,F811
+    tests/qtoggleserver/conftest.py:F401
+    setup.py: F401

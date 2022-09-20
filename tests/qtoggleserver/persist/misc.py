@@ -123,7 +123,9 @@ async def test_filter_sort_datetime(driver: BaseDriver) -> None:
     id3 = await driver.insert(data.COLL1, dict(data.RECORD3, moment=dt3))
     await driver.insert(data.COLL1, data.RECORD3)
 
-    results = await driver.query(data.COLL1, fields=None, filt={'moment': {'gt': dt1}}, sort=[('moment', True)], limit=None)
+    results = await driver.query(
+        data.COLL1, fields=None, filt={'moment': {'gt': dt1}}, sort=[('moment', True)], limit=None
+    )
     results = list(results)
     assert len(results) == 2
 
