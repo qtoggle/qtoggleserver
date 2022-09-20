@@ -1,0 +1,20 @@
+[tool.flake8]
+max-line-length = 120
+ignore = ['E129','E731','W504','ANN002','ANN003','ANN101','ANN102','ANN401']
+per-file-ignores = [
+    '**/__init__.py:F401,E402,F403',
+    'qtoggleserver/core/expressions/functions.py:F401,E402,F811'
+]
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+py_version = 39
+line_length = 120
+lines_between_types = 1
+lines_after_imports = 2
+honor_noqa = true
+
+[tpp.pytest.ini_options]
+testpaths = ['tests/qtoggleserver']
+addopts = '-v'

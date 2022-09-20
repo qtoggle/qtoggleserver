@@ -1,5 +1,6 @@
 flake8
 flake8-annotations
+flake8-pyproject
 pytest
 pytest-asyncio
 pytest-tornasync
