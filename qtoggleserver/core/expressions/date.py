@@ -5,9 +5,9 @@ import datetime
 
 from qtoggleserver import system
 
-from .base import EvalResult, EvalContext
-from .exceptions import InvalidArgumentValue, EvalSkipped
-from .functions import function, Function
+from .base import EvalContext, EvalResult
+from .exceptions import EvalSkipped, InvalidArgumentValue
+from .functions import Function, function
 
 
 class DateUnitFunction(Function, metaclass=abc.ABCMeta):

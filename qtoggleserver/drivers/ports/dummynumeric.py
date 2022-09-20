@@ -1,4 +1,3 @@
-
 from typing import Optional
 
 from qtoggleserver.core import ports

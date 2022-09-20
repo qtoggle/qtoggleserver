@@ -1,7 +1,6 @@
 import pytest
 
-from qtoggleserver.core.expressions import parse, ROLE_VALUE
-from qtoggleserver.core.expressions import literalvalues
+from qtoggleserver.core.expressions import ROLE_VALUE, literalvalues, parse
 from qtoggleserver.core.expressions.exceptions import ValueUnavailable
 
 

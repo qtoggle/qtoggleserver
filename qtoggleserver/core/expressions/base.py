@@ -71,4 +71,5 @@ class EvalContext:
 from qtoggleserver.core import ports as core_ports  # noqa: E402
 from qtoggleserver.core.typing import NullablePortValue  # noqa: E402
 
+
 EvalResult = Union[bool, int, float, core_ports.BasePort]

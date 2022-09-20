@@ -1,12 +1,11 @@
-
 import asyncio
 import logging
 import ssl
 
 from typing import Optional
 
-from tornado.web import Application, HTTPServer, RequestHandler, URLSpec
 from qui.web import tornado as qui_tornado
+from tornado.web import Application, HTTPServer, RequestHandler, URLSpec
 
 from qtoggleserver import system
 from qtoggleserver.conf import settings

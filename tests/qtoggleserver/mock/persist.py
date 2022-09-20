@@ -1,4 +1,3 @@
-
 from qtoggleserver.drivers.persist.json import JSONDriver, UnindexedData
 
 

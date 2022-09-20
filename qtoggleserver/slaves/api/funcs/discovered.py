@@ -1,4 +1,3 @@
-
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core.api import schema as core_api_schema
 from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList

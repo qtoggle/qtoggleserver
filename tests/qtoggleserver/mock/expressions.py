@@ -1,8 +1,15 @@
-
 from typing import Optional
 
-from qtoggleserver.core.expressions import Expression, EvalContext, EvalResult, PortRef, PortValue, ROLE_VALUE
-from qtoggleserver.core.expressions import UnknownPortId, PortValueUnavailable
+from qtoggleserver.core.expressions import (
+    ROLE_VALUE,
+    EvalContext,
+    EvalResult,
+    Expression,
+    PortRef,
+    PortValue,
+    PortValueUnavailable,
+    UnknownPortId,
+)
 from qtoggleserver.core.ports import BasePort  # this needs to be imported after qtoggleserver.core.expressions
 
 

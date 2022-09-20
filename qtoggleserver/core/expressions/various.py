@@ -4,9 +4,9 @@ from typing import Any, Optional
 from qtoggleserver import system
 from qtoggleserver.core import history
 
-from .base import EvalResult, EvalContext
-from .exceptions import PortValueUnavailable, ExpressionEvalError, EvalSkipped
-from .functions import function, Function
+from .base import EvalContext, EvalResult
+from .exceptions import EvalSkipped, ExpressionEvalError, PortValueUnavailable
+from .functions import Function, function
 from .port import PortRef
 
 

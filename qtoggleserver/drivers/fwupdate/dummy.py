@@ -1,4 +1,3 @@
-
 import asyncio
 
 from qtoggleserver import version

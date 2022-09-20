@@ -1,18 +1,11 @@
-
 import fakeredis
 import pytest
 import redis as python_redis
 
-
 from qtoggleserver.drivers.persist import redis
 from qtoggleserver.persist import BaseDriver
 
-from . import insert
-from . import misc
-from . import remove
-from . import replace
-from . import query
-from . import update
+from . import insert, misc, query, remove, replace, update
 
 
 @pytest.fixture

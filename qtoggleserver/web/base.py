@@ -1,4 +1,3 @@
-
 import asyncio
 import inspect
 import logging
@@ -7,13 +6,12 @@ import re
 from typing import Any, Callable, Optional
 
 from tornado.iostream import StreamClosedError
-from tornado.web import RequestHandler, HTTPError
-
+from tornado.web import HTTPError, RequestHandler
 
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import responses as core_responses
-from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.api import auth as core_api_auth
+from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.utils import json as json_utils
 
 

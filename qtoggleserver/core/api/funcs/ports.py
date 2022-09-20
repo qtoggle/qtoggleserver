@@ -1,4 +1,3 @@
-
 import asyncio
 import inspect
 import time
@@ -14,10 +13,16 @@ from qtoggleserver.core import main as core_main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import vports as core_vports
 from qtoggleserver.core.api import schema as core_api_schema
-from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, GenericJSONList, NullablePortValue
-from qtoggleserver.core.typing import PortValue
-from qtoggleserver.slaves import ports as slaves_ports
+from qtoggleserver.core.typing import (
+    Attribute,
+    Attributes,
+    GenericJSONDict,
+    GenericJSONList,
+    NullablePortValue,
+    PortValue,
+)
 from qtoggleserver.slaves import devices as slaves_devices
+from qtoggleserver.slaves import ports as slaves_ports
 from qtoggleserver.utils import json as json_utils
 
 

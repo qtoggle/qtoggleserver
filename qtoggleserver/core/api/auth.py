@@ -1,11 +1,11 @@
-
 import hashlib
-import jwt
 import logging
 import re
 import time
 
 from typing import Callable, Optional
+
+import jwt
 
 from qtoggleserver import system
 from qtoggleserver.conf import settings

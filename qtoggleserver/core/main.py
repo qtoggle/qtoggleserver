@@ -1,4 +1,3 @@
-
 import asyncio
 import logging
 import time
@@ -10,8 +9,8 @@ from qtoggleserver.core import expressions as core_expressions  # noqa: F401; Re
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import NullablePortValue
 from qtoggleserver.utils import json as json_utils
-from qtoggleserver.utils import timedset
 from qtoggleserver.utils import logging as logging_utils
+from qtoggleserver.utils import timedset
 
 
 # After how much time to retry reading a port whose read_value() method raised an error
@@ -34,8 +33,7 @@ _update_lock: Optional[asyncio.Lock] = None
 
 
 async def update() -> None:
-    from . import ports
-    from . import sessions
+    from . import ports, sessions
 
     global _last_time
     global _update_lock

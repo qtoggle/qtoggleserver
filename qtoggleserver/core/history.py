@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import asyncio
@@ -7,8 +6,7 @@ import time
 
 from typing import Iterable, Optional
 
-from qtoggleserver import persist
-from qtoggleserver import system
+from qtoggleserver import persist, system
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports

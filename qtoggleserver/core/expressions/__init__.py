@@ -1,12 +1,11 @@
 
 from typing import Optional
 
-
 # This needs to be imported here to determine a correct order of some partially imported modules (core.ports,
 # core.expressions and core.main)
 from qtoggleserver.core import main
 
-from .base import Expression, EvalResult, EvalContext
+from .base import EvalContext, EvalResult, Expression
 
 
 ROLE_VALUE = 1
@@ -83,4 +82,4 @@ from .exceptions import *
 from .exceptions import CircularDependency
 from .functions import Function
 from .literalvalues import LiteralValue
-from .port import PortExpression, PortValue, PortRef
+from .port import PortExpression, PortRef, PortValue

@@ -1,8 +1,7 @@
 
 import pytest
 
-from qtoggleserver.core.expressions import sign, Function, ROLE_VALUE
-from qtoggleserver.core.expressions import InvalidNumberOfArguments
+from qtoggleserver.core.expressions import ROLE_VALUE, Function, InvalidNumberOfArguments, sign
 
 
 async def test_abs(literal_two, literal_minus_two, dummy_eval_context):

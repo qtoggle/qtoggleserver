@@ -1,4 +1,3 @@
-
 import argparse
 import asyncio
 import logging.config
@@ -9,28 +8,15 @@ import types
 
 from typing import Any, Optional
 
-from tornado import httpclient
-from tornado import netutil
+from tornado import httpclient, netutil
 
-from qtoggleserver import persist
-from qtoggleserver import slaves
-from qtoggleserver import system
-from qtoggleserver import version
-from qtoggleserver import web
-from qtoggleserver.core import device
-from qtoggleserver.core import events
-from qtoggleserver.core import history
-from qtoggleserver.core import main
-from qtoggleserver.core import ports
-from qtoggleserver.core import reverse
-from qtoggleserver.core import sessions
+from qtoggleserver import peripherals  # this must be imported after core.ports
+from qtoggleserver import persist, slaves, system, version, web
 from qtoggleserver.conf import settings
-from qtoggleserver.core import vports
-from qtoggleserver.core import webhooks
+from qtoggleserver.core import device, events, history, main, ports, reverse, sessions, vports, webhooks
 from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import logging as logging_utils
-from qtoggleserver import peripherals  # this must be imported after core.ports
 
 
 logger: Optional[logging.Logger] = None

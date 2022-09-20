@@ -1,4 +1,3 @@
-
 import datetime
 import os
 import time
@@ -12,8 +11,7 @@ from freezegun import freeze_time
 from qtoggleserver import persist
 from qtoggleserver.core import expressions  # Required to prevent partial import errors due to circular imports
 from qtoggleserver.core import ports as core_ports
-
-from tests.qtoggleserver.mock import MockPersistDriver, NumberMockPort, BooleanMockPort
+from tests.qtoggleserver.mock import BooleanMockPort, MockPersistDriver, NumberMockPort
 
 
 tz_info = pytz.timezone('Europe/Bucharest')

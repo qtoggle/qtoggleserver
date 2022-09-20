@@ -5,9 +5,8 @@ import re
 
 from typing import Callable, Optional
 
-from . import exceptions
-from . import parse
-from .base import Expression, EvalResult, EvalContext
+from . import exceptions, parse
+from .base import EvalContext, EvalResult, Expression
 from .literalvalues import LiteralValue
 from .port import PortValue
 
@@ -157,14 +156,14 @@ class Function(Expression, metaclass=abc.ABCMeta):
 # These imports are here just because we need all modules to be imported, so that @function decorator registers all
 # defined functions.
 
+from .aggregation import function as _
 from .arithmetic import function as _
-from .logic import function as _
 from .bitwise import function as _
 from .comparison import function as _
-from .sign import function as _
-from .aggregation import function as _
-from .rounding import function as _
-from .time import function as _
 from .date import function as _
+from .logic import function as _
+from .rounding import function as _
+from .sign import function as _
+from .time import function as _
 from .timeprocessing import function as _
 from .various import function as _

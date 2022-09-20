@@ -4,12 +4,12 @@ import re
 
 from typing import Optional
 
-from . import ROLE_TRANSFORM_READ, ROLE_TRANSFORM_WRITE
-from .base import Expression, EvalResult, EvalContext
-from .exceptions import UnknownPortId, DisabledPort, PortValueUnavailable, UnexpectedCharacter
-
 # Import core.ports after defining Expression, because core.ports.BasePort depends on Expression.
 from qtoggleserver.core import ports as core_ports
+
+from . import ROLE_TRANSFORM_READ, ROLE_TRANSFORM_WRITE
+from .base import EvalContext, EvalResult, Expression
+from .exceptions import DisabledPort, PortValueUnavailable, UnexpectedCharacter, UnknownPortId
 
 
 class PortExpression(Expression, metaclass=abc.ABCMeta):

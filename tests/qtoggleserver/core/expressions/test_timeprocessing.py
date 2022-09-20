@@ -1,9 +1,6 @@
-
 import pytest
 
-from qtoggleserver.core.expressions import timeprocessing, Function, ROLE_VALUE
-from qtoggleserver.core.expressions import InvalidNumberOfArguments, EvalSkipped
-
+from qtoggleserver.core.expressions import ROLE_VALUE, EvalSkipped, Function, InvalidNumberOfArguments, timeprocessing
 from tests.qtoggleserver.mock import MockExpression
 
 

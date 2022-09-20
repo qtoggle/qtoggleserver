@@ -1,8 +1,6 @@
-
 import pytest
 
-from qtoggleserver.core.expressions import literalvalues, ROLE_VALUE
-from qtoggleserver.core.expressions import EvalContext
+from qtoggleserver.core.expressions import ROLE_VALUE, EvalContext, literalvalues
 
 
 @pytest.fixture(scope='session')

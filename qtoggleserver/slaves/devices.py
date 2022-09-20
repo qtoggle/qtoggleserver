@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import asyncio
@@ -14,12 +13,12 @@ from typing import Any, Optional
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 from qtoggleserver import persist
+from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import main as core_main  # noqa: F401; This needs to be imported here for correct import order
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
-from qtoggleserver.conf import settings
 from qtoggleserver.core.api import auth as core_api_auth
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, NullablePortValue
@@ -28,8 +27,7 @@ from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
 
-from . import events
-from . import exceptions
+from . import events, exceptions
 from .ports import SlavePort
 
 

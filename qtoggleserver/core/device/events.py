@@ -1,4 +1,3 @@
-
 from qtoggleserver.core import events as core_events
 
 

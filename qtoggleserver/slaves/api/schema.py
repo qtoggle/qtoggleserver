@@ -1,4 +1,3 @@
-
 PUT_SLAVE_DEVICES = {
     "type": "array",
     "items": {

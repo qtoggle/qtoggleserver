@@ -1,10 +1,8 @@
-
 from __future__ import annotations
 
 import asyncio
 import ctypes
 import logging
-import psutil
 import random
 import re
 import socket
@@ -12,6 +10,8 @@ import struct
 import time
 
 from typing import Optional
+
+import psutil
 
 
 DEFAULT_TIMEOUT = 10

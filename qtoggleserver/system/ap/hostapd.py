@@ -1,13 +1,13 @@
-
 import asyncio
 import logging
-import psutil
 import re
 import subprocess
 import tempfile
 import time
 
 from typing import Optional, TextIO
+
+import psutil
 
 from .exceptions import APException
 

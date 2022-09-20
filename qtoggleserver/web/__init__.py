@@ -1,10 +1,8 @@
-
 import logging
 
 import qui
 
-from qtoggleserver import persist
-from qtoggleserver import version
+from qtoggleserver import persist, version
 from qtoggleserver.conf import settings
 
 from .base import APIHandler, BaseHandler

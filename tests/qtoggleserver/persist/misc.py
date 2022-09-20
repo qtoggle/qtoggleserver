@@ -1,4 +1,3 @@
-
 import datetime
 
 from qtoggleserver.persist import BaseDriver

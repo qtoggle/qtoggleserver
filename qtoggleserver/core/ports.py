@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import abc
@@ -17,8 +16,14 @@ from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import history as core_history
 from qtoggleserver.core import main
 from qtoggleserver.core import sequences as core_sequences
-from qtoggleserver.core.typing import Attribute, Attributes, AttributeDefinitions, GenericJSONDict
-from qtoggleserver.core.typing import NullablePortValue, PortValue
+from qtoggleserver.core.typing import (
+    Attribute,
+    AttributeDefinitions,
+    Attributes,
+    GenericJSONDict,
+    NullablePortValue,
+    PortValue,
+)
 from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils

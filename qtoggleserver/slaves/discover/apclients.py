@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import asyncio
@@ -15,10 +14,7 @@ from qtoggleserver.conf import settings
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import Attributes, GenericJSONDict
 from qtoggleserver.slaves import utils as salves_utils
-from qtoggleserver.system import ap
-from qtoggleserver.system import dhcp
-from qtoggleserver.system import dns
-from qtoggleserver.system import net
+from qtoggleserver.system import ap, dhcp, dns, net
 from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import cmd as cmd_utils
 

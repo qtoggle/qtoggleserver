@@ -1,4 +1,3 @@
-
 import logging
 
 from qtoggleserver import persist

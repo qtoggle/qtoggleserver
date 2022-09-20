@@ -1,10 +1,9 @@
 from typing import Optional
 
 from . import TIME_JUMP_THRESHOLD
-
-from .base import EvalResult, EvalContext
+from .base import EvalContext, EvalResult
 from .exceptions import EvalSkipped
-from .functions import function, Function
+from .functions import Function, function
 
 
 @function('DELAY')

@@ -1,6 +1,5 @@
-
-from qtoggleserver.core.ports import Port, TYPE_NUMBER, TYPE_BOOLEAN
-from qtoggleserver.core.typing import PortValue, NullablePortValue
+from qtoggleserver.core.ports import TYPE_BOOLEAN, TYPE_NUMBER, Port
+from qtoggleserver.core.typing import NullablePortValue, PortValue
 
 
 class MockPort(Port):

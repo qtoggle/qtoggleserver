@@ -1,8 +1,7 @@
-
 from __future__ import annotations
 
-import inspect
 import asyncio
+import inspect
 import re
 
 from typing import Any, Callable, Optional

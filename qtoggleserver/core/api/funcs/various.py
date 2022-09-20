@@ -1,10 +1,8 @@
-
 import importlib
 import inspect
 import traceback
 
-from qtoggleserver import slaves
-from qtoggleserver import system
+from qtoggleserver import slaves, system
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import device as core_device

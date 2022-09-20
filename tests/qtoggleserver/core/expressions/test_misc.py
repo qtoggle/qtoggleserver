@@ -1,9 +1,15 @@
-
 import pytest
 
-from qtoggleserver.core.expressions import parse, ROLE_VALUE
-from qtoggleserver.core.expressions import EmptyExpression, EvalContext
-from qtoggleserver.core.expressions import UnknownFunction, UnbalancedParentheses, UnexpectedEnd, UnexpectedCharacter
+from qtoggleserver.core.expressions import (
+    ROLE_VALUE,
+    EmptyExpression,
+    EvalContext,
+    UnbalancedParentheses,
+    UnexpectedCharacter,
+    UnexpectedEnd,
+    UnknownFunction,
+    parse,
+)
 
 
 async def test_parse_complex_expression(num_mock_port1, num_mock_port2):

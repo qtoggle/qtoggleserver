@@ -1,11 +1,10 @@
-
 import logging
 
 from qtoggleserver import persist
 
 from . import devices as slaves_devices
-from . import ports as slaves_ports
 from . import discover
+from . import ports as slaves_ports
 
 
 logger = logging.getLogger(__name__)

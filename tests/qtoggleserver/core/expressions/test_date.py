@@ -1,9 +1,8 @@
-
 import datetime
+
 import pytest
 
-from qtoggleserver.core.expressions import date, literalvalues, Function, ROLE_VALUE
-from qtoggleserver.core.expressions import InvalidNumberOfArguments
+from qtoggleserver.core.expressions import ROLE_VALUE, Function, InvalidNumberOfArguments, date, literalvalues
 
 
 async def test_year_simple(dummy_local_datetime, dummy_eval_context):

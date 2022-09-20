@@ -1,4 +1,3 @@
-
 import asyncio
 import copy
 import datetime
@@ -11,10 +10,9 @@ import time
 
 from typing import Optional
 
-from qtoggleserver import system
-from qtoggleserver import version
+from qtoggleserver import system, version
 from qtoggleserver.conf import settings
-from qtoggleserver.core.typing import Attributes, AttributeDefinitions, GenericJSONDict
+from qtoggleserver.core.typing import AttributeDefinitions, Attributes, GenericJSONDict
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_set_cmd
 

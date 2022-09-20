@@ -1,8 +1,6 @@
-
 import pytest
 
-from qtoggleserver.core.expressions import time, Function, ROLE_VALUE
-from qtoggleserver.core.expressions import InvalidNumberOfArguments
+from qtoggleserver.core.expressions import ROLE_VALUE, Function, InvalidNumberOfArguments, time
 
 
 async def test_time(dummy_utc_datetime, dummy_timestamp, dummy_eval_context):

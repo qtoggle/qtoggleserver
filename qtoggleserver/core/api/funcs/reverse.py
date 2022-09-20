@@ -1,4 +1,3 @@
-
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import reverse as core_reverse
 from qtoggleserver.core.api import schema as core_api_schema

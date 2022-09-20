@@ -1,4 +1,3 @@
-
 import logging
 
 from qtoggleserver.conf import settings

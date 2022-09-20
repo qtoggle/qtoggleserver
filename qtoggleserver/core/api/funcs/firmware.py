@@ -1,4 +1,3 @@
-
 import logging
 
 from qtoggleserver.core import api as core_api

@@ -1,4 +1,3 @@
-
 from qtoggleserver import system
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import device as core_device

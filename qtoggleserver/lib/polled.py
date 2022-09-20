@@ -1,10 +1,9 @@
-
 import abc
 import asyncio
 import copy
 import logging
 
-from typing import cast, Optional
+from typing import Optional, cast
 
 from qtoggleserver.peripherals import Peripheral, PeripheralPort
 

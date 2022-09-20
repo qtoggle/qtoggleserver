@@ -1,4 +1,3 @@
-
 import abc
 import datetime
 import logging
@@ -7,11 +6,11 @@ from typing import Optional
 
 from jinja2 import Environment, Template
 
+from qtoggleserver.conf import settings
 from qtoggleserver.core import device
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import main as core_main
 from qtoggleserver.core import ports as core_ports
-from qtoggleserver.conf import settings
 from qtoggleserver.core.typing import Attribute, Attributes, NullablePortValue
 from qtoggleserver.slaves import devices as slaves_devices
 

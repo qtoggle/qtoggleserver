@@ -1,8 +1,6 @@
-
 import pytest
 
-from qtoggleserver.core.expressions import comparison, Function, ROLE_VALUE
-from qtoggleserver.core.expressions import InvalidNumberOfArguments
+from qtoggleserver.core.expressions import ROLE_VALUE, Function, InvalidNumberOfArguments, comparison
 
 
 async def test_if_boolean(literal_false, literal_true, literal_one, literal_two, dummy_eval_context):

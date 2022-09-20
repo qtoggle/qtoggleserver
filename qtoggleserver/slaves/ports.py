@@ -1,4 +1,3 @@
-
 import asyncio
 import copy
 import re
@@ -10,8 +9,14 @@ from typing import Any, Optional
 from qtoggleserver.conf import settings
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
-from qtoggleserver.core.typing import Attribute, Attributes, AttributeDefinitions, GenericJSONDict
-from qtoggleserver.core.typing import NullablePortValue, PortValue
+from qtoggleserver.core.typing import (
+    Attribute,
+    AttributeDefinitions,
+    Attributes,
+    GenericJSONDict,
+    NullablePortValue,
+    PortValue,
+)
 
 from . import exceptions
 
