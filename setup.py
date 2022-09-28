@@ -43,6 +43,8 @@ setup(
     ]],
 
     install_requires=[
+        'bleak>=0.14,<1',
+        'dbus-next>=0.2,<1',
         'jinja2>=3,<4',
         'jsonpointer>=2.0,<3',
         'jsonschema>=2.5,<5',
