@@ -473,7 +473,6 @@ def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
 
         try:
             attrdef = attrdefs[n]
-
         except KeyError:
             if ignore_extra:
                 continue

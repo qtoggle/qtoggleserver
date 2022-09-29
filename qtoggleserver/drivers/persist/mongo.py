@@ -114,7 +114,6 @@ class MongoDriver(BaseDriver):
 
         try:
             self._db[collection].create_index(index)
-
         except pymongo.errors.DuplicateKeyError:
             logger.debug('index already exists')
 

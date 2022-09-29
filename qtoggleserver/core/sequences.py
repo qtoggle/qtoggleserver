@@ -48,13 +48,11 @@ class Sequence:
             try:
                 try:
                     self._callback(value)
-
                 except Exception as e:
                     logger.error('sequence callback failed: %s', e, exc_info=True)
 
                 if i < len(self._values) - 1:
                     await asyncio.sleep(self._delays[i] / 1000.0)
-
                 else:
                     if self._repeat > 0 and self._counter >= self._repeat - 1:
                         await self._finish_callback()
@@ -66,7 +64,6 @@ class Sequence:
 
                     self._loop_task = asyncio.create_task(self._loop())
                     return
-
             except asyncio.CancelledError:
                 logger.debug('sequence loop cancelled')
                 break

@@ -47,16 +47,13 @@ class ParallelCaller:
                 try:
                     if is_async:
                         result['ret'] = await func(*args, **kwargs)
-
                     else:
                         result['ret'] = func(*args, **kwargs)
-
                 except Exception:
                     result['exc_info'] = sys.exc_info()
 
                 async with when_ready:
                     when_ready.notify_all()
-
         except asyncio.CancelledError:
             pass
 
@@ -94,15 +91,12 @@ class Timer:
     async def run(self) -> None:
         try:
             await asyncio.sleep(self._timeout)
-
         except asyncio.CancelledError:
             pass
-
         else:
             result = self._callback(*self._args, **self._kwargs)
             if inspect.isawaitable(result):
                 await result
-
         finally:
             self._task = None
 
@@ -127,16 +121,13 @@ class ThreadedRunner(threading.Thread, metaclass=abc.ABCMeta):
         while self._running:
             try:
                 func, callback = self._queue.get(timeout=self.QUEUE_TIMEOUT)
-
             except queue.Empty:
                 continue
 
             try:
                 result = func()
-
             except Exception as e:
                 self._loop.call_soon_threadsafe(callback, None, e)
-
             else:
                 self._loop.call_soon_threadsafe(callback, result, None)
 
@@ -145,7 +136,6 @@ class ThreadedRunner(threading.Thread, metaclass=abc.ABCMeta):
     def schedule_func(self, func: Callable, callback: Callable) -> None:
         try:
             self._queue.put_nowait((func, callback))
-
         except queue.Full:
             raise RunnerBusy() from None
 

@@ -199,7 +199,6 @@ class JSONDriver(BaseDriver):
         for key, value in filt.items():
             try:
                 db_record_value = record[key]
-
             except KeyError:
                 return False
 
@@ -227,7 +226,6 @@ class JSONDriver(BaseDriver):
         for id_ in coll.keys():
             try:
                 int_ids.append(int(id_))
-
             except ValueError:
                 continue
 
@@ -245,7 +243,6 @@ class JSONDriver(BaseDriver):
             if os.stat(self._file_path).st_size == 0:
                 logger.debug('file %s is empty', self._file_path)
                 return {}
-
         except FileNotFoundError:
             # If the file does not exist, consider data loaded and return empty dictionary
             logger.debug('file %s does not exist', self._file_path)
@@ -255,7 +252,6 @@ class JSONDriver(BaseDriver):
             with open(self._file_path, 'rb') as f:
                 data = f.read()
                 return json_utils.loads(data, allow_extended_types=True)
-
         except Exception as e:
             if not self._use_backup:
                 raise

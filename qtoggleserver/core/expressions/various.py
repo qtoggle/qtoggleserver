@@ -17,7 +17,6 @@ class AvailableFunction(Function):
         try:
             await self.args[0].eval(context)
             return True
-
         except ExpressionEvalError:
             return False
 
@@ -29,7 +28,6 @@ class DefaultFunction(Function):
     async def _eval(self, context: EvalContext) -> EvalResult:
         try:
             return await self.args[0].eval(context)
-
         except ExpressionEvalError:
             return await self.args[1].eval(context)
 

@@ -136,7 +136,6 @@ class HostAPD:
 
         try:
             output = subprocess.check_output([cli_binary, 'list'], stderr=subprocess.DEVNULL).decode().strip()
-
         except subprocess.CalledProcessError:
             logger.error('command hostapd_cli list failed')
             return
@@ -152,14 +151,12 @@ class HostAPD:
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
                 )
-
             except subprocess.CalledProcessError:
                 logger.error('command hostapd_cli disassociate failed')
 
     def _find_binary(self, binary: str) -> Optional[str]:
         try:
             return subprocess.check_output(['which', binary], stderr=subprocess.DEVNULL).decode().strip()
-
         except subprocess.CalledProcessError:
             return None
 

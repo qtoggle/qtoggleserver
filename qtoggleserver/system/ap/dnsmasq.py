@@ -141,7 +141,6 @@ class DNSMasq:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
-
         except subprocess.CalledProcessError:
             raise DNSMasqException('Could not clear current own IP address')
 
@@ -151,14 +150,12 @@ class DNSMasq:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
-
         except subprocess.CalledProcessError:
             raise DNSMasqException('Could not set own IP address')
 
     def _find_binary(self) -> Optional[str]:
         try:
             return subprocess.check_output(['which', BINARY], stderr=subprocess.DEVNULL).decode().strip()
-
         except subprocess.CalledProcessError:
             return None
 

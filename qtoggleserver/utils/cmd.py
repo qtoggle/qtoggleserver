@@ -19,7 +19,6 @@ def run_get_cmd(
 
     try:
         config = subprocess.check_output(get_cmd, stderr=subprocess.STDOUT, shell=True)
-
     except Exception as e:
         raise exc_class(f'{cmd_name or get_cmd} get command failed: {e}') from e
 
@@ -77,7 +76,6 @@ def run_set_cmd(
 
     try:
         subprocess.check_output(set_cmd, env=env, stderr=subprocess.STDOUT, shell=True)
-
     except Exception as e:
         raise exc_class(f'{cmd_name or set_cmd} set command failed: {e}') from e
 
@@ -85,6 +83,5 @@ def run_set_cmd(
         if log_values:
             values_str = ', '.join(f'{k} = "{v}"' for k, v in sorted(config.items()))
             logger.debug('%s set to: %s', cmd_name, values_str)
-
         else:
             logger.debug('%s set', cmd_name)

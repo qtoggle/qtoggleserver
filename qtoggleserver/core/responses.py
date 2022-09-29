@@ -133,7 +133,6 @@ def parse(response: HTTPResponse, decode_json: bool = True, resolve_refs: bool =
         if decode_json and response.body:
             try:
                 body = json_utils.loads(response.body, resolve_refs=resolve_refs)
-
             except Exception as e:
                 raise InvalidJson() from e
 

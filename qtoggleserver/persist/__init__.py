@@ -26,7 +26,6 @@ def _get_driver() -> BaseDriver:
             logger.debug('loading persistence driver %s', driver_class_path)
             driver_class = dynload_utils.load_attr(driver_class_path)
             _thread_local.driver = driver_class(**driver_args)
-
         except Exception as e:
             logger.error('failed to load persistence driver %s: %s', driver_class_path, e, exc_info=True)
 

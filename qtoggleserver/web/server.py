@@ -176,7 +176,6 @@ async def init() -> None:
     try:
         _server = app.listen(port, address, ssl_options=ssl_context)
         logger.info('server listening on %s:%s', address, port)
-
     except Exception as e:
         logger.error('server listen failed: %s', e)
         raise

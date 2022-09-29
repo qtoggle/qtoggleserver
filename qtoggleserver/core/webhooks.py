@@ -121,7 +121,6 @@ class Webhooks:
 
         try:
             self._queue.put(request)
-
         except queue.Full:
             logger.error('%s: queue is full', self)
             return
@@ -136,7 +135,6 @@ class Webhooks:
         def on_response(response: HTTPResponse) -> None:
             try:
                 core_responses.parse(response)
-
             except core_responses.Error as e:
                 logger.error('%s: call failed: %s', self, e)
 
@@ -149,10 +147,8 @@ class Webhooks:
                     logger.debug('%s: resending request (retry %s/%s)', self, request.retries, self._retries)
 
                     self._request(request)
-
                 else:
                     self._check_pending()
-
             else:
                 logger.debug('%s: call succeeded', self)
                 self._check_pending()
@@ -184,7 +180,6 @@ class Webhooks:
     def _check_pending(self) -> None:
         try:
             request = self._queue.get(block=False)
-
         except queue.Empty:
             return
 

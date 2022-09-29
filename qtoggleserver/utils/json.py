@@ -86,14 +86,12 @@ def decode_json_hook(obj: dict) -> Any:
         if __t == DATE_TYPE:
             try:
                 return datetime.datetime.strptime(__v, DATE_FORMAT).date()
-
             except ValueError:
                 pass
 
         elif __t == DATETIME_TYPE:
             try:
                 return datetime.datetime.strptime(__v, DATETIME_FORMAT)
-
             except ValueError:
                 pass
 
@@ -104,27 +102,21 @@ def dumps(obj: Any, allow_extended_types: bool = False, **kwargs) -> str:
     # Treat primitive types separately to gain just a bit of performance
     if isinstance(obj, str):
         return '"' + obj + '"'
-
     elif isinstance(obj, bool):
         return ['false', 'true'][obj]
-
     elif isinstance(obj, (int, float)):
         if math.isinf(obj) or math.isnan(obj):
             return 'null'
 
         return str(obj)
-
     elif obj is None:
         return 'null'
-
     else:
         if allow_extended_types:
             return json.dumps(obj, default=encode_default_json, allow_nan=True, **kwargs)
-
         else:
             try:
                 return json.dumps(obj, allow_nan=False, **kwargs)
-
             except ValueError:
                 # Retry again by replacing Infinity and NaN values with None
                 obj = _replace_nan_inf_rec(obj, replace_value=None)

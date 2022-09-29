@@ -25,7 +25,6 @@ async def put_reverse(request: core_api.APIRequest, params: GenericJSONDict) -> 
 
     try:
         core_reverse.setup(**params)
-
     except core_reverse.InvalidParamError as e:
         raise core_api.APIError(400, 'invalid-field', field=e.param) from e
 

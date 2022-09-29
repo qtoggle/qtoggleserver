@@ -227,7 +227,6 @@ async def request(
     # Find MAC & IP address of given interface
     try:
         if_addrs = psutil.net_if_addrs()[interface]
-
     except KeyError:
         raise DHCPException(f'Cannot find own address for interface {interface}')
 
@@ -268,7 +267,6 @@ async def request(
     while True:
         try:
             data = sock.recv(1024, socket.MSG_DONTWAIT)
-
         except BlockingIOError:
             data = None
 

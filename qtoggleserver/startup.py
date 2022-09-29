@@ -75,17 +75,14 @@ def init_settings() -> None:
     if options.config_file:
         try:
             parsed_config = conf_utils.config_from_file(options.config_file)
-
         except IOError as e:
             sys.stderr.write(f'failed to open config file "{options.config_file}": {e}\n')
             sys.exit(-1)
-
         except Exception as e:
             sys.stderr.write(f'failed to load config file "{options.config_file}": {e}\n')
             sys.exit(-1)
 
         settings.source = os.path.abspath(options.config_file)
-
     else:
         parsed_config = {}
 
@@ -182,7 +179,6 @@ async def init_persist() -> None:
     logger.info('initializing persistence')
     try:
         await persist.get_value('device')
-
     except Exception as e:
         logger.error('failed to initialize persistence: %s', e, exc_info=True)
         sys.exit(-1)
@@ -282,7 +278,6 @@ async def init_ports() -> None:
             # Use raise_on_error=False because we prefer a partial successful startup rather than a failed one
             loaded_ports = await ports.load(port_args, raise_on_error=False)
             peripheral.set_ports(loaded_ports)
-
         except Exception as e:
             logger.error('failed to load ports of %s: %s', peripheral, e, exc_info=True)
 

@@ -363,7 +363,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
         try:
             await self.on_event(event)
-
         except Exception as e:
             self.error('failed to handle event %s: %s', event, e, exc_info=True)
 
@@ -411,7 +410,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
             elif isinstance(event, slaves_events.SlaveDeviceRemove):
                 await self.on_slave_device_remove(event, event.get_slave(), new_attrs)
-
         except Exception as e:
             self.error('failed to handle event %s: %s', event, e, exc_info=True)
 

@@ -25,7 +25,6 @@ async def get_firmware(request: core_api.APIRequest) -> GenericJSONDict:
                 'latest_url': latest_url,
                 'status': status
             }
-
         except Exception as e:
             logger.error('get latest firmware failed: %s', e, exc_info=True)
 
@@ -33,7 +32,6 @@ async def get_firmware(request: core_api.APIRequest) -> GenericJSONDict:
                 'version': current_version,
                 'status': status
             }
-
     else:
         return {
             'version': current_version,

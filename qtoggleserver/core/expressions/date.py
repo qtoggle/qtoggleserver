@@ -116,7 +116,6 @@ class DateFunction(Function):
 
         try:
             return int(datetime.datetime(*eval_args).timestamp())
-
         except ValueError as e:
             unit = str(e).split()[0]
             index = self.UNIT_INDEX.get(unit)
@@ -329,7 +328,6 @@ class MDIntervalFunction(Function):
 
         try:
             start_dt = now.replace(month=int(start_m), day=int(start_d))
-
         except ValueError:
             raise InvalidArgumentValue(2, start_d)
 
@@ -338,7 +336,6 @@ class MDIntervalFunction(Function):
 
         try:
             stop_dt = now.replace(month=int(stop_m), day=int(stop_d))
-
         except ValueError:
             raise InvalidArgumentValue(4, stop_d)
 

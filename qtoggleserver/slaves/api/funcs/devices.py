@@ -71,31 +71,24 @@ async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
             admin_password_hash=admin_password_hash,
             **properties
         )
-
-    except (core_responses.HostUnreachable,
-            core_responses.NetworkUnreachable,
-            core_responses.UnresolvableHostname) as e:
-
+    except (
+        core_responses.HostUnreachable,
+        core_responses.NetworkUnreachable,
+        core_responses.UnresolvableHostname
+    ) as e:
         raise core_api.APIError(502, 'unreachable') from e
-
     except core_responses.ConnectionRefused as e:
         raise core_api.APIError(502, 'connection-refused') from e
-
     except core_responses.InvalidJson as e:
         raise core_api.APIError(502, 'invalid-device') from e
-
     except core_responses.Timeout as e:
         raise core_api.APIError(504, 'device-timeout') from e
-
     except slaves_exceptions.InvalidDevice as e:
         raise core_api.APIError(502, 'invalid-device') from e
-
     except slaves_exceptions.NoListenSupport as e:
         raise core_api.APIError(400, 'no-listen-support') from e
-
     except slaves_exceptions.DeviceAlreadyExists as e:
         raise core_api.APIError(400, 'duplicate-device') from e
-
     except core_api.APIError:
         raise
 
@@ -105,7 +98,6 @@ async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
             raise core_api.APIError(400, 'forbidden') from e
 
         raise core_api.APIError.from_http_error(e) from e
-
     except Exception as e:
         raise slaves_exceptions.adapt_api_error(e) from e
 
@@ -115,12 +107,10 @@ async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
 async def add_slave_device_retry_disabled(properties: GenericJSONDict) -> slaves_devices.Slave:
     try:
         return await add_slave_device(properties)
-
     except core_api.APIError:
         if properties.get('enabled', True):
             core_api.logger.warning('adding device failed, adding it as disabled', exc_info=True)
             return await add_slave_device(dict(properties, enabled=False))
-
         else:
             raise
 
@@ -130,7 +120,6 @@ async def wrap_error_with_index(index: int, func: Callable, *args, **kwargs) -> 
         result = func(*args, **kwargs)
         if inspect.isawaitable(result):
             result = await result
-
     except core_api.APIError as e:
         raise core_api.APIError(
             status=e.status,
@@ -138,14 +127,12 @@ async def wrap_error_with_index(index: int, func: Callable, *args, **kwargs) -> 
             index=index,
             **e.params
         )
-
     except asyncio.TimeoutError:
         raise core_api.APIError(
             status=504,
             code='device-timeout',
             index=index
         )
-
     except Exception as e:
         raise core_api.APIError(
             status=500,
@@ -217,7 +204,6 @@ async def put_slave_devices(request: core_api.APIRequest, params: GenericJSONLis
 
         try:
             await asyncio.gather(*wait_online_futures)
-
         except asyncio.TimeoutError:
             # Ignore timeouts; this is a best-effort API call
             pass
@@ -266,7 +252,6 @@ async def patch_slave_device(request: core_api.APIRequest, name: str, params: Ge
             if slave.is_enabled():
                 try:
                     attrs = await slave.api_call('GET', '/device')
-
                 except Exception as e:
                     raise slaves_exceptions.adapt_api_error(e) from e
 
@@ -319,10 +304,8 @@ async def slave_device_forward(
     if timeout is not None:
         try:
             timeout = int(timeout)
-
         except ValueError:
             raise core_api.APIError(400, 'invalid-field', field='timeout') from None
-
     else:
         # Use default slave timeout unless API call requires longer timeout
         timeout = settings.slaves.timeout
@@ -333,7 +316,6 @@ async def slave_device_forward(
 
     try:
         response = await slave.api_call(request.method, path, params, timeout=timeout, retry_counter=None)
-
     except Exception as e:
         raise slaves_exceptions.adapt_api_error(e) from e
 
@@ -370,7 +352,6 @@ async def post_slave_device_events(request: core_api.APIRequest, name: str, para
             lambda u: slave.get_admin_password_hash(),
             require_usr=False
         )
-
     except core_api_auth.AuthError as e:
         slave.warning(str(e))
         raise core_api.APIError(401, 'authentication-required') from e
@@ -387,7 +368,6 @@ async def post_slave_device_events(request: core_api.APIRequest, name: str, para
 
     try:
         await slave.handle_event(params)
-
     except Exception as e:
         raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
 

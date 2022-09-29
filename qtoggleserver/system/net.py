@@ -73,7 +73,6 @@ def set_wifi_config(ssid: str, psk: str, bssid: str) -> None:
 def get_default_interface() -> Optional[str]:
     try:
         output = subprocess.check_output(['ip', 'route']).decode().strip()
-
     except Exception as e:
         raise NetError('Could not determine default route') from e
 

@@ -56,7 +56,6 @@ def parse_auth_header(auth: str, origin: str, password_hash_func: Callable, requ
 
     try:
         payload = jwt.decode(token, algorithms=[JWT_ALG], options={'verify_signature': False})
-
     except jwt.exceptions.InvalidTokenError as e:
         raise AuthError(f'Invalid JWT: {e}') from e
 
@@ -86,10 +85,8 @@ def parse_auth_header(auth: str, origin: str, password_hash_func: Callable, requ
     # Decode again to verify signature
     try:
         jwt.decode(token, key=password_hash, algorithms=[JWT_ALG], verify=True)
-
     except jwt.exceptions.InvalidSignatureError as e:
         raise AuthError('Invalid JWT signature') from e
-
     except jwt.exceptions.InvalidTokenError as e:
         raise AuthError(f'Invalid JWT: {e}') from e
 
@@ -99,12 +96,9 @@ def parse_auth_header(auth: str, origin: str, password_hash_func: Callable, requ
 def consumer_password_hash_func(usr: str) -> Optional[str]:
     if usr == 'admin':
         return core_device_attrs.admin_password_hash
-
     elif usr == 'normal':
         return core_device_attrs.normal_password_hash
-
     elif usr == 'viewonly':
         return core_device_attrs.viewonly_password_hash
-
     else:
         return None

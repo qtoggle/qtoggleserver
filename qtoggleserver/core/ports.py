@@ -373,7 +373,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if method:
             try:
                 await method(value)
-
             except Exception:
                 self.error('failed to set attribute %s = %s', name, json_utils.dumps(value), exc_info=True)
 
@@ -409,7 +408,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if method:
             try:
                 await method(value)
-
             except Exception as e:
                 self.error('%s failed: %s', method_name, e, exc_info=True)
 
@@ -483,7 +481,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         try:
             await self.handle_enable()
-
         except Exception:
             self.error('failed to enable')
             self._enabled = False
@@ -506,7 +503,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         try:
             await self.handle_disable()
-
         except Exception:
             self.error('failed to disable')
             self._enabled = True
@@ -567,7 +563,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             self.debug('checking for expression circular dependencies')
             await core_expressions.check_loops(self, expression)
-
         except core_expressions.ExpressionParseError as e:
             self.error('failed to set expression "%s": %s', sexpression, e)
 
@@ -581,7 +576,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def attr_get_transform_read(self) -> str:
         if self._transform_read:
             return str(self._transform_read)
-
         else:
             return ''
 
@@ -609,7 +603,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             self.debug('setting read transform "%s"', transform_read)
             self._transform_read = transform_read
-
         except core_expressions.ExpressionParseError as e:
             self.error('failed to set transform read expression "%s": %s', stransform_read, e)
 
@@ -625,7 +618,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         if self._transform_write:
             return str(self._transform_write)
-
         else:
             return ''
 
@@ -653,7 +645,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             self.debug('setting write transform "%s"', transform_write)
             self._transform_write = transform_write
-
         except core_expressions.ExpressionParseError as e:
             self.error('failed to set transform write expression "%s": %s', stransform_write, e)
 
@@ -767,11 +758,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
                 # Do an update after every confirmed write
                 await main.update()
-
             except asyncio.CancelledError:
                 self.debug('write value task cancelled')
                 break
-
             except Exception:
                 self.error('write value task error', exc_info=True)
                 await asyncio.sleep(1)
@@ -821,7 +810,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.debug('expression "%s" evaluated to %s', expression, json_utils.dumps(value))
             try:
                 await self.transform_and_write_value(value)
-
             except Exception as e:
                 self.error('failed to write value: %s', e)
 
@@ -943,7 +931,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             try:
                 self.debug('loading %s = %s', name, json_utils.dumps(value))
                 await self.set_attr(name, value)
-
             except Exception as e:
                 self.error('failed to set attribute %s = %s: %s', name, json_utils.dumps(value), e)
 
@@ -970,7 +957,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if value is not None:
                     self._last_read_value = value
                     self.debug('read value = %s', json_utils.dumps(self._last_read_value))
-
             except Exception as e:
                 self.error('failed to read value: %s', e, exc_info=True)
 
@@ -1167,7 +1153,6 @@ async def load(
                 try:
                     logger.debug('loading port driver %s', driver)
                     port_driver_classes[driver] = dynload_utils.load_attr(driver)
-
                 except Exception as e:
                     if raise_on_error:
                         raise PortLoadError(f'Failed to load port driver {driver}') from e
@@ -1193,7 +1178,6 @@ async def load(
             ports.append(port)
 
             logger.debug('initialized %s (driver %s)', port, port_class_desc)
-
         except Exception as e:
             if raise_on_error:
                 raise PortLoadError(f'Failed to initialize port from driver {port_class_desc}') from e
@@ -1227,7 +1211,6 @@ async def load(
 
         try:
             port.map_id(new_id)
-
         except Exception as e:
             if raise_on_error:
                 raise PortLoadError(f'Cannot map port {old_id} to {new_id}') from e
@@ -1241,7 +1224,6 @@ async def load(
     for port in ports:
         try:
             await port.load()
-
         except Exception as e:
             if raise_on_error:
                 raise PortLoadError(f'Failed to load {port}') from e

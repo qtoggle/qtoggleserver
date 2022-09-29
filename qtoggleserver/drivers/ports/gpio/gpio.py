@@ -33,7 +33,6 @@ class GPIO(ports.Port):
     async def handle_enable(self) -> None:
         try:
             (self._val_file, self._dir_file) = self._configure()
-
         except Exception as e:
             self.error('failed to configure %s: %s', self, e)
 

@@ -76,11 +76,9 @@ async def sampling_task() -> None:
                 await save_sample(port, now_ms)
                 port.set_history_last_timestamp(now_ms)
                 port.save_asap()  # history_last_timestamp must be persisted
-
         except asyncio.CancelledError:
             logger.debug('sampling task cancelled')
             break
-
         except Exception as e:
             logger.error('sampling task error: %s', e, exc_info=True)
 
@@ -127,11 +125,9 @@ async def janitor_task() -> None:
                 port, from_timestamp, to_timestamp = _pending_remove_samples.pop(0)
                 logger.debug('removing samples of %s from history (background)', port)
                 await remove_samples([port], from_timestamp=from_timestamp, to_timestamp=to_timestamp)
-
         except asyncio.CancelledError:
             logger.debug('janitor task cancelled')
             break
-
         except Exception as e:
             logger.error('janitor task error: %s', e, exc_info=True)
 

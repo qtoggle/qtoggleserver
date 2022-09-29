@@ -107,7 +107,6 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
 
         try:
             await port.set_attr(attr_name, attr_value)
-
         except Exception as e1:
             errors_by_name[attr_name] = e1
 
@@ -147,7 +146,6 @@ async def wrap_error_with_port_id(port_id: str, func: Callable, *args, **kwargs)
         result = func(*args, **kwargs)
         if inspect.isawaitable(result):
             result = await result
-
     except core_api.APIError as e:
         raise core_api.APIError(
             status=e.status,
@@ -155,7 +153,6 @@ async def wrap_error_with_port_id(port_id: str, func: Callable, *args, **kwargs)
             id=port_id,
             **e.params
         )
-
     except Exception as e:
         raise core_api.APIError(
             status=500,
@@ -327,7 +324,6 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
 
     try:
         core_api_schema.validate(params, await port.get_value_schema())
-
     except core_api.APIError:
         # Transform any validation error into an invalid-field APIError for value
         raise core_api.APIError(400, 'invalid-value') from None
@@ -350,16 +346,12 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
 
     try:
         await port.transform_and_write_value(value)
-
     except core_ports.PortTimeout as e:
         raise core_api.APIError(504, 'port-timeout') from e
-
     except core_ports.PortError as e:
         raise core_api.APIError(502, 'port-error', code=str(e)) from e
-
     except core_api.APIError:
         raise
-
     except Exception as e:
         # Transform any unhandled exception into APIError(500)
         raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
@@ -395,7 +387,6 @@ async def patch_port_sequence(request: core_api.APIRequest, port_id: str, params
         # Translate any APIError generated when validating value schema into an invalid-field APIError on value
         try:
             core_api_schema.validate(value, value_schema)
-
         except core_api.APIError:
             raise core_api.APIError(400, 'invalid-field', field='values') from None
 
@@ -414,7 +405,6 @@ async def patch_port_sequence(request: core_api.APIRequest, port_id: str, params
 
     try:
         await port.set_sequence(values, delays, repeat)
-
     except Exception as e:
         # Transform any unhandled exception into APIError(500)
         raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
@@ -437,13 +427,11 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
     if from_str:
         try:
             from_timestamp = int(from_str)
-
         except ValueError:
             raise core_api.APIError(400, 'invalid-field', field='from')
 
         if from_timestamp < 0:
             raise core_api.APIError(400, 'invalid-field', field='from')
-
     else:
         from_timestamp = None
 
@@ -452,7 +440,6 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
     if to_str is not None:
         try:
             to_timestamp = int(to_str)
-
         except ValueError:
             raise core_api.APIError(400, 'invalid-field', field='to') from None
 
@@ -464,7 +451,6 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
     if limit_str is not None:
         try:
             limit = int(limit_str)
-
         except ValueError:
             raise core_api.APIError(400, 'invalid-field', field='limit') from None
 
@@ -476,7 +462,6 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
         timestamps = timestamps_str.split(',')
         try:
             timestamps = [int(t) for t in timestamps]
-
         except ValueError:
             raise core_api.APIError(400, 'invalid-field', field='timestamps')
 
@@ -506,7 +491,6 @@ async def delete_port_history(request: core_api.APIRequest, port_id: str) -> Non
 
     try:
         from_timestamp = int(from_str)
-
     except ValueError:
         raise core_api.APIError(400, 'invalid-field', field='from') from None
 
@@ -519,7 +503,6 @@ async def delete_port_history(request: core_api.APIRequest, port_id: str) -> Non
 
     try:
         to_timestamp = int(to_str)
-
     except ValueError:
         raise core_api.APIError(400, 'invalid-field', field='to') from None
 

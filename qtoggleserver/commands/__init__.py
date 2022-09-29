@@ -20,7 +20,6 @@ def execute(main_code: Awaitable) -> None:
     finally:
         try:
             loop.run_until_complete(startup.cleanup_loop())
-
         except asyncio.CancelledError:
             pass  # Ignore any cancelled errors
 

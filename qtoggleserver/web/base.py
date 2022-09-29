@@ -39,7 +39,6 @@ class BaseHandler(RequestHandler):
         if self._json is self._UNDEFINED:
             try:
                 self._json = json_utils.loads(self.request.body)
-
             except ValueError as e:
                 logger.error('could not decode json from request body: %s', e)
 
@@ -80,14 +79,15 @@ class BaseHandler(RequestHandler):
             if isinstance(exception, HTTPError):
                 logger.error('%s %s: %s', self.request.method, self.request.uri, exception)
                 self.set_status(exception.status_code)
-                self.finish_json({'error': (exception.log_message or
-                                            getattr(exception, 'reason', None) or str(exception))})
-
+                self.finish_json(
+                    {
+                        'error': (exception.log_message or getattr(exception, 'reason', None) or str(exception))
+                    }
+                )
             else:
                 logger.error(str(exception), exc_info=True)
                 self.set_status(500)
                 self.finish_json({'error': 'internal server error'})
-
         except RuntimeError:
             pass  # Nevermind
 
@@ -120,16 +120,13 @@ class APIHandler(BaseHandler):
                     core_api_auth.ORIGIN_CONSUMER,
                     core_api_auth.consumer_password_hash_func
                 )
-
             except core_api_auth.AuthError as e:
                 logger.warning(str(e))
                 return
-
         else:
             if core_device_attrs.admin_password_hash == core_device_attrs.EMPTY_PASSWORD_HASH:
                 logger.debug('authenticating request as admin due to empty admin password')
                 usr = 'admin'
-
             else:
                 logger.warning('missing authorization header')
                 return
@@ -164,10 +161,8 @@ class APIHandler(BaseHandler):
             self.set_status(default_status)
             if response is not None or default_status == 200:
                 await self.finish_json(response)
-
             else:
                 await self.finish()
-
         except Exception as e:
             await self._handle_api_call_exception(func, kwargs, e)
 

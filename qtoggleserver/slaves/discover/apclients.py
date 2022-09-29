@@ -134,7 +134,6 @@ async def finish() -> None:
         _discover_task.cancel()
         try:
             await _discover_task
-
         except Exception as e:
             logger.error('discover task error: %s', e, exc_info=True)
 
@@ -204,7 +203,6 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
                 mac_address=ap_client.mac_address,
                 hostname=ap_client.hostname
             )
-
         except dhcp.DHCPTimeout:
             logger.warning('could not determine future device IP address of %s', discovered_device)
             reply = None
@@ -249,7 +247,6 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
                 )
                 logger.debug('%s connected to new network', discovered_device)
                 break
-
             except Exception:
                 if time.time() - start_time > settings.slaves.long_timeout:
                     logger.error('timeout waiting for %s to connect to new network', discovered_device)
@@ -293,7 +290,6 @@ async def _discover(timeout: int) -> list[DiscoveredDevice]:
                 raise DiscoverException('AP stopped unexpectedly')
 
         clients = ap.get_clients()
-
     except asyncio.CancelledError:
         logger.debug('discover task cancelled')
         clients = []
@@ -314,7 +310,6 @@ async def _discover(timeout: int) -> list[DiscoveredDevice]:
     for client in clients:
         try:
             discovered_devices.append(await _query_client(client))
-
         except Exception as e:
             logger.error('client query failed: %s', e, exc_info=True)
 
@@ -336,7 +331,6 @@ async def _query_client(ap_client: ap.APClient) -> Optional[DiscoveredDevice]:
         try:
             attrs = await ap_client.request('GET', f'{prefix}/device')
             break
-
         except (httpclient.HTTPError, json.JSONDecodeError):
             continue
 

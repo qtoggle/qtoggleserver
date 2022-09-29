@@ -143,7 +143,6 @@ class Reverse:
 
             try:
                 api_request_dict = await self._wait(api_request_dict, api_response_dict)  # TODO properly implement me
-
             except UnauthorizedConsumerRequestError:
                 api_response_dict = {
                     'status': 401,
@@ -151,7 +150,6 @@ class Reverse:
                 }
 
                 continue
-
             except Exception as e:
                 logger.error(
                     'wait failed: %s, retrying in %s seconds',
@@ -168,7 +166,6 @@ class Reverse:
 
             try:
                 api_response_dict = await self._process_api_request(api_request_dict)
-
             except Exception as e:
                 logger.error('reverse API call failed: %s', e, exc_info=True)
                 sleep_interval = settings.reverse.retry_interval
@@ -218,7 +215,6 @@ class Reverse:
         try:
             # This response is in fact an API request
             consumer_response = await http_client.fetch(request, raise_error=False)
-
         except Exception as e:
             # We need to catch exceptions here even though raise_error is False, because it only affects HTTP errors
             consumer_response = SimpleNamespace(error=e, code=599)
@@ -240,7 +236,6 @@ class Reverse:
                 auth, core_api_auth.ORIGIN_CONSUMER,
                 core_api_auth.consumer_password_hash_func
             )
-
         except core_api_auth.AuthError as e:
             raise UnauthorizedConsumerRequestError(str(e)) from e
 
@@ -248,19 +243,16 @@ class Reverse:
 
         try:
             method = response.headers['Method']
-
         except KeyError:
             raise InvalidConsumerRequestError('Missing Method header') from None
 
         try:
             path = response.headers['Path']
-
         except KeyError:
             raise InvalidConsumerRequestError('Missing Path header') from None
 
         try:
             session_id = response.headers['Session-Id']
-
         except KeyError:
             raise InvalidConsumerRequestError('Missing Session-Id header') from None
 

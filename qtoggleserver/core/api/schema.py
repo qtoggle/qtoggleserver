@@ -267,22 +267,18 @@ def _validate_schema(json: Any, schema: GenericJSONDict) -> Optional[tuple[str, 
     try:
         jsonschema.Draft4Validator(schema=schema).validate(json)
         return None
-
     except jsonschema.ValidationError as e:
         try:
             field = e.path.pop()
             return 'invalid', field
-
         except Exception:
             try:
                 field = re.match(r'\'(\w+)\' is a required property', e.message).group(1)
                 return 'missing', field
-
             except Exception:
                 try:
                     field = re.match(r'Additional properties are not allowed \(u?\'(\w+)\'.*', e.message).group(1)
                     return 'unexpected', field
-
                 except Exception:
                     return 'invalid', None
 

@@ -245,13 +245,11 @@ class RedisDriver(BaseDriver):
         for key, value in filt.items():
             try:
                 db_record_value = db_record[key]
-
             except KeyError:
                 return False
 
             if key == 'id':
                 record_value = db_record_value
-
             else:
                 record_value = self._value_from_db(db_record_value)
 

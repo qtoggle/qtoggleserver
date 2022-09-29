@@ -37,7 +37,6 @@ async def get_listen(
     if timeout is not None:
         try:
             timeout = int(timeout)
-
         except ValueError:
             raise core_api.APIError(400, 'invalid-field', field='timeout') from None
 
@@ -96,7 +95,6 @@ async def post_introspect(request: core_api.APIRequest, params: GenericJSONDict)
             result = await result
 
         res_str = str(result)
-
     except Exception:
         exc_str = traceback.format_exc()
 

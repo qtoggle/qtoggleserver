@@ -37,7 +37,6 @@ async def _custom_cleanup_loop() -> None:
                     _custom_dns_mapping.pop(hostname, None)
 
             await asyncio.sleep(_CUSTOM_CLEANUP_INTERVAL)
-
     except asyncio.CancelledError:
         logger.debug('custom DNS mapping cleanup task cancelled')
 

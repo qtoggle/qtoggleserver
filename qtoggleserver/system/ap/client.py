@@ -81,7 +81,6 @@ class APClient(logging_utils.LoggableMixin):
 
         try:
             response = await http_client.fetch(request, raise_error=True)
-
         except Exception as e:
             if not no_log:
                 self.error('request %s %s failed: %s', method, path, e, exc_info=True)

@@ -15,7 +15,6 @@ async def get_discovered(request: core_api.APIRequest) -> GenericJSONList:
 
     try:
         timeout = int(timeout)
-
     except ValueError:
         raise core_api.APIError(400, 'invalid-field', field='timeout') from None
 
@@ -43,7 +42,6 @@ async def patch_discovered_device(request: core_api.APIRequest, name: str, param
     attrs = params['attrs']
     try:
         discovered_device = await slaves_discover.configure(discovered_device, attrs)
-
     except Exception as e:
         raise slaves_exceptions.adapt_api_error(e) from e
 

@@ -7,13 +7,11 @@ import qtoggleserver.version
 
 try:
     import fastentrypoints
-
 except ImportError:
     pass
 
 try:
     import setupnovernormalize
-
 except ImportError:
     pass
 

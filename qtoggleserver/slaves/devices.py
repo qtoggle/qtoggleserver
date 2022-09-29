@@ -229,7 +229,6 @@ class Slave(logging_utils.LoggableMixin):
         # Rename associated ports persisted data
         try:
             await self._rename_ports_persisted_data(new_name)
-
         except Exception as e:
             logger.error('renaming ports persisted data failed: %s', e, exc_info=True)
 
@@ -571,14 +570,12 @@ class Slave(logging_utils.LoggableMixin):
 
         try:
             response = await http_client.fetch(request, raise_error=False)
-
         except Exception as e:
             # We need to catch exceptions here even though raise_error is False, because it only affects HTTP errors
             response = types.SimpleNamespace(error=e, code=599)
 
         try:
             response_body = core_responses.parse(response)
-
         except core_responses.Accepted as e:
             self.debug('api call %s %s succeeded but not processed', method, path)
 
@@ -586,7 +583,6 @@ class Slave(logging_utils.LoggableMixin):
             await self.intercept_response(method, path, body, e.response)
 
             raise e
-
         except core_responses.Error as e:
             e = self.intercept_error(e)
 
@@ -601,11 +597,9 @@ class Slave(logging_utils.LoggableMixin):
                 await asyncio.sleep(settings.slaves.retry_interval)
 
                 return await self.api_call(method, path, body, timeout, retry_counter + 1)
-
             else:
                 self.error(msg)
                 raise e
-
         else:
             self.debug('api call %s %s succeeded', method, path)
 
@@ -700,7 +694,6 @@ class Slave(logging_utils.LoggableMixin):
         # Fetch remote attributes
         try:
             attrs = await self.api_call('GET', '/device')
-
         except Exception as e:
             self.error('failed to fetch device attributes: %s', e)
             raise
@@ -720,7 +713,6 @@ class Slave(logging_utils.LoggableMixin):
         self.debug('fetching ports')
         try:
             port_attrs = await self.api_call('GET', '/ports')
-
         except Exception as e:
             self.error('failed to fetch ports: %s', e)
 
@@ -808,7 +800,6 @@ class Slave(logging_utils.LoggableMixin):
 
                 try:
                     response = await http_client.fetch(request, raise_error=False)
-
                 except Exception as e:
                     # We need to catch exceptions here even though raise_error is False, because it only affects HTTP
                     # errors
@@ -817,7 +808,6 @@ class Slave(logging_utils.LoggableMixin):
                 # Ignore response to older or mismatching listen requests
                 if self._listen_session_id != requested_session_id:
                     self.debug('ignoring listen response to older session (%s)', requested_session_id)
-
                     break
 
                 if not self._listen_session_id:
@@ -825,7 +815,6 @@ class Slave(logging_utils.LoggableMixin):
 
                 try:
                     received_events = core_responses.parse(response)
-
                 except core_responses.Error as e:
                     offline_counter += 1
 
@@ -858,11 +847,9 @@ class Slave(logging_utils.LoggableMixin):
                             await self.handle_event(event)
                             if event['type'] in ('port-add', 'port-remove', 'port-update'):
                                 needs_save_ports = True
-
                         except exceptions.DeviceRenamed:
                             self.debug('ignoring device renamed exception')
                             break
-
                         except Exception:
                             # Ignoring any error from handling an event is the best thing that we can do here, to ensure
                             # that we keep handling remaining events
@@ -892,7 +879,6 @@ class Slave(logging_utils.LoggableMixin):
                     else:  # Still online
                         if needs_save_ports:
                             await self._save_ports()
-
             except asyncio.CancelledError:
                 self.debug('listen task cancelled')
                 break
@@ -907,7 +893,6 @@ class Slave(logging_utils.LoggableMixin):
 
                 if not interval:
                     break
-
             except asyncio.CancelledError:
                 self.debug('poll task cancelled')
                 break
@@ -927,7 +912,6 @@ class Slave(logging_utils.LoggableMixin):
 
         try:
             attrs = await self.api_call('GET', '/device')
-
         except Exception as e:
             self.error('failed to poll device: %s', e)
 
@@ -967,17 +951,14 @@ class Slave(logging_utils.LoggableMixin):
         if removed_names or added_names or changed_names:
             try:
                 await self._handle_device_update(**attrs)
-
             except exceptions.DeviceAlreadyExists:
                 # When DeviceAlreadyExists is raised, we expect the slave to be disabled; therefore we exit the polling
                 # loop right away
                 return 0
-
             except exceptions.DeviceRenamed:
                 # When DeviceRenamed is raised, we have to break the polling loop right away, because another slave
                 # device has been added in place of this one
                 return 0
-
             except Exception as e:
                 self.error('failed to update device: %s', e)
 
@@ -1008,7 +989,6 @@ class Slave(logging_utils.LoggableMixin):
 
         try:
             ports = await self.api_call('GET', '/ports')
-
         except Exception as e:
             self.error('failed to poll ports: %s', e)
 
@@ -1035,7 +1015,6 @@ class Slave(logging_utils.LoggableMixin):
             try:
                 await self._handle_port_add(**attrs_by_id[id_])
                 needs_save_ports = True
-
             except Exception as e:
                 self.error('failed to add polled port %s: %s', id_, e)
 
@@ -1045,7 +1024,6 @@ class Slave(logging_utils.LoggableMixin):
             try:
                 await self._handle_port_remove(id_)
                 needs_save_ports = True
-
             except Exception as e:
                 self.error('failed to remove polled port %s: %s', id_, e)
 
@@ -1082,7 +1060,6 @@ class Slave(logging_utils.LoggableMixin):
                 try:
                     await self._handle_port_update(**attrs)
                     needs_save_ports = True
-
                 except Exception as e:
                     self.error('failed to update polled port %s: %s', id_, e)
 
@@ -1097,7 +1074,6 @@ class Slave(logging_utils.LoggableMixin):
         if needs_save_ports:
             try:
                 await self._save_ports()
-
             except Exception as e:
                 self.error('failed to save polled ports: %s', e)
 
@@ -1116,12 +1092,10 @@ class Slave(logging_utils.LoggableMixin):
                 # Requesting GET /firmware will call the intercept_request() method and will cancel the loop when done
                 try:
                     await self.api_call('GET', '/firmware')
-
                 except Exception:
                     pass
 
                 counter -= 1
-
             except asyncio.CancelledError:
                 self.debug('fwupdate poll loop cancelled')
                 break
@@ -1140,11 +1114,9 @@ class Slave(logging_utils.LoggableMixin):
         self.debug('handling event of type %s', event['type'])
         try:
             await method(**event.get('params', {}))
-
         except exceptions.DeviceRenamed:
             # Treat DeviceRenamed as an expected exception, do not log anything but forward it
             raise
-
         except Exception as e:
             self.error('handling event of type %s failed: %s', event['type'], e, exc_info=True)
             raise
@@ -1284,7 +1256,6 @@ class Slave(logging_utils.LoggableMixin):
             try:
                 await self.fetch_and_update_device()
                 await self.fetch_and_update_ports()
-
             except Exception as e:
                 self.error('failed to fetch device attributes and ports: %s', e, exc_info=True)
 
@@ -1331,7 +1302,6 @@ class Slave(logging_utils.LoggableMixin):
 
             try:
                 await self.api_call('PATCH', '/device', attrs, timeout=settings.slaves.long_timeout)
-
             except Exception as e:
                 self.error('failed to provision device attributes: %s', e)
 
@@ -1346,7 +1316,6 @@ class Slave(logging_utils.LoggableMixin):
 
             try:
                 await self.api_call('PUT', '/webhooks', self._cached_webhooks)
-
             except Exception as e:
                 self.error('failed to provision webhooks params: %s', e)
 
@@ -1362,7 +1331,6 @@ class Slave(logging_utils.LoggableMixin):
 
             try:
                 await self.api_call('PUT', '/reverse', self._cached_reverse)
-
             except Exception as e:
                 self.error('failed to provision reverse params: %s', e)
 
@@ -1392,7 +1360,6 @@ class Slave(logging_utils.LoggableMixin):
                         attrs,
                         timeout=settings.slaves.long_timeout
                     )
-
                 except Exception as e:
                     self.error('failed to provision %s attributes: %s', port, e)
 
@@ -1409,7 +1376,6 @@ class Slave(logging_utils.LoggableMixin):
                         f'/ports/{port.get_remote_id()}/value',
                         timeout=settings.slaves.long_timeout
                     )
-
                 except Exception as e:
                     self.error('failed to provision %s value: %s', port, e)
 
@@ -1429,7 +1395,6 @@ class Slave(logging_utils.LoggableMixin):
             try:
                 self._cached_webhooks = await self.api_call('GET', '/webhooks')
                 webhooks_queried = True
-
             except Exception as e:
                 self.error('failed to query current webhooks params: %s', e)
 
@@ -1441,7 +1406,6 @@ class Slave(logging_utils.LoggableMixin):
             try:
                 self._cached_reverse = await self.api_call('GET', '/reverse')
                 reverse_queried = True
-
             except Exception as e:
                 self.error('failed to query current reverse params: %s', e)
 
@@ -1544,7 +1508,6 @@ class Slave(logging_utils.LoggableMixin):
                 if new_name and new_name != self._name:
                     try:
                         await self.update_cached_attrs({'name': new_name}, partial=True)
-
                     except exceptions.DeviceRenamed:
                         pass
 
@@ -1755,14 +1718,12 @@ async def load() -> None:
     for entry in await persist.query('slaves'):
         try:
             entry['name'] = entry.pop('id')
-
         except KeyError:
             logger.error('skipping entry with missing "id" key in persisted data')
             continue
 
         try:
             slave = Slave(**entry)
-
         except Exception as e:
             logger.error('failed to load slave %s: %s', entry['name'], e, exc_info=True)
             continue
@@ -1772,7 +1733,6 @@ async def load() -> None:
         if entry['enabled']:
             logger.debug('loaded %s', slave)
             await slave.enable()
-
         else:
             logger.debug('loaded %s (disabled)', slave)
 

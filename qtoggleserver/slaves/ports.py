@@ -212,7 +212,6 @@ class SlavePort(core_ports.BasePort):
 
                 try:
                     await self._update_attrs_remotely()
-
                 except Exception as e:
                     # Map exceptions to specific slave API errors
                     raise exceptions.adapt_api_error(e) from e
@@ -265,7 +264,6 @@ class SlavePort(core_ports.BasePort):
         try:
             await self._slave.api_call('PATCH', f'/ports/{self._remote_id}', body, timeout=settings.slaves.long_timeout)
             self.debug('successfully updated attributes remotely')
-
         except Exception as e:
             self.debug('failed to update attributes remotely: %s', e)
 
@@ -318,7 +316,6 @@ class SlavePort(core_ports.BasePort):
     def get_last_remote_value(self) -> NullablePortValue:
         try:
             return self._remote_value_queue[0]
-
         except IndexError:
             return self._cached_value
 
@@ -326,7 +323,6 @@ class SlavePort(core_ports.BasePort):
         try:
             self._cached_value = self._remote_value_queue.pop()
             return self._cached_value
-
         except IndexError:
             return
 
@@ -340,12 +336,10 @@ class SlavePort(core_ports.BasePort):
                     timeout=settings.slaves.long_timeout
                 )
                 self.push_remote_value(value)
-
             except core_responses.Accepted:
                 # The value has been successfully sent to the slave but it hasn't been applied right away. We should
                 # update the cached value later, as soon as we receive a corresponding value-change event.
                 pass
-
             except core_responses.HTTPError as e:
                 if e.code == 502 and e.code == 'port-error':
                     message = e.params.get('message')
@@ -381,7 +375,6 @@ class SlavePort(core_ports.BasePort):
                 {'values': values, 'delays': delays, 'repeat': repeat}
             )
             self.debug('sequence sent remotely')
-
         except Exception as e:
             self.error('failed to send sequence remotely: %s', e)
 
@@ -447,10 +440,8 @@ class SlavePort(core_ports.BasePort):
 
             try:
                 value = await self._slave.api_call('GET', f'/ports/{self._remote_id}/value', retry_counter=None)
-
             except Exception as e:
                 self.error('failed to fetch port value: %s', e)
-
             else:
                 if value is not None:
                     self.push_remote_value(value)
