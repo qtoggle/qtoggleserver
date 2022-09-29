@@ -1,4 +1,3 @@
-
 from .base import EvalContext, EvalResult
 from .exceptions import ExpressionArithmeticError
 from .functions import Function, function

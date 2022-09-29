@@ -1,4 +1,3 @@
-
 from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.core.typing import PortValue as CorePortValue
 
