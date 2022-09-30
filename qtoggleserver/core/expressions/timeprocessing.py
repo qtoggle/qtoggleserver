@@ -1,11 +1,8 @@
-
-import time
-
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import List, Optional, Tuple
 
 from . import TIME_JUMP_THRESHOLD
 
-from .base import Evaluated
+from .base import EvalResult, EvalContext
 from .exceptions import EvalSkipped
 from .functions import function, Function
 
@@ -13,7 +10,7 @@ from .functions import function, Function
 @function('DELAY')
 class DelayFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
-    DEPS = ['millisecond']
+    DEPS = {'asap'}
     HISTORY_SIZE = 1024
 
     def __init__(self, *args, **kwargs) -> None:
@@ -23,9 +20,7 @@ class DelayFunction(Function):
         self._last_value: Optional[float] = None
         self._current_value: Optional[float] = None
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
-        time_ms = int(time.time() * 1000)
-
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value, delay = await self.eval_args(context)
 
         if self._current_value is None:
@@ -39,11 +34,16 @@ class DelayFunction(Function):
             while len(self._queue) >= self.HISTORY_SIZE:
                 self._queue.pop(0)
 
-            self._queue.append((time_ms, value))
+            self._queue.append((context.now_ms, value))
 
         # Process history
-        while self._queue and (time_ms - self._queue[0][0]) >= delay:
+        while self._queue and (context.now_ms - self._queue[0][0]) >= delay:
             self._current_value = self._queue.pop(0)[1]
+
+        if self._queue:
+            self.pause_asap_eval(self._queue[0][0] + delay)
+        else:
+            self.pause_asap_eval(context.now_ms + delay)
 
         return self._current_value
 
@@ -51,28 +51,22 @@ class DelayFunction(Function):
 @function('SAMPLE')
 class SampleFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
+    DEPS = {'asap'}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self._last_value: Optional[float] = None
-        self._last_duration: float = 0
+        self._last_duration_ms: int = 0
         self._last_time_ms: int = 0
 
-    def get_deps(self) -> Set[str]:
-        # Function depends on milliseconds only if it's time to reevaluate value
-        if time.time() * 1000 - self._last_time_ms >= self._last_duration:
-            return {'millisecond'}
-
-        return super().get_deps()
-
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
-        time_ms = int(time.time() * 1000)
-        if time_ms - self._last_time_ms < self._last_duration:
+    async def _eval(self, context: EvalContext) -> EvalResult:
+        if context.now_ms - self._last_time_ms < self._last_duration_ms:
+            self.pause_asap_eval(self._last_time_ms + self._last_duration_ms)
             return self._last_value
 
-        self._last_value, self._last_duration = await self.eval_args(context)
-        self._last_time_ms = time_ms
+        self._last_value, self._last_duration_ms = await self.eval_args(context)
+        self._last_time_ms = context.now_ms
 
         return self._last_value
 
@@ -80,35 +74,31 @@ class SampleFunction(Function):
 @function('FREEZE')
 class FreezeFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
+    DEPS = {'asap'}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self._last_value: Optional[float] = None
-        self._last_duration: float = 0
+        self._last_duration_ms: int = 0
         self._last_time_ms: int = 0
 
-    def get_deps(self) -> Set[str]:
-        # Function depends on milliseconds only when timer is active
-        if self._last_time_ms > 0:
-            return {'millisecond'}
-
-        return super().get_deps()
-
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
-        time_ms = int(time.time() * 1000)
-
-        if self._last_time_ms == 0:  # Idle
+    async def _eval(self, context: EvalContext) -> EvalResult:
+        if self._last_time_ms == 0:  # idle
             value = await self.args[0].eval(context)
-            if value != self._last_value:  # Value change detected, start timer
-                self._last_time_ms = time_ms
-                self._last_duration = await self.args[1].eval(context)
+            if value != self._last_value:  # value change detected, start timer
+                self._last_time_ms = context.now_ms
+                self._last_duration_ms = await self.args[1].eval(context)
                 self._last_value = value
-
-        else:  # Timer active
-            if time_ms - self._last_time_ms > self._last_duration:  # Timer expired
+            else:
+                self.pause_asap_eval()
+        else:  # timer active
+            if context.now_ms - self._last_time_ms > self._last_duration_ms:  # timer expired
                 self._last_time_ms = 0
-                return await self.eval(context)  # Call eval() again, now that _last_time_ms is 0
+                # Call _eval() again, now that _last_time_ms is 0
+                return await self._eval(context)
+            else:
+                self.pause_asap_eval(self._last_time_ms + self._last_duration_ms)
 
         return self._last_value
 
@@ -116,6 +106,7 @@ class FreezeFunction(Function):
 @function('HELD')
 class HeldFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
+    DEPS = {'asap'}
 
     STATE_OFF = 0
     STATE_WAITING = 1
@@ -124,32 +115,25 @@ class HeldFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._time_ms: Optional[int] = None
+        self._start_time_ms: Optional[int] = None
         self._state = self.STATE_OFF
 
-    def get_deps(self) -> Set[str]:
-        if self._state == self.STATE_WAITING:
-            return {'millisecond'}
-
-        return super().get_deps()
-
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value, fixed_value, duration = await self.eval_args(context)
 
         if value == fixed_value:
-            time_ms = int(time.time() * 1000)
-
             if self._state == self.STATE_OFF:
-                self._time_ms = time_ms
+                self._start_time_ms = context.now_ms
                 self._state = self.STATE_WAITING
-
+                self.pause_asap_eval(self._start_time_ms + duration)
             elif self._state == self.STATE_WAITING:
-                delta = time_ms - self._time_ms
+                delta = context.now_ms - self._start_time_ms
                 if delta >= duration:
                     self._state = self.STATE_ON
-
+                self.pause_asap_eval()
         else:
             self._state = self.STATE_OFF
+            self.pause_asap_eval()
 
         return self._state == self.STATE_ON
 
@@ -157,36 +141,33 @@ class HeldFunction(Function):
 @function('DERIV')
 class DerivFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
-    DEPS = ['millisecond']
+    DEPS = {'asap'}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self._last_value: Optional[float] = None
-        self._last_time: float = 0
+        self._last_time_ms: int = 0
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value, sampling_interval = await self.eval_args(context)
-
-        sampling_interval /= 1000
         result = 0
-        now = time.time()
 
         if self._last_value is not None:
-            delta = now - self._last_time
+            delta = context.now_ms - self._last_time_ms
             if delta < sampling_interval:
+                self.pause_asap_eval(self._last_time_ms + sampling_interval)
                 raise EvalSkipped()
 
             if delta > TIME_JUMP_THRESHOLD:
                 self._last_value = value
-                self._last_time = now
+                self._last_time_ms = context.now_ms
                 raise EvalSkipped()
 
-            else:
-                result = (value - self._last_value) / delta
+            result = (value - self._last_value) / delta * 1000
 
         self._last_value = value
-        self._last_time = now
+        self._last_time_ms = context.now_ms
 
         return result
 
@@ -194,35 +175,33 @@ class DerivFunction(Function):
 @function('INTEG')
 class IntegFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = ['millisecond']
+    DEPS = {'asap'}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self._last_value: Optional[float] = None
-        self._last_time: float = 0
+        self._last_time_ms: int = 0
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value, accumulator, sampling_interval = await self.eval_args(context)
-
-        sampling_interval /= 1000
         result = accumulator
-        now = time.time()
 
         if self._last_value is not None:
-            delta = now - self._last_time
+            delta = context.now_ms - self._last_time_ms
             if delta < sampling_interval:
+                self.pause_asap_eval(self._last_time_ms + sampling_interval)
                 raise EvalSkipped()
 
             if delta > TIME_JUMP_THRESHOLD:
                 self._last_value = value
-                self._last_time = now
+                self._last_time_ms = context.now_ms
                 raise EvalSkipped()
 
-            result += (value + self._last_value) * delta / 2
+            result += (value + self._last_value) * delta / 2000
 
         self._last_value = value
-        self._last_time = now
+        self._last_time_ms = context.now_ms
 
         return result
 
@@ -230,29 +209,27 @@ class IntegFunction(Function):
 @function('FMAVG')
 class FMAvgFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = ['millisecond']
+    DEPS = {'asap'}
     QUEUE_SIZE = 1024
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self._queue: List[float] = []
-        self._last_time: float = 0
+        self._last_time_ms: int = 0
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value, width, sampling_interval = await self.eval_args(context)
-
         width = min(width, self.QUEUE_SIZE)
-        sampling_interval /= 1000
-        now = time.time()
 
-        if self._last_time > 0:
-            delta = now - self._last_time
+        if self._last_time_ms > 0:
+            delta = context.now_ms - self._last_time_ms
             if delta < sampling_interval:
+                self.pause_asap_eval(self._last_time_ms + sampling_interval)
                 raise EvalSkipped()
 
             if delta > TIME_JUMP_THRESHOLD:
-                self._last_time = now
+                self._last_time_ms = context.now_ms
                 raise EvalSkipped()
 
         # Make place for the new element
@@ -260,7 +237,7 @@ class FMAvgFunction(Function):
             self._queue.pop(0)
 
         self._queue.append(value)
-        self._last_time = now
+        self._last_time_ms = context.now_ms
 
         queue = self._queue[-int(width):]
 
@@ -270,29 +247,27 @@ class FMAvgFunction(Function):
 @function('FMEDIAN')
 class FMedianFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = ['millisecond']
+    DEPS = {'asap'}
     QUEUE_SIZE = 1024
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self._queue: List[float] = []
-        self._last_time: float = 0
+        self._last_time_ms: int = 0
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         value, width, sampling_interval = await self.eval_args(context)
-
         width = min(width, self.QUEUE_SIZE)
-        sampling_interval /= 1000
-        now = time.time()
 
-        if self._last_time > 0:
-            delta = now - self._last_time
+        if self._last_time_ms > 0:
+            delta = context.now_ms - self._last_time_ms
             if delta < sampling_interval:
+                self.pause_asap_eval(self._last_time_ms + sampling_interval)
                 raise EvalSkipped()
 
             if delta > TIME_JUMP_THRESHOLD:
-                self._last_time = now
+                self._last_time_ms = context.now_ms
                 raise EvalSkipped()
 
         # Make place for the new element
@@ -300,7 +275,7 @@ class FMedianFunction(Function):
             self._queue.pop(0)
 
         self._queue.append(value)
-        self._last_time = now
+        self._last_time_ms = context.now_ms
 
         queue = self._queue[-int(width):]
         queue.sort()

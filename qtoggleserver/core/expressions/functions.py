@@ -3,11 +3,11 @@ import abc
 import asyncio
 import re
 
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Callable, List, Optional, Set
 
 from . import exceptions
 from . import parse
-from .base import Expression, Evaluated
+from .base import Expression, EvalResult, EvalContext
 from .literalvalues import LiteralValue
 from .port import PortValue
 
@@ -29,12 +29,12 @@ class Function(Expression, metaclass=abc.ABCMeta):
     NAME = None
     MIN_ARGS = None
     MAX_ARGS = None
-    DEPS = []
+    DEPS = set()
     ARG_KINDS = []
     ENABLED = True
 
-    def __init__(self, args: List[Expression]) -> None:
-        super().__init__()
+    def __init__(self, args: List[Expression], role: int) -> None:
+        super().__init__(role)
 
         self.args: List[Expression] = args
 
@@ -46,14 +46,14 @@ class Function(Expression, metaclass=abc.ABCMeta):
 
         return s
 
-    def get_deps(self) -> Set[str]:
+    def _get_deps(self) -> Set[str]:
         deps = set(self.DEPS)
         for arg in self.args:
             deps |= arg.get_deps()
 
         return deps
 
-    async def eval_args(self, context: Dict[str, Any]) -> List[Evaluated]:
+    async def eval_args(self, context: EvalContext) -> List[EvalResult]:
         return list(await asyncio.gather(*(a.eval(context) for a in self.args)))
 
     @classmethod
@@ -61,7 +61,6 @@ class Function(Expression, metaclass=abc.ABCMeta):
         for i, arg in enumerate(args):
             try:
                 kind = cls.ARG_KINDS[i]
-
             except IndexError:
                 kind = (LiteralValue, PortValue, Function)
 
@@ -69,7 +68,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
                 raise exceptions.InvalidArgumentKind(cls.NAME, pos_list[i], i + 1)
 
     @staticmethod
-    def parse(self_port_id: Optional[str], sexpression: str, pos: int) -> Expression:
+    def parse(self_port_id: Optional[str], sexpression: str, role: int, pos: int) -> Expression:
         # Remove leading whitespace
         while sexpression and sexpression[0].isspace():
             sexpression = sexpression[1:]
@@ -149,10 +148,10 @@ class Function(Expression, metaclass=abc.ABCMeta):
         if func_class.MAX_ARGS is not None and len(sargs) > func_class.MAX_ARGS:
             raise exceptions.InvalidNumberOfArguments(func_name, pos)
 
-        args = [parse(self_port_id, sarg, pos + spos) for (sarg, spos) in sargs]
+        args = [parse(self_port_id, sarg, role, pos + spos) for (sarg, spos) in sargs]
         func_class.validate_arg_kinds(args, [pos + spos + 1 for (_, spos) in sargs])
 
-        return func_class(args)
+        return func_class(args, role)
 
 
 # These imports are here just because we need all modules to be imported, so that @function decorator registers all

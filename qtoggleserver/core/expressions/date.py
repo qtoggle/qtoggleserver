@@ -2,13 +2,10 @@
 import abc
 import calendar
 import datetime
-import time
-
-from typing import Any, Dict
 
 from qtoggleserver import system
 
-from .base import Evaluated
+from .base import EvalResult, EvalContext
 from .exceptions import InvalidArgumentValue, EvalSkipped
 from .functions import function, Function
 
@@ -16,17 +13,16 @@ from .functions import function, Function
 class DateUnitFunction(Function, metaclass=abc.ABCMeta):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = ['second']
+    DEPS = {'second'}
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
         if len(self.args) > 0:
             timestamp = int(await self.args[0].eval(context))
-
         else:
-            timestamp = int(time.time())
+            timestamp = context.timestamp
 
         return self.extract_unit(datetime.datetime.fromtimestamp(timestamp))
 
@@ -86,13 +82,13 @@ class SecondFunction(DateUnitFunction):
 @function('MILLISECOND')
 class MillisecondFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
-    DEPS = ['millisecond']
+    DEPS = {'asap'}
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        return datetime.datetime.now().microsecond // 1000
+        return int(context.now_ms % 1000)
 
 
 @function('MINUTEDAY')
@@ -110,10 +106,10 @@ class SecondDayFunction(DateUnitFunction):
 @function('DATE')
 class DateFunction(Function):
     MIN_ARGS = MAX_ARGS = 6
-    DEPS = ['second']
+    DEPS = {'second'}
     UNIT_INDEX = {u: i + 1 for i, u in enumerate(('year', 'month', 'day', 'hour', 'minute', 'second'))}
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -135,13 +131,13 @@ class DateFunction(Function):
 class BOYFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = ['second']
+    DEPS = {'second'}
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        now = datetime.datetime.now()
+        now = datetime.datetime.fromtimestamp(context.timestamp)
 
         n = 0
         if len(self.args) > 0:
@@ -157,13 +153,13 @@ class BOYFunction(Function):
 class BOMFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = ['second']
+    DEPS = {'second'}
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        now = datetime.datetime.now()
+        now = datetime.datetime.fromtimestamp(context.timestamp)
         n = 0
         if len(self.args) > 0:
             n = int(await self.args[0].eval(context))
@@ -197,9 +193,9 @@ class BOMFunction(Function):
 class BOWFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 2
-    DEPS = ['second']
+    DEPS = {'second'}
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
@@ -210,8 +206,8 @@ class BOWFunction(Function):
             if len(self.args) > 1:
                 s = int(await self.args[1].eval(context))
 
-        now = datetime.datetime.now()
-        dt = now.replace(hour=12)  # Using mid day practically avoids problems due to DST
+        now = datetime.datetime.fromtimestamp(context.timestamp)
+        dt = now.replace(hour=12)  # Using midday practically avoids problems due to DST
         if s > 0:
             dt -= datetime.timedelta(days=dt.weekday() + 7 - s)
 
@@ -260,13 +256,13 @@ class BOWFunction(Function):
 class BODFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = ['second']
+    DEPS = {'second'}
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        now = datetime.datetime.now()
+        now = datetime.datetime.fromtimestamp(context.timestamp)
         n = 0
         if len(self.args) > 0:
             n = int(await self.args[0].eval(context))
@@ -280,13 +276,13 @@ class BODFunction(Function):
 @function('HMSINTERVAL')
 class HMSIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 6
-    DEPS = ['second']
+    DEPS = {'second'}
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        now = datetime.datetime.now().replace(microsecond=0)
+        now = datetime.datetime.fromtimestamp(context.timestamp).replace(microsecond=0)
 
         start_h, start_m, start_s, stop_h, stop_m, stop_s = await self.eval_args(context)
 
@@ -320,14 +316,13 @@ class HMSIntervalFunction(Function):
 @function('MDINTERVAL')
 class MDIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 4
-    DEPS = ['second']
+    DEPS = {'second'}
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        now = datetime.datetime.now().replace(microsecond=0)
-
+        now = datetime.datetime.fromtimestamp(context.timestamp).replace(microsecond=0)
         start_m, start_d, stop_m, stop_d = await self.eval_args(context)
 
         if not (1 <= start_m <= 12):

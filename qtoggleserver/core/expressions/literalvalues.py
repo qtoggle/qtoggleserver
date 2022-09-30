@@ -1,17 +1,17 @@
 
 import re
 
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from qtoggleserver.core.typing import NullablePortValue as CoreNullablePortValue
 
-from .base import Expression, Evaluated
+from .base import Expression, EvalResult, EvalContext
 from .exceptions import UnexpectedCharacter, EmptyExpression, ValueUnavailable
 
 
 class LiteralValue(Expression):
-    def __init__(self, value: CoreNullablePortValue, sexpression: str) -> None:
-        super().__init__()
+    def __init__(self, value: CoreNullablePortValue, sexpression: str, role: int) -> None:
+        super().__init__(role)
 
         self.value: CoreNullablePortValue = value
         self.sexpression: str = sexpression
@@ -19,14 +19,14 @@ class LiteralValue(Expression):
     def __str__(self) -> str:
         return self.sexpression
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         if self.value is None:
             raise ValueUnavailable
 
         return float(self.value)
 
     @staticmethod
-    def parse(self_port_id: Optional[str], sexpression: str, pos: int) -> Expression:
+    def parse(self_port_id: Optional[str], sexpression: str, role: int, pos: int) -> Expression:
         while sexpression and sexpression[0].isspace():
             sexpression = sexpression[1:]
             pos += 1
@@ -56,4 +56,4 @@ class LiteralValue(Expression):
                     else:
                         raise UnexpectedCharacter(sexpression[0], pos) from None
 
-        return LiteralValue(value, sexpression)
+        return LiteralValue(value, sexpression, role)

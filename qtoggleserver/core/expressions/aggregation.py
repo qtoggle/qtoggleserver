@@ -1,7 +1,5 @@
 
-from typing import Any, Dict
-
-from .base import Evaluated
+from .base import EvalResult, EvalContext
 from .functions import function, Function
 
 
@@ -9,7 +7,7 @@ from .functions import function, Function
 class MinFunction(Function):
     MIN_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         eval_args = await self.eval_args(context)
 
         m = eval_args[0]
@@ -24,7 +22,7 @@ class MinFunction(Function):
 class MaxFunction(Function):
     MIN_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         eval_args = await self.eval_args(context)
 
         m = eval_args[0]
@@ -39,7 +37,7 @@ class MaxFunction(Function):
 class AvgFunction(Function):
     MIN_ARGS = 2
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
+    async def _eval(self, context: EvalContext) -> EvalResult:
         eval_args = await self.eval_args(context)
 
         return sum(eval_args) / len(eval_args)

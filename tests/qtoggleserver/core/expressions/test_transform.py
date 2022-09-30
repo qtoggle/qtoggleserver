@@ -1,10 +1,4 @@
 
-import datetime
-
-from qtoggleserver.core import main
-from qtoggleserver.core import ports as core_ports
-
-
 async def test_transform_read(num_mock_port1):
     await num_mock_port1.set_attr('transform_read', 'MUL($, 10)')
     num_mock_port1.set_last_read_value(4)

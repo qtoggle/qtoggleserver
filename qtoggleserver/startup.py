@@ -339,7 +339,7 @@ async def init_main() -> None:
     if settings.slaves.enabled:
         logger.debug('waiting for slaves to become ready')
         while not slaves_devices.ready():
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(1)
 
         logger.debug('slaves are ready')
 

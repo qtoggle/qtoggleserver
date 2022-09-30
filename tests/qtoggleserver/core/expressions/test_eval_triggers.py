@@ -1,9 +1,8 @@
 
 import asyncio
-import datetime
+import time
 
 from qtoggleserver.core import main
-from qtoggleserver.core import ports as core_ports
 
 
 async def test_eval_trigger_set_expression(mocker, num_mock_port1, num_mock_port2):
@@ -106,3 +105,48 @@ async def test_eval_trigger_ignore_inexistent_port(mocker, num_mock_port1, num_m
     mocker.patch.object(num_mock_port2, 'transform_and_write_value')
     await main.update()
     num_mock_port2.transform_and_write_value.assert_not_called()
+
+
+async def test_asap_eval_paused(mocker, num_mock_port1, dummy_eval_context):
+    num_mock_port1.set_writable(True)
+    await num_mock_port1.set_attr('expression', 'MILLISECOND()')
+    e = num_mock_port1.get_expression()
+
+    with mocker.patch.object(e, 'eval'):
+        await main.update()
+        await asyncio.sleep(0.1)
+        e.eval.assert_called()
+
+    # Reset eval queue
+    while True:
+        try:
+            num_mock_port1._eval_queue.get_nowait()
+        except asyncio.QueueEmpty:
+            break
+
+    e.pause_asap_eval(time.time() * 1000 + 1000)
+    with mocker.patch.object(e, 'eval'):
+        await main.update()
+        await asyncio.sleep(0.1)
+        e.eval.assert_not_called()
+
+
+async def test_asap_eval_paused_value_change(mocker, num_mock_port1, num_mock_port2, dummy_eval_context):
+    num_mock_port1.set_writable(True)
+    num_mock_port2.set_last_read_value(4)
+    await num_mock_port1.set_attr('expression', 'ADD(MILLISECOND(), $nid2)')
+    e = num_mock_port1.get_expression()
+
+    # Reset eval queue
+    while True:
+        try:
+            num_mock_port1._eval_queue.get_nowait()
+        except asyncio.QueueEmpty:
+            break
+
+    num_mock_port2.set_next_value(5)
+    e.pause_asap_eval(time.time() * 1000 + 1000)
+    with mocker.patch.object(e, 'eval'):
+        await main.update()
+        await asyncio.sleep(0.1)
+        e.eval.assert_called()

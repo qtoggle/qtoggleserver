@@ -1,25 +1,21 @@
 
-import time
-
-from typing import Any, Dict
-
-from .base import Evaluated
+from .base import EvalResult, EvalContext
 from .functions import function, Function
 
 
 @function('TIME')
 class TimeFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
-    DEPS = ['second']
+    DEPS = {'second'}
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
-        return int(time.time())
+    async def _eval(self, context: EvalContext) -> EvalResult:
+        return context.timestamp
 
 
 @function('TIMEMS')
 class TimeMSFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
-    DEPS = ['millisecond']
+    DEPS = {'asap'}
 
-    async def eval(self, context: Dict[str, Any]) -> Evaluated:
-        return int(time.time() * 1000)
+    async def _eval(self, context: EvalContext) -> EvalResult:
+        return context.now_ms

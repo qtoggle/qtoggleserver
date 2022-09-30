@@ -376,11 +376,11 @@ class Slave(logging_utils.LoggableMixin):
         return self._poll_interval == 0 and not self._listen_enabled
 
     async def wait_online(self, timeout: int) -> None:
-        for _ in range(timeout * 10):
+        for _ in range(timeout):
             if self._online:
                 return
 
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(1)
 
         raise asyncio.TimeoutError('Timeout waiting for device to come online')
 
@@ -1092,8 +1092,7 @@ class Slave(logging_utils.LoggableMixin):
             new_value = values_by_id.get(id_)
             if old_value != new_value:
                 try:
-                    await self._handle_value_change(id_, new_value)
-
+                    await self._handle_value_change(id_, new_value, old_value)
                 except Exception as e:
                     self.error('failed to update polled port %s value: %s', id_, e)
 
@@ -1149,10 +1148,15 @@ class Slave(logging_utils.LoggableMixin):
             raise
 
         except Exception as e:
-            self.error('handling event of type %s failed: %s', event['type'], e)
+            self.error('handling event of type %s failed: %s', event['type'], e, exc_info=True)
             raise
 
-    async def _handle_value_change(self, id: str, value: NullablePortValue) -> None:
+    async def _handle_value_change(
+        self,
+        id: str,
+        value: NullablePortValue,
+        old_value: NullablePortValue = None
+    ) -> None:
         local_id = f'{self._name}.{id}'
         port = core_ports.get(local_id)
         if not port or not isinstance(port, SlavePort):
