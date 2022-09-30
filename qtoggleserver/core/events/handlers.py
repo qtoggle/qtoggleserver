@@ -1,8 +1,5 @@
-
 import asyncio
 import logging
-
-from typing import List, Set
 
 from qtoggleserver.conf import settings
 from qtoggleserver.utils import dynload as dynload_utils
@@ -12,8 +9,8 @@ from .base import Event, Handler
 
 logger = logging.getLogger(__name__)
 
-_registered_handlers: List[Handler] = []
-_active_handle_tasks: Set[asyncio.Task] = set()
+_registered_handlers: list[Handler] = []
+_active_handle_tasks: set[asyncio.Task] = set()
 _enabled: bool = True
 
 
@@ -48,12 +45,10 @@ async def trigger(event: Event) -> None:
             task = asyncio.create_task(handler.handle_event(event))
             task.add_done_callback(_active_handle_tasks.discard)
             _active_handle_tasks.add(task)
-
         else:
             # Synchronously call non-fire-and-forget handlers, shielding the loop from any exception
             try:
                 await handler.handle_event(event)
-
             except Exception as e:
                 logger.error('event handling failed: %s', e, exc_info=True)
 
@@ -66,10 +61,8 @@ async def init() -> None:
             logger.debug('loading event handler %s', handler_class_path)
             handler_class = dynload_utils.load_attr(handler_class_path)
             handler = handler_class(**handler_args)
-
         except Exception as e:
             logger.error('failed to load event handler %s: %s', handler_class_path, e, exc_info=True)
-
         else:
             _registered_handlers.append(handler)
 

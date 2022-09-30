@@ -1,10 +1,12 @@
+fakeredis
 flake8
 flake8-annotations
-pytest
-pytest-asyncio
-pytest-tornasync
-pytest-mock
+flake8-pyproject
 freezegun
 mongomock
-fakeredis
+pre-commit
+pytest
+pytest-asyncio
+pytest-mock
+pytest-tornasync
 testing.postgresql

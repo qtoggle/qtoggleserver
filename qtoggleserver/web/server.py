@@ -1,12 +1,11 @@
-
 import asyncio
 import logging
 import ssl
 
-from typing import List, Optional
+from typing import Optional
 
-from tornado.web import Application, HTTPServer, RequestHandler, URLSpec
 from qui.web import tornado as qui_tornado
+from tornado.web import Application, HTTPServer, RequestHandler, URLSpec
 
 from qtoggleserver import system
 from qtoggleserver.conf import settings
@@ -24,10 +23,8 @@ _server: Optional[HTTPServer] = None
 def _log_request(handler: RequestHandler) -> None:
     if handler.get_status() < 400:
         log_method = logger.debug
-
     elif handler.get_status() < 500:
         log_method = logger.warning
-
     else:
         log_method = logger.error
 
@@ -35,7 +32,7 @@ def _log_request(handler: RequestHandler) -> None:
     log_method('%d %s %.2fms', handler.get_status(), handler._request_summary(), request_time)
 
 
-def _make_routing_table() -> List[URLSpec]:
+def _make_routing_table() -> list[URLSpec]:
     handlers_list = []
 
     # Frontend
@@ -177,7 +174,6 @@ async def init() -> None:
     try:
         _server = app.listen(port, address, ssl_options=ssl_context)
         logger.info('server listening on %s:%s', address, port)
-
     except Exception as e:
         logger.error('server listen failed: %s', e)
         raise

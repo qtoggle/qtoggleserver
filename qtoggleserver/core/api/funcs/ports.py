@@ -1,9 +1,8 @@
-
 import asyncio
 import inspect
 import time
 
-from typing import Any, Callable, List
+from typing import Any, Callable
 
 from qtoggleserver import slaves
 from qtoggleserver.conf import settings
@@ -14,10 +13,16 @@ from qtoggleserver.core import main as core_main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import vports as core_vports
 from qtoggleserver.core.api import schema as core_api_schema
-from qtoggleserver.core.typing import Attribute, Attributes, GenericJSONDict, GenericJSONList, NullablePortValue
-from qtoggleserver.core.typing import PortValue
-from qtoggleserver.slaves import ports as slaves_ports
+from qtoggleserver.core.typing import (
+    Attribute,
+    Attributes,
+    GenericJSONDict,
+    GenericJSONList,
+    NullablePortValue,
+    PortValue,
+)
 from qtoggleserver.slaves import devices as slaves_devices
+from qtoggleserver.slaves import ports as slaves_ports
 from qtoggleserver.utils import json as json_utils
 
 
@@ -50,7 +55,7 @@ async def add_virtual_port(attrs: GenericJSONDict) -> core_ports.BasePort:
             'step': step,
             'choices': choices
         },
-        trigger_add=False  # Will trigger add event manually, later, after we've enabled the port
+        trigger_add=False  # will trigger add event manually, later, after we've enabled the port
     )
 
     # A virtual port is enabled by default
@@ -67,14 +72,13 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
     def unexpected_field_code(field: str) -> str:
         if field in non_modifiable_attrs:
             return 'attribute-not-modifiable'
-
         else:
             return 'no-such-attribute'
 
     schema = await port.get_schema()
     if ignore_extra_attrs:
         schema = dict(schema)
-        schema['additionalProperties'] = True  # Ignore non-existent and non-modifiable attributes
+        schema['additionalProperties'] = True  # ignore non-existent and non-modifiable attributes
 
     core_api_schema.validate(
         attrs,
@@ -102,7 +106,6 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
 
         try:
             await port.set_attr(attr_name, attr_value)
-
         except Exception as e1:
             errors_by_name[attr_name] = e1
 
@@ -116,16 +119,12 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
 
         if isinstance(error, core_api.APIError):
             raise error
-
         elif isinstance(error, core_ports.InvalidAttributeValue):
             raise core_api.APIError(400, 'invalid-field', field=name, details=error.details)
-
         elif isinstance(error, core_ports.PortTimeout):
             raise core_api.APIError(504, 'port-timeout')
-
         elif isinstance(error, core_ports.PortError):
             raise core_api.APIError(502, 'port-error', code=str(error))
-
         else:
             # Transform any unhandled exception into APIError(500)
             raise core_api.APIError(500, 'unexpected-error', message=str(error)) from error
@@ -142,7 +141,6 @@ async def wrap_error_with_port_id(port_id: str, func: Callable, *args, **kwargs)
         result = func(*args, **kwargs)
         if inspect.isawaitable(result):
             result = await result
-
     except core_api.APIError as e:
         raise core_api.APIError(
             status=e.status,
@@ -150,7 +148,6 @@ async def wrap_error_with_port_id(port_id: str, func: Callable, *args, **kwargs)
             id=port_id,
             **e.params
         )
-
     except Exception as e:
         raise core_api.APIError(
             status=500,
@@ -163,7 +160,7 @@ async def wrap_error_with_port_id(port_id: str, func: Callable, *args, **kwargs)
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
-async def get_ports(request: core_api.APIRequest) -> List[Attributes]:
+async def get_ports(request: core_api.APIRequest) -> list[Attributes]:
     return [await port.to_json() for port in sorted(core_ports.get_all(), key=lambda p: p.get_id())]
 
 
@@ -215,13 +212,13 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
 
             # Virtual ports must be added first (unless they belong to a slave)
             virtual = attrs.get('virtual')
-            if port is not None:  # Port already exists so it probably belongs to a slave
+            if port is not None:  # port already exists so it probably belongs to a slave
                 virtual = False
             for slave in slaves_devices.get_all():
                 if id_.startswith(f'{slave.get_name()}.'):  # id indicates that port belongs to a slave
                     virtual = False
                     break
-            if 'provisioning' in attrs:  # A clear indication that port belongs to a slave
+            if 'provisioning' in attrs:  # a clear indication that port belongs to a slave
                 virtual = False
 
             if virtual:
@@ -246,7 +243,6 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
 
                 # For slave ports, ignore any attributes that are not kept on master
                 attrs = {n: v for n, v in attrs.items() if n in ('tag', 'expression', 'expires')}
-
             else:
                 core_api.logger.debug('restoring local port "%s"', id_)
 
@@ -322,7 +318,6 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
 
     try:
         core_api_schema.validate(params, await port.get_value_schema())
-
     except core_api.APIError:
         # Transform any validation error into an invalid-field APIError for value
         raise core_api.APIError(400, 'invalid-value') from None
@@ -345,16 +340,12 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
 
     try:
         await port.transform_and_write_value(value)
-
     except core_ports.PortTimeout as e:
         raise core_api.APIError(504, 'port-timeout') from e
-
     except core_ports.PortError as e:
         raise core_api.APIError(502, 'port-error', code=str(e)) from e
-
     except core_api.APIError:
         raise
-
     except Exception as e:
         # Transform any unhandled exception into APIError(500)
         raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
@@ -390,7 +381,6 @@ async def patch_port_sequence(request: core_api.APIRequest, port_id: str, params
         # Translate any APIError generated when validating value schema into an invalid-field APIError on value
         try:
             core_api_schema.validate(value, value_schema)
-
         except core_api.APIError:
             raise core_api.APIError(400, 'invalid-field', field='values') from None
 
@@ -409,7 +399,6 @@ async def patch_port_sequence(request: core_api.APIRequest, port_id: str, params
 
     try:
         await port.set_sequence(values, delays, repeat)
-
     except Exception as e:
         # Transform any unhandled exception into APIError(500)
         raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
@@ -432,13 +421,11 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
     if from_str:
         try:
             from_timestamp = int(from_str)
-
         except ValueError:
             raise core_api.APIError(400, 'invalid-field', field='from')
 
         if from_timestamp < 0:
             raise core_api.APIError(400, 'invalid-field', field='from')
-
     else:
         from_timestamp = None
 
@@ -447,7 +434,6 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
     if to_str is not None:
         try:
             to_timestamp = int(to_str)
-
         except ValueError:
             raise core_api.APIError(400, 'invalid-field', field='to') from None
 
@@ -459,7 +445,6 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
     if limit_str is not None:
         try:
             limit = int(limit_str)
-
         except ValueError:
             raise core_api.APIError(400, 'invalid-field', field='limit') from None
 
@@ -471,7 +456,6 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
         timestamps = timestamps_str.split(',')
         try:
             timestamps = [int(t) for t in timestamps]
-
         except ValueError:
             raise core_api.APIError(400, 'invalid-field', field='timestamps')
 
@@ -480,7 +464,6 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
 
     if timestamps is not None:
         samples = await core_history.get_samples_by_timestamp(port, timestamps)
-
     else:
         samples = await core_history.get_samples_slice(port, from_timestamp, to_timestamp, limit)
 
@@ -501,7 +484,6 @@ async def delete_port_history(request: core_api.APIRequest, port_id: str) -> Non
 
     try:
         from_timestamp = int(from_str)
-
     except ValueError:
         raise core_api.APIError(400, 'invalid-field', field='from') from None
 
@@ -514,7 +496,6 @@ async def delete_port_history(request: core_api.APIRequest, port_id: str) -> Non
 
     try:
         to_timestamp = int(to_str)
-
     except ValueError:
         raise core_api.APIError(400, 'invalid-field', field='to') from None
 

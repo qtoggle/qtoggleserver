@@ -1,19 +1,17 @@
-
 import asyncio
 import inspect
 import logging
 import re
 
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
 
 from tornado.iostream import StreamClosedError
-from tornado.web import RequestHandler, HTTPError
-
+from tornado.web import HTTPError, RequestHandler
 
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import responses as core_responses
-from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.api import auth as core_api_auth
+from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.utils import json as json_utils
 
 
@@ -41,7 +39,6 @@ class BaseHandler(RequestHandler):
         if self._json is self._UNDEFINED:
             try:
                 self._json = json_utils.loads(self.request.body)
-
             except ValueError as e:
                 logger.error('could not decode json from request body: %s', e)
 
@@ -69,7 +66,7 @@ class BaseHandler(RequestHandler):
     def get_response_body_json(self) -> Any:
         return self._response_body_json
 
-    def get_response_headers(self) -> Dict[str, str]:
+    def get_response_headers(self) -> dict[str, str]:
         return dict(self._headers.get_all())
 
     def get(self, **kwargs) -> None:
@@ -82,16 +79,17 @@ class BaseHandler(RequestHandler):
             if isinstance(exception, HTTPError):
                 logger.error('%s %s: %s', self.request.method, self.request.uri, exception)
                 self.set_status(exception.status_code)
-                self.finish_json({'error': (exception.log_message or
-                                            getattr(exception, 'reason', None) or str(exception))})
-
+                self.finish_json(
+                    {
+                        'error': (exception.log_message or getattr(exception, 'reason', None) or str(exception))
+                    }
+                )
             else:
                 logger.error(str(exception), exc_info=True)
                 self.set_status(500)
                 self.finish_json({'error': 'internal server error'})
-
         except RuntimeError:
-            pass  # Nevermind
+            pass  # nevermind
 
     def data_received(self, chunk: bytes) -> None:
         pass
@@ -122,16 +120,13 @@ class APIHandler(BaseHandler):
                     core_api_auth.ORIGIN_CONSUMER,
                     core_api_auth.consumer_password_hash_func
                 )
-
             except core_api_auth.AuthError as e:
                 logger.warning(str(e))
                 return
-
         else:
             if core_device_attrs.admin_password_hash == core_device_attrs.EMPTY_PASSWORD_HASH:
                 logger.debug('authenticating request as admin due to empty admin password')
                 usr = 'admin'
-
             else:
                 logger.warning('missing authorization header')
                 return
@@ -166,10 +161,8 @@ class APIHandler(BaseHandler):
             self.set_status(default_status)
             if response is not None or default_status == 200:
                 await self.finish_json(response)
-
             else:
                 await self.finish()
-
         except Exception as e:
             await self._handle_api_call_exception(func, kwargs, e)
 
@@ -186,20 +179,18 @@ class APIHandler(BaseHandler):
             logger.error('api call %s failed: %s (args=%s, body=%s)', func.__name__, error, args, body)
 
             self.set_status(error.status)
-            if not self._finished:  # Avoid finishing an already finished request
+            if not self._finished:  # avoid finishing an already finished request
                 await self.finish_json(error.to_json())
 
         if isinstance(error, core_api.APIAccepted):
             self.set_status(202)
-            if not self._finished and error.response is not None:  # Avoid finishing an already finished request
+            if not self._finished and error.response is not None:  # avoid finishing an already finished request
                 await self.finish_json(error.response)
-
         elif isinstance(error, StreamClosedError) and func.__name__ == 'get_listen':
             logger.debug('api call get_listen could not complete: stream closed')
-
         else:
             logger.error('api call %s failed: %s (args=%s, body=%s)', func.__name__, error, args, body, exc_info=True)
 
             self.set_status(500)
-            if not self._finished:  # Avoid finishing an already finished request
+            if not self._finished:  # avoid finishing an already finished request
                 await self.finish_json({'error': str(error)})

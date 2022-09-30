@@ -1,15 +1,14 @@
-
 import abc
 import re
 
-from typing import Optional, Set
-
-from . import ROLE_TRANSFORM_READ, ROLE_TRANSFORM_WRITE
-from .base import Expression, EvalResult, EvalContext
-from .exceptions import UnknownPortId, DisabledPort, PortValueUnavailable, UnexpectedCharacter
+from typing import Optional
 
 # Import core.ports after defining Expression, because core.ports.BasePort depends on Expression.
 from qtoggleserver.core import ports as core_ports
+
+from . import ROLE_TRANSFORM_READ, ROLE_TRANSFORM_WRITE
+from .base import EvalContext, EvalResult, Expression
+from .exceptions import DisabledPort, PortValueUnavailable, UnexpectedCharacter, UnknownPortId
 
 
 class PortExpression(Expression, metaclass=abc.ABCMeta):
@@ -44,13 +43,12 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
 
             if prefix == '$':
                 return PortValue(port_id, prefix, role)
-            else:  # Assuming prefix == '@'
+            else:  # assuming prefix == '@'
                 return PortRef(port_id, prefix, role)
-
         else:
             if prefix == '$':
                 return SelfPortValue(self_port_id, prefix, role)
-            else:  # Assuming prefix == '@'
+            else:  # assuming prefix == '@'
                 return SelfPortRef(self_port_id, prefix, role)
 
 
@@ -58,7 +56,7 @@ class PortValue(PortExpression):
     def __str__(self) -> str:
         return f'{self.prefix}{self.port_id}'
 
-    def _get_deps(self) -> Set[str]:
+    def _get_deps(self) -> set[str]:
         return {f'${self.port_id}'}
 
     async def _eval(self, context: EvalContext) -> EvalResult:

@@ -1,8 +1,7 @@
-
 import logging
 import threading
 
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Iterable, Optional, Union
 
 from qtoggleserver.conf import settings
 from qtoggleserver.utils import conf as conf_utils
@@ -27,7 +26,6 @@ def _get_driver() -> BaseDriver:
             logger.debug('loading persistence driver %s', driver_class_path)
             driver_class = dynload_utils.load_attr(driver_class_path)
             _thread_local.driver = driver_class(**driver_args)
-
         except Exception as e:
             logger.error('failed to load persistence driver %s: %s', driver_class_path, e, exc_info=True)
 
@@ -42,9 +40,9 @@ def is_history_supported() -> bool:
 
 async def query(
     collection: str,
-    fields: Optional[List[str]] = None,
-    filt: Optional[Dict[str, Any]] = None,
-    sort: Optional[Union[str, List[str]]] = None,
+    fields: Optional[list[str]] = None,
+    filt: Optional[dict[str, Any]] = None,
+    sort: Optional[Union[str, list[str]]] = None,
     limit: Optional[int] = None
 ) -> Iterable[Record]:
 
@@ -93,10 +91,8 @@ async def get_value(name: str, default: Optional[Any] = None) -> Any:
         logger.warning('more than one record found in single-value collection %s', name)
 
         record = records[0]
-
     elif len(records) > 0:
         record = records[0]
-
     else:
         return default
 
@@ -115,7 +111,6 @@ async def set_value(name: str, value: Any) -> None:
         logger.warning('more than one record found in single-value collection %s', name)
 
         id_ = records[0]['id']
-
     elif len(records) > 0:
         id_ = records[0]['id']
 
@@ -136,7 +131,7 @@ async def insert(collection: str, record: Record) -> Id:
     return await _get_driver().insert(collection, record)
 
 
-async def update(collection: str, record_part: Record, filt: Optional[Dict[str, Any]] = None) -> int:
+async def update(collection: str, record_part: Record, filt: Optional[dict[str, Any]] = None) -> int:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
             'updating %s where %s with %s',
@@ -161,7 +156,7 @@ async def replace(collection: str, id_: Id, record: Record) -> bool:
             collection
         )
 
-    record = dict(record, id=id_)  # Make sure the new record contains the id field
+    record = dict(record, id=id_)  # make sure the new record contains the id field
     replaced = await _get_driver().replace(collection, id_, record)
     if replaced:
         logger.debug('replaced record with id %s in %s', id_, collection)
@@ -175,7 +170,7 @@ async def replace(collection: str, id_: Id, record: Record) -> bool:
         return True
 
 
-async def remove(collection: str, filt: Optional[Dict[str, Any]] = None) -> int:
+async def remove(collection: str, filt: Optional[dict[str, Any]] = None) -> int:
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('removing from %s where %s', collection, json_utils.dumps(filt or {}, allow_extended_types=True))
 
@@ -186,7 +181,7 @@ async def remove(collection: str, filt: Optional[Dict[str, Any]] = None) -> int:
     return count
 
 
-async def ensure_index(collection: str, index: Union[str, List[str]]) -> None:
+async def ensure_index(collection: str, index: Union[str, list[str]]) -> None:
     if isinstance(index, str):
         index = [index]
 

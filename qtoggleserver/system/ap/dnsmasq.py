@@ -1,12 +1,12 @@
-
 import asyncio
 import logging
-import psutil
 import subprocess
 import tempfile
 import time
 
-from typing import Dict, List, Optional, TextIO, Union
+from typing import Optional, TextIO, Union
+
+import psutil
 
 from .exceptions import APException
 
@@ -55,7 +55,7 @@ class DNSMasq:
         self._leases_file: Optional[TextIO] = None
         self._process: Optional[subprocess.Popen] = None
 
-        self._leases: List[Dict[str, Union[str, int]]] = []
+        self._leases: list[dict[str, Union[str, int]]] = []
 
     def is_alive(self) -> bool:
         return (self._process is not None) and (self._process.poll() is None)
@@ -115,7 +115,7 @@ class DNSMasq:
                 logger.error('failed to stop hostapd within %d seconds, killing it', STOP_TIMEOUT)
                 self._process.kill()
                 await asyncio.sleep(1)
-                self._process.poll()  # We want no zombies
+                self._process.poll()  # we want no zombies
 
             self._process = None
 
@@ -141,7 +141,6 @@ class DNSMasq:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
-
         except subprocess.CalledProcessError:
             raise DNSMasqException('Could not clear current own IP address')
 
@@ -151,18 +150,16 @@ class DNSMasq:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
-
         except subprocess.CalledProcessError:
             raise DNSMasqException('Could not set own IP address')
 
     def _find_binary(self) -> Optional[str]:
         try:
             return subprocess.check_output(['which', BINARY], stderr=subprocess.DEVNULL).decode().strip()
-
         except subprocess.CalledProcessError:
             return None
 
-    def _read_leases_file(self) -> List[Dict[str, Union[str, int]]]:
+    def _read_leases_file(self) -> list[dict[str, Union[str, int]]]:
         self._leases_file.seek(0)
         lines = self._leases_file.readlines()
 
@@ -186,7 +183,7 @@ class DNSMasq:
 
         return leases
 
-    def get_leases(self) -> List[Dict[str, Union[str, int]]]:
+    def get_leases(self) -> list[dict[str, Union[str, int]]]:
         if self._leases_file:
             self._leases = self._read_leases_file()
 

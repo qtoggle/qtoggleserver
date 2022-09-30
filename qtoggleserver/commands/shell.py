@@ -10,7 +10,7 @@ async def main() -> bool:
 
     code.interact(local=locals())
 
-    return False  # Don't run loop afterwards
+    return False  # don't run loop afterwards
 
 
 def execute() -> None:

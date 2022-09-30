@@ -1,8 +1,7 @@
-
 import math
 
-from .base import EvalResult, EvalContext
-from .functions import function, Function
+from .base import EvalContext, EvalResult
+from .functions import Function, function
 
 
 @function('FLOOR')

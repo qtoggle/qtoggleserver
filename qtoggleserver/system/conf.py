@@ -1,9 +1,8 @@
-
 import logging
 import os
 import shutil
 
-from typing import Any, Dict
+from typing import Any
 
 from qtoggleserver.conf import settings
 from qtoggleserver.utils import conf as conf_utils
@@ -19,14 +18,14 @@ def can_write_conf_file() -> bool:
     return os.access(settings.source, os.W_OK)
 
 
-def conf_file_to_dict() -> Dict[str, Any]:
+def conf_file_to_dict() -> dict[str, Any]:
     if not can_write_conf_file():
         raise Exception('Configuration file not available')
 
     return conf_utils.config_from_file(settings.source)
 
 
-def conf_file_from_dict(d: Dict[str, Any]) -> None:
+def conf_file_from_dict(d: dict[str, Any]) -> None:
     if not can_write_conf_file():
         raise Exception('Configuration file not available')
 

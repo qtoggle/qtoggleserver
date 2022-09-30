@@ -1,8 +1,7 @@
-
 import asyncio
 import logging
 
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 from qtoggleserver.core.typing import PortValue
 
@@ -17,15 +16,15 @@ class SequenceError(Exception):
 class Sequence:
     def __init__(
         self,
-        values: List[PortValue],
-        delays: List[int],
+        values: list[PortValue],
+        delays: list[int],
         repeat: int,
         callback: Callable,
         finish_callback: Callable
     ) -> None:
 
-        self._values: List[PortValue] = values
-        self._delays: List[int] = delays
+        self._values: list[PortValue] = values
+        self._delays: list[int] = delays
         self._repeat: int = repeat
 
         self._callback: Callable = callback
@@ -49,13 +48,11 @@ class Sequence:
             try:
                 try:
                     self._callback(value)
-
                 except Exception as e:
                     logger.error('sequence callback failed: %s', e, exc_info=True)
 
                 if i < len(self._values) - 1:
                     await asyncio.sleep(self._delays[i] / 1000.0)
-
                 else:
                     if self._repeat > 0 and self._counter >= self._repeat - 1:
                         await self._finish_callback()
@@ -67,7 +64,6 @@ class Sequence:
 
                     self._loop_task = asyncio.create_task(self._loop())
                     return
-
             except asyncio.CancelledError:
                 logger.debug('sequence loop cancelled')
                 break

@@ -1,4 +1,3 @@
-
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import webhooks as core_webhooks
 from qtoggleserver.core.api import schema as core_api_schema
@@ -26,7 +25,6 @@ async def put_webhooks(request: core_api.APIRequest, params: GenericJSONDict) ->
 
     try:
         core_webhooks.setup(**params)
-
     except core_webhooks.InvalidParamError as e:
         raise core_api.APIError(400, 'invalid-field', field=e.param) from e
 

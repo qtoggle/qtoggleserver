@@ -1,4 +1,3 @@
-
 from typing import Optional
 
 from qtoggleserver.core import ports
@@ -47,7 +46,6 @@ class DummyGPIO(ports.Port):
 
         if output:
             self.debug('setting output mode')
-
         else:
             self.debug('setting input mode')
 

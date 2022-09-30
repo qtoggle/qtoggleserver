@@ -1,7 +1,6 @@
-
 import logging
 
-from typing import Dict, Optional
+from typing import Optional
 
 from qtoggleserver import persist
 from qtoggleserver.core import ports as core_ports
@@ -10,7 +9,7 @@ from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList, Nullable
 
 logger = logging.getLogger(__name__)
 
-_vport_args: Dict[str, GenericJSONDict] = {}
+_vport_args: dict[str, GenericJSONDict] = {}
 
 
 class VirtualPort(core_ports.Port):

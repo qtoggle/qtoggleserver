@@ -1,11 +1,10 @@
-
 from __future__ import annotations
-
-from typing import Optional
 
 import abc
 import logging
 import time
+
+from typing import Optional
 
 from qtoggleserver import system
 from qtoggleserver.core import api as core_api
@@ -26,7 +25,6 @@ class Event(metaclass=abc.ABCMeta):
         if timestamp is None:
             if system.date.has_real_date_time():
                 timestamp = time.time()
-
             else:
                 timestamp = 0
 

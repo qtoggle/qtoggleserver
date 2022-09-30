@@ -1,3 +1,4 @@
+asyncpg
+bleak
 pymongo
 redis
-asyncpg

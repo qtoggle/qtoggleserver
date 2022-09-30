@@ -1,13 +1,13 @@
-
 import asyncio
 import logging
-import psutil
 import re
 import subprocess
 import tempfile
 import time
 
 from typing import Optional, TextIO
+
+import psutil
 
 from .exceptions import APException
 
@@ -102,7 +102,7 @@ class HostAPD:
 
         if self._process:
             self._disassociate_clients()
-            await asyncio.sleep(1)  # Allow 1 second for hostapd to honor the command
+            await asyncio.sleep(1)  # allow 1 second for hostapd to honor the command
 
             self._process.terminate()
 
@@ -117,7 +117,7 @@ class HostAPD:
                 logger.error('failed to stop hostapd within %d seconds, killing it', STOP_TIMEOUT)
                 self._process.kill()
                 await asyncio.sleep(1)
-                self._process.poll()  # We want no zombies
+                self._process.poll()  # we want no zombies
 
             self._process = None
 
@@ -136,7 +136,6 @@ class HostAPD:
 
         try:
             output = subprocess.check_output([cli_binary, 'list'], stderr=subprocess.DEVNULL).decode().strip()
-
         except subprocess.CalledProcessError:
             logger.error('command hostapd_cli list failed')
             return
@@ -152,14 +151,12 @@ class HostAPD:
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
                 )
-
             except subprocess.CalledProcessError:
                 logger.error('command hostapd_cli disassociate failed')
 
     def _find_binary(self, binary: str) -> Optional[str]:
         try:
             return subprocess.check_output(['which', binary], stderr=subprocess.DEVNULL).decode().strip()
-
         except subprocess.CalledProcessError:
             return None
 

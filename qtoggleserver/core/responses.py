@@ -1,4 +1,3 @@
-
 import errno
 import socket
 
@@ -110,16 +109,12 @@ class OtherError(Error):
 def _response_error_errno(eno: Optional[int]) -> Error:
     if eno == errno.ECONNREFUSED:
         return ConnectionRefused()
-
     elif eno == errno.EHOSTUNREACH:
         return HostUnreachable()
-
     elif eno == errno.ENETUNREACH:
         return NetworkUnreachable()
-
     elif eno in (socket.EAI_NONAME, socket.EAI_NODATA):
         return UnresolvableHostname()
-
     elif eno:
         return OtherError(errno.errorcode.get(eno))
 
@@ -129,20 +124,18 @@ def _response_error_errno(eno: Optional[int]) -> Error:
 def parse(response: HTTPResponse, decode_json: bool = True, resolve_refs: bool = True) -> Any:
     if 100 <= response.code < 599:
         if response.code == 204:
-            return  # Happy case - no content
+            return  # happy case - no content
 
         if decode_json and response.body:
             try:
                 body = json_utils.loads(response.body, resolve_refs=resolve_refs)
-
             except Exception as e:
                 raise InvalidJson() from e
-
         else:
             body = response.body
 
         if response.code == 200:
-            return body  # Happy case with content
+            return body  # happy case with content
 
         if response.code == 202:
             raise Accepted(body)
@@ -157,7 +150,6 @@ def parse(response: HTTPResponse, decode_json: bool = True, resolve_refs: bool =
             raise HTTPError(response.code, body.pop('error', ''), **body)
 
         raise HTTPError(response.code, response.reason)
-
     elif response.error or response.code == 599:
         if str(response.error).lower().count('timeout'):
             raise Timeout()

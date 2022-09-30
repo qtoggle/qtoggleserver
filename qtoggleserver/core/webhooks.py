@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import logging
@@ -105,7 +104,6 @@ class Webhooks:
         if not self._url:
             if self._scheme == 'http' and self._port == 80 or self._scheme == 'https' and self._port == 443:
                 self._url = f'{self._scheme}://{self._host}{self._path}'
-
             else:
                 self._url = f'{self._scheme}://{self._host}:{self._port}{self._path}'
 
@@ -122,7 +120,6 @@ class Webhooks:
 
         try:
             self._queue.put(request)
-
         except queue.Full:
             logger.error('%s: queue is full', self)
             return
@@ -137,7 +134,6 @@ class Webhooks:
         def on_response(response: HTTPResponse) -> None:
             try:
                 core_responses.parse(response)
-
             except core_responses.Error as e:
                 logger.error('%s: call failed: %s', self, e)
 
@@ -150,10 +146,8 @@ class Webhooks:
                     logger.debug('%s: resending request (retry %s/%s)', self, request.retries, self._retries)
 
                     self._request(request)
-
                 else:
                     self._check_pending()
-
             else:
                 logger.debug('%s: call succeeded', self)
                 self._check_pending()
@@ -185,7 +179,6 @@ class Webhooks:
     def _check_pending(self) -> None:
         try:
             request = self._queue.get(block=False)
-
         except queue.Empty:
             return
 

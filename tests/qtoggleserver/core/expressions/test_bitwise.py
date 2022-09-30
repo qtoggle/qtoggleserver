@@ -1,8 +1,6 @@
-
 import pytest
 
-from qtoggleserver.core.expressions import bitwise, Function, ROLE_VALUE
-from qtoggleserver.core.expressions import InvalidNumberOfArguments
+from qtoggleserver.core.expressions import ROLE_VALUE, Function, InvalidNumberOfArguments, bitwise
 
 
 async def test_bitand_simple(literal_three, literal_ten, dummy_eval_context):

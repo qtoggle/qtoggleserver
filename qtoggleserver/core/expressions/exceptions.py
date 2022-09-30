@@ -1,6 +1,5 @@
-
-from qtoggleserver.core.typing import PortValue as CorePortValue
 from qtoggleserver.core.typing import GenericJSONDict
+from qtoggleserver.core.typing import PortValue as CorePortValue
 
 
 class ExpressionException(Exception):

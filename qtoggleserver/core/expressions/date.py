@@ -1,13 +1,12 @@
-
 import abc
 import calendar
 import datetime
 
 from qtoggleserver import system
 
-from .base import EvalResult, EvalContext
-from .exceptions import InvalidArgumentValue, EvalSkipped
-from .functions import function, Function
+from .base import EvalContext, EvalResult
+from .exceptions import EvalSkipped, InvalidArgumentValue
+from .functions import Function, function
 
 
 class DateUnitFunction(Function, metaclass=abc.ABCMeta):
@@ -117,7 +116,6 @@ class DateFunction(Function):
 
         try:
             return int(datetime.datetime(*eval_args).timestamp())
-
         except ValueError as e:
             unit = str(e).split()[0]
             index = self.UNIT_INDEX.get(unit)
@@ -169,16 +167,13 @@ class BOMFunction(Function):
             for _ in range(n):
                 if month < 12:
                     month += 1
-
                 else:
                     year += 1
                     month = 1
-
         else:
             for _ in range(-n):
                 if month > 1:
                     month -= 1
-
                 else:
                     year -= 1
                     month = 12
@@ -207,10 +202,9 @@ class BOWFunction(Function):
                 s = int(await self.args[1].eval(context))
 
         now = datetime.datetime.fromtimestamp(context.timestamp)
-        dt = now.replace(hour=12)  # Using midday practically avoids problems due to DST
+        dt = now.replace(hour=12)  # using midday practically avoids problems due to DST
         if s > 0:
             dt -= datetime.timedelta(days=dt.weekday() + 7 - s)
-
         else:
             dt -= datetime.timedelta(days=dt.weekday())
 
@@ -220,25 +214,20 @@ class BOWFunction(Function):
                 last_day = calendar.monthrange(year, month)[1]
                 if day + 7 <= last_day:
                     day += 7
-
                 else:
                     day = 7 - last_day + day
                     if month < 12:
                         month += 1
-
                     else:
                         year += 1
                         month = 1
-
         else:
             for _ in range(-n):
                 if day > 7:
                     day -= 7
-
                 else:
                     if month > 1:
                         month -= 1
-
                     else:
                         year -= 1
                         month = 12
@@ -330,7 +319,6 @@ class MDIntervalFunction(Function):
 
         try:
             start_dt = now.replace(month=int(start_m), day=int(start_d))
-
         except ValueError:
             raise InvalidArgumentValue(2, start_d)
 
@@ -339,7 +327,6 @@ class MDIntervalFunction(Function):
 
         try:
             stop_dt = now.replace(month=int(stop_m), day=int(stop_d))
-
         except ValueError:
             raise InvalidArgumentValue(4, stop_d)
 

@@ -1,4 +1,3 @@
-
 import asyncio
 import copy
 import datetime
@@ -11,10 +10,9 @@ import time
 
 from typing import Optional
 
-from qtoggleserver import system
-from qtoggleserver import version
+from qtoggleserver import system, version
 from qtoggleserver.conf import settings
-from qtoggleserver.core.typing import Attributes, AttributeDefinitions, GenericJSONDict
+from qtoggleserver.core.typing import AttributeDefinitions, Attributes, GenericJSONDict
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_set_cmd
 
@@ -86,7 +84,7 @@ ATTRDEFS = {
         'type': 'number',
         'modifiable': lambda: system.date.has_set_date_support(),
         'persisted': False,
-        'standard': False  # Having standard False here enables exposing of definition (needed for non-modifiable)
+        'standard': False  # having standard False here enables exposing of definition (needed for non-modifiable)
     },
     'timezone': {
         'type': 'string',
@@ -94,7 +92,7 @@ ATTRDEFS = {
         'persisted': False,
         'choices': [{'value': zone} for zone in system.date.get_timezones()],
         'enabled': lambda: system.date.has_timezone_support(),
-        'standard': False  # Having standard False here enables exposing of definition (needed for choices)
+        'standard': False  # having standard False here enables exposing of definition (needed for choices)
     },
     'wifi_ssid': {
         'type': 'string',
@@ -228,7 +226,7 @@ ATTRDEFS = {
         'enabled': lambda: system.temperature.has_temperature_support(),
         'min': lambda: settings.system.temperature.min,
         'max': lambda: settings.system.temperature.max,
-        'standard': False  # Having standard False here enables exposing of definition (needed for min/max)
+        'standard': False  # having standard False here enables exposing of definition (needed for min/max)
     },
     'battery_level': {
         'type': 'number',
@@ -251,7 +249,7 @@ NETWORK_ATTRS_WATCH_INTERVAL = 5
 
 
 name: str = re.sub(r'[^a-zA-Z0-9_-]', '', socket.gethostname())
-if not re.match('^[a-zA-Z_]', name):  # Make sure name starts with a letter or underscore
+if not re.match('^[a-zA-Z_]', name):  # make sure name starts with a letter or underscore
     name = f'q{name}'
 name = name[:32]
 
@@ -316,7 +314,6 @@ def get_schema(loose: bool = False) -> GenericJSONDict:
 
             if 'max' in attr_schema:
                 attr_schema['maxLength'] = attr_schema.pop('max')
-
         elif attr_schema['type'] == 'number':
             if attr_schema.get('integer'):
                 attr_schema['type'] = 'integer'
@@ -413,13 +410,10 @@ def get_attrs() -> Attributes:
             rssi = int(rssi)
             if rssi >= WIFI_RSSI_EXCELLENT:
                 strength = 3
-
             elif rssi >= WIFI_RSSI_GOOD:
                 strength = 2
-
             elif rssi >= WIFI_RSSI_FAIR:
                 strength = 1
-
             else:
                 strength = 0
 
@@ -469,17 +463,14 @@ def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
         # A few attributes may carry sensitive information, so treat them separately and do not log their values
         if n.count('password') or n == 'wifi_key':
             logger.debug('setting device attribute %s', n)
-
         else:
             logger.debug('setting device attribute %s = %s', n, json_utils.dumps(value))
 
         try:
             attrdef = attrdefs[n]
-
         except KeyError:
             if ignore_extra:
                 continue
-
             else:
                 raise
 
@@ -504,7 +495,6 @@ def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
 
             setattr(core_device_attrs, n, value)
             continue
-
         elif n.endswith('_password_hash') and hasattr(core_device_attrs, n):
             # FIXME: Password set command cannot be called with hash and we don't have clear-text password here.
             #        A solution would be to use sha256 crypt algorithm w/o salt for Unix password (watch for the special
@@ -518,21 +508,17 @@ def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
 
         if n == 'name' and settings.core.device_name.set_cmd:
             run_set_cmd(settings.core.device_name.set_cmd, cmd_name='device name', name=value)
-
         elif n == 'date' and system.date.has_set_date_support():
             date = datetime.datetime.utcfromtimestamp(value)
             system.date.set_date(date)
-
         elif n == 'timezone' and system.date.has_timezone_support():
             system.date.set_timezone(value)
-
         elif n in ('wifi_ssid', 'wifi_key', 'wifi_bssid') and system.net.has_wifi_support():
             k = n[5:]
             k = {
                 'key': 'psk'
             }.get(k, k)
             wifi_attrs[k] = value
-
         elif n in ('ip_address', 'ip_netmask', 'ip_gateway', 'ip_dns') and system.net.has_ip_support():
             k = n[3:]
             ip_attrs[k] = value

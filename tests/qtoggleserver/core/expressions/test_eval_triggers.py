@@ -1,4 +1,3 @@
-
 import asyncio
 import time
 
@@ -21,7 +20,7 @@ async def test_eval_trigger_value_change(mocker, num_mock_port1, num_mock_port2)
     num_mock_port2.set_last_read_value(5)
     num_mock_port2.set_writable(True)
     await num_mock_port2.set_attr('expression', 'MUL($nid1, 10)')
-    await asyncio.sleep(0.1)  # Eats up the eval() due to setting an expression
+    await asyncio.sleep(0.1)  # eats up the eval() due to setting an expression
 
     num_mock_port1.set_next_value(6)
     mocker.patch.object(num_mock_port2, 'transform_and_write_value')
@@ -35,7 +34,7 @@ async def test_eval_trigger_value_change_self(mocker, num_mock_port1, num_mock_p
     num_mock_port2.set_last_read_value(5)
     num_mock_port2.set_writable(True)
     await num_mock_port2.set_attr('expression', 'MUL($nid1, $nid2)')
-    await asyncio.sleep(0.1)  # Eats up the eval() due to setting an expression
+    await asyncio.sleep(0.1)  # eats up the eval() due to setting an expression
 
     num_mock_port1.set_next_value(6)
     mocker.patch.object(num_mock_port2, 'transform_and_write_value')
@@ -112,10 +111,10 @@ async def test_asap_eval_paused(mocker, num_mock_port1, dummy_eval_context):
     await num_mock_port1.set_attr('expression', 'MILLISECOND()')
     e = num_mock_port1.get_expression()
 
-    with mocker.patch.object(e, 'eval'):
-        await main.update()
-        await asyncio.sleep(0.1)
-        e.eval.assert_called()
+    mocker.patch.object(e, 'eval')
+    await main.update()
+    await asyncio.sleep(0.1)
+    e.eval.assert_called()
 
     # Reset eval queue
     while True:
@@ -125,10 +124,10 @@ async def test_asap_eval_paused(mocker, num_mock_port1, dummy_eval_context):
             break
 
     e.pause_asap_eval(time.time() * 1000 + 1000)
-    with mocker.patch.object(e, 'eval'):
-        await main.update()
-        await asyncio.sleep(0.1)
-        e.eval.assert_not_called()
+    mocker.patch.object(e, 'eval')
+    await main.update()
+    await asyncio.sleep(0.1)
+    e.eval.assert_not_called()
 
 
 async def test_asap_eval_paused_value_change(mocker, num_mock_port1, num_mock_port2, dummy_eval_context):
@@ -146,7 +145,7 @@ async def test_asap_eval_paused_value_change(mocker, num_mock_port1, num_mock_po
 
     num_mock_port2.set_next_value(5)
     e.pause_asap_eval(time.time() * 1000 + 1000)
-    with mocker.patch.object(e, 'eval'):
-        await main.update()
-        await asyncio.sleep(0.1)
-        e.eval.assert_called()
+    mocker.patch.object(e, 'eval')
+    await main.update()
+    await asyncio.sleep(0.1)
+    e.eval.assert_called()

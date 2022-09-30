@@ -1,17 +1,22 @@
-
 import asyncio
 import copy
 import re
 import time
 
 from collections import deque
-from typing import Any, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
-from qtoggleserver.core.typing import Attribute, Attributes, AttributeDefinitions, GenericJSONDict
-from qtoggleserver.core.typing import NullablePortValue, PortValue
+from qtoggleserver.core.typing import (
+    Attribute,
+    AttributeDefinitions,
+    Attributes,
+    GenericJSONDict,
+    NullablePortValue,
+    PortValue,
+)
 
 from . import exceptions
 
@@ -32,7 +37,7 @@ MASTER_ATTRS = {
 
 
 # We can't use proper type annotations for slaves in this module because that would create unsolvable circular imports.
-# Therefore we use "Any" type annotation for Slave instances.
+# Therefore, we use "Any" type annotation for Slave instances.
 
 
 class SlavePort(core_ports.BasePort):
@@ -78,7 +83,7 @@ class SlavePort(core_ports.BasePort):
     }
 
     def __init__(self, slave: Any, attrs: Attributes) -> None:
-        from .devices import Slave  # We need this import here just for Slave type annotation
+        from .devices import Slave  # we need this import here just for Slave type annotation
 
         self._slave: Slave = slave
 
@@ -92,7 +97,7 @@ class SlavePort(core_ports.BasePort):
         self._cached_attrs: Attributes = {}
 
         # Names of attributes that will be updated remotely asap
-        self._remote_update_pending_attrs: Set[Tuple[str, Attribute]] = set()
+        self._remote_update_pending_attrs: set[tuple[str, Attribute]] = set()
 
         # Tag is kept locally
         self._tag: str = ''
@@ -108,7 +113,7 @@ class SlavePort(core_ports.BasePort):
 
         # Names of attributes (including value) that have been changed while device was offline and have to be
         # provisioned later
-        self._provisioning: Set[str] = set()
+        self._provisioning: set[str] = set()
 
         # Helps managing the triggering of port-update event from non-async methods
         self._trigger_update_task: Optional[asyncio.Task] = None
@@ -180,8 +185,7 @@ class SlavePort(core_ports.BasePort):
 
         if name in MASTER_ATTRS:
             return await super().get_attr(name)
-
-        elif _DEVICE_EXPRESSION_RE.match(name) or _DEVICE_HISTORY_RE.match(name):  # Strip leading "device_"
+        elif _DEVICE_EXPRESSION_RE.match(name) or _DEVICE_HISTORY_RE.match(name):  # strip leading "device_"
             return self.get_cached_attr(name[7:])
 
         value = self._cached_attrs.get(name)
@@ -194,9 +198,8 @@ class SlavePort(core_ports.BasePort):
         if name in MASTER_ATTRS:
             # Attributes that always stay locally, on master
             await super().set_attr(name, value)
-
         else:
-            if _DEVICE_EXPRESSION_RE.match(name) or _DEVICE_HISTORY_RE.match(name):  # Strip leading "device_"
+            if _DEVICE_EXPRESSION_RE.match(name) or _DEVICE_HISTORY_RE.match(name):  # strip leading "device_"
                 name = name[7:]
 
             if self._slave.is_online():
@@ -207,12 +210,10 @@ class SlavePort(core_ports.BasePort):
 
                 try:
                     await self._update_attrs_remotely()
-
                 except Exception as e:
                     # Map exceptions to specific slave API errors
                     raise exceptions.adapt_api_error(e) from e
-
-            else:  # Offline
+            else:  # offline
                 # Allow provisioning for offline devices
                 self.debug('marking attribute %s for provisioning', name)
                 self._provisioning.add(name)
@@ -238,7 +239,6 @@ class SlavePort(core_ports.BasePort):
     async def update_enabled(self) -> None:
         if self._cached_attrs.get('enabled') and not self.is_enabled():
             await self.enable()
-
         elif not self._cached_attrs.get('enabled') and self.is_enabled():
             await self.disable()
 
@@ -260,7 +260,6 @@ class SlavePort(core_ports.BasePort):
         try:
             await self._slave.api_call('PATCH', f'/ports/{self._remote_id}', body, timeout=settings.slaves.long_timeout)
             self.debug('successfully updated attributes remotely')
-
         except Exception as e:
             self.debug('failed to update attributes remotely: %s', e)
 
@@ -286,7 +285,7 @@ class SlavePort(core_ports.BasePort):
 
         return self._cached_attrs.get('online', True)
 
-    async def attr_get_provisioning(self) -> List[str]:
+    async def attr_get_provisioning(self) -> list[str]:
         return list(self._provisioning)
 
     def get_provisioning_attrs(self) -> Attributes:
@@ -313,7 +312,6 @@ class SlavePort(core_ports.BasePort):
     def get_last_remote_value(self) -> NullablePortValue:
         try:
             return self._remote_value_queue[0]
-
         except IndexError:
             return self._cached_value
 
@@ -321,7 +319,6 @@ class SlavePort(core_ports.BasePort):
         try:
             self._cached_value = self._remote_value_queue.pop()
             return self._cached_value
-
         except IndexError:
             return
 
@@ -335,18 +332,15 @@ class SlavePort(core_ports.BasePort):
                     timeout=settings.slaves.long_timeout
                 )
                 self.push_remote_value(value)
-
             except core_responses.Accepted:
                 # The value has been successfully sent to the slave but it hasn't been applied right away. We should
                 # update the cached value later, as soon as we receive a corresponding value-change event.
                 pass
-
             except core_responses.HTTPError as e:
                 if e.code == 502 and e.code == 'port-error':
                     message = e.params.get('message')
                     if message:
                         raise core_ports.PortError(message)
-
                     else:
                         raise core_ports.PortError()
 
@@ -354,18 +348,17 @@ class SlavePort(core_ports.BasePort):
                     raise core_ports.PortTimeout()
 
                 raise exceptions.adapt_api_error(e) from e
-
-        else:  # Offline
+        else:  # offline
             # Allow provisioning for offline devices
             self.debug('marking value for provisioning')
             self._cached_value = value
             self._provisioning.add('value')
-            await self.save()  # Save provisioning value
+            await self.save()  # save provisioning value
 
             # We need to trigger a port-update because our provisioning attribute has changed
             await self.trigger_update()
 
-    async def set_sequence(self, values: List[PortValue], delays: List[int], repeat: int) -> None:
+    async def set_sequence(self, values: list[PortValue], delays: list[int], repeat: int) -> None:
         if not self._slave.is_online():
             raise exceptions.DeviceOffline(self._slave)
 
@@ -376,7 +369,6 @@ class SlavePort(core_ports.BasePort):
                 {'values': values, 'delays': delays, 'repeat': repeat}
             )
             self.debug('sequence sent remotely')
-
         except Exception as e:
             self.error('failed to send sequence remotely: %s', e)
 
@@ -442,10 +434,8 @@ class SlavePort(core_ports.BasePort):
 
             try:
                 value = await self._slave.api_call('GET', f'/ports/{self._remote_id}/value', retry_counter=None)
-
             except Exception as e:
                 self.error('failed to fetch port value: %s', e)
-
             else:
                 if value is not None:
                     self.push_remote_value(value)

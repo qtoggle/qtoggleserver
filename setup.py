@@ -1,19 +1,17 @@
-
 import os.path
 
-from setuptools import setup, find_namespace_packages
+from setuptools import find_namespace_packages, setup
 
 import qtoggleserver.version
 
+
 try:
     import fastentrypoints
-
 except ImportError:
     pass
 
 try:
     import setupnovernormalize
-
 except ImportError:
     pass
 

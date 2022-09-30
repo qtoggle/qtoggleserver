@@ -1,4 +1,3 @@
-
 import mongomock
 import pymongo
 import pytest
@@ -6,12 +5,7 @@ import pytest
 from qtoggleserver.drivers.persist import mongo
 from qtoggleserver.persist import BaseDriver
 
-from . import insert
-from . import misc
-from . import remove
-from . import replace
-from . import query
-from . import update
+from . import insert, misc, query, remove, replace, update
 
 
 @pytest.fixture

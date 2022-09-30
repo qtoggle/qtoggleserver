@@ -1,7 +1,6 @@
-
 import re
 
-from typing import Any, Callable, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import jsonschema
 
@@ -264,26 +263,22 @@ POST_INTROSPECT = {
 }
 
 
-def _validate_schema(json: Any, schema: GenericJSONDict) -> Optional[Tuple[str, Optional[str]]]:
+def _validate_schema(json: Any, schema: GenericJSONDict) -> Optional[tuple[str, Optional[str]]]:
     try:
         jsonschema.Draft4Validator(schema=schema).validate(json)
         return None
-
     except jsonschema.ValidationError as e:
         try:
             field = e.path.pop()
             return 'invalid', field
-
         except Exception:
             try:
                 field = re.match(r'\'(\w+)\' is a required property', e.message).group(1)
                 return 'missing', field
-
             except Exception:
                 try:
                     field = re.match(r'Additional properties are not allowed \(u?\'(\w+)\'.*', e.message).group(1)
                     return 'unexpected', field
-
                 except Exception:
                     return 'invalid', None
 
@@ -308,21 +303,17 @@ def validate(
                     invalid_field_code = invalid_field_code(field)
 
                 raise APIError(400, invalid_field_code, **{invalid_field_name: field})
-
             else:
                 raise APIError(400, invalid_request_code)
-
         elif error == 'missing':
             if callable(missing_field_code):
                 missing_field_code = missing_field_code(field)
 
             raise APIError(400, missing_field_code, **{missing_field_name: field})
-
         elif error == 'unexpected':
             if callable(unexpected_field_code):
                 unexpected_field_code = unexpected_field_code(field)
 
             raise APIError(400, unexpected_field_code, **{unexpected_field_name: field})
-
         else:
             raise APIError(400, 'invalid-request')

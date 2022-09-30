@@ -1,4 +1,3 @@
-
 from qtoggleserver.persist import BaseDriver
 
 from . import data

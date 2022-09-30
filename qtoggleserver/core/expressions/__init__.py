@@ -1,12 +1,10 @@
-
 from typing import Optional
-
 
 # This needs to be imported here to determine a correct order of some partially imported modules (core.ports,
 # core.expressions and core.main)
 from qtoggleserver.core import main
 
-from .base import Expression, EvalResult, EvalContext
+from .base import EvalContext, EvalResult, Expression
 
 
 ROLE_VALUE = 1
@@ -28,10 +26,8 @@ def parse(self_port_id: Optional[str], sexpression: str, role: int, pos: int = 1
 
     if sexpression and sexpression[0] in ('$', '@'):
         return PortExpression.parse(self_port_id, sexpression, role, pos)
-
     elif '(' in sexpression or ')' in sexpression:
         return Function.parse(self_port_id, sexpression, role, pos)
-
     else:
         return LiteralValue.parse(self_port_id, sexpression, role, pos)
 
@@ -66,7 +62,6 @@ async def check_loops(port: core_ports.BasePort, expression: Expression) -> None
                     return lv
 
             return 0
-
         elif isinstance(e, Function):
             for arg in e.args:
                 lv = await check_loops_rec(level, arg)
@@ -83,4 +78,4 @@ from .exceptions import *
 from .exceptions import CircularDependency
 from .functions import Function
 from .literalvalues import LiteralValue
-from .port import PortExpression, PortValue, PortRef
+from .port import PortExpression, PortRef, PortValue

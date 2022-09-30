@@ -1,4 +1,3 @@
-
 import logging
 
 from qtoggleserver.core import api as core_api
@@ -26,7 +25,6 @@ async def get_firmware(request: core_api.APIRequest) -> GenericJSONDict:
                 'latest_url': latest_url,
                 'status': status
             }
-
         except Exception as e:
             logger.error('get latest firmware failed: %s', e, exc_info=True)
 
@@ -34,7 +32,6 @@ async def get_firmware(request: core_api.APIRequest) -> GenericJSONDict:
                 'version': current_version,
                 'status': status
             }
-
     else:
         return {
             'version': current_version,
@@ -52,6 +49,5 @@ async def patch_firmware(request: core_api.APIRequest, params: GenericJSONDict) 
 
     if params.get('url'):
         await fwupdate.update_to_url(params['url'])
-
-    else:  # Assuming params['version']
+    else:  # assuming params['version']
         await fwupdate.update_to_version(params['version'])

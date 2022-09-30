@@ -1,10 +1,9 @@
-
 import copy
 import logging
 import operator
 import os
 
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Iterable, Optional
 
 from qtoggleserver.conf import settings
 from qtoggleserver.persist import BaseDriver
@@ -25,9 +24,9 @@ FILTER_OP_MAPPING = {
 
 logger = logging.getLogger(__name__)
 
-Collection = Dict[int, Record]
-IndexedData = Dict[str, Collection]
-UnindexedData = Dict[str, List[Record]]
+Collection = dict[int, Record]
+IndexedData = dict[str, Collection]
+UnindexedData = dict[str, list[Record]]
 
 
 class JSONPersistError(Exception):
@@ -61,16 +60,16 @@ class JSONDriver(BaseDriver):
     async def query(
         self,
         collection: str,
-        fields: Optional[List[str]],
-        filt: Dict[str, Any],
-        sort: List[Tuple[str, bool]],
+        fields: Optional[list[str]],
+        filt: dict[str, Any],
+        sort: list[tuple[str, bool]],
         limit: Optional[int]
     ) -> Iterable[Record]:
 
         coll = self._data.get(collection, {})
         records = []
 
-        if isinstance(filt.get('id'), Id):  # Look for specific record id
+        if isinstance(filt.get('id'), Id):  # look for specific record id
             filt = dict(filt)
             id_ = filt.pop('id')
             record = coll.get(id_)
@@ -78,8 +77,7 @@ class JSONDriver(BaseDriver):
             # Apply filter criteria
             if record is not None and self._filter_matches(record, filt):
                 records.append(record)
-
-        else:  # No single specific id in filt
+        else:  # no single specific id in filt
             for id_, record in coll.items():
                 # Apply filter criteria
                 if self._filter_matches(dict(record, id=id_), filt):
@@ -89,7 +87,6 @@ class JSONDriver(BaseDriver):
         for field, rev in reversed(sort):
             if field == 'id':
                 records.sort(key=lambda r: int(r['id']), reverse=rev)
-
             else:
                 records.sort(key=lambda r: r.get(field), reverse=rev)
 
@@ -116,7 +113,6 @@ class JSONDriver(BaseDriver):
         if id_ is None:
             id_ = self._find_next_id(coll)
             record = dict(record, id=id_)
-
         elif id_ in coll:
             raise DuplicateRecordId(id_)
 
@@ -126,7 +122,7 @@ class JSONDriver(BaseDriver):
 
         return id_
 
-    async def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
+    async def update(self, collection: str, record_part: Record, filt: dict[str, Any]) -> int:
         coll = self._data.setdefault(collection, {})
         modified_count = 0
 
@@ -138,8 +134,7 @@ class JSONDriver(BaseDriver):
             if record is not None:
                 record.update(record_part)
                 modified_count = 1
-
-        else:  # No single specific id in filt
+        else:  # no single specific id in filt
             for id_, record in coll.items():
                 # Apply filter criteria
                 if not self._filter_matches(dict(record, id=id_), filt):
@@ -157,7 +152,7 @@ class JSONDriver(BaseDriver):
         coll = self._data.setdefault(collection, {})
 
         if coll.get(id_) is None:
-            return False  # No record found, no replacing
+            return False  # no record found, no replacing
 
         record = dict(record)
 
@@ -169,7 +164,7 @@ class JSONDriver(BaseDriver):
 
         return True
 
-    async def remove(self, collection: str, filt: Dict[str, Any]) -> int:
+    async def remove(self, collection: str, filt: dict[str, Any]) -> int:
         coll = self._data.setdefault(collection, {})
         removed_count = 0
 
@@ -181,8 +176,7 @@ class JSONDriver(BaseDriver):
             if (record is not None) and self._filter_matches(record, filt):
                 coll.pop(id_)
                 removed_count = 1
-
-        else:  # No single specific id in filt
+        else:  # no single specific id in filt
             for id_, record in list(coll.items()):
                 # Apply filter criteria
                 if not self._filter_matches(dict(record, id=id_), filt):
@@ -196,11 +190,10 @@ class JSONDriver(BaseDriver):
 
         return removed_count
 
-    def _filter_matches(self, record: Record, filt: Dict[str, Any]) -> bool:
+    def _filter_matches(self, record: Record, filt: dict[str, Any]) -> bool:
         for key, value in filt.items():
             try:
                 db_record_value = record[key]
-
             except KeyError:
                 return False
 
@@ -218,8 +211,7 @@ class JSONDriver(BaseDriver):
                     return False
 
             return True
-
-        else:  # Assuming simple value
+        else:  # assuming simple value
             return db_record_value == filt_value
 
     @staticmethod
@@ -228,7 +220,6 @@ class JSONDriver(BaseDriver):
         for id_ in coll.keys():
             try:
                 int_ids.append(int(id_))
-
             except ValueError:
                 continue
 
@@ -246,7 +237,6 @@ class JSONDriver(BaseDriver):
             if os.stat(self._file_path).st_size == 0:
                 logger.debug('file %s is empty', self._file_path)
                 return {}
-
         except FileNotFoundError:
             # If the file does not exist, consider data loaded and return empty dictionary
             logger.debug('file %s does not exist', self._file_path)
@@ -256,7 +246,6 @@ class JSONDriver(BaseDriver):
             with open(self._file_path, 'rb') as f:
                 data = f.read()
                 return json_utils.loads(data, allow_extended_types=True)
-
         except Exception as e:
             if not self._use_backup:
                 raise

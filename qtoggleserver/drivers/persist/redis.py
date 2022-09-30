@@ -1,8 +1,7 @@
-
 import logging
 import operator
 
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Iterable, Optional
 
 import redis
 
@@ -51,15 +50,15 @@ class RedisDriver(BaseDriver):
     async def query(
         self,
         collection: str,
-        fields: Optional[List[str]],
-        filt: Dict[str, Any],
-        sort: List[Tuple[str, bool]],
+        fields: Optional[list[str]],
+        filt: dict[str, Any],
+        sort: list[tuple[str, bool]],
         limit: Optional[int]
     ) -> Iterable[Record]:
 
         db_records = []
 
-        if isinstance(filt.get('id'), Id):  # Look for specific record id
+        if isinstance(filt.get('id'), Id):  # look for specific record id
             filt = dict(filt)
             id_ = filt.pop('id')
             db_record = self._client.hgetall(self._make_record_key(collection, id_))
@@ -68,8 +67,7 @@ class RedisDriver(BaseDriver):
             if db_record and self._filter_matches(db_record, filt):
                 db_record['id'] = id_
                 db_records.append(db_record)
-
-        else:  # No single specific id in filt
+        else:  # no single specific id in filt
             # Look through all records from this collection, iterating through set
             for id_ in self._client.sscan_iter(self._make_set_key(collection)):
                 # Retrieve the db record
@@ -124,7 +122,7 @@ class RedisDriver(BaseDriver):
 
         return id_
 
-    async def update(self, collection: str, record_part: Record, filt: Dict[str, Any]) -> int:
+    async def update(self, collection: str, record_part: Record, filt: dict[str, Any]) -> int:
         # Adapt the record part to db
         db_record_part = self._record_to_db(record_part)
 
@@ -141,7 +139,7 @@ class RedisDriver(BaseDriver):
                 self._client.hset(key, mapping=db_record_part)
                 modified_count = 1
 
-        else:  # No single specific id in filt
+        else:  # no single specific id in filt
             # Look through all records from this collection, iterating through set
             for id_ in self._client.sscan_iter(self._make_set_key(collection)):
                 key = self._make_record_key(collection, id_)
@@ -168,13 +166,13 @@ class RedisDriver(BaseDriver):
     async def replace(self, collection: str, id_: Id, record: Record) -> bool:
         # Adapt the record to db
         new_db_record = self._record_to_db(record)
-        new_db_record.pop('id', None)  # Never add the id together with other fields
+        new_db_record.pop('id', None)  # never add the id together with other fields
 
         skey = self._make_set_key(collection)
         key = self._make_record_key(collection, id_)
 
         if not self._client.sismember(skey, id_):
-            return False  # No record found, no replacing
+            return False  # no record found, no replacing
 
         # Remove existing record
         self._client.delete(key)
@@ -188,7 +186,7 @@ class RedisDriver(BaseDriver):
 
         return True
 
-    async def remove(self, collection: str, filt: Dict[str, Any]) -> int:
+    async def remove(self, collection: str, filt: dict[str, Any]) -> int:
         removed_count = 0
 
         if isinstance(filt.get('id'), Id):
@@ -205,7 +203,7 @@ class RedisDriver(BaseDriver):
             # Remove the id from set
             self._client.srem(self._make_set_key(collection), id_)
 
-        else:  # No single specific id in filt
+        else:  # no single specific id in filt
             ids_to_remove = set()
 
             # Look through all records from this collection, iterating through set
@@ -242,17 +240,15 @@ class RedisDriver(BaseDriver):
     def is_history_supported(self) -> bool:
         return self._history_support
 
-    def _filter_matches(self, db_record: GenericJSONDict, filt: Dict[str, Any]) -> bool:
+    def _filter_matches(self, db_record: GenericJSONDict, filt: dict[str, Any]) -> bool:
         for key, value in filt.items():
             try:
                 db_record_value = db_record[key]
-
             except KeyError:
                 return False
 
             if key == 'id':
                 record_value = db_record_value
-
             else:
                 record_value = self._value_from_db(db_record_value)
 
@@ -271,14 +267,14 @@ class RedisDriver(BaseDriver):
 
             return True
 
-        else:  # Assuming simple value
+        else:  # assuming simple value
             return record_value == filt_value
 
     def _get_next_id(self, collection: str) -> Id:
         return str(self._client.incr(self._make_sequence_key(collection)))
 
     @classmethod
-    def _record_from_db(cls, db_record: GenericJSONDict, fields: Optional[Set[str]] = None) -> Record:
+    def _record_from_db(cls, db_record: GenericJSONDict, fields: Optional[set[str]] = None) -> Record:
         if fields is not None:
             return {k: (cls._value_from_db(v) if k != 'id' else v) for k, v in db_record.items() if k in fields}
 

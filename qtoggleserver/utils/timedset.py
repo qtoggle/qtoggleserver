@@ -1,15 +1,14 @@
-
 import collections.abc
 import time
 
-from typing import Any, Dict, Iterable, Set
+from typing import Any, Iterable
 
 
 class TimedSet(collections.abc.MutableSet):
     def __init__(self, timeout: float) -> None:
         self._timeout: float = timeout
-        self._times: Dict[Any, float] = {}
-        self._set: Set[Any] = set()
+        self._times: dict[Any, float] = {}
+        self._set: set[Any] = set()
 
     def add(self, x: Any) -> None:
         self._set.add(x)

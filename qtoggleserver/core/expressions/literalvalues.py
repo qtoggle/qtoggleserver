@@ -1,12 +1,11 @@
-
 import re
 
 from typing import Optional
 
 from qtoggleserver.core.typing import NullablePortValue as CoreNullablePortValue
 
-from .base import Expression, EvalResult, EvalContext
-from .exceptions import UnexpectedCharacter, EmptyExpression, ValueUnavailable
+from .base import EvalContext, EvalResult, Expression
+from .exceptions import EmptyExpression, UnexpectedCharacter, ValueUnavailable
 
 
 class LiteralValue(Expression):

@@ -1,4 +1,3 @@
-
 import datetime
 import hashlib
 import logging
@@ -46,7 +45,6 @@ class APClient(logging_utils.LoggableMixin):
         http_client = httpclient.AsyncHTTPClient()
         if admin_password:
             password_hash = hashlib.sha256(admin_password.encode()).hexdigest()
-
         else:
             password_hash = core_api_auth.EMPTY_PASSWORD_HASH
 
@@ -82,7 +80,6 @@ class APClient(logging_utils.LoggableMixin):
 
         try:
             response = await http_client.fetch(request, raise_error=True)
-
         except Exception as e:
             if not no_log:
                 self.error('request %s %s failed: %s', method, path, e, exc_info=True)

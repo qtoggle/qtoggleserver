@@ -1,7 +1,4 @@
-
 import logging
-
-from typing import Dict, Tuple
 
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
@@ -34,7 +31,7 @@ class DummyEventHandler(filtereventhandler.FilterEventHandler):
         port: core_ports.BasePort,
         old_attrs: Attributes,
         new_attrs: Attributes,
-        changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+        changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
         removed_attrs: Attributes
     ) -> None:
@@ -52,7 +49,7 @@ class DummyEventHandler(filtereventhandler.FilterEventHandler):
         event: core_events.Event,
         old_attrs: Attributes,
         new_attrs: Attributes,
-        changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+        changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
         removed_attrs: Attributes
     ) -> None:
@@ -68,7 +65,7 @@ class DummyEventHandler(filtereventhandler.FilterEventHandler):
         slave: slaves_devices.Slave,
         old_attrs: Attributes,
         new_attrs: Attributes,
-        changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+        changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
         removed_attrs: Attributes
     ) -> None:

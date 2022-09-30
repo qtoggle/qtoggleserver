@@ -1,6 +1,5 @@
-
-from .base import EvalResult, EvalContext
-from .functions import function, Function
+from .base import EvalContext, EvalResult
+from .functions import Function, function
 
 
 @function('ABS')
@@ -19,9 +18,7 @@ class SgnFunction(Function):
         e = int((await self.eval_args(context))[0])
         if e > 0:
             return 1
-
         elif e < 0:
             return -1
-
         else:
             return 0

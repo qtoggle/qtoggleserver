@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import asyncio
@@ -7,7 +6,7 @@ import json
 import logging
 import time
 
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 from tornado import httpclient
 
@@ -15,10 +14,7 @@ from qtoggleserver.conf import settings
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import Attributes, GenericJSONDict
 from qtoggleserver.slaves import utils as salves_utils
-from qtoggleserver.system import ap
-from qtoggleserver.system import dhcp
-from qtoggleserver.system import dns
-from qtoggleserver.system import net
+from qtoggleserver.system import ap, dhcp, dns, net
 from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import cmd as cmd_utils
 
@@ -31,11 +27,11 @@ _INTERFACE_CACHE_TIMEOUT = 60
 logger = logging.getLogger(__name__)
 
 _discover_task: Optional[asyncio.Task] = None
-_discovered_devices: Optional[Dict[str, DiscoveredDevice]] = None
+_discovered_devices: Optional[dict[str, DiscoveredDevice]] = None
 _finish_timer: Optional[asyncio_utils.Timer] = None
 
 # TODO: replace these with a common cache service with integrated timeout management
-_interface: Optional[Tuple[str]] = None
+_interface: Optional[tuple[str]] = None
 _interface_time: float = 0
 
 
@@ -138,7 +134,6 @@ async def finish() -> None:
         _discover_task.cancel()
         try:
             await _discover_task
-
         except Exception as e:
             logger.error('discover task error: %s', e, exc_info=True)
 
@@ -154,7 +149,7 @@ async def finish() -> None:
     _discovered_devices = None
 
 
-def get_discovered_devices() -> Optional[Dict[str, DiscoveredDevice]]:
+def get_discovered_devices() -> Optional[dict[str, DiscoveredDevice]]:
     return _discovered_devices
 
 
@@ -189,7 +184,6 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
                 discovered_device.ap_client.mac_address,
                 'viewonly'
             )
-
     else:
         logger.debug('using supplied password for %s', discovered_device)
         discovered_device.admin_password = attrs['admin_password']
@@ -208,7 +202,6 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
                 mac_address=ap_client.mac_address,
                 hostname=ap_client.hostname
             )
-
         except dhcp.DHCPTimeout:
             logger.warning('could not determine future device IP address of %s', discovered_device)
             reply = None
@@ -241,7 +234,7 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
 
     if network_configured:
         logger.debug('waiting for %s to connect to new network', discovered_device)
-        await asyncio.sleep(5)  # Device requires at least 5 seconds to connect to new network
+        await asyncio.sleep(5)  # device requires at least 5 seconds to connect to new network
         start_time = time.time()
         while True:
             try:
@@ -253,7 +246,6 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
                 )
                 logger.debug('%s connected to new network', discovered_device)
                 break
-
             except Exception:
                 if time.time() - start_time > settings.slaves.long_timeout:
                     logger.error('timeout waiting for %s to connect to new network', discovered_device)
@@ -264,7 +256,7 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
     return discovered_device
 
 
-async def _discover(timeout: int) -> List[DiscoveredDevice]:
+async def _discover(timeout: int) -> list[DiscoveredDevice]:
     logger.debug('starting discovery')
 
     # (Re)start our AP
@@ -297,7 +289,6 @@ async def _discover(timeout: int) -> List[DiscoveredDevice]:
                 raise DiscoverException('AP stopped unexpectedly')
 
         clients = ap.get_clients()
-
     except asyncio.CancelledError:
         logger.debug('discover task cancelled')
         clients = []
@@ -318,7 +309,6 @@ async def _discover(timeout: int) -> List[DiscoveredDevice]:
     for client in clients:
         try:
             discovered_devices.append(await _query_client(client))
-
         except Exception as e:
             logger.error('client query failed: %s', e, exc_info=True)
 
@@ -340,10 +330,8 @@ async def _query_client(ap_client: ap.APClient) -> Optional[DiscoveredDevice]:
         try:
             attrs = await ap_client.request('GET', f'{prefix}/device')
             break
-
         except (httpclient.HTTPError, json.JSONDecodeError):
             continue
-
     else:
         raise DiscoverException('Could not find device API endpoint')
 

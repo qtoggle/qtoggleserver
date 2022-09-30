@@ -1,4 +1,3 @@
-
 import abc
 import asyncio
 import logging
@@ -34,7 +33,7 @@ class OneWireTimeout(OneWireException):
 class OneWirePeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
     logger = logger
 
-    TIMEOUT = 5  # Seconds
+    TIMEOUT = 5  # seconds
 
     def __init__(self, *, address: str, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -58,7 +57,7 @@ class OneWirePeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
         raise OneWirePeripheralNotFound(self._address)
 
-    # def autodetect_addresses(self) -> List[str]:
+    # def autodetect_addresses(self) -> list[str]:
     #     # TODO: make this method look only through specific device types (e.g. temperature sensors)
     #     # TODO: use this method in a more general peripheral autodetection routine
     #
@@ -88,7 +87,6 @@ class OneWirePeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         try:
             future = self.run_threaded(self.read_sync)
             self._data = await asyncio.wait_for(future, timeout=self.TIMEOUT)
-
         except asyncio.TimeoutError as e:
             raise OneWireTimeout('Timeout waiting for one-wire data from peripheral') from e
 

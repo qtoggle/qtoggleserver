@@ -1,17 +1,16 @@
-
 import abc
 import datetime
 import logging
 
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 from jinja2 import Environment, Template
 
+from qtoggleserver.conf import settings
 from qtoggleserver.core import device
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import main as core_main
 from qtoggleserver.core import ports as core_ports
-from qtoggleserver.conf import settings
 from qtoggleserver.core.typing import Attribute, Attributes, NullablePortValue
 from qtoggleserver.slaves import devices as slaves_devices
 
@@ -69,8 +68,8 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
     def __init__(
         self,
         *,
-        template: Optional[Dict[str, str]] = None,
-        templates: Optional[Dict[str, Dict[str, str]]] = None,
+        template: Optional[dict[str, str]] = None,
+        templates: Optional[dict[str, dict[str, str]]] = None,
         skip_startup: bool = True,
         filter: dict = None,
         name: Optional[str] = None
@@ -86,7 +85,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
 
         # Convert template strings to jinja2 templates
         self._j2env: Environment = Environment(enable_async=True)
-        self._templates: Dict[str, Dict[str, Template]] = {}
+        self._templates: dict[str, dict[str, Template]] = {}
         for type_, ts in templates.items():
             # Ensure values in templates are dicts themselves
             if isinstance(ts, str):
@@ -98,7 +97,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
 
         super().__init__(name=name, filter=filter)
 
-    async def render(self, event_type: str, context: dict) -> Dict[str, str]:
+    async def render(self, event_type: str, context: dict) -> dict[str, str]:
         template = self._templates[event_type]
 
         return {k: await t.render_async(context) if t is not None else None for k, t in template.items()}
@@ -108,7 +107,6 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         timestamp = event.get_timestamp()
         if timestamp:
             moment = datetime.datetime.fromtimestamp(timestamp)
-
         else:
             moment = None
 
@@ -166,7 +164,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         port: core_ports.BasePort,
         old_attrs: Attributes,
         new_attrs: Attributes,
-        changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+        changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
         removed_attrs: Attributes
     ) -> None:
@@ -209,7 +207,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         event: core_events.Event,
         old_attrs: Attributes,
         new_attrs: Attributes,
-        changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+        changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
         removed_attrs: Attributes
     ) -> None:
@@ -237,7 +235,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         slave: slaves_devices.Slave,
         old_attrs: Attributes,
         new_attrs: Attributes,
-        changed_attrs: Dict[str, Tuple[Attribute, Attribute]],
+        changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
         removed_attrs: Attributes
     ) -> None:

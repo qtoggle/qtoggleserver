@@ -1,4 +1,3 @@
-
 from typing import Any
 
 from qtoggleserver.core import api as core_api
@@ -7,7 +6,7 @@ from qtoggleserver.core.typing import GenericJSONDict
 
 
 # We can't use proper type annotations for slaves in this module because that would create unsolvable circular imports.
-# Therefore we use "Any" type annotation for Slave instances.
+# Therefore, we use "Any" type annotation for Slave instances.
 
 
 class SlaveDeviceEvent(core_events.Event):

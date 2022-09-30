@@ -1,12 +1,11 @@
-
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from qtoggleserver import system
 from qtoggleserver.core import history
 
-from .base import EvalResult, EvalContext
-from .exceptions import PortValueUnavailable, ExpressionEvalError, EvalSkipped
-from .functions import function, Function
+from .base import EvalContext, EvalResult
+from .exceptions import EvalSkipped, ExpressionEvalError, PortValueUnavailable
+from .functions import Function, function
 from .port import PortRef
 
 
@@ -18,7 +17,6 @@ class AvailableFunction(Function):
         try:
             await self.args[0].eval(context)
             return True
-
         except ExpressionEvalError:
             return False
 
@@ -30,7 +28,6 @@ class DefaultFunction(Function):
     async def _eval(self, context: EvalContext) -> EvalResult:
         try:
             return await self.args[0].eval(context)
-
         except ExpressionEvalError:
             return await self.args[1].eval(context)
 
@@ -177,7 +174,7 @@ class SequenceFunction(Function):
             delays.append(0)
 
         delta = context.now_ms - self._last_time_ms
-        delta = delta % total_delay  # Work modulo total_delay, to create repeat effect
+        delta = delta % total_delay  # work modulo total_delay, to create repeat effect
         delay_so_far = 0
         result = values[0]
         for i in range(num_values):
@@ -210,9 +207,8 @@ class LUTFunction(Function):
             if x > p2[0]:
                 continue
 
-            if x - p1[0] < p2[0] - x:  # Closer to p1 than to p2
+            if x - p1[0] < p2[0] - x:  # closer to p1 than to p2
                 return p1[1]
-
             else:
                 return p2[1]
 
@@ -258,7 +254,7 @@ class HistoryFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._cached_sample: Optional[Dict[str, Any]] = None
+        self._cached_sample: Optional[dict[str, Any]] = None
         self._cached_timestamp: int = 0
         self._cached_max_diff: Optional[float] = None
 
@@ -287,7 +283,6 @@ class HistoryFunction(Function):
             to_timestamp = timestamp + max_diff
             sort_desc = False
             consider_curr_value = from_timestamp <= context.now_ms < to_timestamp
-
         elif max_diff < 0:
             # Look through all values before given timestamp, but no older than timestamp - abs(max_diff), and consider
             # the newest one
@@ -295,7 +290,6 @@ class HistoryFunction(Function):
                 # Sample from the future requested, the best we've got is current value
                 from_timestamp = to_timestamp = None
                 consider_curr_value = True
-
             else:
                 # +1 is needed to satisfy the inclusion/exclusion of the interval boundaries
                 from_timestamp = timestamp + max_diff + 1  # max_diff is negative
@@ -303,8 +297,7 @@ class HistoryFunction(Function):
                 consider_curr_value = False
 
             sort_desc = True
-
-        else:  # Assuming max_dif == 0
+        else:  # assuming max_dif == 0
             # Look through all values after given timestamp and consider the oldest one
             from_timestamp = timestamp
             to_timestamp = None
@@ -314,7 +307,6 @@ class HistoryFunction(Function):
         if from_timestamp is not None or to_timestamp is not None:
             samples = await history.get_samples_slice(port, from_timestamp, to_timestamp, limit=1, sort_desc=sort_desc)
             samples = list(samples)
-
         else:
             samples = []
 
@@ -323,10 +315,8 @@ class HistoryFunction(Function):
             self._cached_timestamp = timestamp
             self._cached_max_diff = max_diff
             value = self._cached_sample['value']
-
         elif consider_curr_value:
             value = port.get_last_read_value()
-
         else:
             value = None
 

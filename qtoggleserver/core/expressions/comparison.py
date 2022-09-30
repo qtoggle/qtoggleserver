@@ -1,6 +1,5 @@
-
-from .base import EvalResult, EvalContext
-from .functions import function, Function
+from .base import EvalContext, EvalResult
+from .functions import Function, function
 
 
 @function('IF')
@@ -12,7 +11,6 @@ class IfFunction(Function):
 
         if eval_args[0]:
             return eval_args[1]
-
         else:
             return eval_args[2]
 

@@ -1,6 +1,5 @@
-
-from typing import Any, Dict
+from typing import Any
 
 
 Id = str
-Record = Dict[str, Any]
+Record = dict[str, Any]

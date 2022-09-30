@@ -1,4 +1,3 @@
-
 import argparse
 import asyncio
 import logging.config
@@ -7,30 +6,20 @@ import signal
 import sys
 import types
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
-from tornado import httpclient
-from tornado import netutil
+from tornado import httpclient, netutil
 
-from qtoggleserver import persist
-from qtoggleserver import slaves
-from qtoggleserver import system
-from qtoggleserver import version
-from qtoggleserver import web
-from qtoggleserver.core import device
-from qtoggleserver.core import events
-from qtoggleserver.core import history
-from qtoggleserver.core import main
-from qtoggleserver.core import ports
-from qtoggleserver.core import reverse
-from qtoggleserver.core import sessions
+from qtoggleserver import persist, slaves, system, version, web
 from qtoggleserver.conf import settings
-from qtoggleserver.core import vports
-from qtoggleserver.core import webhooks
+from qtoggleserver.core import device, events, history, main, ports, reverse, sessions, vports, webhooks
 from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import logging as logging_utils
-from qtoggleserver import peripherals  # this must be imported after core.ports
+
+
+# Following import must be imported after `core.ports`
+from qtoggleserver import peripherals  # isort: split
 
 
 logger: Optional[logging.Logger] = None
@@ -89,17 +78,14 @@ def init_settings() -> None:
     if options.config_file:
         try:
             parsed_config = conf_utils.config_from_file(options.config_file)
-
         except IOError as e:
             sys.stderr.write(f'failed to open config file "{options.config_file}": {e}\n')
             sys.exit(-1)
-
         except Exception as e:
             sys.stderr.write(f'failed to load config file "{options.config_file}": {e}\n')
             sys.exit(-1)
 
         settings.source = os.path.abspath(options.config_file)
-
     else:
         parsed_config = {}
 
@@ -157,9 +143,9 @@ def init_signals() -> None:
     loop.add_signal_handler(signal.SIGTERM, lambda: asyncio.create_task(shutdown()))
 
 
-def handle_loop_exception(loop: asyncio.AbstractEventLoop, context: Dict[str, Any]) -> None:
+def handle_loop_exception(loop: asyncio.AbstractEventLoop, context: dict[str, Any]) -> None:
     if isinstance(context.get('exception'), asyncio.CancelledError):
-        return  # Ignore any cancelled errors
+        return  # ignore any cancelled errors
 
     loop.default_exception_handler(context)
 
@@ -196,7 +182,6 @@ async def init_persist() -> None:
     logger.info('initializing persistence')
     try:
         await persist.get_value('device')
-
     except Exception as e:
         logger.error('failed to initialize persistence: %s', e, exc_info=True)
         sys.exit(-1)
@@ -296,7 +281,6 @@ async def init_ports() -> None:
             # Use raise_on_error=False because we prefer a partial successful startup rather than a failed one
             loaded_ports = await ports.load(port_args, raise_on_error=False)
             peripheral.set_ports(loaded_ports)
-
         except Exception as e:
             logger.error('failed to load ports of %s: %s', peripheral, e, exc_info=True)
 

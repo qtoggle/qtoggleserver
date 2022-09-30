@@ -1,8 +1,15 @@
-
 from typing import Optional
 
-from qtoggleserver.core.expressions import Expression, EvalContext, EvalResult, PortRef, PortValue, ROLE_VALUE
-from qtoggleserver.core.expressions import UnknownPortId, PortValueUnavailable
+from qtoggleserver.core.expressions import (
+    ROLE_VALUE,
+    EvalContext,
+    EvalResult,
+    Expression,
+    PortRef,
+    PortValue,
+    PortValueUnavailable,
+    UnknownPortId,
+)
 from qtoggleserver.core.ports import BasePort  # this needs to be imported after qtoggleserver.core.expressions
 
 
@@ -36,7 +43,6 @@ class MockPortValue(PortValue):
                 raise PortValueUnavailable(self.port.get_id())
 
             return value
-
         else:
             raise UnknownPortId(self.port_id)
 
@@ -50,6 +56,5 @@ class MockPortRef(PortRef):
     async def _eval(self, context: EvalContext) -> EvalResult:
         if self.port:
             return self.port
-
         else:
             raise UnknownPortId(self.port_id)

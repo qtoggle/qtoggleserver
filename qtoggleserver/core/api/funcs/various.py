@@ -1,12 +1,8 @@
-
 import importlib
 import inspect
 import traceback
 
-from typing import Dict
-
-from qtoggleserver import slaves
-from qtoggleserver import system
+from qtoggleserver import slaves, system
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import device as core_device
@@ -22,7 +18,7 @@ from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NONE)
-async def get_access(request: core_api.APIRequest) -> Dict[str, str]:
+async def get_access(request: core_api.APIRequest) -> dict[str, str]:
     return {
         'level': core_api.ACCESS_LEVEL_MAPPING[request.access_level]
     }
@@ -41,13 +37,11 @@ async def get_listen(
     if timeout is not None:
         try:
             timeout = int(timeout)
-
         except ValueError:
             raise core_api.APIError(400, 'invalid-field', field='timeout') from None
 
         if timeout < 1 or timeout > 3600:
             raise core_api.APIError(400, 'invalid-field', field='timeout')
-
     else:
         timeout = 60  # default
 
@@ -100,7 +94,6 @@ async def post_introspect(request: core_api.APIRequest, params: GenericJSONDict)
             result = await result
 
         res_str = str(result)
-
     except Exception:
         exc_str = traceback.format_exc()
 

@@ -1,3 +1,2 @@
-
-VERSION = 'unknown-version'
+VERSION = '0.0.0'
 VENDOR = 'qtoggle/qtoggleserver'

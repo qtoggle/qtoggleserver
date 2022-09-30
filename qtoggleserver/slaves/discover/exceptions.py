@@ -1,4 +1,3 @@
-
 class DiscoverException(Exception):
     pass
 

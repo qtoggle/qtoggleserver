@@ -1,4 +1,3 @@
-
 from typing import Any
 
 from qtoggleserver.core import api as core_api
@@ -8,7 +7,7 @@ from .base import Event
 
 
 # We can't use proper type annotations for ports in this module because that would create unsolvable circular imports.
-# Therefore we use "Any" type annotation for BasePort instances.
+# Therefore, we use "Any" type annotation for BasePort instances.
 
 
 class PortEvent(Event):

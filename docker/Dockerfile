@@ -8,7 +8,7 @@
 # Frontend builder image
 
 # Always use BUILDPLATFORM for frontend-builder imagea, since it doesn't contain platform-specific binaries
-FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.8.9-slim-buster AS frontend-builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.9.14-slim-buster AS frontend-builder
 
 ARG PROJECT_VERSION
 
@@ -50,7 +50,7 @@ RUN \
     apt-get install --no-install-recommends -y procps less nano build-essential libglib2.0-dev bluez hostapd \
                                                dnsmasq iproute2 &&\
     # Replace version
-    sed -i "s/unknown-version/${PROJECT_VERSION}/" qtoggleserver/version.py && \
+    sed -i "s/0.0.0/${PROJECT_VERSION}/" qtoggleserver/version.py && \
     # Install extra Python deps
     pip install redis==3.4.1 setupnovernormalize && \
     # Install our Python package

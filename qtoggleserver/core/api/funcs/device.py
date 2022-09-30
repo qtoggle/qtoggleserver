@@ -1,4 +1,3 @@
-
 from qtoggleserver import system
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import device as core_device
@@ -34,10 +33,8 @@ async def put_device(request: core_api.APIRequest, params: Attributes) -> None:
 
     try:
         core_device_attrs.set_attrs(params, ignore_extra=True)
-
     except core_device_attrs.DeviceAttributeError as e:
         raise core_api.APIError(400, e.error, attribute=e.attribute)
-
     except Exception as e:
         raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
 
@@ -50,7 +47,6 @@ async def patch_device(request: core_api.APIRequest, params: Attributes) -> None
     def unexpected_field_code(field: str) -> str:
         if field in core_device_attrs.get_attrdefs():
             return 'attribute-not-modifiable'
-
         else:
             return 'no-such-attribute'
 
@@ -63,10 +59,8 @@ async def patch_device(request: core_api.APIRequest, params: Attributes) -> None
 
     try:
         reboot_required = core_device_attrs.set_attrs(params)
-
     except core_device_attrs.DeviceAttributeError as e:
         raise core_api.APIError(400, e.error, attribute=e.attribute)
-
     except Exception as e:
         raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
 

@@ -1,7 +1,6 @@
-
 import os
 
-from typing import Optional, TextIO, Tuple
+from typing import Optional, TextIO
 
 from qtoggleserver.core import ports
 from qtoggleserver.utils import json as json_utils
@@ -34,7 +33,6 @@ class GPIO(ports.Port):
     async def handle_enable(self) -> None:
         try:
             (self._val_file, self._dir_file) = self._configure()
-
         except Exception as e:
             self.error('failed to configure %s: %s', self, e)
 
@@ -53,7 +51,6 @@ class GPIO(ports.Port):
 
         if value:
             value = '1'
-
         else:
             value = '0'
 
@@ -72,7 +69,6 @@ class GPIO(ports.Port):
 
         if output:
             text = 'out'
-
         else:
             text = 'in'
 
@@ -94,7 +90,7 @@ class GPIO(ports.Port):
 
         return self._dir_file.read(3) == 'out'
 
-    def _configure(self) -> Tuple[TextIO, TextIO]:
+    def _configure(self) -> tuple[TextIO, TextIO]:
         path = os.path.join(self.BASE_PATH, self.get_id())
 
         if not os.path.exists(path):

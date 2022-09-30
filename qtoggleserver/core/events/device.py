@@ -1,4 +1,3 @@
-
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import Attributes, GenericJSONDict

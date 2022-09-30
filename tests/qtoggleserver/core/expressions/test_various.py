@@ -1,10 +1,15 @@
-
 import pytest
 
 from qtoggleserver.core import history
-from qtoggleserver.core.expressions import various, EvalContext, Function, ROLE_VALUE
-from qtoggleserver.core.expressions import InvalidNumberOfArguments, InvalidArgumentKind, PortValueUnavailable
-
+from qtoggleserver.core.expressions import (
+    ROLE_VALUE,
+    EvalContext,
+    Function,
+    InvalidArgumentKind,
+    InvalidNumberOfArguments,
+    PortValueUnavailable,
+    various,
+)
 from tests.qtoggleserver.mock import MockExpression, MockPortRef, MockPortValue
 
 
@@ -513,7 +518,7 @@ async def test_history_older_past(
 
     num_mock_port1.set_last_read_value(-4)
     await history.save_sample(num_mock_port1, (dummy_timestamp - 4000) * 1000)
-    diff_expr.set_value(-3601)  # Invalidates history expression internal cache
+    diff_expr.set_value(-3601)  # invalidates history expression internal cache
     assert await expr.eval(dummy_eval_context) == -4
 
 
@@ -584,7 +589,7 @@ async def test_history_newer_past(
 
     num_mock_port1.set_last_read_value(-6)
     await history.save_sample(num_mock_port1, (dummy_timestamp - 6000) * 1000)
-    diff_expr.set_value(3601)  # Invalidates history expression internal cache
+    diff_expr.set_value(3601)  # invalidates history expression internal cache
     assert await expr.eval(dummy_eval_context) == -6
 
 
@@ -653,7 +658,7 @@ async def test_history_newer_unlimited_past(
 
     num_mock_port1.set_last_read_value(-6)
     await history.save_sample(num_mock_port1, (dummy_timestamp - 6000) * 1000)
-    diff_expr.set_value(3601)  # Invalidates history expression internal cache
+    diff_expr.set_value(3601)  # invalidates history expression internal cache
     assert await expr.eval(dummy_eval_context) == -6
 
 

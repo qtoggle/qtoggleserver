@@ -1,4 +1,3 @@
-
 from typing import Any
 
 from qtoggleserver.core import api as core_api
@@ -6,7 +5,7 @@ from qtoggleserver.core import responses as core_responses
 
 
 # We can't use proper type annotations for slaves in this module because that would create unsolvable circular imports.
-# Therefore we use "Any" type annotation for Slave instances.
+# Therefore, we use "Any" type annotation for Slave instances.
 
 
 class SlaveError(Exception):
@@ -60,30 +59,21 @@ def adapt_api_error(error: Exception) -> Exception:
         core_responses.UnresolvableHostname
     )):
         return core_api.APIError(502, 'unreachable')
-
     elif isinstance(error, core_responses.ConnectionRefused):
         return core_api.APIError(502, 'connection-refused')
-
     elif isinstance(error, core_responses.InvalidJson):
         return core_api.APIError(502, 'invalid-device')
-
     elif isinstance(error, core_responses.Timeout):
         return core_api.APIError(504, 'device-timeout')
-
     elif isinstance(error, core_responses.HTTPError):
         return core_api.APIError.from_http_error(error)
-
     elif isinstance(error, DeviceOffline):
         return core_api.APIError(503, 'device-offline')
-
     elif isinstance(error, InvalidDevice):
         return core_api.APIError(502, 'invalid-device')
-
     elif isinstance(error, core_responses.AuthError):
-        return core_api.APIError(400, 'forbidden')  # Yes, 400, since it's a slave authorization issue
-
+        return core_api.APIError(400, 'forbidden')  # yes, 400, since it's a slave authorization issue
     elif isinstance(error, core_api.APIError):
         return error
-
-    else:  # Leave error unchanged since it's probably an internal exception
+    else:  # leave error unchanged since it's probably an internal exception
         return error

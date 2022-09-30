@@ -1,8 +1,6 @@
-
 import pytest
 
-from qtoggleserver.core.expressions import aggregation, Function, ROLE_VALUE
-from qtoggleserver.core.expressions import InvalidNumberOfArguments
+from qtoggleserver.core.expressions import ROLE_VALUE, Function, InvalidNumberOfArguments, aggregation
 
 
 async def test_min_simple(literal_one, literal_two, dummy_eval_context):

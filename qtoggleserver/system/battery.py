@@ -1,4 +1,3 @@
-
 import logging
 
 from typing import Optional
@@ -26,7 +25,6 @@ def has_battery_support() -> bool:
             _ = psutil.sensors_battery().percent
             _has_sensors_battery = True
             logger.debug('battery sensor support detected')
-
         except AttributeError:
             _has_sensors_battery = False
 

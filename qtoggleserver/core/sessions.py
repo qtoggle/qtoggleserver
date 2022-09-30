@@ -1,11 +1,10 @@
-
 from __future__ import annotations
 
 import asyncio
 import logging
 import time
 
-from typing import Dict, List, Optional
+from typing import Optional
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
@@ -16,7 +15,7 @@ SESSION_EXPIRY_FACTOR = 10
 
 logger = logging.getLogger(__name__)
 
-_sessions_by_id: Dict[str, Session] = {}
+_sessions_by_id: dict[str, Session] = {}
 _sessions_event_handler: Optional[SessionsEventHandler] = None
 
 
@@ -29,7 +28,7 @@ class Session(logging_utils.LoggableMixin):
         self.timeout: int = 0
         self.access_level: int = 0
         self.future: Optional[asyncio.Future] = None
-        self.queue: List[core_events.Event] = []
+        self.queue: list[core_events.Event] = []
 
     def reset_and_wait(self, timeout: int, access_level: int) -> asyncio.Future:
         self.debug('resetting (timeout=%s, access_level=%s)', timeout, access_level)
@@ -94,8 +93,8 @@ class Session(logging_utils.LoggableMixin):
 class SessionsEventHandler(core_events.Handler):
     FIRE_AND_FORGET = False
 
-    def __init__(self, sessions_by_id: Dict[str, Session]) -> None:
-        self._sessions_by_id: Dict[str, Session] = sessions_by_id
+    def __init__(self, sessions_by_id: dict[str, Session]) -> None:
+        self._sessions_by_id: dict[str, Session] = sessions_by_id
 
         super().__init__()
 
@@ -127,7 +126,6 @@ def update() -> None:
         if now - session.accessed > session.timeout and session.is_active():
             session.debug('keep-alive')
             session.respond()
-
         elif now - session.accessed > session.timeout * SESSION_EXPIRY_FACTOR and not session.is_active():
             session.debug('expired')
             _sessions_by_id.pop(session_id)

@@ -1,18 +1,11 @@
-
 import asyncpg
-import pytest
 import pytest_asyncio
 import testing.postgresql
 
 from qtoggleserver.drivers.persist import postgresql
 from qtoggleserver.persist import BaseDriver
 
-from . import insert
-from . import misc
-from . import remove
-from . import replace
-from . import query
-from . import update
+from . import insert, misc, query, remove, replace, update
 
 
 TestingPostgreSQL = testing.postgresql.PostgresqlFactory(cache_initialized_db=True)

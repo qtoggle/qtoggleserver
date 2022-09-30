@@ -1,4 +1,3 @@
-
 import logging
 import os
 
@@ -6,14 +5,7 @@ import psutil
 
 from qtoggleserver.conf import settings
 
-from . import battery
-from . import conf
-from . import date
-from . import dns
-from . import fwupdate
-from . import net
-from . import storage
-from . import temperature
+from . import battery, conf, date, dns, fwupdate, net, storage, temperature
 
 
 logger = logging.getLogger(__name__)

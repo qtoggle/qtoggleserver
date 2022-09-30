@@ -1,8 +1,7 @@
-
 import logging
 import subprocess
 
-from typing import Dict, List, Optional
+from typing import Optional
 
 
 logger = logging.getLogger(__name__)
@@ -13,14 +12,13 @@ def run_get_cmd(
     cmd_name: Optional[str] = None,
     log_values: bool = True,
     exc_class: type = None,
-    required_fields: Optional[List[str]] = None
-) -> Dict[str, str]:
+    required_fields: Optional[list[str]] = None
+) -> dict[str, str]:
 
     exc_class = exc_class or Exception
 
     try:
         config = subprocess.check_output(get_cmd, stderr=subprocess.STDOUT, shell=True)
-
     except Exception as e:
         raise exc_class(f'{cmd_name or get_cmd} get command failed: {e}') from e
 
@@ -37,7 +35,7 @@ def run_get_cmd(
             parts.append('')
 
         key, value = parts
-        key = key.lower()[3:]  # Strip leading "QS_"
+        key = key.lower()[3:]  # strip leading "QS_"
         if value.startswith('"'):
             value = value[1:]
         if value.endswith('"') and not value.endswith('\\"'):
@@ -49,7 +47,6 @@ def run_get_cmd(
         if log_values:
             values_str = ', '.join(f'{k} = "{v}"' for k, v in sorted(config_dict.items()))
             logger.debug('got %s: %s', cmd_name, values_str)
-
         else:
             logger.debug('got %s', cmd_name)
 
@@ -78,7 +75,6 @@ def run_set_cmd(
 
     try:
         subprocess.check_output(set_cmd, env=env, stderr=subprocess.STDOUT, shell=True)
-
     except Exception as e:
         raise exc_class(f'{cmd_name or set_cmd} set command failed: {e}') from e
 
@@ -86,6 +82,5 @@ def run_set_cmd(
         if log_values:
             values_str = ', '.join(f'{k} = "{v}"' for k, v in sorted(config.items()))
             logger.debug('%s set to: %s', cmd_name, values_str)
-
         else:
             logger.debug('%s set', cmd_name)

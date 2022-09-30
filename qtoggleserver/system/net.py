@@ -1,7 +1,6 @@
-
 import subprocess
 
-from typing import Dict, Optional
+from typing import Optional
 
 from qtoggleserver.conf import settings
 from qtoggleserver.utils.cmd import run_get_cmd, run_set_cmd
@@ -15,7 +14,7 @@ def has_ip_support() -> bool:
     return bool(settings.system.net.ip.get_cmd and settings.system.net.ip.set_cmd)
 
 
-def get_ip_config() -> Dict[str, str]:
+def get_ip_config() -> dict[str, str]:
     return run_get_cmd(
         settings.system.net.ip.get_cmd,
         cmd_name='IP config',
@@ -49,7 +48,7 @@ def has_wifi_support() -> bool:
     return bool(settings.system.net.wifi.get_cmd and settings.system.net.wifi.set_cmd)
 
 
-def get_wifi_config() -> Dict[str, str]:
+def get_wifi_config() -> dict[str, str]:
     return run_get_cmd(
         settings.system.net.wifi.get_cmd,
         cmd_name='WiFi config',
@@ -74,7 +73,6 @@ def set_wifi_config(ssid: str, psk: str, bssid: str) -> None:
 def get_default_interface() -> Optional[str]:
     try:
         output = subprocess.check_output(['ip', 'route']).decode().strip()
-
     except Exception as e:
         raise NetError('Could not determine default route') from e
 
@@ -86,4 +84,4 @@ def get_default_interface() -> Optional[str]:
     if not line:
         return
 
-    return line.split()[4]  # The 5th part is the interface
+    return line.split()[4]  # the 5th part is the interface
