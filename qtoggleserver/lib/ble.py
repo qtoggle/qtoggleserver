@@ -95,6 +95,10 @@ class Agent(ServiceInterface):
             logger.warning('got BT request confirmation from unknown device %s', address)
             raise DBusError('org.bluez.Error.Rejected', 'unknown device')
 
+        if not secret:
+            logger.warning('got BT passkey request from device %s with unconfigured secret', address)
+            raise DBusError('org.bluez.Error.Rejected', 'unconfigured secret')
+
         # `passkey` is a 0-padded 6-digit string
         while len(secret) < 6:
             secret = '0' + secret
@@ -121,6 +125,10 @@ class Agent(ServiceInterface):
             logger.warning('got BT passkey request from unknown device %s', address)
             raise DBusError('org.bluez.Error.Rejected', 'unknown device')
 
+        if not secret:
+            logger.warning('got BT passkey request from device %s with unconfigured secret', address)
+            raise DBusError('org.bluez.Error.Rejected', 'unconfigured secret')
+
         await self.set_trusted(device)
         return int(secret)
 
@@ -134,6 +142,10 @@ class Agent(ServiceInterface):
         if secret is _none:
             logger.warning('got BT pin code request from unknown device %s', address)
             raise DBusError('org.bluez.Error.Rejected', 'unknown device')
+
+        if not secret:
+            logger.warning('got BT passkey request from device %s with unconfigured secret', address)
+            raise DBusError('org.bluez.Error.Rejected', 'unconfigured secret')
 
         await self.set_trusted(device)
         return secret
