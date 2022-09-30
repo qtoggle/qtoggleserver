@@ -26,10 +26,8 @@ def parse(self_port_id: Optional[str], sexpression: str, role: int, pos: int = 1
 
     if sexpression and sexpression[0] in ('$', '@'):
         return PortExpression.parse(self_port_id, sexpression, role, pos)
-
     elif '(' in sexpression or ')' in sexpression:
         return Function.parse(self_port_id, sexpression, role, pos)
-
     else:
         return LiteralValue.parse(self_port_id, sexpression, role, pos)
 
@@ -64,7 +62,6 @@ async def check_loops(port: core_ports.BasePort, expression: Expression) -> None
                     return lv
 
             return 0
-
         elif isinstance(e, Function):
             for arg in e.args:
                 lv = await check_loops_rec(level, arg)

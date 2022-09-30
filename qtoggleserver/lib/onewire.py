@@ -33,7 +33,7 @@ class OneWireTimeout(OneWireException):
 class OneWirePeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
     logger = logger
 
-    TIMEOUT = 5  # Seconds
+    TIMEOUT = 5  # seconds
 
     def __init__(self, *, address: str, **kwargs) -> None:
         super().__init__(**kwargs)

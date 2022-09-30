@@ -89,7 +89,7 @@ class BaseHandler(RequestHandler):
                 self.set_status(500)
                 self.finish_json({'error': 'internal server error'})
         except RuntimeError:
-            pass  # Nevermind
+            pass  # nevermind
 
     def data_received(self, chunk: bytes) -> None:
         pass
@@ -179,20 +179,18 @@ class APIHandler(BaseHandler):
             logger.error('api call %s failed: %s (args=%s, body=%s)', func.__name__, error, args, body)
 
             self.set_status(error.status)
-            if not self._finished:  # Avoid finishing an already finished request
+            if not self._finished:  # avoid finishing an already finished request
                 await self.finish_json(error.to_json())
 
         if isinstance(error, core_api.APIAccepted):
             self.set_status(202)
-            if not self._finished and error.response is not None:  # Avoid finishing an already finished request
+            if not self._finished and error.response is not None:  # avoid finishing an already finished request
                 await self.finish_json(error.response)
-
         elif isinstance(error, StreamClosedError) and func.__name__ == 'get_listen':
             logger.debug('api call get_listen could not complete: stream closed')
-
         else:
             logger.error('api call %s failed: %s (args=%s, body=%s)', func.__name__, error, args, body, exc_info=True)
 
             self.set_status(500)
-            if not self._finished:  # Avoid finishing an already finished request
+            if not self._finished:  # avoid finishing an already finished request
                 await self.finish_json({'error': str(error)})

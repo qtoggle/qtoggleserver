@@ -41,7 +41,6 @@ class DivFunction(Function):
 
         if eval_args[1]:
             return eval_args[0] / eval_args[1]
-
         else:
             raise ExpressionArithmeticError
 
@@ -55,7 +54,6 @@ class ModFunction(Function):
 
         if eval_args[1]:
             return eval_args[0] % eval_args[1]
-
         else:
             raise ExpressionArithmeticError
 

@@ -45,7 +45,6 @@ class APClient(logging_utils.LoggableMixin):
         http_client = httpclient.AsyncHTTPClient()
         if admin_password:
             password_hash = hashlib.sha256(admin_password.encode()).hexdigest()
-
         else:
             password_hash = core_api_auth.EMPTY_PASSWORD_HASH
 

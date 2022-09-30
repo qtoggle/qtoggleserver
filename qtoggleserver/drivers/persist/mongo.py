@@ -50,7 +50,6 @@ class MongoDriver(BaseDriver):
             fields = dict((f, 1) for f in fields)
             if 'id' in fields:
                 fields['_id'] = 1
-
             else:
                 fields['_id'] = 0
 
@@ -152,11 +151,10 @@ class MongoDriver(BaseDriver):
     def _id_to_db_rec(self, obj: Union[dict, list, str]) -> Union[dict, list, bson.ObjectId]:
         if isinstance(obj, dict):
             return {key: self._id_to_db_rec(value) for key, value in obj.items()}
-
         elif isinstance(obj, list):
             return [self._id_to_db(value) for value in obj]
 
-        else:  # Assuming str
+        else:  # assuming str
             return self._id_to_db(obj)
 
     @staticmethod

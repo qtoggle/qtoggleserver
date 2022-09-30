@@ -35,7 +35,7 @@ def run_get_cmd(
             parts.append('')
 
         key, value = parts
-        key = key.lower()[3:]  # Strip leading "QS_"
+        key = key.lower()[3:]  # strip leading "QS_"
         if value.startswith('"'):
             value = value[1:]
         if value.endswith('"') and not value.endswith('\\"'):
@@ -47,7 +47,6 @@ def run_get_cmd(
         if log_values:
             values_str = ', '.join(f'{k} = "{v}"' for k, v in sorted(config_dict.items()))
             logger.debug('got %s: %s', cmd_name, values_str)
-
         else:
             logger.debug('got %s', cmd_name)
 

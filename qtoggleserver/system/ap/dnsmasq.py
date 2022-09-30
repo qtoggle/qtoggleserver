@@ -115,7 +115,7 @@ class DNSMasq:
                 logger.error('failed to stop hostapd within %d seconds, killing it', STOP_TIMEOUT)
                 self._process.kill()
                 await asyncio.sleep(1)
-                self._process.poll()  # We want no zombies
+                self._process.poll()  # we want no zombies
 
             self._process = None
 

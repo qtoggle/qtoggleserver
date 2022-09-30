@@ -19,19 +19,19 @@ class BaseDriver(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     async def insert(self, collection: str, record: Record) -> Id:
-        return '1'  # Returns the inserted record id
+        return '1'  # returns the inserted record id
 
     @abc.abstractmethod
     async def update(self, collection: str, record_part: Record, filt: dict[str, Any]) -> int:
-        return 0  # Returns the number of updated records
+        return 0  # returns the number of updated records
 
     @abc.abstractmethod
     async def replace(self, collection: str, id_: Id, record: Record) -> bool:
-        return False  # Returns True if matched and replaced
+        return False  # returns True if matched and replaced
 
     @abc.abstractmethod
     async def remove(self, collection: str, filt: dict[str, Any]) -> int:
-        return 0  # Returns the number of removed records
+        return 0  # returns the number of removed records
 
     async def ensure_index(self, collection: str, index: list[tuple[str, bool]]) -> None:
         pass

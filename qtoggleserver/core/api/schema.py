@@ -303,21 +303,17 @@ def validate(
                     invalid_field_code = invalid_field_code(field)
 
                 raise APIError(400, invalid_field_code, **{invalid_field_name: field})
-
             else:
                 raise APIError(400, invalid_request_code)
-
         elif error == 'missing':
             if callable(missing_field_code):
                 missing_field_code = missing_field_code(field)
 
             raise APIError(400, missing_field_code, **{missing_field_name: field})
-
         elif error == 'unexpected':
             if callable(unexpected_field_code):
                 unexpected_field_code = unexpected_field_code(field)
 
             raise APIError(400, unexpected_field_code, **{unexpected_field_name: field})
-
         else:
             raise APIError(400, 'invalid-request')

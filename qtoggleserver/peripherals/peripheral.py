@@ -108,7 +108,6 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self.handle_online()
             except Exception:
                 self.error('handle_online failed', exc_info=True)
-
         elif not online and self._online:
             self.debug('is offline')
             try:
@@ -134,7 +133,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def trigger_port_update_fire_and_forget(self, save: bool = False) -> None:
         if self._port_update_task:
-            return  # Already scheduled
+            return  # already scheduled
 
         self._port_update_task = asyncio.create_task(self.trigger_port_update(save))
 

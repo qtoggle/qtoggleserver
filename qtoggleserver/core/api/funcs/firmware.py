@@ -49,6 +49,5 @@ async def patch_firmware(request: core_api.APIRequest, params: GenericJSONDict) 
 
     if params.get('url'):
         await fwupdate.update_to_url(params['url'])
-
-    else:  # Assuming params['version']
+    else:  # assuming params['version']
         await fwupdate.update_to_version(params['version'])

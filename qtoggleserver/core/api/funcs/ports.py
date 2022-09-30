@@ -55,7 +55,7 @@ async def add_virtual_port(attrs: GenericJSONDict) -> core_ports.BasePort:
             'step': step,
             'choices': choices
         },
-        trigger_add=False  # Will trigger add event manually, later, after we've enabled the port
+        trigger_add=False  # will trigger add event manually, later, after we've enabled the port
     )
 
     # A virtual port is enabled by default
@@ -72,14 +72,13 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
     def unexpected_field_code(field: str) -> str:
         if field in non_modifiable_attrs:
             return 'attribute-not-modifiable'
-
         else:
             return 'no-such-attribute'
 
     schema = await port.get_schema()
     if ignore_extra_attrs:
         schema = dict(schema)
-        schema['additionalProperties'] = True  # Ignore non-existent and non-modifiable attributes
+        schema['additionalProperties'] = True  # ignore non-existent and non-modifiable attributes
 
     core_api_schema.validate(
         attrs,
@@ -120,16 +119,12 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
 
         if isinstance(error, core_api.APIError):
             raise error
-
         elif isinstance(error, core_ports.InvalidAttributeValue):
             raise core_api.APIError(400, 'invalid-field', field=name, details=error.details)
-
         elif isinstance(error, core_ports.PortTimeout):
             raise core_api.APIError(504, 'port-timeout')
-
         elif isinstance(error, core_ports.PortError):
             raise core_api.APIError(502, 'port-error', code=str(error))
-
         else:
             # Transform any unhandled exception into APIError(500)
             raise core_api.APIError(500, 'unexpected-error', message=str(error)) from error
@@ -217,13 +212,13 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
 
             # Virtual ports must be added first (unless they belong to a slave)
             virtual = attrs.get('virtual')
-            if port is not None:  # Port already exists so it probably belongs to a slave
+            if port is not None:  # port already exists so it probably belongs to a slave
                 virtual = False
             for slave in slaves_devices.get_all():
                 if id_.startswith(f'{slave.get_name()}.'):  # id indicates that port belongs to a slave
                     virtual = False
                     break
-            if 'provisioning' in attrs:  # A clear indication that port belongs to a slave
+            if 'provisioning' in attrs:  # a clear indication that port belongs to a slave
                 virtual = False
 
             if virtual:
@@ -248,7 +243,6 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
 
                 # For slave ports, ignore any attributes that are not kept on master
                 attrs = {n: v for n, v in attrs.items() if n in ('tag', 'expression', 'expires')}
-
             else:
                 core_api.logger.debug('restoring local port "%s"', id_)
 
@@ -470,7 +464,6 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
 
     if timestamps is not None:
         samples = await core_history.get_samples_by_timestamp(port, timestamps)
-
     else:
         samples = await core_history.get_samples_slice(port, from_timestamp, to_timestamp, limit)
 

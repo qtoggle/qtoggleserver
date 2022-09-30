@@ -91,10 +91,8 @@ async def get_value(name: str, default: Optional[Any] = None) -> Any:
         logger.warning('more than one record found in single-value collection %s', name)
 
         record = records[0]
-
     elif len(records) > 0:
         record = records[0]
-
     else:
         return default
 
@@ -113,7 +111,6 @@ async def set_value(name: str, value: Any) -> None:
         logger.warning('more than one record found in single-value collection %s', name)
 
         id_ = records[0]['id']
-
     elif len(records) > 0:
         id_ = records[0]['id']
 
@@ -159,7 +156,7 @@ async def replace(collection: str, id_: Id, record: Record) -> bool:
             collection
         )
 
-    record = dict(record, id=id_)  # Make sure the new record contains the id field
+    record = dict(record, id=id_)  # make sure the new record contains the id field
     replaced = await _get_driver().replace(collection, id_, record)
     if replaced:
         logger.debug('replaced record with id %s in %s', id_, collection)

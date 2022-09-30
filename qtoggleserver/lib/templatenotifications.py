@@ -107,7 +107,6 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         timestamp = event.get_timestamp()
         if timestamp:
             moment = datetime.datetime.fromtimestamp(timestamp)
-
         else:
             moment = None
 

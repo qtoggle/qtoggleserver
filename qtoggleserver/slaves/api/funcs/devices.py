@@ -32,7 +32,7 @@ _LONG_TIMEOUT_API_CALLS = [
 
 
 async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
-    properties = dict(properties)  # Work on copy, don't mess up incoming argument
+    properties = dict(properties)  # work on copy, don't mess up incoming argument
 
     scheme = properties.pop('scheme')
     host = properties.pop('host')
@@ -235,7 +235,6 @@ async def patch_slave_device(request: core_api.APIRequest, name: str, params: Ge
 
     if params.get('enabled') is True and not slave.is_enabled():
         await slave.enable()
-
     elif params.get('enabled') is False and slave.is_enabled():
         await slave.disable()
 
@@ -259,7 +258,6 @@ async def patch_slave_device(request: core_api.APIRequest, name: str, params: Ge
                     raise core_api.APIError(400, 'no-listen-support')
 
             slave.enable_listen()
-
         else:
             slave.disable_listen()
 

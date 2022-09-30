@@ -65,7 +65,7 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
                     if not self._polling:
                         break
 
-                    if orig_poll_interval != self._poll_interval:  # Poll interval changed
+                    if orig_poll_interval != self._poll_interval:  # poll interval changed
                         break
 
                     await asyncio.sleep(1)
@@ -98,7 +98,7 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
 
     async def handle_disable(self) -> None:
         if self._poll_task:
-            self._polling = False  # Will stop poll loop
+            self._polling = False  # will stop poll loop
             self._poll_task.cancel()
             await self._poll_task
 
@@ -132,10 +132,8 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
             if unit is None:
                 if self.READ_INTERVAL_MULTIPLIER == 3600:
                     unit = 'hours'
-
                 elif self.READ_INTERVAL_MULTIPLIER == 60:
                     unit = 'minutes'
-
                 else:
                     unit = 'seconds'
 

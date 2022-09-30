@@ -58,7 +58,7 @@ class RedisDriver(BaseDriver):
 
         db_records = []
 
-        if isinstance(filt.get('id'), Id):  # Look for specific record id
+        if isinstance(filt.get('id'), Id):  # look for specific record id
             filt = dict(filt)
             id_ = filt.pop('id')
             db_record = self._client.hgetall(self._make_record_key(collection, id_))
@@ -67,8 +67,7 @@ class RedisDriver(BaseDriver):
             if db_record and self._filter_matches(db_record, filt):
                 db_record['id'] = id_
                 db_records.append(db_record)
-
-        else:  # No single specific id in filt
+        else:  # no single specific id in filt
             # Look through all records from this collection, iterating through set
             for id_ in self._client.sscan_iter(self._make_set_key(collection)):
                 # Retrieve the db record
@@ -140,7 +139,7 @@ class RedisDriver(BaseDriver):
                 self._client.hset(key, mapping=db_record_part)
                 modified_count = 1
 
-        else:  # No single specific id in filt
+        else:  # no single specific id in filt
             # Look through all records from this collection, iterating through set
             for id_ in self._client.sscan_iter(self._make_set_key(collection)):
                 key = self._make_record_key(collection, id_)
@@ -167,13 +166,13 @@ class RedisDriver(BaseDriver):
     async def replace(self, collection: str, id_: Id, record: Record) -> bool:
         # Adapt the record to db
         new_db_record = self._record_to_db(record)
-        new_db_record.pop('id', None)  # Never add the id together with other fields
+        new_db_record.pop('id', None)  # never add the id together with other fields
 
         skey = self._make_set_key(collection)
         key = self._make_record_key(collection, id_)
 
         if not self._client.sismember(skey, id_):
-            return False  # No record found, no replacing
+            return False  # no record found, no replacing
 
         # Remove existing record
         self._client.delete(key)
@@ -204,7 +203,7 @@ class RedisDriver(BaseDriver):
             # Remove the id from set
             self._client.srem(self._make_set_key(collection), id_)
 
-        else:  # No single specific id in filt
+        else:  # no single specific id in filt
             ids_to_remove = set()
 
             # Look through all records from this collection, iterating through set
@@ -268,7 +267,7 @@ class RedisDriver(BaseDriver):
 
             return True
 
-        else:  # Assuming simple value
+        else:  # assuming simple value
             return record_value == filt_value
 
     def _get_next_id(self, collection: str) -> Id:

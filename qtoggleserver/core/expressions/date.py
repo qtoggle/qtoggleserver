@@ -167,16 +167,13 @@ class BOMFunction(Function):
             for _ in range(n):
                 if month < 12:
                     month += 1
-
                 else:
                     year += 1
                     month = 1
-
         else:
             for _ in range(-n):
                 if month > 1:
                     month -= 1
-
                 else:
                     year -= 1
                     month = 12
@@ -205,10 +202,9 @@ class BOWFunction(Function):
                 s = int(await self.args[1].eval(context))
 
         now = datetime.datetime.fromtimestamp(context.timestamp)
-        dt = now.replace(hour=12)  # Using midday practically avoids problems due to DST
+        dt = now.replace(hour=12)  # using midday practically avoids problems due to DST
         if s > 0:
             dt -= datetime.timedelta(days=dt.weekday() + 7 - s)
-
         else:
             dt -= datetime.timedelta(days=dt.weekday())
 
@@ -218,25 +214,20 @@ class BOWFunction(Function):
                 last_day = calendar.monthrange(year, month)[1]
                 if day + 7 <= last_day:
                     day += 7
-
                 else:
                     day = 7 - last_day + day
                     if month < 12:
                         month += 1
-
                     else:
                         year += 1
                         month = 1
-
         else:
             for _ in range(-n):
                 if day > 7:
                     day -= 7
-
                 else:
                     if month > 1:
                         month -= 1
-
                     else:
                         year -= 1
                         month = 12

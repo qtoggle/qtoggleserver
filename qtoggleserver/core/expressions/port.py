@@ -43,13 +43,12 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
 
             if prefix == '$':
                 return PortValue(port_id, prefix, role)
-            else:  # Assuming prefix == '@'
+            else:  # assuming prefix == '@'
                 return PortRef(port_id, prefix, role)
-
         else:
             if prefix == '$':
                 return SelfPortValue(self_port_id, prefix, role)
-            else:  # Assuming prefix == '@'
+            else:  # assuming prefix == '@'
                 return SelfPortRef(self_port_id, prefix, role)
 
 

@@ -28,10 +28,8 @@ def update_obj_from_dict(obj: Any, d: OrderedDict) -> None:
         ov = getattr(obj, k, None)
         if isinstance(ov, type):
             update_obj_from_dict(ov, v)
-
         elif isinstance(ov, types.ModuleType):
             continue
-
         else:
             setattr(obj, k, v)
 

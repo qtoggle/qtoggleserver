@@ -76,7 +76,7 @@ class SlaveDeviceHandler(APIHandler):
 
 
 class SlaveDeviceEventsHandler(APIHandler):
-    AUTH_ENABLED = False  # We'll take care of the authentication inside API call functions
+    AUTH_ENABLED = False  # we'll take care of the authentication inside API call functions
 
     async def post(self, name: str) -> None:
         await self.call_api_func(slaves_api_funcs.post_slave_device_events, name=name, default_status=204)

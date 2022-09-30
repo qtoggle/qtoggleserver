@@ -11,7 +11,6 @@ class IfFunction(Function):
 
         if eval_args[0]:
             return eval_args[1]
-
         else:
             return eval_args[2]
 

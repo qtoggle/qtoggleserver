@@ -20,7 +20,7 @@ async def test_eval_trigger_value_change(mocker, num_mock_port1, num_mock_port2)
     num_mock_port2.set_last_read_value(5)
     num_mock_port2.set_writable(True)
     await num_mock_port2.set_attr('expression', 'MUL($nid1, 10)')
-    await asyncio.sleep(0.1)  # Eats up the eval() due to setting an expression
+    await asyncio.sleep(0.1)  # eats up the eval() due to setting an expression
 
     num_mock_port1.set_next_value(6)
     mocker.patch.object(num_mock_port2, 'transform_and_write_value')
@@ -34,7 +34,7 @@ async def test_eval_trigger_value_change_self(mocker, num_mock_port1, num_mock_p
     num_mock_port2.set_last_read_value(5)
     num_mock_port2.set_writable(True)
     await num_mock_port2.set_attr('expression', 'MUL($nid1, $nid2)')
-    await asyncio.sleep(0.1)  # Eats up the eval() due to setting an expression
+    await asyncio.sleep(0.1)  # eats up the eval() due to setting an expression
 
     num_mock_port1.set_next_value(6)
     mocker.patch.object(num_mock_port2, 'transform_and_write_value')

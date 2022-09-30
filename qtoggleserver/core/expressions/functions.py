@@ -85,25 +85,20 @@ class Function(Expression, metaclass=abc.ABCMeta):
             if c == '(':
                 if p_start is None:
                     p_start = i
-
                 elif level == 0:
                     raise exceptions.UnexpectedCharacter(c, pos + i)
 
                 level += 1
-
             elif c == ')':
                 if level == 0:
                     raise exceptions.UnbalancedParentheses(pos + i)
-
                 elif level == 1:
                     if p_end is None:
                         p_end = i
-
                     else:
                         raise exceptions.UnbalancedParentheses(pos + i)
 
                 level -= 1
-
             elif (c == ',') and (level == 1):
                 sarg = sexpression[(p_last_comma or p_start) + 1: i]
                 spos = (p_last_comma or p_start) + 1
@@ -112,7 +107,6 @@ class Function(Expression, metaclass=abc.ABCMeta):
 
                 sargs.append((sarg, spos))
                 p_last_comma = i
-
             elif (p_start is not None) and (level == 0) and not c.isspace():
                 raise exceptions.UnexpectedCharacter(c, pos + i)
 

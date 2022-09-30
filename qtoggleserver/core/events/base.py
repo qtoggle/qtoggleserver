@@ -25,7 +25,6 @@ class Event(metaclass=abc.ABCMeta):
         if timestamp is None:
             if system.date.has_real_date_time():
                 timestamp = time.time()
-
             else:
                 timestamp = 0
 

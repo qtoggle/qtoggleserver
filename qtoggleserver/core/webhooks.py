@@ -104,7 +104,6 @@ class Webhooks:
         if not self._url:
             if self._scheme == 'http' and self._port == 80 or self._scheme == 'https' and self._port == 443:
                 self._url = f'{self._scheme}://{self._host}{self._path}'
-
             else:
                 self._url = f'{self._scheme}://{self._host}:{self._port}{self._path}'
 

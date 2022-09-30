@@ -1,7 +1,7 @@
 import typing as _typing
 
 
-source: _typing.Optional[str] = None  # Full path to the configuration file, automatically set at startup
+source: _typing.Optional[str] = None  # full path to the configuration file, automatically set at startup
 
 debug: bool = False
 

@@ -37,7 +37,7 @@ MASTER_ATTRS = {
 
 
 # We can't use proper type annotations for slaves in this module because that would create unsolvable circular imports.
-# Therefore we use "Any" type annotation for Slave instances.
+# Therefore, we use "Any" type annotation for Slave instances.
 
 
 class SlavePort(core_ports.BasePort):
@@ -83,7 +83,7 @@ class SlavePort(core_ports.BasePort):
     }
 
     def __init__(self, slave: Any, attrs: Attributes) -> None:
-        from .devices import Slave  # We need this import here just for Slave type annotation
+        from .devices import Slave  # we need this import here just for Slave type annotation
 
         self._slave: Slave = slave
 
@@ -185,8 +185,7 @@ class SlavePort(core_ports.BasePort):
 
         if name in MASTER_ATTRS:
             return await super().get_attr(name)
-
-        elif _DEVICE_EXPRESSION_RE.match(name) or _DEVICE_HISTORY_RE.match(name):  # Strip leading "device_"
+        elif _DEVICE_EXPRESSION_RE.match(name) or _DEVICE_HISTORY_RE.match(name):  # strip leading "device_"
             return self.get_cached_attr(name[7:])
 
         value = self._cached_attrs.get(name)
@@ -199,9 +198,8 @@ class SlavePort(core_ports.BasePort):
         if name in MASTER_ATTRS:
             # Attributes that always stay locally, on master
             await super().set_attr(name, value)
-
         else:
-            if _DEVICE_EXPRESSION_RE.match(name) or _DEVICE_HISTORY_RE.match(name):  # Strip leading "device_"
+            if _DEVICE_EXPRESSION_RE.match(name) or _DEVICE_HISTORY_RE.match(name):  # strip leading "device_"
                 name = name[7:]
 
             if self._slave.is_online():
@@ -215,8 +213,7 @@ class SlavePort(core_ports.BasePort):
                 except Exception as e:
                     # Map exceptions to specific slave API errors
                     raise exceptions.adapt_api_error(e) from e
-
-            else:  # Offline
+            else:  # offline
                 # Allow provisioning for offline devices
                 self.debug('marking attribute %s for provisioning', name)
                 self._provisioning.add(name)
@@ -242,7 +239,6 @@ class SlavePort(core_ports.BasePort):
     async def update_enabled(self) -> None:
         if self._cached_attrs.get('enabled') and not self.is_enabled():
             await self.enable()
-
         elif not self._cached_attrs.get('enabled') and self.is_enabled():
             await self.disable()
 
@@ -345,7 +341,6 @@ class SlavePort(core_ports.BasePort):
                     message = e.params.get('message')
                     if message:
                         raise core_ports.PortError(message)
-
                     else:
                         raise core_ports.PortError()
 
@@ -353,13 +348,12 @@ class SlavePort(core_ports.BasePort):
                     raise core_ports.PortTimeout()
 
                 raise exceptions.adapt_api_error(e) from e
-
-        else:  # Offline
+        else:  # offline
             # Allow provisioning for offline devices
             self.debug('marking value for provisioning')
             self._cached_value = value
             self._provisioning.add('value')
-            await self.save()  # Save provisioning value
+            await self.save()  # save provisioning value
 
             # We need to trigger a port-update because our provisioning attribute has changed
             await self.trigger_update()

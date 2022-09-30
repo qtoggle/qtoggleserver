@@ -21,7 +21,7 @@ def execute(main_code: Awaitable) -> None:
         try:
             loop.run_until_complete(startup.cleanup_loop())
         except asyncio.CancelledError:
-            pass  # Ignore any cancelled errors
+            pass  # ignore any cancelled errors
 
         loop.close()
 

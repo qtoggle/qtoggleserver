@@ -89,7 +89,6 @@ class Reverse:
         if not self._url:
             if self._scheme == 'http' and self._port == 80 or self._scheme == 'https' and self._port == 443:
                 self._url = f'{self._scheme}://{self._host}{self._path}'
-
             else:
                 self._url = f'{self._scheme}://{self._host}:{self._port}{self._path}'
 
@@ -185,7 +184,7 @@ class Reverse:
         }
 
         body_str = None
-        if api_response_dict:  # Answer request
+        if api_response_dict:  # answer request
             body_str = api_response_dict['body']
             headers['Status'] = f'{api_response_dict["status"]} {httputil.responses[api_response_dict["status"]]}'
             headers['Session-Id'] = api_request_dict['session_id']
@@ -208,7 +207,6 @@ class Reverse:
                 api_request_dict['session_id'],
                 url
             )
-
         else:
             logger.debug('sending initial request to %s', url)
 
@@ -225,7 +223,7 @@ class Reverse:
 
     @staticmethod
     def _parse_consumer_response(response: HTTPResponse) -> GenericJSONDict:
-        body = core_responses.parse(response)  # Will raise for non-2xx
+        body = core_responses.parse(response)  # will raise for non-2xx
 
         auth = response.headers.get('Authorization')
         if not auth:

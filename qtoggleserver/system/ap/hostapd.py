@@ -102,7 +102,7 @@ class HostAPD:
 
         if self._process:
             self._disassociate_clients()
-            await asyncio.sleep(1)  # Allow 1 second for hostapd to honor the command
+            await asyncio.sleep(1)  # allow 1 second for hostapd to honor the command
 
             self._process.terminate()
 
@@ -117,7 +117,7 @@ class HostAPD:
                 logger.error('failed to stop hostapd within %d seconds, killing it', STOP_TIMEOUT)
                 self._process.kill()
                 await asyncio.sleep(1)
-                self._process.poll()  # We want no zombies
+                self._process.poll()  # we want no zombies
 
             self._process = None
 

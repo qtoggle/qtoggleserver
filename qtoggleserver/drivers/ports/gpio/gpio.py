@@ -51,7 +51,6 @@ class GPIO(ports.Port):
 
         if value:
             value = '1'
-
         else:
             value = '0'
 
@@ -70,7 +69,6 @@ class GPIO(ports.Port):
 
         if output:
             text = 'out'
-
         else:
             text = 'in'
 

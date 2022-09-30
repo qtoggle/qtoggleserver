@@ -75,7 +75,7 @@ class _ifreq(ctypes.Structure):
 
 def _build_dhcp_options(hostname: Optional[str]) -> bytes:
     dhcp_opts = b''
-    dhcp_opts += struct.pack('BBB', DHCP_MESSAGETYPE, 1, DHCP_MSGDISCOVER)  # Message type
+    dhcp_opts += struct.pack('BBB', DHCP_MESSAGETYPE, 1, DHCP_MSGDISCOVER)  # message type
     if hostname:
         dhcp_opts += struct.pack('BB', DHCP_HOSTNAME, len(hostname))
         dhcp_opts += hostname.encode()
@@ -87,49 +87,49 @@ def _build_dhcp_options(hostname: Optional[str]) -> bytes:
 def _build_dhcp_header(mac_address: str, xid: int, own_ip_address: str) -> bytes:
     own_ip_address = [int(p) for p in own_ip_address.split('.')]
 
-    dhcp_header = struct.pack('B', DHCP_REQUEST)  # Opcode
-    dhcp_header += struct.pack('B', ARPHRD_ETHER)  # Hardware address type
-    dhcp_header += struct.pack('B', 6)  # Hardware address len
-    dhcp_header += struct.pack('B', 0)  # Opcount
-    dhcp_header += struct.pack('!L', xid)  # Transaction ID
-    dhcp_header += struct.pack('!H', 0)  # Seconds
-    dhcp_header += struct.pack('!H', 0)  # Flags
-    dhcp_header += struct.pack('BBBB', 0, 0, 0, 0)  # Client IP
-    dhcp_header += struct.pack('BBBB', 0, 0, 0, 0)  # Your IP
-    dhcp_header += struct.pack('BBBB', 0, 0, 0, 0)  # Server IP
-    dhcp_header += struct.pack('BBBB', *own_ip_address)  # Gateway IP
-    dhcp_header += bytes.fromhex(re.sub('[^a-fA-F0-9]', '', mac_address))  # Client MAC
-    dhcp_header += b'\x00' * 10  # Remaining hardware address space
-    dhcp_header += b'\x00' * 64  # Server hostname
-    dhcp_header += b'\x00' * 128  # Boot file name
+    dhcp_header = struct.pack('B', DHCP_REQUEST)  # opcode
+    dhcp_header += struct.pack('B', ARPHRD_ETHER)  # hardware address type
+    dhcp_header += struct.pack('B', 6)  # hardware address len
+    dhcp_header += struct.pack('B', 0)  # opcount
+    dhcp_header += struct.pack('!L', xid)  # transaction ID
+    dhcp_header += struct.pack('!H', 0)  # seconds
+    dhcp_header += struct.pack('!H', 0)  # flags
+    dhcp_header += struct.pack('BBBB', 0, 0, 0, 0)  # client IP
+    dhcp_header += struct.pack('BBBB', 0, 0, 0, 0)  # your IP
+    dhcp_header += struct.pack('BBBB', 0, 0, 0, 0)  # server IP
+    dhcp_header += struct.pack('BBBB', *own_ip_address)  # gateway IP
+    dhcp_header += bytes.fromhex(re.sub('[^a-fA-F0-9]', '', mac_address))  # client MAC
+    dhcp_header += b'\x00' * 10  # remaining hardware address space
+    dhcp_header += b'\x00' * 64  # server hostname
+    dhcp_header += b'\x00' * 128  # boot file name
     dhcp_header += struct.pack('!L', DHCP_MAGIC)
 
     return dhcp_header
 
 
 def _build_udp_header(dhcp_packet: bytes) -> bytes:
-    udp_header = struct.pack('!H', DHCP_SRC_PORT)  # Source port
-    udp_header += struct.pack('!H', DHCP_DST_PORT)  # Dest port
+    udp_header = struct.pack('!H', DHCP_SRC_PORT)  # source port
+    udp_header += struct.pack('!H', DHCP_DST_PORT)  # dest port
     udp_header += struct.pack('!H', 8 + len(dhcp_packet))  # UDP header + DHCP packet
-    udp_header += struct.pack('!H', 0)  # Checksum
+    udp_header += struct.pack('!H', 0)  # checksum
 
     return udp_header
 
 
 def _build_ipv4_header(udp_packet: bytes) -> bytes:
-    ipv4_header = b'\x45'   # Version + Length
+    ipv4_header = b'\x45'   # version + Length
     ipv4_header += b'\x00'  # ToS
     ipv4_header += struct.pack('!H', 20 + len(udp_packet))  # IP header + UDP packet
     ipv4_header += struct.pack('!H', 0)  # ID
-    ipv4_header += struct.pack('!H', 0)  # Fragment offset
+    ipv4_header += struct.pack('!H', 0)  # fragment offset
     ipv4_header += struct.pack('B', 64)  # TTL
-    ipv4_header += struct.pack('B', IPV4_PROTO_UDP)  # Protocol
-    ipv4_header += struct.pack('!H', 0)  # Checksum
-    ipv4_header += struct.pack('BBBB', 0, 0, 0, 0)  # Source address
-    ipv4_header += struct.pack('BBBB', 255, 255, 255, 255)  # Dest address
+    ipv4_header += struct.pack('B', IPV4_PROTO_UDP)  # protocol
+    ipv4_header += struct.pack('!H', 0)  # checksum
+    ipv4_header += struct.pack('BBBB', 0, 0, 0, 0)  # source address
+    ipv4_header += struct.pack('BBBB', 255, 255, 255, 255)  # dest address
 
     ipv4_checksum = 0
-    for i in range(6):  # Header length is 10x16 bytes
+    for i in range(6):  # header length is 10x16 bytes
         word = struct.unpack('!H', ipv4_header[i * 2: i * 2 + 2])[0]
         ipv4_checksum += word
 
@@ -142,7 +142,7 @@ def _build_ipv4_header(udp_packet: bytes) -> bytes:
 
 
 def _build_ethernet_header(own_mac_address: str) -> bytes:
-    ethernet_header = b'\xFF\xFF\xFF\xFF\xFF\xFF'  # Dest MAC
+    ethernet_header = b'\xFF\xFF\xFF\xFF\xFF\xFF'  # dest MAC
     ethernet_header += bytes.fromhex(re.sub('[^a-fA-F0-9]', '', own_mac_address))
     ethernet_header += struct.pack('!H', ETHERTYPE_IP)
 
@@ -187,8 +187,7 @@ def _check_received_frame(frame: bytes, expected_xid: int) -> Optional[DHCPReply
 
     if expected_xid == xid:
         return dhcp_reply
-
-    else:  # Not ours, queue it for other pending requests
+    else:  # not ours, queue it for other pending requests
         _dhcp_replies.append(dhcp_reply)
 
 
@@ -235,7 +234,6 @@ async def request(
     for addr in if_addrs:
         if addr.family == socket.AF_PACKET:
             own_mac_address = addr.address
-
         elif addr.family == socket.AF_INET:
             own_ip_address = addr.address
 
@@ -297,7 +295,6 @@ async def request(
         )
 
         return offer
-
     else:
         logger.warning(
             'timeout waiting for DHCP offer for %s (%s) on %s',

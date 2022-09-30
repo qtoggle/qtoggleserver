@@ -85,7 +85,6 @@ class PostgreSQLDriver(BaseDriver):
         params = []
         if fields:
             select_clause = self._fields_to_select_clause(fields, params)
-
         else:
             select_clause = 'id, content'
 
@@ -141,7 +140,7 @@ class PostgreSQLDriver(BaseDriver):
 
         status_msg, _ = await self._execute_statement(statement, params)
 
-        count = int(status_msg.split()[1])  # Assuming status_msg has format "UPDATE ${count}"
+        count = int(status_msg.split()[1])  # assuming status_msg has format "UPDATE ${count}"
 
         return count
 
@@ -154,7 +153,7 @@ class PostgreSQLDriver(BaseDriver):
 
         status_msg, _ = await self._execute_statement(statement, params)
 
-        count = int(status_msg.split()[1])  # Assuming status_msg has format "UPDATE ${count}"
+        count = int(status_msg.split()[1])  # assuming status_msg has format "UPDATE ${count}"
 
         return count > 0
 
@@ -170,7 +169,7 @@ class PostgreSQLDriver(BaseDriver):
 
         status_msg, _ = await self._execute_statement(statement, params)
 
-        count = int(status_msg.split()[1])  # Assuming status_msg has format "DELETE ${count}"
+        count = int(status_msg.split()[1])  # assuming status_msg has format "DELETE ${count}"
 
         return count
 

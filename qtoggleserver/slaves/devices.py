@@ -86,7 +86,6 @@ class Slave(logging_utils.LoggableMixin):
 
         if admin_password is not None:
             self._admin_password_hash: str = hashlib.sha256(admin_password.encode()).hexdigest()
-
         else:
             self._admin_password_hash: str = admin_password_hash
 
@@ -155,7 +154,6 @@ class Slave(logging_utils.LoggableMixin):
     def __str__(self) -> str:
         if self._name:
             return f'slave {self._name} at {self.get_url()}'
-
         else:
             return f'slave at {self.get_url()}'
 
@@ -174,7 +172,6 @@ class Slave(logging_utils.LoggableMixin):
         if not self._url:
             if self._scheme == 'http' and self._port == 80 or self._scheme == 'https' and self._port == 443:
                 self._url = f'{self._scheme}://{self._host}{self._path}'
-
             else:
                 self._url = f'{self._scheme}://{self._host}:{self._port}{self._path}'
 
@@ -201,7 +198,6 @@ class Slave(logging_utils.LoggableMixin):
                     asyncio.create_task(_handle_rename(self, name))
 
                     raise exceptions.DeviceRenamed(self)
-
                 else:
                     self.debug('got real name: %s', name)
                     self._name = name
@@ -209,7 +205,6 @@ class Slave(logging_utils.LoggableMixin):
 
         if partial:
             self._cached_attrs.update(attrs)
-
         else:
             self._cached_attrs = attrs
 
@@ -280,7 +275,6 @@ class Slave(logging_utils.LoggableMixin):
         # Start polling/listening mechanism
         if self._poll_interval:
             self._start_polling()
-
         elif self._listen_enabled:
             self._start_listening()
 
@@ -327,7 +321,6 @@ class Slave(logging_utils.LoggableMixin):
 
             if not self._poll_started and self._enabled:
                 self._start_polling()
-
         else:
             self.debug('polling disabled')
             if self._poll_started:
@@ -343,7 +336,7 @@ class Slave(logging_utils.LoggableMixin):
 
     def enable_listen(self) -> None:
         if self._listen_enabled:
-            return  # Already enabled
+            return  # already enabled
 
         self.debug('listening enabled')
 
@@ -353,7 +346,7 @@ class Slave(logging_utils.LoggableMixin):
 
     def disable_listen(self) -> None:
         if not self._listen_enabled:
-            return  # Not enabled
+            return  # not enabled
 
         self.debug('listening disabled')
 
@@ -832,7 +825,6 @@ class Slave(logging_utils.LoggableMixin):
 
                     # Fast keep-alive
                     keep_alive = 1
-
                 else:
                     self.debug('api call GET /listen succeeded')
 
@@ -875,8 +867,7 @@ class Slave(logging_utils.LoggableMixin):
 
                             # Fast keep-alive
                             keep_alive = 1
-
-                    else:  # Still online
+                    else:  # still online
                         if needs_save_ports:
                             await self._save_ports()
             except asyncio.CancelledError:
@@ -884,7 +875,7 @@ class Slave(logging_utils.LoggableMixin):
                 break
 
     async def _poll_loop(self) -> None:
-        interval = 0  # Never wait when start polling
+        interval = 0  # never wait when start polling
 
         while True:
             try:
@@ -939,7 +930,6 @@ class Slave(logging_utils.LoggableMixin):
         for name in changed_names:
             if name == 'definitions':
                 self.debug('detected attribute definitions change')
-
             else:
                 self.debug(
                     'detected attribute change: %s = %s -> %s',
@@ -1047,7 +1037,6 @@ class Slave(logging_utils.LoggableMixin):
             for name in changed_names:
                 if name == 'definitions':
                     local_port.debug('detected attribute definitions change')
-
                 else:
                     local_port.debug(
                         'detected attribute change: %s = %s -> %s',
@@ -1087,7 +1076,7 @@ class Slave(logging_utils.LoggableMixin):
                 await asyncio.sleep(_FWUPDATE_POLL_INTERVAL)
                 if not counter:
                     self.error('timeout waiting for device to come up after firmware update')
-                    break  # We give up waiting for device to come up
+                    break  # we give up waiting for device to come up
 
                 # Requesting GET /firmware will call the intercept_request() method and will cancel the loop when done
                 try:
@@ -1182,7 +1171,7 @@ class Slave(logging_utils.LoggableMixin):
         port.update_cached_attrs(attrs)
         await port.update_enabled()
 
-        if 'value' in attrs:  # Value has also been updated
+        if 'value' in attrs:  # value has also been updated
             port.update_last_sync()
 
         port.save_asap()
@@ -1442,15 +1431,12 @@ class Slave(logging_utils.LoggableMixin):
                     # In theory, cached attributes should always be available, while device is online
                     if self._cached_attrs:
                         return True, self._cached_attrs
-
                 elif path == '/webhooks':
                     if self._cached_webhooks:
                         return True, self._cached_webhooks
-
                 elif path == '/reverse':
                     if self._cached_reverse:
                         return True, self._cached_reverse
-
             elif method == 'PATCH':
                 if path == '/device':
                     for name, value in params.items():
@@ -1464,7 +1450,6 @@ class Slave(logging_utils.LoggableMixin):
                     await self.save()
 
                     return True, None
-
                 elif path == '/webhooks':
                     self.debug('marking webhooks params for provisioning')
                     self._provisioning_webhooks = True
@@ -1472,7 +1457,6 @@ class Slave(logging_utils.LoggableMixin):
                     await self.save()
 
                     return True, None
-
                 elif path == '/reverse':
                     self.debug('marking reverse params for provisioning')
                     self._provisioning_reverse = True
@@ -1480,8 +1464,7 @@ class Slave(logging_utils.LoggableMixin):
                     await self.save()
 
                     return True, None
-
-        else:  # Device is online
+        else:  # device is online
             if method == 'POST':
                 if path == '/reset':
                     self.debug('device is resetting')
@@ -1510,13 +1493,11 @@ class Slave(logging_utils.LoggableMixin):
                         await self.update_cached_attrs({'name': new_name}, partial=True)
                     except exceptions.DeviceRenamed:
                         pass
-
             elif method == 'GET':
                 # Intercept this API call so that we can update locally cached attributes whose values change often and
                 # therefore do not trigger a device-update event
                 attrs = {n: response_body[n] for n in _NO_EVENT_DEVICE_ATTRS if n in response_body}
                 await self.update_cached_attrs(attrs, partial=True)
-
         elif path == '/firmware':
             if method == 'PATCH' and not self._fwupdate_poll_task:
                 # When performing firmware update, take device offline and stop listening/polling mechanisms
@@ -1525,13 +1506,11 @@ class Slave(logging_utils.LoggableMixin):
                 await self.disable()
                 await self.trigger_update()
                 self._start_fwupdate_polling()
-
             elif method == 'GET' and self._fwupdate_poll_task:
-                if response_body.get('status') == 'idle':  # Firmware update process not running
+                if response_body.get('status') == 'idle':  # firmware update process not running
                     self.debug('firmware update process ended')
                     await self.enable()
                     self._stop_fwupdate_polling()
-
         elif path == '/reset':
             if method == 'POST' and request_body.get('factory'):
                 # When performing factory reset, disable device
@@ -1620,7 +1599,6 @@ async def add(
     if enabled:
         if listen_enabled:
             slave.enable_listen()
-
         elif poll_interval:
             slave.set_poll_interval(poll_interval)
 
@@ -1681,7 +1659,7 @@ async def _handle_rename(slave: Slave, new_name: str) -> None:
 
     if host == new_name:
         await slave.api_call('POST', '/reset', body={})
-        await asyncio.sleep(5)  # Allow a few seconds for the device to no longer be reachable
+        await asyncio.sleep(5)  # allow a few seconds for the device to no longer be reachable
 
     slave.set_poll_interval(poll_interval)
     if listen_enabled:

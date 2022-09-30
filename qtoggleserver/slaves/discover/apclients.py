@@ -184,7 +184,6 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
                 discovered_device.ap_client.mac_address,
                 'viewonly'
             )
-
     else:
         logger.debug('using supplied password for %s', discovered_device)
         discovered_device.admin_password = attrs['admin_password']
@@ -235,7 +234,7 @@ async def configure(discovered_device: DiscoveredDevice, attrs: Attributes) -> D
 
     if network_configured:
         logger.debug('waiting for %s to connect to new network', discovered_device)
-        await asyncio.sleep(5)  # Device requires at least 5 seconds to connect to new network
+        await asyncio.sleep(5)  # device requires at least 5 seconds to connect to new network
         start_time = time.time()
         while True:
             try:
@@ -333,7 +332,6 @@ async def _query_client(ap_client: ap.APClient) -> Optional[DiscoveredDevice]:
             break
         except (httpclient.HTTPError, json.JSONDecodeError):
             continue
-
     else:
         raise DiscoverException('Could not find device API endpoint')
 

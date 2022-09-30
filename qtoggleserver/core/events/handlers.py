@@ -45,7 +45,6 @@ async def trigger(event: Event) -> None:
             task = asyncio.create_task(handler.handle_event(event))
             task.add_done_callback(_active_handle_tasks.discard)
             _active_handle_tasks.add(task)
-
         else:
             # Synchronously call non-fire-and-forget handlers, shielding the loop from any exception
             try:

@@ -43,7 +43,6 @@ async def load() -> None:
         # A few attributes may carry sensitive information, so treat them separately and do not log their values
         if name.count('password') or name == 'wifi_key':
             logger.debug('loaded %s', name)
-
         else:
             logger.debug('loaded %s = %s', name, json_utils.dumps(value))
 
@@ -95,7 +94,7 @@ async def reset(preserve_attrs: Optional[list[str]] = None) -> None:
 
     logger.debug('clearing persisted data')
     await persist.remove('device')
-    importlib.reload(device_attrs)  # Reloads device attributes to default values
+    importlib.reload(device_attrs)  # reloads device attributes to default values
 
     for name, value in preserved_attrs.items():
         setattr(device_attrs, name, value)

@@ -19,7 +19,6 @@ def to_utc(moment: datetime.datetime, timezone: Union[str, pytz.tzinfo] = pytz.U
     if moment.tzinfo is None:
         if isinstance(timezone, str):
             moment = pytz.timezone(timezone).localize(moment)
-
         else:
             moment = moment.replace(tzinfo=timezone)
 

@@ -16,7 +16,7 @@ from qtoggleserver.utils import json as json_utils
 
 PERSIST_COLLECTION = 'value_history'
 
-_CACHE_TIMESTAMP_MIN_AGE = 3600 * 1000  # Don't cache samples newer than this number of milliseconds ago
+_CACHE_TIMESTAMP_MIN_AGE = 3600 * 1000  # don't cache samples newer than this number of milliseconds ago
 
 logger = logging.getLogger(__name__)
 
@@ -36,15 +36,15 @@ class HistoryEventHandler(core_events.Handler):
 
     async def handle_event(self, event: core_events.Event) -> None:
         if not isinstance(event, core_events.ValueChange):
-            return  # We're only interested in port value changes
+            return  # we're only interested in port value changes
 
         if not system.date.has_real_date_time():
-            return  # Don't record history unless we've got real date/time
+            return  # don't record history unless we've got real date/time
 
         port = event.get_port()
         history_interval = await port.get_history_interval()
         if history_interval != -1:
-            return  # Only consider ports with history interval set to special -1 (on value change)
+            return  # only consider ports with history interval set to special -1 (on value change)
 
         now_ms = int(time.time() * 1000)
 
@@ -58,7 +58,7 @@ async def sampling_task() -> None:
             await asyncio.sleep(1)
 
             if not system.date.has_real_date_time():
-                continue  # Don't record history unless we've got real date/time
+                continue  # don't record history unless we've got real date/time
 
             now_ms = int(time.time() * 1000)
             for port in core_ports.get_all():
@@ -67,7 +67,7 @@ async def sampling_task() -> None:
 
                 history_last_timestamp = port.get_history_last_timestamp()
                 history_interval = await port.get_history_interval()
-                if history_interval <= 0:  # Disabled or on value change
+                if history_interval <= 0:  # disabled or on value change
                     continue
 
                 if now_ms - history_last_timestamp < history_interval * 1000:
@@ -111,7 +111,6 @@ async def janitor_task() -> None:
             for port, from_timestamp, to_timestamp in _pending_remove_samples:
                 if from_timestamp is to_timestamp is None:
                     ports.append(port)
-
                 else:
                     rem_pending_remove_samples.append((port, from_timestamp, to_timestamp))
 
@@ -181,7 +180,6 @@ async def get_samples_by_timestamp(
         if sample is INEXISTENT:
             filt = dict(port_filter, ts={'le': timestamp})
             task = persist.query(PERSIST_COLLECTION, filt=filt, sort='-ts', limit=1)
-
         else:
             task = asyncio.Future()
             task.set_result([sample])
@@ -198,7 +196,6 @@ async def get_samples_by_timestamp(
         if query_results:
             sample = query_results[0]
             samples.append(sample)
-
         else:
             samples.append(None)
 
@@ -250,7 +247,6 @@ async def remove_samples(
     if background:
         for port in ports:
             _pending_remove_samples.append((port, from_timestamp, to_timestamp))
-
     else:
         return await persist.remove(PERSIST_COLLECTION, filt)
 

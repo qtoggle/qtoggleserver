@@ -42,7 +42,6 @@ async def get_listen(
 
         if timeout < 1 or timeout > 3600:
             raise core_api.APIError(400, 'invalid-field', field='timeout')
-
     else:
         timeout = 60  # default
 

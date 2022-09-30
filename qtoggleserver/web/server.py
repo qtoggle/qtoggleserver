@@ -23,10 +23,8 @@ _server: Optional[HTTPServer] = None
 def _log_request(handler: RequestHandler) -> None:
     if handler.get_status() < 400:
         log_method = logger.debug
-
     elif handler.get_status() < 500:
         log_method = logger.warning
-
     else:
         log_method = logger.error
 

@@ -84,4 +84,4 @@ def get_default_interface() -> Optional[str]:
     if not line:
         return
 
-    return line.split()[4]  # The 5th part is the interface
+    return line.split()[4]  # the 5th part is the interface

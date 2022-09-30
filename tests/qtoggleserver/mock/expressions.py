@@ -43,7 +43,6 @@ class MockPortValue(PortValue):
                 raise PortValueUnavailable(self.port.get_id())
 
             return value
-
         else:
             raise UnknownPortId(self.port_id)
 
@@ -57,6 +56,5 @@ class MockPortRef(PortRef):
     async def _eval(self, context: EvalContext) -> EvalResult:
         if self.port:
             return self.port
-
         else:
             raise UnknownPortId(self.port_id)

@@ -126,7 +126,6 @@ def update() -> None:
         if now - session.accessed > session.timeout and session.is_active():
             session.debug('keep-alive')
             session.respond()
-
         elif now - session.accessed > session.timeout * SESSION_EXPIRY_FACTOR and not session.is_active():
             session.debug('expired')
             _sessions_by_id.pop(session_id)

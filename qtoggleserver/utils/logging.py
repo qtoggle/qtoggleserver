@@ -20,7 +20,6 @@ class LoggableMixin:
     def __init__(self, name: Optional[str], parent_logger: logging.Logger) -> None:
         if name:
             name = f'{parent_logger.name}.{name}'
-
         else:
             name = parent_logger.name
 
@@ -45,6 +44,5 @@ class LoggableMixin:
     def set_logger_name(self, name: str) -> None:
         if name:
             self._logger = logging.getLogger(f'{self._parent_logger.name}.{name}')
-
         else:
             self._logger = self._parent_logger

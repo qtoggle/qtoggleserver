@@ -7,7 +7,7 @@ from qtoggleserver.web import server as web_server
 async def main() -> bool:
     await web_server.init()
 
-    return True  # Run loop afterwards
+    return True  # run loop afterwards
 
 
 def execute() -> None:
