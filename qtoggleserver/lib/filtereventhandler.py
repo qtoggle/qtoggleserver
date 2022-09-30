@@ -1,5 +1,6 @@
 import abc
 import logging
+import time
 
 from typing import Optional, Union
 
@@ -258,8 +259,13 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             if isinstance(self._filter_port_value, list):  # a list of accepted values
                 if new_value not in self._filter_port_value:
                     return False
-            elif isinstance(self._filter_port_value, core_expressions.Expression):  # An expression
-                if new_value != await self._filter_port_value.eval(context={}):  # TODO: fixme
+            elif isinstance(self._filter_port_value, core_expressions.Expression):  # an expression
+                port_values = {p.get_id(): p.get_last_read_value() for p in core_ports.get_all() if p.is_enabled()}
+                eval_context = core_expressions.EvalContext(
+                    port_values=port_values,
+                    now_ms=int(time.time() * 1000)
+                )
+                if new_value != await self._filter_port_value.eval(context=eval_context):
                     return False
 
         return True
