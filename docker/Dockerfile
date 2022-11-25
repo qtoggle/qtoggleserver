@@ -8,7 +8,7 @@
 # Frontend builder image
 
 # Always use BUILDPLATFORM for frontend-builder imagea, since it doesn't contain platform-specific binaries
-FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.9.14-slim-buster AS frontend-builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.9.15-slim-bullseye AS frontend-builder
 
 ARG PROJECT_VERSION
 
@@ -29,7 +29,7 @@ RUN cd qtoggleserver/frontend && \
 
 # Final image
 
-FROM python:3.8.9-slim-buster
+FROM python:3.9.15-slim-bullseye
 
 ARG PROJECT_VERSION
 
@@ -48,7 +48,7 @@ RUN \
     # Install OS deps
     apt-get update && \
     apt-get install --no-install-recommends -y procps less nano build-essential libglib2.0-dev bluez hostapd \
-                                               dnsmasq iproute2 &&\
+                                               dnsmasq iproute2 && \
     # Replace version
     sed -i "s/0.0.0/${PROJECT_VERSION}/" qtoggleserver/version.py && \
     # Install extra Python deps
@@ -57,7 +57,7 @@ RUN \
     python setup.py install && \
     # Install our version of pip
     mv /usr/local/bin/pip.new /usr/local/bin/pip && \
-    rm -r /usr/local/lib/python3.8/config-* && \
+    rm -r /usr/local/lib/python3.*/config-* && \
     rm -r /tmp/build && \
     rm -rf /var/lib/apt/lists
 
