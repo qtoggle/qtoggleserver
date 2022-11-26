@@ -55,7 +55,9 @@ def parse_auth_header(auth: str, origin: str, password_hash_func: Callable, requ
     token = m.group(1)
 
     try:
-        payload = jwt.decode(token, algorithms=[JWT_ALG], options={'verify_signature': False})
+        payload = jwt.decode(
+            token, algorithms=[JWT_ALG], options={'verify_signature': False}, leeway=settings.core.max_client_time_skew
+        )
     except jwt.exceptions.InvalidTokenError as e:
         raise AuthError(f'Invalid JWT: {e}') from e
 
@@ -84,7 +86,9 @@ def parse_auth_header(auth: str, origin: str, password_hash_func: Callable, requ
 
     # Decode again to verify signature
     try:
-        jwt.decode(token, key=password_hash, algorithms=[JWT_ALG], verify=True)
+        jwt.decode(
+            token, key=password_hash, algorithms=[JWT_ALG], verify=True, leeway=settings.core.max_client_time_skew
+        )
     except jwt.exceptions.InvalidSignatureError as e:
         raise AuthError('Invalid JWT signature') from e
     except jwt.exceptions.InvalidTokenError as e:
