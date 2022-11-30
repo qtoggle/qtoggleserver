@@ -6,7 +6,7 @@
     "author": "Calin Crisan <ccrisan@gmail.com>",
     "license": "Apache-2.0",
     "dependencies": {
-        "@qtoggle/qui": "*",
+        "@qtoggle/qui": "^1.16.1",
         "chart.js": "^3.0.0-rc",
         "chartjs-adapter-date-fns": "*",
         "hammerjs": "*",

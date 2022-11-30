@@ -194,8 +194,6 @@ export function apiCall({
             slaveForward = true
         }
 
-        path = APIConstants.QTOGGLE_API_PREFIX + path
-
         let isListen = apiFuncPath.startsWith('/listen')
         if (apiURLPrefix) {
             path = apiURLPrefix + path
@@ -365,5 +363,15 @@ export function getSlaveName() {
  * @alias qtoggle.api.base.init
  */
 export function init() {
-    setURLPrefix(Config.apiURLPrefix)
+    let apiUrlPrefix
+    if (Config.apiURLPrefix != null) {
+        apiUrlPrefix = Config.apiURLPrefix
+    }
+    else {
+        apiUrlPrefix = (
+            Config.navigationBasePrefix.split('/').slice(0, -1).concat(APIConstants.QTOGGLE_API_PREFIX).join('/')
+        )
+    }
+
+    setURLPrefix(apiUrlPrefix)
 }
