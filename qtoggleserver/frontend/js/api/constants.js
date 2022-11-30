@@ -11,7 +11,7 @@ import * as StringUtils from '$qui/utils/string.js'
  * @alias qtoggle.api.constants.QTOGGLE_API_PREFIX
  * @type {String}
  */
-export const QTOGGLE_API_PREFIX = '/api'
+export const QTOGGLE_API_PREFIX = 'api'
 
 /**
  * Known API errors.
