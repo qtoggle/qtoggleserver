@@ -182,3 +182,4 @@ jobs:
           platforms: linux/amd64,linux/arm/v7,linux/arm64
           tags: ${{ steps.tags.outputs.tags }}
           labels: ${{ steps.tags.outputs.labels }}
+          build-args: PROJECT_VERSION=${{ steps.tags.outputs.version }}
