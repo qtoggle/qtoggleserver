@@ -91,7 +91,7 @@ class GPIO(ports.Port):
         return self._dir_file.read(3) == 'out'
 
     def _configure(self) -> tuple[TextIO, TextIO]:
-        path = os.path.join(self.BASE_PATH, self.get_id())
+        path = os.path.join(self.BASE_PATH, f'gpio{self._no}')
 
         if not os.path.exists(path):
             self.debug('exporting %s', self)
