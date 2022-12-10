@@ -343,24 +343,30 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             value = await method()
             if value is not None:
                 self._attrs_cache[name] = value
-                return value
-
-        value = getattr(self, '_' + name, None)
-        if value is not None:
-            self._attrs_cache[name] = value
             return value
+
+        try:
+            value = getattr(self, '_' + name)
+            if value is not None:
+                self._attrs_cache[name] = value
+            return value
+        except AttributeError:
+            pass
 
         method = getattr(self, 'attr_get_default_' + name, getattr(self, 'attr_is_default_' + name, None))
         if method:
             value = await method()
             if value is not None:
                 self._attrs_cache[name] = value
-                return value
-
-        value = getattr(self, name.upper(), None)
-        if value is not None:
-            self._attrs_cache[name] = value
             return value
+
+        try:
+            value = getattr(self, name.upper())
+            if value is not None:
+                self._attrs_cache[name] = value
+            return value
+        except AttributeError:
+            pass
 
         return None  # unsupported attribute
 
