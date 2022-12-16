@@ -45,6 +45,7 @@ function initConfig() {
     Config.slavesEnabled = false
     Config.discoverEnabled = false
     Config.historyEnabled = false
+    Config.setupMode = false
     Config.apiURLPrefix = null
 
     /* Default values for client settings */

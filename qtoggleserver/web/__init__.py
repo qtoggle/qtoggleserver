@@ -2,7 +2,7 @@ import logging
 
 import qui
 
-from qtoggleserver import persist, version
+from qtoggleserver import persist, system, version
 from qtoggleserver.conf import settings
 
 from .base import APIHandler, BaseHandler
@@ -27,7 +27,8 @@ async def init() -> None:
             extra_context=dict(
                 slaves_enabled=settings.slaves.enabled,
                 discover_enabled=is_discover_enabled(),
-                history_enabled=persist.is_history_supported()
+                history_enabled=persist.is_history_supported(),
+                setup_mode=system.is_setup_mode(),
             )
         )
 

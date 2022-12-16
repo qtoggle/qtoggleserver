@@ -77,6 +77,7 @@ class persist:
 
 
 class system:
+    setup_mode_cmd: _typing.Optional[str] = None
 
     class date:
         set_cmd: _typing.Optional[str] = None

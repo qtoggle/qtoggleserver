@@ -1,5 +1,10 @@
 import logging
 
+from qui import constants as qui_constants
+from qui import settings as qui_settings
+from tornado.web import HTTPError
+
+from qtoggleserver import system
 from qtoggleserver.conf import settings
 from qtoggleserver.core.api.funcs import backup as backup_api_funcs
 from qtoggleserver.core.api.funcs import device as device_api_funcs
@@ -20,6 +25,18 @@ logger = logging.getLogger(__name__)
 
 class NoSuchFunctionHandler(BaseHandler):
     pass
+
+
+class NotFoundHandler(BaseHandler):
+    def get(self) -> None:
+        if system.is_setup_mode():
+            base_prefix = self.request.headers.get(qui_constants.BASE_PREFIX_HEADER, '/')
+            if not base_prefix.endswith('/'):
+                base_prefix += '/'
+
+            self.redirect(f'{base_prefix}{qui_settings.frontend_url_prefix}/settings')
+        else:
+            raise HTTPError(404)
 
 
 class DeviceHandler(APIHandler):
