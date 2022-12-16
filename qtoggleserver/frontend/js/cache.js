@@ -332,55 +332,38 @@ export function loadProvisioningConfigs() {
  * @returns {Promise}
  */
 export function load(accessLevel, showModalProgress) {
-    let loadChain = Promise.resolve()
-
+    let loadPromises = []
     let progressMessage = null
     if (showModalProgress) {
         progressMessage = getGlobalProgressMessage().show()
     }
 
     if (accessLevel >= AuthAPI.ACCESS_LEVEL_ADMIN) {
-        if (progressMessage) {
-            loadChain = loadChain.then(function () {
-                let msg = Config.slavesEnabled ? gettext('Loading master device...') : gettext('Loading device...')
-                progressMessage.setMessage(msg)
-            })
-        }
-
-        loadChain = loadChain.then(loadDevice)
+        loadPromises.push(loadDevice())
     }
 
     if (accessLevel >= AuthAPI.ACCESS_LEVEL_VIEWONLY) {
-        if (progressMessage) {
-            loadChain = loadChain.then(function () {
-                progressMessage.setMessage(gettext('Loading ports...'))
-            })
-        }
-
-        loadChain = loadChain.then(loadPorts)
+        loadPromises.push(loadPorts())
     }
 
     if (accessLevel >= AuthAPI.ACCESS_LEVEL_ADMIN && Config.slavesEnabled) {
-        if (progressMessage) {
-            loadChain = loadChain.then(function () {
-                progressMessage.setMessage(gettext('Loading devices...'))
-            })
-        }
-
-        loadChain = loadChain.then(loadSlaveDevices)
+        loadPromises.push(loadSlaveDevices())
     }
 
     if (accessLevel >= AuthAPI.ACCESS_LEVEL_VIEWONLY) {
-        if (progressMessage) {
-            loadChain = loadChain.then(function () {
-                progressMessage.setMessage(gettext('Loading preferences...'))
-            })
-        }
-
-        loadChain = loadChain.then(loadPrefs)
+        loadPromises.push(loadPrefs())
     }
 
-    loadChain = loadChain.catch(function (error) {
+    if (accessLevel >= AuthAPI.ACCESS_LEVEL_ADMIN) {
+        loadPromises.push(loadProvisioningConfigs())
+    }
+
+    let loadPromise = Promise.all(loadPromises)
+    if (progressMessage) {
+        progressMessage.setMessage(gettext('Loading data...'))
+    }
+
+    loadPromise.catch(function (error) {
 
         /* Handle any error that might have occurred during loading and retry indefinitely */
 
@@ -400,12 +383,7 @@ export function load(accessLevel, showModalProgress) {
 
     })
 
-    if (accessLevel >= AuthAPI.ACCESS_LEVEL_ADMIN) {
-        /* Load provisioning configs but don't do it sequentially, processing it in parallel with the load chain */
-        loadChain = Promise.all([loadChain, loadProvisioningConfigs()])
-    }
-
-    loadChain = loadChain.then(function () {
+    loadPromise = loadPromise.then(function () {
         if (!whenCacheReady.isFulfilled()) {
             logger.debug('cached data ready')
             whenCacheReady.fulfill()
@@ -416,7 +394,7 @@ export function load(accessLevel, showModalProgress) {
         }
     })
 
-    return loadChain
+    return loadPromise
 }
 
 /**
