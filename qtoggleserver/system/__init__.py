@@ -1,5 +1,6 @@
 import logging
 import os
+import subprocess
 
 import psutil
 
@@ -9,6 +10,17 @@ from . import battery, conf, date, dns, fwupdate, net, storage, temperature
 
 
 logger = logging.getLogger(__name__)
+
+
+def is_setup_mode() -> bool:
+    if not settings.system.setup_mode_cmd:
+        return False
+
+    try:
+        subprocess.check_call(settings.system.setup_mode_cmd, stderr=subprocess.STDOUT, shell=True)
+        return True
+    except subprocess.CalledProcessError:
+        return False
 
 
 def reboot() -> None:

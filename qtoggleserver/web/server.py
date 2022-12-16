@@ -134,7 +134,8 @@ def _make_routing_table() -> list[URLSpec]:
     # Default 404 API handler
 
     handlers_list += [
-        URLSpec(r'^/api/.*$', handlers.NoSuchFunctionHandler)
+        URLSpec(r'^/api/.*$', handlers.NoSuchFunctionHandler),
+        URLSpec(r'^/.*$', handlers.NotFoundHandler),
     ]
 
     return handlers_list
