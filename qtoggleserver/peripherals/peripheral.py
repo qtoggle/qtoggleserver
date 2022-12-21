@@ -2,7 +2,6 @@ import abc
 import asyncio
 import functools
 import inspect
-import logging
 
 from typing import Any, Callable, Optional, Union
 
@@ -10,8 +9,7 @@ from qtoggleserver.core import ports as core_ports
 from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import logging as logging_utils
 
-
-logger = logging.getLogger(__name__)
+from . import logger
 
 
 class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
@@ -21,8 +19,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     logger = logger
 
     def __init__(self, *, name: Optional[str] = None, **kwargs) -> None:
-        logging_utils.LoggableMixin.__init__(self, name, self.logger)
-
+        self._internal_id: str = hex(id(self))[2:]
         self._name: Optional[str] = name
         self._ports: list[core_ports.BasePort] = []
         self._enabled: bool = False
@@ -30,11 +27,13 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._runner: Optional[asyncio_utils.ThreadedRunner] = None
         self._port_update_task: Optional[asyncio.Task] = None
 
+        logging_utils.LoggableMixin.__init__(self, name or self._internal_id, self.logger)
+
     def __str__(self) -> str:
         return f'peripheral {self.get_id()}'
 
     def get_id(self) -> str:
-        return self.get_name() or f'{self.__class__.__name__}({hex(id(self))})'
+        return self.get_name() or f'{self.__class__.__name__}({self._internal_id})'
 
     def get_name(self) -> Optional[str]:
         return self._name
