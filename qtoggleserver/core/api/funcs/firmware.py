@@ -14,7 +14,7 @@ async def get_firmware(request: core_api.APIRequest) -> GenericJSONDict:
     current_version = await fwupdate.get_current_version()
     status = await fwupdate.get_status()
 
-    if status == fwupdate.STATUS_IDLE:
+    if status in (fwupdate.STATUS_IDLE, fwupdate.STATUS_ERROR):
         try:
             latest_version, latest_date, latest_url = await fwupdate.get_latest()
 
