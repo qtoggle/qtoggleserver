@@ -18,22 +18,23 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     logger = logger
 
-    def __init__(self, *, name: Optional[str] = None, **kwargs) -> None:
-        self._internal_id: str = hex(id(self))[2:]
+    def __init__(self, *, name: Optional[str] = None, internal_id: Optional[str] = None, **kwargs) -> None:
         self._name: Optional[str] = name
+        self._internal_id: str = internal_id or hex(id(self))[2:]
         self._ports: list[core_ports.BasePort] = []
         self._enabled: bool = False
         self._online: bool = False
         self._runner: Optional[asyncio_utils.ThreadedRunner] = None
         self._port_update_task: Optional[asyncio.Task] = None
 
-        logging_utils.LoggableMixin.__init__(self, name or self._internal_id, self.logger)
+        logging_utils.LoggableMixin.__init__(self, self.get_id(), self.logger)
 
     def __str__(self) -> str:
         return f'peripheral {self.get_id()}'
 
     def get_id(self) -> str:
-        return self.get_name() or f'{self.__class__.__name__}({self._internal_id})'
+        # If peripheral has a name, we always use it as id.
+        return self.get_name() or self._internal_id
 
     def get_name(self) -> Optional[str]:
         return self._name
