@@ -101,8 +101,7 @@ async def init() -> None:
 
         logger.debug('loaded virtual port settings for %s', entry['id'])
 
-    # Use raise_on_error=False because we prefer a partial successful startup rather than a failed one
-    await core_ports.load(all_port_args(), raise_on_error=False)
+    await core_ports.load(all_port_args())
 
 
 async def reset() -> None:

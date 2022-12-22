@@ -1,5 +1,6 @@
 import abc
 import asyncio
+import builtins
 import functools
 import inspect
 
@@ -18,9 +19,9 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     logger = logger
 
-    def __init__(self, *, name: Optional[str] = None, internal_id: Optional[str] = None, **kwargs) -> None:
+    def __init__(self, *, name: Optional[str] = None, id: Optional[str] = None, **kwargs) -> None:
         self._name: Optional[str] = name
-        self._internal_id: str = internal_id or hex(id(self))[2:]
+        self._id: str = id or name or hex(builtins.id(self))[2:]
         self._ports: list[core_ports.BasePort] = []
         self._enabled: bool = False
         self._online: bool = False
@@ -33,8 +34,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return f'peripheral {self.get_id()}'
 
     def get_id(self) -> str:
-        # If peripheral has a name, we always use it as id.
-        return self.get_name() or self._internal_id
+        return self._id
 
     def get_name(self) -> Optional[str]:
         return self._name
