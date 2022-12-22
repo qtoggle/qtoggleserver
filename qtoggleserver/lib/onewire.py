@@ -13,9 +13,6 @@ W1_DEVICES_PATH = '/sys/bus/w1/devices'
 SLAVE_FILE_NAME = 'w1_slave'
 
 
-logger = logging.getLogger(__name__)
-
-
 class OneWireException(Exception):
     pass
 
@@ -31,9 +28,9 @@ class OneWireTimeout(OneWireException):
 
 
 class OneWirePeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
-    logger = logger
-
     TIMEOUT = 5  # seconds
+
+    logger = logging.getLogger(__name__)
 
     def __init__(self, *, address: str, **kwargs) -> None:
         super().__init__(**kwargs)
