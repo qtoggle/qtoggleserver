@@ -21,7 +21,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def __init__(self, *, name: Optional[str] = None, id: Optional[str] = None, **kwargs) -> None:
         self._name: Optional[str] = name
-        self._id: str = id or name or hex(builtins.id(self))[2:]
+        self._id: str = id or name or f'p{hex(builtins.id(self))[2:]}'
         self._ports: list[core_ports.BasePort] = []
         self._enabled: bool = False
         self._online: bool = False

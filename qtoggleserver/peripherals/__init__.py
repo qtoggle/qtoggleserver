@@ -32,7 +32,7 @@ def get_all() -> list[Peripheral]:
 
 
 def get_all_with_args() -> list[tuple[Peripheral, GenericJSONDict]]:
-    return [(v[0], dict(v[1], id=v[0].get_id())) for v in _registered_peripherals.values()]
+    return [(v[0], dict(v[1], id=v[0].get_id(), name=v[0].get_name())) for v in _registered_peripherals.values()]
 
 
 def get(peripheral_id: str) -> Optional[Peripheral]:
@@ -54,14 +54,11 @@ def get_args(peripheral_id: str) -> Optional[dict]:
 
 
 async def add(peripheral_args: dict[str, Any], static: bool = False) -> Peripheral:
-    if not static:
-        if not (peripheral_args.get('name') or peripheral_args.get('internal_id')):
-            raise ValueError('Dynamic peripherals must have either name or internal_id set')
-
     args = dict(peripheral_args)
     class_path = args.pop('driver')
+    args.pop('static', None)
 
-    logger.debug('loading peripheral %s', class_path)
+    logger.debug('creating peripheral with driver "%s"', class_path)
     try:
         peripheral_class = dynload_utils.load_attr(class_path)
     except Exception:
@@ -72,12 +69,14 @@ async def add(peripheral_args: dict[str, Any], static: bool = False) -> Peripher
     _registered_peripherals[p.get_id()] = p, dict(peripheral_args, static=static)
 
     if not static:
+        peripheral_args = dict(peripheral_args)
+        peripheral_args.pop('static', None)
         await persist.replace('peripherals', p.get_id(), peripheral_args)
 
     return p
 
 
-async def remove(peripheral_id: str) -> None:
+async def remove(peripheral_id: str, persisted_data=True) -> None:
     p, args = _registered_peripherals[peripheral_id]
 
     p.debug('cleaning up')
@@ -86,7 +85,7 @@ async def remove(peripheral_id: str) -> None:
 
     logger.debug('peripheral %s removed', peripheral_id)
 
-    if not args.get('static'):
+    if persisted_data:
         await persist.remove('peripherals', filt={'id': peripheral_id})
 
 
@@ -119,6 +118,6 @@ async def init() -> None:
 
 
 async def cleanup() -> None:
-    tasks = [asyncio.create_task(remove(p_id)) for p_id in _registered_peripherals.keys()]
+    tasks = [asyncio.create_task(remove(p_id, persisted_data=False)) for p_id in _registered_peripherals.keys()]
     if tasks:
         await asyncio.wait(tasks)

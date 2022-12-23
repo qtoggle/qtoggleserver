@@ -42,7 +42,7 @@ async def delete_peripheral(request: core_api.APIRequest, peripheral_id: str) ->
         raise core_api.APIError(400, 'peripheral-not-removable')
 
     await peripherals.cleanup_ports(p, persisted_data=True)
-    await peripherals.remove(peripheral_id)
+    await peripherals.remove(peripheral_id, persisted_data=True)
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
@@ -55,10 +55,12 @@ async def put_peripherals(request: core_api.APIRequest, params: GenericJSONList)
         if args.get('static'):
             continue
         await peripherals.cleanup_ports(p, persisted_data=True)
-        await peripherals.remove(p.get_id())
+        await peripherals.remove(p.get_id(), persisted_data=True)
 
     peripheral_list = []
     for args in params:
+        if args.get('static'):
+            continue
         p = await peripherals.add(args)
         peripheral_list.append(p)
 
