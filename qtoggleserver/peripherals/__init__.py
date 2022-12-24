@@ -77,7 +77,7 @@ async def add(peripheral_args: dict[str, Any], static: bool = False) -> Peripher
     return p
 
 
-async def remove(peripheral_id: str, persisted_data=True) -> None:
+async def remove(peripheral_id: str, persisted_data: bool = True) -> None:
     p, args = _registered_peripherals[peripheral_id]
 
     p.debug('cleaning up')
