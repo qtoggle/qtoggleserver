@@ -10,7 +10,8 @@ from qtoggleserver.core.expressions import (
     PortValueUnavailable,
     various,
 )
-from tests.qtoggleserver.mock import MockExpression, MockPortRef, MockPortValue
+
+from tests.qtoggleserver.mock.expressions import MockExpression, MockPortRef, MockPortValue
 
 
 async def test_available_literal(literal_three, literal_false, dummy_eval_context):

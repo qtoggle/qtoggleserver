@@ -58,15 +58,11 @@ async def add(peripheral_args: dict[str, Any], static: bool = False) -> Peripher
     class_path = args.pop('driver')
     args.pop('static', None)
 
-    peripheral_class = class_path
-    if isinstance(peripheral_class, str):
-        logger.debug('creating peripheral with driver "%s"', class_path)
-        try:
-            peripheral_class = dynload_utils.load_attr(class_path)
-        except Exception:
-            raise NoSuchDriver(class_path)
-    else:
-        logger.debug('creating peripheral with driver "%s.%s"', peripheral_class.__module__, peripheral_class.__name__)
+    logger.debug('creating peripheral with driver "%s"', class_path)
+    try:
+        peripheral_class = dynload_utils.load_attr(class_path)
+    except Exception:
+        raise NoSuchDriver(class_path)
 
     p = peripheral_class(**args)
     p.debug('initializing')

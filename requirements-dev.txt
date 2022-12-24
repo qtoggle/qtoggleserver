@@ -8,5 +8,4 @@ pre-commit
 pytest
 pytest-asyncio
 pytest-mock
-pytest-tornasync
 testing.postgresql

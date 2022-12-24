@@ -1,7 +1,8 @@
 import pytest
 
 from qtoggleserver.core.expressions import ROLE_VALUE, EvalSkipped, Function, InvalidNumberOfArguments, timeprocessing
-from tests.qtoggleserver.mock import MockExpression
+
+from tests.qtoggleserver.mock.expressions import MockExpression
 
 
 async def test_delay(literal_one_thousand, dummy_eval_context, later_eval_context):
