@@ -133,5 +133,18 @@ async def mock_peripheral2() -> MockPeripheral:
 
 
 @pytest.fixture
+async def mock_peripheral1() -> MockPeripheral:
+    peripheral = await peripherals.add(
+        {
+            'driver': 'tests.qtoggleserver.mock.peripherals.MockPeripheral',
+            'dummy_param': 'dummy_value1',
+            'name': 'peripheral1',
+        }
+    )
+    yield peripheral
+    await peripherals.remove(peripheral.get_id(), persisted_data=True)
+
+
+@pytest.fixture
 def mock_api_request_maker() -> Callable:
     return MockAPIRequest

@@ -29,6 +29,7 @@ async def post_peripherals(request: core_api.APIRequest, params: GenericJSONDict
 
     params = dict(params)
     params['id'] = peripheral.get_id()
+    params['static'] = False
     return params
 
 

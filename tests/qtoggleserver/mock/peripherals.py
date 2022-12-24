@@ -1,9 +1,16 @@
 from typing import Any, Union
 
-from qtoggleserver.core import ports as core_ports
-from qtoggleserver.peripherals import Peripheral
+from core.typing import NullablePortValue
 
-from tests.qtoggleserver.mock.ports import MockBooleanPort, MockNumberPort
+from qtoggleserver.core import ports as core_ports
+from qtoggleserver.peripherals import Peripheral, PeripheralPort
+
+
+class MockPeripheralPort(PeripheralPort):
+    TYPE = core_ports.TYPE_BOOLEAN
+
+    async def read_value(self) -> NullablePortValue:
+        return False
 
 
 class MockPeripheral(Peripheral):
@@ -14,13 +21,11 @@ class MockPeripheral(Peripheral):
     async def make_port_args(self) -> list[Union[dict[str, Any], type[core_ports.BasePort]]]:
         return [
             {
-                'driver': MockBooleanPort,
-                'port_id': 'bid1',
-                'value': False,
+                'driver': MockPeripheralPort,
+                'id': 'id1',
             },
             {
-                'driver': MockNumberPort,
-                'port_id': 'nid1',
-                'value': 1,
+                'driver': MockPeripheralPort,
+                'id': 'id2',
             },
         ]
