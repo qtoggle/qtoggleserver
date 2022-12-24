@@ -1,8 +1,7 @@
 from typing import Any, Union
 
-from core.typing import NullablePortValue
-
 from qtoggleserver.core import ports as core_ports
+from qtoggleserver.core.typing import NullablePortValue
 from qtoggleserver.peripherals import Peripheral, PeripheralPort
 
 
