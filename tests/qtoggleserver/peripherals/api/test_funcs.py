@@ -39,18 +39,21 @@ class TestGetPeripherals:
 
     async def test_normal_user_permissions(self, mock_api_request_maker, mock_peripheral1, mock_peripheral2):
         request = mock_api_request_maker('GET', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_NORMAL)
-        with pytest.raises(core_api.APIError, match='forbidden'):
+        with pytest.raises(core_api.APIError, match='forbidden') as e:
             await peripherals_api_funcs.get_peripherals(request)
+        assert e.value.status == 403
 
     async def test_viewonly_user_permissions(self, mock_api_request_maker, mock_peripheral1, mock_peripheral2):
         request = mock_api_request_maker('GET', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_VIEWONLY)
-        with pytest.raises(core_api.APIError, match='forbidden'):
+        with pytest.raises(core_api.APIError, match='forbidden') as e:
             await peripherals_api_funcs.get_peripherals(request)
+        assert e.value.status == 403
 
     async def test_anonymous_user_permissions(self, mock_api_request_maker, mock_peripheral1, mock_peripheral2):
         request = mock_api_request_maker('GET', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_NONE)
-        with pytest.raises(core_api.APIError, match='authentication-required'):
+        with pytest.raises(core_api.APIError, match='authentication-required') as e:
             await peripherals_api_funcs.get_peripherals(request)
+        assert e.value.status == 401
 
 
 class TestPostPeripherals:
@@ -140,33 +143,55 @@ class TestPostPeripherals:
         assert result.pop('id')
         assert result == payload
 
+    async def test_no_such_driver(self, mock_api_request_maker, mock_peripheral1):
+        payload = dict(MOCK_PERIPHERAL2_PAYLOAD)
+        payload.pop('static')
+        payload['driver'] = 'does.not.exist'
+        request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_ADMIN)
+
+        with pytest.raises(core_api.APIError, match='no-such-driver') as e:
+            await peripherals_api_funcs.post_peripherals(request, payload)
+        assert e.value.status == 404
+
+    async def test_duplicate_peripheral(self, mock_api_request_maker, mock_peripheral1):
+        payload = dict(MOCK_PERIPHERAL1_PAYLOAD)
+        payload.pop('static')
+        request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_ADMIN)
+
+        with pytest.raises(core_api.APIError, match='duplicate-peripheral') as e:
+            await peripherals_api_funcs.post_peripherals(request, payload)
+        assert e.value.status == 400
+
     async def test_normal_user_permissions(self, mock_api_request_maker, mock_peripheral1):
         payload = dict(MOCK_PERIPHERAL2_PAYLOAD)
         payload.pop('static')
         request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_NORMAL)
 
-        with pytest.raises(core_api.APIError, match='forbidden'):
+        with pytest.raises(core_api.APIError, match='forbidden') as e:
             await peripherals_api_funcs.post_peripherals(request, payload)
+        assert e.value.status == 403
 
     async def test_viewonly_user_permissions(self, mock_api_request_maker, mock_peripheral1):
         payload = dict(MOCK_PERIPHERAL2_PAYLOAD)
         payload.pop('static')
         request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_VIEWONLY)
 
-        with pytest.raises(core_api.APIError, match='forbidden'):
+        with pytest.raises(core_api.APIError, match='forbidden') as e:
             await peripherals_api_funcs.post_peripherals(request, payload)
+        assert e.value.status == 403
 
     async def test_anonymous_user_permissions(self, mock_api_request_maker, mock_peripheral1):
         payload = dict(MOCK_PERIPHERAL2_PAYLOAD)
         payload.pop('static')
         request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_NONE)
 
-        with pytest.raises(core_api.APIError, match='authentication-required'):
+        with pytest.raises(core_api.APIError, match='authentication-required') as e:
             await peripherals_api_funcs.post_peripherals(request, payload)
+        assert e.value.status == 401
 
 
 class TestDeletePeripheral:
-    async def test_ok(self, mocker, mock_api_request_maker, mock_peripheral1):
+    async def test_ok(self, mock_api_request_maker, mock_peripheral1, mocker):
         request = mock_api_request_maker(
             'DELETE', f'/api/peripherals/{mock_peripheral1.get_id()}', access_level=core_api.ACCESS_LEVEL_ADMIN
         )
@@ -182,22 +207,25 @@ class TestDeletePeripheral:
         request = mock_api_request_maker(
             'DELETE', f'/api/peripherals/{mock_peripheral1.get_id()}', access_level=core_api.ACCESS_LEVEL_NORMAL
         )
-        with pytest.raises(core_api.APIError, match='forbidden'):
+        with pytest.raises(core_api.APIError, match='forbidden') as e:
             await peripherals_api_funcs.delete_peripheral(request, mock_peripheral1.get_id())
+        assert e.value.status == 403
 
     async def test_viewonly_user_permissions(self, mock_api_request_maker, mock_peripheral1):
         request = mock_api_request_maker(
             'DELETE', f'/api/peripherals/{mock_peripheral1.get_id()}', access_level=core_api.ACCESS_LEVEL_VIEWONLY
         )
-        with pytest.raises(core_api.APIError, match='forbidden'):
+        with pytest.raises(core_api.APIError, match='forbidden') as e:
             await peripherals_api_funcs.delete_peripheral(request, mock_peripheral1.get_id())
+        assert e.value.status == 403
 
     async def test_anonymous_user_permissions(self, mock_api_request_maker, mock_peripheral1):
         request = mock_api_request_maker(
             'DELETE', f'/api/peripherals/{mock_peripheral1.get_id()}', access_level=core_api.ACCESS_LEVEL_NONE
         )
-        with pytest.raises(core_api.APIError, match='authentication-required'):
+        with pytest.raises(core_api.APIError, match='authentication-required') as e:
             await peripherals_api_funcs.delete_peripheral(request, mock_peripheral1.get_id())
+        assert e.value.status == 401
 
 
 class TestPutPeripherals:
@@ -234,19 +262,22 @@ class TestPutPeripherals:
         request = mock_api_request_maker(
             'PUT', f'/api/peripherals', access_level=core_api.ACCESS_LEVEL_NORMAL
         )
-        with pytest.raises(core_api.APIError, match='forbidden'):
+        with pytest.raises(core_api.APIError, match='forbidden') as e:
             await peripherals_api_funcs.put_peripherals(request, [])
+        assert e.value.status == 403
 
     async def test_viewonly_user_permissions(self, mock_api_request_maker, mock_peripheral1):
         request = mock_api_request_maker(
             'PUT', f'/api/peripherals', access_level=core_api.ACCESS_LEVEL_VIEWONLY
         )
-        with pytest.raises(core_api.APIError, match='forbidden'):
+        with pytest.raises(core_api.APIError, match='forbidden') as e:
             await peripherals_api_funcs.put_peripherals(request, [])
+        assert e.value.status == 403
 
     async def test_anonymous_user_permissions(self, mock_api_request_maker, mock_peripheral1):
         request = mock_api_request_maker(
             'PUT', f'/api/peripherals', access_level=core_api.ACCESS_LEVEL_NONE
         )
-        with pytest.raises(core_api.APIError, match='authentication-required'):
+        with pytest.raises(core_api.APIError, match='authentication-required') as e:
             await peripherals_api_funcs.put_peripherals(request, [])
+        assert e.value.status == 401

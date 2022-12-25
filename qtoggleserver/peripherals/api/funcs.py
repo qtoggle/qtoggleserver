@@ -18,14 +18,23 @@ async def get_peripherals(request: core_api.APIRequest) -> GenericJSONList:
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def post_peripherals(request: core_api.APIRequest, params: GenericJSONDict) -> GenericJSONDict:
     core_api_schema.validate(params, peripherals_api_schema.POST_PERIPHERALS)
+
+    name = params.get('name')
+    if name and peripherals.get(name):
+        raise core_api.APIError(400, 'duplicate-peripheral')
+
     try:
         peripheral = await peripherals.add(params)
     except peripherals.NoSuchDriver:
-        raise core_api.APIError(400, 'driver-not-found')
+        raise core_api.APIError(404, 'no-such-driver')
     except Exception as e:
         raise core_api.APIError(400, 'invalid-request', details=str(e))
 
-    await peripherals.init_ports(peripheral)
+    try:
+        await peripherals.init_ports(peripheral)
+    except Exception:
+        await peripherals.remove(peripheral.get_id())
+        raise
 
     params = dict(params)
     params['id'] = peripheral.get_id()

@@ -65,6 +65,9 @@ async def add(peripheral_args: dict[str, Any], static: bool = False) -> Peripher
         raise NoSuchDriver(class_path)
 
     p = peripheral_class(**args)
+    if p.get_id() in _registered_peripherals:
+        raise PeripheralException(f'Peripheral {p.get_id()} already exists')
+
     p.debug('initializing')
     await p.handle_init()
     _registered_peripherals[p.get_id()] = p, dict(peripheral_args, static=static)
