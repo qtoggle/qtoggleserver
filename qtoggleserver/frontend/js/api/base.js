@@ -60,12 +60,12 @@ export class APIError extends Error {
      * @returns {qtoggle.api.base.APIError}
      */
     static fromHTTPResponse(data, status, msg) {
-        let errorCode = data.error || msg
+        let errorCode = data['error'] || msg
         let pretty = errorCode
         let params = ObjectUtils.copy(data, /* deep = */ true)
         delete params['error']
 
-        if (data.error) {
+        if (data['error']) {
             /* Look through known errors and see if we can find a match */
             APIConstants.KNOWN_ERRORS.some(function (ke) {
                 if (ke.code !== data['error']) {
@@ -73,6 +73,10 @@ export class APIError extends Error {
                 }
 
                 if (ke.status && ke.status !== status) {
+                    return
+                }
+
+                if (!(ke.fields || []).every(f => data[f])) {
                     return
                 }
 

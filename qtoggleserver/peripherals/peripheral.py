@@ -7,6 +7,7 @@ import inspect
 from typing import Any, Callable, Optional, Union
 
 from qtoggleserver.core import ports as core_ports
+from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import logging as logging_utils
 
@@ -20,7 +21,13 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     logger = logger
 
     def __init__(
-        self, *, params: dict[str, Any], name: Optional[str] = None, id: Optional[str] = None, **kwargs
+        self,
+        *,
+        params: dict[str, Any],
+        name: Optional[str] = None,
+        id: Optional[str] = None,
+        static: bool = False,
+        **kwargs
     ) -> None:
         sorted_params = self._sorted_tuples_dict(params)
         auto_id_to_hash = f'{self.__class__.__module__}.{self.__class__.__name__}:{name}:{sorted_params}'
@@ -29,6 +36,8 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._params: dict[str, Any] = params
         self._name: Optional[str] = name
         self._id: str = name or id or auto_id  # name will always be used as id, if supplied
+        self._static: bool = static
+
         self._ports: list[core_ports.BasePort] = []
         self._enabled: bool = False
         self._online: bool = False
@@ -39,7 +48,8 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     @staticmethod
     def _sorted_tuples_dict(params: dict[str, Any]) -> tuple:
-        def dict_reorder(d):
+
+        def dict_reorder(d: dict) -> tuple:
             return tuple((k, dict_reorder(v)) if isinstance(v, dict) else v for k, v in sorted(d.items()))
 
         return dict_reorder(params)
@@ -52,6 +62,15 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def get_name(self) -> Optional[str]:
         return self._name
+
+    def get_params(self) -> dict[str, Any]:
+        return self._params
+
+    def is_static(self) -> bool:
+        return self._static
+
+    def to_json(self) -> GenericJSONDict:
+        return dict(self._params, id=self.get_id(), static=self.is_static(), name=self.get_name())
 
     async def get_port_args(self) -> list[dict[str, Any]]:
         port_args = self.make_port_args()

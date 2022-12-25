@@ -6,7 +6,7 @@ from qtoggleserver.peripherals.api import funcs as peripherals_api_funcs
 from tests.qtoggleserver.mock.peripherals import MockPeripheral
 
 
-MOCK_PERIPHERAL1_PAYLOAD = {
+MOCK_PERIPHERAL1_DATA = {
     'driver': 'tests.qtoggleserver.mock.peripherals.MockPeripheral',
     'dummy_param': 'dummy_value1',
     'name': 'peripheral1',
@@ -14,7 +14,7 @@ MOCK_PERIPHERAL1_PAYLOAD = {
     'static': False
 }
 
-MOCK_PERIPHERAL2_PAYLOAD = {
+MOCK_PERIPHERAL2_DATA = {
     'driver': 'tests.qtoggleserver.mock.peripherals.MockPeripheral',
     'dummy_param': 'dummy_value2',
     'name': 'peripheral2',
@@ -22,7 +22,7 @@ MOCK_PERIPHERAL2_PAYLOAD = {
     'static': False
 }
 
-MOCK_PERIPHERAL3_PAYLOAD = {
+MOCK_PERIPHERAL3_DATA = {
     'driver': 'tests.qtoggleserver.mock.peripherals.MockPeripheral',
     'dummy_param': 'dummy_value3',
     'name': 'peripheral3',
@@ -35,7 +35,7 @@ class TestGetPeripherals:
     async def test_ok(self, mock_api_request_maker, mock_peripheral1, mock_peripheral2):
         request = mock_api_request_maker('GET', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_ADMIN)
         result = await peripherals_api_funcs.get_peripherals(request)
-        assert result == [MOCK_PERIPHERAL1_PAYLOAD, MOCK_PERIPHERAL2_PAYLOAD]
+        assert result == [MOCK_PERIPHERAL1_DATA, MOCK_PERIPHERAL2_DATA]
 
     async def test_normal_user_permissions(self, mock_api_request_maker, mock_peripheral1, mock_peripheral2):
         request = mock_api_request_maker('GET', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_NORMAL)
@@ -59,11 +59,11 @@ class TestGetPeripherals:
 class TestPostPeripherals:
     async def test_ok_with_name_and_id(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
-            name=MOCK_PERIPHERAL2_PAYLOAD['name'],
-            dummy_param=MOCK_PERIPHERAL2_PAYLOAD['dummy_param'],
+            name=MOCK_PERIPHERAL2_DATA['name'],
+            dummy_param=MOCK_PERIPHERAL2_DATA['dummy_param'],
         )
 
-        payload = dict(MOCK_PERIPHERAL2_PAYLOAD)
+        payload = dict(MOCK_PERIPHERAL2_DATA)
         payload.pop('static')
         request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_ADMIN)
 
@@ -74,15 +74,15 @@ class TestPostPeripherals:
         spy_add.assert_called_once_with(payload)
         spy_init_ports.assert_called_once_with(mock_peripheral2)
 
-        assert result == MOCK_PERIPHERAL2_PAYLOAD
+        assert result == MOCK_PERIPHERAL2_DATA
 
     async def test_ok_with_name(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
-            name=MOCK_PERIPHERAL2_PAYLOAD['name'],
-            dummy_param=MOCK_PERIPHERAL2_PAYLOAD['dummy_param'],
+            name=MOCK_PERIPHERAL2_DATA['name'],
+            dummy_param=MOCK_PERIPHERAL2_DATA['dummy_param'],
         )
 
-        payload = dict(MOCK_PERIPHERAL2_PAYLOAD)
+        payload = dict(MOCK_PERIPHERAL2_DATA)
         payload.pop('static')
         payload.pop('id')
         request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_ADMIN)
@@ -94,15 +94,15 @@ class TestPostPeripherals:
         spy_add.assert_called_once_with(payload)
         spy_init_ports.assert_called_once_with(mock_peripheral2)
 
-        assert result == MOCK_PERIPHERAL2_PAYLOAD
+        assert result == MOCK_PERIPHERAL2_DATA
 
     async def test_ok_with_id(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
-            name=MOCK_PERIPHERAL2_PAYLOAD['name'],
-            dummy_param=MOCK_PERIPHERAL2_PAYLOAD['dummy_param'],
+            id=MOCK_PERIPHERAL2_DATA['id'],
+            dummy_param=MOCK_PERIPHERAL2_DATA['dummy_param'],
         )
 
-        payload = dict(MOCK_PERIPHERAL2_PAYLOAD)
+        payload = dict(MOCK_PERIPHERAL2_DATA)
         payload.pop('static')
         payload.pop('name')
         request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_ADMIN)
@@ -114,17 +114,12 @@ class TestPostPeripherals:
         spy_add.assert_called_once_with(payload)
         spy_init_ports.assert_called_once_with(mock_peripheral2)
 
-        payload = dict(MOCK_PERIPHERAL2_PAYLOAD)
-        payload.pop('name')
-        assert result == payload
+        assert result == dict(payload, name=None, static=False)
 
     async def test_ok_no_name_no_id(self, mock_api_request_maker, mock_peripheral1, mocker):
-        mock_peripheral2 = MockPeripheral(
-            name=MOCK_PERIPHERAL2_PAYLOAD['name'],
-            dummy_param=MOCK_PERIPHERAL2_PAYLOAD['dummy_param'],
-        )
+        mock_peripheral2 = MockPeripheral(dummy_param=MOCK_PERIPHERAL2_DATA['dummy_param'])
 
-        payload = dict(MOCK_PERIPHERAL2_PAYLOAD)
+        payload = dict(MOCK_PERIPHERAL2_DATA)
         payload.pop('static')
         payload.pop('name')
         payload.pop('id')
@@ -137,14 +132,11 @@ class TestPostPeripherals:
         spy_add.assert_called_once_with(payload)
         spy_init_ports.assert_called_once_with(mock_peripheral2)
 
-        payload = dict(MOCK_PERIPHERAL2_PAYLOAD)
-        payload.pop('name')
-        payload.pop('id')
         assert result.pop('id')
-        assert result == payload
+        assert result == dict(payload, name=None, static=False)
 
     async def test_no_such_driver(self, mock_api_request_maker, mock_peripheral1):
-        payload = dict(MOCK_PERIPHERAL2_PAYLOAD)
+        payload = dict(MOCK_PERIPHERAL2_DATA)
         payload.pop('static')
         payload['driver'] = 'does.not.exist'
         request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_ADMIN)
@@ -154,7 +146,7 @@ class TestPostPeripherals:
         assert e.value.status == 404
 
     async def test_duplicate_peripheral(self, mock_api_request_maker, mock_peripheral1):
-        payload = dict(MOCK_PERIPHERAL1_PAYLOAD)
+        payload = dict(MOCK_PERIPHERAL1_DATA)
         payload.pop('static')
         request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_ADMIN)
 
@@ -163,7 +155,7 @@ class TestPostPeripherals:
         assert e.value.status == 400
 
     async def test_normal_user_permissions(self, mock_api_request_maker, mock_peripheral1):
-        payload = dict(MOCK_PERIPHERAL2_PAYLOAD)
+        payload = dict(MOCK_PERIPHERAL2_DATA)
         payload.pop('static')
         request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_NORMAL)
 
@@ -172,7 +164,7 @@ class TestPostPeripherals:
         assert e.value.status == 403
 
     async def test_viewonly_user_permissions(self, mock_api_request_maker, mock_peripheral1):
-        payload = dict(MOCK_PERIPHERAL2_PAYLOAD)
+        payload = dict(MOCK_PERIPHERAL2_DATA)
         payload.pop('static')
         request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_VIEWONLY)
 
@@ -181,7 +173,7 @@ class TestPostPeripherals:
         assert e.value.status == 403
 
     async def test_anonymous_user_permissions(self, mock_api_request_maker, mock_peripheral1):
-        payload = dict(MOCK_PERIPHERAL2_PAYLOAD)
+        payload = dict(MOCK_PERIPHERAL2_DATA)
         payload.pop('static')
         request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_NONE)
 
@@ -231,15 +223,15 @@ class TestDeletePeripheral:
 class TestPutPeripherals:
     async def test_ok(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
-            name=MOCK_PERIPHERAL2_PAYLOAD['name'],
-            dummy_param=MOCK_PERIPHERAL2_PAYLOAD['dummy_param'],
+            name=MOCK_PERIPHERAL2_DATA['name'],
+            dummy_param=MOCK_PERIPHERAL2_DATA['dummy_param'],
         )
         mock_peripheral3 = MockPeripheral(
-            name=MOCK_PERIPHERAL3_PAYLOAD['name'],
-            dummy_param=MOCK_PERIPHERAL3_PAYLOAD['dummy_param'],
+            name=MOCK_PERIPHERAL3_DATA['name'],
+            dummy_param=MOCK_PERIPHERAL3_DATA['dummy_param'],
         )
-        payload2 = dict(MOCK_PERIPHERAL2_PAYLOAD)
-        payload3 = dict(MOCK_PERIPHERAL3_PAYLOAD)
+        payload2 = dict(MOCK_PERIPHERAL2_DATA)
+        payload3 = dict(MOCK_PERIPHERAL3_DATA)
         payload2.pop('static')
         payload3.pop('static')
 

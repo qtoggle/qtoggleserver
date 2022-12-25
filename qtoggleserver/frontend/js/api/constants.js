@@ -33,7 +33,13 @@ export const KNOWN_ERRORS = [
     {
         status: 400,
         code: 'invalid-request',
-        pretty: gettext('Communication error (%(error)s).')
+        fields: ['details'],
+        pretty: gettext('Invalid request: %(details)s.')
+    },
+    {
+        status: 400,
+        code: 'invalid-request',
+        pretty: gettext('Invalid request.')
     },
     {
         status: 400,

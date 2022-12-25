@@ -14,6 +14,9 @@ class MockPeripheralPort(PeripheralPort):
 
 class MockPeripheral(Peripheral):
     def __init__(self, *, dummy_param: str, **kwargs) -> None:
+        kwargs = dict(kwargs)
+        kwargs.setdefault('driver', f'{self.__class__.__module__}.{self.__class__.__name__}')
+        kwargs.setdefault('params', dict(kwargs, dummy_param=dummy_param))
         self._dummy_param: str = dummy_param
         super().__init__(**kwargs)
 

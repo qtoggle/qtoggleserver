@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def get_peripherals(request: core_api.APIRequest) -> GenericJSONList:
-    return [p[1] for p in peripherals.get_all_with_args()]
+    return [p.to_json() for p in peripherals.get_all()]
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
@@ -29,28 +29,29 @@ async def post_peripherals(request: core_api.APIRequest, params: GenericJSONDict
         raise core_api.APIError(404, 'no-such-driver')
     except peripherals.DuplicatePeripheral:
         raise core_api.APIError(400, 'duplicate-peripheral')
+    except TypeError as e:
+        if 'arguments' in str(e):
+            raise core_api.APIError(400, 'invalid-field', field='params')
+        else:
+            raise core_api.APIError(400, 'invalid-request', details=str(e))
     except Exception as e:
         raise core_api.APIError(400, 'invalid-request', details=str(e))
 
     try:
         await peripherals.init_ports(peripheral)
-    except Exception:
+    except Exception as e:
         await peripherals.remove(peripheral.get_id())
-        raise
+        raise core_api.APIError(400, 'invalid-request', details=str(e))
 
-    params = dict(params)
-    params['id'] = peripheral.get_id()
-    params['static'] = False
-    return params
+    return peripheral.to_json()
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def delete_peripheral(request: core_api.APIRequest, peripheral_id: str) -> None:
-    args = peripherals.get_args(peripheral_id)
     p = peripherals.get(peripheral_id)
-    if not args:
+    if not p:
         raise core_api.APIError(404, 'no-such-peripheral')
-    if args.get('static'):
+    if p.is_static():
         raise core_api.APIError(400, 'peripheral-not-removable')
 
     await peripherals.cleanup_ports(p, persisted_data=True)
@@ -63,17 +64,17 @@ async def put_peripherals(request: core_api.APIRequest, params: GenericJSONList)
 
     logger.debug('restoring peripherals')
 
-    for p, args in peripherals.get_all_with_args():
-        if args.get('static'):
+    for p in peripherals.get_all():
+        if p.is_static():
             continue
         await peripherals.cleanup_ports(p, persisted_data=True)
         await peripherals.remove(p.get_id(), persisted_data=True)
 
     peripheral_list = []
-    for args in params:
-        if args.get('static'):
+    for par in params:
+        if par.pop('static', None):
             continue
-        p = await peripherals.add(args)
+        p = await peripherals.add(par)
         peripheral_list.append(p)
 
     for p in peripheral_list:
