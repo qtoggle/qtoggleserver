@@ -14,6 +14,7 @@ from qtoggleserver.core import expressions  # required to prevent partial import
 
 
 from qtoggleserver import peripherals  # isort: split
+from qtoggleserver.conf import settings
 from qtoggleserver.core import ports as core_ports
 
 from tests.qtoggleserver.mock.api import MockAPIRequest
@@ -23,6 +24,12 @@ from tests.qtoggleserver.mock.ports import MockBooleanPort, MockNumberPort
 
 
 tz_info = pytz.timezone('Europe/Bucharest')
+
+
+@pytest.fixture(scope='session', autouse=True)
+def init_settings():
+    settings.persist.driver = 'qtoggleserver.drivers.persist.JSONDriver'
+    settings.persist.file_path = None
 
 
 @pytest.fixture(scope='session')

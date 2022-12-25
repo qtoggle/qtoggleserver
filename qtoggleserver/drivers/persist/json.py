@@ -40,18 +40,21 @@ class DuplicateRecordId(JSONPersistError):
 class JSONDriver(BaseDriver):
     def __init__(
         self,
-        file_path: str = DEFAULT_FILE_PATH,
+        file_path: Optional[str] = DEFAULT_FILE_PATH,
         pretty_format: Optional[bool] = None,
         use_backup: bool = True,
         **kwargs
     ) -> None:
-        logger.debug('using file %s', file_path)
+        if file_path:
+            logger.debug('using file %s', file_path)
+        else:
+            logger.warning('using in-memory storage')
 
         # Pretty formatting follows general debug flag, by default
         if pretty_format is None:
             pretty_format = settings.debug
 
-        self._file_path: str = file_path
+        self._file_path: Optional[str] = file_path
         self._pretty_format: bool = pretty_format
         self._use_backup: bool = use_backup
 
@@ -225,11 +228,16 @@ class JSONDriver(BaseDriver):
 
         return str(max(int_ids) + 1)
 
-    def _get_backup_file_path(self) -> str:
+    def _get_backup_file_path(self) -> Optional[str]:
+        if not self._file_path:
+            return None
         path, ext = os.path.splitext(self._file_path)
         return f'{path}_backup{ext}'
 
     def _load(self) -> UnindexedData:
+        if not self._file_path:
+            return {}
+
         logger.debug('loading from %s', self._file_path)
 
         try:
@@ -254,14 +262,22 @@ class JSONDriver(BaseDriver):
             logger.error('failed to load from %s: %s', self._file_path, e, exc_info=True)
 
             backup_file_path = self._get_backup_file_path()
-            logger.warning('loading from backup %s', backup_file_path)
+            if backup_file_path:
+                logger.warning('loading from backup %s', backup_file_path)
 
-            with open(backup_file_path, 'rb') as f:
-                return json_utils.loads(f.read(), allow_extended_types=True)
+                with open(backup_file_path, 'rb') as f:
+                    return json_utils.loads(f.read(), allow_extended_types=True)
+
+        return {}
 
     def _save(self, data: UnindexedData) -> None:
+        if not self._file_path:
+            return
+
         if self._use_backup and os.path.exists(self._file_path):
             backup_file_path = self._get_backup_file_path()
+            if not backup_file_path:
+                return
             logger.debug('backing up %s to %s', self._file_path, backup_file_path)
             os.rename(self._file_path, backup_file_path)
 
