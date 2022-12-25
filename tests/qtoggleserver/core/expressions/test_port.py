@@ -61,7 +61,7 @@ async def test_port_value_snapshot_value_transform_read(mock_num_port1):
     assert await mock_num_port1.read_transformed_value() == 50
 
 
-async def test_port_value_snapshot_value_transform_write(mocker, mock_num_port1):
+async def test_port_value_snapshot_value_transform_write(mock_num_port1, mocker):
     mock_num_port1.set_writable(True)
     mocker.patch.object(mock_num_port1, 'write_value')
 

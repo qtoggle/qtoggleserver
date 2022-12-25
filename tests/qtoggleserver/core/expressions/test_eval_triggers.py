@@ -4,7 +4,7 @@ import time
 from qtoggleserver.core import main
 
 
-async def test_eval_trigger_set_expression(mocker, mock_num_port1, mock_num_port2):
+async def test_eval_trigger_set_expression(mock_num_port1, mock_num_port2, mocker):
     mock_num_port1.set_last_read_value(4)
     mock_num_port2.set_last_read_value(5)
     mock_num_port2.set_writable(True)
@@ -15,7 +15,7 @@ async def test_eval_trigger_set_expression(mocker, mock_num_port1, mock_num_port
     mock_num_port2.transform_and_write_value.assert_called_once_with(40)
 
 
-async def test_eval_trigger_value_change(mocker, mock_num_port1, mock_num_port2):
+async def test_eval_trigger_value_change(mock_num_port1, mock_num_port2, mocker):
     mock_num_port1.set_last_read_value(4)
     mock_num_port2.set_last_read_value(5)
     mock_num_port2.set_writable(True)
@@ -29,7 +29,7 @@ async def test_eval_trigger_value_change(mocker, mock_num_port1, mock_num_port2)
     mock_num_port2.transform_and_write_value.assert_called_once_with(60)
 
 
-async def test_eval_trigger_value_change_self(mocker, mock_num_port1, mock_num_port2):
+async def test_eval_trigger_value_change_self(mock_num_port1, mock_num_port2, mocker):
     mock_num_port1.set_last_read_value(4)
     mock_num_port2.set_last_read_value(5)
     mock_num_port2.set_writable(True)
@@ -47,7 +47,7 @@ async def test_eval_trigger_value_change_self(mocker, mock_num_port1, mock_num_p
     mock_num_port2.transform_and_write_value.assert_called_once_with(30)
 
 
-# async def test_eval_trigger_second(freezer, mocker, mock_num_port1, dummy_utc_datetime):
+# async def test_eval_trigger_second(freezer, mock_num_port1, dummy_utc_datetime, mocker):
 #     dummy_utc_datetime = dummy_utc_datetime.replace(microsecond=0)
 #     freezer.move_to(dummy_utc_datetime)
 #
@@ -70,7 +70,7 @@ async def test_eval_trigger_value_change_self(mocker, mock_num_port1, mock_num_p
 #     mock_num_port1.transform_and_write_value.assert_called_once()
 #
 #
-# async def test_eval_trigger_millisecond(freezer, mocker, mock_num_port1):
+# async def test_eval_trigger_millisecond(freezer, mock_num_port1, mocker):
 #     mock_num_port1.set_last_read_value(4)
 #     mock_num_port1.set_writable(True)
 #     mocker.patch.object(mock_num_port1, 'transform_and_write_value')
@@ -79,7 +79,7 @@ async def test_eval_trigger_value_change_self(mocker, mock_num_port1, mock_num_p
 #     mock_num_port1.transform_and_write_value.assert_called_once()
 
 
-async def test_eval_trigger_ignore_disabled_port(mocker, mock_num_port1, mock_num_port2):
+async def test_eval_trigger_ignore_disabled_port(mock_num_port1, mock_num_port2, mocker):
     mock_num_port1.set_last_read_value(4)
     mock_num_port2.set_last_read_value(5)
     mock_num_port2.set_writable(True)
@@ -93,7 +93,7 @@ async def test_eval_trigger_ignore_disabled_port(mocker, mock_num_port1, mock_nu
     mock_num_port2.transform_and_write_value.assert_not_called()
 
 
-async def test_eval_trigger_ignore_inexistent_port(mocker, mock_num_port1, mock_num_port2):
+async def test_eval_trigger_ignore_inexistent_port(mock_num_port1, mock_num_port2, mocker):
     mock_num_port1.set_last_read_value(4)
     mock_num_port2.set_last_read_value(5)
     mock_num_port2.set_writable(True)
@@ -106,7 +106,7 @@ async def test_eval_trigger_ignore_inexistent_port(mocker, mock_num_port1, mock_
     mock_num_port2.transform_and_write_value.assert_not_called()
 
 
-async def test_asap_eval_paused(mocker, mock_num_port1, dummy_eval_context):
+async def test_asap_eval_paused(mock_num_port1, dummy_eval_context, mocker):
     mock_num_port1.set_writable(True)
     await mock_num_port1.set_attr('expression', 'MILLISECOND()')
     e = mock_num_port1.get_expression()
@@ -130,7 +130,7 @@ async def test_asap_eval_paused(mocker, mock_num_port1, dummy_eval_context):
     e.eval.assert_not_called()
 
 
-async def test_asap_eval_paused_value_change(mocker, mock_num_port1, mock_num_port2, dummy_eval_context):
+async def test_asap_eval_paused_value_change(mock_num_port1, mock_num_port2, dummy_eval_context, mocker):
     mock_num_port1.set_writable(True)
     mock_num_port2.set_last_read_value(4)
     await mock_num_port1.set_attr('expression', 'ADD(MILLISECOND(), $nid2)')

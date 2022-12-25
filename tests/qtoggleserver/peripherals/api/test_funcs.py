@@ -57,7 +57,7 @@ class TestGetPeripherals:
 
 
 class TestPostPeripherals:
-    async def test_ok_with_name_and_id(self, mocker, mock_api_request_maker, mock_peripheral1):
+    async def test_ok_with_name_and_id(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
             name=MOCK_PERIPHERAL2_PAYLOAD['name'],
             dummy_param=MOCK_PERIPHERAL2_PAYLOAD['dummy_param'],
@@ -76,7 +76,7 @@ class TestPostPeripherals:
 
         assert result == MOCK_PERIPHERAL2_PAYLOAD
 
-    async def test_ok_with_name(self, mocker, mock_api_request_maker, mock_peripheral1):
+    async def test_ok_with_name(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
             name=MOCK_PERIPHERAL2_PAYLOAD['name'],
             dummy_param=MOCK_PERIPHERAL2_PAYLOAD['dummy_param'],
@@ -96,7 +96,7 @@ class TestPostPeripherals:
 
         assert result == MOCK_PERIPHERAL2_PAYLOAD
 
-    async def test_ok_with_id(self, mocker, mock_api_request_maker, mock_peripheral1):
+    async def test_ok_with_id(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
             name=MOCK_PERIPHERAL2_PAYLOAD['name'],
             dummy_param=MOCK_PERIPHERAL2_PAYLOAD['dummy_param'],
@@ -118,7 +118,7 @@ class TestPostPeripherals:
         payload.pop('name')
         assert result == payload
 
-    async def test_ok_no_name_no_id(self, mocker, mock_api_request_maker, mock_peripheral1):
+    async def test_ok_no_name_no_id(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
             name=MOCK_PERIPHERAL2_PAYLOAD['name'],
             dummy_param=MOCK_PERIPHERAL2_PAYLOAD['dummy_param'],
@@ -229,7 +229,7 @@ class TestDeletePeripheral:
 
 
 class TestPutPeripherals:
-    async def test_ok(self, mocker, mock_api_request_maker, mock_peripheral1):
+    async def test_ok(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
             name=MOCK_PERIPHERAL2_PAYLOAD['name'],
             dummy_param=MOCK_PERIPHERAL2_PAYLOAD['dummy_param'],
