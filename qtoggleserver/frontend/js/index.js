@@ -27,6 +27,7 @@ import DashboardSection           from '$app/dashboard/dashboard-section.js'
 import DevicesSection             from '$app/devices/devices-section.js'
 import * as Events                from '$app/events.js'
 import LoginSection               from '$app/login/login-section.js'
+import PeripheralsSection         from '$app/peripherals/peripherals-section.js'
 import PortsSection               from '$app/ports/ports-section.js'
 import * as ClientSettings        from '$app/settings/client-settings.js'
 import SettingsSection            from '$app/settings/settings-section.js'
@@ -60,10 +61,12 @@ function handleAccessLevelChange(oldLevel, newLevel) {
     }
 
     let portsSection = PortsSection.getInstance()
+    let peripheralsSection = PeripheralsSection.getInstance()
     let settingsSection = SettingsSection.getInstance()
     let devicesSection = Config.slavesEnabled ? DevicesSection.getInstance() : null
 
     portsSection.setButtonVisibility(newLevel >= AuthAPI.ACCESS_LEVEL_ADMIN)
+    peripheralsSection.setButtonVisibility(newLevel >= AuthAPI.ACCESS_LEVEL_ADMIN)
     settingsSection.setButtonVisibility(newLevel >= AuthAPI.ACCESS_LEVEL_ADMIN)
     if (devicesSection) {
         devicesSection.setButtonVisibility(newLevel >= AuthAPI.ACCESS_LEVEL_ADMIN)
@@ -126,6 +129,7 @@ function registerSections() {
     if (Config.slavesEnabled) {
         Sections.register(DevicesSection)
     }
+    Sections.register(PeripheralsSection)
     Sections.register(SettingsSection)
     Sections.register(LoginSection)
 

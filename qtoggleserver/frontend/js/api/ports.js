@@ -53,10 +53,10 @@ export function patchPort(id, attrs, expectEventTimeout = null) {
  * @param {String} type the port type
  * @param {?Number} min a minimum port value
  * @param {?Number} max a maximum port value
- * @param {?Boolean} integer whether the port value must be a integer
+ * @param {?Boolean} integer whether the port value must be an integer
  * @param {?Number} step a step for port value validation
  * @param {?Number[]|?String[]} choices valid choices for the port value
- * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected,
+ * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected
  * @returns {Promise}
  */
 export function postPorts(id, type, min, max, integer, step, choices, expectEventTimeout = null) {

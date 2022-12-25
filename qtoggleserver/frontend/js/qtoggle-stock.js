@@ -20,6 +20,7 @@ Stocks.register('qtoggle', function () {
             'panel-group': 5,
             'panel': 6,
             'provisioning': 7,
+            'peripheral': 8,
             'widget-on-off-button': 18,
             'widget-slider': 19,
             'widget-on-off-indicator': 20,
