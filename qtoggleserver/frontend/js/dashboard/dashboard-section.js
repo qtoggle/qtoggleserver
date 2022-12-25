@@ -239,21 +239,25 @@ class DashboardSection extends Section {
         }
 
         /* Warn user of external edit */
-        if (!byCurrentSession && this.isCurrent()) {
-            let msg = gettext('The dashboard is currently being edited in another session.')
-            Toast.warning(msg)
-
-            let rootGroup = this.getMainPage()
-            let promise = Promise.resolve()
-            if (rootGroup.getNext()) {
-                promise = rootGroup.getNext().close()
+        if (!byCurrentSession) {
+            if (this.isCurrent()) {
+                let msg = gettext('The dashboard is currently being edited in another session.')
+                Toast.warning(msg)
             }
 
-            promise.then(function () {
-                /* Update all groups and panels */
-                rootGroup.fromJSON({children: panels})
-                rootGroup.updateUI(/* recursive = */ true)
-            })
+            let rootGroup = this.getMainPage()
+            if (rootGroup) {
+                let promise = Promise.resolve()
+                if (rootGroup.getNext()) {
+                    promise = rootGroup.getNext().close()
+                }
+
+                promise.then(function () {
+                    /* Update all groups and panels */
+                    rootGroup.fromJSON({children: panels})
+                    rootGroup.updateUI(/* recursive = */ true)
+                })
+            }
         }
     }
 

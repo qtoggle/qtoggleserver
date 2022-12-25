@@ -64,4 +64,7 @@ async def put_frontend(request: core_api.APIRequest, params: GenericJSONDict) ->
     logger.debug('restoring dashboard panels')
     await persist.set_value('dashboard_panels', dashboard_panels)
 
-    await core_events.trigger(DashboardUpdateEvent(request=request, panels=dashboard_panels))
+    # Don't supply a request to the DashboardUpdateEvent because the event isn't directly triggered by the current
+    # session, but rather an indirect consequence of restoring the frontend settings. This ensures that the current user
+    # will also benefit from an updated dashboard when he restores frontend from a backup.
+    await core_events.trigger(DashboardUpdateEvent(panels=dashboard_panels))
