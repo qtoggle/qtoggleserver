@@ -34,9 +34,9 @@ class MockPort(Port):
         return self._last_written_value
 
 
-class BooleanMockPort(MockPort):
+class MockBooleanPort(MockPort):
     TYPE = TYPE_BOOLEAN
 
 
-class NumberMockPort(MockPort):
+class MockNumberPort(MockPort):
     TYPE = TYPE_NUMBER

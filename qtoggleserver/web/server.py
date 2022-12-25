@@ -58,6 +58,10 @@ def _make_routing_table() -> list[URLSpec]:
 
         # Port values
         URLSpec(r'^/api/ports/(?P<port_id>[A-Za-z0-9_.-]+)/value/?$', handlers.PortValueHandler),
+
+        # Peripheral management
+        URLSpec(r'^/api/peripherals/?$', handlers.PeripheralsHandler),
+        URLSpec(r'^/api/peripherals/(?P<peripheral_id>[A-Za-z0-9_.-]+)/?$', handlers.PeripheralHandler),
     ]
 
     if settings.core.sequences_support:

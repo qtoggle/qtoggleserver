@@ -11,7 +11,14 @@ logger = logging.getLogger(__name__)
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def get_backup_endpoints(request: core_api.APIRequest) -> GenericJSONList:
-    endpoints = []
+    endpoints = [
+        {
+            'path': '/peripherals',
+            'display_name': 'Peripherals',
+            'restore_method': 'PUT',
+            'order': 15
+        }
+    ]
 
     if system_conf.can_write_conf_file():
         endpoints.append({

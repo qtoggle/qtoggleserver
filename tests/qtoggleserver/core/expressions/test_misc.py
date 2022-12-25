@@ -12,14 +12,14 @@ from qtoggleserver.core.expressions import (
 )
 
 
-async def test_parse_complex_expression(num_mock_port1, num_mock_port2):
-    num_mock_port1.set_last_read_value(5)
-    num_mock_port2.set_last_read_value(-4)
+async def test_parse_complex_expression(mock_num_port1, mock_num_port2):
+    mock_num_port1.set_last_read_value(5)
+    mock_num_port2.set_last_read_value(-4)
 
     context = EvalContext(
         port_values={
-            'nid1': num_mock_port1.get_last_read_value(),
-            'nid2': num_mock_port2.get_last_read_value()
+            'nid1': mock_num_port1.get_last_read_value(),
+            'nid2': mock_num_port2.get_last_read_value()
         },
         now_ms=0
     )
@@ -31,14 +31,14 @@ async def test_parse_complex_expression(num_mock_port1, num_mock_port2):
     assert round(await e.eval(context=context), 1) == 26.7
 
 
-async def test_parse_whitespace(num_mock_port1, num_mock_port2):
-    num_mock_port1.set_last_read_value(5)
-    num_mock_port2.set_last_read_value(-4)
+async def test_parse_whitespace(mock_num_port1, mock_num_port2):
+    mock_num_port1.set_last_read_value(5)
+    mock_num_port2.set_last_read_value(-4)
 
     context = EvalContext(
         port_values={
-            'nid1': num_mock_port1.get_last_read_value(),
-            'nid2': num_mock_port2.get_last_read_value()
+            'nid1': mock_num_port1.get_last_read_value(),
+            'nid2': mock_num_port2.get_last_read_value()
         },
         now_ms=0
     )

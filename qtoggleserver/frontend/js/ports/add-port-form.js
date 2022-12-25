@@ -50,7 +50,7 @@ class AddPortForm extends PageForm {
 
                     validate(id) {
                         if (!id.match(VALID_ID_REGEX)) {
-                            let msg = gettext('Only letters, digits and underscores are permitted.')
+                            let msg = gettext('Only letters, digits, underscores and dots are permitted.')
                             throw new ValidationError(msg)
                         }
                     }

@@ -271,18 +271,17 @@ async def cleanup_reverse() -> None:
 async def init_ports() -> None:
     logger.info('initializing ports')
 
-    # Load ports statically configured in settings
     await ports.init()
 
+    # Load ports statically configured in settings
+    await ports.load(settings.ports)
+
     # Peripheral ports
-    for peripheral in peripherals.all_peripherals():
+    for peripheral in peripherals.get_all():
         try:
-            port_args = await peripheral.get_port_args()
-            # Use raise_on_error=False because we prefer a partial successful startup rather than a failed one
-            loaded_ports = await ports.load(port_args, raise_on_error=False)
-            peripheral.set_ports(loaded_ports)
-        except Exception as e:
-            logger.error('failed to load ports of %s: %s', peripheral, e, exc_info=True)
+            await peripherals.init_ports(peripheral)
+        except Exception:
+            peripheral.error('failed to load ports of %s', peripheral, exc_info=True)
 
     # Load virtual ports
     await vports.init()

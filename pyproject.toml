@@ -7,14 +7,17 @@ per-file-ignores = [
 ]
 
 [tool.isort]
-profile = "black"
+profile = 'black'
 multi_line_output = 3
 py_version = 39
 line_length = 120
 lines_between_types = 1
 lines_after_imports = 2
 honor_noqa = true
+known_tests = ['tests']
+sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER', 'TESTS']
 
-[tpp.pytest.ini_options]
+[tool.pytest.ini_options]
 testpaths = ['tests/qtoggleserver']
+asyncio_mode = 'auto'
 addopts = '-v'

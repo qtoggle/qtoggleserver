@@ -1125,11 +1125,7 @@ class Port(BasePort, metaclass=abc.ABCMeta):
         self._internal: bool = False
 
 
-async def load(
-    port_args: list[dict[str, Any]],
-    raise_on_error: bool = True,
-    trigger_add: bool = True
-) -> list[BasePort]:
+async def load(port_args: list[dict[str, Any]], trigger_add: bool = True) -> list[BasePort]:
     port_driver_classes = {}
     ports = []
 
@@ -1137,11 +1133,7 @@ async def load(
     for ps in port_args:
         driver = ps.pop('driver', None)
         if not driver:
-            if raise_on_error:
-                raise PortLoadError('Missing port driver')
-
-            logger.error('ignoring port with no driver')
-            continue
+            raise PortLoadError('Missing port driver')
 
         if isinstance(driver, str):
             if driver not in port_driver_classes:
@@ -1149,11 +1141,7 @@ async def load(
                     logger.debug('loading port driver %s', driver)
                     port_driver_classes[driver] = dynload_utils.load_attr(driver)
                 except Exception as e:
-                    if raise_on_error:
-                        raise PortLoadError(f'Failed to load port driver {driver}') from e
-
-                    logger.error('failed to load port driver %s: %s', driver, e, exc_info=True)
-                    continue
+                    raise PortLoadError(f'Failed to load port driver {driver}') from e
 
             port_class = port_driver_classes[driver]
         else:
@@ -1173,10 +1161,7 @@ async def load(
 
             logger.debug('initialized %s (driver %s)', port, port_class_desc)
         except Exception as e:
-            if raise_on_error:
-                raise PortLoadError(f'Failed to initialize port from driver {port_class_desc}') from e
-
-            logger.error('failed to initialize port from driver %s: %s', port_class_desc, e, exc_info=True)
+            raise PortLoadError(f'Failed to initialize port from driver {port_class_desc}') from e
 
     # Map IDs
     for port in ports:
@@ -1189,27 +1174,16 @@ async def load(
             continue
 
         if new_id in _ports_by_id:
-            if raise_on_error:
-                raise PortLoadError(f'Cannot map port {old_id} to {new_id}: new id already exists')
-
-            logger.error('cannot map port %s to %s: new id already exists', old_id, new_id)
-            continue
+            raise PortLoadError(f'Cannot map port {old_id} to {new_id}: new id already exists')
 
         port = _ports_by_id.get(old_id)
         if not port:
-            if raise_on_error:
-                raise PortLoadError(f'Cannot map port {old_id} to {new_id}: no such port')
-
-            logger.error('cannot map port %s to %s: no such port', old_id, new_id)
-            continue
+            raise PortLoadError(f'Cannot map port {old_id} to {new_id}: no such port')
 
         try:
             port.map_id(new_id)
         except Exception as e:
-            if raise_on_error:
-                raise PortLoadError(f'Cannot map port {old_id} to {new_id}') from e
-
-            port.error('cannot map to %s: %s', new_id, e)
+            raise PortLoadError(f'Cannot map port {old_id} to {new_id}') from e
 
         _ports_by_id.pop(old_id)
         _ports_by_id[port.get_id()] = port
@@ -1219,10 +1193,7 @@ async def load(
         try:
             await port.load()
         except Exception as e:
-            if raise_on_error:
-                raise PortLoadError(f'Failed to load {port}') from e
-
-            port.error('failed to load: %s', port, e, exc_info=True)
+            raise PortLoadError(f'Failed to load {port}') from e
 
         if trigger_add:
             await port.trigger_add()
@@ -1232,7 +1203,7 @@ async def load(
 
 async def load_one(cls: Union[str, type], args: dict[str, Any], trigger_add: bool = True) -> BasePort:
     port_args = [dict(driver=cls, **args)]
-    ports = await load(port_args, raise_on_error=True, trigger_add=trigger_add)
+    ports = await load(port_args, trigger_add=trigger_add)
 
     return ports[0]
 
@@ -1269,21 +1240,13 @@ async def init() -> None:
 
     _save_loop_task = asyncio.create_task(save_loop())
 
-    # Use raise_on_error=False because we prefer a partial successful startup rather than a failed one
-    await load(settings.ports, raise_on_error=False)
-
 
 async def cleanup() -> None:
-
-    async def cleanup_port(port: BasePort) -> None:
-        await port.disable()
-        await port.cleanup()
-
     if _save_loop_task:
         _save_loop_task.cancel()
         await _save_loop_task
 
-    tasks = [asyncio.create_task(cleanup_port(port)) for port in _ports_by_id.values()]
+    tasks = [asyncio.create_task(port.remove(persisted_data=False)) for port in _ports_by_id.values()]
     if tasks:
         await asyncio.wait(tasks)
 

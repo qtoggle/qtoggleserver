@@ -14,6 +14,7 @@ from qtoggleserver.core.api.funcs import reverse as reverse_api_funcs
 from qtoggleserver.core.api.funcs import various as various_api_funcs
 from qtoggleserver.core.api.funcs import webhooks as webhooks_api_funcs
 from qtoggleserver.frontend.api import funcs as frontend_api_funcs
+from qtoggleserver.peripherals.api import funcs as peripherals_api_funcs
 from qtoggleserver.slaves.api import funcs as slaves_api_funcs
 from qtoggleserver.system.api import funcs as system_api_funcs
 
@@ -184,6 +185,24 @@ class ReverseHandler(APIHandler):
 
     async def put(self) -> None:
         await self.call_api_func(reverse_api_funcs.put_reverse, default_status=204)
+
+
+class PeripheralsHandler(APIHandler):
+    async def get(self) -> None:
+        await self.call_api_func(peripherals_api_funcs.get_peripherals)
+
+    async def put(self) -> None:
+        await self.call_api_func(peripherals_api_funcs.put_peripherals, default_status=204)
+
+    async def post(self) -> None:
+        await self.call_api_func(peripherals_api_funcs.post_peripherals, default_status=201)
+
+
+class PeripheralHandler(APIHandler):
+    async def delete(self, peripheral_id: str) -> None:
+        await self.call_api_func(
+            peripherals_api_funcs.delete_peripheral, peripheral_id=peripheral_id, default_status=204
+        )
 
 
 class DashboardPanelsHandler(APIHandler):

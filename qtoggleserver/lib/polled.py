@@ -17,12 +17,11 @@ READ_INTERVAL_ATTRDEF = {
 }
 
 
-logger = logging.getLogger(__name__)
-
-
 class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
     DEFAULT_POLL_INTERVAL = 1800
     RETRY_POLL_INTERVAL = 60
+
+    logger = logging.getLogger(__name__)
 
     def __init__(self, **kwargs) -> None:
         self._polling: bool = False
