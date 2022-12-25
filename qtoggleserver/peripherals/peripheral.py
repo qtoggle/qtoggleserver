@@ -1,7 +1,7 @@
 import abc
 import asyncio
-import builtins
 import functools
+import hashlib
 import inspect
 
 from typing import Any, Callable, Optional, Union
@@ -19,9 +19,16 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     logger = logger
 
-    def __init__(self, *, name: Optional[str] = None, id: Optional[str] = None, **kwargs) -> None:
+    def __init__(
+        self, *, params: dict[str, Any], name: Optional[str] = None, id: Optional[str] = None, **kwargs
+    ) -> None:
+        sorted_params = self._sorted_tuples_dict(params)
+        auto_id_to_hash = f'{self.__class__.__module__}.{self.__class__.__name__}:{name}:{sorted_params}'
+        auto_id = f'peripheral_{hashlib.sha256(auto_id_to_hash.encode()).hexdigest()[:8]}'
+
+        self._params: dict[str, Any] = params
         self._name: Optional[str] = name
-        self._id: str = id or name or f'p{hex(builtins.id(self))[2:]}'
+        self._id: str = name or id or auto_id  # name will always be used as id, if supplied
         self._ports: list[core_ports.BasePort] = []
         self._enabled: bool = False
         self._online: bool = False
@@ -29,6 +36,13 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._port_update_task: Optional[asyncio.Task] = None
 
         logging_utils.LoggableMixin.__init__(self, self.get_id(), self.logger)
+
+    @staticmethod
+    def _sorted_tuples_dict(params: dict[str, Any]) -> tuple:
+        def dict_reorder(d):
+            return tuple((k, dict_reorder(v)) if isinstance(v, dict) else v for k, v in sorted(d.items()))
+
+        return dict_reorder(params)
 
     def __str__(self) -> str:
         return f'peripheral {self.get_id()}'

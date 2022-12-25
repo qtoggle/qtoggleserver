@@ -27,6 +27,8 @@ async def post_peripherals(request: core_api.APIRequest, params: GenericJSONDict
         peripheral = await peripherals.add(params)
     except peripherals.NoSuchDriver:
         raise core_api.APIError(404, 'no-such-driver')
+    except peripherals.DuplicatePeripheral:
+        raise core_api.APIError(400, 'duplicate-peripheral')
     except Exception as e:
         raise core_api.APIError(400, 'invalid-request', details=str(e))
 

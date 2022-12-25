@@ -27,6 +27,10 @@ class NoSuchDriver(PeripheralException):
     pass
 
 
+class DuplicatePeripheral(PeripheralException):
+    pass
+
+
 def get_all() -> list[Peripheral]:
     return [v[0] for v in _registered_peripherals.values()]
 
@@ -64,9 +68,9 @@ async def add(peripheral_args: dict[str, Any], static: bool = False) -> Peripher
     except Exception:
         raise NoSuchDriver(class_path)
 
-    p = peripheral_class(**args)
+    p = peripheral_class(params=peripheral_args, **args)
     if p.get_id() in _registered_peripherals:
-        raise PeripheralException(f'Peripheral {p.get_id()} already exists')
+        raise DuplicatePeripheral(f'Peripheral {p.get_id()} already exists')
 
     p.debug('initializing')
     await p.handle_init()

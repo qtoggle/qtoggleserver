@@ -37,6 +37,10 @@ class PeripheralsList extends PageList {
         return this.updateUI()
     }
 
+    onBecomeCurrent() {
+        this.updateUI()
+    }
+
     /**
      * Update list items from peripherals.
      * @returns {Promise}
