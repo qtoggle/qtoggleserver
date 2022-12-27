@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import abc
 import asyncio
 import functools
 import hashlib
 import inspect
 
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Union, cast
 
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import GenericJSONDict
@@ -39,7 +41,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._id: str = name or id or auto_id  # name will always be used as id, if supplied
         self._static: bool = static
 
-        self._ports_by_id: dict[str, core_ports.BasePort] = {}
+        self._ports_by_id: dict[str, PeripheralPort] = {}
         self._enabled: bool = False
         self._online: bool = False
         self._runner: Optional[asyncio_utils.ThreadedRunner] = None
@@ -92,7 +94,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return port_args
 
     @abc.abstractmethod
-    async def make_port_args(self) -> list[Union[dict[str, Any], type[core_ports.BasePort]]]:
+    async def make_port_args(self) -> list[Union[dict[str, Any], type[PeripheralPort]]]:
         raise NotImplementedError()
 
     async def init_ports(self) -> None:
@@ -105,11 +107,11 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if tasks:
             await asyncio.wait(tasks)
 
-    async def add_port(self, port_args: dict[str, Any]) -> core_ports.BasePort:
+    async def add_port(self, port_args: dict[str, Any]) -> PeripheralPort:
         # Supply the peripheral argument
         port_args.setdefault('peripheral', self)
 
-        port = (await core_ports.load([port_args]))[0]
+        port = cast(PeripheralPort, (await core_ports.load([port_args]))[0])
         self._ports_by_id[port.get_id()] = port
         return port
 
@@ -121,7 +123,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         await port.remove(persisted_data=persisted_data)
 
-    def get_ports(self) -> list[core_ports.BasePort]:
+    def get_ports(self) -> list[PeripheralPort]:
         return list(self._ports_by_id.values())
 
     def is_enabled(self) -> bool:
@@ -143,7 +145,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         await self.handle_disable()
         self.debug('peripheral disabled')
 
-    async def check_disabled(self, exclude_port: Optional[core_ports.BasePort] = None) -> None:
+    async def check_disabled(self, exclude_port: Optional[PeripheralPort] = None) -> None:
         if not self._enabled:
             return
 
@@ -242,3 +244,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.debug('stopping threaded runner')
             await self._runner.stop()
             self.debug('threaded runner stopped')
+
+
+# This needs to be imported here to avoid circular import issues
+from .peripheralport import PeripheralPort  # noqa: E402

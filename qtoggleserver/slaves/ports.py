@@ -115,7 +115,7 @@ class SlavePort(core_ports.BasePort):
         # provisioned later
         self._provisioning: set[str] = set()
 
-        # Helps managing the triggering of port-update event from non-async methods
+        # Helps to manage the triggering of port-update event from non-async methods
         self._trigger_update_task: Optional[asyncio.Task] = None
 
         port_id = f'{slave.get_name()}.{self._remote_id}'
@@ -230,7 +230,7 @@ class SlavePort(core_ports.BasePort):
     def update_cached_attrs(self, attrs: Attributes) -> None:
         self._cached_attrs = dict(attrs)
 
-        # Value can be found among attrs but we don't want it as attribute
+        # Value can be found among attrs, but we don't want it as attribute
         if 'value' in attrs:
             self.push_remote_value(self._cached_attrs.pop('value'))
 
@@ -333,7 +333,7 @@ class SlavePort(core_ports.BasePort):
                 )
                 self.push_remote_value(value)
             except core_responses.Accepted:
-                # The value has been successfully sent to the slave but it hasn't been applied right away. We should
+                # The value has been successfully sent to the slave, but it hasn't been applied right away. We should
                 # update the cached value later, as soon as we receive a corresponding value-change event.
                 pass
             except core_responses.HTTPError as e:
