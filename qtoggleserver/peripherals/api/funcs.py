@@ -38,7 +38,7 @@ async def post_peripherals(request: core_api.APIRequest, params: GenericJSONDict
         raise core_api.APIError(400, 'invalid-request', details=str(e))
 
     try:
-        await peripherals.init_ports(peripheral)
+        await peripheral.init_ports()
     except Exception as e:
         await peripherals.remove(peripheral.get_id())
         raise core_api.APIError(400, 'invalid-request', details=str(e))
@@ -54,7 +54,7 @@ async def delete_peripheral(request: core_api.APIRequest, peripheral_id: str) ->
     if p.is_static():
         raise core_api.APIError(400, 'peripheral-not-removable')
 
-    await peripherals.cleanup_ports(p, persisted_data=True)
+    await p.cleanup_ports(persisted_data=True)
     await peripherals.remove(peripheral_id, persisted_data=True)
 
 
@@ -67,7 +67,7 @@ async def put_peripherals(request: core_api.APIRequest, params: GenericJSONList)
     for p in peripherals.get_all():
         if p.is_static():
             continue
-        await peripherals.cleanup_ports(p, persisted_data=True)
+        await p.cleanup_ports(persisted_data=True)
         await peripherals.remove(p.get_id(), persisted_data=True)
 
     peripheral_list = []
@@ -78,4 +78,4 @@ async def put_peripherals(request: core_api.APIRequest, params: GenericJSONList)
         peripheral_list.append(p)
 
     for p in peripheral_list:
-        await peripherals.init_ports(p)
+        await p.init_ports()

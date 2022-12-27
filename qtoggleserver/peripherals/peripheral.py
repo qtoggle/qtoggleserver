@@ -12,6 +12,7 @@ from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import logging as logging_utils
 
 from . import logger
+from .exceptions import NotOurPort
 
 
 class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
@@ -38,7 +39,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._id: str = name or id or auto_id  # name will always be used as id, if supplied
         self._static: bool = static
 
-        self._ports: list[core_ports.BasePort] = []
+        self._ports_by_id: dict[str, core_ports.BasePort] = {}
         self._enabled: bool = False
         self._online: bool = False
         self._runner: Optional[asyncio_utils.ThreadedRunner] = None
@@ -94,11 +95,34 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def make_port_args(self) -> list[Union[dict[str, Any], type[core_ports.BasePort]]]:
         raise NotImplementedError()
 
-    def set_ports(self, ports: list[core_ports.BasePort]) -> None:
-        self._ports = ports
+    async def init_ports(self) -> None:
+        port_args = await self.get_port_args()
+        loaded_ports = await core_ports.load(port_args)
+        self._ports_by_id = {p.get_id(): p for p in loaded_ports}
+
+    async def cleanup_ports(self, persisted_data: bool) -> None:
+        tasks = [asyncio.create_task(port.remove(persisted_data=persisted_data)) for port in self._ports_by_id.values()]
+        if tasks:
+            await asyncio.wait(tasks)
+
+    async def add_port(self, port_args: dict[str, Any]) -> core_ports.BasePort:
+        # Supply the peripheral argument
+        port_args.setdefault('peripheral', self)
+
+        port = (await core_ports.load([port_args]))[0]
+        self._ports_by_id[port.get_id()] = port
+        return port
+
+    async def remove_port(self, port_id: str, persisted_data: bool = False) -> None:
+        try:
+            port = self._ports_by_id.pop(port_id)
+        except KeyError:
+            raise NotOurPort(f'Port {port_id} does not belong to {self}')
+
+        await port.remove(persisted_data=persisted_data)
 
     def get_ports(self) -> list[core_ports.BasePort]:
-        return list(self._ports)
+        return list(self._ports_by_id.values())
 
     def is_enabled(self) -> bool:
         return self._enabled
@@ -123,10 +147,9 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if not self._enabled:
             return
 
-        for port in self._ports:
+        for port in self._ports_by_id.values():
             if port.is_enabled() and port != exclude_port:
                 break
-
         else:
             self.debug('all ports are disabled, disabling peripheral')
             await self.disable()
@@ -158,7 +181,8 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def trigger_port_update(self, save: bool = False) -> None:
         self._port_update_task = None
-        for port in self._ports:
+        for port in self._ports_by_id.values():
+            port.invalidate_attrs()
             if port.is_enabled():
                 await port.trigger_update()
                 if save:

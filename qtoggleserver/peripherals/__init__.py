@@ -5,30 +5,17 @@ from typing import Any, Optional
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
-from qtoggleserver.core import ports
-from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.utils import dynload as dynload_utils
 
 
 logger = logging.getLogger(__name__)
 
+from .exceptions import DuplicatePeripheral, NoSuchDriver, NotOurPort, PeripheralException
 from .peripheral import Peripheral
 from .peripheralport import PeripheralPort
 
 
 _registered_peripherals: dict[str, Peripheral] = {}
-
-
-class PeripheralException(Exception):
-    pass
-
-
-class NoSuchDriver(PeripheralException):
-    pass
-
-
-class DuplicatePeripheral(PeripheralException):
-    pass
 
 
 def get_all() -> list[Peripheral]:
@@ -77,18 +64,6 @@ async def remove(peripheral_id: str, persisted_data: bool = True) -> None:
 
     if persisted_data:
         await persist.remove('peripherals', filt={'id': peripheral_id})
-
-
-async def init_ports(peripheral: Peripheral) -> None:
-    port_args = await peripheral.get_port_args()
-    loaded_ports = await ports.load(port_args)
-    peripheral.set_ports(loaded_ports)
-
-
-async def cleanup_ports(peripheral: Peripheral, persisted_data: bool) -> None:
-    tasks = [asyncio.create_task(port.remove(persisted_data=persisted_data)) for port in peripheral.get_ports()]
-    if tasks:
-        await asyncio.wait(tasks)
 
 
 async def init() -> None:

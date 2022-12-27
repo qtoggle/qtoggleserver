@@ -68,11 +68,11 @@ class TestPostPeripherals:
         request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_ADMIN)
 
         spy_add = mocker.patch('qtoggleserver.peripherals.add', return_value=mock_peripheral2)
-        spy_init_ports = mocker.patch('qtoggleserver.peripherals.init_ports')
+        spy_init_ports = mocker.patch.object(mock_peripheral2, 'init_ports')
         result = await peripherals_api_funcs.post_peripherals(request, payload)
 
         spy_add.assert_called_once_with(payload)
-        spy_init_ports.assert_called_once_with(mock_peripheral2)
+        spy_init_ports.assert_called_once_with()
 
         assert result == MOCK_PERIPHERAL2_DATA
 
@@ -88,11 +88,11 @@ class TestPostPeripherals:
         request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_ADMIN)
 
         spy_add = mocker.patch('qtoggleserver.peripherals.add', return_value=mock_peripheral2)
-        spy_init_ports = mocker.patch('qtoggleserver.peripherals.init_ports')
+        spy_init_ports = mocker.patch.object(mock_peripheral2, 'init_ports')
         result = await peripherals_api_funcs.post_peripherals(request, payload)
 
         spy_add.assert_called_once_with(payload)
-        spy_init_ports.assert_called_once_with(mock_peripheral2)
+        spy_init_ports.assert_called_once_with()
 
         assert result == MOCK_PERIPHERAL2_DATA
 
@@ -108,11 +108,11 @@ class TestPostPeripherals:
         request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_ADMIN)
 
         spy_add = mocker.patch('qtoggleserver.peripherals.add', return_value=mock_peripheral2)
-        spy_init_ports = mocker.patch('qtoggleserver.peripherals.init_ports')
+        spy_init_ports = mocker.patch.object(mock_peripheral2, 'init_ports')
         result = await peripherals_api_funcs.post_peripherals(request, payload)
 
         spy_add.assert_called_once_with(payload)
-        spy_init_ports.assert_called_once_with(mock_peripheral2)
+        spy_init_ports.assert_called_once_with()
 
         assert result == dict(payload, name=None, static=False)
 
@@ -126,11 +126,11 @@ class TestPostPeripherals:
         request = mock_api_request_maker('POST', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_ADMIN)
 
         spy_add = mocker.patch('qtoggleserver.peripherals.add', return_value=mock_peripheral2)
-        spy_init_ports = mocker.patch('qtoggleserver.peripherals.init_ports')
+        spy_init_ports = mocker.patch.object(mock_peripheral2, 'init_ports')
         result = await peripherals_api_funcs.post_peripherals(request, payload)
 
         spy_add.assert_called_once_with(payload)
-        spy_init_ports.assert_called_once_with(mock_peripheral2)
+        spy_init_ports.assert_called_once_with()
 
         assert result.pop('id')
         assert result == dict(payload, name=None, static=False)
@@ -187,11 +187,11 @@ class TestDeletePeripheral:
         request = mock_api_request_maker(
             'DELETE', f'/api/peripherals/{mock_peripheral1.get_id()}', access_level=core_api.ACCESS_LEVEL_ADMIN
         )
-        spy_cleanup_ports = mocker.patch('qtoggleserver.peripherals.cleanup_ports')
+        spy_cleanup_ports = mocker.patch.object(mock_peripheral1, 'cleanup_ports')
         spy_remove = mocker.patch('qtoggleserver.peripherals.remove')
         result = await peripherals_api_funcs.delete_peripheral(request, mock_peripheral1.get_id())
 
-        spy_cleanup_ports.assert_called_once_with(mock_peripheral1, persisted_data=True)
+        spy_cleanup_ports.assert_called_once_with(persisted_data=True)
         spy_remove.assert_called_once_with(mock_peripheral1.get_id(), persisted_data=True)
         assert result is None
 
@@ -236,17 +236,19 @@ class TestPutPeripherals:
         payload3.pop('static')
 
         request = mock_api_request_maker('PUT', '/api/peripherals', access_level=core_api.ACCESS_LEVEL_ADMIN)
-        spy_cleanup_ports = mocker.patch('qtoggleserver.peripherals.cleanup_ports')
+        spy_cleanup_ports = mocker.patch.object(mock_peripheral1, 'cleanup_ports')
         spy_remove = mocker.patch('qtoggleserver.peripherals.remove')
         spy_add = mocker.patch('qtoggleserver.peripherals.add', side_effect=[mock_peripheral2, mock_peripheral3])
-        spy_init_ports = mocker.patch('qtoggleserver.peripherals.init_ports')
+        spy_init_ports2 = mocker.patch.object(mock_peripheral2, 'init_ports')
+        spy_init_ports3 = mocker.patch.object(mock_peripheral3, 'init_ports')
 
         result = await peripherals_api_funcs.put_peripherals(request, [payload2, payload3])
 
-        spy_cleanup_ports.assert_called_once_with(mock_peripheral1, persisted_data=True)
+        spy_cleanup_ports.assert_called_once_with(persisted_data=True)
         spy_remove.assert_called_once_with(mock_peripheral1.get_id(), persisted_data=True)
         spy_add.assert_has_calls([mocker.call(payload2), mocker.call(payload3)])
-        spy_init_ports.assert_has_calls([mocker.call(mock_peripheral2), mocker.call(mock_peripheral3)])
+        spy_init_ports2.assert_called_once_with()
+        spy_init_ports3.assert_called_once_with()
 
         assert result is None
 

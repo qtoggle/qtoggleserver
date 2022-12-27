@@ -1086,7 +1086,7 @@ class Slave(logging_utils.LoggableMixin):
 
                 counter -= 1
             except asyncio.CancelledError:
-                self.debug('fwupdate poll loop cancelled')
+                self.debug('fwupdate poll task cancelled')
                 break
 
         # Clear task reference when exiting the task loop

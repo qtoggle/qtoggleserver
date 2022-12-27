@@ -1231,7 +1231,7 @@ async def save_loop() -> None:
             await asyncio.sleep(settings.core.persist_interval)
 
         except asyncio.CancelledError:
-            logger.debug('save loop cancelled')
+            logger.debug('save task cancelled')
             break
 
 
