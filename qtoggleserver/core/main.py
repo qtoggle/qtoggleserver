@@ -235,7 +235,7 @@ async def init() -> None:
     global _update_loop_task
     global loop
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     force_eval_expressions()
     _update_loop_task = loop.create_task(update_loop())

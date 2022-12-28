@@ -123,7 +123,7 @@ def init_logging() -> None:
 
 
 def init_signals() -> None:
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     async def shutdown() -> None:
         global _stopping
@@ -151,7 +151,7 @@ def handle_loop_exception(loop: asyncio.AbstractEventLoop, context: dict[str, An
 
 
 async def init_loop() -> None:
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     loop.set_exception_handler(handle_loop_exception)
 
@@ -166,7 +166,7 @@ async def cleanup_loop() -> None:
 
     await asyncio.gather(*tasks)
 
-    await asyncio.get_event_loop().shutdown_asyncgens()
+    await asyncio.get_running_loop().shutdown_asyncgens()
 
 
 def init_tornado() -> None:

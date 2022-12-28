@@ -254,15 +254,21 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._write_value_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
         self._pending_value: NullablePortValue = None
         self._write_value_task: Optional[asyncio.Task] = None
-        if asyncio.get_event_loop().is_running():
+        try:
+            asyncio.get_running_loop()
             self._write_value_task = asyncio.create_task(self._write_value_loop())
+        except RuntimeError:
+            pass
         self._reading: bool = False
         self._writing: bool = False
 
         self._eval_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
         self._eval_task: Optional[asyncio.Task] = None
-        if asyncio.get_event_loop().is_running():
+        try:
+            asyncio.get_running_loop()
             self._eval_task = asyncio.create_task(self._eval_loop())
+        except RuntimeError:
+            pass
         self._evaling: bool = False
 
         self._save_lock: asyncio.Lock = asyncio.Lock()
