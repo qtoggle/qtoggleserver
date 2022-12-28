@@ -100,7 +100,12 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def init_ports(self) -> None:
         port_args = await self.get_port_args()
         loaded_ports = await core_ports.load(port_args)
-        self._ports_by_id = {p.get_id(): p for p in loaded_ports}
+        self._ports_by_id = {cast(PeripheralPort, p).get_initial_id(): p for p in loaded_ports}
+
+        # If no port has been loaded, there's no way for the user to enable the peripheral (via ports) so we have to
+        # enable it manually, here.
+        if not loaded_ports:
+            await self.enable()
 
     async def cleanup_ports(self, persisted_data: bool) -> None:
         tasks = [asyncio.create_task(port.remove(persisted_data=persisted_data)) for port in self._ports_by_id.values()]
@@ -112,14 +117,17 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         port_args.setdefault('peripheral', self)
 
         port = cast(PeripheralPort, (await core_ports.load([port_args]))[0])
-        self._ports_by_id[port.get_id()] = port
+        self._ports_by_id[port.get_initial_id()] = port
         return port
 
     async def remove_port(self, port_id: str, persisted_data: bool = False) -> None:
+        if self._name and port_id.startswith(f'{self._name}.'):
+            port_id = port_id[len(self._name) + 1:]
+
         try:
             port = self._ports_by_id.pop(port_id)
         except KeyError:
-            raise NotOurPort(f'Port {port_id} does not belong to {self}')
+            raise NotOurPort(f'Port {port_id} does not belong to {self}') from None
 
         await port.remove(persisted_data=persisted_data)
 
