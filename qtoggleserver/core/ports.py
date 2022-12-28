@@ -1244,7 +1244,7 @@ async def save_loop() -> None:
                 except Exception as e:
                     port.error('save failed: %s', e, exc_info=True)
 
-            await asyncio.sleep(settings.core.persist_interval)
+            await asyncio.sleep(settings.core.persist_interval / 1000.0)
 
         except asyncio.CancelledError:
             logger.debug('save task cancelled')
