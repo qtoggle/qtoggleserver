@@ -931,9 +931,17 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         attr_items = attr_items_start + attr_items + attr_items_end
 
+        attrdefs = await self.get_attrdefs()
+
         for name, value in attr_items:
             if name in ('id', 'value', 'pending_value'):
                 continue  # value is also among the persisted fields
+
+            attrdef = attrdefs.get(name)
+            if not attrdef:
+                continue  # don't load attribute w/o definition
+            if attrdef.get('persisted') is False:
+                continue  # don't load attributes marked as non-persisted
 
             try:
                 self.debug('loading %s = %s', name, json_utils.dumps(value))

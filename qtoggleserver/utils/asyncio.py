@@ -152,6 +152,6 @@ class ThreadedRunner(threading.Thread, metaclass=abc.ABCMeta):
         await self._stopped_future
 
 
-async def await_later(delay: float, coroutine: Callable, *args, loop: asyncio.AbstractEventLoop = None) -> None:
+async def await_later(delay: float, aw: Awaitable, loop: asyncio.AbstractEventLoop = None) -> None:
     await asyncio.sleep(delay, loop=loop)
-    await coroutine(*args)
+    await aw

@@ -1405,7 +1405,7 @@ class Slave(logging_utils.LoggableMixin):
         if self._provisioning_timeout_task:
             self._provisioning_timeout_task.cancel()
 
-        future = asyncio_utils.await_later(delay, self._provision_and_update)
+        future = asyncio_utils.await_later(delay, self._provision_and_update())
         self._provisioning_timeout_task = asyncio.create_task(future)
 
     async def _provision_and_update(self) -> None:
