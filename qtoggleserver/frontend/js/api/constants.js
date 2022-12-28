@@ -227,6 +227,10 @@ export const KNOWN_ERRORS = [
     {
         code: 'other-error',
         pretty: StringUtils.formatPercent(gettext('Error communicating with device (%(message)s).'))
+    },
+    {
+        code: 'unexpected-error',
+        pretty: StringUtils.formatPercent(gettext('Unexpected error: %(message)s.'))
     }
 ]
 
