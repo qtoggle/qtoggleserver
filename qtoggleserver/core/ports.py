@@ -194,6 +194,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     UNIT = ''
     WRITABLE = False
     CHOICES = None
+    TAG = ''
+    PERSISTED = False
+    INTERNAL = False
 
     WRITE_VALUE_QUEUE_SIZE = 1024
 
@@ -226,8 +229,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._id: str = port_id
         self._enabled: bool = False
-        self._display_name: Optional[str] = None
-        self._unit: Optional[str] = None
+        self._display_name: Optional[str] = self.DISPLAY_NAME
+        self._unit: Optional[str] = self.UNIT
+        self._tag: str = self.TAG
+        self._persisted: bool = self.PERSISTED
+        self._internal: bool = self.INTERNAL
 
         self._sequence: Optional[core_sequences.Sequence] = None
         self._expression: Optional[core_expressions.Expression] = None
@@ -1131,12 +1137,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
 
 class Port(BasePort, metaclass=abc.ABCMeta):
-    def __init__(self, port_id: str) -> None:
-        super().__init__(port_id)
-
-        self._tag: str = ''
-        self._persisted: bool = False
-        self._internal: bool = False
+    pass
 
 
 async def load(port_args: list[dict[str, Any]], trigger_add: bool = True) -> list[BasePort]:
@@ -1145,6 +1146,7 @@ async def load(port_args: list[dict[str, Any]], trigger_add: bool = True) -> lis
 
     # Create ports
     for ps in port_args:
+        ps = dict(ps)
         driver = ps.pop('driver', None)
         if not driver:
             raise PortLoadError('Missing port driver')

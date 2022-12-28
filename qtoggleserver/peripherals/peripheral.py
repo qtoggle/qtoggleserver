@@ -114,6 +114,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def add_port(self, port_args: dict[str, Any]) -> PeripheralPort:
         # Supply the peripheral argument
+        port_args = dict(port_args)
         port_args.setdefault('peripheral', self)
 
         port = cast(PeripheralPort, (await core_ports.load([port_args]))[0])
