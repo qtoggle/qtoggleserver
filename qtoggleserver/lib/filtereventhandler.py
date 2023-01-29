@@ -330,6 +330,18 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
         return True
 
+    def get_device_attrs(self) -> Attributes:
+        return self._device_attrs
+
+    def get_port_values(self) -> dict[str, NullablePortValue]:
+        return self._port_values
+
+    def get_port_attrs(self) -> dict[str, Attributes]:
+        return self._port_attrs
+
+    def get_slave_attrs(self) -> dict[str, Attributes]:
+        return self._slave_attrs
+
     async def handle_event(self, event: core_events.Event) -> None:
         (
             value_pair,
