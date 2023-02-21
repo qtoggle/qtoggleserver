@@ -40,6 +40,8 @@ jobs:
       - eslint
       - flake8
     runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --openssl-legacy-provider
     steps:
       - name: Source code checkout
         uses: actions/checkout@v3
