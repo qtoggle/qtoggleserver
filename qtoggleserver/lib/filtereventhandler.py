@@ -12,6 +12,10 @@ from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.slaves import events as slaves_events
 
 
+ANY_VALUE = 'any'
+
+AnyNullablePortValue = Union[str, NullablePortValue]
+
 logger = logging.getLogger(__package__)
 
 
@@ -29,7 +33,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         self._filter_device_attr_names: set[str] = set()
 
         self._filter_port_value: Optional[Union[list[NullablePortValue]], core_expressions.Expression] = None
-        self._filter_port_value_transition: Optional[tuple[NullablePortValue, NullablePortValue]] = None
+        self._filter_port_value_transition: Optional[tuple[AnyNullablePortValue, AnyNullablePortValue]] = None
         self._filter_port_attrs: Union[Attributes, dict[str, list[Attribute]]] = {}
         self._filter_port_attr_transitions: dict[str, tuple[Attribute, Attribute]] = {}
         self._filter_port_attr_names: set[str] = set()
@@ -216,9 +220,11 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             filter_transition = filter_attr_transitions.get(name)
             if filter_transition is not None:
                 old_filter_value, new_filter_value = filter_transition
-                if ((old_filter_value != old_value and old_filter_value is not None) or
-                    (new_filter_value != new_value and new_filter_value is not None)):
-
+                if (
+                    (old_filter_value != old_value and old_filter_value != ANY_VALUE) or
+                    (new_filter_value != new_value and new_filter_value != ANY_VALUE) or
+                    (old_value == new_value)
+                ):
                     return False
 
             filter_value = filter_attrs.get(name)
@@ -250,9 +256,11 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
         if self._filter_port_value_transition is not None:
             old_filter_value, new_filter_value = self._filter_port_value_transition
-            if ((old_filter_value != old_value and old_filter_value is not None) or
-                (new_filter_value != new_value and new_filter_value is not None)):
-
+            if (
+                (old_filter_value != old_value and old_filter_value != ANY_VALUE) or
+                (new_filter_value != new_value and new_filter_value != ANY_VALUE) or
+                (old_value == new_value)
+            ):
                 return False
 
         if self._filter_port_value is not None:
