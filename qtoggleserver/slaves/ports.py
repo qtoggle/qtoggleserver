@@ -306,7 +306,7 @@ class SlavePort(core_ports.BasePort):
     def clear_provisioning(self) -> None:
         self._provisioning = set()
 
-    def push_remote_value(self, value: PortValue) -> None:
+    def push_remote_value(self, value: NullablePortValue) -> None:
         self._remote_value_queue.appendleft(value)
 
     def get_last_remote_value(self) -> NullablePortValue:
@@ -320,9 +320,9 @@ class SlavePort(core_ports.BasePort):
             self._cached_value = self._remote_value_queue.pop()
             return self._cached_value
         except IndexError:
-            return
+            raise core_ports.SkipRead()
 
-    async def write_value(self, value: PortValue) -> None:
+    async def write_value(self, value: NullablePortValue) -> None:
         if self._slave.is_online():
             try:
                 await self._slave.api_call(
