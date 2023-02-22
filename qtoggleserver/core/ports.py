@@ -3,11 +3,12 @@ from __future__ import annotations
 import abc
 import asyncio
 import copy
+import functools
 import inspect
 import logging
 import time
 
-from typing import Any, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
@@ -174,6 +175,10 @@ class PortReadError(PortError):
     pass
 
 
+class SkipRead(PortReadError):
+    pass
+
+
 class InvalidAttributeValue(PortError):
     def __init__(self, attr: str, details: Optional[GenericJSONDict] = None) -> None:
         self.attr: str = attr
@@ -184,6 +189,16 @@ class InvalidAttributeValue(PortError):
 
 class PortTimeout(PortError):
     pass
+
+
+def skip_write_unavailable(func: Callable) -> Callable:
+    @functools.wraps(func)
+    async def wrapper(value: NullablePortValue) -> None:
+        if value is None:
+            return
+        await func(value)
+
+    return wrapper
 
 
 class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
@@ -679,7 +694,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def read_value(self) -> NullablePortValue:
         return None
 
-    async def write_value(self, value: PortValue) -> None:
+    async def write_value(self, value: NullablePortValue) -> None:
         pass
 
     def get_last_read_value(self) -> NullablePortValue:
@@ -702,9 +717,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         finally:
             self._reading = False
 
-        if value is None:
-            return None
-
         if self._transform_read:
             context = self._make_eval_context(port_values={self.get_id(): value})
             value = await self.adapt_value_type(await self._transform_read.eval(context))
@@ -714,7 +726,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def is_reading(self) -> bool:
         return self._reading
 
-    async def transform_and_write_value(self, value: PortValue) -> None:
+    async def transform_and_write_value(self, value: NullablePortValue) -> None:
         value_str = json_utils.dumps(value)
 
         if self._transform_write:
@@ -733,7 +745,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def is_writing(self) -> bool:
         return self._writing
 
-    async def _write_value_queued(self, value: PortValue) -> None:
+    async def _write_value_queued(self, value: NullablePortValue) -> None:
         done = asyncio.get_running_loop().create_future()
 
         while True:
@@ -807,6 +819,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         try:
             self._evaling = True
             value = await expression.eval(context)
+        except core_expressions.ValueUnavailable:
+            value = None
         except core_expressions.ExpressionEvalError:
             return
         except Exception as e:
@@ -816,9 +830,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._evaling = False
 
         value = await self.adapt_value_type(value)
-        if value is None:
-            return
-
         if value != self.get_last_read_value():  # value changed after evaluation
             self.debug('expression "%s" evaluated to %s', expression, json_utils.dumps(value))
             try:
@@ -867,7 +878,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.debug('installing sequence')
             self._sequence.start()
 
-    def _transform_and_write_value_fire_and_forget(self, value: PortValue) -> None:
+    def _transform_and_write_value_fire_and_forget(self, value: NullablePortValue) -> None:
         asyncio.create_task(self.transform_and_write_value(value))
 
     async def _on_sequence_finish(self) -> None:
@@ -974,11 +985,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         elif self.is_enabled():
             try:
                 value = await self.read_transformed_value()
-                if value is not None:
-                    self._last_read_value = value
-                    self.debug('read value = %s', json_utils.dumps(self._last_read_value))
+            except SkipRead:
+                pass
             except Exception as e:
                 self.error('failed to read value: %s', e, exc_info=True)
+            else:
+                self._last_read_value = value
+                self.debug('read value = %s', json_utils.dumps(self._last_read_value))
 
         # various
         self._history_last_timestamp = data.get('history_last_timestamp', 0)

@@ -75,14 +75,13 @@ async def update() -> None:
 
             try:
                 new_value = await port.read_transformed_value()
+            except core_ports.SkipRead:
+                continue  # read explicitly skipped
             except Exception as e:
                 logger.error('failed to read value from %s: %s', port, e, exc_info=True)
                 _ports_with_read_error.add(port)
 
                 continue
-
-            if new_value is None:
-                continue  # read value not available
 
             if new_value != old_value:
                 old_value_str = json_utils.dumps(old_value) if old_value is not None else '(unavailable)'
