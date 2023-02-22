@@ -27,6 +27,18 @@ async def test_if_number(literal_zero, literal_one, literal_two, dummy_eval_cont
     assert result == 1
 
 
+async def test_if_unavailable(literal_false, literal_true, literal_ten, literal_unavailable, dummy_eval_context):
+    result = await comparison.IfFunction(
+        [literal_false, literal_unavailable, literal_ten], role=ROLE_VALUE
+    ).eval(dummy_eval_context)
+    assert result == 10
+
+    result = await comparison.IfFunction(
+        [literal_true, literal_ten, literal_unavailable], role=ROLE_VALUE
+    ).eval(dummy_eval_context)
+    assert result == 10
+
+
 def test_if_parse():
     e = Function.parse(None, 'IF(1, 2, 3)', ROLE_VALUE, 0)
     assert isinstance(e, comparison.IfFunction)

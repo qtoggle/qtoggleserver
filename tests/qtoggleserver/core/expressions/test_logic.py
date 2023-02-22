@@ -26,6 +26,13 @@ async def test_and_multiple(literal_false, literal_true, dummy_eval_context):
     assert result == 1
 
 
+async def test_and_unavailable(literal_false, literal_true, literal_unavailable, dummy_eval_context):
+    result = await logic.AndFunction(
+        [literal_true, literal_false, literal_unavailable], role=ROLE_VALUE
+    ).eval(dummy_eval_context)
+    assert result == 0
+
+
 async def test_and_number(literal_zero, literal_ten, literal_true, dummy_eval_context):
     result = await logic.AndFunction([literal_zero, literal_true], role=ROLE_VALUE).eval(dummy_eval_context)
     assert result == 0
@@ -63,6 +70,13 @@ async def test_or_multiple(literal_false, literal_true, dummy_eval_context):
 
     result = await logic.OrFunction(
         [literal_false, literal_true, literal_false], role=ROLE_VALUE
+    ).eval(dummy_eval_context)
+    assert result == 1
+
+
+async def test_or_unavailable(literal_false, literal_true, literal_unavailable, dummy_eval_context):
+    result = await logic.OrFunction(
+        [literal_false, literal_true, literal_unavailable], role=ROLE_VALUE
     ).eval(dummy_eval_context)
     assert result == 1
 
