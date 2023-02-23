@@ -112,7 +112,7 @@ class DashboardSection extends Section {
             case 'value-change': {
                 let currentPanel = Dashboard.getCurrentPanel()
 
-                if (currentPanel && event.params.value != null) {
+                if (currentPanel) {
                     currentPanel.getWidgets().forEach(function (widget) {
                         widget.handlePortValueChange(event.params.id, event.params.value)
                     })

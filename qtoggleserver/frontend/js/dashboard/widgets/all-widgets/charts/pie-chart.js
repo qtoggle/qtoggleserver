@@ -324,7 +324,7 @@ class PieChart extends BaseChartWidget {
             labels = []
             this._ports.forEach(function (portInfo) {
 
-                let value = this.getPortValue(portInfo.portId)
+                let value = this.getPortValue(portInfo.portId) || 0
 
                 value *= this._multiplier
 
@@ -341,7 +341,11 @@ class PieChart extends BaseChartWidget {
             let portInfo = this._ports[0]
             let portValue = this.getPortValue(portInfo.portId)
             if (portValue == null) {
-                return
+                portValue = 0
+                this.widgetCall({disabled: true})
+            }
+            else {
+                this.widgetCall({disabled: false})
             }
 
             let value = portValue * this._multiplier

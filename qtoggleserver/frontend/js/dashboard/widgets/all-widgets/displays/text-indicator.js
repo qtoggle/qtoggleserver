@@ -376,10 +376,6 @@ class TextIndicator extends Widget {
 
     showCurrentValue() {
         let value = this.getPortValue(this._portId)
-        if (value == null) {
-            return
-        }
-
         this._showValue(value)
     }
 
@@ -417,14 +413,18 @@ class TextIndicator extends Widget {
                 text = this._trueText
                 color = this._trueColor
             }
-            else {
+            else if (value === false) {
                 text = this._falseText
                 color = this._falseColor
             }
+            else {
+                text = ''
+                color = ''
+            }
         }
         else { /* Number */
-            let valueText = value.toFixed(this._decimals)
-            if (this._displayUnit) {
+            let valueText = value != null ? value.toFixed(this._decimals) : ''
+            if (this._displayUnit && valueText) {
                 valueText += this._unit
             }
 
