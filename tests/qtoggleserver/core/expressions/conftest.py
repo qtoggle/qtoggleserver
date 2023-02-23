@@ -27,6 +27,11 @@ def literal_true():
 
 
 @pytest.fixture(scope='session')
+def literal_unavailable():
+    return literalvalues.LiteralValue(None, 'unavailable', role=ROLE_VALUE)
+
+
+@pytest.fixture(scope='session')
 def literal_zero():
     return literalvalues.LiteralValue(0, '0', role=ROLE_VALUE)
 

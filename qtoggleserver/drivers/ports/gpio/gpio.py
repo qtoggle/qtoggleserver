@@ -46,7 +46,10 @@ class GPIO(ports.Port):
 
         return self._val_file.read(1) == '1'
 
-    async def write_value(self, value: bool) -> None:
+    async def write_value(self, value: Optional[bool]) -> None:
+        if value is None:
+            return
+
         self._val_file.seek(0)
 
         if value:

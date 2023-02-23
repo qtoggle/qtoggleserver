@@ -4,7 +4,7 @@ from typing import Optional
 
 from qtoggleserver import persist
 from qtoggleserver.core import ports as core_ports
-from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList, NullablePortValue, PortValue, PortValueChoices
+from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList, NullablePortValue, PortValueChoices
 
 
 logger = logging.getLogger(__name__)
@@ -35,9 +35,9 @@ class VirtualPort(core_ports.Port):
         self._integer: Optional[bool] = integer
         self._step: Optional[float] = step
         self._choices: Optional[PortValueChoices] = choices
-
-        self._value = self._virtual_value = None
         self._virtual_value: NullablePortValue = None
+
+        self._value = None
 
     def map_id(self, new_id: str) -> None:
         raise core_ports.PortError('Virtual ports cannot be mapped')
@@ -45,7 +45,7 @@ class VirtualPort(core_ports.Port):
     async def read_value(self) -> NullablePortValue:
         return self._virtual_value
 
-    async def write_value(self, value: PortValue) -> None:
+    async def write_value(self, value: NullablePortValue) -> None:
         self._virtual_value = value
 
 
