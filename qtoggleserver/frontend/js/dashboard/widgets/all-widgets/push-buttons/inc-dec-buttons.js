@@ -23,7 +23,7 @@ class ConfigForm extends WidgetConfigForm {
                     name: 'portId',
                     label: gettext('Port'),
                     required: true,
-                    filter: port => port.type === 'number',
+                    filter: port => port.type === 'number'
                 }),
                 new NumericField({
                     name: 'min',
