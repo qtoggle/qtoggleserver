@@ -2,7 +2,7 @@
 
 if [ -z "$1" ]; then
     echo "missing argument version"
-    return 1
+    exit 1
 fi
 
 cd $(dirname $0)/qtoggleserver/frontend
