@@ -193,7 +193,7 @@ class PortTimeout(PortError):
 
 def skip_write_unavailable(func: Callable) -> Callable:
     @functools.wraps(func)
-    async def wrapper(self, value: NullablePortValue) -> None:
+    async def wrapper(self: BasePort, value: NullablePortValue) -> None:
         if value is None:
             return
         await func(self, value)
