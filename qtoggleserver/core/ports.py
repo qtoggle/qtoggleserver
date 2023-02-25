@@ -719,7 +719,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         if self._transform_read:
             context = self._make_eval_context(port_values={self.get_id(): value})
-            value = await self.adapt_value_type(await self._transform_read.eval(context))
+            try:
+                value = await self.adapt_value_type(await self._transform_read.eval(context))
+            except core_expressions.ValueUnavailable:
+                value = None
 
         return value
 
@@ -731,7 +734,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         if self._transform_write:
             context = self._make_eval_context(port_values={self.get_id(): value})
-            value = await self.adapt_value_type(await self._transform_write.eval(context))
+            try:
+                value = await self.adapt_value_type(await self._transform_write.eval(context))
+            except core_expressions.ValueUnavailable:
+                value = None
             value_str = f'{value_str} ({json_utils.dumps(value)} after write transform)'
 
         try:
@@ -975,11 +981,14 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 # Write the just-loaded value to the port
                 value = self._last_read_value
                 if self._transform_write:
-                    value = await self.adapt_value_type(
-                        await self._transform_write.eval(
-                            self._make_eval_context(port_values={self.get_id(): value})
+                    try:
+                        value = await self.adapt_value_type(
+                            await self._transform_write.eval(
+                                self._make_eval_context(port_values={self.get_id(): value})
+                            )
                         )
-                    )
+                    except core_expressions.ValueUnavailable:
+                        value = None
 
                 await self.write_value(value)
         elif self.is_enabled():
