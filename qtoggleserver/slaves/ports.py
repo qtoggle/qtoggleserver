@@ -115,7 +115,7 @@ class SlavePort(core_ports.BasePort):
         # provisioned later
         self._provisioning: set[str] = set()
 
-        # Helps managing the triggering of port-update event from non-async methods
+        # Helps to manage the triggering of port-update event from non-async methods
         self._trigger_update_task: Optional[asyncio.Task] = None
 
         port_id = f'{slave.get_name()}.{self._remote_id}'
@@ -230,7 +230,7 @@ class SlavePort(core_ports.BasePort):
     def update_cached_attrs(self, attrs: Attributes) -> None:
         self._cached_attrs = dict(attrs)
 
-        # Value can be found among attrs but we don't want it as attribute
+        # Value can be found among attrs, but we don't want it as attribute
         if 'value' in attrs:
             self.push_remote_value(self._cached_attrs.pop('value'))
 
@@ -306,7 +306,7 @@ class SlavePort(core_ports.BasePort):
     def clear_provisioning(self) -> None:
         self._provisioning = set()
 
-    def push_remote_value(self, value: PortValue) -> None:
+    def push_remote_value(self, value: NullablePortValue) -> None:
         self._remote_value_queue.appendleft(value)
 
     def get_last_remote_value(self) -> NullablePortValue:
@@ -320,9 +320,9 @@ class SlavePort(core_ports.BasePort):
             self._cached_value = self._remote_value_queue.pop()
             return self._cached_value
         except IndexError:
-            return
+            raise core_ports.SkipRead()
 
-    async def write_value(self, value: PortValue) -> None:
+    async def write_value(self, value: NullablePortValue) -> None:
         if self._slave.is_online():
             try:
                 await self._slave.api_call(
@@ -333,7 +333,7 @@ class SlavePort(core_ports.BasePort):
                 )
                 self.push_remote_value(value)
             except core_responses.Accepted:
-                # The value has been successfully sent to the slave but it hasn't been applied right away. We should
+                # The value has been successfully sent to the slave, but it hasn't been applied right away. We should
                 # update the cached value later, as soon as we receive a corresponding value-change event.
                 pass
             except core_responses.HTTPError as e:

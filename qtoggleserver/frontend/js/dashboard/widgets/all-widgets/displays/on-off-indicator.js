@@ -128,10 +128,6 @@ class OnOffIndicator extends Widget {
 
     showCurrentValue() {
         let value = this.getPortValue(this._portId)
-        if (value == null) {
-            return
-        }
-
         this._showValue(value)
     }
 
@@ -150,8 +146,11 @@ class OnOffIndicator extends Widget {
             if (value) {
                 this._showOn()
             }
-            else if (!value) {
+            else if (value === false) {
                 this._showOff()
+            }
+            else {
+                this._showUnavailable()
             }
         }
         else { /* Number */
@@ -160,6 +159,9 @@ class OnOffIndicator extends Widget {
             }
             else if ((value === this._offValue) || (value !== this._onValue && this._offValue == null)) {
                 this._showOff()
+            }
+            else {
+                this._showUnavailable()
             }
         }
     }
@@ -208,6 +210,11 @@ class OnOffIndicator extends Widget {
     _showOff() {
         this.getContentElement().removeClass('on')
         this._lightDiv.css('background', '')
+    }
+
+    _showUnavailable() {
+        this.getContentElement().removeClass('on')
+        this._lightDiv.css('background', Theme.getColor('@disabled-color'))
     }
 
     _isBoolean() {

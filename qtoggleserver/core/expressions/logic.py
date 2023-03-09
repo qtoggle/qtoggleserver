@@ -7,11 +7,11 @@ class AndFunction(Function):
     MIN_ARGS = 2
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        r = True
-        for e in await self.eval_args(context):
-            r = r and bool(e)
+        for arg in self.args:
+            if not await arg.eval(context):
+                return 0
 
-        return int(r)
+        return 1
 
 
 @function('OR')
@@ -19,11 +19,11 @@ class OrFunction(Function):
     MIN_ARGS = 2
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        r = False
-        for e in await self.eval_args(context):
-            r = r or bool(e)
+        for arg in self.args:
+            if await arg.eval(context):
+                return 1
 
-        return int(r)
+        return 0
 
 
 @function('NOT')

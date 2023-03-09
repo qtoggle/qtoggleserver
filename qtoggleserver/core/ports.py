@@ -3,11 +3,12 @@ from __future__ import annotations
 import abc
 import asyncio
 import copy
+import functools
 import inspect
 import logging
 import time
 
-from typing import Any, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
@@ -174,6 +175,10 @@ class PortReadError(PortError):
     pass
 
 
+class SkipRead(PortReadError):
+    pass
+
+
 class InvalidAttributeValue(PortError):
     def __init__(self, attr: str, details: Optional[GenericJSONDict] = None) -> None:
         self.attr: str = attr
@@ -186,6 +191,16 @@ class PortTimeout(PortError):
     pass
 
 
+def skip_write_unavailable(func: Callable) -> Callable:
+    @functools.wraps(func)
+    async def wrapper(self: BasePort, value: NullablePortValue) -> None:
+        if value is None:
+            return
+        await func(self, value)
+
+    return wrapper
+
+
 class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     PERSIST_COLLECTION = 'ports'
 
@@ -194,6 +209,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     UNIT = ''
     WRITABLE = False
     CHOICES = None
+    TAG = ''
+    PERSISTED = False
+    INTERNAL = False
 
     WRITE_VALUE_QUEUE_SIZE = 1024
 
@@ -226,8 +244,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._id: str = port_id
         self._enabled: bool = False
-        self._display_name: Optional[str] = None
-        self._unit: Optional[str] = None
+        self._display_name: Optional[str] = self.DISPLAY_NAME
+        self._unit: Optional[str] = self.UNIT
+        self._tag: str = self.TAG
+        self._persisted: bool = self.PERSISTED
+        self._internal: bool = self.INTERNAL
 
         self._sequence: Optional[core_sequences.Sequence] = None
         self._expression: Optional[core_expressions.Expression] = None
@@ -254,15 +275,21 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._write_value_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
         self._pending_value: NullablePortValue = None
         self._write_value_task: Optional[asyncio.Task] = None
-        if asyncio.get_event_loop().is_running():
+        try:
+            asyncio.get_running_loop()
             self._write_value_task = asyncio.create_task(self._write_value_loop())
+        except RuntimeError:
+            pass
         self._reading: bool = False
         self._writing: bool = False
 
         self._eval_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
         self._eval_task: Optional[asyncio.Task] = None
-        if asyncio.get_event_loop().is_running():
+        try:
+            asyncio.get_running_loop()
             self._eval_task = asyncio.create_task(self._eval_loop())
+        except RuntimeError:
+            pass
         self._evaling: bool = False
 
         self._save_lock: asyncio.Lock = asyncio.Lock()
@@ -667,7 +694,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def read_value(self) -> NullablePortValue:
         return None
 
-    async def write_value(self, value: PortValue) -> None:
+    async def write_value(self, value: NullablePortValue) -> None:
         pass
 
     def get_last_read_value(self) -> NullablePortValue:
@@ -690,24 +717,27 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         finally:
             self._reading = False
 
-        if value is None:
-            return None
-
         if self._transform_read:
             context = self._make_eval_context(port_values={self.get_id(): value})
-            value = await self.adapt_value_type(await self._transform_read.eval(context))
+            try:
+                value = await self.adapt_value_type(await self._transform_read.eval(context))
+            except core_expressions.ValueUnavailable:
+                value = None
 
         return value
 
     def is_reading(self) -> bool:
         return self._reading
 
-    async def transform_and_write_value(self, value: PortValue) -> None:
+    async def transform_and_write_value(self, value: NullablePortValue) -> None:
         value_str = json_utils.dumps(value)
 
         if self._transform_write:
             context = self._make_eval_context(port_values={self.get_id(): value})
-            value = await self.adapt_value_type(await self._transform_write.eval(context))
+            try:
+                value = await self.adapt_value_type(await self._transform_write.eval(context))
+            except core_expressions.ValueUnavailable:
+                value = None
             value_str = f'{value_str} ({json_utils.dumps(value)} after write transform)'
 
         try:
@@ -721,7 +751,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def is_writing(self) -> bool:
         return self._writing
 
-    async def _write_value_queued(self, value: PortValue) -> None:
+    async def _write_value_queued(self, value: NullablePortValue) -> None:
         done = asyncio.get_running_loop().create_future()
 
         while True:
@@ -795,6 +825,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         try:
             self._evaling = True
             value = await expression.eval(context)
+        except core_expressions.ValueUnavailable:
+            value = None
         except core_expressions.ExpressionEvalError:
             return
         except Exception as e:
@@ -804,9 +836,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._evaling = False
 
         value = await self.adapt_value_type(value)
-        if value is None:
-            return
-
         if value != self.get_last_read_value():  # value changed after evaluation
             self.debug('expression "%s" evaluated to %s', expression, json_utils.dumps(value))
             try:
@@ -855,7 +884,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.debug('installing sequence')
             self._sequence.start()
 
-    def _transform_and_write_value_fire_and_forget(self, value: PortValue) -> None:
+    def _transform_and_write_value_fire_and_forget(self, value: NullablePortValue) -> None:
         asyncio.create_task(self.transform_and_write_value(value))
 
     async def _on_sequence_finish(self) -> None:
@@ -925,9 +954,17 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         attr_items = attr_items_start + attr_items + attr_items_end
 
+        attrdefs = await self.get_attrdefs()
+
         for name, value in attr_items:
             if name in ('id', 'value', 'pending_value'):
                 continue  # value is also among the persisted fields
+
+            attrdef = attrdefs.get(name)
+            if not attrdef:
+                continue  # don't load attribute w/o definition
+            if attrdef.get('persisted') is False:
+                continue  # don't load attributes marked as non-persisted
 
             try:
                 self.debug('loading %s = %s', name, json_utils.dumps(value))
@@ -944,21 +981,26 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 # Write the just-loaded value to the port
                 value = self._last_read_value
                 if self._transform_write:
-                    value = await self.adapt_value_type(
-                        await self._transform_write.eval(
-                            self._make_eval_context(port_values={self.get_id(): value})
+                    try:
+                        value = await self.adapt_value_type(
+                            await self._transform_write.eval(
+                                self._make_eval_context(port_values={self.get_id(): value})
+                            )
                         )
-                    )
+                    except core_expressions.ValueUnavailable:
+                        value = None
 
                 await self.write_value(value)
         elif self.is_enabled():
             try:
                 value = await self.read_transformed_value()
-                if value is not None:
-                    self._last_read_value = value
-                    self.debug('read value = %s', json_utils.dumps(self._last_read_value))
+            except SkipRead:
+                pass
             except Exception as e:
                 self.error('failed to read value: %s', e, exc_info=True)
+            else:
+                self._last_read_value = value
+                self.debug('read value = %s', json_utils.dumps(self._last_read_value))
 
         # various
         self._history_last_timestamp = data.get('history_last_timestamp', 0)
@@ -1117,31 +1159,19 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
 
 class Port(BasePort, metaclass=abc.ABCMeta):
-    def __init__(self, port_id: str) -> None:
-        super().__init__(port_id)
-
-        self._tag: str = ''
-        self._persisted: bool = False
-        self._internal: bool = False
+    pass
 
 
-async def load(
-    port_args: list[dict[str, Any]],
-    raise_on_error: bool = True,
-    trigger_add: bool = True
-) -> list[BasePort]:
+async def load(port_args: list[dict[str, Any]], trigger_add: bool = True) -> list[BasePort]:
     port_driver_classes = {}
     ports = []
 
     # Create ports
     for ps in port_args:
+        ps = dict(ps)
         driver = ps.pop('driver', None)
         if not driver:
-            if raise_on_error:
-                raise PortLoadError('Missing port driver')
-
-            logger.error('ignoring port with no driver')
-            continue
+            raise PortLoadError('Missing port driver')
 
         if isinstance(driver, str):
             if driver not in port_driver_classes:
@@ -1149,11 +1179,7 @@ async def load(
                     logger.debug('loading port driver %s', driver)
                     port_driver_classes[driver] = dynload_utils.load_attr(driver)
                 except Exception as e:
-                    if raise_on_error:
-                        raise PortLoadError(f'Failed to load port driver {driver}') from e
-
-                    logger.error('failed to load port driver %s: %s', driver, e, exc_info=True)
-                    continue
+                    raise PortLoadError(f'Failed to load port driver {driver}') from e
 
             port_class = port_driver_classes[driver]
         else:
@@ -1173,10 +1199,7 @@ async def load(
 
             logger.debug('initialized %s (driver %s)', port, port_class_desc)
         except Exception as e:
-            if raise_on_error:
-                raise PortLoadError(f'Failed to initialize port from driver {port_class_desc}') from e
-
-            logger.error('failed to initialize port from driver %s: %s', port_class_desc, e, exc_info=True)
+            raise PortLoadError(f'Failed to initialize port from driver {port_class_desc}') from e
 
     # Map IDs
     for port in ports:
@@ -1189,27 +1212,16 @@ async def load(
             continue
 
         if new_id in _ports_by_id:
-            if raise_on_error:
-                raise PortLoadError(f'Cannot map port {old_id} to {new_id}: new id already exists')
-
-            logger.error('cannot map port %s to %s: new id already exists', old_id, new_id)
-            continue
+            raise PortLoadError(f'Cannot map port {old_id} to {new_id}: new id already exists')
 
         port = _ports_by_id.get(old_id)
         if not port:
-            if raise_on_error:
-                raise PortLoadError(f'Cannot map port {old_id} to {new_id}: no such port')
-
-            logger.error('cannot map port %s to %s: no such port', old_id, new_id)
-            continue
+            raise PortLoadError(f'Cannot map port {old_id} to {new_id}: no such port')
 
         try:
             port.map_id(new_id)
         except Exception as e:
-            if raise_on_error:
-                raise PortLoadError(f'Cannot map port {old_id} to {new_id}') from e
-
-            port.error('cannot map to %s: %s', new_id, e)
+            raise PortLoadError(f'Cannot map port {old_id} to {new_id}') from e
 
         _ports_by_id.pop(old_id)
         _ports_by_id[port.get_id()] = port
@@ -1219,10 +1231,7 @@ async def load(
         try:
             await port.load()
         except Exception as e:
-            if raise_on_error:
-                raise PortLoadError(f'Failed to load {port}') from e
-
-            port.error('failed to load: %s', port, e, exc_info=True)
+            raise PortLoadError(f'Failed to load {port}') from e
 
         if trigger_add:
             await port.trigger_add()
@@ -1232,7 +1241,7 @@ async def load(
 
 async def load_one(cls: Union[str, type], args: dict[str, Any], trigger_add: bool = True) -> BasePort:
     port_args = [dict(driver=cls, **args)]
-    ports = await load(port_args, raise_on_error=True, trigger_add=trigger_add)
+    ports = await load(port_args, trigger_add=trigger_add)
 
     return ports[0]
 
@@ -1257,10 +1266,10 @@ async def save_loop() -> None:
                 except Exception as e:
                     port.error('save failed: %s', e, exc_info=True)
 
-            await asyncio.sleep(settings.core.persist_interval)
+            await asyncio.sleep(settings.core.persist_interval / 1000.0)
 
         except asyncio.CancelledError:
-            logger.debug('save loop cancelled')
+            logger.debug('save task cancelled')
             break
 
 
@@ -1269,21 +1278,13 @@ async def init() -> None:
 
     _save_loop_task = asyncio.create_task(save_loop())
 
-    # Use raise_on_error=False because we prefer a partial successful startup rather than a failed one
-    await load(settings.ports, raise_on_error=False)
-
 
 async def cleanup() -> None:
-
-    async def cleanup_port(port: BasePort) -> None:
-        await port.disable()
-        await port.cleanup()
-
     if _save_loop_task:
         _save_loop_task.cancel()
         await _save_loop_task
 
-    tasks = [asyncio.create_task(cleanup_port(port)) for port in _ports_by_id.values()]
+    tasks = [asyncio.create_task(port.remove(persisted_data=False)) for port in _ports_by_id.values()]
     if tasks:
         await asyncio.wait(tasks)
 

@@ -123,7 +123,7 @@ def init_logging() -> None:
 
 
 def init_signals() -> None:
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     async def shutdown() -> None:
         global _stopping
@@ -151,7 +151,7 @@ def handle_loop_exception(loop: asyncio.AbstractEventLoop, context: dict[str, An
 
 
 async def init_loop() -> None:
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     loop.set_exception_handler(handle_loop_exception)
 
@@ -166,7 +166,7 @@ async def cleanup_loop() -> None:
 
     await asyncio.gather(*tasks)
 
-    await asyncio.get_event_loop().shutdown_asyncgens()
+    await asyncio.get_running_loop().shutdown_asyncgens()
 
 
 def init_tornado() -> None:
@@ -271,18 +271,17 @@ async def cleanup_reverse() -> None:
 async def init_ports() -> None:
     logger.info('initializing ports')
 
-    # Load ports statically configured in settings
     await ports.init()
 
+    # Load ports statically configured in settings
+    await ports.load(settings.ports)
+
     # Peripheral ports
-    for peripheral in peripherals.all_peripherals():
+    for peripheral in peripherals.get_all():
         try:
-            port_args = await peripheral.get_port_args()
-            # Use raise_on_error=False because we prefer a partial successful startup rather than a failed one
-            loaded_ports = await ports.load(port_args, raise_on_error=False)
-            peripheral.set_ports(loaded_ports)
-        except Exception as e:
-            logger.error('failed to load ports of %s: %s', peripheral, e, exc_info=True)
+            await peripheral.init_ports()
+        except Exception:
+            peripheral.error('failed to load ports of %s', peripheral, exc_info=True)
 
     # Load virtual ports
     await vports.init()

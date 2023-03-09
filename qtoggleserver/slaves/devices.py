@@ -1086,7 +1086,7 @@ class Slave(logging_utils.LoggableMixin):
 
                 counter -= 1
             except asyncio.CancelledError:
-                self.debug('fwupdate poll loop cancelled')
+                self.debug('fwupdate poll task cancelled')
                 break
 
         # Clear task reference when exiting the task loop
@@ -1405,7 +1405,7 @@ class Slave(logging_utils.LoggableMixin):
         if self._provisioning_timeout_task:
             self._provisioning_timeout_task.cancel()
 
-        future = asyncio_utils.await_later(delay, self._provision_and_update)
+        future = asyncio_utils.await_later(delay, self._provision_and_update())
         self._provisioning_timeout_task = asyncio.create_task(future)
 
     async def _provision_and_update(self) -> None:

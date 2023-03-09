@@ -102,8 +102,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
 
         return {k: await t.render_async(context) if t is not None else None for k, t in template.items()}
 
-    @staticmethod
-    def get_common_context(event: core_events.Event) -> dict:
+    def get_common_context(self, event: core_events.Event) -> dict:
         timestamp = event.get_timestamp()
         if timestamp:
             moment = datetime.datetime.fromtimestamp(timestamp)
@@ -116,7 +115,11 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
             'timestamp': timestamp,
             'moment': moment,
             'display_moment': moment.strftime('%c') if moment else '',
-            'public_url': settings.public_url
+            'public_url': settings.public_url,
+            'device_attrs': self.get_device_attrs(),
+            'port_values': self.get_port_values(),
+            'port_attrs': self.get_port_attrs(),
+            'slave_attrs': self.get_slave_attrs(),
         }
 
     @abc.abstractmethod

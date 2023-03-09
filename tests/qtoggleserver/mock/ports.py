@@ -1,5 +1,5 @@
-from qtoggleserver.core.ports import TYPE_BOOLEAN, TYPE_NUMBER, Port
-from qtoggleserver.core.typing import NullablePortValue, PortValue
+from qtoggleserver.core.ports import TYPE_BOOLEAN, TYPE_NUMBER, Port, SkipRead
+from qtoggleserver.core.typing import NullablePortValue
 
 
 class MockPort(Port):
@@ -16,11 +16,14 @@ class MockPort(Port):
         self._last_written_value: NullablePortValue = None
 
     async def read_value(self) -> NullablePortValue:
+        if self._next_value is None:
+            raise SkipRead()
+
         value = self._next_value
         self._next_value = None
         return value
 
-    async def write_value(self, value: PortValue) -> None:
+    async def write_value(self, value: NullablePortValue) -> None:
         self._last_written_value = value
 
     def set_next_value(self, value: NullablePortValue) -> None:
@@ -34,9 +37,9 @@ class MockPort(Port):
         return self._last_written_value
 
 
-class BooleanMockPort(MockPort):
+class MockBooleanPort(MockPort):
     TYPE = TYPE_BOOLEAN
 
 
-class NumberMockPort(MockPort):
+class MockNumberPort(MockPort):
     TYPE = TYPE_NUMBER

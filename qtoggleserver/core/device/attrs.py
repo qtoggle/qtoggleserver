@@ -496,7 +496,7 @@ def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
             setattr(core_device_attrs, n, value)
             continue
         elif n.endswith('_password_hash') and hasattr(core_device_attrs, n):
-            # FIXME: Password set command cannot be called with hash and we don't have clear-text password here.
+            # FIXME: Password set command cannot be called with hash, and we don't have clear-text password here.
             #        A solution would be to use sha256 crypt algorithm w/o salt for Unix password (watch for the special
             #        alphabet and for number of rounds defaulting to 5000)
             setattr(core_device_attrs, n, value)

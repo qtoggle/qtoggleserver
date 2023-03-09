@@ -4,7 +4,7 @@ import abc
 
 from typing import Optional, Union
 
-from .exceptions import EvalSkipped, ExpressionEvalError
+from .exceptions import EvalSkipped, ExpressionEvalError, ValueUnavailable
 
 
 class Expression(metaclass=abc.ABCMeta):
@@ -24,6 +24,8 @@ class Expression(metaclass=abc.ABCMeta):
         try:
             return await self._eval(context)
         except EvalSkipped:
+            raise
+        except ValueUnavailable:
             raise
         except ExpressionEvalError:
             # Pause expression evaluation for 1 second, as it's very unlikely that a problematic expression become

@@ -316,7 +316,7 @@ function wait(firstQuick = false) {
             syncListenError = error
             listenErrorCount++
 
-            /* Reconnect fast a few couple of time */
+            /* Reconnect fast a few couple of times */
             if (listenErrorCount <= FAST_RECONNECT_LISTEN_ERRORS) {
                 reconnectSeconds = 1
             }

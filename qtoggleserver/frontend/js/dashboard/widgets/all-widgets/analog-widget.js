@@ -751,6 +751,26 @@ export class AnalogWidget extends Widget {
     }
 
     _showValue(value, pos = null) {
+        if (value == null) {
+            let disabledColor = Theme.getColor('@disabled-color')
+            this._containerDiv.toggleClass('end-half', false)
+            if (this._cursorDiv) {
+                this._cursorDiv.css('background', disabledColor)
+                this._cursorDiv.css(this._vert ? 'height' : 'width', 0)
+            }
+            if (this._handleDiv) {
+                if (this._negativeProgress) {
+                    this._progressDiskDiv.progressdisk({color: disabledColor})
+                }
+                this._handleDiv.toggleClass('progress', false)
+                this._handleDiv.css('background', disabledColor)
+                this._handleDiv.css(this._vert ? 'bottom' : 'left', 0)
+            }
+            this._backgroundCoverDiv.css(this._vert ? 'bottom' : 'left', 0)
+            this._textDiv.html('')
+            return
+        }
+
         let showProgress = false
         if (this._negativeProgress && value < 0) {
             value = -value

@@ -75,14 +75,13 @@ async def update() -> None:
 
             try:
                 new_value = await port.read_transformed_value()
+            except core_ports.SkipRead:
+                continue  # read explicitly skipped
             except Exception as e:
                 logger.error('failed to read value from %s: %s', port, e, exc_info=True)
                 _ports_with_read_error.add(port)
 
                 continue
-
-            if new_value is None:
-                continue  # read value not available
 
             if new_value != old_value:
                 old_value_str = json_utils.dumps(old_value) if old_value is not None else '(unavailable)'
@@ -109,7 +108,7 @@ async def update_loop() -> None:
                 logger.error('update failed: %s', e, exc_info=True)
             await asyncio.sleep(settings.core.tick_interval / 1000.0)
         except asyncio.CancelledError:
-            logger.debug('update loop cancelled')
+            logger.debug('update task cancelled')
             break
 
 
@@ -235,7 +234,7 @@ async def init() -> None:
     global _update_loop_task
     global loop
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     force_eval_expressions()
     _update_loop_task = loop.create_task(update_loop())

@@ -22,7 +22,8 @@ class ConfigForm extends WidgetConfigForm {
                 new PortPickerField({
                     name: 'portId',
                     label: gettext('Port'),
-                    required: true
+                    required: true,
+                    filter: port => port.type === 'number'
                 }),
                 new NumericField({
                     name: 'min',

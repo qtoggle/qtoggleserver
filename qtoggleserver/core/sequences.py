@@ -65,7 +65,7 @@ class Sequence:
                     self._loop_task = asyncio.create_task(self._loop())
                     return
             except asyncio.CancelledError:
-                logger.debug('sequence loop cancelled')
+                logger.debug('sequence task cancelled')
                 break
 
         self._loop_task = None

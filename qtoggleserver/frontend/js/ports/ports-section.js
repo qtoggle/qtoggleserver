@@ -166,7 +166,7 @@ class PortsSection extends Section {
                 }
 
                 /* Update port form */
-                if (portForm && (portForm.getPortId() === event.params.id) && (event.params.value != null)) {
+                if (portForm && (portForm.getPortId() === event.params.id)) {
                     let lastSync = Math.round(new Date().getTime() / 1000)
 
                     let valueField = portForm.getField('value')

@@ -3,7 +3,7 @@ from qtoggleserver.drivers.persist.json import JSONDriver, UnindexedData
 
 class MockPersistDriver(JSONDriver):
     def __init__(self) -> None:
-        super().__init__(file_path='')
+        super().__init__(file_path=None)
 
         self._history_supported: bool = False
 
