@@ -530,6 +530,15 @@ export const STD_DEVICE_ATTRDEFS = {
         standard: true,
         order: 120
     },
+    firmware_auto_update: {
+        display_name: gettext('Firmware Auto-update'),
+        description: gettext('Automatically check and apply firmware updates.'),
+        type: 'boolean',
+        modifiable: true,
+        optional: true,
+        standard: true,
+        order: 121
+    },
     api_version: {
         display_name: gettext('API Version'),
         description: gettext('The qToggle API version implemented and supported by the device.'),

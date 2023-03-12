@@ -9,7 +9,7 @@ from qtoggleserver.utils import json as json_utils
 from . import attrs as device_attrs
 
 
-SAVED_ATTRS = ['name', 'display_name', 'admin_password_hash', 'normal_password_hash', 'viewonly_password_hash']
+_PERSISTED_MODULE_ATTRS = ['admin_password_hash', 'normal_password_hash', 'viewonly_password_hash']
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,8 @@ def get_display_name() -> str:
 async def load() -> None:
     data = await persist.get_value('device', {})
 
-    for name in SAVED_ATTRS:
+    # Load persisted module attributes
+    for name in _PERSISTED_MODULE_ATTRS:
         value = data.get(name)
         if value is None:
             continue
@@ -35,6 +36,15 @@ async def load() -> None:
 
         setattr(device_attrs, name, value)
 
+    # Load persisted device attributes
+    attrdefs = device_attrs.get_attrdefs()
+    attrs = {}
+    for name, attrdef in attrdefs.items():
+        if attrdef.get('persisted') and data.get(name) is not None:
+            attrs[name] = data[name]
+    if attrs:
+        await device_attrs.set_attrs(attrs)
+
     # Hash empty passwords
     if not device_attrs.admin_password_hash:
         device_attrs.admin_password_hash = device_attrs.EMPTY_PASSWORD_HASH
@@ -45,7 +55,13 @@ async def load() -> None:
 
 
 async def save() -> None:
-    data = {name: getattr(device_attrs, name) for name in SAVED_ATTRS}
+    data = {name: getattr(device_attrs, name) for name in _PERSISTED_MODULE_ATTRS}
+
+    attrdefs = device_attrs.get_attrdefs()
+    attrs = await device_attrs.get_attrs()
+    for name, attrdef in attrdefs.items():
+        if attrdef.get('persisted') and attrs.get(name) is not None:
+            data[name] = attrs[name]
 
     logger.debug('saving persisted data')
     await persist.set_value('device', data)

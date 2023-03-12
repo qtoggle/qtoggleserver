@@ -13,6 +13,7 @@ _DUMMY_DATE = '2222-11-10'
 class DummyDriver(fwupdate.BaseDriver):
     def __init__(self) -> None:
         self._status = fwupdate.STATUS_IDLE
+        self._auto_update_enabled: bool = False
 
         fwupdate.BaseDriver.__init__(self)
 
@@ -48,3 +49,9 @@ class DummyDriver(fwupdate.BaseDriver):
         self._status = fwupdate.STATUS_RESTARTING
         await asyncio.sleep(_SLEEP_TIME * 2)
         self._status = fwupdate.STATUS_IDLE
+
+    async def is_auto_update_enabled(self) -> bool:
+        return self._auto_update_enabled
+
+    async def set_auto_update_enabled(self, enabled: bool) -> None:
+        self._auto_update_enabled = enabled

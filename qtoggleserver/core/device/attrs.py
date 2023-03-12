@@ -14,6 +14,7 @@ from typing import Optional
 from qtoggleserver import system, version
 from qtoggleserver.conf import settings
 from qtoggleserver.core.typing import AttributeDefinitions, Attributes, GenericJSONDict
+from qtoggleserver.system import fwupdate
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_get_cmd, run_set_cmd
 
@@ -140,6 +141,7 @@ ATTRDEFS = {
         'max': 32,
         'pattern': r'^[_a-zA-Z][_a-zA-Z0-9-]{0,31}$',
         'standard': True,
+        'persisted': True,
         'getter': attr_get_name,
         'setter': attr_set_name,
     },
@@ -148,6 +150,7 @@ ATTRDEFS = {
         'modifiable': True,
         'max': 64,
         'standard': True,
+        'persisted': True,
         'getter': attr_get_display_name,
         'setter': attr_set_display_name,
     },
@@ -155,6 +158,14 @@ ATTRDEFS = {
         'type': 'string',
         'standard': True,
         'getter': lambda: version.VERSION,
+    },
+    'firmware_auto_update': {
+        'type': 'boolean',
+        'modifiable': True,
+        'standard': True,
+        'enabled': lambda: bool(settings.system.fwupdate.driver),
+        'getter': fwupdate.is_auto_update_enabled,
+        'setter': fwupdate.set_auto_update_enabled,
     },
     'api_version': {
         'type': 'string',
@@ -513,6 +524,7 @@ def get_schema(loose: bool = False) -> GenericJSONDict:
 
         attr_schema.pop('modifiable', None)
         attr_schema.pop('standard', None)
+        attr_schema.pop('persisted', None)
         attr_schema.pop('getter', None)
         attr_schema.pop('setter', None)
         attr_schema.pop('reboot', None)
@@ -642,6 +654,7 @@ async def to_json() -> GenericJSONDict:
             continue
 
         attrdef.pop('reboot', None)
+        attrdef.pop('persisted', None)
         attrdef.pop('pattern', None)  # TODO: remove this line once pattern becomes an API-defined attrdef field
         attrdef.pop('setter', None)
         attrdef.pop('getter', None)

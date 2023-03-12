@@ -57,6 +57,14 @@ class BaseDriver(metaclass=abc.ABCMeta):
     async def update_to_url(self, url: str) -> None:
         pass
 
+    @abc.abstractmethod
+    async def is_auto_update_enabled(self) -> bool:
+        pass
+
+    @abc.abstractmethod
+    async def set_auto_update_enabled(self, enabled: bool) -> None:
+        pass
+
 
 def _get_fwupdate() -> BaseDriver:
     global _driver
@@ -107,3 +115,13 @@ async def update_to_url(url: str) -> None:
     logger.debug('updating to url %s', url)
 
     await _get_fwupdate().update_to_url(url)
+
+
+async def is_auto_update_enabled() -> bool:
+    return await _get_fwupdate().is_auto_update_enabled()
+
+
+async def set_auto_update_enabled(enabled: bool) -> None:
+    logger.debug('auto-update %s', ['disabled', 'enabled'][enabled])
+
+    await _get_fwupdate().set_auto_update_enabled(enabled)
