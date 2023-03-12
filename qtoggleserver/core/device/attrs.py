@@ -468,7 +468,7 @@ def get_attrdefs() -> AttributeDefinitions:
                 if callable(v) and k in ATTRDEF_CALLABLE_FIELDS:
                     attrdef[k] = v()
 
-            if attrdef.get('enabled') is False:
+            if attrdef.pop('enabled', True) is False:
                 _attrdefs.pop(n)
 
     return _attrdefs
@@ -511,7 +511,6 @@ def get_schema(loose: bool = False) -> GenericJSONDict:
         if 'choices' in attrdef:
             attr_schema['enum'] = [c['value'] for c in attr_schema.pop('choices')]
 
-        attr_schema.pop('persisted', None)
         attr_schema.pop('modifiable', None)
         attr_schema.pop('standard', None)
         attr_schema.pop('getter', None)
@@ -539,7 +538,7 @@ async def get_attrs() -> Attributes:
 
     for call in call_results.keys():
         result = call()
-        if inspect.isawaitable(call):
+        if inspect.isawaitable(result):
             result = await result
         call_results[call] = result
 
@@ -592,13 +591,13 @@ async def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
             if ignore_extra:
                 continue
             else:
-                raise
+                raise DeviceAttributeError('no-such-attribute', n) from None
 
         if not attrdef.get('modifiable'):
             if not ignore_extra:
                 raise DeviceAttributeError('attribute-not-modifiable', n)
 
-        reboot_required = reboot_required or attrdef.get('reboot')
+        reboot_required = reboot_required or attrdef.get('reboot', False)
 
         # Used by `PUT /device` API call to restore passwords stored as hashes
         if n.endswith('_password_hash') and hasattr(core_device_attrs, n):
