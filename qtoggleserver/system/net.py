@@ -60,7 +60,7 @@ def has_wifi_support() -> bool:
 def get_wifi_config() -> dict[str, str]:
     result = run_get_cmd(
         settings.system.net.wifi.get_cmd,
-        cmd_name='WiFi config',
+        cmd_name='Wi-Fi config',
         log_values=False,
         exc_class=NetError,
         required_fields=['ssid', 'psk', 'bssid', 'bssid_current', 'rssi_current']
@@ -85,7 +85,7 @@ def get_wifi_config() -> dict[str, str]:
 def set_wifi_config(ssid: str, psk: str, bssid: str) -> None:
     run_set_cmd(
         settings.system.net.wifi.set_cmd,
-        cmd_name='WiFi config',
+        cmd_name='Wi-Fi config',
         exc_class=NetError,
         log_values=False,
         ssid=ssid,
