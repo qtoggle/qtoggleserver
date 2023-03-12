@@ -72,6 +72,10 @@ async def post_reset(request: core_api.APIRequest, params: GenericJSONDict) -> N
             await slaves.reset_slaves()
         if core_history.is_enabled():
             await core_history.reset()
+        if system.net.has_ip_support():
+            system.net.reset_ip_config()
+        if system.net.has_wifi_support():
+            system.net.reset_wifi_config()
 
     main.loop.call_later(2, system.reboot)
 

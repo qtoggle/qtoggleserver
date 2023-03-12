@@ -49,6 +49,10 @@ def set_ip_config(address: str, netmask: str, gateway: str, dns: str) -> None:
     )
 
 
+def reset_ip_config() -> None:
+    set_ip_config(address='', netmask='', gateway='', dns='')
+
+
 def has_wifi_support() -> bool:
     return bool(settings.system.net.wifi.get_cmd and settings.system.net.wifi.set_cmd)
 
@@ -88,6 +92,10 @@ def set_wifi_config(ssid: str, psk: str, bssid: str) -> None:
         psk=psk,
         bssid=bssid
     )
+
+
+def reset_wifi_config() -> None:
+    set_wifi_config(ssid='', psk='', bssid='')
 
 
 def get_default_interface() -> Optional[str]:
