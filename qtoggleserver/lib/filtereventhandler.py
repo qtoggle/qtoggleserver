@@ -184,7 +184,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 self._port_values[port.get_id()] = new_value
         elif isinstance(event, core_events.DeviceEvent):
             old_attrs = self._device_attrs
-            new_attrs = event.get_attrs()
+            new_attrs = await event.get_attrs()
 
             changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
             self._device_attrs = new_attrs

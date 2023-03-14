@@ -10,7 +10,7 @@ from qtoggleserver.core.typing import Attributes
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def get_device(request: core_api.APIRequest) -> Attributes:
-    return core_device_attrs.to_json()
+    return await core_device_attrs.to_json()
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
@@ -32,7 +32,7 @@ async def put_device(request: core_api.APIRequest, params: Attributes) -> None:
     await core_device.load()
 
     try:
-        core_device_attrs.set_attrs(params, ignore_extra=True)
+        await core_device_attrs.set_attrs(params, ignore_extra=True)
     except core_device_attrs.DeviceAttributeError as e:
         raise core_api.APIError(400, e.error, attribute=e.attribute)
     except Exception as e:
@@ -58,7 +58,7 @@ async def patch_device(request: core_api.APIRequest, params: Attributes) -> None
     )
 
     try:
-        reboot_required = core_device_attrs.set_attrs(params)
+        reboot_required = await core_device_attrs.set_attrs(params)
     except core_device_attrs.DeviceAttributeError as e:
         raise core_api.APIError(400, e.error, attribute=e.attribute)
     except Exception as e:

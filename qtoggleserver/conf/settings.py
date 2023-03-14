@@ -54,7 +54,7 @@ class core:
     max_client_time_skew: int = 300
     backup_support: bool = True
     history_support: bool = True
-    history_janitor_interval: int = 600
+    history_janitor_interval: int = 3600
     listen_support: bool = True
     sequences_support: bool = True
     tls_support: bool = True

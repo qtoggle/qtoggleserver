@@ -4,41 +4,29 @@ import logging
 from typing import Optional
 
 from qtoggleserver import persist
-from qtoggleserver.conf import settings
 from qtoggleserver.utils import json as json_utils
-from qtoggleserver.utils.cmd import run_get_cmd
 
 from . import attrs as device_attrs
 
+
+_PERSISTED_MODULE_ATTRS = ['admin_password_hash', 'normal_password_hash', 'viewonly_password_hash']
 
 logger = logging.getLogger(__name__)
 
 
 def get_display_name() -> str:
+    # Used by template notifications
     return device_attrs.display_name or device_attrs.name
 
 
 async def load() -> None:
     data = await persist.get_value('device', {})
 
-    # Attributes
-    persisted_attrs = []
-    for name, value in device_attrs.get_attrdefs().items():
-        persisted = value.get('persisted', value.get('modifiable'))
-        if callable(persisted):
-            persisted = persisted()
-
-        if persisted:
-            persisted_attrs.append(name)
-
-    for name in persisted_attrs:
-        if name.endswith('password') and hasattr(device_attrs, name + '_hash'):
-            name += '_hash'
-
-        if name not in data:
+    # Load persisted module attributes
+    for name in _PERSISTED_MODULE_ATTRS:
+        value = data.get(name)
+        if value is None:
             continue
-
-        value = data[name]
 
         # A few attributes may carry sensitive information, so treat them separately and do not log their values
         if name.count('password') or name == 'wifi_key':
@@ -48,10 +36,14 @@ async def load() -> None:
 
         setattr(device_attrs, name, value)
 
-    # Device name
-    if settings.core.device_name.get_cmd:
-        result = run_get_cmd(settings.core.device_name.get_cmd, cmd_name='device name', required_fields=['name'])
-        device_attrs.name = result['name']
+    # Load persisted device attributes
+    attrdefs = device_attrs.get_attrdefs()
+    attrs = {}
+    for name, attrdef in attrdefs.items():
+        if attrdef.get('persisted') and data.get(name) is not None:
+            attrs[name] = data[name]
+    if attrs:
+        await device_attrs.set_attrs(attrs)
 
     # Hash empty passwords
     if not device_attrs.admin_password_hash:
@@ -63,23 +55,13 @@ async def load() -> None:
 
 
 async def save() -> None:
-    data = {}
+    data = {name: getattr(device_attrs, name) for name in _PERSISTED_MODULE_ATTRS}
 
-    # Attributes
-    persisted_attrs = []
-    for name, value in device_attrs.get_attrdefs().items():
-        persisted = value.get('persisted', value.get('modifiable'))
-        if callable(persisted):
-            persisted = persisted()
-
-        if persisted:
-            persisted_attrs.append(name)
-
-    for name in persisted_attrs:
-        if name.endswith('password') and hasattr(device_attrs, name + '_hash'):
-            name += '_hash'
-
-        data[name] = getattr(device_attrs, name)
+    attrdefs = device_attrs.get_attrdefs()
+    attrs = await device_attrs.get_attrs()
+    for name, attrdef in attrdefs.items():
+        if attrdef.get('persisted') and attrs.get(name) is not None:
+            data[name] = attrs[name]
 
     logger.debug('saving persisted data')
     await persist.set_value('device', data)

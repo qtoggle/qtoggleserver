@@ -2,6 +2,7 @@ import asyncio
 import copy
 import datetime
 import hashlib
+import inspect
 import logging
 import re
 import socket
@@ -13,239 +14,20 @@ from typing import Optional
 from qtoggleserver import system, version
 from qtoggleserver.conf import settings
 from qtoggleserver.core.typing import AttributeDefinitions, Attributes, GenericJSONDict
+from qtoggleserver.system import fwupdate
 from qtoggleserver.utils import json as json_utils
-from qtoggleserver.utils.cmd import run_set_cmd
+from qtoggleserver.utils.cmd import run_get_cmd, run_set_cmd
 
 from . import events as device_events
 
 
 logger = logging.getLogger(__name__)
 
-ATTRDEFS = {
-    'name': {
-        'type': 'string',
-        'modifiable': True,
-        'persisted': True,
-        'min': 1,
-        'max': 32,
-        'pattern': r'^[_a-zA-Z][_a-zA-Z0-9-]{0,31}$',
-        'standard': True
-    },
-    'display_name': {
-        'type': 'string',
-        'modifiable': True,
-        'max': 64,
-        'standard': True
-    },
-    'version': {
-        'type': 'string',
-        'standard': True
-    },
-    'api_version': {
-        'type': 'string',
-        'standard': True
-    },
-    'vendor': {
-        'type': 'string',
-        'standard': True
-    },
-    'admin_password': {
-        'type': 'string',
-        'modifiable': True,
-        'max': 32,
-        'standard': True
-    },
-    'normal_password': {
-        'type': 'string',
-        'modifiable': True,
-        'max': 32,
-        'standard': True
-    },
-    'viewonly_password': {
-        'type': 'string',
-        'modifiable': True,
-        'max': 32,
-        'standard': True
-    },
-    'flags': {
-        'type': ['string'],
-        'standard': True
-    },
-    'virtual_ports': {
-        'type': 'number',
-        'enabled': lambda: bool(settings.core.virtual_ports),
-        'standard': True
-    },
-    'uptime': {
-        'type': 'number',
-        'standard': True
-    },
-    'date': {
-        'type': 'number',
-        'modifiable': lambda: system.date.has_set_date_support(),
-        'persisted': False,
-        'standard': False  # having standard False here enables exposing of definition (needed for non-modifiable)
-    },
-    'timezone': {
-        'type': 'string',
-        'modifiable': True,
-        'persisted': False,
-        'choices': [{'value': zone} for zone in system.date.get_timezones()],
-        'enabled': lambda: system.date.has_timezone_support(),
-        'standard': False  # having standard False here enables exposing of definition (needed for choices)
-    },
-    'wifi_ssid': {
-        'type': 'string',
-        'max': 32,
-        'modifiable': True,
-        'persisted': False,
-        'enabled': lambda: system.net.has_wifi_support(),
-        'standard': True
-    },
-    'wifi_key': {
-        'type': 'string',
-        'max': 64,
-        'modifiable': True,
-        'persisted': False,
-        'enabled': lambda: system.net.has_wifi_support(),
-        'standard': True
-    },
-    'wifi_bssid': {
-        'type': 'string',
-        'pattern': r'^([a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2})?$',
-        'modifiable': True,
-        'persisted': False,
-        'enabled': lambda: system.net.has_wifi_support(),
-        'standard': True
-    },
-    'wifi_bssid_current': {
-        'type': 'string',
-        'modifiable': False,
-        'persisted': False,
-        'enabled': lambda: system.net.has_wifi_support(),
-        'standard': True
-    },
-    'wifi_signal_strength': {
-        'type': 'number',
-        'modifiable': False,
-        'persisted': False,
-        'enabled': lambda: system.net.has_wifi_support(),
-        'standard': True
-    },
-    'ip_address': {
-        'type': 'string',
-        'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})?$',
-        'modifiable': True,
-        'persisted': False,
-        'enabled': lambda: system.net.has_ip_support(),
-        'standard': True
-    },
-    'ip_netmask': {
-        'type': 'number',
-        'min': 0,
-        'max': 31,
-        'integer': True,
-        'modifiable': True,
-        'persisted': False,
-        'enabled': lambda: system.net.has_ip_support(),
-        'standard': True
-    },
-    'ip_gateway': {
-        'type': 'string',
-        'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})?$',
-        'modifiable': True,
-        'persisted': False,
-        'enabled': lambda: system.net.has_ip_support(),
-        'standard': True
-    },
-    'ip_dns': {
-        'type': 'string',
-        'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})?$',
-        'modifiable': True,
-        'persisted': False,
-        'enabled': lambda: system.net.has_ip_support(),
-        'standard': True
-    },
-    'ip_address_current': {
-        'type': 'string',
-        'modifiable': False,
-        'persisted': False,
-        'enabled': lambda: system.net.has_ip_support(),
-        'standard': True
-    },
-    'ip_netmask_current': {
-        'type': 'number',
-        'modifiable': False,
-        'persisted': False,
-        'enabled': lambda: system.net.has_ip_support(),
-        'standard': True
-    },
-    'ip_gateway_current': {
-        'type': 'string',
-        'modifiable': False,
-        'persisted': False,
-        'enabled': lambda: system.net.has_ip_support(),
-        'standard': True
-    },
-    'ip_dns_current': {
-        'type': 'string',
-        'modifiable': False,
-        'persisted': False,
-        'enabled': lambda: system.net.has_ip_support(),
-        'standard': True
-    },
-    'cpu_usage': {
-        'type': 'number',
-        'min': 0,
-        'max': 100,
-        'modifiable': False,
-        'persisted': False,
-        'standard': True
-    },
-    'mem_usage': {
-        'type': 'number',
-        'min': 0,
-        'max': 100,
-        'modifiable': False,
-        'persisted': False,
-        'standard': True
-    },
-    'storage_usage': {
-        'type': 'number',
-        'min': 0,
-        'max': 100,
-        'modifiable': False,
-        'persisted': False,
-        'enabled': lambda: system.storage.has_storage_support(),
-        'standard': True
-    },
-    'temperature': {
-        'type': 'number',
-        'modifiable': False,
-        'persisted': False,
-        'enabled': lambda: system.temperature.has_temperature_support(),
-        'min': lambda: settings.system.temperature.min,
-        'max': lambda: settings.system.temperature.max,
-        'standard': False  # having standard False here enables exposing of definition (needed for min/max)
-    },
-    'battery_level': {
-        'type': 'number',
-        'min': 0,
-        'max': 100,
-        'modifiable': False,
-        'persisted': False,
-        'enabled': lambda: system.battery.has_battery_support(),
-        'standard': True
-    }
-}
 
 EMPTY_PASSWORD_HASH = hashlib.sha256(b'').hexdigest()
-
-WIFI_RSSI_EXCELLENT = -50
-WIFI_RSSI_GOOD = -60
-WIFI_RSSI_FAIR = -70
-
 NETWORK_ATTRS_WATCH_INTERVAL = 5
+ATTRDEFS_CACHE_TIMEOUT = 10
+ATTRDEF_CALLABLE_FIELDS = {'modifiable', 'min', 'max', 'enabled'}
 
 
 name: str = re.sub(r'[^a-zA-Z0-9_-]', '', socket.gethostname())
@@ -263,99 +45,40 @@ _attrdefs: Optional[AttributeDefinitions] = None
 _attrs_watch_task: Optional[asyncio.Task] = None
 
 
-class DeviceAttributeError(Exception):
-    def __init__(self, error: str, attribute: str) -> None:
-        self.error: str = error
-        self.attribute: str = attribute
+def attr_get_name() -> str:
+    global name
+    if settings.core.device_name.get_cmd:
+        result = run_get_cmd(settings.core.device_name.get_cmd, cmd_name='device name', required_fields=['name'])
+        name = result['name']
+
+    return name
 
 
-def get_attrdefs() -> AttributeDefinitions:
-    global _attrdefs
+def attr_set_name(value: str) -> None:
+    global name
+    name = value
 
-    if _attrdefs is None:
-        logger.debug('initializing attribute definitions')
-        _attrdefs = copy.deepcopy(ATTRDEFS)
-
-        # Transform all callable values into corresponding results
-        for n, attrdef in _attrdefs.items():
-            for k, v in attrdef.items():
-                if callable(v):
-                    attrdef[k] = v()
-
-    return _attrdefs
+    if settings.core.device_name.set_cmd:
+        run_set_cmd(settings.core.device_name.set_cmd, cmd_name='device name', name=value)
 
 
-def get_schema(loose: bool = False) -> GenericJSONDict:
-    global _schema
-
-    # Use cached value, but only when loose is false, as loose schema is never cached
-    if _schema is not None and not loose:
-        return _schema
-
-    schema = {
-        'type': 'object',
-        'properties': {},
-        'additionalProperties': loose
-    }
-
-    for n, attrdef in get_attrdefs().items():
-        if not attrdef.get('modifiable'):
-            continue
-
-        attr_schema = dict(attrdef)
-
-        enabled = attr_schema.pop('enabled', True)
-        if not enabled:
-            continue
-
-        if attr_schema['type'] == 'string':
-            if 'min' in attr_schema:
-                attr_schema['minLength'] = attr_schema.pop('min')
-
-            if 'max' in attr_schema:
-                attr_schema['maxLength'] = attr_schema.pop('max')
-        elif attr_schema['type'] == 'number':
-            if attr_schema.get('integer'):
-                attr_schema['type'] = 'integer'
-
-            if 'min' in attr_schema:
-                attr_schema['minimum'] = attr_schema.pop('min')
-
-            if 'max' in attr_schema:
-                attr_schema['maximum'] = attr_schema.pop('max')
-
-        if 'choices' in attrdef:
-            attr_schema['enum'] = [c['value'] for c in attr_schema.pop('choices')]
-
-        attr_schema.pop('persisted', None)
-        attr_schema.pop('modifiable', None)
-        attr_schema.pop('standard', None)
-
-        schema['properties'][n] = attr_schema
-
-    if not loose:
-        _schema = schema
-
-    return schema
+def attr_get_display_name() -> str:
+    return display_name
 
 
-def get_attrs() -> Attributes:
+def attr_set_display_name(value: str) -> None:
+    global display_name
+    display_name = value
+
+
+def attr_get_api_version() -> str:
     from qtoggleserver.core import api as core_api
+
+    return core_api.API_VERSION
+
+
+def attr_get_flags() -> list[str]:
     from qtoggleserver.core import history as core_history
-
-    attrs = {
-        'name': name,
-        'display_name': display_name,
-        'version': version.VERSION,
-        'api_version': core_api.API_VERSION,
-        'vendor': version.VENDOR,
-        'uptime': system.uptime(),
-
-        # Never disclose passwords
-        'admin_password': '' if admin_password_hash == EMPTY_PASSWORD_HASH else 'set',
-        'normal_password': '' if normal_password_hash == EMPTY_PASSWORD_HASH else 'set',
-        'viewonly_password': '' if viewonly_password_hash == EMPTY_PASSWORD_HASH else 'set'
-    }
 
     flags = ['expressions']
     if settings.system.fwupdate.driver:
@@ -385,79 +108,487 @@ def get_attrs() -> Attributes:
     if settings.webhooks.enabled:
         flags.append('webhooks')
 
-    attrs['flags'] = flags
+    return flags
 
-    if settings.core.virtual_ports:
-        attrs['virtual_ports'] = settings.core.virtual_ports
 
-    if system.date.has_real_date_time():
-        attrs['date'] = int(time.time())
+def attr_get_password(which: str) -> str:
+    core_device_attrs = sys.modules[__name__]
+    password_hash = getattr(core_device_attrs, f'{which}_password_hash')
+    return ['set', ''][password_hash == EMPTY_PASSWORD_HASH]
 
-    if system.date.has_timezone_support():
-        attrs['timezone'] = system.date.get_timezone()
 
-    if system.net.has_wifi_support():
-        wifi_config = system.net.get_wifi_config()
-        attrs['wifi_ssid'] = wifi_config['ssid']
-        attrs['wifi_key'] = wifi_config['psk']
-        attrs['wifi_bssid'] = wifi_config['bssid']
+def attr_set_password(which: str, value: str) -> None:
+    # Call password set command, if available
+    if settings.core.passwords.set_cmd:
+        run_set_cmd(
+            settings.core.passwords.set_cmd,
+            cmd_name='password',
+            log_values=False,
+            username=which,
+            password=value
+        )
 
-        if wifi_config['bssid_current']:
-            attrs['wifi_bssid_current'] = wifi_config['bssid_current']
+    core_device_attrs = sys.modules[__name__]
+    password_hash = hashlib.sha256(value.encode()).hexdigest()
+    setattr(core_device_attrs, f'{which}_password_hash', password_hash)
 
-        rssi = wifi_config['rssi_current']
-        if rssi:
-            rssi = int(rssi)
-            if rssi >= WIFI_RSSI_EXCELLENT:
-                strength = 3
-            elif rssi >= WIFI_RSSI_GOOD:
-                strength = 2
-            elif rssi >= WIFI_RSSI_FAIR:
-                strength = 1
-            else:
-                strength = 0
 
-            attrs['wifi_signal_strength'] = strength
+ATTRDEFS = {
+    'name': {
+        'type': 'string',
+        'modifiable': True,
+        'min': 1,
+        'max': 32,
+        'pattern': r'^[_a-zA-Z][_a-zA-Z0-9-]{0,31}$',
+        'standard': True,
+        'persisted': True,
+        'getter': attr_get_name,
+        'setter': attr_set_name,
+    },
+    'display_name': {
+        'type': 'string',
+        'modifiable': True,
+        'max': 64,
+        'standard': True,
+        'persisted': True,
+        'getter': attr_get_display_name,
+        'setter': attr_set_display_name,
+    },
+    'version': {
+        'type': 'string',
+        'standard': True,
+        'getter': lambda: version.VERSION,
+    },
+    'firmware_auto_update': {
+        'type': 'boolean',
+        'modifiable': True,
+        'standard': True,
+        'enabled': lambda: bool(settings.system.fwupdate.driver),
+        'getter': fwupdate.is_auto_update_enabled,
+        'setter': fwupdate.set_auto_update_enabled,
+    },
+    'api_version': {
+        'type': 'string',
+        'standard': True,
+        'getter': attr_get_api_version,
+    },
+    'vendor': {
+        'type': 'string',
+        'standard': True,
+        'getter': lambda: version.VENDOR,
+    },
+    'admin_password': {
+        'type': 'string',
+        'modifiable': True,
+        'max': 32,
+        'standard': True,
+        'getter': lambda: attr_get_password('admin'),
+        'setter': lambda v: attr_set_password('admin', v),
+    },
+    'normal_password': {
+        'type': 'string',
+        'modifiable': True,
+        'max': 32,
+        'standard': True,
+        'getter': lambda: attr_get_password('normal'),
+        'setter': lambda v: attr_set_password('normal', v),
+    },
+    'viewonly_password': {
+        'type': 'string',
+        'modifiable': True,
+        'max': 32,
+        'standard': True,
+        'getter': lambda: attr_get_password('viewonly'),
+        'setter': lambda v: attr_set_password('viewonly', v),
+    },
+    'flags': {
+        'type': ['string'],
+        'standard': True,
+        'getter': attr_get_flags,
+    },
+    'virtual_ports': {
+        'type': 'number',
+        'standard': True,
+        'enabled': lambda: bool(settings.core.virtual_ports),
+        'getter': lambda: settings.core.virtual_ports,
+    },
+    'uptime': {
+        'type': 'number',
+        'standard': True,
+        'getter': system.uptime,
+    },
+    'date': {
+        'type': 'number',
+        'modifiable': system.date.has_set_date_support,
+        # mark as non-standard if no set support, to make attribute non-modifiable
+        'standard': system.date.has_set_date_support,
+        'enabled': system.date.has_real_date_time,
+        'getter': lambda: int(time.time()),
+        'setter': lambda v: system.date.set_date(datetime.datetime.utcfromtimestamp(v)),
+    },
+    'timezone': {
+        'type': 'string',
+        'modifiable': True,
+        'choices': [{'value': zone} for zone in system.date.get_timezones()],
+        'standard': True,
+        'enabled': system.date.has_timezone_support,
+        'getter': system.date.get_timezone,
+        'setter': system.date.set_timezone,
+    },
+    'wifi_ssid': {
+        'type': 'string',
+        'max': 32,
+        'modifiable': True,
+        'standard': True,
+        'enabled': system.net.has_wifi_support,
+        'reboot': True,
+        'getter': {
+            'call': system.net.get_wifi_config,
+            'key': 'ssid',
+        },
+        'setter': {
+            'call': system.net.set_wifi_config,
+            'key': 'ssid',
+        },
+    },
+    'wifi_key': {
+        'type': 'string',
+        'max': 64,
+        'modifiable': True,
+        'standard': True,
+        'enabled': system.net.has_wifi_support,
+        'reboot': True,
+        'getter': {
+            'call': system.net.get_wifi_config,
+            'key': 'psk',
+        },
+        'setter': {
+            'call': system.net.set_wifi_config,
+            'key': 'psk',
+        },
+    },
+    'wifi_bssid': {
+        'type': 'string',
+        'pattern': r'^([a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2})?$',
+        'modifiable': True,
+        'standard': True,
+        'enabled': system.net.has_wifi_support,
+        'reboot': True,
+        'getter': {
+            'call': system.net.get_wifi_config,
+            'key': 'bssid',
+        },
+        'setter': {
+            'call': system.net.set_wifi_config,
+            'key': 'bssid',
+        },
+    },
+    'wifi_bssid_current': {
+        'type': 'string',
+        'modifiable': False,
+        'standard': True,
+        'enabled': system.net.has_wifi_support,
+        'getter': {
+            'call': system.net.get_wifi_config,
+            'key': 'bssid_current',
+        },
+    },
+    'wifi_signal_strength': {
+        'type': 'number',
+        'modifiable': False,
+        'standard': True,
+        'enabled': system.net.has_wifi_support,
+        'getter': {
+            'call': system.net.get_wifi_config,
+            'key': 'strength_current',
+            'transform': lambda v: int(v),
+        },
+    },
+    'ip_address': {
+        'type': 'string',
+        'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})?$',
+        'modifiable': True,
+        'standard': True,
+        'enabled': system.net.has_ip_support,
+        'reboot': True,
+        'getter': {
+            'call': system.net.get_ip_config,
+            'key': 'address',
+        },
+        'setter': {
+            'call': system.net.set_ip_config,
+            'key': 'address',
+        },
+    },
+    'ip_netmask': {
+        'type': 'number',
+        'min': 0,
+        'max': 31,
+        'integer': True,
+        'modifiable': True,
+        'standard': True,
+        'enabled': system.net.has_ip_support,
+        'reboot': True,
+        'getter': {
+            'call': system.net.get_ip_config,
+            'key': 'netmask',
+            'transform': lambda v: v or 0
+        },
+        'setter': {
+            'call': system.net.set_ip_config,
+            'key': 'netmask',
+            'transform': lambda v: str(v)
+        },
+    },
+    'ip_gateway': {
+        'type': 'string',
+        'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})?$',
+        'modifiable': True,
+        'standard': True,
+        'enabled': system.net.has_ip_support,
+        'reboot': True,
+        'getter': {
+            'call': system.net.get_ip_config,
+            'key': 'gateway',
+        },
+        'setter': {
+            'call': system.net.set_ip_config,
+            'key': 'gateway',
+        },
+    },
+    'ip_dns': {
+        'type': 'string',
+        'pattern': r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})?$',
+        'modifiable': True,
+        'standard': True,
+        'enabled': system.net.has_ip_support,
+        'reboot': True,
+        'getter': {
+            'call': system.net.get_ip_config,
+            'key': 'dns',
+        },
+        'setter': {
+            'call': system.net.set_ip_config,
+            'key': 'dns',
+        },
+    },
+    'ip_address_current': {
+        'type': 'string',
+        'modifiable': False,
+        'standard': True,
+        'enabled': system.net.has_ip_support,
+        'getter': {
+            'call': system.net.get_ip_config,
+            'key': 'address_current',
+        },
+    },
+    'ip_netmask_current': {
+        'type': 'number',
+        'modifiable': False,
+        'standard': True,
+        'enabled': system.net.has_ip_support,
+        'getter': {
+            'call': system.net.get_ip_config,
+            'key': 'netmask_current',
+            'transform': lambda v: v or 0
+        },
+    },
+    'ip_gateway_current': {
+        'type': 'string',
+        'modifiable': False,
+        'standard': True,
+        'enabled': system.net.has_ip_support,
+        'getter': {
+            'call': system.net.get_ip_config,
+            'key': 'gateway_current',
+        },
+    },
+    'ip_dns_current': {
+        'type': 'string',
+        'modifiable': False,
+        'standard': True,
+        'enabled': system.net.has_ip_support,
+        'getter': {
+            'call': system.net.get_ip_config,
+            'key': 'dns_current',
+        },
+    },
+    'cpu_usage': {
+        'type': 'number',
+        'min': 0,
+        'max': 100,
+        'modifiable': False,
+        'standard': True,
+        'getter': system.get_cpu_usage,
+    },
+    'mem_usage': {
+        'type': 'number',
+        'min': 0,
+        'max': 100,
+        'modifiable': False,
+        'standard': True,
+        'getter': system.get_mem_usage,
+    },
+    'storage_usage': {
+        'type': 'number',
+        'min': 0,
+        'max': 100,
+        'modifiable': False,
+        'standard': True,
+        'enabled': system.storage.has_storage_support,
+        'getter': system.storage.get_storage_usage,
+    },
+    'temperature': {
+        'type': 'number',
+        'modifiable': False,
+        'min': lambda: settings.system.temperature.min,
+        'max': lambda: settings.system.temperature.max,
+        # mark as non-standard to expose min/max fields
+        'standard': False,
+        'enabled': system.temperature.has_temperature_support,
+        'getter': system.temperature.get_temperature,
+    },
+    'battery_level': {
+        'type': 'number',
+        'min': 0,
+        'max': 100,
+        'modifiable': False,
+        'standard': True,
+        'enabled': system.battery.has_battery_support,
+        'getter': system.battery.get_battery_level,
+    }
+}
 
-    if system.net.has_ip_support():
-        ip_config = system.net.get_ip_config()
-        attrs['ip_address'] = ip_config['address']
-        attrs['ip_netmask'] = int(ip_config['netmask'] or 0)
-        attrs['ip_gateway'] = ip_config['gateway']
-        attrs['ip_dns'] = ip_config['dns']
 
-        if 'address_current' in ip_config:
-            attrs['ip_address_current'] = ip_config['address_current']
-        if 'netmask_current' in ip_config:
-            attrs['ip_netmask_current'] = int(ip_config['netmask_current'] or 0)
-        if 'gateway_current' in ip_config:
-            attrs['ip_gateway_current'] = ip_config['gateway_current']
-        if 'dns_current' in ip_config:
-            attrs['ip_dns_current'] = ip_config['dns_current']
+class DeviceAttributeError(Exception):
+    def __init__(self, error: str, attribute: str) -> None:
+        self.error: str = error
+        self.attribute: str = attribute
 
-    attrs['cpu_usage'] = system.get_cpu_usage()
-    attrs['mem_usage'] = system.get_mem_usage()
 
-    if system.storage.has_storage_support():
-        attrs['storage_usage'] = system.storage.get_storage_usage()
+def get_attrdefs() -> AttributeDefinitions:
+    global _attrdefs
 
-    if system.temperature.has_temperature_support():
-        attrs['temperature'] = system.temperature.get_temperature()
+    if _attrdefs is None:
+        logger.debug('initializing attribute definitions')
+        _attrdefs = copy.deepcopy(ATTRDEFS)
 
-    if system.battery.has_battery_support():
-        attrs['battery_level'] = system.battery.get_battery_level()
+        # Transform some callable values into corresponding results
+        for n, attrdef in list(_attrdefs.items()):
+            for k, v in attrdef.items():
+                if callable(v) and k in ATTRDEF_CALLABLE_FIELDS:
+                    attrdef[k] = v()
+
+            if attrdef.pop('enabled', True) is False:
+                _attrdefs.pop(n)
+
+    return _attrdefs
+
+
+def get_schema(loose: bool = False) -> GenericJSONDict:
+    global _schema
+
+    # Use cached value, but only when loose is false, as loose schema is never cached
+    if _schema is not None and not loose:
+        return _schema
+
+    schema = {
+        'type': 'object',
+        'properties': {},
+        'additionalProperties': loose
+    }
+
+    for n, attrdef in get_attrdefs().items():
+        if not attrdef.get('modifiable'):
+            continue
+
+        attr_schema = dict(attrdef)
+        if attr_schema['type'] == 'string':
+            if 'min' in attr_schema:
+                attr_schema['minLength'] = attr_schema.pop('min')
+
+            if 'max' in attr_schema:
+                attr_schema['maxLength'] = attr_schema.pop('max')
+        elif attr_schema['type'] == 'number':
+            if attr_schema.get('integer'):
+                attr_schema['type'] = 'integer'
+
+            if 'min' in attr_schema:
+                attr_schema['minimum'] = attr_schema.pop('min')
+
+            if 'max' in attr_schema:
+                attr_schema['maximum'] = attr_schema.pop('max')
+
+        if 'choices' in attrdef:
+            attr_schema['enum'] = [c['value'] for c in attr_schema.pop('choices')]
+
+        attr_schema.pop('modifiable', None)
+        attr_schema.pop('standard', None)
+        attr_schema.pop('persisted', None)
+        attr_schema.pop('getter', None)
+        attr_schema.pop('setter', None)
+        attr_schema.pop('reboot', None)
+
+        schema['properties'][n] = attr_schema
+
+    if not loose:
+        _schema = schema
+
+    return schema
+
+
+async def get_attrs() -> Attributes:
+    attrdefs = get_attrdefs()
+
+    # Do a first round to gather all required calls and ensure we only call each function once, caching its result
+    call_results = {}
+    for n, attrdef in attrdefs.items():
+        getter = attrdef['getter']
+        if isinstance(getter, dict):
+            call = getter['call']
+            call_results[call] = None
+
+    for call in call_results.keys():
+        result = call()
+        if inspect.isawaitable(result):
+            result = await result
+        call_results[call] = result
+
+    # Do a second round to prepare attribute values
+    attrs = {}
+    for n, attrdef in attrdefs.items():
+        getter = attrdef['getter']
+        if not getter:
+            continue
+
+        if isinstance(getter, dict):
+            call = getter['call']
+            key = getter.get('key')
+            transform = getter.get('transform')
+            value = call_results[call]
+            if key:
+                value = value[key]
+            if transform:
+                value = transform(value)
+        elif callable(getter):
+            value = getter()
+            if inspect.isawaitable(value):
+                value = await value
+        else:
+            continue
+
+        attrs[n] = value
 
     return attrs
 
 
-def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
+async def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
     core_device_attrs = sys.modules[__name__]
 
     reboot_required = False
     attrdefs = get_attrdefs()
 
-    wifi_attrs = {}
-    ip_attrs = {}
+    call_values: dict[callable, dict] = {}
 
     for n, value in attrs.items():
         # A few attributes may carry sensitive information, so treat them separately and do not log their values
@@ -472,98 +603,65 @@ def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
             if ignore_extra:
                 continue
             else:
-                raise
+                raise DeviceAttributeError('no-such-attribute', n) from None
 
         if not attrdef.get('modifiable'):
             if not ignore_extra:
                 raise DeviceAttributeError('attribute-not-modifiable', n)
 
-        # Treat passwords separately, as they are not persisted as given, but hashed first
-        if n.endswith('_password') and hasattr(core_device_attrs, f'{n}_hash'):
-            # Call password set command, if available
-            if settings.core.passwords.set_cmd:
-                run_set_cmd(
-                    settings.core.passwords.set_cmd,
-                    cmd_name='password',
-                    log_values=False,
-                    username=n[:-9],
-                    password=value
-                )
+        reboot_required = reboot_required or attrdef.get('reboot', False)
 
-            value = hashlib.sha256(value.encode()).hexdigest()
-            n += '_hash'
-
-            setattr(core_device_attrs, n, value)
-            continue
-        elif n.endswith('_password_hash') and hasattr(core_device_attrs, n):
+        # Used by `PUT /device` API call to restore passwords stored as hashes
+        if n.endswith('_password_hash') and hasattr(core_device_attrs, n):
             # FIXME: Password set command cannot be called with hash, and we don't have clear-text password here.
             #        A solution would be to use sha256 crypt algorithm w/o salt for Unix password (watch for the special
             #        alphabet and for number of rounds defaulting to 5000)
             setattr(core_device_attrs, n, value)
             continue
 
-        persisted = attrdef.get('persisted', attrdef.get('modifiable'))
-        if persisted:
-            setattr(core_device_attrs, n, value)
+        setter = attrdef['setter']
+        if isinstance(setter, dict):
+            call = setter['call']
+            key = setter.get('key')
+            transform = setter.get('transform')
+            if transform:
+                value = transform(value)
+            if key:
+                call_values.setdefault(call, {})[key] = value
+            else:
+                result = call(value)
+                if inspect.isawaitable(result):
+                    await result
+        else:
+            result = setter(value)
+            if inspect.isawaitable(result):
+                await result
 
-        if n == 'name' and settings.core.device_name.set_cmd:
-            run_set_cmd(settings.core.device_name.set_cmd, cmd_name='device name', name=value)
-        elif n == 'date' and system.date.has_set_date_support():
-            date = datetime.datetime.utcfromtimestamp(value)
-            system.date.set_date(date)
-        elif n == 'timezone' and system.date.has_timezone_support():
-            system.date.set_timezone(value)
-        elif n in ('wifi_ssid', 'wifi_key', 'wifi_bssid') and system.net.has_wifi_support():
-            k = n[5:]
-            k = {
-                'key': 'psk'
-            }.get(k, k)
-            wifi_attrs[k] = value
-        elif n in ('ip_address', 'ip_netmask', 'ip_gateway', 'ip_dns') and system.net.has_ip_support():
-            k = n[3:]
-            ip_attrs[k] = value
-
-    if wifi_attrs:
-        wifi_config = system.net.get_wifi_config()
-
-        for k, v in wifi_attrs.items():
-            wifi_config[k] = v
-            wifi_config = {k: v for k, v in wifi_config.items() if not k.endswith('_current')}
-
-        system.net.set_wifi_config(**wifi_config)
-        reboot_required = True
-
-    if ip_attrs:
-        ip_config = system.net.get_ip_config()
-
-        for k, v in ip_attrs.items():
-            ip_config[k] = v
-            ip_config = {k: v for k, v in ip_config.items() if not k.endswith('_current')}
-            ip_config['netmask'] = str(ip_config['netmask'])
-
-        system.net.set_ip_config(**ip_config)
-        reboot_required = True
+    # Actually do the calls with corresponding values
+    for call, values in call_values.items():
+        result = call(**values)
+        if inspect.isawaitable(result):
+            await result
 
     return reboot_required
 
 
-def to_json() -> GenericJSONDict:
+async def to_json() -> GenericJSONDict:
     attrdefs = copy.deepcopy(get_attrdefs())
     filtered_attrdefs = {}
     for n, attrdef in attrdefs.items():
         if attrdef.pop('standard', False):
             continue
 
-        enabled = attrdef.pop('enabled', True)
-        if not enabled:
-            continue
-
+        attrdef.pop('reboot', None)
         attrdef.pop('persisted', None)
-        attrdef.pop('pattern', None)
+        attrdef.pop('pattern', None)  # TODO: remove this line once pattern becomes an API-defined attrdef field
+        attrdef.pop('setter', None)
+        attrdef.pop('getter', None)
 
         filtered_attrdefs[n] = attrdef
 
-    result = dict(get_attrs())
+    result = dict(await get_attrs())
     result['definitions'] = filtered_attrdefs
 
     return result
