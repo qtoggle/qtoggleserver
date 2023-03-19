@@ -20,8 +20,10 @@ def make_driver(tmp_path: pathlib.Path) -> Callable[..., BaseDriver]:
 
 
 @pytest.fixture
-def driver(make_driver: Callable[..., BaseDriver]) -> BaseDriver:
-    return make_driver()
+async def driver(make_driver: Callable[..., BaseDriver]) -> BaseDriver:
+    driver = make_driver()
+    await driver.init()
+    return driver
 
 
 async def test_query_all(driver: BaseDriver) -> None:

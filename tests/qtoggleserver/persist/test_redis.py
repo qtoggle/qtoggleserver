@@ -9,13 +9,13 @@ from . import insert, misc, query, remove, replace, update
 
 
 @pytest.fixture
-def driver(monkeypatch) -> BaseDriver:
+async def driver(monkeypatch) -> BaseDriver:
     monkeypatch.setattr(python_redis, 'StrictRedis', fakeredis.FakeStrictRedis)
     driver = redis.RedisDriver()
+    await driver.init()
     # Make sure we're starting with a clean database
     assert isinstance(driver._client, fakeredis.FakeStrictRedis)
     driver._client.flushall()
-
     return driver
 
 

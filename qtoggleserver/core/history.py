@@ -14,8 +14,7 @@ from qtoggleserver.core.typing import GenericJSONDict, PortValue
 from qtoggleserver.utils import json as json_utils
 
 
-PERSIST_COLLECTION = 'value_history'
-
+_PERSIST_COLLECTION = 'value_history'
 _CACHE_TIMESTAMP_MIN_AGE = 3600 * 1000  # don't cache samples newer than this number of milliseconds ago
 
 logger = logging.getLogger(__name__)
@@ -132,7 +131,7 @@ async def janitor_task() -> None:
 
 
 def is_enabled() -> bool:
-    return persist.is_history_supported() and settings.core.history_support
+    return persist.is_samples_supported() and settings.core.history_support
 
 
 async def get_samples_slice(
@@ -142,86 +141,48 @@ async def get_samples_slice(
     limit: Optional[int] = None,
     sort_desc: bool = False
 ) -> Iterable[GenericJSONDict]:
-    filt = {
-        'pid': port.get_id(),
-    }
-
-    if from_timestamp is not None:
-        filt.setdefault('ts', {})['ge'] = from_timestamp
-
-    if to_timestamp is not None:
-        filt.setdefault('ts', {})['lt'] = to_timestamp
-
-    sort = 'ts'
-    if sort_desc:
-        sort = f'-{sort}'
-
-    results = await persist.query(PERSIST_COLLECTION, filt=filt, sort=sort, limit=limit)
-
-    return ({'value': r['val'], 'timestamp': r['ts']} for r in results)
+    return await persist.get_samples_slice(
+        _PERSIST_COLLECTION, port.get_id(), from_timestamp, to_timestamp, limit, sort_desc
+    )
 
 
-async def get_samples_by_timestamp(
-    port: core_ports.BasePort,
-    timestamps: list[int]
-) -> Iterable[GenericJSONDict]:
-    port_filter = {
-        'pid': port.get_id(),
-    }
-
+async def get_samples_by_timestamp(port: core_ports.BasePort, timestamps: list[int]) -> Iterable[GenericJSONDict]:
     now_ms = int(time.time() * 1000)
     samples_cache = _samples_cache.setdefault(port.get_id(), {})
     INEXISTENT = {}
 
-    query_tasks = []
+    results = {}
+    missed_timestamps = []
     for timestamp in timestamps:
         # Look it up in cache
         sample = samples_cache.get(timestamp, INEXISTENT)
         if sample is INEXISTENT:
-            filt = dict(port_filter, ts={'le': timestamp})
-            task = persist.query(PERSIST_COLLECTION, filt=filt, sort='-ts', limit=1)
+            missed_timestamps.append(timestamp)
         else:
-            task = asyncio.Future()
-            task.set_result([sample])
+            results[timestamp] = sample
 
-        query_tasks.append(task)
+    if missed_timestamps:
+        samples = await persist.get_samples_by_timestamp(_PERSIST_COLLECTION, port.get_id(), missed_timestamps)
+        samples = list(samples)
+        for i, timestamp in enumerate(missed_timestamps):
+            results[timestamp] = samples[i]
 
-    task_results = await asyncio.gather(*query_tasks)
+            # Add sample to cache if it's old enough
+            if now_ms - timestamp > _CACHE_TIMESTAMP_MIN_AGE:
+                samples_cache[timestamp] = samples[i]
 
-    samples = []
-    for i, task_result in enumerate(task_results):
-        timestamp = timestamps[i]
-
-        query_results = list(task_result)
-        if query_results:
-            sample = query_results[0]
-            samples.append(sample)
-        else:
-            samples.append(None)
-
-        # Add sample to cache if it's old enough
-        if now_ms - timestamp > _CACHE_TIMESTAMP_MIN_AGE:
-            samples_cache[timestamp] = samples[-1]
-
-    return ({'value': r['val'], 'timestamp': r['ts']} if r is not None else None for r in samples)
+    return ({'value': v, 'timestamp': t} if v is not None else None for t, v in results.items())
 
 
 async def save_sample(port: core_ports.BasePort, timestamp: int) -> None:
     value = port.get_last_read_value()
-
     if value is None:
         logger.debug('skipping null sample of %s (timestamp = %s)', port, timestamp)
         return
 
     logger.debug('saving sample of %s (value = %s, timestamp = %s)', port, json_utils.dumps(value), timestamp)
 
-    record = {
-        'pid': port.get_id(),
-        'val': value,
-        'ts': timestamp
-    }
-
-    await persist.insert(PERSIST_COLLECTION, record)
+    await persist.save_sample(_PERSIST_COLLECTION, port.get_id(), timestamp, value)
 
 
 async def remove_samples(
@@ -230,16 +191,6 @@ async def remove_samples(
     to_timestamp: Optional[int] = None,
     background: bool = False
 ) -> Optional[int]:
-    filt = {
-        'pid': {'in': [p.get_id() for p in ports]}
-    }
-
-    if from_timestamp is not None:
-        filt.setdefault('ts', {})['ge'] = from_timestamp
-
-    if to_timestamp is not None:
-        filt.setdefault('ts', {})['lt'] = to_timestamp
-
     # Invalidate samples cache for the ports
     for port in ports:
         _samples_cache.pop(port.get_id(), None)
@@ -248,12 +199,13 @@ async def remove_samples(
         for port in ports:
             _pending_remove_samples.append((port, from_timestamp, to_timestamp))
     else:
-        return await persist.remove(PERSIST_COLLECTION, filt)
+        port_ids = [p.get_id() for p in ports]
+        return await persist.remove_samples(_PERSIST_COLLECTION, port_ids, from_timestamp, to_timestamp)
 
 
 async def reset() -> None:
     logger.debug('clearing persisted data')
-    await persist.remove(PERSIST_COLLECTION)
+    await persist.remove_samples(_PERSIST_COLLECTION)
 
 
 async def init() -> None:
@@ -267,7 +219,7 @@ async def init() -> None:
     _sampling_task = asyncio.create_task(sampling_task())
     _janitor_task = asyncio.create_task(janitor_task())
 
-    await persist.ensure_index(PERSIST_COLLECTION, 'ts')
+    await persist.ensure_index(_PERSIST_COLLECTION)
 
 
 async def cleanup() -> None:

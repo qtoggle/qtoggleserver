@@ -26,16 +26,28 @@ FILTER_OP_MAPPING = {
 
 
 class MongoDriver(BaseDriver):
-    def __init__(self, host: str = '127.0.0.1', port: str = 27017, db: str = DEFAULT_DB, **kwargs) -> None:
-        logger.debug('connecting to %s:%s/%s', host, port, db)
+    def __init__(self, host: str = '127.0.0.1', port: int = 27017, db: str = DEFAULT_DB, **kwargs) -> None:
+        self._host: str = host
+        self._port: int = port
+        self._db_name: str = db
 
+        self._client: Optional[pymongo.MongoClient] = None
+        self._db: Optional[pymongo.database.Database] = None
+
+    async def init(self) -> None:
+        logger.debug('connecting to %s:%s/%s', self._host, self._port, self._db_name)
         self._client: pymongo.MongoClient = pymongo.MongoClient(
-            host,
-            port,
+            self._host,
+            self._port,
             serverSelectionTimeoutMS=200,
             connectTimeoutMS=200
         )
-        self._db: pymongo.database.Database = self._client[db]
+        self._db: pymongo.database.Database = self._client[self._db_name]
+
+    async def cleanup(self) -> None:
+        logger.debug('disconnecting mongo client')
+
+        self._client.close()
 
     async def query(
         self,
@@ -45,7 +57,6 @@ class MongoDriver(BaseDriver):
         sort: list[tuple[str, bool]],
         limit: Optional[int]
     ) -> Iterable[Record]:
-
         if fields:
             fields = dict((f, 1) for f in fields)
             if 'id' in fields:
@@ -108,21 +119,19 @@ class MongoDriver(BaseDriver):
 
         return self._db[collection].delete_many(db_filt).deleted_count
 
-    async def ensure_index(self, collection: str, index: list[tuple[str, bool]]) -> None:
-        index = [(f, [pymongo.ASCENDING, pymongo.DESCENDING][r]) for f, r in index]
+    def is_samples_supported(self) -> bool:
+        return True
+
+    async def ensure_index(self, collection: str, index: Optional[list[tuple[str, bool]]]) -> None:
+        if index:
+            index = [(f, [pymongo.ASCENDING, pymongo.DESCENDING][r]) for f, r in index]
+        else:  # assuming samples collection
+            index = [('ts', pymongo.ASCENDING)]
 
         try:
             self._db[collection].create_index(index)
         except pymongo.errors.DuplicateKeyError:
-            logger.debug('index already exists')
-
-    async def cleanup(self) -> None:
-        logger.debug('disconnecting mongo client')
-
-        self._client.close()
-
-    def is_history_supported(self) -> bool:
-        return True
+            pass
 
     @classmethod
     def _query_gen_wrapper(cls, q: Iterable[Record]) -> Iterable[Record]:

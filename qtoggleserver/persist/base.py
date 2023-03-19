@@ -1,11 +1,22 @@
 import abc
+import asyncio
 
 from typing import Any, Iterable, Optional
 
-from .typing import Id, Record
+from .typing import Id, Record, SampleValue
 
 
 class BaseDriver(metaclass=abc.ABCMeta):
+    async def init(self) -> None:
+        """Perform any initialization necessary to use this driver."""
+
+        pass
+
+    async def cleanup(self) -> None:
+        """Perform any cleanups necessary to decommission this driver."""
+
+        pass
+
     @abc.abstractmethod
     async def query(
         self,
@@ -15,29 +26,171 @@ class BaseDriver(metaclass=abc.ABCMeta):
         sort: list[tuple[str, bool]],
         limit: Optional[int]
     ) -> Iterable[Record]:
+        """Return records from `collection`.
+
+        Optionally project the returned records by only returning given `fields`, if not `None`.
+
+        Filter records according to `filt`. Besides filtering by exact field value, the following filter operators are
+        supported: `gt`, `ge`, `lt`, `le` and `in` (list of values).
+
+        Sort results according to `sort` argument which is a list of pairs of fields and "descending" flags, if not an
+        empty list.
+
+        Optionally limit the number of returned records to `limit`, if not None."""
+
         return []
 
     @abc.abstractmethod
     async def insert(self, collection: str, record: Record) -> Id:
-        return '1'  # returns the inserted record id
+        """Insert `record` into `collection`.
+
+        Return the associated record ID."""
+
+        return '1'
 
     @abc.abstractmethod
     async def update(self, collection: str, record_part: Record, filt: dict[str, Any]) -> int:
-        return 0  # returns the number of updated records
+        """Update records from `collection` with fields given in `record_part`.
+
+        Only records that match the `filt` filter will be updated. Besides filtering by exact field value, the following
+        filter operators are supported: `gt`, `ge`, `lt`, `le` and `in` (list of values).
+
+        Return the total number of records that were updated."""
+
+        return 0
 
     @abc.abstractmethod
     async def replace(self, collection: str, id_: Id, record: Record) -> bool:
-        return False  # returns True if matched and replaced
+        """Replace record with `id` in `collection`.
+
+        Return `True` if matched and replaced."""
+
+        return False
 
     @abc.abstractmethod
     async def remove(self, collection: str, filt: dict[str, Any]) -> int:
-        return 0  # returns the number of removed records
+        """Remove records from `collection`.
 
-    async def ensure_index(self, collection: str, index: list[tuple[str, bool]]) -> None:
-        pass
+        Only records that match the `filt` filter will be removed. Besides filtering by exact field value, the following
+        filter operators are supported: `gt`, `ge`, `lt`, `le` and `in` (list of values).
 
-    async def cleanup(self) -> None:
-        pass
+        Return the total number of records that were removed."""
 
-    def is_history_supported(self) -> bool:
+        return 0
+
+    async def get_samples_slice(
+        self,
+        collection: str,
+        obj_id: Id,
+        from_timestamp: Optional[int],
+        to_timestamp: Optional[int],
+        limit: Optional[int],
+        sort_desc: bool,
+    ) -> Iterable[Record]:
+        """Return the samples of `obj_id` from `collection`.
+
+        Filter results by an interval of time, if `from_timestamp` and/or `to_timestamp` are not `None`.
+
+        Optionally limit results to `limit` number of records, if not `None`.
+
+        Sort the results by timestamp according to the value of `sort_desc`."""
+
+        filt: dict[str, Any] = {
+            'oid': obj_id,
+        }
+
+        if from_timestamp is not None:
+            filt.setdefault('ts', {})['ge'] = from_timestamp
+
+        if to_timestamp is not None:
+            filt.setdefault('ts', {})['lt'] = to_timestamp
+
+        sort = [('ts', sort_desc)]
+
+        results = await self.query(collection, fields=None, filt=filt, sort=sort, limit=limit)
+
+        return ({'value': r['val'], 'timestamp': r['ts']} for r in results)
+
+    async def get_samples_by_timestamp(
+        self,
+        collection: str,
+        obj_id: Id,
+        timestamps: list[int],
+    ) -> Iterable[SampleValue]:
+        """For each timestamp in `timestamps`, return the sample of `obj_id` from `collection` that was saved right
+        before the timestamp."""
+
+        object_filter: dict[str, Any] = {
+            'oid': obj_id,
+        }
+
+        query_tasks = []
+        for timestamp in timestamps:
+            filt = dict(object_filter, ts={'le': timestamp})
+            task = self.query(collection, fields=None, filt=filt, sort=[('ts', True)], limit=1)
+            query_tasks.append(task)
+
+        task_results = await asyncio.gather(*query_tasks)
+
+        samples = []
+        for i, task_result in enumerate(task_results):
+            query_results = list(task_result)
+            if query_results:
+                sample = query_results[0]
+                samples.append(sample)
+            else:
+                samples.append(None)
+
+        return samples
+
+    async def save_sample(self, collection: str, obj_id: Id, timestamp: int, value: SampleValue) -> None:
+        """Save a sample of an object with `obj_id` at a given `timestamp` to a specified `collection`."""
+
+        record = {
+            'oid': obj_id,
+            'val': value,
+            'ts': timestamp
+        }
+
+        await self.insert(collection, record)
+
+    async def remove_samples(
+        self,
+        collection: str,
+        obj_ids: Optional[list[Id]],
+        from_timestamp: Optional[int],
+        to_timestamp: Optional[int],
+    ) -> int:
+        """Remove samples from `collection`.
+
+        If `obj_ids` is not `None`, only remove samples of given object ids.
+
+        If `from_timestamp` and/or `to_timestamp` are not `None`, only remove samples within specified interval of time.
+
+        Return the number of removed samples."""
+
+        filt: dict[str, Any] = {}
+        if obj_ids:
+            filt['obj_id'] = {'in': obj_ids}
+
+        if from_timestamp is not None:
+            filt.setdefault('ts', {})['ge'] = from_timestamp
+
+        if to_timestamp is not None:
+            filt.setdefault('ts', {})['lt'] = to_timestamp
+
+        return await self.remove(collection, filt)
+
+    def is_samples_supported(self) -> bool:
+        """Tell whether samples are supported by this driver or not."""
+
         return False
+
+    async def ensure_index(self, collection: str, index: Optional[list[tuple[str, bool]]]) -> None:
+        """Create an index on `collection` if not already present. `index` is a list of pairs of field names and
+        "descending" direction flags.
+
+        If `index` is `None`, the collection is assumed to be a collection of samples where the index is considered to
+        be ascending on the timestamp field."""
+
+        pass

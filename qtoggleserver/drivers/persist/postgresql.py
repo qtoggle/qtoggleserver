@@ -173,7 +173,8 @@ class PostgreSQLDriver(BaseDriver):
 
         return count
 
-    async def ensure_index(self, collection: str, index: list[tuple[str, bool]]) -> None:
+    async def ensure_index(self, collection: str, index: Optional[list[tuple[str, bool]]]) -> None:
+        # TODO: if not index: do stuff for samples
         await self._ensure_table_exists(collection)
 
         field_names = [i[0] for i in index]
@@ -193,7 +194,7 @@ class PostgreSQLDriver(BaseDriver):
             await self._conn_pool.close()
             self._conn_pool = None
 
-    def is_history_supported(self) -> bool:
+    def is_samples_supported(self) -> bool:
         return True
 
     async def _acquire_connection(self) -> AsyncContextManager[asyncpg.Connection]:

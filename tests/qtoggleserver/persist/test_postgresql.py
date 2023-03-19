@@ -35,6 +35,7 @@ async def driver() -> BaseDriver:
         username=params['user'],
         password=params.get('password')
     )
+    await driver.init()
 
     yield driver
 

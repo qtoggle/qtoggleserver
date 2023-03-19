@@ -9,9 +9,11 @@ from . import insert, misc, query, remove, replace, update
 
 
 @pytest.fixture
-def driver(monkeypatch) -> BaseDriver:
+async def driver(monkeypatch) -> BaseDriver:
     monkeypatch.setattr(pymongo, 'MongoClient', mongomock.MongoClient)
-    return mongo.MongoDriver()
+    driver = mongo.MongoDriver()
+    await driver.init()
+    return driver
 
 
 async def test_query_all(driver: BaseDriver) -> None:

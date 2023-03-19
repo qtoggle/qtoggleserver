@@ -32,7 +32,7 @@ class RedisDriver(BaseDriver):
         host: str = '127.0.0.1',
         port: int = 6379,
         db: int = 0,
-        history_support: bool = False,
+        samples_support: bool = False,
         **kwargs
     ) -> None:
         logger.debug('connecting to %s:%s/%s', host, port, db)
@@ -45,7 +45,7 @@ class RedisDriver(BaseDriver):
             decode_responses=True
         )
 
-        self._history_support: bool = history_support
+        self._samples_support: bool = samples_support
 
     async def query(
         self,
@@ -237,8 +237,8 @@ class RedisDriver(BaseDriver):
 
         self._client.close()
 
-    def is_history_supported(self) -> bool:
-        return self._history_support
+    def is_samples_supported(self) -> bool:
+        return self._samples_support
 
     def _filter_matches(self, db_record: GenericJSONDict, filt: dict[str, Any]) -> bool:
         for key, value in filt.items():
