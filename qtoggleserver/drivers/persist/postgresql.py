@@ -371,7 +371,7 @@ class PostgreSQLDriver(BaseDriver):
         # We can't use prepared statements with CREATE INDEX, so we need to build our query without arguments
         for field, _ in index:
             field = re.sub(r'[^a-zA-Z0-9_]', '', field)
-            index_clause.append(f"(content->'${field}')")
+            index_clause.append(f"(content->'{field}')")
 
         index_clause = ', '.join(index_clause)
 
