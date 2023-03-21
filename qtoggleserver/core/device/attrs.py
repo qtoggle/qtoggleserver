@@ -300,7 +300,7 @@ ATTRDEFS = {
         'enabled': system.net.has_wifi_support,
         'getter': {
             'call': system.net.get_wifi_config,
-            'key': 'strength_current',
+            'key': 'signal_strength_current',
             'transform': lambda v: int(v),
         },
     },
