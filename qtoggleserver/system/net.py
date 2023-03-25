@@ -78,6 +78,8 @@ def get_wifi_config() -> dict[str, str]:
             strength = 0
 
         result['signal_strength_current'] = str(strength)
+    else:
+        result['signal_strength_current'] = '0'
 
     return result
 
