@@ -606,7 +606,9 @@ async def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
                 raise DeviceAttributeError('no-such-attribute', n) from None
 
         if not attrdef.get('modifiable'):
-            if not ignore_extra:
+            if ignore_extra:
+                continue
+            else:
                 raise DeviceAttributeError('attribute-not-modifiable', n)
 
         reboot_required = reboot_required or attrdef.get('reboot', False)
