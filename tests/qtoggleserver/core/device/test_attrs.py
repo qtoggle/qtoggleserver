@@ -314,11 +314,13 @@ async def test_set_attrs(mocker):
         'name1': {
             'type': 'string',
             'modifiable': True,
+            'getter': mock.MagicMock(),
             'setter': call1,
         },
         'name2': {
             'type': 'string',
             'modifiable': True,
+            'getter': mock.MagicMock(),
             'setter': {
                 'call': call2,
                 'transform': lambda v: v + ' transformed',
@@ -327,6 +329,7 @@ async def test_set_attrs(mocker):
         'name3': {
             'type': 'string',
             'modifiable': True,
+            'getter': mock.MagicMock(),
             'setter': {
                 'call': call34,
                 'key': 'key3',
@@ -335,6 +338,7 @@ async def test_set_attrs(mocker):
         'name4': {
             'type': 'string',
             'modifiable': True,
+            'getter': mock.MagicMock(),
             'setter': {
                 'call': call34,
                 'key': 'key4',
@@ -344,6 +348,7 @@ async def test_set_attrs(mocker):
         'name5': {
             'type': 'string',
             'modifiable': True,
+            'getter': mock.MagicMock(),
             'setter': call5,
         },
     })
@@ -370,12 +375,14 @@ async def test_set_attrs_reboot(mocker):
         'name1': {
             'type': 'string',
             'modifiable': True,
+            'getter': mock.MagicMock(),
             'setter': mock.MagicMock(),
         },
         'name2': {
             'type': 'string',
             'modifiable': True,
             'reboot': True,
+            'getter': mock.MagicMock(),
             'setter': mock.MagicMock(),
         },
     })
@@ -395,12 +402,14 @@ async def test_set_attrs_ignore_extra(mocker):
         'name1': {
             'type': 'string',
             'modifiable': True,
+            'getter': mock.MagicMock(),
             'setter': mock.MagicMock(),
         },
         'name2': {
             'type': 'string',
             'modifiable': True,
             'reboot': True,
+            'getter': mock.MagicMock(),
             'setter': mock.MagicMock(),
         },
     })
@@ -427,11 +436,13 @@ async def test_set_attrs_not_modifiable(mocker):
         'name1': {
             'type': 'string',
             'modifiable': True,
+            'getter': mock.MagicMock(),
             'setter': mock.MagicMock(),
         },
         'name2': {
             'type': 'string',
             'modifiable': False,
+            'getter': mock.MagicMock(),
             'setter': mock.MagicMock(),
         },
     })
