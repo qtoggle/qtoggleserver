@@ -588,6 +588,20 @@ async def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
     reboot_required = False
     attrdefs = get_attrdefs()
 
+    # Call getters first so that we have all current attribute values, needed for a complete setter argument list
+    getter_call_results = {}
+    for n, attrdef in attrdefs.items():
+        getter = attrdef['getter']
+        if isinstance(getter, dict):
+            call = getter['call']
+            getter_call_results[call] = None
+
+    for call in getter_call_results.keys():
+        result = call()
+        if inspect.isawaitable(result):
+            result = await result
+        getter_call_results[call] = result
+
     call_values: dict[callable, dict] = {}
 
     for n, value in attrs.items():
@@ -641,6 +655,17 @@ async def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
 
     # Actually do the calls with corresponding values
     for call, values in call_values.items():
+        # Fill in any missing setter parameters using corresponding getter values
+        for n, attrdef in attrdefs.items():
+            getter = attrdef['getter']
+            setter = attrdef.get('setter')
+            if not isinstance(getter, dict) or not isinstance(setter, dict) or setter['call'] is not call:
+                continue
+            call_result = getter_call_results.get(getter['call'])
+            if not call_result:
+                continue
+            values.setdefault(setter['key'], call_result[setter['key']])
+
         result = call(**values)
         if inspect.isawaitable(result):
             await result
