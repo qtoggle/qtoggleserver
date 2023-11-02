@@ -19,22 +19,35 @@ READ_INTERVAL_ATTRDEF = {
 
 class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
     DEFAULT_POLL_INTERVAL = 1800
-    RETRY_POLL_INTERVAL = 60
+    DEFAULT_RETRY_COUNT = 0
+    DEFAULT_RETRY_POLL_INTERVAL = 60
 
     logger = logging.getLogger(__name__)
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(
+        self,
+        *,
+        retry_poll_interval: int = -1,
+        retry_count: int = -1,
+        **kwargs
+    ) -> None:
         self._polling: bool = False
         self._poll_stopped: bool = False
         self._poll_task: Optional[asyncio.Task] = None
         self._poll_interval: int = self.DEFAULT_POLL_INTERVAL
         self._poll_error: Optional[Exception] = None
+        self._retry_poll_interval: int = (
+            retry_poll_interval if retry_poll_interval >= 0 else self.DEFAULT_RETRY_POLL_INTERVAL
+        )
+        self._retry_count: int = retry_count if retry_count >= 0 else self.DEFAULT_RETRY_COUNT
+        self._retry_counter: int = 0
 
         super().__init__(**kwargs)
 
     async def _poll_loop(self) -> None:
         self.debug('polling started')
         self._polling = True
+        self._retry_counter = 0
 
         while self._polling:
             try:
@@ -47,18 +60,27 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
                 except asyncio.CancelledError:
                     raise
                 except Exception as e:
-                    retry_poll_interval = min(self.RETRY_POLL_INTERVAL, self._poll_interval)
-                    self.error('polling failed (retrying in %s seconds): %s', retry_poll_interval, e, exc_info=True)
+                    retry_poll_interval = min(self._retry_poll_interval, self._poll_interval)
+                    self.error(
+                        'polling failed (retrying in %s seconds, %s/%s): %s',
+                        retry_poll_interval,
+                        self._retry_counter + 1, self._retry_count,
+                        e,
+                        exc_info=True,
+                    )
                     self._poll_error = e
-                    self.set_online(False)
+                    self._retry_counter += 1
+                    if self._retry_counter > self._retry_count:
+                        self.set_online(False)
                     await asyncio.sleep(retry_poll_interval)
                     continue
 
                 # Clear poll error, as the poll call has been successful
                 self._poll_error = None
+                self._retry_counter = 0
                 self.set_online(True)
 
-                # Granular sleep so it can be interrupted
+                # Granular sleep so it can be adjusted
                 orig_poll_interval = self._poll_interval
                 for i in range(self._poll_interval):
                     if not self._polling:
@@ -102,6 +124,7 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
             await self._poll_task
 
         self._poll_error = None
+        self._retry_counter = 0
 
     async def handle_cleanup(self) -> None:
         await super().handle_cleanup()
