@@ -3,7 +3,7 @@ import asyncio
 
 from typing import Any, Iterable, Optional
 
-from .typing import Id, Record, SampleValue
+from .typing import Id, Record, Sample, SampleValue
 
 
 class BaseDriver(metaclass=abc.ABCMeta):
@@ -86,7 +86,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
         to_timestamp: Optional[int],
         limit: Optional[int],
         sort_desc: bool,
-    ) -> Iterable[Record]:
+    ) -> Iterable[Sample]:
         """Return the samples of `obj_id` from `collection`.
 
         Filter results by an interval of time, if `from_timestamp` and/or `to_timestamp` are not `None`.
@@ -109,7 +109,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
 
         results = await self.query(collection, fields=None, filt=filt, sort=sort, limit=limit)
 
-        return ({'value': r['val'], 'timestamp': r['ts']} for r in results)
+        return ((r['ts'], r['val']) for r in results)
 
     async def get_samples_by_timestamp(
         self,

@@ -467,8 +467,9 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
         samples = await core_history.get_samples_by_timestamp(port, timestamps)
     else:
         samples = await core_history.get_samples_slice(port, from_timestamp, to_timestamp, limit)
+        samples = [{'timestamp': s[0], 'value': s[1]} for s in samples]
 
-    return list(samples)
+    return samples
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)

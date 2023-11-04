@@ -9,7 +9,7 @@ from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import json as json_utils
 
 from .base import BaseDriver
-from .typing import Id, Record, SampleValue
+from .typing import Id, Record, Sample, SampleValue
 
 
 logger = logging.getLogger(__name__)
@@ -236,7 +236,7 @@ async def get_samples_slice(
     to_timestamp: Optional[int] = None,
     limit: Optional[int] = None,
     sort_desc: bool = False,
-) -> Iterable[Record]:
+) -> Iterable[Sample]:
     """Return the samples of `obj_id` from `collection`.
 
     Filter results by an interval of time, if `from_timestamp` and/or `to_timestamp` are not `None`.

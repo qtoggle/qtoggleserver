@@ -140,7 +140,7 @@ async def get_samples_slice(
     to_timestamp: Optional[int] = None,
     limit: Optional[int] = None,
     sort_desc: bool = False
-) -> Iterable[GenericJSONDict]:
+) -> Iterable[persist.Sample]:
     return await persist.get_samples_slice(
         _PERSIST_COLLECTION, port.get_id(), from_timestamp, to_timestamp, limit, sort_desc
     )

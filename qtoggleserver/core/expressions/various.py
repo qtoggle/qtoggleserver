@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-from qtoggleserver import system
+from qtoggleserver import persist, system
 from qtoggleserver.core import history
 
 from .base import EvalContext, EvalResult
@@ -254,7 +254,7 @@ class HistoryFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._cached_sample: Optional[dict[str, Any]] = None
+        self._cached_sample: Optional[persist.Sample] = None
         self._cached_timestamp: int = 0
         self._cached_max_diff: Optional[float] = None
 
@@ -274,7 +274,7 @@ class HistoryFunction(Function):
             self._cached_sample = None
 
         if self._cached_sample is not None:
-            return self._cached_sample['value']
+            return self._cached_sample[1]
 
         if max_diff > 0:
             # Look through all values after given timestamp, but no newer than timestamp + max_diff, and consider the
@@ -314,7 +314,7 @@ class HistoryFunction(Function):
             self._cached_sample = samples[0]
             self._cached_timestamp = timestamp
             self._cached_max_diff = max_diff
-            value = self._cached_sample['value']
+            value = self._cached_sample[1]
         elif consider_curr_value:
             value = port.get_last_read_value()
         else:
