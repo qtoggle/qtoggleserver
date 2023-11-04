@@ -110,19 +110,19 @@ STANDARD_ATTRDEFS = {
         'type': 'string',
         'optional': True,
         'modifiable': True,
-        'max': 1024,
+        'max': 10240,
     },
     'transform_read': {
         'type': 'string',
         'optional': True,
         'modifiable': True,
-        'max': 1024,
+        'max': 10240,
     },
     'transform_write': {
         'type': 'string',
         'optional': True,
         'modifiable': True,
-        'max': 1024,
+        'max': 10240,
     },
     'persisted': {
         'type': 'boolean',
