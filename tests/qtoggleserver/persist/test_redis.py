@@ -11,7 +11,12 @@ from . import insert, misc, query, remove, replace, update
 @pytest.fixture
 def driver(monkeypatch) -> BaseDriver:
     monkeypatch.setattr(python_redis, 'StrictRedis', fakeredis.FakeStrictRedis)
-    return redis.RedisDriver()
+    driver = redis.RedisDriver()
+    # Make sure we're starting with a clean database
+    assert isinstance(driver._client, fakeredis.FakeStrictRedis)
+    driver._client.flushall()
+
+    return driver
 
 
 async def test_query_all(driver: BaseDriver) -> None:
