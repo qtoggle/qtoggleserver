@@ -149,14 +149,14 @@ async def get_samples_slice(
 async def get_samples_by_timestamp(port: core_ports.BasePort, timestamps: list[int]) -> Iterable[GenericJSONDict]:
     now_ms = int(time.time() * 1000)
     samples_cache = _samples_cache.setdefault(port.get_id(), {})
-    INEXISTENT = {}
+    MISSED = {}
 
     results = {}
     missed_timestamps = []
     for timestamp in timestamps:
         # Look it up in cache
-        sample = samples_cache.get(timestamp, INEXISTENT)
-        if sample is INEXISTENT:
+        sample = samples_cache.get(timestamp, MISSED)
+        if sample is MISSED:
             missed_timestamps.append(timestamp)
         else:
             results[timestamp] = sample

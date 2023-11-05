@@ -240,6 +240,7 @@ async def get_samples_slice(
     """Return the samples of `obj_id` from `collection`.
 
     Filter results by an interval of time, if `from_timestamp` and/or `to_timestamp` are not `None`.
+    `from_timestamp` is inclusive, while `to_timestamp` is exclusive.
 
     Optionally limit results to `limit` number of records, if not `None`.
 
@@ -262,7 +263,8 @@ async def get_samples_slice(
 
 async def get_samples_by_timestamp(collection: str, obj_id: Id, timestamps: list[int]) -> Iterable[SampleValue]:
     """For each timestamp in `timestamps`, return the sample of `obj_id` from `collection` that was saved right
-    before the timestamp."""
+    before the (or at the exact) timestamp.
+    """
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
@@ -303,6 +305,7 @@ async def remove_samples(
     If `obj_ids` is not `None`, only remove samples of given object ids.
 
     If `from_timestamp` and/or `to_timestamp` are not `None`, only remove samples within specified interval of time.
+    `from_timestamp` is inclusive, while `to_timestamp` is exclusive.
 
     Return the number of removed samples."""
 
@@ -325,6 +328,9 @@ async def remove_samples(
 def is_samples_supported() -> bool:
     """Tell whether samples are supported by the current persistence driver or not."""
 
+    # We need this function to *not* be async, therefore we try to obtain a reference to the existing driver rather than
+    # calling the async function `_get_driver()`. We rely on the fact that it will always be called after driver
+    # initialization and thus the `_thread_local` variable will have the `driver` attribute set.
     driver = getattr(_thread_local, 'driver', None)
     if not driver:
         return False

@@ -90,8 +90,10 @@ class BaseDriver(metaclass=abc.ABCMeta):
         """Return the samples of `obj_id` from `collection`.
 
         Filter results by an interval of time, if `from_timestamp` and/or `to_timestamp` are not `None`.
+        `from_timestamp` is inclusive, while `to_timestamp` is exclusive.
 
-        Optionally limit results to `limit` number of records, if not `None`.
+        Optionally limit results to `limit` number of records, if not `None`. Limiting is done always with respect to
+        the order of samples (i.e. chronologically ascending or descending).
 
         Sort the results by timestamp according to the value of `sort_desc`."""
 
@@ -118,7 +120,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
         timestamps: list[int],
     ) -> Iterable[SampleValue]:
         """For each timestamp in `timestamps`, return the sample of `obj_id` from `collection` that was saved right
-        before the timestamp."""
+        before the (or at the exact) timestamp."""
 
         object_filter: dict[str, Any] = {
             'oid': obj_id,
@@ -136,7 +138,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
         for i, task_result in enumerate(task_results):
             query_results = list(task_result)
             if query_results:
-                sample = query_results[0]
+                sample = query_results[0]['val']
                 samples.append(sample)
             else:
                 samples.append(None)
@@ -166,12 +168,13 @@ class BaseDriver(metaclass=abc.ABCMeta):
         If `obj_ids` is not `None`, only remove samples of given object ids.
 
         If `from_timestamp` and/or `to_timestamp` are not `None`, only remove samples within specified interval of time.
+        `from_timestamp` is inclusive, while `to_timestamp` is exclusive.
 
         Return the number of removed samples."""
 
         filt: dict[str, Any] = {}
         if obj_ids:
-            filt['obj_id'] = {'in': obj_ids}
+            filt['oid'] = {'in': obj_ids}
 
         if from_timestamp is not None:
             filt.setdefault('ts', {})['ge'] = from_timestamp

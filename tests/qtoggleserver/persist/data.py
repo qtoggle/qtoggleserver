@@ -26,5 +26,13 @@ RECORD3 = {
     'non_unique_key': 'unique_b'
 }
 
+SAMPLE_OBJ_ID1 = 'obj_id1'
+SAMPLE_OBJ_ID2 = 'obj_id2'
+
+SAMPLE1 = (1600000000010, 10)
+SAMPLE2 = (1600000000020, 30)
+SAMPLE3 = (1600000000030, 20)
+SAMPLE4 = (1600000000040, 30)
+
 CUSTOM_ID_SIMPLE = '34'
 CUSTOM_ID_COMPLEX = 'long.id-with_vari0u5-characters'
