@@ -8,7 +8,7 @@ from typing import Any, AsyncContextManager, Iterable, Optional
 import asyncpg.pool
 
 from qtoggleserver.persist import BaseDriver
-from qtoggleserver.persist.typing import Id, Record
+from qtoggleserver.persist.typing import Id, Record, Sample, SampleValue
 from qtoggleserver.utils import json as json_utils
 
 
@@ -173,9 +173,124 @@ class PostgreSQLDriver(BaseDriver):
 
         return count
 
+    async def get_samples_slice(
+        self,
+        collection: str,
+        obj_id: Id,
+        from_timestamp: Optional[int],
+        to_timestamp: Optional[int],
+        limit: Optional[int],
+        sort_desc: bool,
+    ) -> Iterable[Sample]:
+        await self._ensure_table_exists(collection, for_samples=True)
+
+        filt: dict[str, Any] = {
+            'oid': obj_id,
+        }
+
+        if from_timestamp is not None:
+            filt.setdefault('ts', {})['ge'] = from_timestamp
+
+        if to_timestamp is not None:
+            filt.setdefault('ts', {})['lt'] = to_timestamp
+
+        params = []
+        query = f'SELECT ts, val FROM {collection}'
+
+        where_clause = self._filt_to_where_clause(self._filt_to_db(filt), params, for_samples=True)
+        if where_clause:
+            query += f' WHERE {where_clause}'
+
+        query += ' ORDER BY ts'
+        if sort_desc:
+            query += ' DESC'
+
+        if limit is not None:
+            query += f' LIMIT ${len(params) + 1}'
+            params.append(limit)
+
+        results = await self._execute_query(query, params)
+
+        return ((r[0], r[1]) for r in results)
+
+    async def get_samples_by_timestamp(
+        self,
+        collection: str,
+        obj_id: Id,
+        timestamps: list[int],
+    ) -> Iterable[SampleValue]:
+        # `await self._ensure_table_exists(collection)` is called by `get_samples_slice()` below.
+
+        query_tasks = []
+        for timestamp in timestamps:
+            task = self.get_samples_slice(
+                collection, obj_id, from_timestamp=None, to_timestamp=timestamp + 1, limit=1, sort_desc=True
+            )
+            query_tasks.append(task)
+
+        task_results = await asyncio.gather(*query_tasks)
+
+        samples = []
+        for i, task_result in enumerate(task_results):
+            query_results = list(task_result)
+            if query_results:
+                sample = query_results[0][1]
+                samples.append(sample)
+            else:
+                samples.append(None)
+
+        return samples
+
+    async def save_sample(self, collection: str, obj_id: Id, timestamp: int, value: SampleValue) -> None:
+        await self._ensure_table_exists(collection, for_samples=True)
+
+        if isinstance(value, bool):
+            value = int(value)
+
+        statement = f'INSERT INTO {collection}(oid, ts, val) VALUES($1, $2, $3)'
+        params = [obj_id, timestamp, value]
+
+        await self._execute_statement(statement, params)
+
+    async def remove_samples(
+        self,
+        collection: str,
+        obj_ids: Optional[list[Id]],
+        from_timestamp: Optional[int],
+        to_timestamp: Optional[int],
+    ) -> int:
+        await self._ensure_table_exists(collection, for_samples=True)
+
+        filt: dict[str, Any] = {}
+        if obj_ids:
+            filt['oid'] = {'in': obj_ids}
+
+        if from_timestamp is not None:
+            filt.setdefault('ts', {})['ge'] = from_timestamp
+
+        if to_timestamp is not None:
+            filt.setdefault('ts', {})['lt'] = to_timestamp
+
+        params = []
+        statement = f'DELETE FROM {collection}'
+
+        where_clause = self._filt_to_where_clause(self._filt_to_db(filt), params, for_samples=True)
+        if where_clause:
+            statement += f' WHERE {where_clause}'
+
+        status_msg, _ = await self._execute_statement(statement, params)
+        count = int(status_msg.split()[1])  # assuming status_msg has format "DELETE ${count}"
+
+        return count
+
     async def ensure_index(self, collection: str, index: Optional[list[tuple[str, bool]]]) -> None:
-        # TODO: if not index: do stuff for samples
-        await self._ensure_table_exists(collection)
+        # A missing `index` specification indicates an index on samples.
+        for_samples = False
+        if not index:
+            index = [('ts', False)]
+            for_samples = True
+
+        await self._ensure_table_exists(collection, for_samples=for_samples)
 
         field_names = [i[0] for i in index]
         field_names_str = '_'.join(field_names)
@@ -220,7 +335,7 @@ class PostgreSQLDriver(BaseDriver):
             format='text'
         )
 
-    async def _ensure_table_exists(self, table_name: str) -> None:
+    async def _ensure_table_exists(self, table_name: str, for_samples: bool = False) -> None:
         async with self._ensure_table_exists_lock:
             if self._existing_tables is None:
                 self._existing_tables = await self._get_existing_table_names()
@@ -232,7 +347,13 @@ class PostgreSQLDriver(BaseDriver):
             await self._execute_statement(statement)
 
             id_data_type = f"TEXT NOT NULL DEFAULT NEXTVAL('{table_name}_id_seq') PRIMARY KEY"
-            statement = f'CREATE TABLE {table_name}(id {id_data_type}, content JSONB)'
+            if for_samples:
+                statement = (
+                    f'CREATE TABLE {table_name}(id {id_data_type}, '
+                    'oid TEXT NOT NULL, ts BIGINT NOT NULL, val DOUBLE PRECISION NOT NULL)'
+                )
+            else:
+                statement = f'CREATE TABLE {table_name}(id {id_data_type}, content JSONB)'
             await self._execute_statement(statement)
 
             self._existing_tables.add(table_name)
@@ -306,7 +427,7 @@ class PostgreSQLDriver(BaseDriver):
         return order_by_clause
 
     @staticmethod
-    def _filt_to_where_clause(filt: dict[str, Any], params: list[Any]) -> str:
+    def _filt_to_where_clause(filt: dict[str, Any], params: list[Any], for_samples: bool = False) -> str:
         where_clause = []
 
         for key, value in filt.items():
@@ -316,7 +437,7 @@ class PostgreSQLDriver(BaseDriver):
             else:
                 ops_values = [('=', value)]
 
-            if key == 'id':
+            if key == 'id' or for_samples:
                 for o, v in ops_values:
                     if o == 'in':
                         placeholder = ', '.join(f'${len(params) + 1 + i}' for i, _ in enumerate(v))
