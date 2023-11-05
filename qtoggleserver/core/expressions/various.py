@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Optional
 
 from qtoggleserver import persist, system
 from qtoggleserver.core import history
