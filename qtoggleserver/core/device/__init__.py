@@ -20,7 +20,7 @@ def get_display_name() -> str:
 
 
 async def load() -> None:
-    data = await persist.get_value('device', {})
+    data = await persist.get_value('device', default={})
 
     # Load persisted module attributes
     for name in _PERSISTED_MODULE_ATTRS:

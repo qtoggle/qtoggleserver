@@ -496,7 +496,7 @@ async def test_history_older_past(
     freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
 ):
     freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_history_support()
+    mock_persist_driver.enable_samples_support()
 
     port_expr = MockPortRef(mock_num_port1)
     ts_expr = MockExpression(dummy_timestamp - 3600)
@@ -527,7 +527,7 @@ async def test_history_older_future(
     freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
 ):
     freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_history_support()
+    mock_persist_driver.enable_samples_support()
 
     port_expr = MockPortRef(mock_num_port1)
     ts_expr = MockExpression(dummy_timestamp + 7200)
@@ -546,7 +546,7 @@ async def test_history_older_current(
     freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
 ):
     freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_history_support()
+    mock_persist_driver.enable_samples_support()
 
     port_expr = MockPortRef(mock_num_port1)
     ts_expr = MockExpression(dummy_timestamp + 1800)
@@ -567,7 +567,7 @@ async def test_history_newer_past(
     freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
 ):
     freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_history_support()
+    mock_persist_driver.enable_samples_support()
 
     port_expr = MockPortRef(mock_num_port1)
     ts_expr = MockExpression(dummy_timestamp - 7200)
@@ -598,7 +598,7 @@ async def test_history_newer_future(
     freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
 ):
     freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_history_support()
+    mock_persist_driver.enable_samples_support()
 
     port_expr = MockPortRef(mock_num_port1)
     ts_expr = MockExpression(dummy_timestamp + 3600)
@@ -618,7 +618,7 @@ async def test_history_newer_current(
     freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
 ):
     freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_history_support()
+    mock_persist_driver.enable_samples_support()
 
     port_expr = MockPortRef(mock_num_port1)
     ts_expr = MockExpression(dummy_timestamp - 1800)
@@ -639,7 +639,7 @@ async def test_history_newer_unlimited_past(
     freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
 ):
     freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_history_support()
+    mock_persist_driver.enable_samples_support()
 
     port_expr = MockPortRef(mock_num_port1)
     ts_expr = MockExpression(dummy_timestamp - 7200)
@@ -667,7 +667,7 @@ async def test_history_newer_unlimited_future(
     freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
 ):
     freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_history_support()
+    mock_persist_driver.enable_samples_support()
 
     port_expr = MockPortRef(mock_num_port1)
     ts_expr = MockExpression(dummy_timestamp + 7200)
@@ -684,14 +684,14 @@ async def test_history_newer_unlimited_future(
 
 
 def test_history_parse(mock_persist_driver):
-    mock_persist_driver.enable_history_support()
+    mock_persist_driver.enable_samples_support()
 
     e = Function.parse(None, 'HISTORY(@some_id, 1, 2)', ROLE_VALUE, 0)
     assert isinstance(e, various.HistoryFunction)
 
 
 def test_history_arg_type(mock_persist_driver):
-    mock_persist_driver.enable_history_support()
+    mock_persist_driver.enable_samples_support()
 
     with pytest.raises(InvalidArgumentKind) as exc_info:
         Function.parse(None, 'HISTORY(1, 2, 3)', ROLE_VALUE, 0)
@@ -702,7 +702,7 @@ def test_history_arg_type(mock_persist_driver):
 
 
 def test_history_num_args(mock_persist_driver):
-    mock_persist_driver.enable_history_support()
+    mock_persist_driver.enable_samples_support()
 
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, 'HISTORY(@some_id, 1)', ROLE_VALUE, 0)

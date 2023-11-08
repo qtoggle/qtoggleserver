@@ -5,7 +5,7 @@ class MockPersistDriver(JSONDriver):
     def __init__(self) -> None:
         super().__init__(file_path=None)
 
-        self._history_supported: bool = False
+        self._samples_supported: bool = False
 
     def _load(self) -> UnindexedData:
         return {}
@@ -13,8 +13,8 @@ class MockPersistDriver(JSONDriver):
     def _save(self, data: UnindexedData) -> None:
         pass
 
-    def enable_history_support(self) -> None:
-        self._history_supported = True
+    def enable_samples_support(self) -> None:
+        self._samples_supported = True
 
-    def is_history_supported(self) -> bool:
-        return self._history_supported
+    def is_samples_supported(self) -> bool:
+        return self._samples_supported

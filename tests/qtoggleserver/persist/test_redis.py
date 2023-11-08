@@ -5,17 +5,17 @@ import redis as python_redis
 from qtoggleserver.drivers.persist import redis
 from qtoggleserver.persist import BaseDriver
 
-from . import insert, misc, query, remove, replace, update
+from . import insert, misc, query, remove, replace, samples, update
 
 
 @pytest.fixture
-def driver(monkeypatch) -> BaseDriver:
+async def driver(monkeypatch) -> BaseDriver:
     monkeypatch.setattr(python_redis, 'StrictRedis', fakeredis.FakeStrictRedis)
     driver = redis.RedisDriver()
+    await driver.init()
     # Make sure we're starting with a clean database
-    assert isinstance(driver._client, fakeredis.FakeStrictRedis)
-    driver._client.flushall()
-
+    assert isinstance(driver._client, fakeredis.FakeStrictRedis)  # noqa
+    driver._client.flushall()  # noqa
     return driver
 
 
@@ -233,6 +233,98 @@ async def test_update_no_match_custom_id_simple(driver: BaseDriver) -> None:
 
 async def test_update_no_match_custom_id_complex(driver: BaseDriver) -> None:
     await update.test_update_no_match_custom_id_complex(driver)
+
+
+async def test_get_samples_slice_all(driver: BaseDriver) -> None:
+    await samples.test_get_samples_slice_all(driver)
+
+
+async def test_get_samples_slice_from_timestamp(driver: BaseDriver) -> None:
+    await samples.test_get_samples_slice_from_timestamp(driver)
+
+
+async def test_get_samples_slice_to_timestamp(driver: BaseDriver) -> None:
+    await samples.test_get_samples_slice_to_timestamp(driver)
+
+
+async def test_get_samples_slice_from_to_timestamp(driver: BaseDriver) -> None:
+    await samples.test_get_samples_slice_from_to_timestamp(driver)
+
+
+async def test_get_samples_slice_from_to_timestamp_sort_desc(driver: BaseDriver) -> None:
+    await samples.test_get_samples_slice_from_to_timestamp_sort_desc(driver)
+
+
+async def test_get_samples_slice_from_timestamp_limit(driver: BaseDriver) -> None:
+    await samples.test_get_samples_slice_from_timestamp_limit(driver)
+
+
+async def test_get_samples_slice_to_timestamp_limit(driver: BaseDriver) -> None:
+    await samples.test_get_samples_slice_to_timestamp_limit(driver)
+
+
+async def test_get_samples_slice_all_sort_desc(driver: BaseDriver) -> None:
+    await samples.test_get_samples_slice_all_sort_desc(driver)
+
+
+async def test_get_samples_slice_limit(driver: BaseDriver) -> None:
+    await samples.test_get_samples_slice_limit(driver)
+
+
+async def test_get_samples_slice_limit_more(driver: BaseDriver) -> None:
+    await samples.test_get_samples_slice_limit_more(driver)
+
+
+async def test_get_samples_slice_limit_sort_desc(driver: BaseDriver) -> None:
+    await samples.test_get_samples_slice_limit_sort_desc(driver)
+
+
+async def test_get_samples_slice_from_to_timestamp_limit_sort_desc(driver: BaseDriver) -> None:
+    await samples.test_get_samples_slice_from_to_timestamp_limit_sort_desc(driver)
+
+
+async def test_get_samples_slice_obj_id_separation(driver: BaseDriver) -> None:
+    await samples.test_get_samples_slice_obj_id_separation(driver)
+
+
+async def test_get_samples_by_timestamp_exact(driver: BaseDriver) -> None:
+    await samples.test_get_samples_by_timestamp_exact(driver)
+
+
+async def test_get_samples_by_timestamp_after(driver: BaseDriver) -> None:
+    await samples.test_get_samples_by_timestamp_after(driver)
+
+
+async def test_get_samples_by_timestamp_unsorted(driver: BaseDriver) -> None:
+    await samples.test_get_samples_by_timestamp_unsorted(driver)
+
+
+async def test_get_samples_by_timestamp_same_value(driver: BaseDriver) -> None:
+    await samples.test_get_samples_by_timestamp_same_value(driver)
+
+
+async def test_get_samples_by_timestamp_obj_id_separation(driver: BaseDriver) -> None:
+    await samples.test_get_samples_by_timestamp_obj_id_separation(driver)
+
+
+async def test_remove_samples_all(driver: BaseDriver) -> None:
+    await samples.test_remove_samples_all(driver)
+
+
+async def test_remove_samples_from_timestamp(driver: BaseDriver) -> None:
+    await samples.test_remove_samples_from_timestamp(driver)
+
+
+async def test_remove_samples_to_timestamp(driver: BaseDriver) -> None:
+    await samples.test_remove_samples_to_timestamp(driver)
+
+
+async def test_remove_samples_from_to_timestamp(driver: BaseDriver) -> None:
+    await samples.test_remove_samples_from_to_timestamp(driver)
+
+
+async def test_remove_samples_obj_id_separation(driver: BaseDriver) -> None:
+    await samples.test_remove_samples_obj_id_separation(driver)
 
 
 async def test_collection_separation(driver: BaseDriver) -> None:
