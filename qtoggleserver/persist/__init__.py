@@ -350,10 +350,11 @@ async def ensure_index(collection: str, index: Union[str, list[str], None] = Non
         index = [index]
 
     # Transform '-field' into (field, descending)
-    index = [
-        (i[1:], True) if i.startswith('-') else (i, False)
-        for i in index
-    ]
+    if index:
+        index = [
+            (i[1:], True) if i.startswith('-') else (i, False)
+            for i in index
+        ]
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug('ensuring index %s in %s', json_utils.dumps(index), collection)

@@ -297,7 +297,10 @@ class PostgreSQLDriver(BaseDriver):
         index_name = f'{collection}_{field_names_str}'
 
         params = []
-        index_statement = self._index_to_index_clause(index, params)
+        if for_samples:
+            index_statement = 'ts'
+        else:
+            index_statement = self._index_to_index_clause(index, params)
         statement = f'CREATE INDEX IF NOT EXISTS {index_name} ON {collection}({index_statement})'
 
         await self._execute_statement(statement, params)
@@ -346,14 +349,15 @@ class PostgreSQLDriver(BaseDriver):
             statement = f'CREATE SEQUENCE {table_name}_id_seq'
             await self._execute_statement(statement)
 
-            id_data_type = f"TEXT NOT NULL DEFAULT NEXTVAL('{table_name}_id_seq') PRIMARY KEY"
+            id_type = ['TEXT', 'BIGINT'][for_samples]
+            id_spec = f"{id_type} NOT NULL DEFAULT NEXTVAL('{table_name}_id_seq') PRIMARY KEY"
             if for_samples:
                 statement = (
-                    f'CREATE TABLE {table_name}(id {id_data_type}, '
+                    f'CREATE TABLE {table_name}(id {id_spec}, '
                     'oid TEXT NOT NULL, ts BIGINT NOT NULL, val DOUBLE PRECISION NOT NULL)'
                 )
             else:
-                statement = f'CREATE TABLE {table_name}(id {id_data_type}, content JSONB)'
+                statement = f'CREATE TABLE {table_name}(id {id_spec}, content JSONB)'
             await self._execute_statement(statement)
 
             self._existing_tables.add(table_name)
