@@ -11,7 +11,7 @@ async def main() -> bool:
 
 
 def execute() -> None:
-    commands.execute(main())
+    commands.execute(main)
 
 
 if __name__ == '__main__':
