@@ -1,7 +1,7 @@
-from typing import Any, Union
+from typing import Any
 
 
 Id = str
 Record = dict[str, Any]
-SampleValue = Union[bool, int, float, None]
+SampleValue = float
 Sample = tuple[int, SampleValue]
