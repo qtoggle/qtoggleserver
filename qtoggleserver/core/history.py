@@ -140,10 +140,17 @@ async def get_samples_slice(
     to_timestamp: Optional[int] = None,
     limit: Optional[int] = None,
     sort_desc: bool = False
-) -> Iterable[persist.Sample]:
-    return await persist.get_samples_slice(
+) -> Iterable[tuple[int, PortValue]]:
+    samples = await persist.get_samples_slice(
         _PERSIST_COLLECTION, port.get_id(), from_timestamp, to_timestamp, limit, sort_desc
     )
+
+    # Transform samples according to port type
+    type_ = await port.get_type()
+    integer = await port.get_attr('integer')
+    samples = ((s[0], port.adapt_value_type_sync(type_, integer, s[1])) for s in samples)
+
+    return samples
 
 
 async def get_samples_by_timestamp(port: core_ports.BasePort, timestamps: list[int]) -> Iterable[GenericJSONDict]:
@@ -164,6 +171,12 @@ async def get_samples_by_timestamp(port: core_ports.BasePort, timestamps: list[i
     if missed_timestamps:
         samples = await persist.get_samples_by_timestamp(_PERSIST_COLLECTION, port.get_id(), missed_timestamps)
         samples = list(samples)
+
+        # Transform samples according to port type
+        type_ = await port.get_type()
+        integer = await port.get_attr('integer')
+        samples = [port.adapt_value_type_sync(type_, integer, s) for s in samples]
+
         for i, timestamp in enumerate(missed_timestamps):
             results[timestamp] = samples[i]
 
@@ -182,7 +195,7 @@ async def save_sample(port: core_ports.BasePort, timestamp: int) -> None:
 
     logger.debug('saving sample of %s (value = %s, timestamp = %s)', port, json_utils.dumps(value), timestamp)
 
-    await persist.save_sample(_PERSIST_COLLECTION, port.get_id(), timestamp, value)
+    await persist.save_sample(_PERSIST_COLLECTION, port.get_id(), timestamp, float(value))
 
 
 async def remove_samples(
