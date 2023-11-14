@@ -2,7 +2,7 @@ import abc
 import datetime
 import logging
 
-from typing import Optional
+from typing import Optional, Union
 
 from jinja2 import Environment, Template
 
@@ -70,12 +70,11 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         *,
         template: Optional[dict[str, str]] = None,
         templates: Optional[dict[str, dict[str, str]]] = None,
-        skip_startup: bool = True,
+        skip_startup: Union[int, bool] = True,
         filter: dict = None,
         name: Optional[str] = None
     ) -> None:
-
-        self._skip_startup: bool = skip_startup
+        self._skip_startup: Union[int, bool] = skip_startup
 
         # "template" has the highest precedence; then comes "templates" and then comes "DEFAULT_TEMPLATES"
         if template is not None:
@@ -85,22 +84,34 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
 
         # Convert template strings to jinja2 templates
         self._j2env: Environment = Environment(enable_async=True)
-        self._templates: dict[str, dict[str, Template]] = {}
+        self._templates: dict[str, Union[None, Template, dict[str, Template]]] = {}
         for type_, ts in templates.items():
-            # Ensure values in templates are dicts themselves
-            if isinstance(ts, str):
-                ts = {'title': ts}
-
-            self._templates[type_] = {}
-            for k, t in ts.items():
-                self._templates[type_][k] = self._j2env.from_string(t) if t is not None else None
+            if isinstance(ts, dict):
+                self._templates[type_] = {}
+                for k, t in ts.items():
+                    self._templates[type_][k] = self.make_template(t) if t is not None else None
+            elif isinstance(ts, str):
+                self._templates[type_] = self.make_template(ts)
+            else:
+                self._templates[type_] = None
 
         super().__init__(name=name, filter=filter)
 
-    async def render(self, event_type: str, context: dict) -> dict[str, str]:
+    def get_j2env(self) -> Environment:
+        return self._j2env
+
+    def make_template(self, source: str) -> Template:
+        return self.get_j2env().from_string(source)
+
+    async def render(self, event_type: str, context: dict) -> Union[None, str, dict[str, str]]:
         template = self._templates[event_type]
 
-        return {k: await t.render_async(context) if t is not None else None for k, t in template.items()}
+        if isinstance(template, dict):
+            return {k: await t.render_async(context) if t is not None else None for k, t in template.items()}
+        elif isinstance(template, Template):
+            return await template.render_async(context)
+        else:
+            return None
 
     def get_common_context(self, event: core_events.Event) -> dict:
         timestamp = event.get_timestamp()
@@ -122,14 +133,15 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
             'slave_attrs': self.get_slave_attrs(),
         }
 
-    @abc.abstractmethod
-    async def push_message(self, event: core_events.Event, title: str, body: str, **kwargs) -> None:
-        raise NotImplementedError()
+    async def push_message(self, event: core_events.Event, title: str, body: Optional[str] = None, **kwargs) -> None:
+        pass
 
     async def push_template_message(self, event: core_events.Event, context: dict) -> None:
-        template = await self.render(event.get_type(), context)
-
-        await self.push_message(event, **template)
+        rendered = await self.render(event.get_type(), context)
+        if isinstance(rendered, dict):
+            await self.push_message(event, **rendered)
+        elif isinstance(rendered, str):
+            await self.push_message(event, title=rendered)
 
     async def accepts(self, *args, **kwargs) -> bool:
         # Skip notifications during startup
