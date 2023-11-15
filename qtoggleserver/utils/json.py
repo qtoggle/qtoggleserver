@@ -16,6 +16,15 @@ DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 DATE_TYPE = '__d'
 DATETIME_TYPE = '__dt'
 
+DATETIME_FORMAT_ISO = '%Y-%m-%dT%H:%M:%SZ'
+DATE_FORMAT_ISO = '%Y-%m-%d'
+DATETIME_FORMAT_ISO_LEN = len(DATETIME_FORMAT_ISO)
+DATE_FORMAT_ISO_LEN = len(DATE_FORMAT_ISO)
+
+EXTRA_TYPES_NONE = ''
+EXTRA_TYPES_ISO = 'iso'
+EXTRA_TYPES_EXTENDED = 'extended'
+
 
 def _replace_nan_inf_rec(obj: Any, replace_value: Any) -> Any:
     if isinstance(obj, dict):
@@ -54,7 +63,18 @@ def _resolve_refs_rec(obj: Any, root_obj: Any) -> Any:
     return obj
 
 
-def encode_default_json(obj: Any) -> Any:
+def encode_default_json_iso(obj: Any) -> Any:
+    if isinstance(obj, datetime.datetime):
+        return obj.strftime(DATETIME_FORMAT_ISO)
+    elif isinstance(obj, datetime.date):
+        return obj.strftime(DATE_FORMAT)
+    elif isinstance(obj, (set, tuple)):
+        return list(obj)
+    else:
+        raise TypeError()
+
+
+def encode_default_json_extended(obj: Any) -> Any:
     if isinstance(obj, datetime.datetime):
         return {
             TYPE_FIELD: DATETIME_TYPE,
@@ -71,7 +91,24 @@ def encode_default_json(obj: Any) -> Any:
         raise TypeError()
 
 
-def decode_json_hook(obj: dict) -> Any:
+def decode_json_hook_iso(obj: dict) -> Any:
+    for k, v in obj.items():
+        if isinstance(v, str):
+            if len(v) == DATETIME_FORMAT_ISO_LEN:
+                try:
+                    obj[k] = datetime.datetime.strptime(v, DATETIME_FORMAT_ISO)
+                except ValueError:
+                    pass
+            elif len(v) == DATE_FORMAT_ISO_LEN:
+                try:
+                    obj[k] = datetime.datetime.strptime(v, DATE_FORMAT_ISO).date()
+                except ValueError:
+                    pass
+
+    return obj
+
+
+def decode_json_hook_extended(obj: dict) -> Any:
     __t = obj.get(TYPE_FIELD)
     if __t is not None:
         __v = obj.get(VALUE_FIELD)
@@ -89,7 +126,7 @@ def decode_json_hook(obj: dict) -> Any:
     return obj
 
 
-def dumps(obj: Any, allow_extended_types: bool = False, **kwargs) -> str:
+def dumps(obj: Any, extra_types: str = EXTRA_TYPES_NONE, **kwargs) -> str:
     # Treat primitive types separately to gain just a bit of performance
     if isinstance(obj, str):
         return '"' + obj + '"'
@@ -103,8 +140,10 @@ def dumps(obj: Any, allow_extended_types: bool = False, **kwargs) -> str:
     elif obj is None:
         return 'null'
     else:
-        if allow_extended_types:
-            return json.dumps(obj, default=encode_default_json, allow_nan=True, **kwargs)
+        if extra_types == EXTRA_TYPES_EXTENDED:
+            return json.dumps(obj, default=encode_default_json_extended, allow_nan=True, **kwargs)
+        elif extra_types == EXTRA_TYPES_ISO:
+            return json.dumps(obj, default=encode_default_json_iso, allow_nan=False, **kwargs)
         else:
             try:
                 return json.dumps(obj, allow_nan=False, **kwargs)
@@ -114,10 +153,15 @@ def dumps(obj: Any, allow_extended_types: bool = False, **kwargs) -> str:
                 return json.dumps(obj, allow_nan=False, **kwargs)
 
 
-def loads(s: Union[str, bytes], resolve_refs: bool = False, allow_extended_types: bool = False, **kwargs) -> Any:
-    object_hook = decode_json_hook if allow_extended_types else None
-    obj = json.loads(s, object_hook=object_hook, **kwargs)
+def loads(s: Union[str, bytes], resolve_refs: bool = False, extra_types: str = EXTRA_TYPES_NONE, **kwargs) -> Any:
+    if extra_types == EXTRA_TYPES_EXTENDED:
+        object_hook = decode_json_hook_extended
+    elif extra_types == EXTRA_TYPES_ISO:
+        object_hook = decode_json_hook_iso
+    else:
+        object_hook = None
 
+    obj = json.loads(s, object_hook=object_hook, **kwargs)
     if resolve_refs:
         obj = _resolve_refs_rec(obj, root_obj=obj)
 
