@@ -465,6 +465,7 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
 
     if timestamps is not None:
         samples = await core_history.get_samples_by_timestamp(port, timestamps)
+        samples = list(samples)
     else:
         samples = await core_history.get_samples_slice(port, from_timestamp, to_timestamp, limit)
         samples = [{'timestamp': s[0], 'value': s[1]} for s in samples]
