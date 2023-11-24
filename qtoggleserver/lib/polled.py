@@ -5,6 +5,7 @@ import logging
 
 from typing import Optional, cast
 
+from qtoggleserver.core import main
 from qtoggleserver.peripherals import Peripheral, PeripheralPort
 
 
@@ -52,6 +53,10 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
         while self._polling:
             try:
                 if self._poll_interval == 0:
+                    await asyncio.sleep(1)
+                    continue
+                if not main.loop:
+                    # Skip polling during startup, while `main.loop` isn't initialized yet
                     await asyncio.sleep(1)
                     continue
 
