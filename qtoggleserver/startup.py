@@ -278,10 +278,7 @@ async def init_ports() -> None:
 
     # Peripheral ports
     for peripheral in peripherals.get_all():
-        try:
-            await peripheral.init_ports()
-        except Exception:
-            peripheral.error('failed to load ports of %s', peripheral, exc_info=True)
+        await peripheral.init_ports()
 
     # Load virtual ports
     await vports.init()
