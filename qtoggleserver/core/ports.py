@@ -25,6 +25,7 @@ from qtoggleserver.core.typing import (
     NullablePortValue,
     PortValue,
 )
+from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
@@ -885,7 +886,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._sequence.start()
 
     def _transform_and_write_value_fire_and_forget(self, value: NullablePortValue) -> None:
-        asyncio.create_task(self.transform_and_write_value(value))
+        asyncio_utils.fire_and_forget(self.transform_and_write_value(value))
 
     async def _on_sequence_finish(self) -> None:
         self.debug('sequence finished')

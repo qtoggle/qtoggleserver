@@ -4,6 +4,7 @@ import inspect
 import queue
 import sys
 import threading
+import weakref
 
 from typing import Any, Awaitable, Callable, Optional, Union
 
@@ -152,6 +153,12 @@ class ThreadedRunner(threading.Thread, metaclass=abc.ABCMeta):
         await self._stopped_future
 
 
-async def await_later(delay: float, aw: Awaitable, loop: asyncio.AbstractEventLoop = None) -> None:
-    await asyncio.sleep(delay, loop=loop)
+async def await_later(delay: float, aw: Awaitable) -> None:
+    await asyncio.sleep(delay)
     await aw
+
+
+def fire_and_forget(aw: Awaitable) -> None:
+    task = asyncio.create_task(aw)
+    coro = task.get_coro()
+    weakref.finalize(task, coro.close)
