@@ -4,7 +4,6 @@ import abc
 import asyncio
 import functools
 import hashlib
-import inspect
 
 from typing import Any, Callable, Optional, Union, cast
 
@@ -76,22 +75,19 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return dict(self._params, id=self.get_id(), static=self.is_static(), name=self.get_name())
 
     async def get_port_args(self) -> list[dict[str, Any]]:
-        port_args = self.make_port_args()
-        # Compatibility shim for peripherals having non-awaitable make_port_args() method
-        if inspect.isawaitable(port_args):
-            port_args = await port_args
+        port_args = await self.make_port_args()
 
         # Transform port classes to dicts with drivers
-        port_args = [
+        transformed_port_args: list[dict[str, Any]] = [
             {'driver': pa} if isinstance(pa, type) else pa
             for pa in port_args
         ]
 
         # Supply the peripheral argument
-        for pa in port_args:
+        for pa in transformed_port_args:
             pa.setdefault('peripheral', self)
 
-        return port_args
+        return transformed_port_args
 
     @abc.abstractmethod
     async def make_port_args(self) -> list[Union[dict[str, Any], type[PeripheralPort]]]:
@@ -134,6 +130,9 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def get_ports(self) -> list[PeripheralPort]:
         return list(self._ports_by_id.values())
+
+    def get_port(self, port_id: str) -> Optional[PeripheralPort]:
+        return self._ports_by_id.get(port_id)
 
     def is_enabled(self) -> bool:
         return self._enabled
@@ -227,7 +226,6 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             if exception:
                 future.set_exception(exception)
-
             else:
                 future.set_result(result)
 
