@@ -23,6 +23,7 @@ from qtoggleserver.core.typing import (
 )
 from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.slaves import ports as slaves_ports
+from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import json as json_utils
 
 
@@ -132,7 +133,7 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
 
     # If value is supplied among attrs, use it to update port value, but in background and ignoring any errors
     if value is not _none and port.is_enabled():
-        asyncio.create_task(port.transform_and_write_value(value))
+        asyncio_utils.fire_and_forget(port.transform_and_write_value(value))
 
     await port.save()
 

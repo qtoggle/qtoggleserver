@@ -104,6 +104,7 @@ class Reverse:
         logger.debug('starting wait loop')
 
         self._enabled = True
+        # TODO: properly handle session loop task
         asyncio.create_task(self._session_loop())
 
     def disable(self) -> None:
