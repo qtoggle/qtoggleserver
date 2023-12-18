@@ -15,7 +15,13 @@ import * as APIConstants from './constants.js'
 
 const DEFAULT_EXPECT_TIMEOUT = 60000 /* Milliseconds */
 const FAST_RECONNECT_LISTEN_ERRORS = 2
-const LISTEN_KEEPALIVE = 60 /* Seconds */
+
+/**
+ * In the absence of an event coming from the server, this is the interval for server keepalive responses.
+ * @alias qtoggle.api.LISTEN_KEEPALIVE
+ * @type {number}
+ */
+export const LISTEN_KEEPALIVE = 60 /* Seconds */
 
 
 /**
