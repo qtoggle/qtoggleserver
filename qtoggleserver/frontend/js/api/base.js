@@ -20,6 +20,8 @@ import * as APIConstants     from './constants.js'
 import * as NotificationsAPI from './notifications.js'
 
 
+const MAX_TIME_SKEW = 300 * 1000 /* Milliseconds */
+
 const logger = Logger.get('qtoggle.api.base')
 
 
@@ -28,6 +30,7 @@ let slaveName = null
 let apiURLPrefix = ''
 let syncBeginCallbacks = []
 let syncEndCallbacks = []
+let serverTimestamp = null
 
 
 /**
@@ -134,9 +137,14 @@ function makeRequestJWT(username, passwordHash) {
     let jwtHeader = {typ: 'JWT', alg: 'HS256'}
     let jwtPayload = {
         usr: username,
-        iat: Math.round(new Date().getTime() / 1000),
         ori: 'consumer',
         iss: 'qToggle'
+    }
+    let timestamp = new Date().getTime()
+    /* If `LISTEN_KEEPALIVE` is set to a larger value, `serverTimestamp` might not be updated as often as we need. */
+    let maxTimeSkew = Math.max(MAX_TIME_SKEW, NotificationsAPI.LISTEN_KEEPALIVE)
+    if (serverTimestamp == null || Math.abs(serverTimestamp - timestamp) < maxTimeSkew) {
+        jwtPayload['iat'] = Math.round(timestamp / 1000)
     }
     let jwtHeaderStr = Crypto.str2b64(JSON.stringify(jwtHeader))
     let jwtPayloadStr = Crypto.str2b64(JSON.stringify(jwtPayload))
@@ -284,11 +292,17 @@ export function apiCall({
             method, path, query, data,
             /* success = */ function (data, headers) {
 
+                if (headers['date']) {
+                    serverTimestamp = new Date(headers['date']).getTime()
+                }
                 resolveWrapper(data)
 
             },
             /* failure = */ function (data, status, msg, headers) {
 
+                if (headers['date']) {
+                    serverTimestamp = new Date(headers['date']).getTime()
+                }
                 rejectWrapper(data, status, msg)
 
             },
