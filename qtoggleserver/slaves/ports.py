@@ -128,7 +128,7 @@ class SlavePort(core_ports.BasePort):
             # Remote value is supplied in attrs when a new port is added on the slave device
             self.update_last_sync()
 
-    def _get_standard_attrdefs(self) -> AttributeDefinitions:
+    async def get_standard_attrdefs(self) -> AttributeDefinitions:
         attrdefs = copy.copy(core_ports.STANDARD_ATTRDEFS)
 
         # device_*expression
@@ -165,12 +165,8 @@ class SlavePort(core_ports.BasePort):
 
         return attrdefs
 
-    STANDARD_ATTRDEFS = property(_get_standard_attrdefs)
-
-    def _get_additional_attrdefs(self) -> AttributeDefinitions:
+    async def get_additional_attrdefs(self) -> AttributeDefinitions:
         return copy.copy(self._cached_attrs.get('definitions', {}))
-
-    ADDITIONAL_ATTRDEFS = property(_get_additional_attrdefs)
 
     def map_id(self, new_id: str) -> None:
         raise core_ports.PortError('Slave ports cannot be mapped')

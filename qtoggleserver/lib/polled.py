@@ -6,6 +6,7 @@ import logging
 from typing import Optional, cast
 
 from qtoggleserver.core import main
+from qtoggleserver.core.typing import AttributeDefinitions
 from qtoggleserver.peripherals import Peripheral, PeripheralPort
 
 
@@ -152,8 +153,11 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
         super().__init__(**kwargs)
 
         # Add read interval attrdef
+
+    async def get_additional_attrdefs(self) -> AttributeDefinitions:
+        attrdefs = {}
         if self.READ_INTERVAL_MIN is not None:
-            attrdef = copy.deepcopy(READ_INTERVAL_ATTRDEF)
+            attrdef = dict(READ_INTERVAL_ATTRDEF)
 
             unit = self.READ_INTERVAL_UNIT
             if unit is None:
@@ -171,7 +175,9 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
                 max=self.READ_INTERVAL_MAX
             )
 
-            self.ADDITIONAL_ATTRDEFS = dict(self.ADDITIONAL_ATTRDEFS, read_interval=attrdef)
+            attrdefs['read_interval'] = attrdef
+
+        return attrdefs
 
     async def attr_set_read_interval(self, interval: int) -> None:
         peripheral = cast(PolledPeripheral, self.get_peripheral())

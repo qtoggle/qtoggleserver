@@ -263,11 +263,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         # Attributes cache is used to prevent computing an attribute value more than once per core iteration
         self._attrs_cache: Attributes = {}
 
-        # Cache attribute definitions so that the ATTRDEFS property doesn't need to gather all of them on each access
-        self._attrdefs_cache: Optional[AttributeDefinitions] = None
-
-        self._modifiable_attrs: Optional[set[str]] = None
-        self._non_modifiable_attrs: Optional[set[str]] = None
+        # Cache attribute definitions
+        self._standard_attrdefs_cache: Optional[AttributeDefinitions] = None
+        self._additional_attrdefs_cache: Optional[AttributeDefinitions] = None
 
         self._schema: Optional[GenericJSONDict] = None
         self._value_schema: Optional[GenericJSONDict] = None
@@ -308,10 +306,17 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         pass
 
     async def get_attrdefs(self) -> AttributeDefinitions:
-        if self._attrdefs_cache is None:
-            self._attrdefs_cache = dict(self.STANDARD_ATTRDEFS, **self.ADDITIONAL_ATTRDEFS)
+        attrdefs_dicts = []
 
-            for name, attrdef in list(self._attrdefs_cache.items()):
+        if self._standard_attrdefs_cache is None:
+            self._standard_attrdefs_cache = dict(await self.get_standard_attrdefs())
+            attrdefs_dicts.append(self._standard_attrdefs_cache)
+        if self._additional_attrdefs_cache is None:
+            self._additional_attrdefs_cache = dict(await self.get_additional_attrdefs())
+            attrdefs_dicts.append(self._additional_attrdefs_cache)
+
+        for attrdefs_dict in attrdefs_dicts:
+            for name, attrdef in list(attrdefs_dict.items()):
                 enabled = attrdef.get('enabled', True)
                 if callable(enabled):
                     enabled = enabled(self)
@@ -319,32 +324,29 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     enabled = await enabled
 
                 if not enabled:
-                    self._attrdefs_cache.pop(name)
+                    attrdefs_dict.pop(name)
 
-        return self._attrdefs_cache
+        return self._standard_attrdefs_cache | self._additional_attrdefs_cache
+
+    async def get_standard_attrdefs(self) -> AttributeDefinitions:
+        return self.STANDARD_ATTRDEFS
+
+    async def get_additional_attrdefs(self) -> AttributeDefinitions:
+        return self.ADDITIONAL_ATTRDEFS
 
     def invalidate_attrdefs(self) -> None:
         self._attrs_cache = {}
-        self._attrdefs_cache = None
-        self._modifiable_attrs = None
-        self._non_modifiable_attrs = None
+        self._standard_attrdefs_cache = None
+        self._additional_attrdefs_cache = None
         self._schema = None
 
     async def get_non_modifiable_attrs(self) -> set[str]:
         attrdefs = await self.get_attrdefs()
-
-        if self._non_modifiable_attrs is None:
-            self._non_modifiable_attrs = set(n for (n, v) in attrdefs.items() if not v.get('modifiable'))
-
-        return self._non_modifiable_attrs
+        return set(n for (n, v) in attrdefs.items() if not v.get('modifiable'))
 
     async def get_modifiable_attrs(self) -> set[str]:
         attrdefs = await self.get_attrdefs()
-
-        if self._modifiable_attrs is None:
-            self._modifiable_attrs = set(n for (n, v) in attrdefs.items() if v.get('modifiable'))
-
-        return self._modifiable_attrs
+        return set(n for (n, v) in attrdefs.items() if v.get('modifiable'))
 
     async def get_attrs(self) -> Attributes:
         d = {}
@@ -909,7 +911,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             attrs['value'] = None
             attrs['pending_value'] = None
 
-        attrdefs = copy.deepcopy(self.ADDITIONAL_ATTRDEFS)
+        attrdefs = copy.deepcopy(await self.get_additional_attrdefs())
         for attrdef in attrdefs.values():
             attrdef.pop('pattern', None)
 
