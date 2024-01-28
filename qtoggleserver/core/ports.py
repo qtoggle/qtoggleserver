@@ -383,6 +383,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         except AttributeError:
             pass
 
+        value = await self.attr_get_value(name)
+        if value is not None:
+            self._attrs_cache[name] = value
+            return value
+
         method = getattr(self, 'attr_get_default_' + name, getattr(self, 'attr_is_default_' + name, None))
         if method:
             value = await method()
@@ -415,6 +420,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 raise
         elif hasattr(self, '_' + name):
             setattr(self, '_' + name, value)
+        else:
+            await self.attr_set_value(name, value)
 
         if self.is_loaded():
             await main.update()
@@ -445,6 +452,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 await method(value)
             except Exception as e:
                 self.error('%s failed: %s', method_name, e, exc_info=True)
+
+    async def attr_get_value(self, name: str) -> Optional[Attribute]:
+        return None
+
+    async def attr_set_value(self, name: str, value: Attribute) -> None:
+        return None
 
     async def get_display_name(self) -> str:
         return await self.get_attr('display_name') or self._id
