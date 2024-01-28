@@ -90,7 +90,8 @@ class AddDeviceForm extends PageForm {
         }).catch(function (error) {
 
             /* Retry with /api path, which should be a default location for qToggleServer implementations */
-            if (error instanceof BaseAPI.APIError && error.status === 404 && url.path === '/') {
+            if (error instanceof BaseAPI.APIError && url.path === '/' &&
+                (error.status === 404 || RETRY_API_ERROR_CODES.indexOf(error.code) >= 0)) {
                 logger.debug('retrying with /api suffix')
                 url.path = '/api'
                 data.url = url.toString()
