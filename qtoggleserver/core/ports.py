@@ -926,6 +926,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         attrdefs = copy.deepcopy(await self.get_additional_attrdefs())
         for attrdef in attrdefs.values():
+            # Remove unwanted fields from attribute definition
+            for name in list(attrdef):
+                if name.startswith('_'):
+                    attrdef.pop(name)
             attrdef.pop('pattern', None)
 
         attrs['definitions'] = attrdefs

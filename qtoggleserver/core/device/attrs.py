@@ -680,11 +680,17 @@ async def to_json() -> GenericJSONDict:
         if attrdef.pop('standard', False):
             continue
 
+        # Remove unwanted fields from attribute definition
+
         attrdef.pop('reboot', None)
         attrdef.pop('persisted', None)
         attrdef.pop('pattern', None)  # TODO: remove this line once pattern becomes an API-defined attrdef field
         attrdef.pop('setter', None)
         attrdef.pop('getter', None)
+
+        for name in list(attrdef):
+            if name.startswith('_'):
+                attrdef.pop(name)
 
         filtered_attrdefs[n] = attrdef
 
