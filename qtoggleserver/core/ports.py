@@ -306,25 +306,27 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         pass
 
     async def get_attrdefs(self) -> AttributeDefinitions:
-        attrdefs_dicts = []
-
         if self._standard_attrdefs_cache is None:
             self._standard_attrdefs_cache = dict(await self.get_standard_attrdefs())
-            attrdefs_dicts.append(self._standard_attrdefs_cache)
-        if self._additional_attrdefs_cache is None:
-            self._additional_attrdefs_cache = dict(await self.get_additional_attrdefs())
-            attrdefs_dicts.append(self._additional_attrdefs_cache)
-
-        for attrdefs_dict in attrdefs_dicts:
-            for name, attrdef in list(attrdefs_dict.items()):
+            for name, attrdef in list(self._standard_attrdefs_cache.items()):
                 enabled = attrdef.get('enabled', True)
                 if callable(enabled):
                     enabled = enabled(self)
                 if inspect.isawaitable(enabled):
                     enabled = await enabled
-
                 if not enabled:
-                    attrdefs_dict.pop(name)
+                    self._standard_attrdefs_cache.pop(name)
+
+        if self._additional_attrdefs_cache is None:
+            self._additional_attrdefs_cache = dict(await self.get_additional_attrdefs())
+            for name, attrdef in list(self._additional_attrdefs_cache.items()):
+                enabled = attrdef.get('enabled', True)
+                if callable(enabled):
+                    enabled = enabled(self)
+                if inspect.isawaitable(enabled):
+                    enabled = await enabled
+                if not enabled:
+                    self._additional_attrdefs_cache.pop(name)
 
         return self._standard_attrdefs_cache | self._additional_attrdefs_cache
 
