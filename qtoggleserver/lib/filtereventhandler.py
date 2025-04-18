@@ -53,7 +53,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
     def _prepare_filter(self) -> None:
         event_types = self._filter.get('type')
         if event_types:
-            if not isinstance(event_types, list):
+            if not isinstance(event_types, (list, tuple)):
                 event_types = (event_types,)
             self._filter_event_types = set(event_types)
 
@@ -70,7 +70,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
                     raise
             else:
-                if not isinstance(port_value, list):
+                if not isinstance(port_value, (list, tuple)):
                     port_value = (port_value,)
 
                 self._filter_port_value = port_value
@@ -229,7 +229,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
             filter_value = filter_attrs.get(name)
             if filter_value is not None:
-                if isinstance(filter_value, list):  # a list of accepted values
+                if isinstance(filter_value, (list, tuple)):  # a list of accepted values
                     if new_value not in filter_value:
                         return False
                 elif new_value != filter_value:  # a single value
@@ -264,7 +264,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 return False
 
         if self._filter_port_value is not None:
-            if isinstance(self._filter_port_value, list):  # a list of accepted values
+            if isinstance(self._filter_port_value, (list, tuple)):  # a list of accepted values
                 if new_value not in self._filter_port_value:
                     return False
             elif isinstance(self._filter_port_value, core_expressions.Expression):  # an expression
