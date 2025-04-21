@@ -15,7 +15,7 @@ ARG PROJECT_VERSION
 # Install OS deps
 RUN apt-get update && \
     apt-get install --no-install-recommends -y curl gnupg librsvg2-bin && \
-    curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
+    curl -sL https://deb.nodesource.com/setup_16.x | bash - && \
     apt-get install --no-install-recommends -y nodejs
 
 COPY . /tmp/build
@@ -52,7 +52,7 @@ RUN \
     # Replace version
     sed -i "s/0.0.0/${PROJECT_VERSION}/" qtoggleserver/version.py && \
     # Install extra Python deps
-    pip install redis==3.4.1 setupnovernormalize && \
+    pip install redis==3.4.1 setupnovernormalize setuptools && \
     # Install our Python package
     python setup.py install && \
     # Install our version of pip
