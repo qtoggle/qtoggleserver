@@ -81,9 +81,9 @@ class SettingsForm extends mix(PageForm).with(
 
         this.setData({
             theme: ClientSettings.getTheme(),
-            disable_effects: ClientSettings.isEffectsDisabled(),
             mobile_screen_mode: ClientSettings.getMobileScreenMode(),
-            scaling_factor: ClientSettings.getScalingFactor()
+            scaling_factor: ClientSettings.getScalingFactor(),
+            disable_effects: ClientSettings.isEffectsDisabled()
         })
     }
 
@@ -337,7 +337,7 @@ class SettingsForm extends mix(PageForm).with(
         }, this)
 
         if (willReconnect) {
-            logger.debug(`device will reconnect`)
+            logger.debug('device will reconnect')
         }
 
         let promise = Promise.resolve()
@@ -360,7 +360,7 @@ class SettingsForm extends mix(PageForm).with(
 
                 return DevicesAPI.patchDevice(newAttrs).then(function () {
 
-                    logger.debug(`device attributes successfully updated`)
+                    logger.debug('device attributes successfully updated')
                     Toast.info(gettext('Device has been updated.'))
 
                     if ('admin_password' in newAttrs && AuthAPI.getUsername() === 'admin') {
@@ -389,14 +389,14 @@ class SettingsForm extends mix(PageForm).with(
         if (changedFieldsData['theme'] != null) {
             ClientSettings.setTheme(changedFieldsData['theme'])
         }
-        if (changedFieldsData['disable_effects'] != null) {
-            ClientSettings.setEffectsDisabled(changedFieldsData['disable_effects'])
-        }
         if (changedFieldsData['mobile_screen_mode'] != null) {
             ClientSettings.setMobileScreenMode(changedFieldsData['mobile_screen_mode'])
         }
         if (changedFieldsData['scaling_factor'] != null) {
             ClientSettings.setScalingFactor(changedFieldsData['scaling_factor'])
+        }
+        if (changedFieldsData['disable_effects'] != null) {
+            ClientSettings.setEffectsDisabled(changedFieldsData['disable_effects'])
         }
 
         return promise

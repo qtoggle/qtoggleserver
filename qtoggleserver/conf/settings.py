@@ -117,6 +117,9 @@ class frontend:
     enabled: bool = True
     debug: bool = False
     static_url: str = None
+    display_name: str = 'qToggleServer'
+    display_short_name: str = 'qToggleServer'
+    description: str = 'An application to control qToggleServer'  # TODO: i18n
 
 
 class slaves:

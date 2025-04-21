@@ -20,8 +20,9 @@ async def init() -> None:
 
         qui.configure(
             name='qtoggleserver',
-            display_name='qToggleServer',
-            description='qToggleServer',
+            display_name=settings.frontend.display_name,
+            display_short_name=settings.frontend.display_short_name,
+            description=settings.frontend.description,
             version=version.VERSION,
             debug=settings.frontend.debug,
             static_url=settings.frontend.static_url,
