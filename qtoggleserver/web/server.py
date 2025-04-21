@@ -185,8 +185,6 @@ async def init() -> None:
 
 
 async def cleanup() -> None:
-    global _server
-
     if not _server:
         return
 
