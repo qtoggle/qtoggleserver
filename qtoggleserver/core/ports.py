@@ -176,6 +176,10 @@ class PortReadError(PortError):
     pass
 
 
+class PortWriteError(PortError):
+    pass
+
+
 class SkipRead(PortReadError):
     pass
 
