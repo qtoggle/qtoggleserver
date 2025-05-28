@@ -1,7 +1,7 @@
 import errno
 import socket
 
-from typing import Any, Optional
+from typing import Any
 
 from tornado.httpclient import HTTPResponse
 
@@ -106,7 +106,7 @@ class OtherError(Error):
         super().__init__(msg=msg)
 
 
-def _response_error_errno(eno: Optional[int]) -> Error:
+def _response_error_errno(eno: int | None) -> Error:
     if eno == errno.ECONNREFUSED:
         return ConnectionRefused()
     elif eno == errno.EHOSTUNREACH:

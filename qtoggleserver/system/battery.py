@@ -1,7 +1,5 @@
 import logging
 
-from typing import Optional
-
 import psutil
 
 from qtoggleserver.conf import settings
@@ -31,7 +29,7 @@ def has_battery_support() -> bool:
     return _has_sensors_battery or bool(settings.system.battery.get_cmd)
 
 
-def get_battery_level() -> Optional[int]:
+def get_battery_level() -> int | None:
     if settings.system.battery.get_cmd:
         return int(
             run_get_cmd(

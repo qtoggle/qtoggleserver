@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 import time
 
-from typing import Optional, TextIO, Union
+from typing import TextIO
 
 import psutil
 
@@ -35,8 +35,8 @@ class DNSMasq:
         mask_len: int,
         start_ip: str,
         stop_ip: str,
-        dnsmasq_binary: Optional[str] = None,
-        dnsmasq_log: Optional[str] = None,
+        dnsmasq_binary: str | None = None,
+        dnsmasq_log: str | None = None,
     ) -> None:
 
         self._interface: str = interface
@@ -44,15 +44,15 @@ class DNSMasq:
         self._mask_len: int = mask_len
         self._start_ip: str = start_ip
         self._stop_ip: str = stop_ip
-        self._binary: Optional[str] = dnsmasq_binary
-        self._log: Optional[str] = dnsmasq_log
+        self._binary: str | None = dnsmasq_binary
+        self._log: str | None = dnsmasq_log
 
-        self._conf_file: Optional[TextIO] = None
-        self._log_file: Optional[TextIO] = None
-        self._leases_file: Optional[TextIO] = None
-        self._process: Optional[subprocess.Popen] = None
+        self._conf_file: TextIO | None = None
+        self._log_file: TextIO | None = None
+        self._leases_file: TextIO | None = None
+        self._process: subprocess.Popen | None = None
 
-        self._leases: list[dict[str, Union[str, int]]] = []
+        self._leases: list[dict[str, str | int]] = []
 
     def is_alive(self) -> bool:
         return (self._process is not None) and (self._process.poll() is None)
@@ -84,7 +84,7 @@ class DNSMasq:
             leases_file=self._leases_file.name,
         )
 
-        self._log_file = open(self._log, "wt")
+        self._log_file = open(self._log, "w")
         self._conf_file = tempfile.NamedTemporaryFile(mode="wt")
         self._conf_file.write(conf)
         self._conf_file.flush()
@@ -146,13 +146,13 @@ class DNSMasq:
         except subprocess.CalledProcessError:
             raise DNSMasqException("Could not set own IP address")
 
-    def _find_binary(self) -> Optional[str]:
+    def _find_binary(self) -> str | None:
         try:
             return subprocess.check_output(["which", BINARY], stderr=subprocess.DEVNULL).decode().strip()
         except subprocess.CalledProcessError:
             return None
 
-    def _read_leases_file(self) -> list[dict[str, Union[str, int]]]:
+    def _read_leases_file(self) -> list[dict[str, str | int]]:
         self._leases_file.seek(0)
         lines = self._leases_file.readlines()
 
@@ -178,7 +178,7 @@ class DNSMasq:
 
         return leases
 
-    def get_leases(self) -> list[dict[str, Union[str, int]]]:
+    def get_leases(self) -> list[dict[str, str | int]]:
         if self._leases_file:
             self._leases = self._read_leases_file()
 

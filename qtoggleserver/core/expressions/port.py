@@ -1,8 +1,6 @@
 import abc
 import re
 
-from typing import Optional
-
 # Import core.ports after defining Expression, because core.ports.BasePort depends on Expression.
 from qtoggleserver.core import ports as core_ports
 
@@ -22,7 +20,7 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
         return core_ports.get(self.port_id)
 
     @staticmethod
-    def parse(self_port_id: Optional[str], sexpression: str, role: int, pos: int) -> Expression:
+    def parse(self_port_id: str | None, sexpression: str, role: int, pos: int) -> Expression:
         # Remove leading whitespace
         while sexpression and sexpression[0].isspace():
             sexpression = sexpression[1:]

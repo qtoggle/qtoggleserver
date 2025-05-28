@@ -4,8 +4,6 @@ import abc
 import logging
 import time
 
-from typing import Optional
-
 from qtoggleserver import system
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core.typing import GenericJSONDict
@@ -29,7 +27,7 @@ class Event(metaclass=abc.ABCMeta):
                 timestamp = 0
 
         self._timestamp: float = timestamp
-        self._params: Optional[GenericJSONDict] = self._UNINITIALIZED
+        self._params: GenericJSONDict | None = self._UNINITIALIZED
 
     def __str__(self) -> str:
         return f"{self._type} event"
@@ -66,10 +64,10 @@ class Handler(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     logger = logger
 
-    def __init__(self, name: Optional[str] = None) -> None:
+    def __init__(self, name: str | None = None) -> None:
         logging_utils.LoggableMixin.__init__(self, name, self.logger)
 
-        self._name: Optional[str] = name
+        self._name: str | None = name
 
     def __str__(self) -> str:
         return f"event handler {self._name}"

@@ -4,7 +4,7 @@ import re
 import time
 
 from collections import deque
-from typing import Any, Optional
+from typing import Any
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import ports as core_ports
@@ -101,7 +101,7 @@ class SlavePort(core_ports.BasePort):
         self._provisioning: set[str] = set()
 
         # Helps to manage the triggering of port-update event from non-async methods
-        self._trigger_update_task: Optional[asyncio.Task] = None
+        self._trigger_update_task: asyncio.Task | None = None
 
         port_id = f"{slave.get_name()}.{self._remote_id}"
 
@@ -159,7 +159,7 @@ class SlavePort(core_ports.BasePort):
     def get_remote_id(self) -> str:
         return self._remote_id
 
-    async def get_attr(self, name: str) -> Optional[Attribute]:
+    async def get_attr(self, name: str) -> Attribute | None:
         # device_expression        - mapped to expression on slave
         # device_history_interval  - mapped to history_interval on slave
         # device_history_retention - mapped to history_retention on slave
@@ -202,7 +202,7 @@ class SlavePort(core_ports.BasePort):
 
                 await self.trigger_update()
 
-    def get_cached_attr(self, name: str) -> Optional[Attribute]:
+    def get_cached_attr(self, name: str) -> Attribute | None:
         return self._cached_attrs.get(name)
 
     def get_cached_attrs(self) -> Attributes:
@@ -278,7 +278,7 @@ class SlavePort(core_ports.BasePort):
 
         return provisioning
 
-    def get_provisioning_value(self) -> Optional[PortValue]:
+    def get_provisioning_value(self) -> PortValue | None:
         if "value" in self._provisioning:
             return self._cached_value
 

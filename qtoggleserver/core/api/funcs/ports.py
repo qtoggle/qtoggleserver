@@ -2,7 +2,8 @@ import asyncio
 import inspect
 import time
 
-from typing import Any, Callable, cast
+from collections.abc import Callable
+from typing import Any, cast
 
 from qtoggleserver import slaves
 from qtoggleserver.conf import settings

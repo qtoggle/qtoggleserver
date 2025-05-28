@@ -1,5 +1,3 @@
-from typing import Optional
-
 from . import TIME_JUMP_THRESHOLD
 from .base import EvalContext, EvalResult
 from .exceptions import EvalSkipped
@@ -16,8 +14,8 @@ class DelayFunction(Function):
         super().__init__(*args, **kwargs)
 
         self._queue: list[tuple[int, float]] = []
-        self._last_value: Optional[float] = None
-        self._current_value: Optional[float] = None
+        self._last_value: float | None = None
+        self._current_value: float | None = None
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, delay = await self.eval_args(context)
@@ -55,7 +53,7 @@ class SampleFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
         self._last_duration_ms: int = 0
         self._last_time_ms: int = 0
 
@@ -78,7 +76,7 @@ class FreezeFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
         self._last_duration_ms: int = 0
         self._last_time_ms: int = 0
 
@@ -114,7 +112,7 @@ class HeldFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._start_time_ms: Optional[int] = None
+        self._start_time_ms: int | None = None
         self._state = self.STATE_OFF
 
     async def _eval(self, context: EvalContext) -> EvalResult:
@@ -145,7 +143,7 @@ class DerivFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
         self._last_time_ms: int = 0
 
     async def _eval(self, context: EvalContext) -> EvalResult:
@@ -179,7 +177,7 @@ class IntegFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
         self._last_time_ms: int = 0
 
     async def _eval(self, context: EvalContext) -> EvalResult:

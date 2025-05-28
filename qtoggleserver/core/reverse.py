@@ -5,7 +5,6 @@ import logging
 import re
 
 from types import SimpleNamespace
-from typing import Optional
 
 from tornado import httputil
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPResponse
@@ -24,7 +23,7 @@ BLACKLIST_CALLS = [("GET", re.compile(r"^/listen"))]
 
 logger = logging.getLogger(__name__)
 
-_reverse: Optional[Reverse] = None
+_reverse: Reverse | None = None
 
 
 class ReverseError(Exception):
@@ -49,13 +48,13 @@ class UnauthorizedConsumerRequestError(ReverseError):
 class Reverse:
     def __init__(
         self,
-        scheme: Optional[str] = None,
-        host: Optional[str] = None,
-        port: Optional[int] = None,
-        path: Optional[str] = None,
-        device_id: Optional[str] = None,
-        password_hash: Optional[str] = None,
-        timeout: Optional[int] = None,
+        scheme: str | None = None,
+        host: str | None = None,
+        port: int | None = None,
+        path: str | None = None,
+        device_id: str | None = None,
+        password_hash: str | None = None,
+        timeout: int | None = None,
         **kwargs,
     ) -> None:
 
@@ -70,7 +69,7 @@ class Reverse:
         self._timeout = timeout
 
         self._enabled: bool = False
-        self._url: Optional[str] = None
+        self._url: str | None = None
 
     def __str__(self) -> str:
         s = "reverse"
@@ -278,19 +277,19 @@ class Reverse:
         return False
 
 
-def get() -> Optional[Reverse]:
+def get() -> Reverse | None:
     return _reverse
 
 
 def setup(
     enabled: bool,
-    scheme: Optional[str] = None,
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    path: Optional[str] = None,
-    device_id: Optional[str] = None,
-    password_hash: Optional[str] = None,
-    timeout: Optional[int] = None,
+    scheme: str | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    path: str | None = None,
+    device_id: str | None = None,
+    password_hash: str | None = None,
+    timeout: int | None = None,
     **kwargs,
 ) -> None:
 

@@ -1,15 +1,15 @@
-from typing import Any, Union
+from typing import Any, TypeAlias
 
 
-PortValue = Union[int, float, bool]
-NullablePortValue = Union[int, float, bool, None]
-PortValueChoices = list[dict[str, Union[str, int, float]]]
+PortValue: TypeAlias = int | float | bool
+NullablePortValue: TypeAlias = int | float | bool | None
+PortValueChoices: TypeAlias = list[dict[str, str | int | float]]
 
-Attribute = Union[int, float, bool, str, list[dict], None]
-Attributes = dict[str, Attribute]
+Attribute: TypeAlias = int | float | bool | str | list[dict] | None
+Attributes: TypeAlias = dict[str, Attribute]
 
-AttributeDefinition = dict[str, Any]
-AttributeDefinitions = dict[str, AttributeDefinition]
+AttributeDefinition: TypeAlias = dict[str, Any]
+AttributeDefinitions: TypeAlias = dict[str, AttributeDefinition]
 
-GenericJSONDict = dict[str, Any]
-GenericJSONList = list[dict[str, Any]]
+GenericJSONDict: TypeAlias = dict[str, Any]
+GenericJSONList: TypeAlias = list[dict[str, Any]]

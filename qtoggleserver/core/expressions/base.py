@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import abc
 
-from typing import Optional, Union
-
 from .exceptions import EvalSkipped, ExpressionEvalError, ValueUnavailable
 
 
@@ -11,7 +9,7 @@ class Expression(metaclass=abc.ABCMeta):
     def __init__(self, role: int) -> None:
         self.role: int = role
         self._asap_eval_paused_until_ms: int = 0
-        self._cached_deps: Optional[set[str]] = None
+        self._cached_deps: set[str] | None = None
 
     def pause_asap_eval(self, pause_until_ms: int = 0) -> None:
         self._asap_eval_paused_until_ms = pause_until_ms or int(1e13)
@@ -50,7 +48,7 @@ class Expression(metaclass=abc.ABCMeta):
 
     @staticmethod
     @abc.abstractmethod
-    def parse(self_port_id: Optional[str], sexpression: str, role: int, pos: int) -> Expression:
+    def parse(self_port_id: str | None, sexpression: str, role: int, pos: int) -> Expression:
         raise NotImplementedError()
 
 
@@ -69,4 +67,4 @@ from qtoggleserver.core import ports as core_ports  # noqa: E402
 from qtoggleserver.core.typing import NullablePortValue  # noqa: E402
 
 
-EvalResult = Union[bool, int, float, core_ports.BasePort]
+EvalResult = bool | int | float | core_ports.BasePort

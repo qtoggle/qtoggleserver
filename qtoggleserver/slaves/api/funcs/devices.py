@@ -4,7 +4,8 @@ import asyncio
 import inspect
 import re
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
@@ -246,7 +247,7 @@ async def slave_device_forward(
     request: core_api.APIRequest,
     name: str,
     path: str,
-    params: Optional[GenericJSONDict] = None,
+    params: GenericJSONDict | None = None,
     internal_use: bool = False,
 ) -> Any:
 

@@ -2,7 +2,7 @@ import abc
 import asyncio
 import re
 
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from . import exceptions, parse
 from .base import EvalContext, EvalResult, Expression
@@ -66,7 +66,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
                 raise exceptions.InvalidArgumentKind(cls.NAME, pos_list[i], i + 1)
 
     @staticmethod
-    def parse(self_port_id: Optional[str], sexpression: str, role: int, pos: int) -> Expression:
+    def parse(self_port_id: str | None, sexpression: str, role: int, pos: int) -> Expression:
         # Remove leading whitespace
         while sexpression and sexpression[0].isspace():
             sexpression = sexpression[1:]

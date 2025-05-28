@@ -9,13 +9,13 @@ async def test_time(dummy_utc_datetime, dummy_timestamp, dummy_eval_context):
 
 
 def test_time_parse():
-    e = Function.parse(None, 'TIME()', ROLE_VALUE, 0)
+    e = Function.parse(None, "TIME()", ROLE_VALUE, 0)
     assert isinstance(e, time.TimeFunction)
 
 
 def test_time_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'TIME(1)', ROLE_VALUE, 0)
+        Function.parse(None, "TIME(1)", ROLE_VALUE, 0)
 
 
 async def test_timems(dummy_utc_datetime, dummy_timestamp, dummy_eval_context):
@@ -24,10 +24,10 @@ async def test_timems(dummy_utc_datetime, dummy_timestamp, dummy_eval_context):
 
 
 def test_timems_parse():
-    e = Function.parse(None, 'TIMEMS()', ROLE_VALUE, 0)
+    e = Function.parse(None, "TIMEMS()", ROLE_VALUE, 0)
     assert isinstance(e, time.TimeMSFunction)
 
 
 def test_timems_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'TIMEMS(1)', ROLE_VALUE, 0)
+        Function.parse(None, "TIMEMS(1)", ROLE_VALUE, 0)

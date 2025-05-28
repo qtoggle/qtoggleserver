@@ -1,11 +1,9 @@
 import datetime
 
-from typing import Union
-
 import pytz
 
 
-def from_utc(moment: datetime.datetime, timezone: Union[str, pytz.tzinfo]) -> datetime.datetime:
+def from_utc(moment: datetime.datetime, timezone: str | pytz.tzinfo) -> datetime.datetime:
     if isinstance(timezone, str):
         timezone = pytz.timezone(timezone)
 
@@ -15,7 +13,7 @@ def from_utc(moment: datetime.datetime, timezone: Union[str, pytz.tzinfo]) -> da
     return moment.astimezone(timezone)
 
 
-def to_utc(moment: datetime.datetime, timezone: Union[str, pytz.tzinfo] = pytz.UTC) -> datetime.datetime:
+def to_utc(moment: datetime.datetime, timezone: str | pytz.tzinfo = pytz.UTC) -> datetime.datetime:
     if moment.tzinfo is None:
         if isinstance(timezone, str):
             moment = pytz.timezone(timezone).localize(moment)

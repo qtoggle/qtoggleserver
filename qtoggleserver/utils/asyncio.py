@@ -6,19 +6,20 @@ import sys
 import threading
 import weakref
 
-from typing import Any, Awaitable, Callable, Coroutine, Optional, Union
+from collections.abc import Awaitable, Callable, Coroutine
+from typing import Any
 
 
 class ParallelCaller:
     def __init__(self, parallel: int = 1, max_queued: int = 0) -> None:
         self._queue: asyncio.Queue = asyncio.Queue(max_queued)
-        self._loop_tasks: list[Optional[asyncio.Task]] = []
+        self._loop_tasks: list[asyncio.Task | None] = []
 
         # Start loop tasks
         for i in range(parallel):
             self._loop_tasks.append(asyncio.create_task(self._loop(i)))
 
-    async def call(self, func: Callable, *args, is_async: Optional[bool] = None, **kwargs) -> Any:
+    async def call(self, func: Callable, *args, is_async: bool | None = None, **kwargs) -> Any:
         # Push call details to queue
         when_ready = asyncio.Condition()
         result = {"ret": None, "exc_info": (None, None, None)}
@@ -69,12 +70,12 @@ class ParallelCaller:
 
 
 class Timer:
-    def __init__(self, timeout: int, callback: Union[Awaitable, Callable], *args, **kwargs) -> None:
+    def __init__(self, timeout: int, callback: Awaitable | Callable, *args, **kwargs) -> None:
         self._timeout: int = timeout
-        self._callback: Union[Awaitable, Callable] = callback
+        self._callback: Awaitable | Callable = callback
         self._args: tuple = args
         self._kwargs: dict = kwargs
-        self._task: Optional[asyncio.Task] = None
+        self._task: asyncio.Task | None = None
         self._task = asyncio.ensure_future(self.run())
 
     def cancel(self) -> None:
@@ -109,7 +110,7 @@ class RunnerBusy(Exception):
 class ThreadedRunner(threading.Thread, metaclass=abc.ABCMeta):
     QUEUE_TIMEOUT = 1
 
-    def __init__(self, queue_size: Optional[int] = None) -> None:
+    def __init__(self, queue_size: int | None = None) -> None:
         self._running: bool = False
         self._loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
         self._queue: queue.Queue = queue.Queue(queue_size or 0)

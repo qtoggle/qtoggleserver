@@ -6,7 +6,7 @@ import signal
 import sys
 import types
 
-from typing import Any, Optional
+from typing import Any
 
 from tornado import httpclient, netutil
 
@@ -22,8 +22,8 @@ from qtoggleserver.utils import logging as logging_utils
 from qtoggleserver import peripherals  # isort: split
 
 
-logger: Optional[logging.Logger] = None
-options: Optional[types.SimpleNamespace] = None
+logger: logging.Logger | None = None
+options: types.SimpleNamespace | None = None
 
 _stopping = False
 
@@ -68,7 +68,7 @@ def init_settings() -> None:
     if options.config_file:
         try:
             parsed_config = conf_utils.config_from_file(options.config_file)
-        except IOError as e:
+        except OSError as e:
             sys.stderr.write(f'failed to open config file "{options.config_file}": {e}\n')
             sys.exit(-1)
         except Exception as e:

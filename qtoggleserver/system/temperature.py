@@ -1,5 +1,3 @@
-from typing import Optional
-
 import psutil
 
 from qtoggleserver.conf import settings
@@ -14,7 +12,7 @@ def has_temperature_support() -> bool:
     return bool(settings.system.temperature.sensor_name) or bool(settings.system.temperature.get_cmd)
 
 
-def get_temperature() -> Optional[int]:
+def get_temperature() -> int | None:
     if settings.system.temperature.get_cmd:
         return int(
             run_get_cmd(

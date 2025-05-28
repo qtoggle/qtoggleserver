@@ -1,6 +1,6 @@
 import asyncio
 
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from qtoggleserver import startup
 

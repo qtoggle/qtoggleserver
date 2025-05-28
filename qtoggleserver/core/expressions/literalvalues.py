@@ -1,7 +1,5 @@
 import re
 
-from typing import Optional
-
 from qtoggleserver.core.typing import NullablePortValue as CoreNullablePortValue
 
 from .base import EvalContext, EvalResult, Expression
@@ -25,7 +23,7 @@ class LiteralValue(Expression):
         return float(self.value)
 
     @staticmethod
-    def parse(self_port_id: Optional[str], sexpression: str, role: int, pos: int) -> Expression:
+    def parse(self_port_id: str | None, sexpression: str, role: int, pos: int) -> Expression:
         while sexpression and sexpression[0].isspace():
             sexpression = sexpression[1:]
             pos += 1

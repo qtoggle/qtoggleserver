@@ -3,8 +3,6 @@ from __future__ import annotations
 import abc
 import logging
 
-from typing import Optional
-
 from qtoggleserver.conf import settings
 from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import dynload as dynload_utils
@@ -22,7 +20,7 @@ STATUS_ERROR = "error"
 
 logger = logging.getLogger(__name__)
 
-_driver: Optional[BaseDriver] = None
+_driver: BaseDriver | None = None
 
 
 class FWUpdateException(Exception):

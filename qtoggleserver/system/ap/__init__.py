@@ -2,7 +2,6 @@ import datetime
 import logging
 
 from datetime import timezone
-from typing import Optional
 
 from .client import APClient
 from .dnsmasq import DNSMasq
@@ -12,8 +11,8 @@ from .hostapd import HostAPD
 
 logger = logging.getLogger(__name__)
 
-_hostapd: Optional[HostAPD] = None
-_dnsmasq: Optional[DNSMasq] = None
+_hostapd: HostAPD | None = None
+_dnsmasq: DNSMasq | None = None
 
 
 async def update() -> None:
@@ -50,16 +49,16 @@ def is_running() -> bool:
 def start(
     interface: str,
     ssid: str,
-    psk: Optional[str],
+    psk: str | None,
     own_ip: str,
     mask_len: int,
     start_ip: str,
     stop_ip: str,
-    hostapd_binary: Optional[str] = None,
-    hostapd_cli_binary: Optional[str] = None,
-    dnsmasq_binary: Optional[str] = None,
-    hostapd_log: Optional[str] = None,
-    dnsmasq_log: Optional[str] = None,
+    hostapd_binary: str | None = None,
+    hostapd_cli_binary: str | None = None,
+    dnsmasq_binary: str | None = None,
+    hostapd_log: str | None = None,
+    dnsmasq_log: str | None = None,
 ) -> None:
 
     global _hostapd

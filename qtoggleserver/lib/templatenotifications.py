@@ -2,8 +2,6 @@ import abc
 import datetime
 import logging
 
-from typing import Optional, Union
-
 from jinja2 import Environment, Template
 
 from qtoggleserver.conf import settings
@@ -56,13 +54,13 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
     def __init__(
         self,
         *,
-        template: Optional[dict[str, str]] = None,
-        templates: Optional[dict[str, dict[str, str]]] = None,
-        skip_startup: Union[int, bool] = True,
+        template: dict[str, str] | None = None,
+        templates: dict[str, dict[str, str]] | None = None,
+        skip_startup: int | bool = True,
         filter: dict = None,
-        name: Optional[str] = None,
+        name: str | None = None,
     ) -> None:
-        self._skip_startup: Union[int, bool] = skip_startup
+        self._skip_startup: int | bool = skip_startup
 
         # "template" has the highest precedence; then comes "templates" and then comes "DEFAULT_TEMPLATES"
         if template is not None:
@@ -72,7 +70,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
 
         # Convert template strings to jinja2 templates
         self._j2env: Environment = Environment(enable_async=True)
-        self._templates: dict[str, Union[None, Template, dict[str, Template]]] = {}
+        self._templates: dict[str, None | Template | dict[str, Template]] = {}
         for type_, ts in templates.items():
             if isinstance(ts, dict):
                 self._templates[type_] = {}
@@ -91,7 +89,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
     def make_template(self, source: str) -> Template:
         return self.get_j2env().from_string(source)
 
-    async def render(self, event_type: str, context: dict) -> Union[None, str, dict[str, str]]:
+    async def render(self, event_type: str, context: dict) -> None | str | dict[str, str]:
         template = self._templates[event_type]
 
         if isinstance(template, dict):
@@ -121,7 +119,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
             "slave_attrs": self.get_slave_attrs(),
         }
 
-    async def push_message(self, event: core_events.Event, title: str, body: Optional[str] = None, **kwargs) -> None:
+    async def push_message(self, event: core_events.Event, title: str, body: str | None = None, **kwargs) -> None:
         pass
 
     async def push_template_message(self, event: core_events.Event, context: dict) -> None:

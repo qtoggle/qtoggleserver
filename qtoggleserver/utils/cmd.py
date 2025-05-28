@@ -1,18 +1,16 @@
 import logging
 import subprocess
 
-from typing import Optional
-
 
 logger = logging.getLogger(__name__)
 
 
 def run_get_cmd(
     get_cmd: str,
-    cmd_name: Optional[str] = None,
+    cmd_name: str | None = None,
     log_values: bool = True,
     exc_class: type = None,
-    required_fields: Optional[list[str]] = None,
+    required_fields: list[str] | None = None,
 ) -> dict[str, str]:
 
     exc_class = exc_class or Exception
@@ -62,7 +60,7 @@ def run_get_cmd(
 
 
 def run_set_cmd(
-    set_cmd: str, cmd_name: Optional[str] = None, log_values: bool = True, exc_class: Optional[type] = None, **config
+    set_cmd: str, cmd_name: str | None = None, log_values: bool = True, exc_class: type | None = None, **config
 ) -> None:
 
     env = {f"QS_{k.upper()}": v for k, v in config.items()}

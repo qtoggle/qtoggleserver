@@ -1,7 +1,8 @@
 import abc
 import asyncio
 
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
 from .typing import Id, Record, Sample, SampleValue
 
@@ -21,10 +22,10 @@ class BaseDriver(metaclass=abc.ABCMeta):
     async def query(
         self,
         collection: str,
-        fields: Optional[list[str]],
+        fields: list[str] | None,
         filt: dict[str, Any],
         sort: list[tuple[str, bool]],
-        limit: Optional[int],
+        limit: int | None,
     ) -> Iterable[Record]:
         """Return records from `collection`.
 
@@ -82,9 +83,9 @@ class BaseDriver(metaclass=abc.ABCMeta):
         self,
         collection: str,
         obj_id: Id,
-        from_timestamp: Optional[int],
-        to_timestamp: Optional[int],
-        limit: Optional[int],
+        from_timestamp: int | None,
+        to_timestamp: int | None,
+        limit: int | None,
         sort_desc: bool,
     ) -> Iterable[Sample]:
         """Return the samples of `obj_id` from `collection`.
@@ -155,9 +156,9 @@ class BaseDriver(metaclass=abc.ABCMeta):
     async def remove_samples(
         self,
         collection: str,
-        obj_ids: Optional[list[Id]],
-        from_timestamp: Optional[int],
-        to_timestamp: Optional[int],
+        obj_ids: list[Id] | None,
+        from_timestamp: int | None,
+        to_timestamp: int | None,
     ) -> int:
         """Remove samples from `collection`.
 
@@ -185,7 +186,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
 
         return False
 
-    async def ensure_index(self, collection: str, index: Optional[list[tuple[str, bool]]]) -> None:
+    async def ensure_index(self, collection: str, index: list[tuple[str, bool]] | None) -> None:
         """Create an index on `collection` if not already present. `index` is a list of pairs of field names and
         "descending" direction flags.
 

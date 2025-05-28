@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from typing import Any, Optional
+from typing import Any
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
@@ -22,7 +22,7 @@ def get_all() -> list[Peripheral]:
     return list(_registered_peripherals.values())
 
 
-def get(peripheral_id: str) -> Optional[Peripheral]:
+def get(peripheral_id: str) -> Peripheral | None:
     return _registered_peripherals.get(peripheral_id)
 
 

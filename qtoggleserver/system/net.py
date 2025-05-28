@@ -1,7 +1,5 @@
 import subprocess
 
-from typing import Optional
-
 from qtoggleserver.conf import settings
 from qtoggleserver.utils.cmd import run_get_cmd, run_set_cmd
 
@@ -100,7 +98,7 @@ def reset_wifi_config() -> None:
     set_wifi_config(ssid="", psk="", bssid="")
 
 
-def get_default_interface() -> Optional[str]:
+def get_default_interface() -> str | None:
     try:
         output = subprocess.check_output(["ip", "route"]).decode().strip()
     except Exception as e:

@@ -1,11 +1,11 @@
 import typing as _typing
 
 
-source: _typing.Optional[str] = None  # full path to the configuration file, automatically set at startup
+source: str | None = None  # full path to the configuration file, automatically set at startup
 
 debug: bool = False
 
-public_url: _typing.Optional[str] = None
+public_url: str | None = None
 
 
 logging: dict[str, _typing.Any] = {
@@ -31,11 +31,11 @@ logging: dict[str, _typing.Any] = {
 class core:
 
     class device_name:
-        get_cmd: _typing.Optional[str] = None
-        set_cmd: _typing.Optional[str] = None
+        get_cmd: str | None = None
+        set_cmd: str | None = None
 
     class passwords:
-        set_cmd: _typing.Optional[str] = None
+        set_cmd: str | None = None
 
     tick_interval: int = 50
     persist_interval: int = 2000
@@ -56,8 +56,8 @@ class server:
     compress_response: bool = True
 
     class https:
-        cert_file: _typing.Optional[str] = None
-        key_file: _typing.Optional[str] = None
+        cert_file: str | None = None
+        key_file: str | None = None
 
 
 class persist:
@@ -66,40 +66,40 @@ class persist:
 
 
 class system:
-    setup_mode_cmd: _typing.Optional[str] = None
+    setup_mode_cmd: str | None = None
 
     class date:
-        set_cmd: _typing.Optional[str] = None
-        set_format: _typing.Optional[str] = "%Y-%m-%dT%H:%M:%SZ"
+        set_cmd: str | None = None
+        set_format: str | None = "%Y-%m-%dT%H:%M:%SZ"
 
     class timezone:
-        get_cmd: _typing.Optional[str] = None
-        set_cmd: _typing.Optional[str] = None
+        get_cmd: str | None = None
+        set_cmd: str | None = None
 
     class net:
         class wifi:
-            get_cmd: _typing.Optional[str] = None
-            set_cmd: _typing.Optional[str] = None
+            get_cmd: str | None = None
+            set_cmd: str | None = None
 
         class ip:
-            get_cmd: _typing.Optional[str] = None
-            set_cmd: _typing.Optional[str] = None
+            get_cmd: str | None = None
+            set_cmd: str | None = None
 
     class storage:
-        path: _typing.Optional[str] = None
+        path: str | None = None
 
     class temperature:
-        get_cmd: _typing.Optional[str] = None
-        sensor_name: _typing.Optional[str] = None
+        get_cmd: str | None = None
+        sensor_name: str | None = None
         sensor_index: int = 0
-        min: _typing.Optional[int] = 0
-        max: _typing.Optional[int] = 100
+        min: int | None = 0
+        max: int | None = 100
 
     class battery:
-        get_cmd: _typing.Optional[str] = None
+        get_cmd: str | None = None
 
     class fwupdate:
-        driver: _typing.Optional[str] = None
+        driver: str | None = None
 
 
 class frontend:

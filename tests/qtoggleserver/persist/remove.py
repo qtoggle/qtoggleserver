@@ -8,7 +8,7 @@ async def test_remove_by_id(driver: BaseDriver) -> None:
     id2 = await driver.insert(data.COLL1, data.RECORD2)
     id3 = await driver.insert(data.COLL1, data.RECORD3)
 
-    removed = await driver.remove(data.COLL1, filt={'id': id2})
+    removed = await driver.remove(data.COLL1, filt={"id": id2})
     assert removed == 1
 
     results = await driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
@@ -24,7 +24,7 @@ async def test_remove_filter(driver: BaseDriver) -> None:
     await driver.insert(data.COLL1, data.RECORD2)
     await driver.insert(data.COLL1, data.RECORD3)
 
-    removed = await driver.remove(data.COLL1, filt={'int_key': {'gt': 1}})
+    removed = await driver.remove(data.COLL1, filt={"int_key": {"gt": 1}})
     assert removed == 2
 
     results = await driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
@@ -52,7 +52,7 @@ async def test_remove_inexistent_record(driver: BaseDriver) -> None:
     await driver.insert(data.COLL1, data.RECORD2)
     await driver.insert(data.COLL1, data.RECORD3)
 
-    removed = await driver.remove(data.COLL1, filt={'id': '34'})
+    removed = await driver.remove(data.COLL1, filt={"id": "34"})
     assert removed == 0
 
     results = await driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
@@ -65,7 +65,7 @@ async def test_remove_inexistent_field(driver: BaseDriver) -> None:
     await driver.insert(data.COLL1, data.RECORD2)
     await driver.insert(data.COLL1, data.RECORD3)
 
-    removed = await driver.remove(data.COLL1, filt={'inexistent_key': 1})
+    removed = await driver.remove(data.COLL1, filt={"inexistent_key": 1})
     assert removed == 0
 
     results = await driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
@@ -78,7 +78,7 @@ async def test_remove_no_match(driver: BaseDriver) -> None:
     await driver.insert(data.COLL1, data.RECORD2)
     await driver.insert(data.COLL1, data.RECORD3)
 
-    removed = await driver.remove(data.COLL1, filt={'int_key': 4})
+    removed = await driver.remove(data.COLL1, filt={"int_key": 4})
     assert removed == 0
 
     results = await driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
@@ -90,7 +90,7 @@ async def test_remove_custom_id_simple(driver: BaseDriver) -> None:
     await driver.insert(data.COLL1, dict(data.RECORD1, id=data.CUSTOM_ID_SIMPLE))
     id2 = await driver.insert(data.COLL1, data.RECORD2)
 
-    removed = await driver.remove(data.COLL1, filt={'id': data.CUSTOM_ID_SIMPLE})
+    removed = await driver.remove(data.COLL1, filt={"id": data.CUSTOM_ID_SIMPLE})
     assert removed == 1
 
     results = await driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
@@ -103,7 +103,7 @@ async def test_remove_custom_id_complex(driver: BaseDriver) -> None:
     await driver.insert(data.COLL1, dict(data.RECORD1, id=data.CUSTOM_ID_COMPLEX))
     id2 = await driver.insert(data.COLL1, data.RECORD2)
 
-    removed = await driver.remove(data.COLL1, filt={'id': data.CUSTOM_ID_COMPLEX})
+    removed = await driver.remove(data.COLL1, filt={"id": data.CUSTOM_ID_COMPLEX})
     assert removed == 1
 
     results = await driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
@@ -116,7 +116,7 @@ async def test_remove_no_match_custom_id_simple(driver: BaseDriver) -> None:
     await driver.insert(data.COLL1, data.RECORD1)
     await driver.insert(data.COLL1, data.RECORD2)
 
-    removed = await driver.remove(data.COLL1, filt={'id': data.CUSTOM_ID_SIMPLE})
+    removed = await driver.remove(data.COLL1, filt={"id": data.CUSTOM_ID_SIMPLE})
     assert removed == 0
 
     results = await driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
@@ -128,7 +128,7 @@ async def test_remove_no_match_custom_id_complex(driver: BaseDriver) -> None:
     await driver.insert(data.COLL1, data.RECORD1)
     await driver.insert(data.COLL1, data.RECORD2)
 
-    removed = await driver.remove(data.COLL1, filt={'id': data.CUSTOM_ID_COMPLEX})
+    removed = await driver.remove(data.COLL1, filt={"id": data.CUSTOM_ID_COMPLEX})
     assert removed == 0
 
     results = await driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)

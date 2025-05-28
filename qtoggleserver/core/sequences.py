@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from qtoggleserver.core.typing import PortValue
 
@@ -25,7 +25,7 @@ class Sequence:
         self._callback: Callable = callback
         self._finish_callback: Callable = finish_callback
         self._counter: int = 0
-        self._loop_task: Optional[asyncio.Task] = None
+        self._loop_task: asyncio.Task | None = None
 
     def start(self) -> None:
         if self._loop_task:

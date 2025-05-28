@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import time
 
-from typing import Optional, TextIO
+from typing import TextIO
 
 import psutil
 
@@ -44,23 +44,23 @@ class HostAPD:
     def __init__(
         self,
         ssid: str,
-        psk: Optional[str],
+        psk: str | None,
         interface: str,
-        hostapd_binary: Optional[str] = None,
-        hostapd_cli_binary: Optional[str] = None,
-        hostapd_log: Optional[str] = None,
+        hostapd_binary: str | None = None,
+        hostapd_cli_binary: str | None = None,
+        hostapd_log: str | None = None,
     ) -> None:
 
         self._ssid: str = ssid
-        self._psk: Optional[str] = psk
+        self._psk: str | None = psk
         self._interface: str = interface
-        self._binary: Optional[str] = hostapd_binary
-        self._cli_binary: Optional[str] = hostapd_cli_binary
-        self._log: Optional[str] = hostapd_log
+        self._binary: str | None = hostapd_binary
+        self._cli_binary: str | None = hostapd_cli_binary
+        self._log: str | None = hostapd_log
 
-        self._conf_file: Optional[TextIO] = None
-        self._log_file: Optional[TextIO] = None
-        self._process: Optional[subprocess.Popen] = None
+        self._conf_file: TextIO | None = None
+        self._log_file: TextIO | None = None
+        self._process: subprocess.Popen | None = None
 
     def is_alive(self) -> bool:
         return (self._process is not None) and (self._process.poll() is None)
@@ -80,7 +80,7 @@ class HostAPD:
         conf_template = CONF_TEMPLATE if self._psk else CONF_NO_PSK_TEMPLATE
         conf = conf_template.format(ssid=self._ssid, psk=self._psk, interface=self._interface)
 
-        self._log_file = open(self._log, "wt")
+        self._log_file = open(self._log, "w")
         self._conf_file = tempfile.NamedTemporaryFile(mode="wt")
         self._conf_file.write(conf)
         self._conf_file.flush()
@@ -144,7 +144,7 @@ class HostAPD:
             except subprocess.CalledProcessError:
                 logger.error("command hostapd_cli disassociate failed")
 
-    def _find_binary(self, binary: str) -> Optional[str]:
+    def _find_binary(self, binary: str) -> str | None:
         try:
             return subprocess.check_output(["which", binary], stderr=subprocess.DEVNULL).decode().strip()
         except subprocess.CalledProcessError:

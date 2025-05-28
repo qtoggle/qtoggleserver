@@ -3,6 +3,7 @@ flake8
 flake8-annotations
 flake8-pyproject
 freezegun
+isort
 mongomock
 pre-commit
 pytest

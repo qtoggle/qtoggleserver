@@ -2,8 +2,6 @@ import asyncio
 import logging
 import time
 
-from typing import Optional, Union
-
 from qtoggleserver.conf import settings
 from qtoggleserver.core import expressions as core_expressions  # noqa: F401; Required to avoid circular imports
 from qtoggleserver.core import ports as core_ports
@@ -17,11 +15,11 @@ from qtoggleserver.utils import timedset
 _PORT_READ_ERROR_RETRY_INTERVAL = 10
 
 logger = logging.getLogger(__name__)
-memory_logs: Optional[logging_utils.FifoMemoryHandler] = None
+memory_logs: logging_utils.FifoMemoryHandler | None = None
 
-loop: Optional[asyncio.AbstractEventLoop] = None
+loop: asyncio.AbstractEventLoop | None = None
 
-_update_loop_task: Optional[asyncio.Task] = None
+_update_loop_task: asyncio.Task | None = None
 _ready: bool = False
 _updating_enabled: bool = True
 _start_time: float = time.time()
@@ -29,7 +27,7 @@ _last_time: int = 0
 _force_eval_expression_ports: set[core_ports.BasePort] = set()
 _force_eval_all_expressions: bool = False
 _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
-_update_lock: Optional[asyncio.Lock] = None
+_update_lock: asyncio.Lock | None = None
 
 
 async def update() -> None:
@@ -45,7 +43,7 @@ async def update() -> None:
         _update_lock = asyncio.Lock()
 
     async with _update_lock:
-        changed_set: set[Union[core_ports.BasePort, str]] = {"asap"}
+        changed_set: set[core_ports.BasePort | str] = {"asap"}
         value_pairs = {}
 
         now = time.time()
@@ -113,7 +111,7 @@ async def update_loop() -> None:
 
 
 async def handle_value_changes(
-    changed_set: set[Union[core_ports.BasePort, str]],
+    changed_set: set[core_ports.BasePort | str],
     value_pairs: dict[core_ports.BasePort, tuple[NullablePortValue, NullablePortValue]],
     now: float,
 ) -> None:

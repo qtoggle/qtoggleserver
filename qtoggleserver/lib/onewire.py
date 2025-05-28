@@ -4,8 +4,6 @@ import logging
 import os
 import re
 
-from typing import Optional
-
 from qtoggleserver.lib import polled
 
 
@@ -36,8 +34,8 @@ class OneWirePeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         super().__init__(**kwargs)
 
         self._address: str = address
-        self._filename: Optional[str] = None
-        self._data: Optional[str] = None
+        self._filename: str | None = None
+        self._data: str | None = None
 
     def get_filename(self) -> str:
         if self._filename is None:
@@ -65,16 +63,16 @@ class OneWirePeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
     #
     #     return addresses
 
-    def read(self) -> Optional[str]:
+    def read(self) -> str | None:
         data = self._data
         self._data = None
 
         return data
 
-    def read_sync(self) -> Optional[str]:
+    def read_sync(self) -> str | None:
         filename = self.get_filename()
         self.debug("opening file %s", filename)
-        with open(filename, "rt") as f:
+        with open(filename) as f:
             data = f.read()
             self.debug("read data: %s", data.replace("\n", "\\n"))
 

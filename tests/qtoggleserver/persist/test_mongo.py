@@ -10,7 +10,7 @@ from . import insert, misc, query, remove, replace, samples, update
 
 @pytest.fixture
 async def driver(monkeypatch) -> BaseDriver:
-    monkeypatch.setattr(pymongo, 'MongoClient', mongomock.MongoClient)
+    monkeypatch.setattr(pymongo, "MongoClient", mongomock.MongoClient)
     driver = mongo.MongoDriver()
     await driver.init()
     return driver

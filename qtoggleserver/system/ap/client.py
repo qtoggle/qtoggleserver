@@ -2,7 +2,7 @@ import datetime
 import hashlib
 import logging
 
-from typing import Any, Optional
+from typing import Any
 
 from tornado import httpclient
 
@@ -29,7 +29,7 @@ class APClient(logging_utils.LoggableMixin):
         return f"APClient {self.mac_address} at {self.ip_address}"
 
     async def request(
-        self, method: str, path: str, body: Any = None, admin_password: Optional[str] = None, no_log: bool = False
+        self, method: str, path: str, body: Any = None, admin_password: str | None = None, no_log: bool = False
     ) -> Any:
 
         http_client = httpclient.AsyncHTTPClient()

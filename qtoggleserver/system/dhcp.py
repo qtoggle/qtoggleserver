@@ -9,8 +9,6 @@ import socket
 import struct
 import time
 
-from typing import Optional
-
 import psutil
 
 
@@ -65,7 +63,7 @@ class _ifreq(ctypes.Structure):
     _fields_ = [("ifr_ifrn", ctypes.c_char * 16), ("ifr_flags", ctypes.c_short)]
 
 
-def _build_dhcp_options(hostname: Optional[str]) -> bytes:
+def _build_dhcp_options(hostname: str | None) -> bytes:
     dhcp_opts = b""
     dhcp_opts += struct.pack("BBB", DHCP_MESSAGETYPE, 1, DHCP_MSGDISCOVER)  # message type
     if hostname:
@@ -141,7 +139,7 @@ def _build_ethernet_header(own_mac_address: str) -> bytes:
     return ethernet_header
 
 
-def _check_received_frame(frame: bytes, expected_xid: int) -> Optional[DHCPReply]:
+def _check_received_frame(frame: bytes, expected_xid: int) -> DHCPReply | None:
     if len(frame) < 282:
         return None
 
@@ -180,7 +178,7 @@ def _check_received_frame(frame: bytes, expected_xid: int) -> Optional[DHCPReply
         return None
 
 
-def _check_and_prune_pending_dhcp_replies(expected_xid: int) -> Optional[DHCPReply]:
+def _check_and_prune_pending_dhcp_replies(expected_xid: int) -> DHCPReply | None:
     global _dhcp_replies
 
     # Prune expired replies
@@ -196,7 +194,7 @@ def _check_and_prune_pending_dhcp_replies(expected_xid: int) -> Optional[DHCPRep
 
 
 async def request(
-    interface: str, mac_address: str, hostname: Optional[str] = None, timeout: int = DEFAULT_TIMEOUT
+    interface: str, mac_address: str, hostname: str | None = None, timeout: int = DEFAULT_TIMEOUT
 ) -> DHCPReply:
 
     logger.debug(

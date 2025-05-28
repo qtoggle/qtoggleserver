@@ -4,7 +4,7 @@ import asyncio
 import logging
 import time
 
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 from qtoggleserver import persist, system
 from qtoggleserver.conf import settings
@@ -19,15 +19,15 @@ _CACHE_TIMESTAMP_MIN_AGE = 3600 * 1000  # don't cache samples newer than this nu
 
 logger = logging.getLogger(__name__)
 
-_history_event_handler: Optional[HistoryEventHandler] = None
-_sampling_task: Optional[asyncio.Task] = None
-_janitor_task: Optional[asyncio.Task] = None
+_history_event_handler: HistoryEventHandler | None = None
+_sampling_task: asyncio.Task | None = None
+_janitor_task: asyncio.Task | None = None
 
 # Samples cached by port_id and timestamp
 _samples_cache: dict[str, dict[int, PortValue]] = {}
 
 # Used to schedule sample removal with remove_samples(..., background=True)
-_pending_remove_samples: list[tuple[core_ports.BasePort, Optional[int], Optional[int]]] = []
+_pending_remove_samples: list[tuple[core_ports.BasePort, int | None, int | None]] = []
 
 
 class HistoryEventHandler(core_events.Handler):
@@ -136,9 +136,9 @@ def is_enabled() -> bool:
 
 async def get_samples_slice(
     port: core_ports.BasePort,
-    from_timestamp: Optional[int] = None,
-    to_timestamp: Optional[int] = None,
-    limit: Optional[int] = None,
+    from_timestamp: int | None = None,
+    to_timestamp: int | None = None,
+    limit: int | None = None,
     sort_desc: bool = False,
 ) -> Iterable[tuple[int, PortValue]]:
     samples = await persist.get_samples_slice(
@@ -200,10 +200,10 @@ async def save_sample(port: core_ports.BasePort, timestamp: int) -> None:
 
 async def remove_samples(
     ports: list[core_ports.BasePort],
-    from_timestamp: Optional[int] = None,
-    to_timestamp: Optional[int] = None,
+    from_timestamp: int | None = None,
+    to_timestamp: int | None = None,
     background: bool = False,
-) -> Optional[int]:
+) -> int | None:
     # Invalidate samples cache for the ports
     for port in ports:
         _samples_cache.pop(port.get_id(), None)

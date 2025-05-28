@@ -1,7 +1,8 @@
 import logging
 import operator
 
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
 import redis
 
@@ -41,10 +42,10 @@ class RedisDriver(BaseDriver):
     async def query(
         self,
         collection: str,
-        fields: Optional[list[str]],
+        fields: list[str] | None,
         filt: dict[str, Any],
         sort: list[tuple[str, bool]],
-        limit: Optional[int],
+        limit: int | None,
     ) -> Iterable[Record]:
 
         db_records = []
@@ -265,7 +266,7 @@ class RedisDriver(BaseDriver):
         return str(self._client.incr(self._make_sequence_key(collection)))
 
     @classmethod
-    def _record_from_db(cls, db_record: GenericJSONDict, fields: Optional[set[str]] = None) -> Record:
+    def _record_from_db(cls, db_record: GenericJSONDict, fields: set[str] | None = None) -> Record:
         if fields is not None:
             return {k: (cls._value_from_db(v) if k != "id" else v) for k, v in db_record.items() if k in fields}
 

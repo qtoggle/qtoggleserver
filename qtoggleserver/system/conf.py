@@ -43,5 +43,5 @@ def conf_file_from_dict(d: dict[str, Any]) -> None:
     except Exception:
         logger.warning("failed to create backup file %s", f"{settings.source}.bak", exc_info=True)
 
-    with open(settings.source, "wt") as f:
+    with open(settings.source, "w") as f:
         f.write(config_str)

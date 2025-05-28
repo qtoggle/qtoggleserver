@@ -2,7 +2,7 @@ import abc
 import asyncio
 import logging
 
-from typing import Any, Optional, cast
+from typing import cast
 
 from qtoggleserver.core import main
 from qtoggleserver.core.typing import AttributeDefinition, AttributeDefinitions
@@ -28,9 +28,9 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
     def __init__(self, *, retry_poll_interval: int = -1, retry_count: int = -1, **kwargs) -> None:
         self._polling: bool = False
         self._poll_stopped: bool = False
-        self._poll_task: Optional[asyncio.Task] = None
+        self._poll_task: asyncio.Task | None = None
         self._poll_interval: int = self.DEFAULT_POLL_INTERVAL
-        self._poll_error: Optional[Exception] = None
+        self._poll_error: Exception | None = None
         self._retry_poll_interval: int = (
             retry_poll_interval if retry_poll_interval >= 0 else self.DEFAULT_RETRY_POLL_INTERVAL
         )

@@ -8,7 +8,8 @@ import inspect
 import logging
 import time
 
-from typing import Any, Callable, Optional, Union
+from collections.abc import Callable
+from typing import Any
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
@@ -37,7 +38,7 @@ TYPE_NUMBER = "number"
 logger = logging.getLogger(__name__)
 
 _ports_by_id: dict[str, BasePort] = {}
-_save_loop_task: Optional[asyncio.Task] = None
+_save_loop_task: asyncio.Task | None = None
 
 
 async def _attrdef_unit_enabled(port: BasePort) -> bool:
@@ -129,9 +130,9 @@ class SkipRead(PortReadError):
 
 
 class InvalidAttributeValue(PortError):
-    def __init__(self, attr: str, details: Optional[GenericJSONDict] = None) -> None:
+    def __init__(self, attr: str, details: GenericJSONDict | None = None) -> None:
         self.attr: str = attr
-        self.details: Optional[GenericJSONDict] = details
+        self.details: GenericJSONDict | None = details
 
         super().__init__(attr)
 
@@ -193,16 +194,16 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._id: str = port_id
         self._enabled: bool = False
-        self._display_name: Optional[str] = self.DISPLAY_NAME
-        self._unit: Optional[str] = self.UNIT
+        self._display_name: str | None = self.DISPLAY_NAME
+        self._unit: str | None = self.UNIT
         self._tag: str = self.TAG
         self._persisted: bool = self.PERSISTED
         self._internal: bool = self.INTERNAL
 
-        self._sequence: Optional[core_sequences.Sequence] = None
-        self._expression: Optional[core_expressions.Expression] = None
-        self._transform_read: Optional[core_expressions.Expression] = None
-        self._transform_write: Optional[core_expressions.Expression] = None
+        self._sequence: core_sequences.Sequence | None = None
+        self._expression: core_expressions.Expression | None = None
+        self._transform_read: core_expressions.Expression | None = None
+        self._transform_write: core_expressions.Expression | None = None
 
         self._history_interval: int = 0
         self._history_retention: int = 0
@@ -212,16 +213,16 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._attrs_cache: Attributes = {}
 
         # Cache attribute definitions
-        self._standard_attrdefs_cache: Optional[AttributeDefinitions] = None
-        self._additional_attrdefs_cache: Optional[AttributeDefinitions] = None
+        self._standard_attrdefs_cache: AttributeDefinitions | None = None
+        self._additional_attrdefs_cache: AttributeDefinitions | None = None
 
-        self._schema: Optional[GenericJSONDict] = None
-        self._value_schema: Optional[GenericJSONDict] = None
+        self._schema: GenericJSONDict | None = None
+        self._value_schema: GenericJSONDict | None = None
 
         self._last_read_value: NullablePortValue = None
         self._write_value_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
         self._pending_value: NullablePortValue = None
-        self._write_value_task: Optional[asyncio.Task] = None
+        self._write_value_task: asyncio.Task | None = None
         try:
             asyncio.get_running_loop()
             self._write_value_task = asyncio.create_task(self._write_value_loop())
@@ -231,7 +232,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._writing: bool = False
 
         self._eval_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
-        self._eval_task: Optional[asyncio.Task] = None
+        self._eval_task: asyncio.Task | None = None
         try:
             asyncio.get_running_loop()
             self._eval_task = asyncio.create_task(self._eval_loop())
@@ -292,11 +293,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def get_non_modifiable_attrs(self) -> set[str]:
         attrdefs = await self.get_attrdefs()
-        return set(n for (n, v) in attrdefs.items() if not v.get("modifiable"))
+        return {n for (n, v) in attrdefs.items() if not v.get("modifiable")}
 
     async def get_modifiable_attrs(self) -> set[str]:
         attrdefs = await self.get_attrdefs()
-        return set(n for (n, v) in attrdefs.items() if v.get("modifiable"))
+        return {n for (n, v) in attrdefs.items() if v.get("modifiable")}
 
     async def get_attrs(self) -> Attributes:
         d = {}
@@ -313,7 +314,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def invalidate_attrs(self) -> None:
         self._attrs_cache = {}
 
-    async def get_attr(self, name: str) -> Optional[Attribute]:
+    async def get_attr(self, name: str) -> Attribute | None:
         value = self._attrs_cache.get(name)
         if value is not None:
             return value
@@ -403,7 +404,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             except Exception as e:
                 self.error("%s failed: %s", method_name, e, exc_info=True)
 
-    async def attr_get_value(self, name: str) -> Optional[Attribute]:
+    async def attr_get_value(self, name: str) -> Attribute | None:
         return None
 
     async def attr_set_value(self, name: str, value: Attribute) -> None:
@@ -517,10 +518,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         else:
             await self.disable()
 
-    def get_expression(self) -> Optional[core_expressions.Expression]:
+    def get_expression(self) -> core_expressions.Expression | None:
         return self._expression
 
-    async def attr_get_expression(self) -> Optional[str]:
+    async def attr_get_expression(self) -> str | None:
         writable = self._attrs_cache.get("writable")  # use cached value if available, to avoid unnecessary await
         if writable is None:
             writable = await self.is_writable()
@@ -599,7 +600,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             raise InvalidAttributeValue("transform_read", details=e.to_json()) from e
 
-    async def attr_get_transform_write(self) -> Optional[str]:
+    async def attr_get_transform_write(self) -> str | None:
         writable = self._attrs_cache.get("writable")  # use cached value if available, to avoid unnecessary await
         if writable is None:
             writable = await self.is_writable()
@@ -1197,14 +1198,14 @@ async def load(port_args: list[dict[str, Any]], trigger_add: bool = True) -> lis
     return ports
 
 
-async def load_one(cls: Union[str, type], args: dict[str, Any], trigger_add: bool = True) -> BasePort:
+async def load_one(cls: str | type, args: dict[str, Any], trigger_add: bool = True) -> BasePort:
     port_args = [dict(driver=cls, **args)]
     ports = await load(port_args, trigger_add=trigger_add)
 
     return ports[0]
 
 
-def get(port_id: str) -> Optional[BasePort]:
+def get(port_id: str) -> BasePort | None:
     return _ports_by_id.get(port_id)
 
 

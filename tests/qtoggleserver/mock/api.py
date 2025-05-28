@@ -1,4 +1,3 @@
-from typing import Optional
 from unittest import mock
 
 from qtoggleserver.core.api import APIRequest
@@ -10,29 +9,29 @@ class MockAPIRequest(APIRequest):
         self,
         method: str,
         path: str,
-        query: Optional[dict[str, str]] = None,
-        headers: Optional[dict[str, str]] = None,
-        body: bytes = b'',
-        session_id: Optional[str] = None,
-        username: Optional[str] = None,
-        access_level: Optional[int] = None,
-        handler_class: Optional[type[APIHandler]] = None,
+        query: dict[str, str] | None = None,
+        headers: dict[str, str] | None = None,
+        body: bytes = b"",
+        session_id: str | None = None,
+        username: str | None = None,
+        access_level: int | None = None,
+        handler_class: type[APIHandler] | None = None,
     ) -> None:
         query = query or {}
         headers = headers or {}
         if session_id is not None:
-            headers['Session-Id'] = session_id
+            headers["Session-Id"] = session_id
 
         handler_class = handler_class or APIHandler
         handler = handler_class(
             application=mock.MagicMock(),
             request=mock.MagicMock(
-                    headers=headers,
-                    method=method,
-                    path=path,
-                    query=query,
-                    body=body,
-            )
+                headers=headers,
+                method=method,
+                path=path,
+                query=query,
+                body=body,
+            ),
         )
         if username is not None:
             handler.username = username

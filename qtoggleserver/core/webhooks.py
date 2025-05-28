@@ -3,8 +3,6 @@ from __future__ import annotations
 import logging
 import queue
 
-from typing import Optional
-
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPResponse
 
 from qtoggleserver import persist
@@ -18,7 +16,7 @@ from qtoggleserver.utils import json as json_utils
 
 logger = logging.getLogger(__name__)
 
-_webhooks: Optional[Webhooks] = None
+_webhooks: Webhooks | None = None
 
 
 # TODO: add password support
@@ -44,25 +42,25 @@ class WebhooksRequest:
 class Webhooks:
     def __init__(
         self,
-        scheme: Optional[str] = None,
-        host: Optional[str] = None,
-        port: Optional[int] = None,
-        path: Optional[str] = None,
-        timeout: Optional[int] = None,
-        retries: Optional[int] = None,
+        scheme: str | None = None,
+        host: str | None = None,
+        port: int | None = None,
+        path: str | None = None,
+        timeout: int | None = None,
+        retries: int | None = None,
         **kwargs,
     ) -> None:
 
         # The enabled value comes with kwargs but is ignored; webhooks will be explicitly enabled afterwards
 
         self._enabled: bool = False
-        self._scheme: Optional[str] = scheme
-        self._host: Optional[str] = host
-        self._port: Optional[int] = port
-        self._path: Optional[str] = path
-        self._timeout: Optional[int] = timeout
-        self._retries: Optional[int] = retries
-        self._url: Optional[str] = None
+        self._scheme: str | None = scheme
+        self._host: str | None = host
+        self._port: int | None = port
+        self._path: str | None = path
+        self._timeout: int | None = timeout
+        self._retries: int | None = retries
+        self._url: str | None = None
 
         self._queue: queue.Queue = queue.Queue(settings.core.event_queue_size)
 
@@ -199,18 +197,18 @@ class Webhooks:
         return d
 
 
-def get() -> Optional[Webhooks]:
+def get() -> Webhooks | None:
     return _webhooks
 
 
 def setup(
     enabled: bool,
-    scheme: Optional[str] = None,
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    path: Optional[str] = None,
-    timeout: Optional[int] = None,
-    retries: Optional[int] = None,
+    scheme: str | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    path: str | None = None,
+    timeout: int | None = None,
+    retries: int | None = None,
     **kwargs,
 ) -> None:
 

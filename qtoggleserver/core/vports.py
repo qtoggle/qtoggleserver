@@ -1,7 +1,5 @@
 import logging
 
-from typing import Optional
-
 from qtoggleserver import persist
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList, NullablePortValue, PortValueChoices
@@ -20,21 +18,21 @@ class VirtualPort(core_ports.Port):
         self,
         id_: str,
         type_: str,
-        min_: Optional[float],
-        max_: Optional[float],
-        integer: Optional[bool],
-        step: Optional[float],
-        choices: Optional[PortValueChoices],
+        min_: float | None,
+        max_: float | None,
+        integer: bool | None,
+        step: float | None,
+        choices: PortValueChoices | None,
     ) -> None:
 
         super().__init__(id_)
 
         self._type: str = type_
-        self._min: Optional[float] = min_
-        self._max: Optional[float] = max_
-        self._integer: Optional[bool] = integer
-        self._step: Optional[float] = step
-        self._choices: Optional[PortValueChoices] = choices
+        self._min: float | None = min_
+        self._max: float | None = max_
+        self._integer: bool | None = integer
+        self._step: float | None = step
+        self._choices: PortValueChoices | None = choices
         self._virtual_value: NullablePortValue = None
 
         self._value = None
@@ -52,11 +50,11 @@ class VirtualPort(core_ports.Port):
 async def add(
     id_: str,
     type_: str,
-    min_: Optional[float],
-    max_: Optional[float],
-    integer: Optional[bool],
-    step: Optional[float],
-    choices: Optional[PortValueChoices],
+    min_: float | None,
+    max_: float | None,
+    integer: bool | None,
+    step: float | None,
+    choices: PortValueChoices | None,
 ) -> None:
 
     settings = {

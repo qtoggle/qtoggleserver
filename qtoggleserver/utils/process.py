@@ -1,11 +1,9 @@
 import asyncio
 
-from typing import Optional
-
 from tornado import process as tornado_process
 
 
-async def call_subprocess(args: list[str], stdin_data: Optional[bytes] = None) -> tuple[int, bytes, bytes]:
+async def call_subprocess(args: list[str], stdin_data: bytes | None = None) -> tuple[int, bytes, bytes]:
     p = tornado_process.Subprocess(
         args,
         stdin=tornado_process.Subprocess.STREAM,

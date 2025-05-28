@@ -3,7 +3,8 @@ import datetime
 import logging
 import re
 
-from typing import Any, AsyncContextManager, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any, AsyncContextManager
 
 import asyncpg.pool
 
@@ -36,8 +37,8 @@ class PostgreSQLDriver(BaseDriver):
         host: str = "127.0.0.1",
         port: str = 5432,
         db: str = DEFAULT_DB,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: str | None = None,
+        password: str | None = None,
         **kwargs,
     ) -> None:
         logger.debug("using %s:%s/%s", host, port, db)
@@ -51,17 +52,17 @@ class PostgreSQLDriver(BaseDriver):
 
         self._conn_details = {"user": username, "password": password, "database": db, "host": host, "port": port}
 
-        self._conn_pool: Optional[asyncpg.pool.Pool] = None
-        self._existing_tables: Optional[set[str]] = None
+        self._conn_pool: asyncpg.pool.Pool | None = None
+        self._existing_tables: set[str] | None = None
         self._ensure_table_exists_lock: asyncio.Lock = asyncio.Lock()
 
     async def query(
         self,
         collection: str,
-        fields: Optional[list[str]],
+        fields: list[str] | None,
         filt: dict[str, Any],
         sort: list[tuple[str, bool]],
-        limit: Optional[int],
+        limit: int | None,
     ) -> Iterable[Record]:
 
         await self._ensure_table_exists(collection)
@@ -161,9 +162,9 @@ class PostgreSQLDriver(BaseDriver):
         self,
         collection: str,
         obj_id: Id,
-        from_timestamp: Optional[int],
-        to_timestamp: Optional[int],
-        limit: Optional[int],
+        from_timestamp: int | None,
+        to_timestamp: int | None,
+        limit: int | None,
         sort_desc: bool,
     ) -> Iterable[Sample]:
         await self._ensure_table_exists(collection, for_samples=True)
@@ -239,9 +240,9 @@ class PostgreSQLDriver(BaseDriver):
     async def remove_samples(
         self,
         collection: str,
-        obj_ids: Optional[list[Id]],
-        from_timestamp: Optional[int],
-        to_timestamp: Optional[int],
+        obj_ids: list[Id] | None,
+        from_timestamp: int | None,
+        to_timestamp: int | None,
     ) -> int:
         await self._ensure_table_exists(collection, for_samples=True)
 
@@ -267,7 +268,7 @@ class PostgreSQLDriver(BaseDriver):
 
         return count
 
-    async def ensure_index(self, collection: str, index: Optional[list[tuple[str, bool]]]) -> None:
+    async def ensure_index(self, collection: str, index: list[tuple[str, bool]] | None) -> None:
         # A missing `index` specification indicates an index on samples.
         for_samples = False
         if not index:
@@ -351,7 +352,7 @@ class PostgreSQLDriver(BaseDriver):
 
         results = await self._execute_query(query)
 
-        return set(r[0] for r in results)
+        return {r[0] for r in results}
 
     async def _execute_query(self, query: str, params: Iterable[Any] = None) -> Iterable[tuple]:
         async with await self._acquire_connection() as conn:
@@ -480,7 +481,7 @@ class PostgreSQLDriver(BaseDriver):
 
         return index_clause
 
-    def _query_gen_wrapper(self, results: Iterable[tuple[Any, ...]], fields: Optional[list[str]]) -> Iterable[Record]:
+    def _query_gen_wrapper(self, results: Iterable[tuple[Any, ...]], fields: list[str] | None) -> Iterable[Record]:
         if fields:
             for result in results:
                 db_record = {fields[i]: r for i, r in enumerate(result)}
@@ -531,7 +532,7 @@ class PostgreSQLDriver(BaseDriver):
         return DT_FMT.format(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
 
     @staticmethod
-    def str_to_datetime(s: str) -> Optional[datetime.datetime]:
+    def str_to_datetime(s: str) -> datetime.datetime | None:
         if len(s) != DT_FMT_LEN:
             return None
 
@@ -546,7 +547,7 @@ class PostgreSQLDriver(BaseDriver):
         return D_FMT.format(dt.year, dt.month, dt.day)
 
     @staticmethod
-    def str_to_date(s: str) -> Optional[datetime.date]:
+    def str_to_date(s: str) -> datetime.date | None:
         if len(s) != D_FMT_LEN:
             return None
 

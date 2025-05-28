@@ -8,7 +8,7 @@ import re
 import time
 import types
 
-from typing import Any, Optional
+from typing import Any
 
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
@@ -51,20 +51,20 @@ logger = logging.getLogger(__name__)
 class Slave(logging_utils.LoggableMixin):
     def __init__(
         self,
-        name: Optional[str],
+        name: str | None,
         scheme: str,
         host: str,
         port: int,
         path: str,
         poll_interval: int = 0,
         listen_enabled: bool = False,
-        admin_password: Optional[str] = None,
-        admin_password_hash: Optional[str] = None,
+        admin_password: str | None = None,
+        admin_password_hash: str | None = None,
         last_sync: int = -1,
-        attrs: Optional[Attributes] = None,
-        webhooks: Optional[GenericJSONDict] = None,
-        reverse: Optional[GenericJSONDict] = None,
-        provisioning_attrs: Optional[set[str]] = None,
+        attrs: Attributes | None = None,
+        webhooks: GenericJSONDict | None = None,
+        reverse: GenericJSONDict | None = None,
+        provisioning_attrs: set[str] | None = None,
         provisioning_webhooks: bool = False,
         provisioning_reverse: bool = False,
         **kwargs,
@@ -76,7 +76,7 @@ class Slave(logging_utils.LoggableMixin):
         if not name:
             self.set_logger_name(f"{host}:{port}")
 
-        self._name: Optional[str] = name
+        self._name: str | None = name
         self._scheme: str = scheme
         self._host: str = host
         self._port: int = port
@@ -108,12 +108,12 @@ class Slave(logging_utils.LoggableMixin):
         self._parallel_api_caller = asyncio_utils.ParallelCaller(_MAX_PARALLEL_API_CALLS, _MAX_QUEUED_API_CALLS)
 
         # Indicates the listening session id, or None if no listen client is active
-        self._listen_session_id: Optional[str] = None
-        self._listen_task: Optional[asyncio.Task] = None
+        self._listen_session_id: str | None = None
+        self._listen_task: asyncio.Task | None = None
 
         # Polling mechanism
         self._poll_started: bool = False
-        self._poll_task: Optional[asyncio.Task] = None
+        self._poll_task: asyncio.Task | None = None
         self._poll_offline_counter: int = 0
 
         # Attributes cache
@@ -135,19 +135,19 @@ class Slave(logging_utils.LoggableMixin):
         self._provisioning_reverse: bool = bool(provisioning_reverse)
 
         # Used to schedule provisioning + local update for permanently offline slaves
-        self._provisioning_timeout_task: Optional[asyncio.Task] = None
+        self._provisioning_timeout_task: asyncio.Task | None = None
 
         # An internal reference to the last made API call
         self._last_api_call_ref: Any = None
 
         # Cached URL
-        self._url: Optional[str] = None
+        self._url: str | None = None
 
         # Handles firmware update progress
-        self._fwupdate_poll_task: Optional[asyncio.Task] = None
+        self._fwupdate_poll_task: asyncio.Task | None = None
 
         # True while device is being reset (rebooted) via master, None while waiting for device to go offline
-        self._resetting: Optional[bool] = False
+        self._resetting: bool | None = False
 
         self._save_lock: asyncio.Lock = asyncio.Lock()
 
@@ -165,7 +165,7 @@ class Slave(logging_utils.LoggableMixin):
             and self._path == s.get_path()
         )
 
-    def get_url(self, path: Optional[str] = None) -> str:
+    def get_url(self, path: str | None = None) -> str:
         if path:
             url = self.get_url()
             while url.endswith("/"):
@@ -181,7 +181,7 @@ class Slave(logging_utils.LoggableMixin):
 
         return self._url
 
-    def get_cached_attr(self, name: str) -> Optional[Attribute]:
+    def get_cached_attr(self, name: str) -> Attribute | None:
         return self._cached_attrs.get(name)
 
     def get_cached_attrs(self) -> Attributes:
@@ -314,7 +314,7 @@ class Slave(logging_utils.LoggableMixin):
         # Mark offline
         self._online = False
 
-    def set_poll_interval(self, poll_interval: Optional[int]) -> None:
+    def set_poll_interval(self, poll_interval: int | None) -> None:
         if self._poll_interval == poll_interval:
             return
 
@@ -335,7 +335,7 @@ class Slave(logging_utils.LoggableMixin):
                 self._online = False
                 asyncio_utils.fire_and_forget(self._handle_offline())
 
-    def get_poll_interval(self) -> Optional[int]:
+    def get_poll_interval(self) -> int | None:
         return self._poll_interval
 
     def enable_listen(self) -> None:
@@ -508,13 +508,13 @@ class Slave(logging_utils.LoggableMixin):
         await core_events.trigger(events.SlaveDeviceUpdate(self))
 
     async def api_call(
-        self, method: str, path: str, body: Any = None, timeout: int = None, retry_counter: Optional[int] = 0
+        self, method: str, path: str, body: Any = None, timeout: int = None, retry_counter: int | None = 0
     ) -> Any:
 
         return await self._parallel_api_caller.call(self._api_call, method, path, body, timeout, retry_counter)
 
     async def _api_call(
-        self, method: str, path: str, body: Any = None, timeout: int = None, retry_counter: Optional[int] = 0
+        self, method: str, path: str, body: Any = None, timeout: int = None, retry_counter: int | None = 0
     ) -> Any:
 
         if method == "GET":
@@ -697,9 +697,9 @@ class Slave(logging_utils.LoggableMixin):
         # At this point we have all remote information we need about ports
 
         local_ports = self._get_local_ports()
-        local_ports_by_id = dict((p.get_remote_id(), p) for p in local_ports)
+        local_ports_by_id = {p.get_remote_id(): p for p in local_ports}
 
-        attrs_by_id = dict((p.get("id"), p) for p in port_attrs)
+        attrs_by_id = {p.get("id"): p for p in port_attrs}
 
         # Update existing ports
         for port_id, attrs in attrs_by_id.items():
@@ -1496,7 +1496,7 @@ class Slave(logging_utils.LoggableMixin):
         return error
 
 
-def get(name: str) -> Optional[Slave]:
+def get(name: str) -> Slave | None:
     return _slaves_by_name.get(name)
 
 
@@ -1506,14 +1506,14 @@ async def add(
     port: int,
     path: str,
     poll_interval: int = 0,
-    listen_enabled: Optional[bool] = None,
-    admin_password: Optional[str] = None,
-    admin_password_hash: Optional[str] = None,
-    name: Optional[str] = None,
+    listen_enabled: bool | None = None,
+    admin_password: str | None = None,
+    admin_password_hash: str | None = None,
+    name: str | None = None,
     enabled: bool = True,
     last_sync: int = -1,
-    provisioning: Optional[list[str]] = None,
-    attrs: Optional[Attributes] = None,
+    provisioning: list[str] | None = None,
+    attrs: Attributes | None = None,
     **kwargs,
 ) -> Slave:
 

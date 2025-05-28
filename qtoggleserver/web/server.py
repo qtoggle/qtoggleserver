@@ -2,8 +2,6 @@ import asyncio
 import logging
 import ssl
 
-from typing import Optional
-
 from qui.web import tornado as qui_tornado
 from tornado.web import Application, HTTPServer, RequestHandler, URLSpec
 
@@ -16,8 +14,8 @@ from qtoggleserver.web import handlers
 
 logger = logging.getLogger(__name__)
 
-_application: Optional[Application] = None
-_server: Optional[HTTPServer] = None
+_application: Application | None = None
+_server: HTTPServer | None = None
 
 
 def _log_request(handler: RequestHandler) -> None:
@@ -144,7 +142,7 @@ def get_application() -> Application:
     return _application
 
 
-def get_server() -> Optional[HTTPServer]:
+def get_server() -> HTTPServer | None:
     return _server
 
 

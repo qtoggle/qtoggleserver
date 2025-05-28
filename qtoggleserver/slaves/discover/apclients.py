@@ -6,8 +6,6 @@ import json
 import logging
 import time
 
-from typing import Optional
-
 from tornado import httpclient
 
 from qtoggleserver.conf import settings
@@ -26,12 +24,12 @@ _INTERFACE_CACHE_TIMEOUT = 60
 
 logger = logging.getLogger(__name__)
 
-_discover_task: Optional[asyncio.Task] = None
-_discovered_devices: Optional[dict[str, DiscoveredDevice]] = None
-_finish_timer: Optional[asyncio_utils.Timer] = None
+_discover_task: asyncio.Task | None = None
+_discovered_devices: dict[str, DiscoveredDevice] | None = None
+_finish_timer: asyncio_utils.Timer | None = None
 
 # TODO: replace these with a common cache service with integrated timeout management
-_interface: Optional[tuple[str]] = None
+_interface: tuple[str] | None = None
 _interface_time: float = 0
 
 
@@ -64,7 +62,7 @@ class DiscoveredDevice:
         }
 
 
-def get_interface() -> Optional[str]:
+def get_interface() -> str | None:
     global _interface
     global _interface_time
 
@@ -145,7 +143,7 @@ async def finish() -> None:
     _discovered_devices = None
 
 
-def get_discovered_devices() -> Optional[dict[str, DiscoveredDevice]]:
+def get_discovered_devices() -> dict[str, DiscoveredDevice] | None:
     return _discovered_devices
 
 
@@ -307,7 +305,7 @@ async def _finish_timeout() -> None:
     await finish()
 
 
-async def _query_client(ap_client: ap.APClient) -> Optional[DiscoveredDevice]:
+async def _query_client(ap_client: ap.APClient) -> DiscoveredDevice | None:
     logger.debug("querying %s", ap_client)
 
     for prefix in _PATH_PREFIXES:

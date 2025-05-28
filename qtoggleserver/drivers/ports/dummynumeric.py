@@ -1,5 +1,3 @@
-from typing import Optional
-
 from qtoggleserver.core import ports
 from qtoggleserver.utils import json as json_utils
 
@@ -16,13 +14,13 @@ class DummyNumeric(ports.Port):
         }
     }
 
-    def __init__(self, no: int, def_value: Optional[float] = None, def_output: Optional[bool] = None) -> None:
+    def __init__(self, no: int, def_value: float | None = None, def_output: bool | None = None) -> None:
         self._no: int = no
 
-        self._def_value: Optional[float] = def_value
-        self._def_output: Optional[bool] = def_output
+        self._def_value: float | None = def_value
+        self._def_output: bool | None = def_output
 
-        self._dummy_value: Optional[float] = def_value or 0
+        self._dummy_value: float | None = def_value or 0
         self._dummy_output: bool = def_output if def_output is not None else False
 
         super().__init__(port_id=f"numeric{no}")
@@ -31,10 +29,10 @@ class DummyNumeric(ports.Port):
         if self._def_output is not None:
             await self.attr_set_output(self._def_output)
 
-    async def read_value(self) -> Optional[float]:
+    async def read_value(self) -> float | None:
         return self._dummy_value
 
-    async def write_value(self, value: Optional[float]) -> None:
+    async def write_value(self, value: float | None) -> None:
         self.debug('writing "%s"', json_utils.dumps(value))
         self._dummy_value = value
 

@@ -9,8 +9,9 @@ import socket
 import sys
 import time
 
+from collections.abc import Callable
 from datetime import timezone
-from typing import Any, Callable, Optional
+from typing import Any
 
 from qtoggleserver import system, version
 from qtoggleserver.conf import settings
@@ -37,13 +38,13 @@ if not re.match("^[a-zA-Z_]", name):  # make sure name starts with a letter or u
 name = name[:32]
 
 display_name: str = ""
-admin_password_hash: Optional[str] = None
-normal_password_hash: Optional[str] = None
-viewonly_password_hash: Optional[str] = None
+admin_password_hash: str | None = None
+normal_password_hash: str | None = None
+viewonly_password_hash: str | None = None
 
-_schema: Optional[GenericJSONDict] = None
-_attrdefs: Optional[AttributeDefinitions] = None
-_attrs_watch_task: Optional[asyncio.Task] = None
+_schema: GenericJSONDict | None = None
+_attrdefs: AttributeDefinitions | None = None
+_attrs_watch_task: asyncio.Task | None = None
 
 
 def attr_get_name() -> str:

@@ -1,6 +1,6 @@
 import os
 
-from typing import Optional, TextIO
+from typing import TextIO
 
 from qtoggleserver.core import ports
 from qtoggleserver.utils import json as json_utils
@@ -20,13 +20,13 @@ class GPIO(ports.Port):
 
     BASE_PATH = "/sys/class/gpio"
 
-    def __init__(self, no: int, def_value: Optional[bool] = None, def_output: Optional[bool] = None) -> None:
+    def __init__(self, no: int, def_value: bool | None = None, def_output: bool | None = None) -> None:
         self._no: int = no
-        self._def_value: Optional[bool] = def_value
-        self._def_output: Optional[bool] = def_output
+        self._def_value: bool | None = def_value
+        self._def_output: bool | None = def_output
 
-        self._val_file: Optional[TextIO] = None
-        self._dir_file: Optional[TextIO] = None
+        self._val_file: TextIO | None = None
+        self._dir_file: TextIO | None = None
 
         super().__init__(port_id=f"gpio{no}")
 
@@ -46,7 +46,7 @@ class GPIO(ports.Port):
 
         return self._val_file.read(1) == "1"
 
-    async def write_value(self, value: Optional[bool]) -> None:
+    async def write_value(self, value: bool | None) -> None:
         if value is None:
             return
 

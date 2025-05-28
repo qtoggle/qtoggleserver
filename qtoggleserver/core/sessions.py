@@ -4,8 +4,6 @@ import asyncio
 import logging
 import time
 
-from typing import Optional
-
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.utils import logging as logging_utils
@@ -16,7 +14,7 @@ SESSION_EXPIRY_FACTOR = 10
 logger = logging.getLogger(__name__)
 
 _sessions_by_id: dict[str, Session] = {}
-_sessions_event_handler: Optional[SessionsEventHandler] = None
+_sessions_event_handler: SessionsEventHandler | None = None
 
 
 class Session(logging_utils.LoggableMixin):
@@ -27,7 +25,7 @@ class Session(logging_utils.LoggableMixin):
         self.accessed: int = 0
         self.timeout: int = 0
         self.access_level: int = 0
-        self.future: Optional[asyncio.Future] = None
+        self.future: asyncio.Future | None = None
         self.queue: list[core_events.Event] = []
 
     def reset_and_wait(self, timeout: int, access_level: int) -> asyncio.Future:

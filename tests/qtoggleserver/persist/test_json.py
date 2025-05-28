@@ -13,7 +13,7 @@ from . import insert, misc, query, remove, replace, update
 @pytest.fixture
 def make_driver(tmp_path: pathlib.Path) -> Callable[..., BaseDriver]:
     def driver(pretty_format: bool = True, use_backup: bool = True) -> BaseDriver:
-        f = tmp_path / 'dummy.json'
+        f = tmp_path / "dummy.json"
         return json.JSONDriver(str(f), pretty_format=pretty_format, use_backup=use_backup)
 
     return driver

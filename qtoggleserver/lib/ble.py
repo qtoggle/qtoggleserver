@@ -5,7 +5,8 @@ import asyncio
 import functools
 import logging
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 import bleak
 
@@ -32,7 +33,7 @@ BLUEZ_ADAPTER_IFACE = "org.bluez.Adapter1"
 
 logger = logging.getLogger(__name__)
 
-agent: Optional[Agent] = None
+agent: Agent | None = None
 
 
 class BLEException(Exception):
@@ -52,7 +53,7 @@ class Agent(ServiceInterface):
         super().__init__(BLUEZ_AGENT_IFACE)
 
         self.bus: MessageBus = bus
-        self.secrets_by_address: dict[str, Optional[str]] = {}
+        self.secrets_by_address: dict[str, str | None] = {}
 
     async def set_trusted(self, path: str) -> None:
         logger.debug("setting device at BT path %s as trusted", path)
@@ -62,7 +63,7 @@ class Agent(ServiceInterface):
         props = obj.get_interface(BLUEZ_PROPERTIES_IFACE)
         await props.call_set(BLUEZ_DEVICE_IFACE, "Trusted", Variant("b", True))
 
-    def add_device(self, address: str, secret: Optional[str]) -> None:
+    def add_device(self, address: str, secret: str | None) -> None:
         self.secrets_by_address[address.lower()] = secret
 
     def rem_device(self, address: str) -> None:
@@ -77,7 +78,7 @@ class Agent(ServiceInterface):
         logger.debug("BT agent Cancel() called")
 
     @method()
-    async def AuthorizeService(self, device: "o", uuid: "s"):  # noqa
+    async def AuthorizeService(self, device: o, uuid: s):  # noqa
         logger.debug("BT agent AuthorizeService(%s, %s) called", device, uuid)
         address = self.address_from_device_path(device)
         if address not in self.secrets_by_address:
@@ -85,7 +86,7 @@ class Agent(ServiceInterface):
             raise DBusError("org.bluez.Error.Rejected", "unknown device")
 
     @method()
-    async def RequestConfirmation(self, device: "o", passkey: "u"):  # noqa
+    async def RequestConfirmation(self, device: o, passkey: u):  # noqa
         logger.debug("BT agent RequestConfirmation(%s, %s) called", device, passkey)
 
         _none = {}
@@ -107,7 +108,7 @@ class Agent(ServiceInterface):
             raise DBusError("org.bluez.Error.Rejected", "invalid passkey")
 
     @method()
-    async def RequestAuthorization(self, device: "o"):  # noqa
+    async def RequestAuthorization(self, device: o):  # noqa
         logger.debug("BT agent RequestAuthorization(%s) called", device)
         address = self.address_from_device_path(device)
         if address not in self.secrets_by_address:
@@ -115,7 +116,7 @@ class Agent(ServiceInterface):
             raise DBusError("org.bluez.Error.Rejected", "unknown device")
 
     @method()
-    async def RequestPasskey(self, device: "o") -> "u":  # noqa
+    async def RequestPasskey(self, device: o) -> u:  # noqa
         logger.debug("BT agent RequestPasskey(%s) called", device)
 
         _none = {}
@@ -133,7 +134,7 @@ class Agent(ServiceInterface):
         return int(secret)
 
     @method()
-    async def RequestPinCode(self, device: "o") -> "s":  # noqa
+    async def RequestPinCode(self, device: o) -> s:  # noqa
         logger.debug("BT agent RequestPinCode(%s) called", device)
 
         _none = {}
@@ -151,11 +152,11 @@ class Agent(ServiceInterface):
         return secret
 
     @method()
-    async def DisplayPasskey(self, device: "o", passkey: "u", entered: "q"):  # noqa
+    async def DisplayPasskey(self, device: o, passkey: u, entered: q):  # noqa
         logger.debug("BT agent DisplayPasskey(%s, %s, %s) called", device, passkey, entered)
 
     @method()
-    async def DisplayPinCode(self, device: "o", pincode: "s"):  # noqa
+    async def DisplayPinCode(self, device: o, pincode: s):  # noqa
         logger.debug("BT agent DisplayPinCode(%s, %s) called", device, pincode)
 
     @staticmethod
@@ -207,19 +208,19 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         self,
         *,
         address: str,
-        secret: Optional[str] = None,
+        secret: str | None = None,
         cmd_timeout: int = DEFAULT_CMD_TIMEOUT,
         retry_count: int = DEFAULT_RETRY_COUNT,
         retry_delay: int = DEFAULT_RETRY_DELAY,
         **kwargs,
     ) -> None:
         self._address: str = address
-        self._secret: Optional[str] = secret
+        self._secret: str | None = secret
         self._cmd_timeout: int = cmd_timeout
         self._retry_count: int = retry_count
         self._retry_delay: int = retry_delay
         self._busy: bool = False
-        self._notification_data: Optional[bytes] = None
+        self._notification_data: bytes | None = None
 
         super().__init__(**kwargs)
 
@@ -246,7 +247,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
     async def write_wait_notify(self, handle: int, notify_handle: int, data: bytes) -> bytes:
         return await self._run_cmd(self._write_wait_notify, handle=handle, data=data, notify_handle=notify_handle)
 
-    async def _run_cmd(self, cmd_func: Callable, **kwargs) -> Optional[bytes]:
+    async def _run_cmd(self, cmd_func: Callable, **kwargs) -> bytes | None:
         # Wait for the peripheral to be ready (not busy)
         timeout = self._cmd_timeout
         while self._busy and timeout > 0:

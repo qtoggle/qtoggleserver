@@ -3,7 +3,8 @@ import logging
 import operator
 import os
 
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
 from qtoggleserver.conf import settings
 from qtoggleserver.persist import BaseDriver
@@ -40,8 +41,8 @@ class DuplicateRecordId(JSONPersistError):
 class JSONDriver(BaseDriver):
     def __init__(
         self,
-        file_path: Optional[str] = DEFAULT_FILE_PATH,
-        pretty_format: Optional[bool] = None,
+        file_path: str | None = DEFAULT_FILE_PATH,
+        pretty_format: bool | None = None,
         use_backup: bool = True,
         **kwargs,
     ) -> None:
@@ -54,7 +55,7 @@ class JSONDriver(BaseDriver):
         if pretty_format is None:
             pretty_format = settings.debug
 
-        self._file_path: Optional[str] = file_path
+        self._file_path: str | None = file_path
         self._pretty_format: bool = pretty_format
         self._use_backup: bool = use_backup
 
@@ -63,10 +64,10 @@ class JSONDriver(BaseDriver):
     async def query(
         self,
         collection: str,
-        fields: Optional[list[str]],
+        fields: list[str] | None,
         filt: dict[str, Any],
         sort: list[tuple[str, bool]],
-        limit: Optional[int],
+        limit: int | None,
     ) -> Iterable[Record]:
 
         coll = self._data.get(collection, {})
@@ -228,7 +229,7 @@ class JSONDriver(BaseDriver):
 
         return str(max(int_ids) + 1)
 
-    def _get_backup_file_path(self) -> Optional[str]:
+    def _get_backup_file_path(self) -> str | None:
         if not self._file_path:
             return None
         path, ext = os.path.splitext(self._file_path)

@@ -1,7 +1,8 @@
 import logging
 import re
 
-from typing import Any, Iterable, Optional, Union
+from collections.abc import Iterable
+from typing import Any
 
 import bson
 import pymongo.database
@@ -25,8 +26,8 @@ class MongoDriver(BaseDriver):
         self._port: int = port
         self._db_name: str = db
 
-        self._client: Optional[pymongo.MongoClient] = None
-        self._db: Optional[pymongo.database.Database] = None
+        self._client: pymongo.MongoClient | None = None
+        self._db: pymongo.database.Database | None = None
 
     async def init(self) -> None:
         logger.debug("connecting to %s:%s/%s", self._host, self._port, self._db_name)
@@ -43,13 +44,13 @@ class MongoDriver(BaseDriver):
     async def query(
         self,
         collection: str,
-        fields: Optional[list[str]],
+        fields: list[str] | None,
         filt: dict[str, Any],
         sort: list[tuple[str, bool]],
-        limit: Optional[int],
+        limit: int | None,
     ) -> Iterable[Record]:
         if fields:
-            fields = dict((f, 1) for f in fields)
+            fields = {f: 1 for f in fields}
             if "id" in fields:
                 fields["_id"] = 1
             else:
@@ -113,7 +114,7 @@ class MongoDriver(BaseDriver):
     def is_samples_supported(self) -> bool:
         return True
 
-    async def ensure_index(self, collection: str, index: Optional[list[tuple[str, bool]]]) -> None:
+    async def ensure_index(self, collection: str, index: list[tuple[str, bool]] | None) -> None:
         if index:
             index = [(f, [pymongo.ASCENDING, pymongo.DESCENDING][r]) for f, r in index]
         else:  # assuming samples collection
@@ -133,7 +134,7 @@ class MongoDriver(BaseDriver):
             yield r
 
     @staticmethod
-    def _id_to_db(id_: str) -> Union[str, bson.ObjectId]:
+    def _id_to_db(id_: str) -> str | bson.ObjectId:
         if isinstance(id_, str) and _OBJECT_ID_RE.match(id_):
             return bson.ObjectId(id_)
 
@@ -141,14 +142,14 @@ class MongoDriver(BaseDriver):
             return id_
 
     @staticmethod
-    def _id_from_db(id_: Union[str, bson.ObjectId]) -> str:
+    def _id_from_db(id_: str | bson.ObjectId) -> str:
         if isinstance(id_, bson.ObjectId):
             return str(id_)
 
         else:
             return id_
 
-    def _id_to_db_rec(self, obj: Union[dict, list, str]) -> Union[dict, list, bson.ObjectId]:
+    def _id_to_db_rec(self, obj: dict | list | str) -> dict | list | bson.ObjectId:
         if isinstance(obj, dict):
             return {key: self._id_to_db_rec(value) for key, value in obj.items()}
         elif isinstance(obj, list):

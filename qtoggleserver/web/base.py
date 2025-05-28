@@ -3,7 +3,8 @@ import inspect
 import logging
 import re
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from tornado.iostream import StreamClosedError
 from tornado.web import HTTPError, RequestHandler
@@ -46,7 +47,7 @@ class BaseHandler(RequestHandler):
 
         return self._json
 
-    def finish(self, chunk: Optional[str] = None) -> asyncio.Future:
+    def finish(self, chunk: str | None = None) -> asyncio.Future:
         self._response_body = chunk
 
         return super().finish(chunk)
@@ -98,7 +99,7 @@ class APIHandler(BaseHandler):
 
     def __init__(self, *args, **kwargs) -> None:
         self.access_level: int = core_api.ACCESS_LEVEL_NONE
-        self.username: Optional[str] = None
+        self.username: str | None = None
 
         super().__init__(*args, **kwargs)
 

@@ -10,7 +10,7 @@ from . import insert, misc, query, remove, replace, samples, update
 
 @pytest.fixture
 async def driver(monkeypatch) -> BaseDriver:
-    monkeypatch.setattr(python_redis, 'StrictRedis', fakeredis.FakeStrictRedis)
+    monkeypatch.setattr(python_redis, "StrictRedis", fakeredis.FakeStrictRedis)
     driver = redis.RedisDriver()
     await driver.init()
     # Make sure we're starting with a clean database

@@ -3,11 +3,7 @@ from qtoggleserver.core.typing import NullablePortValue
 
 
 class MockPort(Port):
-    def __init__(
-        self,
-        port_id: str,
-        value: NullablePortValue
-    ) -> None:
+    def __init__(self, port_id: str, value: NullablePortValue) -> None:
         super().__init__(port_id)
 
         self.set_last_read_value(value)

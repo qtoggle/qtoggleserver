@@ -1,5 +1,3 @@
-from typing import Optional
-
 # This needs to be imported here to determine a correct order of some partially imported modules (core.ports,
 # core.expressions and core.main)
 from qtoggleserver.core import main
@@ -16,7 +14,7 @@ ROLE_FILTER = 4
 TIME_JUMP_THRESHOLD = 86_400_000
 
 
-def parse(self_port_id: Optional[str], sexpression: str, role: int, pos: int = 1) -> Expression:
+def parse(self_port_id: str | None, sexpression: str, role: int, pos: int = 1) -> Expression:
     while sexpression and sexpression[0].isspace():
         sexpression = sexpression[1:]
         pos += 1

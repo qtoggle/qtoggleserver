@@ -1,7 +1,7 @@
 import datetime
 import time
 
-from typing import Iterable
+from collections.abc import Iterable
 
 import pytz
 

@@ -3,7 +3,7 @@ import logging
 import re
 import time
 
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import jwt
 
@@ -29,8 +29,8 @@ class AuthError(Exception):
     pass
 
 
-def make_auth_header(origin: str, username: Optional[str], password_hash: str) -> str:
-    claims: dict[str, Union[str, int]] = {"iss": JWT_ISS, "ori": origin}
+def make_auth_header(origin: str, username: str | None, password_hash: str) -> str:
+    claims: dict[str, str | int] = {"iss": JWT_ISS, "ori": origin}
 
     if username:
         claims["usr"] = username
@@ -94,7 +94,7 @@ def parse_auth_header(auth: str, origin: str, password_hash_func: Callable, requ
     return usr
 
 
-def consumer_password_hash_func(usr: str) -> Optional[str]:
+def consumer_password_hash_func(usr: str) -> str | None:
     if usr == "admin":
         return core_device_attrs.admin_password_hash
     elif usr == "normal":

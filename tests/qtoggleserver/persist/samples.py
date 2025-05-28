@@ -262,7 +262,7 @@ async def test_get_samples_by_timestamp_exact(driver: BaseDriver) -> None:
     results = await driver.get_samples_by_timestamp(
         collection=data.COLL1,
         obj_id=data.SAMPLE_OBJ_ID1,
-        timestamps=[data.SAMPLE1[0], data.SAMPLE2[0], data.SAMPLE3[0], data.SAMPLE4[0]]
+        timestamps=[data.SAMPLE1[0], data.SAMPLE2[0], data.SAMPLE3[0], data.SAMPLE4[0]],
     )
     results = list(results)
 
@@ -278,7 +278,7 @@ async def test_get_samples_by_timestamp_after(driver: BaseDriver) -> None:
     results = await driver.get_samples_by_timestamp(
         collection=data.COLL1,
         obj_id=data.SAMPLE_OBJ_ID1,
-        timestamps=[data.SAMPLE1[0] + 1, data.SAMPLE2[0] + 1, data.SAMPLE3[0] + 1, data.SAMPLE4[0] + 1]
+        timestamps=[data.SAMPLE1[0] + 1, data.SAMPLE2[0] + 1, data.SAMPLE3[0] + 1, data.SAMPLE4[0] + 1],
     )
     results = list(results)
 
@@ -294,7 +294,7 @@ async def test_get_samples_by_timestamp_unsorted(driver: BaseDriver) -> None:
     results = await driver.get_samples_by_timestamp(
         collection=data.COLL1,
         obj_id=data.SAMPLE_OBJ_ID1,
-        timestamps=[data.SAMPLE4[0] + 1, data.SAMPLE1[0], data.SAMPLE3[0], data.SAMPLE2[0] + 1]
+        timestamps=[data.SAMPLE4[0] + 1, data.SAMPLE1[0], data.SAMPLE3[0], data.SAMPLE2[0] + 1],
     )
     results = list(results)
 
@@ -310,7 +310,7 @@ async def test_get_samples_by_timestamp_same_value(driver: BaseDriver) -> None:
     results = await driver.get_samples_by_timestamp(
         collection=data.COLL1,
         obj_id=data.SAMPLE_OBJ_ID1,
-        timestamps=[data.SAMPLE2[0], data.SAMPLE2[0] + 1, data.SAMPLE2[0] + 2]
+        timestamps=[data.SAMPLE2[0], data.SAMPLE2[0] + 1, data.SAMPLE2[0] + 2],
     )
     results = list(results)
 
@@ -326,7 +326,7 @@ async def test_get_samples_by_timestamp_obj_id_separation(driver: BaseDriver) ->
     results = await driver.get_samples_by_timestamp(
         collection=data.COLL1,
         obj_id=data.SAMPLE_OBJ_ID1,
-        timestamps=[data.SAMPLE1[0], data.SAMPLE2[0], data.SAMPLE3[0], data.SAMPLE4[0]]
+        timestamps=[data.SAMPLE1[0], data.SAMPLE2[0], data.SAMPLE3[0], data.SAMPLE4[0]],
     )
     results = list(results)
 

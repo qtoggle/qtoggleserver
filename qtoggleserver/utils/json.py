@@ -2,7 +2,7 @@ import datetime
 import json
 import math
 
-from typing import Any, Union
+from typing import Any
 
 import jsonpointer
 
@@ -147,7 +147,7 @@ def dumps(obj: Any, extra_types: str = EXTRA_TYPES_NONE, **kwargs) -> str:
                 return json.dumps(obj, allow_nan=False, **kwargs)
 
 
-def loads(s: Union[str, bytes], resolve_refs: bool = False, extra_types: str = EXTRA_TYPES_NONE, **kwargs) -> Any:
+def loads(s: str | bytes, resolve_refs: bool = False, extra_types: str = EXTRA_TYPES_NONE, **kwargs) -> Any:
     if extra_types == EXTRA_TYPES_EXTENDED:
         object_hook = decode_json_hook_extended
     elif extra_types == EXTRA_TYPES_ISO:

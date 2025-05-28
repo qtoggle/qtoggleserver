@@ -1,5 +1,3 @@
-from typing import Optional
-
 from qtoggleserver.core import ports
 from qtoggleserver.utils import json as json_utils
 
@@ -16,13 +14,13 @@ class DummyGPIO(ports.Port):
         }
     }
 
-    def __init__(self, no: int, def_value: Optional[bool] = None, def_output: Optional[bool] = None) -> None:
+    def __init__(self, no: int, def_value: bool | None = None, def_output: bool | None = None) -> None:
         self._no: int = no
 
-        self._def_value: Optional[bool] = def_value
-        self._def_output: Optional[bool] = def_output
+        self._def_value: bool | None = def_value
+        self._def_output: bool | None = def_output
 
-        self._dummy_value: Optional[bool] = def_value or False
+        self._dummy_value: bool | None = def_value or False
         self._dummy_output: bool = def_output if def_output is not None else False
 
         super().__init__(port_id=f"gpio{no}")
@@ -31,10 +29,10 @@ class DummyGPIO(ports.Port):
         if self._def_output is not None:
             await self.attr_set_output(self._def_output)
 
-    async def read_value(self) -> Optional[bool]:
+    async def read_value(self) -> bool | None:
         return self._dummy_value
 
-    async def write_value(self, value: Optional[bool]) -> None:
+    async def write_value(self, value: bool | None) -> None:
         self.debug('writing "%s"', json_utils.dumps(value))
         self._dummy_value = value
 

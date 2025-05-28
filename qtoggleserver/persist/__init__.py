@@ -1,7 +1,8 @@
 import logging
 import threading
 
-from typing import Any, Iterable, Optional, Union
+from collections.abc import Iterable
+from typing import Any
 
 from qtoggleserver.conf import settings
 from qtoggleserver.utils import conf as conf_utils
@@ -38,10 +39,10 @@ async def _get_driver() -> BaseDriver:
 
 async def query(
     collection: str,
-    fields: Optional[list[str]] = None,
-    filt: Optional[dict[str, Any]] = None,
-    sort: Optional[Union[str, list[str]]] = None,
-    limit: Optional[int] = None,
+    fields: list[str] | None = None,
+    filt: dict[str, Any] | None = None,
+    sort: str | list[str] | None = None,
+    limit: int | None = None,
 ) -> Iterable[Record]:
     """Return records from `collection`.
 
@@ -76,7 +77,7 @@ async def query(
     return await driver.query(collection, fields, filt, sort, limit)
 
 
-async def get(collection: str, id_: Id) -> Optional[Record]:
+async def get(collection: str, id_: Id) -> Record | None:
     """Return the record with a given `id` from `collection`.
 
     If no such record is found, `None` is returned."""
@@ -94,7 +95,7 @@ async def get(collection: str, id_: Id) -> Optional[Record]:
     return None
 
 
-async def get_value(name: str, default: Optional[Any] = None) -> Any:
+async def get_value(name: str, default: Any | None = None) -> Any:
     """Return the value of object with name `name` by querying the collection with the same name and considering the
     first (and only) record.
 
@@ -157,7 +158,7 @@ async def insert(collection: str, record: Record) -> Id:
     return await driver.insert(collection, record)
 
 
-async def update(collection: str, record_part: Record, filt: Optional[dict[str, Any]] = None) -> int:
+async def update(collection: str, record_part: Record, filt: dict[str, Any] | None = None) -> int:
     """Update records from `collection` with fields given in `record_part`.
 
     Only records that match the `filt` filter will be updated. Besides filtering by exact field value, the following
@@ -209,7 +210,7 @@ async def replace(collection: str, id_: Id, record: Record) -> bool:
         return True
 
 
-async def remove(collection: str, filt: Optional[dict[str, Any]] = None) -> int:
+async def remove(collection: str, filt: dict[str, Any] | None = None) -> int:
     """Remove records from `collection`.
 
     Only records that match the `filt` filter will be removed. Besides filtering by exact field value, the following
@@ -235,9 +236,9 @@ async def remove(collection: str, filt: Optional[dict[str, Any]] = None) -> int:
 async def get_samples_slice(
     collection: str,
     obj_id: Id,
-    from_timestamp: Optional[int] = None,
-    to_timestamp: Optional[int] = None,
-    limit: Optional[int] = None,
+    from_timestamp: int | None = None,
+    to_timestamp: int | None = None,
+    limit: int | None = None,
     sort_desc: bool = False,
 ) -> Iterable[Sample]:
     """Return the samples of `obj_id` from `collection`.
@@ -299,9 +300,9 @@ async def save_sample(collection: str, obj_id: Id, timestamp: int, value: Sample
 
 async def remove_samples(
     collection: str,
-    obj_ids: Optional[list[Id]] = None,
-    from_timestamp: Optional[int] = None,
-    to_timestamp: Optional[int] = None,
+    obj_ids: list[Id] | None = None,
+    from_timestamp: int | None = None,
+    to_timestamp: int | None = None,
 ) -> int:
     """Remove samples from `collection`.
 
@@ -341,7 +342,7 @@ def is_samples_supported() -> bool:
     return driver.is_samples_supported()
 
 
-async def ensure_index(collection: str, index: Union[str, list[str], None] = None) -> None:
+async def ensure_index(collection: str, index: str | list[str] | None = None) -> None:
     """Create an index on `collection` if not already present.
 
     `index` is a list of field names optionally preceded by a `-` sign for a descending index.

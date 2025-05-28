@@ -1,5 +1,3 @@
-from typing import Optional
-
 from qtoggleserver import persist, system
 from qtoggleserver.core import history
 
@@ -39,7 +37,7 @@ class RisingFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value = await self.args[0].eval(context)
@@ -59,7 +57,7 @@ class FallingFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value = await self.args[0].eval(context)
@@ -79,7 +77,7 @@ class AccFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, accumulator = await self.eval_args(context)
@@ -100,7 +98,7 @@ class AccIncFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, accumulator = await self.eval_args(context)
@@ -255,9 +253,9 @@ class HistoryFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._cached_sample: Optional[persist.Sample] = None
+        self._cached_sample: persist.Sample | None = None
         self._cached_timestamp: int = 0
-        self._cached_max_diff: Optional[float] = None
+        self._cached_max_diff: float | None = None
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():

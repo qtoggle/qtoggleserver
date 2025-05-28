@@ -2,8 +2,6 @@ import asyncio
 import logging
 import time
 
-from typing import Optional
-
 
 _CUSTOM_CLEANUP_INTERVAL = 5
 
@@ -11,14 +9,14 @@ logger = logging.getLogger(__name__)
 
 _custom_dns_mapping: dict[str, str] = {}
 _custom_dns_mapping_timeouts: dict[str, tuple[int, int]] = {}
-_custom_dns_cleanup_task: Optional[asyncio.Task] = None
+_custom_dns_cleanup_task: asyncio.Task | None = None
 
 
 def get_custom_dns_mapping_dict() -> dict[str, str]:
     return _custom_dns_mapping
 
 
-def set_custom_dns_mapping(hostname: str, ip_address: str, timeout: Optional[int] = None) -> None:
+def set_custom_dns_mapping(hostname: str, ip_address: str, timeout: int | None = None) -> None:
     logger.debug("setting custom DNS mapping %s -> %s with timeout %s", hostname, ip_address, timeout or "none")
 
     _custom_dns_mapping[hostname] = ip_address

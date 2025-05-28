@@ -2,8 +2,6 @@ import abc
 import logging
 import time
 
-from typing import Optional, Union
-
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import ports as core_ports
@@ -14,7 +12,7 @@ from qtoggleserver.slaves import events as slaves_events
 
 ANY_VALUE = "any"
 
-AnyNullablePortValue = Union[str, NullablePortValue]
+AnyNullablePortValue = str | NullablePortValue
 
 logger = logging.getLogger(__package__)
 
@@ -22,28 +20,28 @@ logger = logging.getLogger(__package__)
 class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
     logger = logger
 
-    def __init__(self, *, filter: dict = None, name: Optional[str] = None) -> None:
+    def __init__(self, *, filter: dict = None, name: str | None = None) -> None:
         self._filter: dict = filter or {}
         self._filter_prepared: bool = False
 
-        self._filter_event_types: Optional[set[str]] = None
+        self._filter_event_types: set[str] | None = None
 
         self._filter_device_attrs: Attributes = {}
         self._filter_device_attr_transitions: dict[str, tuple[Attribute, Attribute]] = {}
         self._filter_device_attr_names: set[str] = set()
 
-        self._filter_port_value: Optional[Union[list[NullablePortValue]], core_expressions.Expression] = None
-        self._filter_port_value_transition: Optional[tuple[AnyNullablePortValue, AnyNullablePortValue]] = None
-        self._filter_port_attrs: Union[Attributes, dict[str, list[Attribute]]] = {}
+        self._filter_port_value: list[NullablePortValue] | core_expressions.Expression | None = None
+        self._filter_port_value_transition: tuple[AnyNullablePortValue, AnyNullablePortValue] | None = None
+        self._filter_port_attrs: Attributes | dict[str, list[Attribute]] = {}
         self._filter_port_attr_transitions: dict[str, tuple[Attribute, Attribute]] = {}
         self._filter_port_attr_names: set[str] = set()
 
-        self._filter_slave_attrs: Union[Attributes, dict[str, list[Attribute]]] = {}
+        self._filter_slave_attrs: Attributes | dict[str, list[Attribute]] = {}
         self._filter_slave_attr_transitions: dict[str, tuple[Attribute, Attribute]] = {}
         self._filter_slave_attr_names: set[str] = set()
 
         # Maintain an internal "last" state for all objects, so we can detect changes in attributes and values
-        self._device_attrs: Union[Attributes, dict[str, list[Attribute]]] = {}
+        self._device_attrs: Attributes | dict[str, list[Attribute]] = {}
         self._port_values: dict[str, NullablePortValue] = {}
         self._port_attrs: dict[str, Attributes] = {}
         self._slave_attrs: dict[str, Attributes] = {}
