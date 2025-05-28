@@ -453,7 +453,7 @@ class Slave(logging_utils.LoggableMixin):
     async def _load_ports(self) -> None:
         self.debug("loading persisted ports")
         port_data_list = await persist.query(SlavePort.PERSIST_COLLECTION, fields=["id"])
-        my_port_ids = [d["id"][len(self._name) + 1:] for d in port_data_list if d["id"].startswith(f"{self._name}.")]
+        my_port_ids = [d["id"][len(self._name) + 1 :] for d in port_data_list if d["id"].startswith(f"{self._name}.")]
 
         for id_ in my_port_ids:
             await self._add_port(attrs={"id": id_})
@@ -474,7 +474,7 @@ class Slave(logging_utils.LoggableMixin):
 
         # Add new records
         for d in my_port_data_list:
-            d["id"] = new_name + d["id"][len(self._name):]
+            d["id"] = new_name + d["id"][len(self._name) :]
             await persist.insert(SlavePort.PERSIST_COLLECTION, d)
 
     async def remove(self) -> None:

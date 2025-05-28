@@ -122,7 +122,7 @@ def _build_ipv4_header(udp_packet: bytes) -> bytes:
 
     ipv4_checksum = 0
     for i in range(6):  # header length is 10x16 bytes
-        word = struct.unpack("!H", ipv4_header[i * 2:i * 2 + 2])[0]
+        word = struct.unpack("!H", ipv4_header[i * 2 : i * 2 + 2])[0]
         ipv4_checksum += word
 
     ipv4_checksum = (ipv4_checksum >> 16) + ipv4_checksum

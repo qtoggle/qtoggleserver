@@ -100,7 +100,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
 
                 level -= 1
             elif (c == ",") and (level == 1):
-                sarg = sexpression[(p_last_comma or p_start) + 1:i]
+                sarg = sexpression[(p_last_comma or p_start) + 1 : i]
                 spos = (p_last_comma or p_start) + 1
                 if not sarg.strip():
                     raise exceptions.UnexpectedCharacter(c, pos + spos + len(sarg))
@@ -114,7 +114,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
             raise exceptions.UnexpectedEnd()
 
         if p_end - p_start > 1:
-            sarg = sexpression[(p_last_comma or p_start) + 1:p_end]
+            sarg = sexpression[(p_last_comma or p_start) + 1 : p_end]
             spos = (p_last_comma or p_start) + 1
             if not sarg.strip():
                 raise exceptions.UnexpectedCharacter(")", pos + spos + len(sarg))

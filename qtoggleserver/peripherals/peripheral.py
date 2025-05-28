@@ -118,7 +118,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def remove_port(self, port_id: str, persisted_data: bool = False) -> None:
         if self._name and port_id.startswith(f"{self._name}."):
-            port_id = port_id[len(self._name) + 1:]
+            port_id = port_id[len(self._name) + 1 :]
 
         try:
             port = self._ports_by_id.pop(port_id)
