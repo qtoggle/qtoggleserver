@@ -6,7 +6,7 @@ import sys
 import threading
 import weakref
 
-from typing import Any, Awaitable, Callable, Optional, Union
+from typing import Any, Awaitable, Callable, Coroutine, Optional, Union
 
 
 class ParallelCaller:
@@ -21,7 +21,7 @@ class ParallelCaller:
     async def call(self, func: Callable, *args, is_async: Optional[bool] = None, **kwargs) -> Any:
         # Push call details to queue
         when_ready = asyncio.Condition()
-        result = {'ret': None, 'exc_info': (None, None, None)}
+        result = {"ret": None, "exc_info": (None, None, None)}
 
         # Allow QueueFull exceptions to be propagated to caller
         self._queue.put_nowait((func, is_async, args, kwargs, when_ready, result))
@@ -31,11 +31,11 @@ class ParallelCaller:
             await when_ready.wait()
 
         # If an exception was raised, re-raise it
-        typ, val, tb = result['exc_info']
+        typ, val, tb = result["exc_info"]
         if typ:
             raise val
 
-        return result['ret']
+        return result["ret"]
 
     async def _loop(self, index: int) -> None:
         try:
@@ -47,11 +47,11 @@ class ParallelCaller:
 
                 try:
                     if is_async:
-                        result['ret'] = await func(*args, **kwargs)
+                        result["ret"] = await func(*args, **kwargs)
                     else:
-                        result['ret'] = func(*args, **kwargs)
+                        result["ret"] = func(*args, **kwargs)
                 except Exception:
-                    result['exc_info'] = sys.exc_info()
+                    result["exc_info"] = sys.exc_info()
 
                 async with when_ready:
                     when_ready.notify_all()
@@ -79,13 +79,13 @@ class Timer:
 
     def cancel(self) -> None:
         if self._task is None:
-            raise Exception('Task is not running')
+            raise Exception("Task is not running")
 
         self._task.cancel()
 
     async def wait(self) -> None:
         if self._task is None:
-            raise Exception('Task is not running')
+            raise Exception("Task is not running")
 
         await self._task
 
@@ -158,7 +158,7 @@ async def await_later(delay: float, aw: Awaitable) -> None:
     await aw
 
 
-def fire_and_forget(aw: Awaitable) -> None:
-    task = asyncio.create_task(aw)
+def fire_and_forget(coro: Coroutine[Any, Any, Any]) -> None:
+    task = asyncio.create_task(coro)
     coro = task.get_coro()
     weakref.finalize(task, coro.close)

@@ -13,7 +13,7 @@ class FrontendEvent(core_events.Event):
 
     async def to_json(self) -> GenericJSONDict:
         result = await super().to_json()
-        result['session_id'] = self.request.session_id if self.request else ''
+        result["session_id"] = self.request.session_id if self.request else ""
 
         return result
 
@@ -25,7 +25,7 @@ class FrontendEvent(core_events.Event):
 
 class DashboardUpdateEvent(FrontendEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
-    TYPE = 'dashboard-update'
+    TYPE = "dashboard-update"
 
     def __init__(self, panels: GenericJSONList, **kwargs) -> None:
         self.panels: GenericJSONList = panels
@@ -33,6 +33,4 @@ class DashboardUpdateEvent(FrontendEvent):
         super().__init__(**kwargs)
 
     async def get_params(self) -> GenericJSONDict:
-        return {
-            'panels': self.panels
-        }
+        return {"panels": self.panels}

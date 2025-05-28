@@ -2,19 +2,19 @@ import abc
 import asyncio
 import logging
 
-from typing import Optional, cast
+from typing import Any, Optional, cast
 
 from qtoggleserver.core import main
-from qtoggleserver.core.typing import AttributeDefinitions
+from qtoggleserver.core.typing import AttributeDefinition, AttributeDefinitions
 from qtoggleserver.peripherals import Peripheral, PeripheralPort
 
 
 READ_INTERVAL_ATTRDEF = {
-    'display_name': 'Read Interval',
-    'description': 'How often to read peripheral data (set to 0 to disable reading).',
-    'type': 'number',
-    'modifiable': True,
-    'integer': True
+    "display_name": "Read Interval",
+    "description": "How often to read peripheral data (set to 0 to disable reading).",
+    "type": "number",
+    "modifiable": True,
+    "integer": True,
 }
 
 
@@ -25,13 +25,7 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
 
     logger = logging.getLogger(__name__)
 
-    def __init__(
-        self,
-        *,
-        retry_poll_interval: int = -1,
-        retry_count: int = -1,
-        **kwargs
-    ) -> None:
+    def __init__(self, *, retry_poll_interval: int = -1, retry_count: int = -1, **kwargs) -> None:
         self._polling: bool = False
         self._poll_stopped: bool = False
         self._poll_task: Optional[asyncio.Task] = None
@@ -46,7 +40,7 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
         super().__init__(**kwargs)
 
     async def _poll_loop(self) -> None:
-        self.debug('polling started')
+        self.debug("polling started")
         self._polling = True
         self._retry_counter = 0
 
@@ -67,9 +61,10 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
                 except Exception as e:
                     retry_poll_interval = min(self._retry_poll_interval, self._poll_interval)
                     self.error(
-                        'polling failed (retrying in %s seconds, %s/%s): %s',
+                        "polling failed (retrying in %s seconds, %s/%s): %s",
                         retry_poll_interval,
-                        self._retry_counter + 1, self._retry_count,
+                        self._retry_counter + 1,
+                        self._retry_count,
                         e,
                         exc_info=True,
                     )
@@ -96,11 +91,11 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
 
                     await asyncio.sleep(1)
             except asyncio.CancelledError:
-                self.debug('polling task cancelled')
+                self.debug("polling task cancelled")
                 break
 
         self._poll_task = None
-        self.debug('polling stopped')
+        self.debug("polling stopped")
 
     def set_poll_interval(self, interval: int) -> None:
         self._poll_interval = interval
@@ -154,27 +149,27 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
         # Add read interval attrdef
 
     async def get_additional_attrdefs(self) -> AttributeDefinitions:
-        attrdefs = {}
+        attrdefs: AttributeDefinitions = {}
         if self.READ_INTERVAL_MIN is not None:
-            attrdef = dict(READ_INTERVAL_ATTRDEF)
+            attrdef: AttributeDefinition = dict(READ_INTERVAL_ATTRDEF)
 
             unit = self.READ_INTERVAL_UNIT
             if unit is None:
                 if self.READ_INTERVAL_MULTIPLIER == 3600:
-                    unit = 'hours'
+                    unit = "hours"
                 elif self.READ_INTERVAL_MULTIPLIER == 60:
-                    unit = 'minutes'
+                    unit = "minutes"
                 else:
-                    unit = 'seconds'
+                    unit = "seconds"
 
             attrdef.update(
                 unit=unit,
                 step=self.READ_INTERVAL_STEP,
                 min=self.READ_INTERVAL_MIN,
-                max=self.READ_INTERVAL_MAX
+                max=self.READ_INTERVAL_MAX,
             )
 
-            attrdefs['read_interval'] = attrdef
+            attrdefs["read_interval"] = attrdef
 
         return attrdefs
 

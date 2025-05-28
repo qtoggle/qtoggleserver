@@ -31,11 +31,11 @@ class NoSuchFunctionHandler(BaseHandler):
 class NotFoundHandler(BaseHandler):
     def get(self) -> None:
         if system.is_setup_mode():
-            base_prefix = self.request.headers.get(qui_constants.BASE_PREFIX_HEADER, '/')
-            if not base_prefix.endswith('/'):
-                base_prefix += '/'
+            base_prefix = self.request.headers.get(qui_constants.BASE_PREFIX_HEADER, "/")
+            if not base_prefix.endswith("/"):
+                base_prefix += "/"
 
-            self.redirect(f'{base_prefix}{qui_settings.frontend_url_prefix}/settings')
+            self.redirect(f"{base_prefix}{qui_settings.frontend_url_prefix}/settings")
         else:
             raise HTTPError(404)
 

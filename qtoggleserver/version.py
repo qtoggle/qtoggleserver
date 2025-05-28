@@ -1,2 +1,2 @@
-VERSION = '0.0.0'
-VENDOR = 'qtoggle/qtoggleserver'
+VERSION = "0.0.0"
+VENDOR = "qtoggle/qtoggleserver"

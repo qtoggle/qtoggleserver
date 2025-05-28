@@ -16,7 +16,7 @@ class SlaveDeviceEvent(core_events.Event):
         super().__init__(timestamp)
 
     def __str__(self) -> str:
-        return f'{self._type}({self._slave.get_name()}) event'
+        return f"{self._type}({self._slave.get_name()}) event"
 
     def get_slave(self) -> Any:
         return self._slave
@@ -24,7 +24,7 @@ class SlaveDeviceEvent(core_events.Event):
 
 class SlaveDeviceAdd(SlaveDeviceEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
-    TYPE = 'slave-device-add'
+    TYPE = "slave-device-add"
 
     async def get_params(self) -> GenericJSONDict:
         return self.get_slave().to_json()
@@ -32,15 +32,15 @@ class SlaveDeviceAdd(SlaveDeviceEvent):
 
 class SlaveDeviceRemove(SlaveDeviceEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
-    TYPE = 'slave-device-remove'
+    TYPE = "slave-device-remove"
 
     async def get_params(self) -> GenericJSONDict:
-        return {'name': self.get_slave().get_name()}
+        return {"name": self.get_slave().get_name()}
 
 
 class SlaveDeviceUpdate(SlaveDeviceEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
-    TYPE = 'slave-device-update'
+    TYPE = "slave-device-update"
 
     async def get_params(self) -> GenericJSONDict:
         return self.get_slave().to_json()

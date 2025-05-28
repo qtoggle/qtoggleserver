@@ -2,7 +2,7 @@ from .base import EvalContext, EvalResult
 from .functions import Function, function
 
 
-@function('AND')
+@function("AND")
 class AndFunction(Function):
     MIN_ARGS = 2
 
@@ -14,7 +14,7 @@ class AndFunction(Function):
         return 1
 
 
-@function('OR')
+@function("OR")
 class OrFunction(Function):
     MIN_ARGS = 2
 
@@ -26,7 +26,7 @@ class OrFunction(Function):
         return 0
 
 
-@function('NOT')
+@function("NOT")
 class NotFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
@@ -34,7 +34,7 @@ class NotFunction(Function):
         return int(not bool((await self.eval_args(context))[0]))
 
 
-@function('XOR')
+@function("XOR")
 class XOrFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 

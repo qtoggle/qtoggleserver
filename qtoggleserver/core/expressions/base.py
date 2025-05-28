@@ -55,11 +55,7 @@ class Expression(metaclass=abc.ABCMeta):
 
 
 class EvalContext:
-    def __init__(
-        self,
-        port_values: dict[str, NullablePortValue],
-        now_ms: int
-    ) -> None:
+    def __init__(self, port_values: dict[str, NullablePortValue], now_ms: int) -> None:
         self.port_values: dict[str, NullablePortValue] = port_values
         self.now_ms: int = now_ms
 

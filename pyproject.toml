@@ -21,3 +21,7 @@ sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER', 'TEST
 testpaths = ['tests/qtoggleserver']
 asyncio_mode = 'auto'
 addopts = '-v'
+
+[tool.black]
+target-version = ["py39"]
+line-length = 120

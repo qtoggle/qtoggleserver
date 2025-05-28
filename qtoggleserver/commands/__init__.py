@@ -25,4 +25,4 @@ def execute(main_func: Callable[[], Awaitable[bool]]) -> None:
 
         loop.close()
 
-    startup.logger.info('bye!')
+    startup.logger.info("bye!")

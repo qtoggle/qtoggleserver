@@ -17,14 +17,14 @@ _enabled: bool = True
 def enable() -> None:
     global _enabled
 
-    logger.debug('enabling event handling')
+    logger.debug("enabling event handling")
     _enabled = True
 
 
 def disable() -> None:
     global _enabled
 
-    logger.debug('disabling event handling')
+    logger.debug("disabling event handling")
     _enabled = False
 
 
@@ -36,7 +36,7 @@ async def trigger(event: Event) -> None:
     if not _enabled:
         return
 
-    logger.debug('%s triggered', event)
+    logger.debug("%s triggered", event)
 
     await event.init_params()
 
@@ -50,19 +50,19 @@ async def trigger(event: Event) -> None:
             try:
                 await handler.handle_event(event)
             except Exception as e:
-                logger.error('event handling failed: %s', e, exc_info=True)
+                logger.error("event handling failed: %s", e, exc_info=True)
 
 
 async def init() -> None:
     for handler_args in settings.event_handlers:
-        handler_class_path = handler_args.pop('driver')
+        handler_class_path = handler_args.pop("driver")
 
         try:
-            logger.debug('loading event handler %s', handler_class_path)
+            logger.debug("loading event handler %s", handler_class_path)
             handler_class = dynload_utils.load_attr(handler_class_path)
             handler = handler_class(**handler_args)
         except Exception as e:
-            logger.error('failed to load event handler %s: %s', handler_class_path, e, exc_info=True)
+            logger.error("failed to load event handler %s: %s", handler_class_path, e, exc_info=True)
         else:
             _registered_handlers.append(handler)
 

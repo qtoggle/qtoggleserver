@@ -24,9 +24,9 @@ def parse(self_port_id: Optional[str], sexpression: str, role: int, pos: int = 1
     while sexpression and sexpression[-1].isspace():
         sexpression = sexpression[:-1]
 
-    if sexpression and sexpression[0] in ('$', '@'):
+    if sexpression and sexpression[0] in ("$", "@"):
         return PortExpression.parse(self_port_id, sexpression, role, pos)
-    elif '(' in sexpression or ')' in sexpression:
+    elif "(" in sexpression or ")" in sexpression:
         return Function.parse(self_port_id, sexpression, role, pos)
     else:
         return LiteralValue.parse(self_port_id, sexpression, role, pos)

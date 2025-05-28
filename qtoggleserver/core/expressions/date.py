@@ -12,7 +12,7 @@ from .functions import Function, function
 class DateUnitFunction(Function, metaclass=abc.ABCMeta):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {'second'}
+    DEPS = {"second"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -30,58 +30,58 @@ class DateUnitFunction(Function, metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
 
-@function('YEAR')
+@function("YEAR")
 class YearFunction(DateUnitFunction):
     def extract_unit(self, dt: datetime.datetime) -> int:
         return dt.year
 
 
-@function('MONTH')
+@function("MONTH")
 class MonthFunction(DateUnitFunction):
     def extract_unit(self, dt: datetime.datetime) -> int:
         return dt.month
 
 
-@function('DAY')
+@function("DAY")
 class DayFunction(DateUnitFunction):
     def extract_unit(self, dt: datetime.datetime) -> int:
         return dt.day
 
 
-@function('DOW')
+@function("DOW")
 class DOWFunction(DateUnitFunction):
     def extract_unit(self, dt: datetime.datetime) -> int:
         return dt.weekday()
 
 
-@function('LDOM')
+@function("LDOM")
 class LDOMFunction(DateUnitFunction):
     def extract_unit(self, dt: datetime.datetime) -> int:
         return calendar.monthrange(dt.year, dt.month)[1]
 
 
-@function('HOUR')
+@function("HOUR")
 class HourFunction(DateUnitFunction):
     def extract_unit(self, dt: datetime.datetime) -> int:
         return dt.hour
 
 
-@function('MINUTE')
+@function("MINUTE")
 class MinuteFunction(DateUnitFunction):
     def extract_unit(self, dt: datetime.datetime) -> int:
         return dt.minute
 
 
-@function('SECOND')
+@function("SECOND")
 class SecondFunction(DateUnitFunction):
     def extract_unit(self, dt: datetime.datetime) -> int:
         return dt.second
 
 
-@function('MILLISECOND')
+@function("MILLISECOND")
 class MillisecondFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
-    DEPS = {'asap'}
+    DEPS = {"asap"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -90,23 +90,23 @@ class MillisecondFunction(Function):
         return int(context.now_ms % 1000)
 
 
-@function('MINUTEDAY')
+@function("MINUTEDAY")
 class MinuteDayFunction(DateUnitFunction):
     def extract_unit(self, dt: datetime.datetime) -> int:
         return dt.hour * 60 + dt.minute
 
 
-@function('SECONDDAY')
+@function("SECONDDAY")
 class SecondDayFunction(DateUnitFunction):
     def extract_unit(self, dt: datetime.datetime) -> int:
         return dt.hour * 3600 + dt.minute * 60 + dt.second
 
 
-@function('DATE')
+@function("DATE")
 class DateFunction(Function):
     MIN_ARGS = MAX_ARGS = 6
-    DEPS = {'second'}
-    UNIT_INDEX = {u: i + 1 for i, u in enumerate(('year', 'month', 'day', 'hour', 'minute', 'second'))}
+    DEPS = {"second"}
+    UNIT_INDEX = {u: i + 1 for i, u in enumerate(("year", "month", "day", "hour", "minute", "second"))}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -125,11 +125,11 @@ class DateFunction(Function):
             raise InvalidArgumentValue(index, eval_args[index])
 
 
-@function('BOY')
+@function("BOY")
 class BOYFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {'second'}
+    DEPS = {"second"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -147,11 +147,11 @@ class BOYFunction(Function):
         return dt.timestamp()
 
 
-@function('BOM')
+@function("BOM")
 class BOMFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {'second'}
+    DEPS = {"second"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -184,11 +184,11 @@ class BOMFunction(Function):
         return dt.timestamp()
 
 
-@function('BOW')
+@function("BOW")
 class BOWFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 2
-    DEPS = {'second'}
+    DEPS = {"second"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -241,11 +241,11 @@ class BOWFunction(Function):
         return dt.timestamp()
 
 
-@function('BOD')
+@function("BOD")
 class BODFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {'second'}
+    DEPS = {"second"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -262,10 +262,10 @@ class BODFunction(Function):
         return dt.timestamp()
 
 
-@function('HMSINTERVAL')
+@function("HMSINTERVAL")
 class HMSIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 6
-    DEPS = {'second'}
+    DEPS = {"second"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -302,10 +302,10 @@ class HMSIntervalFunction(Function):
         return int(start_dt <= now <= stop_dt)
 
 
-@function('MDINTERVAL')
+@function("MDINTERVAL")
 class MDIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 4
-    DEPS = {'second'}
+    DEPS = {"second"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():

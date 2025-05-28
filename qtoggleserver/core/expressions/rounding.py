@@ -4,7 +4,7 @@ from .base import EvalContext, EvalResult
 from .functions import Function, function
 
 
-@function('FLOOR')
+@function("FLOOR")
 class FloorFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
@@ -14,7 +14,7 @@ class FloorFunction(Function):
         return int(math.floor(eval_args[0]))
 
 
-@function('CEIL')
+@function("CEIL")
 class CeilFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
@@ -24,7 +24,7 @@ class CeilFunction(Function):
         return int(math.ceil(eval_args[0]))
 
 
-@function('ROUND')
+@function("ROUND")
 class RoundFunction(Function):
     MIN_ARGS = 1
     MAX_ARGS = 2

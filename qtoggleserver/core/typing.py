@@ -5,7 +5,7 @@ PortValue = Union[int, float, bool]
 NullablePortValue = Union[int, float, bool, None]
 PortValueChoices = list[dict[str, Union[str, int, float]]]
 
-Attribute = Union[int, float, bool, str, list[dict]]
+Attribute = Union[int, float, bool, str, list[dict], None]
 Attributes = dict[str, Attribute]
 
 AttributeDefinition = dict[str, Any]

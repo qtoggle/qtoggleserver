@@ -32,7 +32,7 @@ class InvalidParamError(WebhooksError):
     def __init__(self, param: str) -> None:
         self.param: str = param
 
-        super().__init__(f'Invalid field: {param}')
+        super().__init__(f"Invalid field: {param}")
 
 
 class WebhooksRequest:
@@ -50,7 +50,7 @@ class Webhooks:
         path: Optional[str] = None,
         timeout: Optional[int] = None,
         retries: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> None:
 
         # The enabled value comes with kwargs but is ignored; webhooks will be explicitly enabled afterwards
@@ -67,13 +67,13 @@ class Webhooks:
         self._queue: queue.Queue = queue.Queue(settings.core.event_queue_size)
 
     def __str__(self) -> str:
-        s = 'webhooks'
+        s = "webhooks"
 
         if not self._enabled:
-            s += ' [disabled]'
+            s += " [disabled]"
 
         if self._scheme:
-            s += ' ' + self.get_url()
+            s += " " + self.get_url()
 
         return s
 
@@ -84,7 +84,7 @@ class Webhooks:
         if self._enabled:
             return
 
-        logger.debug('enabling %s', self)
+        logger.debug("enabling %s", self)
 
         self._enabled = True
 
@@ -92,7 +92,7 @@ class Webhooks:
         if not self._enabled:
             return
 
-        logger.debug('disabling %s', self)
+        logger.debug("disabling %s", self)
 
         self._enabled = False
 
@@ -102,16 +102,16 @@ class Webhooks:
 
     def get_url(self) -> str:
         if not self._url:
-            if self._scheme == 'http' and self._port == 80 or self._scheme == 'https' and self._port == 443:
-                self._url = f'{self._scheme}://{self._host}{self._path}'
+            if self._scheme == "http" and self._port == 80 or self._scheme == "https" and self._port == 443:
+                self._url = f"{self._scheme}://{self._host}{self._path}"
             else:
-                self._url = f'{self._scheme}://{self._host}:{self._port}{self._path}'
+                self._url = f"{self._scheme}://{self._host}:{self._port}{self._path}"
 
         return self._url
 
     def call(self, body: GenericJSONDict) -> None:
         if not self._enabled:
-            return
+            return None
 
         request = WebhooksRequest(body)
 
@@ -121,8 +121,9 @@ class Webhooks:
         try:
             self._queue.put(request)
         except queue.Full:
-            logger.error('%s: queue is full', self)
-            return
+            logger.error("%s: queue is full", self)
+
+        return None
 
     def _request(self, request: WebhooksRequest) -> None:
         if not self._enabled:
@@ -135,7 +136,7 @@ class Webhooks:
             try:
                 core_responses.parse(response)
             except core_responses.Error as e:
-                logger.error('%s: call failed: %s', self, e)
+                logger.error("%s: call failed: %s", self, e)
 
                 # Retry mechanism
                 if not self._retries:
@@ -143,36 +144,36 @@ class Webhooks:
 
                 if request.retries <= self._retries:
                     request.retries += 1
-                    logger.debug('%s: resending request (retry %s/%s)', self, request.retries, self._retries)
+                    logger.debug("%s: resending request (retry %s/%s)", self, request.retries, self._retries)
 
                     self._request(request)
                 else:
                     self._check_pending()
             else:
-                logger.debug('%s: call succeeded', self)
+                logger.debug("%s: call succeeded", self)
                 self._check_pending()
+
+            return None
 
         http_client = AsyncHTTPClient()
         # TODO use webhooks password
         headers = {
-            'Content-Type': json_utils.JSON_CONTENT_TYPE,
-            'Authorization': core_api_auth.make_auth_header(
-                core_api_auth.ORIGIN_DEVICE,
-                username=None,
-                password_hash=core_device_attrs.normal_password_hash
-            )
+            "Content-Type": json_utils.JSON_CONTENT_TYPE,
+            "Authorization": core_api_auth.make_auth_header(
+                core_api_auth.ORIGIN_DEVICE, username=None, password_hash=core_device_attrs.normal_password_hash
+            ),
         }
         request = HTTPRequest(
             url,
-            'POST',
+            "POST",
             headers=headers,
             body=body,
             connect_timeout=self._timeout,
             request_timeout=self._timeout,
-            follow_redirects=True
+            follow_redirects=True,
         )
 
-        logger.debug('%s: calling', self)
+        logger.debug("%s: calling", self)
 
         http_client.fetch(request, callback=on_response)  # TODO implement me using await
 
@@ -186,13 +187,13 @@ class Webhooks:
 
     def to_json(self) -> GenericJSONDict:
         d = {
-            'enabled': self._enabled,
-            'scheme': self._scheme,
-            'host': self._host,
-            'port': self._port,
-            'path': self._path,
-            'timeout': self._timeout,
-            'retries': self._retries
+            "enabled": self._enabled,
+            "scheme": self._scheme,
+            "host": self._host,
+            "port": self._port,
+            "path": self._path,
+            "timeout": self._timeout,
+            "retries": self._retries,
         }
 
         return d
@@ -210,7 +211,7 @@ def setup(
     path: Optional[str] = None,
     timeout: Optional[int] = None,
     retries: Optional[int] = None,
-    **kwargs
+    **kwargs,
 ) -> None:
 
     global _webhooks
@@ -224,32 +225,32 @@ def setup(
 
 
 async def load() -> None:
-    data = await persist.get_value('webhooks')
+    data = await persist.get_value("webhooks")
     if data is None:
         setup(enabled=False)
-        logger.debug('loaded %s', _webhooks)
+        logger.debug("loaded %s", _webhooks)
 
         return
 
     setup(**data)
-    logger.debug('loaded %s', _webhooks)
+    logger.debug("loaded %s", _webhooks)
 
 
 async def save() -> None:
     if _webhooks is None:
         return
 
-    logger.debug('saving persisted data')
-    await persist.set_value('webhooks', _webhooks.to_json())
+    logger.debug("saving persisted data")
+    await persist.set_value("webhooks", _webhooks.to_json())
 
 
 async def reset() -> None:
-    logger.debug('clearing persisted data')
-    await persist.remove('webhooks')
+    logger.debug("clearing persisted data")
+    await persist.remove("webhooks")
 
 
 async def init() -> None:
-    logger.debug('loading persisted data')
+    logger.debug("loading persisted data")
     await load()
 
 

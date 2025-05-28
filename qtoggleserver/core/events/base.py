@@ -17,7 +17,7 @@ logger = logging.getLogger(__package__)
 
 class Event(metaclass=abc.ABCMeta):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_NONE
-    TYPE = 'base-event'
+    TYPE = "base-event"
     _UNINITIALIZED = {}
 
     def __init__(self, timestamp: float = None) -> None:
@@ -32,18 +32,16 @@ class Event(metaclass=abc.ABCMeta):
         self._params: Optional[GenericJSONDict] = self._UNINITIALIZED
 
     def __str__(self) -> str:
-        return f'{self._type} event'
+        return f"{self._type} event"
 
     async def to_json(self) -> GenericJSONDict:
         if self._params is self._UNINITIALIZED:
-            raise Exception('Parameters are uninitialized')
+            raise Exception("Parameters are uninitialized")
 
-        result = {
-            'type': self._type
-        }
+        result: GenericJSONDict = {"type": self._type}
 
         if self._params:
-            result['params'] = self._params
+            result["params"] = self._params
 
         return result
 
@@ -74,10 +72,10 @@ class Handler(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._name: Optional[str] = name
 
     def __str__(self) -> str:
-        return f'event handler {self._name}'
+        return f"event handler {self._name}"
 
     def get_id(self) -> str:
-        return self._name or f'{self.__class__.__name__}({hex(id(self))})'
+        return self._name or f"{self.__class__.__name__}({hex(id(self))})"
 
     @abc.abstractmethod
     async def handle_event(self, event: Event) -> None:

@@ -2,7 +2,7 @@ from .base import EvalContext, EvalResult
 from .functions import Function, function
 
 
-@function('IF')
+@function("IF")
 class IfFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
 
@@ -14,7 +14,7 @@ class IfFunction(Function):
             return await self.args[2].eval(context)
 
 
-@function('EQ')
+@function("EQ")
 class EqFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -24,7 +24,7 @@ class EqFunction(Function):
         return int(eval_args[0] == eval_args[1])
 
 
-@function('GT')
+@function("GT")
 class GTFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -34,7 +34,7 @@ class GTFunction(Function):
         return int(eval_args[0] > eval_args[1])
 
 
-@function('GTE')
+@function("GTE")
 class GTEFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -44,7 +44,7 @@ class GTEFunction(Function):
         return int(eval_args[0] >= eval_args[1])
 
 
-@function('LT')
+@function("LT")
 class LTFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -54,7 +54,7 @@ class LTFunction(Function):
         return int(eval_args[0] < eval_args[1])
 
 
-@function('LTE')
+@function("LTE")
 class LTEFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 

@@ -9,33 +9,22 @@ public_url: _typing.Optional[str] = None
 
 
 logging: dict[str, _typing.Any] = {
-    'version': 1,
-    'memory_logs_buffer_len': 10000,
-    'formatters': {
-        'default': {
-            'format': '%(asctime)s: %(levelname)7s: [%(name)s] %(message)s',
-            'datefmt': '%Y-%m-%d %H:%M:%S'
-        }
+    "version": 1,
+    "memory_logs_buffer_len": 10000,
+    "formatters": {
+        "default": {"format": "%(asctime)s: %(levelname)7s: [%(name)s] %(message)s", "datefmt": "%Y-%m-%d %H:%M:%S"}
     },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'default'
-        }
-    },
-    'loggers': {
+    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "default"}},
+    "loggers": {
         # Double quotes are necessary to avoid HOCON key split
-        '"asyncio"': {'level': 'INFO'},
-        '"bleak"': {'level': 'INFO'},
-        '"qtoggleserver.core.sessions"': {'level': 'INFO'},
-        '"qtoggleserver.persist"': {'level': 'INFO'},
-        '"qtoggleserver.drivers.persist"': {'level': 'INFO'},
-        '"qtoggleserver.utils.cmd"': {'level': 'INFO'}
+        '"asyncio"': {"level": "INFO"},
+        '"bleak"': {"level": "INFO"},
+        '"qtoggleserver.core.sessions"': {"level": "INFO"},
+        '"qtoggleserver.persist"': {"level": "INFO"},
+        '"qtoggleserver.drivers.persist"': {"level": "INFO"},
+        '"qtoggleserver.utils.cmd"': {"level": "INFO"},
     },
-    'root': {
-        'level': 'DEBUG',
-        'handlers': ['console']
-    }
+    "root": {"level": "DEBUG", "handlers": ["console"]},
 }
 
 
@@ -62,7 +51,7 @@ class core:
 
 
 class server:
-    addr: str = '0.0.0.0'
+    addr: str = "0.0.0.0"
     port: int = 8888
     compress_response: bool = True
 
@@ -72,8 +61,8 @@ class server:
 
 
 class persist:
-    driver: str = 'qtoggleserver.drivers.persist.JSONDriver'
-    file_path: str = 'qtoggleserver-data.json'
+    driver: str = "qtoggleserver.drivers.persist.JSONDriver"
+    file_path: str = "qtoggleserver-data.json"
 
 
 class system:
@@ -81,7 +70,7 @@ class system:
 
     class date:
         set_cmd: _typing.Optional[str] = None
-        set_format: _typing.Optional[str] = '%Y-%m-%dT%H:%M:%SZ'
+        set_format: _typing.Optional[str] = "%Y-%m-%dT%H:%M:%SZ"
 
     class timezone:
         get_cmd: _typing.Optional[str] = None
@@ -117,9 +106,9 @@ class frontend:
     enabled: bool = True
     debug: bool = False
     static_url: str = None
-    display_name: str = 'qToggleServer'
-    display_short_name: str = 'qToggleServer'
-    description: str = 'An application to control qToggleServer'  # TODO: i18n
+    display_name: str = "qToggleServer"
+    display_short_name: str = "qToggleServer"
+    description: str = "An application to control qToggleServer"  # TODO: i18n
 
 
 class slaves:
@@ -138,17 +127,17 @@ class slaves:
         class ap:
             interface: str = None
             interface_cmd: str = None
-            ssid: str = 'qToggleSetup'
+            ssid: str = "qToggleSetup"
             psk: str = None
-            own_ip: str = '192.168.43.1'
+            own_ip: str = "192.168.43.1"
             mask_len: int = 24
-            start_ip: str = '192.168.43.50'
-            stop_ip: str = '192.168.43.250'
+            start_ip: str = "192.168.43.50"
+            stop_ip: str = "192.168.43.250"
             hostapd_binary: str = None
             hostapd_cli_binary: str = None
             dnsmasq_binary: str = None
-            hostapd_log: str = '/tmp/hostapd.log'
-            dnsmasq_log: str = '/tmp/dnsmasq.log'
+            hostapd_log: str = "/tmp/hostapd.log"
+            dnsmasq_log: str = "/tmp/dnsmasq.log"
             finish_timeout: int = 300
 
 

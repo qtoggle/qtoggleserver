@@ -20,16 +20,16 @@ def can_write_conf_file() -> bool:
 
 def conf_file_to_dict() -> dict[str, Any]:
     if not can_write_conf_file():
-        raise Exception('Configuration file not available')
+        raise Exception("Configuration file not available")
 
     return conf_utils.config_from_file(settings.source)
 
 
 def conf_file_from_dict(d: dict[str, Any]) -> None:
     if not can_write_conf_file():
-        raise Exception('Configuration file not available')
+        raise Exception("Configuration file not available")
 
-    logger.debug('updating configuration file %s', settings.source)
+    logger.debug("updating configuration file %s", settings.source)
 
     existing_d = conf_utils.config_from_file(settings.source)
     existing_d.update(d)
@@ -39,9 +39,9 @@ def conf_file_from_dict(d: dict[str, Any]) -> None:
 
     # Create a backup
     try:
-        shutil.copy(settings.source, f'{settings.source}.bak')
+        shutil.copy(settings.source, f"{settings.source}.bak")
     except Exception:
-        logger.warning('failed to create backup file %s', f'{settings.source}.bak', exc_info=True)
+        logger.warning("failed to create backup file %s", f"{settings.source}.bak", exc_info=True)
 
-    with open(settings.source, 'wt') as f:
+    with open(settings.source, "wt") as f:
         f.write(config_str)

@@ -2,7 +2,7 @@ from .base import EvalContext, EvalResult
 from .functions import Function, function
 
 
-@function('BITAND')
+@function("BITAND")
 class BitAndFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -14,7 +14,7 @@ class BitAndFunction(Function):
         return r
 
 
-@function('BITOR')
+@function("BITOR")
 class BitOrFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -26,7 +26,7 @@ class BitOrFunction(Function):
         return r
 
 
-@function('BITNOT')
+@function("BITNOT")
 class BitNotFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
@@ -34,7 +34,7 @@ class BitNotFunction(Function):
         return ~int((await self.eval_args(context))[0])
 
 
-@function('BITXOR')
+@function("BITXOR")
 class BitXOrFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -44,7 +44,7 @@ class BitXOrFunction(Function):
         return int(eval_args[0]) ^ int(eval_args[1])
 
 
-@function('SHL')
+@function("SHL")
 class SHLFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -54,7 +54,7 @@ class SHLFunction(Function):
         return int(eval_args[0]) << int(eval_args[1])
 
 
-@function('SHR')
+@function("SHR")
 class SHRFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 

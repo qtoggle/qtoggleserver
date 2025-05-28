@@ -45,7 +45,7 @@ async def update() -> None:
         _update_lock = asyncio.Lock()
 
     async with _update_lock:
-        changed_set: set[Union[core_ports.BasePort, str]] = {'asap'}
+        changed_set: set[Union[core_ports.BasePort, str]] = {"asap"}
         value_pairs = {}
 
         now = time.time()
@@ -54,7 +54,7 @@ async def update() -> None:
         if now_int != _last_time:
             _last_time = now_int
             second_changed = True
-            changed_set.add('second')
+            changed_set.add("second")
 
         for port in ports.get_all():
             if not port.is_enabled():
@@ -67,7 +67,7 @@ async def update() -> None:
                 try:
                     port.heart_beat_second()
                 except Exception as e:
-                    logger.error('port heart beat second exception: %s', e, exc_info=True)
+                    logger.error("port heart beat second exception: %s", e, exc_info=True)
 
             # Skip ports with read errors for a while
             if port in _ports_with_read_error:
@@ -78,16 +78,16 @@ async def update() -> None:
             except core_ports.SkipRead:
                 continue  # read explicitly skipped
             except Exception as e:
-                logger.error('failed to read value from %s: %s', port, e, exc_info=True)
+                logger.error("failed to read value from %s: %s", port, e, exc_info=True)
                 _ports_with_read_error.add(port)
 
                 continue
 
             if new_value != old_value:
-                old_value_str = json_utils.dumps(old_value) if old_value is not None else '(unavailable)'
+                old_value_str = json_utils.dumps(old_value) if old_value is not None else "(unavailable)"
                 new_value_str = json_utils.dumps(new_value)
 
-                logger.debug('detected %s value change: %s -> %s', port, old_value_str, new_value_str)
+                logger.debug("detected %s value change: %s -> %s", port, old_value_str, new_value_str)
 
                 port.set_last_read_value(new_value)
                 changed_set.add(port)
@@ -105,10 +105,10 @@ async def update_loop() -> None:
                 if _ready:
                     await update()
             except Exception as e:
-                logger.error('update failed: %s', e, exc_info=True)
+                logger.error("update failed: %s", e, exc_info=True)
             await asyncio.sleep(settings.core.tick_interval / 1000.0)
         except asyncio.CancelledError:
-            logger.debug('update task cancelled')
+            logger.debug("update task cancelled")
             break
 
 
@@ -141,7 +141,7 @@ async def handle_value_changes(
     # Trigger value-change events; save persisted ports; build changed_set_str
     for port in changed_set:
         if isinstance(port, core_ports.BasePort):
-            changed_set_str.add(f'${port.get_id()}')
+            changed_set_str.add(f"${port.get_id()}")
         else:
             changed_set_str.add(port)
             continue
@@ -169,14 +169,14 @@ async def handle_value_changes(
             continue
 
         port_own_deps: set[str] = expression.get_deps()
-        deps: set[str] = port_own_deps - {f'${port.get_id()}'}
+        deps: set[str] = port_own_deps - {f"${port.get_id()}"}
 
         # Evaluate a port's expression only if one of its deps changed
         changed_deps = deps & changed_set_str
         if not changed_deps:
             continue
 
-        if ('asap' in deps) and (len(changed_deps) == 1):
+        if ("asap" in deps) and (len(changed_deps) == 1):
             # Skip asap evaling if explicitly paused
             if expression.is_asap_eval_paused(now_ms):
                 continue
@@ -191,7 +191,7 @@ async def handle_value_changes(
 def force_eval_expressions(port: core_ports.BasePort = None) -> None:
     global _force_eval_all_expressions
 
-    logger.debug('forcing expression evaluation for %s', port or 'all ports')
+    logger.debug("forcing expression evaluation for %s", port or "all ports")
 
     if port:
         _force_eval_expression_ports.add(port)
@@ -203,7 +203,7 @@ def enable_updating() -> None:
     global _updating_enabled
 
     if not _updating_enabled:
-        logger.debug('enabling update mechanism')
+        logger.debug("enabling update mechanism")
         _updating_enabled = True
 
 
@@ -211,7 +211,7 @@ def disable_updating() -> None:
     global _updating_enabled
 
     if _updating_enabled:
-        logger.debug('disabling update mechanism')
+        logger.debug("disabling update mechanism")
         _updating_enabled = False
 
 
@@ -222,7 +222,7 @@ def is_ready() -> bool:
 def set_ready() -> None:
     global _ready
 
-    logger.debug('ready')
+    logger.debug("ready")
     _ready = True
 
 

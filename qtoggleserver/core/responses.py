@@ -10,7 +10,7 @@ from qtoggleserver.utils import json as json_utils
 
 
 class Error(Exception):
-    MESSAGE = ''
+    MESSAGE = ""
 
     def __init__(self, **params) -> None:
         self._params: dict = params
@@ -25,28 +25,28 @@ class Error(Exception):
 
 
 class HostUnreachable(Error):
-    MESSAGE = 'host unreachable'
+    MESSAGE = "host unreachable"
 
 
 class NetworkUnreachable(Error):
-    MESSAGE = 'network unreachable'
+    MESSAGE = "network unreachable"
 
 
 class UnresolvableHostname(Error):
-    MESSAGE = 'hostname cannot be resolved'
+    MESSAGE = "hostname cannot be resolved"
 
 
 class ConnectionRefused(Error):
-    MESSAGE = 'connection refused'
+    MESSAGE = "connection refused"
 
 
 class Timeout(Error):
-    MESSAGE = 'timeout'
+    MESSAGE = "timeout"
 
 
 class Accepted(Error):
     # HTTP 202
-    MESSAGE = 'accepted but not processed'
+    MESSAGE = "accepted but not processed"
 
     def __init__(self, response: Any) -> None:
         self.response: Any = response
@@ -76,7 +76,7 @@ class Redirect(Error):
 
 class HTTPError(Error):
     # 4xx - 5xx
-    MESSAGE = '{status} {code}'
+    MESSAGE = "{status} {code}"
 
     def __init__(self, status: int, code: str, **params) -> None:
         self.status: int = status
@@ -88,11 +88,11 @@ class HTTPError(Error):
 
 class InvalidJson(Error):
     # JSON load() failure
-    MESSAGE = 'invalid json'
+    MESSAGE = "invalid json"
 
 
 class AuthError(Error):
-    MESSAGE = 'authentication error: {msg}'
+    MESSAGE = "authentication error: {msg}"
 
     def __init__(self, msg: str) -> None:
         super().__init__(msg=msg)
@@ -100,7 +100,7 @@ class AuthError(Error):
 
 class OtherError(Error):
     # Any other error
-    MESSAGE = 'other error: {msg}'
+    MESSAGE = "other error: {msg}"
 
     def __init__(self, msg: str) -> None:
         super().__init__(msg=msg)
@@ -118,13 +118,13 @@ def _response_error_errno(eno: Optional[int]) -> Error:
     elif eno:
         return OtherError(errno.errorcode.get(eno))
 
-    return OtherError('Unknown error')
+    return OtherError("Unknown error")
 
 
 def parse(response: HTTPResponse, decode_json: bool = True, resolve_refs: bool = True) -> Any:
     if 100 <= response.code < 599:
         if response.code == 204:
-            return  # happy case - no content
+            return None  # happy case - no content
 
         if decode_json and response.body:
             try:
@@ -141,23 +141,23 @@ def parse(response: HTTPResponse, decode_json: bool = True, resolve_refs: bool =
             raise Accepted(body)
 
         if response.code == 301:
-            raise MovedPermanently(response.headers.get('Location', ''))
+            raise MovedPermanently(response.headers.get("Location", ""))
 
         if response.code in [302, 303]:
-            raise Redirect(response.headers.get('Location', ''))
+            raise Redirect(response.headers.get("Location", ""))
 
         if decode_json:
-            raise HTTPError(response.code, body.pop('error', ''), **body)
+            raise HTTPError(response.code, body.pop("error", ""), **body)
 
         raise HTTPError(response.code, response.reason)
     elif response.error or response.code == 599:
-        if str(response.error).lower().count('timeout'):
+        if str(response.error).lower().count("timeout"):
             raise Timeout()
 
-        eno = getattr(response.error, 'errno', None)
+        eno = getattr(response.error, "errno", None)
         if eno:
             raise _response_error_errno(eno)
 
         raise OtherError(str(response.error))
 
-    raise OtherError(f'Unknown HTTP error ({response.code}: {str(response.error)})')
+    raise OtherError(f"Unknown HTTP error ({response.code}: {str(response.error)})")

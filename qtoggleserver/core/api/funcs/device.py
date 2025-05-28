@@ -15,20 +15,17 @@ async def get_device(request: core_api.APIRequest) -> Attributes:
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def put_device(request: core_api.APIRequest, params: Attributes) -> None:
-    core_api_schema.validate(
-        params,
-        core_device_attrs.get_schema(loose=True)
-    )
+    core_api_schema.validate(params, core_device_attrs.get_schema(loose=True))
 
     # Password fields must explicitly be ignored, so we pop them from supplied data
-    for f in ('admin', 'normal', 'viewonly'):
-        params.pop(f'{f}_password', None)
+    for f in ("admin", "normal", "viewonly"):
+        params.pop(f"{f}_password", None)
 
     # Ignore the date attribute
-    params.pop('date', None)
+    params.pop("date", None)
 
     # Reset device attributes
-    await core_device.reset(preserve_attrs=['admin_password_hash', 'normal_password_hash', 'viewonly_password_hash'])
+    await core_device.reset(preserve_attrs=["admin_password_hash", "normal_password_hash", "viewonly_password_hash"])
     await core_device.load()
 
     try:
@@ -36,7 +33,7 @@ async def put_device(request: core_api.APIRequest, params: Attributes) -> None:
     except core_device_attrs.DeviceAttributeError as e:
         raise core_api.APIError(400, e.error, attribute=e.attribute)
     except Exception as e:
-        raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
+        raise core_api.APIError(500, "unexpected-error", message=str(e)) from e
 
     await core_device.save()
     await core_device_events.trigger_update()
@@ -46,15 +43,15 @@ async def put_device(request: core_api.APIRequest, params: Attributes) -> None:
 async def patch_device(request: core_api.APIRequest, params: Attributes) -> None:
     def unexpected_field_code(field: str) -> str:
         if field in core_device_attrs.get_attrdefs():
-            return 'attribute-not-modifiable'
+            return "attribute-not-modifiable"
         else:
-            return 'no-such-attribute'
+            return "no-such-attribute"
 
     core_api_schema.validate(
         params,
         core_device_attrs.get_schema(),
         unexpected_field_code=unexpected_field_code,
-        unexpected_field_name='attribute'
+        unexpected_field_name="attribute",
     )
 
     try:
@@ -62,7 +59,7 @@ async def patch_device(request: core_api.APIRequest, params: Attributes) -> None
     except core_device_attrs.DeviceAttributeError as e:
         raise core_api.APIError(400, e.error, attribute=e.attribute)
     except Exception as e:
-        raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
+        raise core_api.APIError(500, "unexpected-error", message=str(e)) from e
 
     await core_device.save()
     await core_device_events.trigger_update()

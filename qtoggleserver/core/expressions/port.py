@@ -36,17 +36,17 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
         port_id = sexpression[1:]
 
         if port_id:
-            m = re.search(r'[^a-zA-Z0-9_.-]', port_id)
+            m = re.search(r"[^a-zA-Z0-9_.-]", port_id)
             if m:
                 p = m.start()
                 raise UnexpectedCharacter(port_id[p], p + pos + 2)
 
-            if prefix == '$':
+            if prefix == "$":
                 return PortValue(port_id, prefix, role)
             else:  # assuming prefix == '@'
                 return PortRef(port_id, prefix, role)
         else:
-            if prefix == '$':
+            if prefix == "$":
                 return SelfPortValue(self_port_id, prefix, role)
             else:  # assuming prefix == '@'
                 return SelfPortRef(self_port_id, prefix, role)
@@ -54,10 +54,10 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
 
 class PortValue(PortExpression):
     def __str__(self) -> str:
-        return f'{self.prefix}{self.port_id}'
+        return f"{self.prefix}{self.port_id}"
 
     def _get_deps(self) -> set[str]:
-        return {f'${self.port_id}'}
+        return {f"${self.port_id}"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         port = self.get_port()
@@ -98,7 +98,7 @@ class SelfPortValue(PortValue):
 
 class PortRef(PortExpression):
     def __str__(self) -> str:
-        return f'{self.prefix}{self.port_id}'
+        return f"{self.prefix}{self.port_id}"
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         port = self.get_port()

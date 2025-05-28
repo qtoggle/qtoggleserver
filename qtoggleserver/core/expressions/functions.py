@@ -37,10 +37,10 @@ class Function(Expression, metaclass=abc.ABCMeta):
         self.args: list[Expression] = args
 
     def __str__(self) -> str:
-        s = getattr(self, '_str', None)
+        s = getattr(self, "_str", None)
         if s is None:
-            args_str = ', '.join(str(e) for e in self.args)
-            self._str = s = f'{self.NAME}({args_str})'
+            args_str = ", ".join(str(e) for e in self.args)
+            self._str = s = f"{self.NAME}({args_str})"
 
         return s
 
@@ -82,14 +82,14 @@ class Function(Expression, metaclass=abc.ABCMeta):
         level = 0
         sargs = []
         for i, c in enumerate(sexpression):
-            if c == '(':
+            if c == "(":
                 if p_start is None:
                     p_start = i
                 elif level == 0:
                     raise exceptions.UnexpectedCharacter(c, pos + i)
 
                 level += 1
-            elif c == ')':
+            elif c == ")":
                 if level == 0:
                     raise exceptions.UnbalancedParentheses(pos + i)
                 elif level == 1:
@@ -99,8 +99,8 @@ class Function(Expression, metaclass=abc.ABCMeta):
                         raise exceptions.UnbalancedParentheses(pos + i)
 
                 level -= 1
-            elif (c == ',') and (level == 1):
-                sarg = sexpression[(p_last_comma or p_start) + 1: i]
+            elif (c == ",") and (level == 1):
+                sarg = sexpression[(p_last_comma or p_start) + 1:i]
                 spos = (p_last_comma or p_start) + 1
                 if not sarg.strip():
                     raise exceptions.UnexpectedCharacter(c, pos + spos + len(sarg))
@@ -114,15 +114,15 @@ class Function(Expression, metaclass=abc.ABCMeta):
             raise exceptions.UnexpectedEnd()
 
         if p_end - p_start > 1:
-            sarg = sexpression[(p_last_comma or p_start) + 1: p_end]
+            sarg = sexpression[(p_last_comma or p_start) + 1:p_end]
             spos = (p_last_comma or p_start) + 1
             if not sarg.strip():
-                raise exceptions.UnexpectedCharacter(')', pos + spos + len(sarg))
+                raise exceptions.UnexpectedCharacter(")", pos + spos + len(sarg))
 
             sargs.append((sarg, spos))
 
         func_name = sexpression[:p_start].strip()
-        m = re.search(r'[^a-zA-Z0-9_]', func_name)
+        m = re.search(r"[^a-zA-Z0-9_]", func_name)
         if m:
             p = m.start()
             raise exceptions.UnexpectedCharacter(func_name[p], p + pos)

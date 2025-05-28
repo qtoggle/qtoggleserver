@@ -10,7 +10,7 @@ async def call_subprocess(args: list[str], stdin_data: Optional[bytes] = None) -
         args,
         stdin=tornado_process.Subprocess.STREAM,
         stdout=tornado_process.Subprocess.STREAM,
-        stderr=tornado_process.Subprocess.STREAM
+        stderr=tornado_process.Subprocess.STREAM,
     )
 
     if stdin_data:

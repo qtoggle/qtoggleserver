@@ -9,8 +9,8 @@ from typing import Optional
 from qtoggleserver.lib import polled
 
 
-W1_DEVICES_PATH = '/sys/bus/w1/devices'
-SLAVE_FILE_NAME = 'w1_slave'
+W1_DEVICES_PATH = "/sys/bus/w1/devices"
+SLAVE_FILE_NAME = "w1_slave"
 
 
 class OneWireException(Exception):
@@ -19,11 +19,11 @@ class OneWireException(Exception):
 
 class OneWirePeripheralNotFound(OneWireException):
     def __init__(self, address: str) -> None:
-        super().__init__(f'Peripheral @{address} not found')
+        super().__init__(f"Peripheral @{address} not found")
 
 
 class OneWireTimeout(OneWireException):
-    def __init__(self, message: str = 'timeout') -> None:
+    def __init__(self, message: str = "timeout") -> None:
         super().__init__(message)
 
 
@@ -46,8 +46,8 @@ class OneWirePeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         return self._filename
 
     def _find_filename(self) -> str:
-        address_parts = re.split('[^a-zA-Z0-9]', self._address)
-        pat = address_parts[0] + '-0*' + ''.join(address_parts[1:])
+        address_parts = re.split("[^a-zA-Z0-9]", self._address)
+        pat = address_parts[0] + "-0*" + "".join(address_parts[1:])
         for name in os.listdir(W1_DEVICES_PATH):
             if re.match(pat, name, re.IGNORECASE):
                 return os.path.join(W1_DEVICES_PATH, name, SLAVE_FILE_NAME)
@@ -73,10 +73,10 @@ class OneWirePeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
     def read_sync(self) -> Optional[str]:
         filename = self.get_filename()
-        self.debug('opening file %s', filename)
-        with open(filename, 'rt') as f:
+        self.debug("opening file %s", filename)
+        with open(filename, "rt") as f:
             data = f.read()
-            self.debug('read data: %s', data.replace('\n', '\\n'))
+            self.debug("read data: %s", data.replace("\n", "\\n"))
 
         return data
 
@@ -85,7 +85,7 @@ class OneWirePeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
             future = self.run_threaded(self.read_sync)
             self._data = await asyncio.wait_for(future, timeout=self.TIMEOUT)
         except asyncio.TimeoutError as e:
-            raise OneWireTimeout('Timeout waiting for one-wire data from peripheral') from e
+            raise OneWireTimeout("Timeout waiting for one-wire data from peripheral") from e
 
     async def handle_disable(self) -> None:
         await super().handle_disable()

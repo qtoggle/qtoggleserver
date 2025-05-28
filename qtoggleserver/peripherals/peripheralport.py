@@ -10,7 +10,7 @@ from .peripheral import Peripheral
 
 
 class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
-    ID = 'port'
+    ID = "port"
 
     def __init__(self, peripheral: Peripheral, id: Optional[str] = None) -> None:
         self._peripheral: Peripheral = peripheral
@@ -18,7 +18,7 @@ class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
 
         id_ = self._initial_id
         if self._peripheral.get_name():
-            id_ = f'{self._peripheral.get_name()}.{id_}'
+            id_ = f"{self._peripheral.get_name()}.{id_}"
 
         super().__init__(id_)
 

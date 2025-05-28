@@ -19,24 +19,18 @@ async def get_firmware(request: core_api.APIRequest) -> GenericJSONDict:
             latest_version, latest_date, latest_url = await fwupdate.get_latest()
 
             return {
-                'version': current_version,
-                'latest_version': latest_version,
-                'latest_date': latest_date,
-                'latest_url': latest_url,
-                'status': status
+                "version": current_version,
+                "latest_version": latest_version,
+                "latest_date": latest_date,
+                "latest_url": latest_url,
+                "status": status,
             }
         except Exception as e:
-            logger.error('get latest firmware failed: %s', e, exc_info=True)
+            logger.error("get latest firmware failed: %s", e, exc_info=True)
 
-            return {
-                'version': current_version,
-                'status': status
-            }
+            return {"version": current_version, "status": status}
     else:
-        return {
-            'version': current_version,
-            'status': status
-        }
+        return {"version": current_version, "status": status}
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
@@ -45,9 +39,9 @@ async def patch_firmware(request: core_api.APIRequest, params: GenericJSONDict) 
 
     status = await fwupdate.get_status()
     if status not in (fwupdate.STATUS_IDLE, fwupdate.STATUS_ERROR):
-        raise core_api.APIError(503, 'busy')
+        raise core_api.APIError(503, "busy")
 
-    if params.get('url'):
-        await fwupdate.update_to_url(params['url'])
+    if params.get("url"):
+        await fwupdate.update_to_url(params["url"])
     else:  # assuming params['version']
-        await fwupdate.update_to_version(params['version'])
+        await fwupdate.update_to_version(params["version"])

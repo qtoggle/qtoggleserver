@@ -9,7 +9,7 @@ from .functions import Function, function
 from .port import PortRef
 
 
-@function('AVAILABLE')
+@function("AVAILABLE")
 class AvailableFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
@@ -21,7 +21,7 @@ class AvailableFunction(Function):
             return False
 
 
-@function('DEFAULT')
+@function("DEFAULT")
 class DefaultFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -32,7 +32,7 @@ class DefaultFunction(Function):
             return await self.args[1].eval(context)
 
 
-@function('RISING')
+@function("RISING")
 class RisingFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
@@ -52,7 +52,7 @@ class RisingFunction(Function):
         return result
 
 
-@function('FALLING')
+@function("FALLING")
 class FallingFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
@@ -72,7 +72,7 @@ class FallingFunction(Function):
         return result
 
 
-@function('ACC')
+@function("ACC")
 class AccFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -93,7 +93,7 @@ class AccFunction(Function):
         return result
 
 
-@function('ACCINC')
+@function("ACCINC")
 class AccIncFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -114,7 +114,7 @@ class AccIncFunction(Function):
         return result
 
 
-@function('HYST')
+@function("HYST")
 class HystFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
 
@@ -126,13 +126,14 @@ class HystFunction(Function):
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, threshold1, threshold2 = await self.eval_args(context)
 
-        self._last_result = int((self._last_result == 0 and value > threshold2) or
-                                (self._last_result != 0 and value >= threshold1))
+        self._last_result = int(
+            (self._last_result == 0 and value > threshold2) or (self._last_result != 0 and value >= threshold1)
+        )
 
         return self._last_result
 
 
-@function('ONOFFAUTO')
+@function("ONOFFAUTO")
 class OnOffAutoFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -146,10 +147,10 @@ class OnOffAutoFunction(Function):
             return auto
 
 
-@function('SEQUENCE')
+@function("SEQUENCE")
 class SequenceFunction(Function):
     MIN_ARGS = 2
-    DEPS = {'asap'}
+    DEPS = {"asap"}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -186,7 +187,7 @@ class SequenceFunction(Function):
         return result
 
 
-@function('LUT')
+@function("LUT")
 class LUTFunction(Function):
     MIN_ARGS = 5
 
@@ -215,7 +216,7 @@ class LUTFunction(Function):
         return points[length - 1][1]
 
 
-@function('LUTLI')
+@function("LUTLI")
 class LUTLIFunction(Function):
     MIN_ARGS = 5
 
@@ -244,10 +245,10 @@ class LUTLIFunction(Function):
         return points[length - 1][1]
 
 
-@function('HISTORY')
+@function("HISTORY")
 class HistoryFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = {'second'}
+    DEPS = {"second"}
     ARG_KINDS = [PortRef]
     ENABLED = history.is_enabled
 

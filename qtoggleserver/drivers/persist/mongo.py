@@ -13,20 +13,14 @@ from qtoggleserver.persist.typing import Id, Record
 
 logger = logging.getLogger(__name__)
 
-_OBJECT_ID_RE = re.compile('^[0-9a-f]{24}$')
-DEFAULT_DB = 'qtoggleserver'
+_OBJECT_ID_RE = re.compile("^[0-9a-f]{24}$")
+DEFAULT_DB = "qtoggleserver"
 
-FILTER_OP_MAPPING = {
-    'gt': '$gt',
-    'ge': '$gte',
-    'lt': '$lt',
-    'le': '$lte',
-    'in': '$in'
-}
+FILTER_OP_MAPPING = {"gt": "$gt", "ge": "$gte", "lt": "$lt", "le": "$lte", "in": "$in"}
 
 
 class MongoDriver(BaseDriver):
-    def __init__(self, host: str = '127.0.0.1', port: int = 27017, db: str = DEFAULT_DB, **kwargs) -> None:
+    def __init__(self, host: str = "127.0.0.1", port: int = 27017, db: str = DEFAULT_DB, **kwargs) -> None:
         self._host: str = host
         self._port: int = port
         self._db_name: str = db
@@ -35,17 +29,14 @@ class MongoDriver(BaseDriver):
         self._db: Optional[pymongo.database.Database] = None
 
     async def init(self) -> None:
-        logger.debug('connecting to %s:%s/%s', self._host, self._port, self._db_name)
+        logger.debug("connecting to %s:%s/%s", self._host, self._port, self._db_name)
         self._client: pymongo.MongoClient = pymongo.MongoClient(
-            self._host,
-            self._port,
-            serverSelectionTimeoutMS=200,
-            connectTimeoutMS=200
+            self._host, self._port, serverSelectionTimeoutMS=200, connectTimeoutMS=200
         )
         self._db: pymongo.database.Database = self._client[self._db_name]
 
     async def cleanup(self) -> None:
-        logger.debug('disconnecting mongo client')
+        logger.debug("disconnecting mongo client")
 
         self._client.close()
 
@@ -55,18 +46,18 @@ class MongoDriver(BaseDriver):
         fields: Optional[list[str]],
         filt: dict[str, Any],
         sort: list[tuple[str, bool]],
-        limit: Optional[int]
+        limit: Optional[int],
     ) -> Iterable[Record]:
         if fields:
             fields = dict((f, 1) for f in fields)
-            if 'id' in fields:
-                fields['_id'] = 1
+            if "id" in fields:
+                fields["_id"] = 1
             else:
-                fields['_id'] = 0
+                fields["_id"] = 0
 
-        if 'id' in filt:
+        if "id" in filt:
             filt = dict(filt)
-            filt['_id'] = self._id_to_db_rec(filt.pop('id'))
+            filt["_id"] = self._id_to_db_rec(filt.pop("id"))
 
         db_filt = self._filt_to_db(filt)
 
@@ -83,37 +74,37 @@ class MongoDriver(BaseDriver):
 
     async def insert(self, collection: str, record: Record) -> Id:
         record = dict(record)
-        if 'id' in record:
-            record['_id'] = self._id_to_db(record.pop('id'))
+        if "id" in record:
+            record["_id"] = self._id_to_db(record.pop("id"))
 
         return self._id_from_db(self._db[collection].insert_one(record).inserted_id)
 
     async def update(self, collection: str, record_part: Record, filt: dict[str, Any]) -> int:
-        if 'id' in record_part:
+        if "id" in record_part:
             record_part = dict(record_part)
-            record_part['_id'] = self._id_to_db(record_part.pop('id'))
+            record_part["_id"] = self._id_to_db(record_part.pop("id"))
 
-        if 'id' in filt:
+        if "id" in filt:
             filt = dict(filt)
-            filt['_id'] = self._id_to_db_rec(filt.pop('id'))
+            filt["_id"] = self._id_to_db_rec(filt.pop("id"))
 
         db_filt = self._filt_to_db(filt)
 
-        return self._db[collection].update_many(db_filt, {'$set': record_part}, upsert=False).modified_count
+        return self._db[collection].update_many(db_filt, {"$set": record_part}, upsert=False).modified_count
 
     async def replace(self, collection: str, id_: Id, record: Record) -> bool:
         record = dict(record)
         id_ = self._id_to_db(id_)
-        record['_id'] = id_
+        record["_id"] = id_
 
-        matched = self._db[collection].replace_one({'_id': id_}, record, upsert=False).matched_count
+        matched = self._db[collection].replace_one({"_id": id_}, record, upsert=False).matched_count
 
         return matched > 0
 
     async def remove(self, collection: str, filt: dict[str, Any]) -> int:
-        if 'id' in filt:
+        if "id" in filt:
             filt = dict(filt)
-            filt['_id'] = self._id_to_db_rec(filt.pop('id'))
+            filt["_id"] = self._id_to_db_rec(filt.pop("id"))
 
         db_filt = self._filt_to_db(filt)
 
@@ -126,7 +117,7 @@ class MongoDriver(BaseDriver):
         if index:
             index = [(f, [pymongo.ASCENDING, pymongo.DESCENDING][r]) for f, r in index]
         else:  # assuming samples collection
-            index = [('ts', pymongo.ASCENDING)]
+            index = [("ts", pymongo.ASCENDING)]
 
         try:
             self._db[collection].create_index(index)
@@ -136,8 +127,8 @@ class MongoDriver(BaseDriver):
     @classmethod
     def _query_gen_wrapper(cls, q: Iterable[Record]) -> Iterable[Record]:
         for r in q:
-            if '_id' in r:
-                r['id'] = cls._id_from_db(r.pop('_id'))
+            if "_id" in r:
+                r["id"] = cls._id_from_db(r.pop("_id"))
 
             yield r
 

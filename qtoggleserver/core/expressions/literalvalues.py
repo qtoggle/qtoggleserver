@@ -36,11 +36,11 @@ class LiteralValue(Expression):
         if not sexpression:
             raise EmptyExpression()
 
-        if sexpression == 'true':
+        if sexpression == "true":
             value = 1
-        elif sexpression == 'false':
+        elif sexpression == "false":
             value = 0
-        elif sexpression == 'unavailable':
+        elif sexpression == "unavailable":
             value = None
         else:
             try:
@@ -49,7 +49,7 @@ class LiteralValue(Expression):
                 try:
                     value = float(sexpression)
                 except ValueError:
-                    m = re.match(r'-?\d+(\.?\d+)?', sexpression)
+                    m = re.match(r"-?\d+(\.?\d+)?", sexpression)
                     if m:
                         raise UnexpectedCharacter(sexpression[m.end()], pos + m.end()) from None
                     else:

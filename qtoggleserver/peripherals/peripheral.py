@@ -29,11 +29,11 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         name: Optional[str] = None,
         id: Optional[str] = None,
         static: bool = False,
-        **kwargs
+        **kwargs,
     ) -> None:
         sorted_params = self._sorted_tuples_dict(params)
-        auto_id_to_hash = f'{self.__class__.__module__}.{self.__class__.__name__}:{name}:{sorted_params}'
-        auto_id = f'peripheral_{hashlib.sha256(auto_id_to_hash.encode()).hexdigest()[:8]}'
+        auto_id_to_hash = f"{self.__class__.__module__}.{self.__class__.__name__}:{name}:{sorted_params}"
+        auto_id = f"peripheral_{hashlib.sha256(auto_id_to_hash.encode()).hexdigest()[:8]}"
 
         self._params: dict[str, Any] = params
         self._name: Optional[str] = name
@@ -57,7 +57,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return dict_reorder(params)
 
     def __str__(self) -> str:
-        return f'peripheral {self.get_id()}'
+        return f"peripheral {self.get_id()}"
 
     def get_id(self) -> str:
         return self._id
@@ -79,13 +79,12 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         # Transform port classes to dicts with drivers
         transformed_port_args: list[dict[str, Any]] = [
-            {'driver': pa} if isinstance(pa, type) else pa
-            for pa in port_args
+            {"driver": pa} if isinstance(pa, type) else pa for pa in port_args
         ]
 
         # Supply the peripheral argument
         for pa in transformed_port_args:
-            pa.setdefault('peripheral', self)
+            pa.setdefault("peripheral", self)
 
         return transformed_port_args
 
@@ -111,20 +110,20 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def add_port(self, port_args: dict[str, Any]) -> PeripheralPort:
         # Supply the peripheral argument
         port_args = dict(port_args)
-        port_args.setdefault('peripheral', self)
+        port_args.setdefault("peripheral", self)
 
         port = cast(PeripheralPort, (await core_ports.load([port_args]))[0])
         self._ports_by_id[port.get_initial_id()] = port
         return port
 
     async def remove_port(self, port_id: str, persisted_data: bool = False) -> None:
-        if self._name and port_id.startswith(f'{self._name}.'):
+        if self._name and port_id.startswith(f"{self._name}."):
             port_id = port_id[len(self._name) + 1:]
 
         try:
             port = self._ports_by_id.pop(port_id)
         except KeyError:
-            raise NotOurPort(f'Port {port_id} does not belong to {self}') from None
+            raise NotOurPort(f"Port {port_id} does not belong to {self}") from None
 
         await port.remove(persisted_data=persisted_data)
 
@@ -143,7 +142,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._enabled = True
         await self.handle_enable()
-        self.debug('peripheral enabled')
+        self.debug("peripheral enabled")
 
     async def disable(self) -> None:
         if not self._enabled:
@@ -151,7 +150,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._enabled = False
         await self.handle_disable()
-        self.debug('peripheral disabled')
+        self.debug("peripheral disabled")
 
     async def check_disabled(self, exclude_port: Optional[PeripheralPort] = None) -> None:
         if not self._enabled:
@@ -161,7 +160,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             if port.is_enabled() and port != exclude_port:
                 break
         else:
-            self.debug('all ports are disabled, disabling peripheral')
+            self.debug("all ports are disabled, disabling peripheral")
             await self.disable()
 
     def is_online(self) -> bool:
@@ -169,17 +168,17 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def set_online(self, online: bool) -> None:
         if online and not self._online:
-            self.debug('is online')
+            self.debug("is online")
             try:
                 self.handle_online()
             except Exception:
-                self.error('handle_online failed', exc_info=True)
+                self.error("handle_online failed", exc_info=True)
         elif not online and self._online:
-            self.debug('is offline')
+            self.debug("is offline")
             try:
                 self.handle_offline()
             except Exception:
-                self.error('handle_offline failed', exc_info=True)
+                self.error("handle_offline failed", exc_info=True)
 
         self._online = online
 
@@ -211,7 +210,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return self._runner
 
     def make_runner(self) -> asyncio_utils.ThreadedRunner:
-        self.debug('starting threaded runner')
+        self.debug("starting threaded runner")
         runner = self.RUNNER_CLASS(queue_size=self.RUNNER_QUEUE_SIZE)
         runner.start()
 
@@ -248,9 +247,9 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             await self._port_update_task
 
         if self._runner:
-            self.debug('stopping threaded runner')
+            self.debug("stopping threaded runner")
             await self._runner.stop()
-            self.debug('threaded runner stopped')
+            self.debug("threaded runner stopped")
 
 
 # This needs to be imported here to avoid circular import issues

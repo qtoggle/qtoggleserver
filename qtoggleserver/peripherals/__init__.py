@@ -28,8 +28,8 @@ def get(peripheral_id: str) -> Optional[Peripheral]:
 
 async def add(peripheral_params: dict[str, Any], static: bool = False) -> Peripheral:
     params = dict(peripheral_params)
-    class_path = params.pop('driver')
-    params.pop('static', None)
+    class_path = params.pop("driver")
+    params.pop("static", None)
 
     logger.debug('creating peripheral with driver "%s"', class_path)
     try:
@@ -39,16 +39,16 @@ async def add(peripheral_params: dict[str, Any], static: bool = False) -> Periph
 
     p = peripheral_class(params=peripheral_params, static=static, **params)
     if p.get_id() in _registered_peripherals:
-        raise DuplicatePeripheral(f'Peripheral {p.get_id()} already exists')
+        raise DuplicatePeripheral(f"Peripheral {p.get_id()} already exists")
 
-    p.debug('initializing')
+    p.debug("initializing")
     await p.handle_init()
     _registered_peripherals[p.get_id()] = p
 
     if not static:
         peripheral_params = dict(peripheral_params)
-        peripheral_params.pop('static', None)
-        await persist.replace('peripherals', p.get_id(), peripheral_params)
+        peripheral_params.pop("static", None)
+        await persist.replace("peripherals", p.get_id(), peripheral_params)
 
     return p
 
@@ -56,30 +56,30 @@ async def add(peripheral_params: dict[str, Any], static: bool = False) -> Periph
 async def remove(peripheral_id: str, persisted_data: bool = True) -> None:
     p = _registered_peripherals[peripheral_id]
 
-    p.debug('cleaning up')
+    p.debug("cleaning up")
     await p.handle_cleanup()
     _registered_peripherals.pop(peripheral_id)
 
-    logger.debug('peripheral %s removed', peripheral_id)
+    logger.debug("peripheral %s removed", peripheral_id)
 
     if persisted_data:
-        await persist.remove('peripherals', filt={'id': peripheral_id})
+        await persist.remove("peripherals", filt={"id": peripheral_id})
 
 
 async def init() -> None:
-    logger.debug('loading static peripherals')
+    logger.debug("loading static peripherals")
     for peripheral_params in settings.peripherals:
         try:
             await add(peripheral_params, static=True)
         except Exception:
-            logger.error('failed to load peripheral %s', peripheral_params.get('driver'), exc_info=True)
+            logger.error("failed to load peripheral %s", peripheral_params.get("driver"), exc_info=True)
 
-    logger.debug('loading dynamic peripherals')
-    for peripheral_params in await persist.query('peripherals'):
+    logger.debug("loading dynamic peripherals")
+    for peripheral_params in await persist.query("peripherals"):
         try:
             await add(peripheral_params)
         except Exception:
-            logger.error('failed to load peripheral %s', peripheral_params.get('driver'), exc_info=True)
+            logger.error("failed to load peripheral %s", peripheral_params.get("driver"), exc_info=True)
 
 
 async def cleanup() -> None:

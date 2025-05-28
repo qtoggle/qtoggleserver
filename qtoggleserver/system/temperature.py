@@ -16,12 +16,14 @@ def has_temperature_support() -> bool:
 
 def get_temperature() -> Optional[int]:
     if settings.system.temperature.get_cmd:
-        return int(run_get_cmd(
-            settings.system.temperature.get_cmd,
-            cmd_name='temperature',
-            exc_class=TemperatureError,
-            required_fields=['value']
-        )['value'])
+        return int(
+            run_get_cmd(
+                settings.system.temperature.get_cmd,
+                cmd_name="temperature",
+                exc_class=TemperatureError,
+                required_fields=["value"],
+            )["value"]
+        )
 
     if settings.system.temperature.sensor_name:
         temperatures = psutil.sensors_temperatures()
@@ -29,3 +31,5 @@ def get_temperature() -> Optional[int]:
         temp_info = temp_info_list[settings.system.temperature.sensor_index]
 
         return int(temp_info.current)
+    else:
+        return None

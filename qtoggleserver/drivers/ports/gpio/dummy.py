@@ -8,11 +8,11 @@ class DummyGPIO(ports.Port):
     TYPE = ports.TYPE_BOOLEAN
 
     ADDITIONAL_ATTRDEFS = {
-        'output': {
-            'display_name': 'Is Output',
-            'description': 'Controls the port direction.',
-            'type': 'boolean',
-            'modifiable': True
+        "output": {
+            "display_name": "Is Output",
+            "description": "Controls the port direction.",
+            "type": "boolean",
+            "modifiable": True,
         }
     }
 
@@ -25,7 +25,7 @@ class DummyGPIO(ports.Port):
         self._dummy_value: Optional[bool] = def_value or False
         self._dummy_output: bool = def_output if def_output is not None else False
 
-        super().__init__(port_id=f'gpio{no}')
+        super().__init__(port_id=f"gpio{no}")
 
     async def handle_enable(self) -> None:
         if self._def_output is not None:
@@ -45,9 +45,9 @@ class DummyGPIO(ports.Port):
         self._dummy_output = output
 
         if output:
-            self.debug('setting output mode')
+            self.debug("setting output mode")
         else:
-            self.debug('setting input mode')
+            self.debug("setting input mode")
 
         if output and self._def_value is not None:
             await self.write_value(self._def_value)

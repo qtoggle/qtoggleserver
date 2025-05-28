@@ -22,45 +22,33 @@ logger = logging.getLogger(__name__)
 
 class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
     DEFAULT_TEMPLATES = {  # TODO: i18n
-        'value-change': {
-            'title': '{{port.get_display_name()}} is {{port.get_display_value()}}',
-            'body': (
-                'Port {{port.get_display_name()}} was {{port.get_display_value(old_value)}} '
-                'and is now {{port.get_display_value(new_value)}}.'
-            )
+        "value-change": {
+            "title": "{{port.get_display_name()}} is {{port.get_display_value()}}",
+            "body": (
+                "Port {{port.get_display_name()}} was {{port.get_display_value(old_value)}} "
+                "and is now {{port.get_display_value(new_value)}}."
+            ),
         },
-        'port-update': {
-            'title': '{{port.get_display_name()}} has been updated',
-            'body': 'Port {{port.get_display_name()}} attributes have been updated.'
+        "port-update": {
+            "title": "{{port.get_display_name()}} has been updated",
+            "body": "Port {{port.get_display_name()}} attributes have been updated.",
         },
-        'port-add': {
-            'title': '{{port.get_display_name()}} has been added',
-            'body': None
+        "port-add": {"title": "{{port.get_display_name()}} has been added", "body": None},
+        "port-remove": {"title": "{{port.get_display_name()}} has been removed", "body": None},
+        "device-update": {
+            "title": "{{device.get_display_name()}} has been updated",
+            "body": "Device {{device.get_display_name()}} attributes have been updated.",
         },
-        'port-remove': {
-            'title': '{{port.get_display_name()}} has been removed',
-            'body': None
+        "full-update": {
+            "title": "{{device.get_display_name()}} has been updated",
+            "body": "Device {{device.get_display_name()}} has been fully updated.",
         },
-        'device-update': {
-            'title': '{{device.get_display_name()}} has been updated',
-            'body': 'Device {{device.get_display_name()}} attributes have been updated.'
+        "slave-device-update": {
+            "title": "{{slave.get_display_name()}} has been updated",
+            "body": "Device {{slave.get_display_name()}} attributes have been updated.",
         },
-        'full-update': {
-            'title': '{{device.get_display_name()}} has been updated',
-            'body': 'Device {{device.get_display_name()}} has been fully updated.'
-        },
-        'slave-device-update': {
-            'title': '{{slave.get_display_name()}} has been updated',
-            'body': 'Device {{slave.get_display_name()}} attributes have been updated.'
-        },
-        'slave-device-add': {
-            'title': '{{slave.get_display_name()}} has been added',
-            'body': None
-        },
-        'slave-device-remove': {
-            'title': '{{slave.get_display_name()}} has been removed',
-            'body': None
-        },
+        "slave-device-add": {"title": "{{slave.get_display_name()}} has been added", "body": None},
+        "slave-device-remove": {"title": "{{slave.get_display_name()}} has been removed", "body": None},
     }
 
     logger = logger
@@ -72,7 +60,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         templates: Optional[dict[str, dict[str, str]]] = None,
         skip_startup: Union[int, bool] = True,
         filter: dict = None,
-        name: Optional[str] = None
+        name: Optional[str] = None,
     ) -> None:
         self._skip_startup: Union[int, bool] = skip_startup
 
@@ -121,16 +109,16 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
             moment = None
 
         return {
-            'event': event,
-            'type': event.get_type(),
-            'timestamp': timestamp,
-            'moment': moment,
-            'display_moment': moment.strftime('%c') if moment else '',
-            'public_url': settings.public_url,
-            'device_attrs': self.get_device_attrs(),
-            'port_values': self.get_port_values(),
-            'port_attrs': self.get_port_attrs(),
-            'slave_attrs': self.get_slave_attrs(),
+            "event": event,
+            "type": event.get_type(),
+            "timestamp": timestamp,
+            "moment": moment,
+            "display_moment": moment.strftime("%c") if moment else "",
+            "public_url": settings.public_url,
+            "device_attrs": self.get_device_attrs(),
+            "port_values": self.get_port_values(),
+            "port_attrs": self.get_port_attrs(),
+            "slave_attrs": self.get_slave_attrs(),
         }
 
     async def push_message(self, event: core_events.Event, title: str, body: Optional[str] = None, **kwargs) -> None:
@@ -160,16 +148,11 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         port: core_ports.BasePort,
         old_value: NullablePortValue,
         new_value: NullablePortValue,
-        attrs: Attributes
+        attrs: Attributes,
     ) -> None:
 
         context = self.get_common_context(event)
-        context.update({
-            'port': port,
-            'old_value': old_value,
-            'new_value': new_value,
-            'attrs': attrs
-        })
+        context.update({"port": port, "old_value": old_value, "new_value": new_value, "attrs": attrs})
 
         await self.push_template_message(event, context)
 
@@ -181,39 +164,33 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         new_attrs: Attributes,
         changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
-        removed_attrs: Attributes
+        removed_attrs: Attributes,
     ) -> None:
 
         context = self.get_common_context(event)
-        context.update({
-            'port': port,
-            'old_attrs': old_attrs,
-            'new_attrs': new_attrs,
-            'changed_attrs': changed_attrs,
-            'added_attrs': added_attrs,
-            'removed_attrs': removed_attrs,
-            'value': port.get_last_read_value()
-        })
+        context.update(
+            {
+                "port": port,
+                "old_attrs": old_attrs,
+                "new_attrs": new_attrs,
+                "changed_attrs": changed_attrs,
+                "added_attrs": added_attrs,
+                "removed_attrs": removed_attrs,
+                "value": port.get_last_read_value(),
+            }
+        )
 
         await self.push_template_message(event, context)
 
     async def on_port_add(self, event: core_events.Event, port: core_ports.BasePort, attrs: Attributes) -> None:
         context = self.get_common_context(event)
-        context.update({
-            'port': port,
-            'attrs': attrs,
-            'value': port.get_last_read_value()
-        })
+        context.update({"port": port, "attrs": attrs, "value": port.get_last_read_value()})
 
         await self.push_template_message(event, context)
 
     async def on_port_remove(self, event: core_events.Event, port: core_ports.BasePort, attrs: Attributes) -> None:
         context = self.get_common_context(event)
-        context.update({
-            'port': port,
-            'attrs': attrs,
-            'value': port.get_last_read_value()
-        })
+        context.update({"port": port, "attrs": attrs, "value": port.get_last_read_value()})
 
         await self.push_template_message(event, context)
 
@@ -224,18 +201,20 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         new_attrs: Attributes,
         changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
-        removed_attrs: Attributes
+        removed_attrs: Attributes,
     ) -> None:
 
         context = self.get_common_context(event)
-        context.update({
-            'device': device,
-            'old_attrs': old_attrs,
-            'new_attrs': new_attrs,
-            'changed_attrs': changed_attrs,
-            'added_attrs': added_attrs,
-            'removed_attrs': removed_attrs,
-        })
+        context.update(
+            {
+                "device": device,
+                "old_attrs": old_attrs,
+                "new_attrs": new_attrs,
+                "changed_attrs": changed_attrs,
+                "added_attrs": added_attrs,
+                "removed_attrs": removed_attrs,
+            }
+        )
 
         await self.push_template_message(event, context)
 
@@ -252,47 +231,37 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         new_attrs: Attributes,
         changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
-        removed_attrs: Attributes
+        removed_attrs: Attributes,
     ) -> None:
 
         context = self.get_common_context(event)
-        context.update({
-            'slave': slave,
-            'old_attrs': old_attrs,
-            'new_attrs': new_attrs,
-            'changed_attrs': changed_attrs,
-            'added_attrs': added_attrs,
-            'removed_attrs': removed_attrs,
-        })
+        context.update(
+            {
+                "slave": slave,
+                "old_attrs": old_attrs,
+                "new_attrs": new_attrs,
+                "changed_attrs": changed_attrs,
+                "added_attrs": added_attrs,
+                "removed_attrs": removed_attrs,
+            }
+        )
 
         await self.push_template_message(event, context)
 
     async def on_slave_device_add(
-        self,
-        event: core_events.Event,
-        slave: slaves_devices.Slave,
-        attrs: Attributes
+        self, event: core_events.Event, slave: slaves_devices.Slave, attrs: Attributes
     ) -> None:
 
         context = self.get_common_context(event)
-        context.update({
-            'slave': slave,
-            'attrs': attrs
-        })
+        context.update({"slave": slave, "attrs": attrs})
 
         await self.push_template_message(event, context)
 
     async def on_slave_device_remove(
-        self,
-        event: core_events.Event,
-        slave: slaves_devices.Slave,
-        attrs: Attributes
+        self, event: core_events.Event, slave: slaves_devices.Slave, attrs: Attributes
     ) -> None:
 
         context = self.get_common_context(event)
-        context.update({
-            'slave': slave,
-            'attrs': attrs
-        })
+        context.update({"slave": slave, "attrs": attrs})
 
         await self.push_template_message(event, context)

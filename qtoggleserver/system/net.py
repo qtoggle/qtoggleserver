@@ -22,35 +22,35 @@ def has_ip_support() -> bool:
 def get_ip_config() -> dict[str, str]:
     return run_get_cmd(
         settings.system.net.ip.get_cmd,
-        cmd_name='IP config',
+        cmd_name="IP config",
         exc_class=NetError,
         required_fields=[
-            'address',
-            'netmask',
-            'gateway',
-            'dns',
-            'address_current',
-            'netmask_current',
-            'gateway_current',
-            'dns_current'
-        ]
+            "address",
+            "netmask",
+            "gateway",
+            "dns",
+            "address_current",
+            "netmask_current",
+            "gateway_current",
+            "dns_current",
+        ],
     )
 
 
 def set_ip_config(address: str, netmask: str, gateway: str, dns: str) -> None:
     run_set_cmd(
         settings.system.net.ip.set_cmd,
-        cmd_name='IP config',
+        cmd_name="IP config",
         exc_class=NetError,
         address=address,
         netmask=netmask,
         gateway=gateway,
-        dns=dns
+        dns=dns,
     )
 
 
 def reset_ip_config() -> None:
-    set_ip_config(address='', netmask='', gateway='', dns='')
+    set_ip_config(address="", netmask="", gateway="", dns="")
 
 
 def has_wifi_support() -> bool:
@@ -60,14 +60,14 @@ def has_wifi_support() -> bool:
 def get_wifi_config() -> dict[str, str]:
     result = run_get_cmd(
         settings.system.net.wifi.get_cmd,
-        cmd_name='Wi-Fi config',
+        cmd_name="Wi-Fi config",
         log_values=False,
         exc_class=NetError,
-        required_fields=['ssid', 'psk', 'bssid', 'bssid_current', 'rssi_current']
+        required_fields=["ssid", "psk", "bssid", "bssid_current", "rssi_current"],
     )
 
-    if result['rssi_current']:
-        rssi = int(result['rssi_current'])
+    if result["rssi_current"]:
+        rssi = int(result["rssi_current"])
         if rssi >= WIFI_RSSI_EXCELLENT:
             strength = 3
         elif rssi >= WIFI_RSSI_GOOD:
@@ -77,9 +77,9 @@ def get_wifi_config() -> dict[str, str]:
         else:
             strength = 0
 
-        result['signal_strength_current'] = str(strength)
+        result["signal_strength_current"] = str(strength)
     else:
-        result['signal_strength_current'] = '0'
+        result["signal_strength_current"] = "0"
 
     return result
 
@@ -87,31 +87,31 @@ def get_wifi_config() -> dict[str, str]:
 def set_wifi_config(ssid: str, psk: str, bssid: str) -> None:
     run_set_cmd(
         settings.system.net.wifi.set_cmd,
-        cmd_name='Wi-Fi config',
+        cmd_name="Wi-Fi config",
         exc_class=NetError,
         log_values=False,
         ssid=ssid,
         psk=psk,
-        bssid=bssid
+        bssid=bssid,
     )
 
 
 def reset_wifi_config() -> None:
-    set_wifi_config(ssid='', psk='', bssid='')
+    set_wifi_config(ssid="", psk="", bssid="")
 
 
 def get_default_interface() -> Optional[str]:
     try:
-        output = subprocess.check_output(['ip', 'route']).decode().strip()
+        output = subprocess.check_output(["ip", "route"]).decode().strip()
     except Exception as e:
-        raise NetError('Could not determine default route') from e
+        raise NetError("Could not determine default route") from e
 
-    lines = output.split('\n')
+    lines = output.split("\n")
     if not lines:
-        raise NetError('Could not determine default route')
+        raise NetError("Could not determine default route")
 
-    line = next((line for line in lines if line.count('default via')), None)
+    line = next((line for line in lines if line.count("default via")), None)
     if not line:
-        return
+        return None
 
     return line.split()[4]  # the 5th part is the interface

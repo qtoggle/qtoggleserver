@@ -18,18 +18,18 @@ _thread_local: threading.local = threading.local()
 
 
 async def _get_driver() -> BaseDriver:
-    if not hasattr(_thread_local, 'driver'):
+    if not hasattr(_thread_local, "driver"):
         driver_args = conf_utils.obj_to_dict(settings.persist)
-        driver_class_path = driver_args.pop('driver')
+        driver_class_path = driver_args.pop("driver")
 
         try:
-            logger.debug('loading persistence driver %s', driver_class_path)
+            logger.debug("loading persistence driver %s", driver_class_path)
             driver_class = dynload_utils.load_attr(driver_class_path)
             driver = driver_class(**driver_args)
             await driver.init()
             _thread_local.driver = driver
         except Exception as e:
-            logger.error('failed to load persistence driver %s: %s', driver_class_path, e, exc_info=True)
+            logger.error("failed to load persistence driver %s: %s", driver_class_path, e, exc_info=True)
 
             raise
 
@@ -41,7 +41,7 @@ async def query(
     fields: Optional[list[str]] = None,
     filt: Optional[dict[str, Any]] = None,
     sort: Optional[Union[str, list[str]]] = None,
-    limit: Optional[int] = None
+    limit: Optional[int] = None,
 ) -> Iterable[Record]:
     """Return records from `collection`.
 
@@ -56,9 +56,9 @@ async def query(
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
-            'querying %s (%s) where %s (sort=%s, limit=%s)',
+            "querying %s (%s) where %s (sort=%s, limit=%s)",
             collection,
-            json_utils.dumps(fields) if fields else 'all fields',
+            json_utils.dumps(fields) if fields else "all fields",
             json_utils.dumps(filt, extra_types=json_utils.EXTRA_TYPES_EXTENDED),
             json_utils.dumps(sort),
             json_utils.dumps(limit),
@@ -70,10 +70,7 @@ async def query(
         sort = [sort]
 
     # Transform '-field' into (field, descending)
-    sort = [
-        (s[1:], True) if s.startswith('-') else (s, False)
-        for s in sort
-    ]
+    sort = [(s[1:], True) if s.startswith("-") else (s, False) for s in sort]
 
     driver = await _get_driver()
     return await driver.query(collection, fields, filt, sort, limit)
@@ -84,12 +81,12 @@ async def get(collection: str, id_: Id) -> Optional[Record]:
 
     If no such record is found, `None` is returned."""
 
-    logger.debug('getting record with id %s from %s', id_, collection)
+    logger.debug("getting record with id %s from %s", id_, collection)
 
     driver = await _get_driver()
-    records = list(await driver.query(collection, fields=None, filt={'id': id_}, sort=[], limit=1))
+    records = list(await driver.query(collection, fields=None, filt={"id": id_}, sort=[], limit=1))
     if len(records) > 1:
-        logger.warning('more than one record with same id %s found in collection %s', id_, collection)
+        logger.warning("more than one record with same id %s found in collection %s", id_, collection)
 
     if records:
         return records[0]
@@ -103,19 +100,19 @@ async def get_value(name: str, default: Optional[Any] = None) -> Any:
 
     If no such record is found, `default` is returned."""
 
-    logger.debug('getting value of %s', name)
+    logger.debug("getting value of %s", name)
 
     driver = await _get_driver()
     records = list(await driver.query(name, fields=None, filt={}, sort=[], limit=2))
     if len(records) > 1:
-        logger.warning('more than one record found in single-value collection %s', name)
+        logger.warning("more than one record found in single-value collection %s", name)
         record = records[0]
     elif len(records) > 0:
         record = records[0]
     else:
         return default
 
-    return record['value']
+    return record["value"]
 
 
 async def set_value(name: str, value: Any) -> None:
@@ -123,18 +120,18 @@ async def set_value(name: str, value: Any) -> None:
     considering the fist (and only) record."""
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('setting %s to %s', name, json_utils.dumps(value, extra_types=json_utils.EXTRA_TYPES_EXTENDED))
+        logger.debug("setting %s to %s", name, json_utils.dumps(value, extra_types=json_utils.EXTRA_TYPES_EXTENDED))
 
     driver = await _get_driver()
-    record = {'value': value}
+    record = {"value": value}
 
-    records = list(await driver.query(name, fields=['id'], filt={}, sort=[], limit=2))
+    records = list(await driver.query(name, fields=["id"], filt={}, sort=[], limit=2))
     if len(records) > 1:
-        logger.warning('more than one record found in single-value collection %s', name)
+        logger.warning("more than one record found in single-value collection %s", name)
 
-        id_ = records[0]['id']
+        id_ = records[0]["id"]
     elif len(records) > 0:
-        id_ = records[0]['id']
+        id_ = records[0]["id"]
 
     else:
         id_ = None
@@ -153,7 +150,7 @@ async def insert(collection: str, record: Record) -> Id:
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
-            'inserting %s into %s', json_utils.dumps(record, extra_types=json_utils.EXTRA_TYPES_EXTENDED), collection
+            "inserting %s into %s", json_utils.dumps(record, extra_types=json_utils.EXTRA_TYPES_EXTENDED), collection
         )
 
     driver = await _get_driver()
@@ -170,16 +167,16 @@ async def update(collection: str, record_part: Record, filt: Optional[dict[str, 
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
-            'updating %s where %s with %s',
+            "updating %s where %s with %s",
             collection,
             json_utils.dumps(filt or {}, extra_types=json_utils.EXTRA_TYPES_EXTENDED),
-            json_utils.dumps(record_part, extra_types=json_utils.EXTRA_TYPES_EXTENDED)
+            json_utils.dumps(record_part, extra_types=json_utils.EXTRA_TYPES_EXTENDED),
         )
 
     driver = await _get_driver()
     count = await driver.update(collection, record_part, filt or {})
 
-    logger.debug('modified %s records in %s', count, collection)
+    logger.debug("modified %s records in %s", count, collection)
 
     return count
 
@@ -191,23 +188,23 @@ async def replace(collection: str, id_: Id, record: Record) -> bool:
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
-            'replacing record with id %s with %s in %s',
+            "replacing record with id %s with %s in %s",
             id_,
             json_utils.dumps(record, extra_types=json_utils.EXTRA_TYPES_EXTENDED),
-            collection
+            collection,
         )
 
     record = dict(record, id=id_)  # make sure the new record contains the id field
     driver = await _get_driver()
     replaced = await driver.replace(collection, id_, record)
     if replaced:
-        logger.debug('replaced record with id %s in %s', id_, collection)
+        logger.debug("replaced record with id %s in %s", id_, collection)
 
         return False
 
     else:
         await driver.insert(collection, dict(record, id=id_))
-        logger.debug('inserted record with id %s in %s', id_, collection)
+        logger.debug("inserted record with id %s in %s", id_, collection)
 
         return True
 
@@ -222,14 +219,15 @@ async def remove(collection: str, filt: Optional[dict[str, Any]] = None) -> int:
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
-            'removing from %s where %s',
-            collection, json_utils.dumps(filt or {}, extra_types=json_utils.EXTRA_TYPES_EXTENDED),
+            "removing from %s where %s",
+            collection,
+            json_utils.dumps(filt or {}, extra_types=json_utils.EXTRA_TYPES_EXTENDED),
         )
 
     driver = await _get_driver()
     count = await driver.remove(collection, filt or {})
 
-    logger.debug('removed %s records from %s', count, collection)
+    logger.debug("removed %s records from %s", count, collection)
 
     return count
 
@@ -253,12 +251,12 @@ async def get_samples_slice(
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
-            'getting samples of object %s from %s between %s and %s (sort=%s, limit=%s)',
+            "getting samples of object %s from %s between %s and %s (sort=%s, limit=%s)",
             obj_id,
             collection,
             json_utils.dumps(from_timestamp),
             json_utils.dumps(to_timestamp),
-            ['asc', 'desc'][sort_desc],
+            ["asc", "desc"][sort_desc],
             json_utils.dumps(limit),
         )
 
@@ -273,7 +271,7 @@ async def get_samples_by_timestamp(collection: str, obj_id: Id, timestamps: list
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
-            'getting samples of object %s from %s for %d timestamps',
+            "getting samples of object %s from %s for %d timestamps",
             obj_id,
             collection,
             len(timestamps),
@@ -288,7 +286,7 @@ async def save_sample(collection: str, obj_id: Id, timestamp: int, value: Sample
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
-            'saving sample value %s of object %s at %s into %s',
+            "saving sample value %s of object %s at %s into %s",
             json_utils.dumps(value),
             obj_id,
             timestamp,
@@ -316,8 +314,8 @@ async def remove_samples(
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
-            'removing samples of objects (%s) between %s and %s from %s',
-            ', '.join(obj_ids) if obj_ids else 'all objects',
+            "removing samples of objects (%s) between %s and %s from %s",
+            ", ".join(obj_ids) if obj_ids else "all objects",
             json_utils.dumps(from_timestamp),
             json_utils.dumps(to_timestamp),
             collection,
@@ -325,7 +323,7 @@ async def remove_samples(
 
     driver = await _get_driver()
     count = await driver.remove_samples(collection, obj_ids, from_timestamp, to_timestamp)
-    logger.debug('removed %s samples', count, collection)
+    logger.debug("removed %s samples", count, collection)
 
     return count
 
@@ -336,7 +334,7 @@ def is_samples_supported() -> bool:
     # We need this function to *not* be async, therefore we try to obtain a reference to the existing driver rather than
     # calling the async function `_get_driver()`. We rely on the fact that it will always be called after driver
     # initialization and thus the `_thread_local` variable will have the `driver` attribute set.
-    driver = getattr(_thread_local, 'driver', None)
+    driver = getattr(_thread_local, "driver", None)
     if not driver:
         return False
 
@@ -356,13 +354,10 @@ async def ensure_index(collection: str, index: Union[str, list[str], None] = Non
 
     # Transform '-field' into (field, descending)
     if index:
-        index = [
-            (i[1:], True) if i.startswith('-') else (i, False)
-            for i in index
-        ]
+        index = [(i[1:], True) if i.startswith("-") else (i, False) for i in index]
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug('ensuring index %s in %s', json_utils.dumps(index), collection)
+        logger.debug("ensuring index %s in %s", json_utils.dumps(index), collection)
 
     driver = await _get_driver()
     await driver.ensure_index(collection, index or [])
@@ -374,7 +369,7 @@ async def init() -> None:
     driver = await _get_driver()
 
     # Do a dummy query so that if there's any problem in querying the collection, an exception is raised now.
-    await driver.query('device', fields=None, filt={}, sort=[], limit=1)
+    await driver.query("device", fields=None, filt={}, sort=[], limit=1)
 
 
 async def cleanup() -> None:

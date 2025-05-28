@@ -11,13 +11,10 @@ import psutil
 from .exceptions import APException
 
 
-BINARY = 'dnsmasq'
+BINARY = "dnsmasq"
 
 DNSMASQ_CONF_TEMPLATE = (
-    'interface={interface}\n'
-    'dhcp-range={start_ip},{stop_ip},24h\n'
-    'dhcp-leasefile={leases_file}\n'
-    'no-ping\n'
+    "interface={interface}\n" "dhcp-range={start_ip},{stop_ip},24h\n" "dhcp-leasefile={leases_file}\n" "no-ping\n"
 )
 
 STOP_TIMEOUT = 2
@@ -39,7 +36,7 @@ class DNSMasq:
         start_ip: str,
         stop_ip: str,
         dnsmasq_binary: Optional[str] = None,
-        dnsmasq_log: Optional[str] = None
+        dnsmasq_log: Optional[str] = None,
     ) -> None:
 
         self._interface: str = interface
@@ -65,41 +62,39 @@ class DNSMasq:
 
     def start(self) -> None:
         logger.debug(
-            'starting dnsmasq with IP range %s - %s and own IP %s/%d',
+            "starting dnsmasq with IP range %s - %s and own IP %s/%d",
             self._start_ip,
             self._stop_ip,
             self._own_ip,
-            self._mask_len
+            self._mask_len,
         )
 
         binary = self._binary or self._find_binary()
         if not binary:
-            raise DNSMasqException('Could not find %s binary', BINARY)
+            raise DNSMasqException("Could not find %s binary", BINARY)
 
         self.ensure_own_ip()
 
-        self._leases_file = tempfile.NamedTemporaryFile(mode='w+t')
+        self._leases_file = tempfile.NamedTemporaryFile(mode="w+t")
 
         conf = DNSMASQ_CONF_TEMPLATE.format(
             start_ip=self._start_ip,
             stop_ip=self._stop_ip,
             interface=self._interface,
-            leases_file=self._leases_file.name
+            leases_file=self._leases_file.name,
         )
 
-        self._log_file = open(self._log, 'wt')
-        self._conf_file = tempfile.NamedTemporaryFile(mode='wt')
+        self._log_file = open(self._log, "wt")
+        self._conf_file = tempfile.NamedTemporaryFile(mode="wt")
         self._conf_file.write(conf)
         self._conf_file.flush()
 
         self._process = subprocess.Popen(
-            [binary, '-d', '-C', self._conf_file.name],
-            stdout=self._log_file,
-            stderr=subprocess.STDOUT
+            [binary, "-d", "-C", self._conf_file.name], stdout=self._log_file, stderr=subprocess.STDOUT
         )
 
     async def stop(self) -> None:
-        logger.debug('stopping dnsmasq')
+        logger.debug("stopping dnsmasq")
 
         if self._process:
             self._process.terminate()
@@ -112,7 +107,7 @@ class DNSMasq:
 
             # If process could not be stopped in time, kill it
             if self._process.poll() is None:
-                logger.error('failed to stop hostapd within %d seconds, killing it', STOP_TIMEOUT)
+                logger.error("failed to stop hostapd within %d seconds, killing it", STOP_TIMEOUT)
                 self._process.kill()
                 await asyncio.sleep(1)
                 self._process.poll()  # we want no zombies
@@ -137,25 +132,23 @@ class DNSMasq:
     def ensure_own_ip(self) -> None:
         try:
             subprocess.check_call(
-                ['ip', 'addr', 'flush', 'dev', self._interface],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                ["ip", "addr", "flush", "dev", self._interface], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
         except subprocess.CalledProcessError:
-            raise DNSMasqException('Could not clear current own IP address')
+            raise DNSMasqException("Could not clear current own IP address")
 
         try:
             subprocess.check_call(
-                ['ip', 'addr', 'add', f'{self._own_ip}/{self._mask_len}', 'dev', self._interface],
+                ["ip", "addr", "add", f"{self._own_ip}/{self._mask_len}", "dev", self._interface],
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.DEVNULL,
             )
         except subprocess.CalledProcessError:
-            raise DNSMasqException('Could not set own IP address')
+            raise DNSMasqException("Could not set own IP address")
 
     def _find_binary(self) -> Optional[str]:
         try:
-            return subprocess.check_output(['which', BINARY], stderr=subprocess.DEVNULL).decode().strip()
+            return subprocess.check_output(["which", BINARY], stderr=subprocess.DEVNULL).decode().strip()
         except subprocess.CalledProcessError:
             return None
 
@@ -174,12 +167,14 @@ class DNSMasq:
                 continue
 
             timestamp, mac_address, ip_address, hostname = parts[:4]
-            leases.append({
-                'timestamp': int(timestamp),
-                'mac_address': mac_address,
-                'ip_address': ip_address,
-                'hostname': hostname
-            })
+            leases.append(
+                {
+                    "timestamp": int(timestamp),
+                    "mac_address": mac_address,
+                    "ip_address": ip_address,
+                    "hostname": hostname,
+                }
+            )
 
         return leases
 
