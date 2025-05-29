@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 import time
 
-from typing import TextIO
+from typing import TextIO, cast
 
 import psutil
 
@@ -74,7 +74,7 @@ class DNSMasq:
 
         self.ensure_own_ip()
 
-        self._leases_file = tempfile.NamedTemporaryFile(mode="w+t")
+        self._leases_file = cast(TextIO, tempfile.NamedTemporaryFile(mode="w+t"))
 
         conf = DNSMASQ_CONF_TEMPLATE.format(
             start_ip=self._start_ip,
@@ -83,8 +83,9 @@ class DNSMasq:
             leases_file=self._leases_file.name,
         )
 
-        self._log_file = open(self._log, "w")
-        self._conf_file = tempfile.NamedTemporaryFile(mode="wt")
+        if self._log:
+            self._log_file = cast(TextIO, open(self._log, "w"))
+        self._conf_file = cast(TextIO, tempfile.NamedTemporaryFile(mode="wt"))
         self._conf_file.write(conf)
         self._conf_file.flush()
 
@@ -152,10 +153,13 @@ class DNSMasq:
             return None
 
     def _read_leases_file(self) -> list[dict[str, str | int]]:
+        if not self._leases_file:
+            return []
+
         self._leases_file.seek(0)
         lines = self._leases_file.readlines()
 
-        leases = []
+        leases: list[dict[str, str | int]] = []
         for line in lines:
             line = line.strip()
             if not line:

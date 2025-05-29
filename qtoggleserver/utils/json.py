@@ -2,7 +2,7 @@ import datetime
 import json
 import math
 
-from typing import Any
+from typing import Any, cast
 
 import jsonpointer
 
@@ -27,6 +27,7 @@ EXTRA_TYPES_EXTENDED = "extended"
 
 
 def _replace_nan_inf_rec(obj: Any, replace_value: Any) -> Any:
+    new_obj: Any
     if isinstance(obj, dict):
         new_obj = {}
         for k, v in obj.items():
@@ -102,10 +103,10 @@ def decode_json_hook_iso(obj: dict) -> Any:
     return obj
 
 
-def decode_json_hook_extended(obj: dict) -> Any:
+def decode_json_hook_extended(obj: dict[Any, Any]) -> Any:
     __t = obj.get(TYPE_FIELD)
     if __t is not None:
-        __v = obj.get(VALUE_FIELD)
+        __v = cast(str, obj.get(VALUE_FIELD))
         if __t == DATE_TYPE:
             try:
                 return datetime.datetime.strptime(__v, DATE_FORMAT).date()

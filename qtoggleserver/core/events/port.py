@@ -11,7 +11,7 @@ from .base import Event
 
 
 class PortEvent(Event):
-    def __init__(self, port: Any, timestamp: float = None) -> None:
+    def __init__(self, port: Any, timestamp: float | None = None) -> None:
         self._port = port
 
         super().__init__(timestamp)

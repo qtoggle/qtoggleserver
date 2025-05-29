@@ -27,7 +27,7 @@ class NoSuchFunction(HTTPError):
 
 
 class BaseHandler(RequestHandler):
-    _UNDEFINED = {}
+    _UNDEFINED: dict = {}
 
     def __init__(self, *args, **kwargs) -> None:
         self._json: Any = self._UNDEFINED

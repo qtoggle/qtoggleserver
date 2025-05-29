@@ -21,7 +21,7 @@ logger = logging.getLogger(__package__)
 class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
     logger = logger
 
-    def __init__(self, *, filter: dict = None, name: str | None = None) -> None:
+    def __init__(self, *, filter: dict | None = None, name: str | None = None) -> None:
         self._filter: dict = filter or {}
         self._filter_prepared: bool = False
 

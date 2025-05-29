@@ -10,7 +10,7 @@ from qtoggleserver.core.typing import GenericJSONDict
 
 
 class SlaveDeviceEvent(core_events.Event):
-    def __init__(self, slave: Any, timestamp: float = None) -> None:
+    def __init__(self, slave: Any, timestamp: float | None = None) -> None:
         self._slave = slave
 
         super().__init__(timestamp)

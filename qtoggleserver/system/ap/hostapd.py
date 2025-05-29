@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import time
 
-from typing import TextIO
+from typing import TextIO, cast
 
 import psutil
 
@@ -79,8 +79,9 @@ class HostAPD:
         conf_template = CONF_TEMPLATE if self._psk else CONF_NO_PSK_TEMPLATE
         conf = conf_template.format(ssid=self._ssid, psk=self._psk, interface=self._interface)
 
-        self._log_file = open(self._log, "w")
-        self._conf_file = tempfile.NamedTemporaryFile(mode="wt")
+        if self._log:
+            self._log_file = cast(TextIO, open(self._log, "w"))
+        self._conf_file = cast(TextIO, tempfile.NamedTemporaryFile(mode="wt"))
         self._conf_file.write(conf)
         self._conf_file.flush()
 

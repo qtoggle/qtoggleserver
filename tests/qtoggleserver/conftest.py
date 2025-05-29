@@ -29,7 +29,7 @@ tz_info = pytz.timezone("Europe/Bucharest")
 @pytest.fixture(scope="session", autouse=True)
 def init_settings():
     settings.persist.driver = "qtoggleserver.drivers.persist.JSONDriver"
-    settings.persist.file_path = None
+    settings.persist.file_path = ""
 
 
 @pytest.fixture(scope="session")

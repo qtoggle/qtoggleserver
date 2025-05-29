@@ -506,12 +506,12 @@ class Slave(logging_utils.LoggableMixin):
         await core_events.trigger(events.SlaveDeviceUpdate(self))
 
     async def api_call(
-        self, method: str, path: str, body: Any = None, timeout: int = None, retry_counter: int | None = 0
+        self, method: str, path: str, body: Any = None, timeout: int | None = None, retry_counter: int | None = 0
     ) -> Any:
         return await self._parallel_api_caller.call(self._api_call, method, path, body, timeout, retry_counter)
 
     async def _api_call(
-        self, method: str, path: str, body: Any = None, timeout: int = None, retry_counter: int | None = 0
+        self, method: str, path: str, body: Any = None, timeout: int | None = None, retry_counter: int | None = 0
     ) -> Any:
         if method == "GET":
             body = None

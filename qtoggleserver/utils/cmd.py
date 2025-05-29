@@ -9,17 +9,17 @@ def run_get_cmd(
     get_cmd: str,
     cmd_name: str | None = None,
     log_values: bool = True,
-    exc_class: type = None,
+    exc_class: type | None = None,
     required_fields: list[str] | None = None,
 ) -> dict[str, str]:
     exc_class = exc_class or Exception
 
     try:
-        config = subprocess.check_output(get_cmd, stderr=subprocess.STDOUT, shell=True)
+        config_bytes = subprocess.check_output(get_cmd, stderr=subprocess.STDOUT, shell=True)
     except Exception as e:
         raise exc_class(f"{cmd_name or get_cmd} get command failed: {e}") from e
 
-    config = config.strip().decode()
+    config = config_bytes.strip().decode()
     config_lines = config.split("\n")
     config_dict = {}
     for line in config_lines:

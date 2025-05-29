@@ -71,10 +71,10 @@ async def query(
         sort = [sort]
 
     # Transform '-field' into (field, descending)
-    sort = [(s[1:], True) if s.startswith("-") else (s, False) for s in sort]
+    sort_tuples = [(s[1:], True) if s.startswith("-") else (s, False) for s in sort]
 
     driver = await _get_driver()
-    return await driver.query(collection, fields, filt, sort, limit)
+    return await driver.query(collection, fields, filt, sort_tuples, limit)
 
 
 async def get(collection: str, id_: Id) -> Record | None:
@@ -354,14 +354,15 @@ async def ensure_index(collection: str, index: str | list[str] | None = None) ->
         index = [index]
 
     # Transform '-field' into (field, descending)
+    index_tuples = []
     if index:
-        index = [(i[1:], True) if i.startswith("-") else (i, False) for i in index]
+        index_tuples = [(i[1:], True) if i.startswith("-") else (i, False) for i in index]
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug("ensuring index %s in %s", json_utils.dumps(index), collection)
+        logger.debug("ensuring index %s in %s", json_utils.dumps(index_tuples), collection)
 
     driver = await _get_driver()
-    await driver.ensure_index(collection, index or [])
+    await driver.ensure_index(collection, index_tuples)
 
 
 async def init() -> None:

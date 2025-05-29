@@ -18,6 +18,8 @@ def has_ip_support() -> bool:
 
 
 def get_ip_config() -> dict[str, str]:
+    assert settings.system.net.ip.get_cmd
+
     return run_get_cmd(
         settings.system.net.ip.get_cmd,
         cmd_name="IP config",
@@ -36,6 +38,8 @@ def get_ip_config() -> dict[str, str]:
 
 
 def set_ip_config(address: str, netmask: str, gateway: str, dns: str) -> None:
+    assert settings.system.net.ip.set_cmd
+
     run_set_cmd(
         settings.system.net.ip.set_cmd,
         cmd_name="IP config",
@@ -56,6 +60,8 @@ def has_wifi_support() -> bool:
 
 
 def get_wifi_config() -> dict[str, str]:
+    assert settings.system.net.wifi.get_cmd
+
     result = run_get_cmd(
         settings.system.net.wifi.get_cmd,
         cmd_name="Wi-Fi config",
@@ -83,6 +89,8 @@ def get_wifi_config() -> dict[str, str]:
 
 
 def set_wifi_config(ssid: str, psk: str, bssid: str) -> None:
+    assert settings.system.net.wifi.set_cmd
+
     run_set_cmd(
         settings.system.net.wifi.set_cmd,
         cmd_name="Wi-Fi config",

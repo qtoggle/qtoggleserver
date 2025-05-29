@@ -16,9 +16,9 @@ logger = logging.getLogger(__package__)
 class Event(metaclass=abc.ABCMeta):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_NONE
     TYPE = "base-event"
-    _UNINITIALIZED = {}
+    _UNINITIALIZED: dict = {}
 
-    def __init__(self, timestamp: float = None) -> None:
+    def __init__(self, timestamp: float | None = None) -> None:
         self._type: str = self.TYPE
         if timestamp is None:
             if system.date.has_real_date_time():

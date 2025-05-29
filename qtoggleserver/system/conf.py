@@ -22,6 +22,8 @@ def conf_file_to_dict() -> dict[str, Any]:
     if not can_write_conf_file():
         raise Exception("Configuration file not available")
 
+    assert settings.source
+
     return conf_utils.config_from_file(settings.source)
 
 
@@ -30,6 +32,8 @@ def conf_file_from_dict(d: dict[str, Any]) -> None:
         raise Exception("Configuration file not available")
 
     logger.debug("updating configuration file %s", settings.source)
+
+    assert settings.source
 
     existing_d = conf_utils.config_from_file(settings.source)
     existing_d.update(d)

@@ -74,7 +74,7 @@ def _build_dhcp_options(hostname: str | None) -> bytes:
 
 
 def _build_dhcp_header(mac_address: str, xid: int, own_ip_address: str) -> bytes:
-    own_ip_address = [int(p) for p in own_ip_address.split(".")]
+    own_ip_address_list = [int(p) for p in own_ip_address.split(".")]
 
     dhcp_header = struct.pack("B", DHCP_REQUEST)  # opcode
     dhcp_header += struct.pack("B", ARPHRD_ETHER)  # hardware address type
@@ -86,7 +86,7 @@ def _build_dhcp_header(mac_address: str, xid: int, own_ip_address: str) -> bytes
     dhcp_header += struct.pack("BBBB", 0, 0, 0, 0)  # client IP
     dhcp_header += struct.pack("BBBB", 0, 0, 0, 0)  # your IP
     dhcp_header += struct.pack("BBBB", 0, 0, 0, 0)  # server IP
-    dhcp_header += struct.pack("BBBB", *own_ip_address)  # gateway IP
+    dhcp_header += struct.pack("BBBB", *own_ip_address_list)  # gateway IP
     dhcp_header += bytes.fromhex(re.sub("[^a-fA-F0-9]", "", mac_address))  # client MAC
     dhcp_header += b"\x00" * 10  # remaining hardware address space
     dhcp_header += b"\x00" * 64  # server hostname
@@ -166,8 +166,8 @@ def _check_received_frame(frame: bytes, expected_xid: int) -> DHCPReply | None:
     # At this point we can consider we're dealing with a DHCP reply
 
     xid = struct.unpack("!L", dhcp_header[4:8])[0]
-    your_ip = dhcp_header[16:20]
-    your_ip = "{:d}.{:d}.{:d}.{:d}".format(*your_ip)
+    your_ip_bytes = dhcp_header[16:20]
+    your_ip = "{:d}.{:d}.{:d}.{:d}".format(*your_ip_bytes)
     dhcp_reply = DHCPReply(ip_address=your_ip, xid=xid, timestamp=time.time())
 
     if expected_xid == xid:

@@ -185,7 +185,7 @@ async def handle_value_changes(
         port.push_eval()
 
 
-def force_eval_expressions(port: core_ports.BasePort = None) -> None:
+def force_eval_expressions(port: core_ports.BasePort | None = None) -> None:
     global _force_eval_all_expressions
 
     logger.debug("forcing expression evaluation for %s", port or "all ports")

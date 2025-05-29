@@ -34,6 +34,8 @@ class LiteralValue(Expression):
         if not sexpression:
             raise EmptyExpression()
 
+        value: EvalResult | None
+
         if sexpression == "true":
             value = 1
         elif sexpression == "false":

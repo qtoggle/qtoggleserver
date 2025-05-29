@@ -116,7 +116,7 @@ def _response_error_errno(eno: int | None) -> Error:
     elif eno in (socket.EAI_NONAME, socket.EAI_NODATA):
         return UnresolvableHostname()
     elif eno:
-        return OtherError(errno.errorcode.get(eno))
+        return OtherError(errno.errorcode.get(eno) or "ERROR")
 
     return OtherError("Unknown error")
 

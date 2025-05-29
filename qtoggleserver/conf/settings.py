@@ -104,7 +104,7 @@ class system:
 class frontend:
     enabled: bool = True
     debug: bool = False
-    static_url: str = None
+    static_url: str | None = None
     display_name: str = "qToggleServer"
     display_short_name: str = "qToggleServer"
     description: str = "An application to control qToggleServer"  # TODO: i18n
@@ -121,20 +121,20 @@ class slaves:
     class discover:
         request_timeout: int = 5
         dhcp_timeout: int = 10
-        dhcp_interface: str = None
+        dhcp_interface: str | None = None
 
         class ap:
-            interface: str = None
-            interface_cmd: str = None
+            interface: str | None = None
+            interface_cmd: str | None = None
             ssid: str = "qToggleSetup"
-            psk: str = None
+            psk: str | None = None
             own_ip: str = "192.168.43.1"
             mask_len: int = 24
             start_ip: str = "192.168.43.50"
             stop_ip: str = "192.168.43.250"
-            hostapd_binary: str = None
-            hostapd_cli_binary: str = None
-            dnsmasq_binary: str = None
+            hostapd_binary: str | None = None
+            hostapd_cli_binary: str | None = None
+            dnsmasq_binary: str | None = None
             hostapd_log: str = "/tmp/hostapd.log"
             dnsmasq_log: str = "/tmp/dnsmasq.log"
             finish_timeout: int = 300

@@ -57,7 +57,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         template: dict[str, str] | None = None,
         templates: dict[str, dict[str, str]] | None = None,
         skip_startup: int | bool = True,
-        filter: dict = None,
+        filter: dict | None = None,
         name: str | None = None,
     ) -> None:
         self._skip_startup: int | bool = skip_startup

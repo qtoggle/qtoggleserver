@@ -11,6 +11,6 @@ testpaths = ['tests/qtoggleserver']
 asyncio_mode = 'auto'
 addopts = '-v'
 
-[tool.black]
-target-version = ["py310"]
-line-length = 120
+[tool.mypy]
+explicit_package_bases = true
+ignore_missing_imports = true

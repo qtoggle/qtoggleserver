@@ -13,7 +13,7 @@ from typing import Any
 class ParallelCaller:
     def __init__(self, parallel: int = 1, max_queued: int = 0) -> None:
         self._queue: asyncio.Queue = asyncio.Queue(max_queued)
-        self._loop_tasks: list[asyncio.Task | None] = []
+        self._loop_tasks: list[asyncio.Task] = []
 
         # Start loop tasks
         for i in range(parallel):
@@ -32,6 +32,7 @@ class ParallelCaller:
             await when_ready.wait()
 
         # If an exception was raised, re-raise it
+        assert result["exc_info"]
         typ, val, tb = result["exc_info"]
         if typ:
             raise val
@@ -70,9 +71,9 @@ class ParallelCaller:
 
 
 class Timer:
-    def __init__(self, timeout: int, callback: Awaitable | Callable, *args, **kwargs) -> None:
+    def __init__(self, timeout: int, callback: Callable, *args, **kwargs) -> None:
         self._timeout: int = timeout
-        self._callback: Awaitable | Callable = callback
+        self._callback: Callable = callback
         self._args: tuple = args
         self._kwargs: dict = kwargs
         self._task: asyncio.Task | None = None
@@ -114,7 +115,6 @@ class ThreadedRunner(threading.Thread, metaclass=abc.ABCMeta):
         self._running: bool = False
         self._loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
         self._queue: queue.Queue = queue.Queue(queue_size or 0)
-        self._queue_size: int = queue_size
         self._stopped_future: asyncio.Future = self._loop.create_future()
 
         super().__init__()
@@ -161,5 +161,4 @@ async def await_later(delay: float, aw: Awaitable) -> None:
 
 def fire_and_forget(coro: Coroutine[Any, Any, Any]) -> None:
     task = asyncio.create_task(coro)
-    coro = task.get_coro()
-    weakref.finalize(task, coro.close)
+    weakref.finalize(task, task.get_coro().close)
