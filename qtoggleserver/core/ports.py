@@ -16,8 +16,8 @@ from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import history as core_history
-from qtoggleserver.core import main
 from qtoggleserver.core import sequences as core_sequences
+from qtoggleserver.core.expressions import exceptions as expressions_exceptions
 from qtoggleserver.core.typing import (
     Attribute,
     AttributeDefinitions,
@@ -558,7 +558,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             self.debug("checking for expression circular dependencies")
             await core_expressions.check_loops(self, expression)
-        except core_expressions.ExpressionParseError as e:
+        except expressions_exceptions.ExpressionParseError as e:
             self.error('failed to set expression "%s": %s', sexpression, e)
 
             raise InvalidAttributeValue("expression", details=e.to_json()) from e
@@ -591,11 +591,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     continue
 
                 if dep != f"${self._id}":
-                    raise core_expressions.ExternalDependency(port_id=dep[1:], pos=stransform_read.index(dep))
+                    raise expressions_exceptions.ExternalDependency(port_id=dep[1:], pos=stransform_read.index(dep))
 
             self.debug('setting read transform "%s"', transform_read)
             self._transform_read = transform_read
-        except core_expressions.ExpressionParseError as e:
+        except expressions_exceptions.ExpressionParseError as e:
             self.error('failed to set transform read expression "%s": %s', stransform_read, e)
 
             raise InvalidAttributeValue("transform_read", details=e.to_json()) from e
@@ -630,11 +630,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     continue
 
                 if dep != f"${self._id}":
-                    raise core_expressions.ExternalDependency(port_id=dep[1:], pos=stransform_write.index(dep))
+                    raise expressions_exceptions.ExternalDependency(port_id=dep[1:], pos=stransform_write.index(dep))
 
             self.debug('setting write transform "%s"', transform_write)
             self._transform_write = transform_write
-        except core_expressions.ExpressionParseError as e:
+        except expressions_exceptions.ExpressionParseError as e:
             self.error('failed to set transform write expression "%s": %s', stransform_write, e)
 
             raise InvalidAttributeValue("transform_write", details=e.to_json()) from e
@@ -682,7 +682,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             context = self._make_eval_context(port_values={self.get_id(): value})
             try:
                 value = await self.adapt_value_type(await self._transform_read.eval(context))
-            except core_expressions.ValueUnavailable:
+            except expressions_exceptions.ValueUnavailable:
                 value = None
 
         return value
@@ -697,7 +697,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             context = self._make_eval_context(port_values={self.get_id(): value})
             try:
                 value = await self.adapt_value_type(await self._transform_write.eval(context))
-            except core_expressions.ValueUnavailable:
+            except expressions_exceptions.ValueUnavailable:
                 value = None
             value_str = f"{value_str} ({json_utils.dumps(value)} after write transform)"
 
@@ -786,9 +786,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         try:
             self._evaling = True
             value = await expression.eval(context)
-        except core_expressions.ValueUnavailable:
+        except expressions_exceptions.ValueUnavailable:
             value = None
-        except core_expressions.ExpressionEvalError:
+        except expressions_exceptions.ExpressionEvalError:
             return
         except Exception as e:
             self.error('failed to evaluate expression "%s": %s', expression, e, exc_info=True)
@@ -950,7 +950,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                                 self._make_eval_context(port_values={self.get_id(): value})
                             )
                         )
-                    except core_expressions.ValueUnavailable:
+                    except expressions_exceptions.ValueUnavailable:
                         value = None
 
                 await self.write_value(value)
@@ -1251,3 +1251,6 @@ async def cleanup() -> None:
 async def reset() -> None:
     logger.debug("clearing ports persisted data")
     await persist.remove(BasePort.PERSIST_COLLECTION)
+
+
+from qtoggleserver.core import main  # noqa: E402

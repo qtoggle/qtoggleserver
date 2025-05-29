@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import abc
 
+from typing import TypeAlias
+
+from qtoggleserver.core.typing import NullablePortValue
+
 from .exceptions import EvalSkipped, ExpressionEvalError, ValueUnavailable
 
 
@@ -62,9 +66,4 @@ class EvalContext:
         return int(self.now_ms / 1000)
 
 
-# This needs to be imported here to avoid circular import issues
-from qtoggleserver.core import ports as core_ports  # noqa: E402
-from qtoggleserver.core.typing import NullablePortValue  # noqa: E402
-
-
-EvalResult = bool | int | float | core_ports.BasePort
+EvalResult: TypeAlias = bool | int | float | str

@@ -1,5 +1,6 @@
 from qtoggleserver import persist, system
-from qtoggleserver.core import history
+from qtoggleserver.core import history as core_history
+from qtoggleserver.core import ports as core_ports
 
 from .base import EvalContext, EvalResult
 from .exceptions import EvalSkipped, ExpressionEvalError, PortValueUnavailable
@@ -248,7 +249,7 @@ class HistoryFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
     DEPS = {"second"}
     ARG_KINDS = [PortRef]
-    ENABLED = history.is_enabled
+    ENABLED = core_history.is_enabled
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -262,7 +263,9 @@ class HistoryFunction(Function):
             raise EvalSkipped()
 
         args = await self.eval_args(context)
-        port, timestamp, max_diff = args
+        port_id, timestamp, max_diff = args
+        port = core_ports.get(port_id)
+        assert port
 
         # Transform everything to milliseconds
         timestamp *= 1000
@@ -304,7 +307,9 @@ class HistoryFunction(Function):
             consider_curr_value = from_timestamp <= context.now_ms
 
         if from_timestamp is not None or to_timestamp is not None:
-            samples = await history.get_samples_slice(port, from_timestamp, to_timestamp, limit=1, sort_desc=sort_desc)
+            samples = await core_history.get_samples_slice(
+                port, from_timestamp, to_timestamp, limit=1, sort_desc=sort_desc
+            )
             samples = list(samples)
         else:
             samples = []

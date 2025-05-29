@@ -4,6 +4,7 @@ import abc
 import asyncio
 import functools
 import hashlib
+import logging
 
 from collections.abc import Callable
 from typing import Any, cast
@@ -13,8 +14,10 @@ from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import logging as logging_utils
 
-from . import logger
 from .exceptions import NotOurPort
+
+
+logger = logging.getLogger(__package__)
 
 
 class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):

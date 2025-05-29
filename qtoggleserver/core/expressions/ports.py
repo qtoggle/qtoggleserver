@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import abc
 import re
 
-# Import core.ports after defining Expression, because core.ports.BasePort depends on Expression.
 from qtoggleserver.core import ports as core_ports
 
 from . import ROLE_TRANSFORM_READ, ROLE_TRANSFORM_WRITE
@@ -103,7 +104,7 @@ class PortRef(PortExpression):
         if not port:
             raise UnknownPortId(self.port_id)
 
-        return port
+        return port.get_id()
 
 
 class SelfPortRef(PortRef):

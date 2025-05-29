@@ -15,7 +15,8 @@ from qtoggleserver.core.api.funcs import various as various_api_funcs
 from qtoggleserver.core.api.funcs import webhooks as webhooks_api_funcs
 from qtoggleserver.frontend.api import funcs as frontend_api_funcs
 from qtoggleserver.peripherals.api import funcs as peripherals_api_funcs
-from qtoggleserver.slaves.api import funcs as slaves_api_funcs
+from qtoggleserver.slaves.api.funcs import devices as slaves_devices_api_funcs
+from qtoggleserver.slaves.api.funcs import discovered as slaves_discovered_api_funcs
 from qtoggleserver.system.api import funcs as system_api_funcs
 
 from .base import APIHandler, BaseHandler, NoSuchFunction
@@ -76,48 +77,48 @@ class AccessHandler(APIHandler):
 
 class SlaveDevicesHandler(APIHandler):
     async def get(self) -> None:
-        await self.call_api_func(slaves_api_funcs.get_slave_devices)
+        await self.call_api_func(slaves_devices_api_funcs.get_slave_devices)
 
     async def put(self) -> None:
-        await self.call_api_func(slaves_api_funcs.put_slave_devices, default_status=204)
+        await self.call_api_func(slaves_devices_api_funcs.put_slave_devices, default_status=204)
 
     async def post(self) -> None:
-        await self.call_api_func(slaves_api_funcs.post_slave_devices, default_status=201)
+        await self.call_api_func(slaves_devices_api_funcs.post_slave_devices, default_status=201)
 
 
 class SlaveDeviceHandler(APIHandler):
     async def patch(self, name: str) -> None:
-        await self.call_api_func(slaves_api_funcs.patch_slave_device, name=name, default_status=204)
+        await self.call_api_func(slaves_devices_api_funcs.patch_slave_device, name=name, default_status=204)
 
     async def delete(self, name: str) -> None:
-        await self.call_api_func(slaves_api_funcs.delete_slave_device, name=name, default_status=204)
+        await self.call_api_func(slaves_devices_api_funcs.delete_slave_device, name=name, default_status=204)
 
 
 class SlaveDeviceEventsHandler(APIHandler):
     AUTH_ENABLED = False  # we'll take care of the authentication inside API call functions
 
     async def post(self, name: str) -> None:
-        await self.call_api_func(slaves_api_funcs.post_slave_device_events, name=name, default_status=204)
+        await self.call_api_func(slaves_devices_api_funcs.post_slave_device_events, name=name, default_status=204)
 
 
 class SlaveDeviceForwardHandler(APIHandler):
     async def get(self, name: str, path: str) -> None:
-        await self.call_api_func(slaves_api_funcs.slave_device_forward, name=name, path=path)
+        await self.call_api_func(slaves_devices_api_funcs.slave_device_forward, name=name, path=path)
 
     post = patch = put = delete = get
 
 
 class DiscoveredHandler(APIHandler):
     async def get(self) -> None:
-        await self.call_api_func(slaves_api_funcs.get_discovered)
+        await self.call_api_func(slaves_discovered_api_funcs.get_discovered)
 
     async def delete(self) -> None:
-        await self.call_api_func(slaves_api_funcs.delete_discovered, default_status=204)
+        await self.call_api_func(slaves_discovered_api_funcs.delete_discovered, default_status=204)
 
 
 class DiscoveredDeviceHandler(APIHandler):
     async def patch(self, name: str) -> None:
-        await self.call_api_func(slaves_api_funcs.patch_discovered_device, name=name)
+        await self.call_api_func(slaves_discovered_api_funcs.patch_discovered_device, name=name)
 
 
 class PortsHandler(APIHandler):

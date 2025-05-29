@@ -8,6 +8,7 @@ from typing import Any
 
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.typing import GenericJSONDict
+from qtoggleserver.web import APIHandler
 
 
 API_VERSION = "1.1"
@@ -108,7 +109,3 @@ def api_call(access_level: int = ACCESS_LEVEL_NONE) -> Callable:
         return wrapper
 
     return decorator
-
-
-# Import this here to prevent errors due to circular imports
-from qtoggleserver.web import APIHandler  # noqa: E402

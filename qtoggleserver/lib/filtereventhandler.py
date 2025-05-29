@@ -5,6 +5,7 @@ import time
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import ports as core_ports
+from qtoggleserver.core.expressions import exceptions as expression_exceptions
 from qtoggleserver.core.typing import Attribute, Attributes, NullablePortValue
 from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.slaves import events as slaves_events
@@ -63,7 +64,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                     self._filter_port_value = core_expressions.parse(
                         self_port_id=None, sexpression=port_value, role=core_expressions.ROLE_FILTER
                     )
-                except core_expressions.ExpressionParseError as e:
+                except expression_exceptions.ExpressionParseError as e:
                     self.error('failed to parse port expression "%s": %s', port_value, e)
 
                     raise
