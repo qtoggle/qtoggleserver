@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 class APClient(logging_utils.LoggableMixin):
     def __init__(self, mac_address: str, ip_address: str, hostname: str, moment: datetime) -> None:
-
         self.mac_address: str = mac_address
         self.ip_address: str = ip_address
         self.hostname: str = hostname
@@ -31,7 +30,6 @@ class APClient(logging_utils.LoggableMixin):
     async def request(
         self, method: str, path: str, body: Any = None, admin_password: str | None = None, no_log: bool = False
     ) -> Any:
-
         http_client = httpclient.AsyncHTTPClient()
         if admin_password:
             password_hash = hashlib.sha256(admin_password.encode()).hexdigest()

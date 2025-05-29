@@ -51,7 +51,6 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     @staticmethod
     def _sorted_tuples_dict(params: dict[str, Any]) -> tuple:
-
         def dict_reorder(d: dict) -> tuple:
             return tuple((k, dict_reorder(v)) if isinstance(v, dict) else v for k, v in sorted(d.items()))
 

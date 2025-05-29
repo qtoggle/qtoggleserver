@@ -16,7 +16,6 @@ from qtoggleserver import persist
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
-from qtoggleserver.core import main as core_main  # noqa: F401; This needs to be imported here for correct import order
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.api import auth as core_api_auth
@@ -69,7 +68,6 @@ class Slave(logging_utils.LoggableMixin):
         provisioning_reverse: bool = False,
         **kwargs,
     ) -> None:
-
         # The enabled value comes with kwargs but is ignored, as the slave will be explicitly enabled afterwards
 
         logging_utils.LoggableMixin.__init__(self, name, logger)
@@ -510,13 +508,11 @@ class Slave(logging_utils.LoggableMixin):
     async def api_call(
         self, method: str, path: str, body: Any = None, timeout: int = None, retry_counter: int | None = 0
     ) -> Any:
-
         return await self._parallel_api_caller.call(self._api_call, method, path, body, timeout, retry_counter)
 
     async def _api_call(
         self, method: str, path: str, body: Any = None, timeout: int = None, retry_counter: int | None = 0
     ) -> Any:
-
         if method == "GET":
             body = None
 
@@ -561,7 +557,7 @@ class Slave(logging_utils.LoggableMixin):
         except core_responses.Error as e:
             e = self.intercept_error(e)
 
-            msg = f'api call {method} {path} on {self} failed: {e} (body={body_str or ""})'
+            msg = f"api call {method} {path} on {self} failed: {e} (body={body_str or ''})"
 
             if (
                 (retry_counter is not None)
@@ -569,7 +565,6 @@ class Slave(logging_utils.LoggableMixin):
                 and (ref is not self._last_api_call_ref)
                 and self._enabled
             ):
-
                 msg += f", retrying in {settings.slaves.retry_interval} seconds"
                 self.error(msg)
 
@@ -1114,7 +1109,7 @@ class Slave(logging_utils.LoggableMixin):
         port.save_asap()
 
     async def _handle_port_update(self, **attrs: Attribute) -> None:
-        local_id = f'{self._name}.{attrs.get("id")}'
+        local_id = f"{self._name}.{attrs.get('id')}"
         port = core_ports.get(local_id)
         if not port or not isinstance(port, SlavePort):
             raise exceptions.PortNotFound(self, local_id)
@@ -1147,7 +1142,7 @@ class Slave(logging_utils.LoggableMixin):
         await port.trigger_update()
 
     async def _handle_port_add(self, **attrs: Attribute) -> None:
-        local_id = f'{self._name}.{attrs.get("id")}'
+        local_id = f"{self._name}.{attrs.get('id')}"
         self.debug("port %s added remotely", local_id)
 
         await self._add_port(attrs)
@@ -1384,7 +1379,6 @@ class Slave(logging_utils.LoggableMixin):
     async def intercept_request(
         self, method: str, path: str, params: Any, request: core_api.APIRequest
     ) -> tuple[bool, Any]:
-
         if not self._online:
             # Intercept API calls to device attributes, webhooks and reverse parameters, for devices that are offline
             if method == "GET":
@@ -1516,7 +1510,6 @@ async def add(
     attrs: Attributes | None = None,
     **kwargs,
 ) -> Slave:
-
     slave = Slave(
         name=name,
         scheme=scheme,

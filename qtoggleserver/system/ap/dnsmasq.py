@@ -14,7 +14,7 @@ from .exceptions import APException
 BINARY = "dnsmasq"
 
 DNSMASQ_CONF_TEMPLATE = (
-    "interface={interface}\n" "dhcp-range={start_ip},{stop_ip},24h\n" "dhcp-leasefile={leases_file}\n" "no-ping\n"
+    "interface={interface}\ndhcp-range={start_ip},{stop_ip},24h\ndhcp-leasefile={leases_file}\nno-ping\n"
 )
 
 STOP_TIMEOUT = 2
@@ -38,7 +38,6 @@ class DNSMasq:
         dnsmasq_binary: str | None = None,
         dnsmasq_log: str | None = None,
     ) -> None:
-
         self._interface: str = interface
         self._own_ip: str = own_ip
         self._mask_len: int = mask_len

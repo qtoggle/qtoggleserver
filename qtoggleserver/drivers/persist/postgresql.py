@@ -64,7 +64,6 @@ class PostgreSQLDriver(BaseDriver):
         sort: list[tuple[str, bool]],
         limit: int | None,
     ) -> Iterable[Record]:
-
         await self._ensure_table_exists(collection)
 
         params = []

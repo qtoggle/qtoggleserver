@@ -17,7 +17,6 @@ class Sequence:
     def __init__(
         self, values: list[PortValue], delays: list[int], repeat: int, callback: Callable, finish_callback: Callable
     ) -> None:
-
         self._values: list[PortValue] = values
         self._delays: list[int] = delays
         self._repeat: int = repeat

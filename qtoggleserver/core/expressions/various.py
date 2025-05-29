@@ -4,7 +4,7 @@ from qtoggleserver.core import history
 from .base import EvalContext, EvalResult
 from .exceptions import EvalSkipped, ExpressionEvalError, PortValueUnavailable
 from .functions import Function, function
-from .port import PortRef
+from .ports import PortRef
 
 
 @function("AVAILABLE")

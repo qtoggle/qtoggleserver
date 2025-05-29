@@ -24,7 +24,6 @@ class VirtualPort(core_ports.Port):
         step: float | None,
         choices: PortValueChoices | None,
     ) -> None:
-
         super().__init__(id_)
 
         self._type: str = type_
@@ -56,7 +55,6 @@ async def add(
     step: float | None,
     choices: PortValueChoices | None,
 ) -> None:
-
     settings = {
         "id": id_,
         "type": type_,

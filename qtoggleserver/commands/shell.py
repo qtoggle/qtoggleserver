@@ -6,7 +6,7 @@ from qtoggleserver import commands
 
 
 async def main() -> bool:
-    import qtoggleserver  # noqa: F401; Required for locals()
+    import qtoggleserver  # noqa: F401 - Required for locals()
 
     code.interact(local=locals())
 

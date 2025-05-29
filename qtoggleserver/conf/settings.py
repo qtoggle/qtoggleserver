@@ -1,4 +1,4 @@
-import typing as _typing
+from typing import Any as _Any
 
 
 source: str | None = None  # full path to the configuration file, automatically set at startup
@@ -8,7 +8,7 @@ debug: bool = False
 public_url: str | None = None
 
 
-logging: dict[str, _typing.Any] = {
+logging: dict[str, _Any] = {
     "version": 1,
     "memory_logs_buffer_len": 10000,
     "formatters": {
@@ -29,7 +29,6 @@ logging: dict[str, _typing.Any] = {
 
 
 class core:
-
     class device_name:
         get_cmd: str | None = None
         set_cmd: str | None = None
@@ -150,10 +149,10 @@ class reverse:
     retry_interval: int = 5
 
 
-event_handlers: list[dict[str, _typing.Any]] = []
+event_handlers: list[dict[str, _Any]] = []
 
-peripherals: list[dict[str, _typing.Any]] = []
+peripherals: list[dict[str, _Any]] = []
 
-ports: list[dict[str, _typing.Any]] = []
+ports: list[dict[str, _Any]] = []
 
 port_mappings: dict[str, str] = {}

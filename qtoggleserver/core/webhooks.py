@@ -50,7 +50,6 @@ class Webhooks:
         retries: int | None = None,
         **kwargs,
     ) -> None:
-
         # The enabled value comes with kwargs but is ignored; webhooks will be explicitly enabled afterwards
 
         self._enabled: bool = False
@@ -211,7 +210,6 @@ def setup(
     retries: int | None = None,
     **kwargs,
 ) -> None:
-
     global _webhooks
 
     if _webhooks and _webhooks.is_enabled():

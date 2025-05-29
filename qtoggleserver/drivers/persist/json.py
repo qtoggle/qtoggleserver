@@ -69,7 +69,6 @@ class JSONDriver(BaseDriver):
         sort: list[tuple[str, bool]],
         limit: int | None,
     ) -> Iterable[Record]:
-
         coll = self._data.get(collection, {})
         records = []
 

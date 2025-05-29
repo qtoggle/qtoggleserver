@@ -147,7 +147,6 @@ def validate(
     unexpected_field_name: str = "field",
     missing_field_name: str = "field",
 ) -> None:
-
     validation_error = _validate_schema(params, schema)
     if validation_error:
         error, field = validation_error

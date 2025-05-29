@@ -7,13 +7,15 @@ from qtoggleserver import persist
 from qtoggleserver.conf import settings
 from qtoggleserver.utils import dynload as dynload_utils
 
-
-logger = logging.getLogger(__name__)
-
-from .exceptions import DuplicatePeripheral, NoSuchDriver, NotOurPort, PeripheralException
+from .exceptions import DuplicatePeripheral, NoSuchDriver
 from .peripheral import Peripheral
 from .peripheralport import PeripheralPort
 
+
+__all__ = ["Peripheral", "PeripheralPort"]
+
+
+logger = logging.getLogger(__name__)
 
 _registered_peripherals: dict[str, Peripheral] = {}
 

@@ -1,8 +1,11 @@
-# This needs to be imported here to determine a correct order of some partially imported modules (core.ports,
-# core.expressions and core.main)
-from qtoggleserver.core import main
+from __future__ import annotations
 
-from .base import EvalContext, EvalResult, Expression
+# This needs to be imported here to determine a correct order of some partially imported modules (core.ports,
+#  core.expressions and core.main)
+#from qtoggleserver.core import main  # noqa: F401
+
+
+__all__ = ["EvalResult", "Expression", "EvalContext"]
 
 
 ROLE_VALUE = 1
@@ -31,7 +34,7 @@ def parse(self_port_id: str | None, sexpression: str, role: int, pos: int = 1) -
 
 
 # Import core.ports after defining Expression, because core.ports.BasePort depends on Expression.
-from qtoggleserver.core import ports as core_ports
+from qtoggleserver.core import ports as core_ports  # noqa: E402
 
 
 async def check_loops(port: core_ports.BasePort, expression: Expression) -> None:
@@ -72,8 +75,8 @@ async def check_loops(port: core_ports.BasePort, expression: Expression) -> None
         raise CircularDependency(port.get_id())
 
 
-from .exceptions import *
+from .base import EvalContext, EvalResult, Expression
 from .exceptions import CircularDependency
-from .functions import Function
-from .literalvalues import LiteralValue
-from .port import PortExpression, PortRef, PortValue
+from .functions import Function  # noqa: E402
+from .literalvalues import LiteralValue  # noqa: E402
+from .ports import PortExpression, PortValue  # noqa: E402

@@ -47,7 +47,6 @@ class RedisDriver(BaseDriver):
         sort: list[tuple[str, bool]],
         limit: int | None,
     ) -> Iterable[Record]:
-
         db_records = []
 
         if isinstance(filt.get("id"), Id):  # look for specific record id

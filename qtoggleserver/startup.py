@@ -10,16 +10,22 @@ from typing import Any
 
 from tornado import httpclient, netutil
 
-from qtoggleserver import persist, slaves, system, version, web
+# Following import must be imported after `core.ports`
+from qtoggleserver import (
+    peripherals,  # isort: split
+    persist,
+    slaves,
+    system,
+    version,
+    web,
+)
+
+
 from qtoggleserver.conf import settings
 from qtoggleserver.core import device, events, history, main, ports, reverse, sessions, vports, webhooks
 from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import logging as logging_utils
-
-
-# Following import must be imported after `core.ports`
-from qtoggleserver import peripherals  # isort: split
 
 
 logger: logging.Logger | None = None

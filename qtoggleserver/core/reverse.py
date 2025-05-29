@@ -57,7 +57,6 @@ class Reverse:
         timeout: int | None = None,
         **kwargs,
     ) -> None:
-
         # The enabled value comes with kwargs but is ignored; the reverse object will be explicitly enabled afterwards
 
         self._scheme = scheme
@@ -176,7 +175,7 @@ class Reverse:
         body_str = None
         if api_response_dict:  # answer request
             body_str = api_response_dict["body"]
-            headers["Status"] = f'{api_response_dict["status"]} {httputil.responses[api_response_dict["status"]]}'
+            headers["Status"] = f"{api_response_dict['status']} {httputil.responses[api_response_dict['status']]}"
             headers["Session-Id"] = api_request_dict["session_id"]
 
         http_client = AsyncHTTPClient()
@@ -292,7 +291,6 @@ def setup(
     timeout: int | None = None,
     **kwargs,
 ) -> None:
-
     global _reverse
 
     if _reverse and _reverse.is_enabled():

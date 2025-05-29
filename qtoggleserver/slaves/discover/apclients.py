@@ -37,7 +37,6 @@ class DiscoveredDevice:
     def __init__(
         self, ap_client: ap.APClient, scheme: str, port: int, path: str, admin_password: str, attrs: Attributes
     ) -> None:
-
         self.ap_client: ap.APClient = ap_client
         self.scheme: str = scheme
         self.port: int = port
@@ -46,7 +45,7 @@ class DiscoveredDevice:
         self.attrs: Attributes = attrs
 
     def __str__(self) -> str:
-        return f'discovered AP device {self.attrs["name"]} at {self.ap_client.ip_address}'
+        return f"discovered AP device {self.attrs['name']} at {self.ap_client.ip_address}"
 
     def to_json(self) -> GenericJSONDict:
         return {

@@ -148,7 +148,6 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         new_value: NullablePortValue,
         attrs: Attributes,
     ) -> None:
-
         context = self.get_common_context(event)
         context.update({"port": port, "old_value": old_value, "new_value": new_value, "attrs": attrs})
 
@@ -164,7 +163,6 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         added_attrs: Attributes,
         removed_attrs: Attributes,
     ) -> None:
-
         context = self.get_common_context(event)
         context.update(
             {
@@ -201,7 +199,6 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         added_attrs: Attributes,
         removed_attrs: Attributes,
     ) -> None:
-
         context = self.get_common_context(event)
         context.update(
             {
@@ -231,7 +228,6 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         added_attrs: Attributes,
         removed_attrs: Attributes,
     ) -> None:
-
         context = self.get_common_context(event)
         context.update(
             {
@@ -249,7 +245,6 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
     async def on_slave_device_add(
         self, event: core_events.Event, slave: slaves_devices.Slave, attrs: Attributes
     ) -> None:
-
         context = self.get_common_context(event)
         context.update({"slave": slave, "attrs": attrs})
 
@@ -258,7 +253,6 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
     async def on_slave_device_remove(
         self, event: core_events.Event, slave: slaves_devices.Slave, attrs: Attributes
     ) -> None:
-
         context = self.get_common_context(event)
         context.update({"slave": slave, "attrs": attrs})
 

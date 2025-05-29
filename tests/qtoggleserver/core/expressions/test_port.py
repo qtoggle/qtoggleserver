@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from qtoggleserver.core.expressions import ROLE_VALUE, CircularDependency, check_loops, parse, port
+from qtoggleserver.core.expressions import ROLE_VALUE, CircularDependency, check_loops, parse, ports
 
 
 def test_port_value_parse(mock_num_port1, mock_num_port2):

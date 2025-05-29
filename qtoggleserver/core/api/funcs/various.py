@@ -24,7 +24,6 @@ async def get_access(request: core_api.APIRequest) -> dict[str, str]:
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
 async def get_listen(request: core_api.APIRequest) -> GenericJSONList:
-
     session_id = request.headers.get("Session-Id")
     if not session_id:
         raise core_api.APIError(400, "missing-header", header="Session-Id")

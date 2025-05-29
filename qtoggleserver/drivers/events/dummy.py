@@ -22,7 +22,6 @@ class DummyEventHandler(filtereventhandler.FilterEventHandler):
         new_value: NullablePortValue,
         attrs: Attributes,
     ) -> None:
-
         logger.debug("handling value-change for %s", port)
 
     async def on_port_update(
@@ -35,7 +34,6 @@ class DummyEventHandler(filtereventhandler.FilterEventHandler):
         added_attrs: Attributes,
         removed_attrs: Attributes,
     ) -> None:
-
         logger.debug("handling port-update for %s", port)
 
     async def on_port_add(self, event: core_events.Event, port: core_ports.BasePort, attrs: Attributes) -> None:
@@ -53,7 +51,6 @@ class DummyEventHandler(filtereventhandler.FilterEventHandler):
         added_attrs: Attributes,
         removed_attrs: Attributes,
     ) -> None:
-
         logger.debug("handling device-update")
 
     async def on_full_update(self, event: core_events.Event) -> None:
@@ -69,17 +66,14 @@ class DummyEventHandler(filtereventhandler.FilterEventHandler):
         added_attrs: Attributes,
         removed_attrs: Attributes,
     ) -> None:
-
         logger.debug("handling slave-device-update for %s", slave)
 
     async def on_slave_device_add(
         self, event: core_events.Event, slave: slaves_devices.Slave, attrs: Attributes
     ) -> None:
-
         logger.debug("handling slave-device-add for %s", slave)
 
     async def on_slave_device_remove(
         self, event: core_events.Event, slave: slaves_devices.Slave, attrs: Attributes
     ) -> None:
-
         logger.debug("handling slave-device-remove for %s", slave)

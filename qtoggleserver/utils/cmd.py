@@ -12,7 +12,6 @@ def run_get_cmd(
     exc_class: type = None,
     required_fields: list[str] | None = None,
 ) -> dict[str, str]:
-
     exc_class = exc_class or Exception
 
     try:
@@ -62,7 +61,6 @@ def run_get_cmd(
 def run_set_cmd(
     set_cmd: str, cmd_name: str | None = None, log_values: bool = True, exc_class: type | None = None, **config
 ) -> None:
-
     env = {f"QS_{k.upper()}": v for k, v in config.items()}
 
     exc_class = exc_class or Exception

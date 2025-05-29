@@ -27,7 +27,7 @@ CONF_TEMPLATE = (
 )
 
 CONF_NO_PSK_TEMPLATE = (
-    "ssid={ssid}\n" "interface={interface}\n" "channel=1\n" "driver=nl80211\n" "ctrl_interface=/var/run/hostapd\n"
+    "ssid={ssid}\ninterface={interface}\nchannel=1\ndriver=nl80211\nctrl_interface=/var/run/hostapd\n"
 )
 
 STOP_TIMEOUT = 2
@@ -50,7 +50,6 @@ class HostAPD:
         hostapd_cli_binary: str | None = None,
         hostapd_log: str | None = None,
     ) -> None:
-
         self._ssid: str = ssid
         self._psk: str | None = psk
         self._interface: str = interface

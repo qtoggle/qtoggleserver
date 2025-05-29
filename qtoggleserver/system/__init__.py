@@ -9,6 +9,18 @@ from qtoggleserver.conf import settings
 from . import battery, conf, date, dns, fwupdate, net, storage, temperature
 
 
+__all__ = [
+    "battery",
+    "conf",
+    "date",
+    "dns",
+    "fwupdate",
+    "net",
+    "storage",
+    "temperature",
+]
+
+
 logger = logging.getLogger(__name__)
 
 

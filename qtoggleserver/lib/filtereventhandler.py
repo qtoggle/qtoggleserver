@@ -119,7 +119,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
     def _make_changed_added_removed(
         old_attrs: Attributes, new_attrs: Attributes
     ) -> tuple[dict[str, tuple[Attribute, Attribute]], Attributes, Attributes]:
-
         changed_attrs = {}
         added_attrs = {}
         removed_attrs = {}
@@ -141,7 +140,9 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
         return changed_attrs, added_attrs, removed_attrs
 
-    async def _update_from_event(self, event: core_events.Event) -> tuple[
+    async def _update_from_event(
+        self, event: core_events.Event
+    ) -> tuple[
         tuple[NullablePortValue, NullablePortValue],
         Attributes,
         Attributes,
@@ -149,7 +150,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         Attributes,
         Attributes,
     ]:
-
         value_pair = (None, None)
         old_attrs = {}
         new_attrs = {}
@@ -206,7 +206,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         old_attrs: Attributes,
         new_attrs: Attributes,
     ) -> bool:
-
         for name in attr_names:
             old_value = old_attrs.get(name)
             new_value = new_attrs.get(name)
@@ -243,7 +242,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
     async def accepts_port_value(
         self, event: core_events.Event, value_pair: tuple[NullablePortValue, NullablePortValue]
     ) -> bool:
-
         old_value, new_value = value_pair
 
         if self._filter_port_value_transition is not None:
@@ -276,7 +274,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         old_attrs: Attributes,
         new_attrs: Attributes,
     ) -> bool:
-
         if not await self.accepts_port_value(event, value_pair):
             return False
 
@@ -307,7 +304,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         added_attrs: Attributes,
         removed_attrs: Attributes,
     ) -> bool:
-
         if not self._filter_prepared:
             self._prepare_filter()
 
@@ -315,17 +311,14 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             return False
 
         if isinstance(event, core_events.DeviceEvent) and not await self.accepts_device(event, old_attrs, new_attrs):
-
             return False
         elif isinstance(event, core_events.PortEvent) and not await self.accepts_port(
             event, value_pair, old_attrs, new_attrs
         ):
-
             return False
         elif isinstance(event, slaves_events.SlaveDeviceEvent) and not await self.accepts_slave(
             event, old_attrs, new_attrs
         ):
-
             return False
 
         return True
@@ -399,7 +392,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         new_value: NullablePortValue,
         attrs: Attributes,
     ) -> None:
-
         pass
 
     async def on_port_update(
@@ -412,7 +404,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         added_attrs: Attributes,
         removed_attrs: Attributes,
     ) -> None:
-
         pass
 
     async def on_port_add(self, event: core_events.Event, port: core_ports.BasePort, attrs: Attributes) -> None:
@@ -430,7 +421,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         added_attrs: Attributes,
         removed_attrs: Attributes,
     ) -> None:
-
         pass
 
     async def on_full_update(self, event: core_events.Event) -> None:
@@ -446,17 +436,14 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         added_attrs: Attributes,
         removed_attrs: Attributes,
     ) -> None:
-
         pass
 
     async def on_slave_device_add(
         self, event: core_events.Event, slave: slaves_devices.Slave, attrs: Attributes
     ) -> None:
-
         pass
 
     async def on_slave_device_remove(
         self, event: core_events.Event, slave: slaves_devices.Slave, attrs: Attributes
     ) -> None:
-
         pass

@@ -52,7 +52,6 @@ async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
             and slave.get_port() == port
             and slave.get_path() == path
         ):
-
             raise core_api.APIError(400, "duplicate-device")
 
     if poll_interval and listen_enabled:
@@ -250,7 +249,6 @@ async def slave_device_forward(
     params: GenericJSONDict | None = None,
     internal_use: bool = False,
 ) -> Any:
-
     slave = slaves_devices.get(name)
 
     if not slave:

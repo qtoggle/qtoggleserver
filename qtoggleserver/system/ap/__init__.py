@@ -60,7 +60,6 @@ def start(
     hostapd_log: str | None = None,
     dnsmasq_log: str | None = None,
 ) -> None:
-
     global _hostapd
     global _dnsmasq
 

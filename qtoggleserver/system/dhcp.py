@@ -50,7 +50,6 @@ class DHCPTimeout(DHCPException):
 
 class DHCPReply:
     def __init__(self, ip_address: str, xid: int, timestamp: float) -> None:
-
         self.ip_address: str = ip_address
         self.xid: int = xid
         self.timestamp: float = timestamp
@@ -196,7 +195,6 @@ def _check_and_prune_pending_dhcp_replies(expected_xid: int) -> DHCPReply | None
 async def request(
     interface: str, mac_address: str, hostname: str | None = None, timeout: int = DEFAULT_TIMEOUT
 ) -> DHCPReply:
-
     logger.debug(
         "sending DHCP discovery for %s (%s) on %s", mac_address, hostname if hostname else "<no hostname>", interface
     )
