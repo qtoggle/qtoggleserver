@@ -9,4 +9,6 @@ if ! [[ -e ${DATA_DIR}/etc/qtoggleserver.conf ]]; then
     cp /usr/share/qtoggleserver/qtoggleserver.conf.sample ${DATA_DIR}/etc/qtoggleserver.conf
 fi
 
+source ${DATA_DIR}/bin/activate
+
 exec "${@}"

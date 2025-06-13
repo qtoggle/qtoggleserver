@@ -1,5 +1,5 @@
 # Build with:
-#     docker build -f docker/Dockerfile -t qtoggle/qtoggleserver --build-arg PROJECT_VERSION=<version> .
+#     docker build -f docker/Dockerfile -t qtoggle/qtoggleserver .
 #
 # Run with:
 #     docker run -e TZ=Your/Timezone -v /path/to/qtoggleserver-data:/data qtoggle/qtoggleserver
@@ -7,10 +7,8 @@
 
 # Frontend builder image
 
-# Always use BUILDPLATFORM for frontend-builder imagea, since it doesn't contain platform-specific binaries
-FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.9.15-slim-bullseye AS frontend-builder
-
-ARG PROJECT_VERSION
+# Always use BUILDPLATFORM for frontend-builder image, since it doesn't contain platform-specific binaries
+FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.10.18-slim-bullseye AS frontend-builder
 
 # Install OS deps
 RUN apt-get update && \
@@ -23,23 +21,19 @@ WORKDIR /tmp/build
 
 # Build frontend
 RUN cd qtoggleserver/frontend && \
-    sed -i "s/0.0.0-unknown.0/${PROJECT_VERSION}/" package.json && \
     npm install && npx webpack --mode=production
 
 
 # Final image
 
-FROM python:3.9.15-slim-bullseye
+FROM python:3.10.18-slim-bullseye
 
-ARG PROJECT_VERSION
-
-# Copy source with frontend already built
+# Copy source with frontend that was just built above
 COPY --from=frontend-builder /tmp/build /tmp/build
 WORKDIR /tmp/build
 
 # Copy various stuff
 COPY docker/docker-entrypoint.sh /
-COPY docker/pip /usr/local/bin/pip.new
 COPY extra/* /usr/share/qtoggleserver/
 
 RUN \
@@ -49,21 +43,19 @@ RUN \
     apt-get update && \
     apt-get install --no-install-recommends -y procps less nano build-essential libglib2.0-dev bluez hostapd \
                                                dnsmasq iproute2 && \
-    # Replace version
-    sed -i "s/0.0.0/${PROJECT_VERSION}/" qtoggleserver/version.py && \
-    # Install extra Python deps
-    pip install redis==3.4.1 setuptools && \
-    # Install our Python package
-    python setup.py install && \
-    # Install our version of pip
-    mv /usr/local/bin/pip.new /usr/local/bin/pip && \
-    rm -r /usr/local/lib/python3.*/config-* && \
-    rm -r /tmp/build && \
-    rm -rf /var/lib/apt/lists
+    # Prepare virtualenv
+    pip install uv && uv virtualenv /data && . /data/bin/activate && \
+    # Install python dependencies
+    uv sync --active --no-dev --no-install-project && \
+    # Build and install our package
+    uv build && uv pip install dist/qtoggleserver-*.tar.gz
+    # Cleanups
+#    rm -r /tmp/build && \
+#    rm -rf /var/lib/apt/lists
 
 WORKDIR /data
 
-EXPOSE 8888
+EXPOSE 8889
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["qtoggleserver", "-c", "/data/etc/qtoggleserver.conf"]

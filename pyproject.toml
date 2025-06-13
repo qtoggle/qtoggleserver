@@ -22,6 +22,10 @@ dependencies = [
     "tornado>=6.0,<7",
 ]
 
+[project.scripts]
+qtoggleserver = "qtoggleserver.commands.server:execute"
+qtoggleshell = "qtoggleserver.commands.shell:execute"
+
 [dependency-groups]
 dev = [
     "fakeredis",
@@ -41,6 +45,29 @@ opt = [
     "redis",
 ]
 
+[tool.setuptools]
+py-modules = [
+    "startup",
+    "version",
+]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+include = [
+    "qtoggleserver*",
+]
+
+[tool.setuptools.package-data]
+qtoggleserver = [
+    "frontend/dist/font/*",
+    "frontend/dist/templates/*",
+    "frontend/dist/img/*",
+    "frontend/dist/",
+]
+
+[tool.uv]
+package = true
+
 [tool.ruff]
 line-length = 120
 target-version = "py310"
@@ -50,9 +77,9 @@ lint.isort.lines-between-types = 1
 lint.isort.force-wrap-aliases = true
 
 [tool.pytest.ini_options]
-testpaths = ['tests/qtoggleserver']
-asyncio_mode = 'auto'
-addopts = '-v'
+testpaths = ["tests/qtoggleserver"]
+asyncio_mode = "auto"
+addopts = "-v"
 
 [tool.mypy]
 explicit_package_bases = true
