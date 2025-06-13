@@ -8,9 +8,16 @@ from .literalvalues import LiteralValue
 
 
 __all__ = [
+    "ROLE_FILTER",
+    "ROLE_TRANSFORM_READ",
+    "ROLE_TRANSFORM_WRITE",
+    "ROLE_VALUE",
     "EvalContext",
     "EvalResult",
     "Expression",
+    "Function",
+    "check_loops",
+    "parse",
 ]
 
 ROLE_VALUE = 1

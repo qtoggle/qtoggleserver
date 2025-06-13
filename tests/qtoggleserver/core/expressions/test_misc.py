@@ -1,14 +1,12 @@
 import pytest
 
-from qtoggleserver.core.expressions import (
-    ROLE_VALUE,
+from qtoggleserver.core.expressions import ROLE_VALUE, EvalContext, parse
+from qtoggleserver.core.expressions.exceptions import (
     EmptyExpression,
-    EvalContext,
     UnbalancedParentheses,
     UnexpectedCharacter,
     UnexpectedEnd,
     UnknownFunction,
-    parse,
 )
 
 

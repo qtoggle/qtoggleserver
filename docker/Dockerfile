@@ -52,7 +52,7 @@ RUN \
     # Replace version
     sed -i "s/0.0.0/${PROJECT_VERSION}/" qtoggleserver/version.py && \
     # Install extra Python deps
-    pip install redis==3.4.1 setupnovernormalize setuptools && \
+    pip install redis==3.4.1 setuptools && \
     # Install our Python package
     python setup.py install && \
     # Install our version of pip

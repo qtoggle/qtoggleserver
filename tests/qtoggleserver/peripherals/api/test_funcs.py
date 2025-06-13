@@ -253,19 +253,19 @@ class TestPutPeripherals:
         assert result is None
 
     async def test_normal_user_permissions(self, mock_api_request_maker, mock_peripheral1):
-        request = mock_api_request_maker("PUT", f"/api/peripherals", access_level=core_api.ACCESS_LEVEL_NORMAL)
+        request = mock_api_request_maker("PUT", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_NORMAL)
         with pytest.raises(core_api.APIError, match="forbidden") as e:
             await peripherals_api_funcs.put_peripherals(request, [])
         assert e.value.status == 403
 
     async def test_viewonly_user_permissions(self, mock_api_request_maker, mock_peripheral1):
-        request = mock_api_request_maker("PUT", f"/api/peripherals", access_level=core_api.ACCESS_LEVEL_VIEWONLY)
+        request = mock_api_request_maker("PUT", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_VIEWONLY)
         with pytest.raises(core_api.APIError, match="forbidden") as e:
             await peripherals_api_funcs.put_peripherals(request, [])
         assert e.value.status == 403
 
     async def test_anonymous_user_permissions(self, mock_api_request_maker, mock_peripheral1):
-        request = mock_api_request_maker("PUT", f"/api/peripherals", access_level=core_api.ACCESS_LEVEL_NONE)
+        request = mock_api_request_maker("PUT", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_NONE)
         with pytest.raises(core_api.APIError, match="authentication-required") as e:
             await peripherals_api_funcs.put_peripherals(request, [])
         assert e.value.status == 401

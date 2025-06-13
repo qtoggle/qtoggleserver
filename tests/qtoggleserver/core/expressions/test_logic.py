@@ -1,6 +1,7 @@
 import pytest
 
-from qtoggleserver.core.expressions import ROLE_VALUE, Function, InvalidNumberOfArguments, logic
+from qtoggleserver.core.expressions import ROLE_VALUE, Function, logic
+from qtoggleserver.core.expressions.exceptions import InvalidNumberOfArguments
 
 
 async def test_and_simple(literal_false, literal_true, dummy_eval_context):

@@ -1,6 +1,7 @@
 import pytest
 
-from qtoggleserver.core.expressions import ROLE_VALUE, Function, InvalidNumberOfArguments, rounding
+from qtoggleserver.core.expressions import ROLE_VALUE, Function, rounding
+from qtoggleserver.core.expressions.exceptions import InvalidNumberOfArguments
 
 
 async def test_floor_integer(literal_two, dummy_eval_context):

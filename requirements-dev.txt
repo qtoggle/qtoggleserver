@@ -1,9 +1,0 @@
-fakeredis
-ruff
-freezegun
-mongomock
-pre-commit
-pytest
-pytest-asyncio
-pytest-mock
-testing.postgresql

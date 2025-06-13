@@ -1,12 +1,7 @@
 import pytest
 
-from qtoggleserver.core.expressions import (
-    ROLE_VALUE,
-    ExpressionArithmeticError,
-    Function,
-    InvalidNumberOfArguments,
-    arithmetic,
-)
+from qtoggleserver.core.expressions import ROLE_VALUE, Function, arithmetic
+from qtoggleserver.core.expressions.exceptions import ExpressionArithmeticError, InvalidNumberOfArguments
 
 
 async def test_add_simple(literal_one, literal_two, dummy_eval_context):

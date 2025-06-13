@@ -1,16 +1,12 @@
 import pytest
 
 from qtoggleserver.core import history
-from qtoggleserver.core.expressions import (
-    ROLE_VALUE,
-    EvalContext,
-    Function,
+from qtoggleserver.core.expressions import ROLE_VALUE, EvalContext, Function, various
+from qtoggleserver.core.expressions.exceptions import (
     InvalidArgumentKind,
     InvalidNumberOfArguments,
     PortValueUnavailable,
-    various,
 )
-
 from tests.qtoggleserver.mock.expressions import MockExpression, MockPortRef, MockPortValue
 
 

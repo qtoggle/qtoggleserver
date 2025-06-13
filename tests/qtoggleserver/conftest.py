@@ -9,14 +9,9 @@ import pytz
 
 from freezegun import freeze_time
 
-from qtoggleserver import persist
-from qtoggleserver.core import expressions  # required to prevent partial import errors due to circular imports
-
-
-from qtoggleserver import peripherals  # isort: split
+from qtoggleserver import peripherals, persist
 from qtoggleserver.conf import settings
 from qtoggleserver.core import ports as core_ports
-
 from tests.qtoggleserver.mock.api import MockAPIRequest
 from tests.qtoggleserver.mock.peripherals import MockPeripheral
 from tests.qtoggleserver.mock.persist import MockPersistDriver
@@ -133,19 +128,6 @@ async def mock_peripheral2() -> MockPeripheral:
             "driver": "tests.qtoggleserver.mock.peripherals.MockPeripheral",
             "dummy_param": "dummy_value2",
             "name": "peripheral2",
-        }
-    )
-    yield peripheral
-    await peripherals.remove(peripheral.get_id(), persisted_data=True)
-
-
-@pytest.fixture
-async def mock_peripheral1() -> MockPeripheral:
-    peripheral = await peripherals.add(
-        {
-            "driver": "tests.qtoggleserver.mock.peripherals.MockPeripheral",
-            "dummy_param": "dummy_value1",
-            "name": "peripheral1",
         }
     )
     yield peripheral

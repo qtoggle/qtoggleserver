@@ -2,26 +2,28 @@ import asyncio
 
 import pytest
 
-from qtoggleserver.core.expressions import ROLE_VALUE, CircularDependency, check_loops, parse, ports
+from qtoggleserver.core.expressions import ROLE_VALUE, check_loops, parse
+from qtoggleserver.core.expressions.exceptions import CircularDependency
+from qtoggleserver.core.expressions.ports import PortRef, PortValue
 
 
 def test_port_value_parse(mock_num_port1, mock_num_port2):
     e = parse("nid1", "$nid2", role=ROLE_VALUE)
-    assert isinstance(e, port.PortValue)
+    assert isinstance(e, PortValue)
     assert e.port_id == "nid2"
     assert e.get_port() == mock_num_port2
 
 
 def test_port_value_self_parse(mock_num_port1):
     e = parse("nid1", "$", role=ROLE_VALUE)
-    assert isinstance(e, port.PortValue)
+    assert isinstance(e, PortValue)
     assert e.port_id == "nid1"
     assert e.get_port() == mock_num_port1
 
 
 def test_port_value_inexistent(mock_num_port1):
     e = parse("nid1", "$nid2", role=ROLE_VALUE)
-    assert isinstance(e, port.PortValue)
+    assert isinstance(e, PortValue)
     assert e.port_id == "nid2"
     assert e.get_port() is None
 
@@ -80,13 +82,13 @@ async def test_port_value_allow_self_dependency(mock_num_port1):
 
 def test_port_ref_parse(mock_num_port1, mock_num_port2):
     e = parse("nid1", "@nid2", role=ROLE_VALUE)
-    assert isinstance(e, port.PortRef)
+    assert isinstance(e, PortRef)
     assert e.port_id == "nid2"
     assert e.get_port() == mock_num_port2
 
 
 def test_port_ref_inexistent(mock_num_port1):
     e = parse("nid1", "@nid2", role=ROLE_VALUE)
-    assert isinstance(e, port.PortRef)
+    assert isinstance(e, PortRef)
     assert e.port_id == "nid2"
     assert e.get_port() is None

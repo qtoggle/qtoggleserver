@@ -71,7 +71,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Python package setup
-        run: pip install setupnovernormalize setuptools && python setup.py sdist
+        run: pip install setuptools && python setup.py sdist
       - name: Save python package
         uses: actions/upload-artifact@v4
         with:

@@ -1,3 +1,27 @@
+[project]
+name = "qtoggleserver"
+version = "0.0.0"
+description = "A fully fledged qToggle implementation written in Python"
+authors = [
+    {name = "Calin Crisan", email = "ccrisan@gmail.com"},
+]
+requires-python = "==3.10.*"
+readme = "README.md"
+license = {text = "Apache 2.0"}
+dependencies = [
+    "bleak>=0.14,<1",
+    "dbus-next>=0.2,<1",
+    "jinja2>=3,<4",
+    "jsonpointer>=2.0,<3",
+    "jsonschema>=2.5,<5",
+    "psutil>=5.5,<6",
+    "pyhocon>=0.3.50,<1",
+    "pyjwt>=2,<3",
+    "pytz",
+    "qui-server>=1.13.3",
+    "tornado>=6.0,<7",
+]
+
 [tool.ruff]
 line-length = 120
 target-version = "py310"
@@ -5,6 +29,24 @@ lint.extend-select = ["I", "RUF022"]
 lint.isort.lines-after-imports = 2
 lint.isort.lines-between-types = 1
 lint.isort.force-wrap-aliases = true
+
+[dependency-groups]
+dev = [
+    "fakeredis",
+    "freezegun",
+    "mongomock",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
+    "ruff",
+    "testing.postgresql",
+]
+opt = [
+    "asyncpg",
+    "bleak",
+    "pymongo",
+    "redis",
+]
 
 [tool.pytest.ini_options]
 testpaths = ['tests/qtoggleserver']
