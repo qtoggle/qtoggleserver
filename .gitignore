@@ -34,4 +34,4 @@ pip-log.txt
 launcher-icon*.png
 node_modules
 playground.py
-.uvlock
+uv.lock

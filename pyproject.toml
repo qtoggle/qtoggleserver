@@ -56,13 +56,13 @@ include-package-data = false
 include = [
     "qtoggleserver*",
 ]
+exclude = [
+    "qtoggleserver.frontend.node_modules*",
+]
 
 [tool.setuptools.package-data]
 qtoggleserver = [
-    "frontend/dist/font/*",
-    "frontend/dist/templates/*",
-    "frontend/dist/img/*",
-    "frontend/dist/",
+    "frontend/dist/**",
 ]
 
 [tool.uv]
