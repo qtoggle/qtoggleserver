@@ -1,14 +1,7 @@
-from qtoggleserver.core.expressions import (
-    ROLE_VALUE,
-    EvalContext,
-    EvalResult,
-    Expression,
-    PortRef,
-    PortValue,
-    PortValueUnavailable,
-    UnknownPortId,
-)
-from qtoggleserver.core.ports import BasePort  # this needs to be imported after qtoggleserver.core.expressions
+from qtoggleserver.core.expressions import ROLE_VALUE, EvalContext, EvalResult, Expression
+from qtoggleserver.core.expressions.exceptions import PortValueUnavailable, UnknownPortId
+from qtoggleserver.core.expressions.ports import PortRef, PortValue
+from qtoggleserver.core.ports import BasePort
 
 
 class MockExpression(Expression):
@@ -53,6 +46,6 @@ class MockPortRef(PortRef):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if self.port:
-            return self.port
+            return self.port.get_id()
         else:
             raise UnknownPortId(self.port_id)
