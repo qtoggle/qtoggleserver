@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 import pytest
 
@@ -360,7 +360,7 @@ async def test_bow_negative(dummy_local_datetime, local_tz_info, dummy_eval_cont
         dummy_eval_context
     )
 
-    dt = datetime.datetime(2018, 2, 26, 0, 0, 0)
+    dt = datetime(2018, 2, 26, 0, 0, 0)
     dt = dt.astimezone(local_tz_info)
     assert result == dt.timestamp()
 
@@ -370,7 +370,7 @@ async def test_bow_positive(dummy_local_datetime, local_tz_info, dummy_eval_cont
         dummy_eval_context
     )
 
-    dt = datetime.datetime(2020, 3, 23, 0, 0, 0)
+    dt = datetime(2020, 3, 23, 0, 0, 0)
     dt = dt.astimezone(local_tz_info)
     assert result == dt.timestamp()
 
@@ -393,7 +393,7 @@ async def test_bow_sunday_negative(dummy_local_datetime, local_tz_info, dummy_ev
         role=ROLE_VALUE,
     ).eval(dummy_eval_context)
 
-    dt = datetime.datetime(2018, 2, 25, 0, 0, 0)
+    dt = datetime(2018, 2, 25, 0, 0, 0)
     dt = dt.astimezone(local_tz_info)
     assert result == dt.timestamp()
 
@@ -403,7 +403,7 @@ async def test_bow_sunday_positive(dummy_local_datetime, local_tz_info, dummy_ev
         [literalvalues.LiteralValue(54, "", ROLE_VALUE), literalvalues.LiteralValue(6, "", ROLE_VALUE)], role=ROLE_VALUE
     ).eval(dummy_eval_context)
 
-    dt = datetime.datetime(2020, 3, 22, 0, 0, 0)
+    dt = datetime(2020, 3, 22, 0, 0, 0)
     dt = dt.astimezone(local_tz_info)
     assert result == dt.timestamp()
 

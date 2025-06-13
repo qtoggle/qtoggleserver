@@ -22,19 +22,12 @@ dependencies = [
     "tornado>=6.0,<7",
 ]
 
-[tool.ruff]
-line-length = 120
-target-version = "py310"
-lint.extend-select = ["I", "RUF022"]
-lint.isort.lines-after-imports = 2
-lint.isort.lines-between-types = 1
-lint.isort.force-wrap-aliases = true
-
 [dependency-groups]
 dev = [
     "fakeredis",
     "freezegun",
     "mongomock",
+    "pre-commit",
     "pytest",
     "pytest-asyncio",
     "pytest-mock",
@@ -47,6 +40,14 @@ opt = [
     "pymongo",
     "redis",
 ]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+lint.extend-select = ["I", "RUF022"]
+lint.isort.lines-after-imports = 2
+lint.isort.lines-between-types = 1
+lint.isort.force-wrap-aliases = true
 
 [tool.pytest.ini_options]
 testpaths = ['tests/qtoggleserver']

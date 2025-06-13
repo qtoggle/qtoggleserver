@@ -1,7 +1,7 @@
-import datetime
 import json
 import math
 
+from datetime import date, datetime
 from typing import Any, cast
 
 import jsonpointer
@@ -65,9 +65,9 @@ def _resolve_refs_rec(obj: Any, root_obj: Any) -> Any:
 
 
 def encode_default_json_iso(obj: Any) -> Any:
-    if isinstance(obj, datetime.datetime):
+    if isinstance(obj, datetime):
         return obj.strftime(DATETIME_FORMAT_ISO)
-    elif isinstance(obj, datetime.date):
+    elif isinstance(obj, date):
         return obj.strftime(DATE_FORMAT)
     elif isinstance(obj, (set, tuple)):
         return list(obj)
@@ -76,9 +76,9 @@ def encode_default_json_iso(obj: Any) -> Any:
 
 
 def encode_default_json_extended(obj: Any) -> Any:
-    if isinstance(obj, datetime.datetime):
+    if isinstance(obj, datetime):
         return {TYPE_FIELD: DATETIME_TYPE, VALUE_FIELD: obj.strftime(DATETIME_FORMAT)}
-    elif isinstance(obj, datetime.date):
+    elif isinstance(obj, date):
         return {TYPE_FIELD: DATE_TYPE, VALUE_FIELD: obj.strftime(DATE_FORMAT)}
     elif isinstance(obj, (set, tuple)):
         return list(obj)
@@ -91,12 +91,12 @@ def decode_json_hook_iso(obj: dict) -> Any:
         if isinstance(v, str):
             if len(v) == DATETIME_FORMAT_ISO_LEN:
                 try:
-                    obj[k] = datetime.datetime.strptime(v, DATETIME_FORMAT_ISO)
+                    obj[k] = datetime.strptime(v, DATETIME_FORMAT_ISO)
                 except ValueError:
                     pass
             elif len(v) == DATE_FORMAT_ISO_LEN:
                 try:
-                    obj[k] = datetime.datetime.strptime(v, DATE_FORMAT_ISO).date()
+                    obj[k] = datetime.strptime(v, DATE_FORMAT_ISO).date()
                 except ValueError:
                     pass
 
@@ -109,12 +109,12 @@ def decode_json_hook_extended(obj: dict[Any, Any]) -> Any:
         __v = cast(str, obj.get(VALUE_FIELD))
         if __t == DATE_TYPE:
             try:
-                return datetime.datetime.strptime(__v, DATE_FORMAT).date()
+                return datetime.strptime(__v, DATE_FORMAT).date()
             except ValueError:
                 pass
         elif __t == DATETIME_TYPE:
             try:
-                return datetime.datetime.strptime(__v, DATETIME_FORMAT)
+                return datetime.strptime(__v, DATETIME_FORMAT)
             except ValueError:
                 pass
 

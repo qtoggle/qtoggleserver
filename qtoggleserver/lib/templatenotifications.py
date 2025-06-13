@@ -1,6 +1,7 @@
 import abc
-import datetime
 import logging
+
+from datetime import datetime
 
 from jinja2 import Environment, Template
 
@@ -102,7 +103,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
     def get_common_context(self, event: core_events.Event) -> dict:
         timestamp = event.get_timestamp()
         if timestamp:
-            moment = datetime.datetime.fromtimestamp(timestamp)
+            moment = datetime.fromtimestamp(timestamp)
         else:
             moment = None
 

@@ -1,7 +1,7 @@
-import datetime
 import time
 
 from collections.abc import Iterable
+from datetime import datetime
 
 import pytz
 
@@ -25,7 +25,7 @@ def has_set_date_support() -> bool:
     return bool(settings.system.date.set_cmd)
 
 
-def set_date(date: datetime.datetime) -> None:
+def set_date(date: datetime) -> None:
     assert settings.system.date.set_format
     assert settings.system.date.set_cmd
 

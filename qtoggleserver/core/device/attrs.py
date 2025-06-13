@@ -1,6 +1,5 @@
 import asyncio
 import copy
-import datetime
 import hashlib
 import inspect
 import logging
@@ -10,7 +9,7 @@ import sys
 import time
 
 from collections.abc import Callable
-from datetime import timezone
+from datetime import datetime, timezone
 from typing import Any
 
 from qtoggleserver import system, version
@@ -222,7 +221,7 @@ ATTRDEFS = {
         "standard": system.date.has_set_date_support,
         "enabled": system.date.has_real_date_time,
         "getter": lambda: int(time.time()),
-        "setter": lambda v: system.date.set_date(datetime.datetime.fromtimestamp(v, tz=timezone.utc)),
+        "setter": lambda v: system.date.set_date(datetime.fromtimestamp(v, tz=timezone.utc)),
     },
     "timezone": {
         "type": "string",

@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 from qtoggleserver.persist import BaseDriver
 
@@ -45,7 +45,7 @@ async def test_collection_separation(driver: BaseDriver) -> None:
 
 
 async def test_data_type_datetime(driver: BaseDriver) -> None:
-    record = {"value1": datetime.datetime(2020, 3, 14, 0, 0, 0), "value2": datetime.datetime(2020, 3, 14, 23, 59, 59)}
+    record = {"value1": datetime(2020, 3, 14, 0, 0, 0), "value2": datetime(2020, 3, 14, 23, 59, 59)}
     id_ = await driver.insert(data.COLL1, record)
 
     results = await driver.query(data.COLL1, fields=None, filt={}, sort=[], limit=None)
@@ -101,9 +101,9 @@ async def test_data_type_complex(driver: BaseDriver) -> None:
 
 
 async def test_filter_sort_datetime(driver: BaseDriver) -> None:
-    dt1 = datetime.datetime(2020, 3, 14, 0, 0, 0)
-    dt2 = datetime.datetime(2020, 3, 14, 23, 59, 59)
-    dt3 = datetime.datetime(2020, 3, 15, 23, 59, 59)
+    dt1 = datetime(2020, 3, 14, 0, 0, 0)
+    dt2 = datetime(2020, 3, 14, 23, 59, 59)
+    dt3 = datetime(2020, 3, 15, 23, 59, 59)
 
     await driver.insert(data.COLL1, dict(data.RECORD1, moment=dt1))
     id2 = await driver.insert(data.COLL1, dict(data.RECORD2, moment=dt2))

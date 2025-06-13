@@ -1,7 +1,7 @@
-import datetime
 import os
 import time
 
+from datetime import datetime
 from typing import Callable
 
 import pytest
@@ -29,7 +29,7 @@ def init_settings():
 
 @pytest.fixture(scope="session")
 def dummy_utc_datetime():
-    return datetime.datetime(2019, 3, 14, 10, 34, 56, microsecond=654321)
+    return datetime(2019, 3, 14, 10, 34, 56, microsecond=654321)
 
 
 @pytest.fixture(scope="session")

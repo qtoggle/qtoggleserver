@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import asyncio
-import datetime
 import json
 import logging
 import time
+
+from datetime import datetime
 
 from tornado import httpclient
 
@@ -51,7 +52,7 @@ class DiscoveredDevice:
         return {
             "mac_address": self.ap_client.mac_address,
             "ip_address": self.ap_client.ip_address,
-            "timestamp": datetime.datetime.timestamp(self.ap_client.moment),
+            "timestamp": datetime.timestamp(self.ap_client.moment),
             "scheme": self.scheme,
             "hostname": self.ap_client.hostname,
             "port": self.port,

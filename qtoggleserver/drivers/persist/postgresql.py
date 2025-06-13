@@ -1,9 +1,9 @@
 import asyncio
-import datetime
 import logging
 import re
 
 from collections.abc import Iterable
+from datetime import date, datetime
 from typing import Any, AsyncContextManager
 
 import asyncpg.pool
@@ -512,10 +512,10 @@ class PostgreSQLDriver(BaseDriver):
         return {k: self.value_from_db(v) for k, v in record.items()}
 
     def value_to_db(self, value: Any) -> Any:
-        if isinstance(value, datetime.datetime):
+        if isinstance(value, datetime):
             return self.datetime_to_str(value)
 
-        if isinstance(value, datetime.date):
+        if isinstance(value, date):
             return self.date_to_str(value)
 
         return value
@@ -527,11 +527,11 @@ class PostgreSQLDriver(BaseDriver):
         return value
 
     @staticmethod
-    def datetime_to_str(dt: datetime.datetime) -> str:
+    def datetime_to_str(dt: datetime) -> str:
         return DT_FMT.format(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
 
     @staticmethod
-    def str_to_datetime(s: str) -> datetime.datetime | None:
+    def str_to_datetime(s: str) -> datetime | None:
         if len(s) != DT_FMT_LEN:
             return None
 
@@ -539,14 +539,14 @@ class PostgreSQLDriver(BaseDriver):
         if m is None:
             return None
 
-        return datetime.datetime(*(int(g) for g in m.groups()))
+        return datetime(*(int(g) for g in m.groups()))
 
     @staticmethod
-    def date_to_str(dt: datetime.date) -> str:
+    def date_to_str(dt: date) -> str:
         return D_FMT.format(dt.year, dt.month, dt.day)
 
     @staticmethod
-    def str_to_date(s: str) -> datetime.date | None:
+    def str_to_date(s: str) -> date | None:
         if len(s) != D_FMT_LEN:
             return None
 
@@ -554,4 +554,4 @@ class PostgreSQLDriver(BaseDriver):
         if m is None:
             return None
 
-        return datetime.date(*(int(g) for g in m.groups()))
+        return date(*(int(g) for g in m.groups()))
