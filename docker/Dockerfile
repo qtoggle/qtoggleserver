@@ -13,7 +13,7 @@ FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.10.18-slim-bullseye AS fr
 # Install OS deps
 RUN apt-get update && \
     apt-get install --no-install-recommends -y curl gnupg librsvg2-bin && \
-    curl -sL https://deb.nodesource.com/setup_16.x | bash - && \
+    curl -sL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get install --no-install-recommends -y nodejs
 
 COPY . /tmp/build
