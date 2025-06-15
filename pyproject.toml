@@ -71,7 +71,8 @@ package = true
 [tool.ruff]
 line-length = 120
 target-version = "py310"
-lint.extend-select = ["I", "RUF022"]
+lint.extend-select = ["I", "RUF022", "ANN"]
+lint.extend-ignore = ["ANN002", "ANN003", "ANN401"]
 lint.isort.lines-after-imports = 2
 lint.isort.lines-between-types = 1
 lint.isort.force-wrap-aliases = true

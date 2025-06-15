@@ -1,3 +1,5 @@
+# ruff: noqa: ANN001, ANN002, ANN201
+
 from __future__ import annotations
 
 import abc
@@ -70,15 +72,15 @@ class Agent(ServiceInterface):
         self.secrets_by_address.pop(address, None)
 
     @method()
-    async def Release(self):  # noqa
+    async def Release(self):
         logger.debug("BT agent Release() called")
 
     @method()
-    async def Cancel(self):  # noqa
+    async def Cancel(self):
         logger.debug("BT agent Cancel() called")
 
     @method()
-    async def AuthorizeService(self, device: o, uuid: s):  # noqa
+    async def AuthorizeService(self, device, uuid):
         logger.debug("BT agent AuthorizeService(%s, %s) called", device, uuid)
         address = self.address_from_device_path(device)
         if address not in self.secrets_by_address:
@@ -86,7 +88,7 @@ class Agent(ServiceInterface):
             raise DBusError("org.bluez.Error.Rejected", "unknown device")
 
     @method()
-    async def RequestConfirmation(self, device: o, passkey: u):  # noqa
+    async def RequestConfirmation(self, device, passkey):
         logger.debug("BT agent RequestConfirmation(%s, %s) called", device, passkey)
 
         _none = {}
@@ -108,7 +110,7 @@ class Agent(ServiceInterface):
             raise DBusError("org.bluez.Error.Rejected", "invalid passkey")
 
     @method()
-    async def RequestAuthorization(self, device: o):  # noqa
+    async def RequestAuthorization(self, device):
         logger.debug("BT agent RequestAuthorization(%s) called", device)
         address = self.address_from_device_path(device)
         if address not in self.secrets_by_address:
@@ -116,7 +118,7 @@ class Agent(ServiceInterface):
             raise DBusError("org.bluez.Error.Rejected", "unknown device")
 
     @method()
-    async def RequestPasskey(self, device: o) -> u:  # noqa
+    async def RequestPasskey(self, device):
         logger.debug("BT agent RequestPasskey(%s) called", device)
 
         _none = {}
@@ -134,7 +136,7 @@ class Agent(ServiceInterface):
         return int(secret)
 
     @method()
-    async def RequestPinCode(self, device: o) -> s:  # noqa
+    async def RequestPinCode(self, device):
         logger.debug("BT agent RequestPinCode(%s) called", device)
 
         _none = {}
@@ -152,11 +154,11 @@ class Agent(ServiceInterface):
         return secret
 
     @method()
-    async def DisplayPasskey(self, device: o, passkey: u, entered: q):  # noqa
+    async def DisplayPasskey(self, device, passkey, entered):
         logger.debug("BT agent DisplayPasskey(%s, %s, %s) called", device, passkey, entered)
 
     @method()
-    async def DisplayPinCode(self, device: o, pincode: s):  # noqa
+    async def DisplayPinCode(self, device, pincode):
         logger.debug("BT agent DisplayPinCode(%s, %s) called", device, pincode)
 
     @staticmethod
