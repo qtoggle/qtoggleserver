@@ -267,7 +267,7 @@ const AttrdefFormMixin = Mixin((superclass = Object) => {
                     try {
                         newValue = def.valueToUI(attrs[name])
                     }
-                    catch (e) {
+                    catch {
                         logger.errorStack(`valueToUI() failed for field ${name} and value ${newValue}`)
                         newValue = null
                     }

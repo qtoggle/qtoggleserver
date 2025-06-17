@@ -63,7 +63,7 @@ class AddPeripheralForm extends PageForm {
                         try {
                             JSON.parse(params)
                         }
-                        catch (e) {
+                        catch {
                             let msg = gettext('Enter a valid JSON')
                             throw new ValidationError(msg)
                         }
