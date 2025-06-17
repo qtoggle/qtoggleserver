@@ -42,7 +42,7 @@ jobs:
       - name: Install Python deps
         run: uv sync
       - name: Run PyTest
-        run: pytest --import-mode=append
+        run: uv run pytest
   build:
     name: Build Package
     if: startsWith(github.ref, 'refs/tags/version-')
