@@ -26,6 +26,14 @@ dependencies = [
 qtoggleserver = "qtoggleserver.commands.server:execute"
 qtoggleshell = "qtoggleserver.commands.shell:execute"
 
+[project.optional-dependencies]
+opt = [
+    "asyncpg",
+    "bleak",
+    "pymongo",
+    "redis",
+]
+
 [dependency-groups]
 dev = [
     "fakeredis",
@@ -37,12 +45,6 @@ dev = [
     "pytest-mock",
     "ruff",
     "testing.postgresql",
-]
-opt = [
-    "asyncpg",
-    "bleak",
-    "pymongo",
-    "redis",
 ]
 
 [tool.setuptools]

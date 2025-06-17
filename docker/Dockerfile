@@ -46,7 +46,7 @@ RUN \
     # Prepare virtualenv
     pip install uv && uv virtualenv /data && . /data/bin/activate && \
     # Install python dependencies
-    uv sync --active --no-dev --no-install-project && \
+    uv sync --active --no-dev --no-install-project --extra opt && \
     # Build and install our package
     uv build && uv pip install dist/qtoggleserver-*.tar.gz
     # Cleanups
