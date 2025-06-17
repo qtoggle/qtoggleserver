@@ -27,6 +27,7 @@
         "expose-loader": "^1",
         "file-loader": "*",
         "glob": "*",
+        "globals": "^16",
         "less": "*",
         "less-loader": "^6",
         "mini-css-extract-plugin": "^1",
