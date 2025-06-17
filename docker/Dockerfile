@@ -24,9 +24,9 @@ RUN cd qtoggleserver/frontend && \
     npm install && npx webpack --mode=production
 
 
-# Final image
+# Python builder image
 
-FROM python:3.10.18-slim-bullseye
+FROM python:3.10.18-slim-bullseye AS python-builder
 
 # Copy source with frontend that was just built above
 COPY --from=frontend-builder /tmp/build /tmp/build
@@ -38,24 +38,40 @@ COPY extra/* /usr/share/qtoggleserver/
 
 RUN \
     # Prepare user data dir
-    rm -rf /root/.local && ln -s /data /root/.local && \
     # Install OS deps
     apt-get update && \
-    apt-get install --no-install-recommends -y procps less nano build-essential libglib2.0-dev bluez hostapd \
-                                               dnsmasq iproute2 && \
+    apt-get install --no-install-recommends -y build-essential libglib2.0-dev bluez && \
     # Prepare virtualenv
     pip install uv && uv virtualenv /data && . /data/bin/activate && \
     # Install python dependencies
     uv sync --active --no-dev --no-install-project --extra opt && \
     # Build and install our package
-    uv build && uv pip install dist/qtoggleserver-*.tar.gz && \
-    # Cleanups
-    rm -r /tmp/build && \
-    rm -rf /var/lib/apt/lists
+    uv build && uv pip install dist/qtoggleserver-*.tar.gz
 
+# Final image
+
+FROM python:3.10.18-slim-bullseye
+
+# Copy data dir with virtualenv that was just created above
+COPY --from=python-builder /data /data
 WORKDIR /data
 
-EXPOSE 8889
+# Copy various stuff
+COPY docker/docker-entrypoint.sh /
+COPY extra/* /usr/share/qtoggleserver/
+
+RUN \
+    # Prepare user data dir
+    rm -rf /root/.local && ln -s /data /root/.local && \
+    # Install OS deps
+    apt-get update && \
+    apt-get install --no-install-recommends -y procps less nano bluez hostapd dnsmasq iproute2 && \
+    # Install UV
+    pip install uv && \
+    # Cleanups
+    rm -rf /var/lib/apt/lists
+
+EXPOSE 8888
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["qtoggleserver", "-c", "/data/etc/qtoggleserver.conf"]
