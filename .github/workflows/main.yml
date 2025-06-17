@@ -52,18 +52,32 @@ jobs:
       - test
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
       - name: Install host packages
         run: sudo apt-get -y update && sudo apt-get -y install librsvg2-bin
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
       - name: Replace source version
         uses: qtoggle/actions-common/actions/replace-source-version@v1
       - name: Build frontend
         run: cd qtoggleserver/frontend && npm install && npx webpack --mode=production
+      - name: Install UV
+        uses: astral-sh/setup-uv@v6
       - name: Build Python package
-        uses: qtoggle/actions-common/actions/build-python-package@v1
+        shell: bash
+        run: uv build
+      - name: Store dist folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-dist
+          path: dist/
   release-pypi:
     name: Publish PyPI Release
     if: startsWith(github.ref, 'refs/tags/version-')
