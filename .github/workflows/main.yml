@@ -107,6 +107,8 @@ jobs:
         with:
           name: python-package-dist
           path: dist/
+      - name: Extract version from tag
+        uses: qtoggle/actions-common/actions/extract-version-from-tag@v1
       - name: Publish to GitHub
         uses: softprops/action-gh-release@v2
         with:
