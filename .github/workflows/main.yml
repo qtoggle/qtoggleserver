@@ -40,7 +40,7 @@ jobs:
       - name: Install UV
         uses: astral-sh/setup-uv@v6
       - name: Install Python deps
-        run: uv sync
+        run: uv sync --extra opt
       - name: Run PyTest
         run: uv run pytest
   build:
