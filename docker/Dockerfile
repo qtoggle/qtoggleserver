@@ -48,10 +48,10 @@ RUN \
     # Install python dependencies
     uv sync --active --no-dev --no-install-project --extra opt && \
     # Build and install our package
-    uv build && uv pip install dist/qtoggleserver-*.tar.gz
+    uv build && uv pip install dist/qtoggleserver-*.tar.gz && \
     # Cleanups
-#    rm -r /tmp/build && \
-#    rm -rf /var/lib/apt/lists
+    rm -r /tmp/build && \
+    rm -rf /var/lib/apt/lists
 
 WORKDIR /data
 
