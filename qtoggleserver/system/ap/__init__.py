@@ -1,7 +1,6 @@
-import datetime
 import logging
 
-from typing import Optional
+from datetime import datetime, timezone
 
 from .client import APClient
 from .dnsmasq import DNSMasq
@@ -11,8 +10,8 @@ from .hostapd import HostAPD
 
 logger = logging.getLogger(__name__)
 
-_hostapd: Optional[HostAPD] = None
-_dnsmasq: Optional[DNSMasq] = None
+_hostapd: HostAPD | None = None
+_dnsmasq: DNSMasq | None = None
 
 
 async def update() -> None:
@@ -20,24 +19,24 @@ async def update() -> None:
     global _dnsmasq
 
     if _hostapd and not _hostapd.is_alive():
-        logger.warning('hostapd died unexpectedly')
+        logger.warning("hostapd died unexpectedly")
         await _hostapd.stop()
         _hostapd = None
 
     if _dnsmasq and not _dnsmasq.is_alive():
-        logger.warning('dnsmasq died unexpectedly')
+        logger.warning("dnsmasq died unexpectedly")
         await _dnsmasq.stop()
         _dnsmasq = None
 
     if None in [_hostapd, _dnsmasq]:
         # Ensure both daemons are stopped
         if _hostapd:
-            logger.warning('dnsmasq is stopped but hostapd is running')
+            logger.warning("dnsmasq is stopped but hostapd is running")
             await _hostapd.stop()
             _hostapd = None
 
         if _dnsmasq:
-            logger.warning('hostapd is stopped but dnsmasq is running')
+            logger.warning("hostapd is stopped but dnsmasq is running")
             await _dnsmasq.stop()
             _dnsmasq = None
 
@@ -49,30 +48,29 @@ def is_running() -> bool:
 def start(
     interface: str,
     ssid: str,
-    psk: Optional[str],
+    psk: str | None,
     own_ip: str,
     mask_len: int,
     start_ip: str,
     stop_ip: str,
-    hostapd_binary: Optional[str] = None,
-    hostapd_cli_binary: Optional[str] = None,
-    dnsmasq_binary: Optional[str] = None,
-    hostapd_log: Optional[str] = None,
-    dnsmasq_log: Optional[str] = None
+    hostapd_binary: str | None = None,
+    hostapd_cli_binary: str | None = None,
+    dnsmasq_binary: str | None = None,
+    hostapd_log: str | None = None,
+    dnsmasq_log: str | None = None,
 ) -> None:
-
     global _hostapd
     global _dnsmasq
 
-    logger.debug('starting')
+    logger.debug("starting")
 
     if is_running():
-        raise APException('AP already started')
+        raise APException("AP already started")
 
     if HostAPD.is_already_running():
-        raise APException('The hostapd daemon is already running')
+        raise APException("The hostapd daemon is already running")
     if DNSMasq.is_already_running():
-        raise APException('The dnsmasq daemon is already running')
+        raise APException("The dnsmasq daemon is already running")
 
     _hostapd = HostAPD(
         interface=interface,
@@ -80,7 +78,7 @@ def start(
         psk=psk,
         hostapd_binary=hostapd_binary,
         hostapd_cli_binary=hostapd_cli_binary,
-        hostapd_log=hostapd_log
+        hostapd_log=hostapd_log,
     )
 
     _dnsmasq = DNSMasq(
@@ -90,23 +88,23 @@ def start(
         start_ip=start_ip,
         stop_ip=stop_ip,
         dnsmasq_binary=dnsmasq_binary,
-        dnsmasq_log=dnsmasq_log
+        dnsmasq_log=dnsmasq_log,
     )
 
     _dnsmasq.start()
     _hostapd.start()
 
-    logger.debug('started')
+    logger.debug("started")
 
 
 async def stop() -> None:
     global _hostapd
     global _dnsmasq
 
-    logger.debug('stopping')
+    logger.debug("stopping")
 
     if not is_running():
-        raise APException('AP not started')
+        raise APException("AP not started")
 
     await _hostapd.stop()
     await _dnsmasq.stop()
@@ -114,18 +112,21 @@ async def stop() -> None:
     _hostapd = None
     _dnsmasq = None
 
-    logger.debug('stopped')
+    logger.debug("stopped")
 
 
 def get_clients() -> list[APClient]:
     if not is_running():
-        raise APException('AP not started')
+        raise APException("AP not started")
 
     leases = _dnsmasq.get_leases()
 
-    return [APClient(
-        mac_address=lease['mac_address'].upper(),
-        ip_address=lease['ip_address'],
-        hostname=lease['hostname'],
-        moment=datetime.datetime.utcfromtimestamp(lease['timestamp'])
-    ) for lease in leases]
+    return [
+        APClient(
+            mac_address=lease["mac_address"].upper(),
+            ip_address=lease["ip_address"],
+            hostname=lease["hostname"],
+            moment=datetime.fromtimestamp(lease["timestamp"], tz=timezone.utc),
+        )
+        for lease in leases
+    ]

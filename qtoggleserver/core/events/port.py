@@ -11,13 +11,13 @@ from .base import Event
 
 
 class PortEvent(Event):
-    def __init__(self, port: Any, timestamp: float = None) -> None:
+    def __init__(self, port: Any, timestamp: float | None = None) -> None:
         self._port = port
 
         super().__init__(timestamp)
 
     def __str__(self) -> str:
-        return f'{self._type}({self._port.get_id()}) event'
+        return f"{self._type}({self._port.get_id()}) event"
 
     def get_port(self) -> Any:
         return self._port
@@ -25,7 +25,7 @@ class PortEvent(Event):
 
 class PortAdd(PortEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_VIEWONLY
-    TYPE = 'port-add'
+    TYPE = "port-add"
 
     async def get_params(self) -> GenericJSONDict:
         return await self.get_port().to_json()
@@ -33,15 +33,15 @@ class PortAdd(PortEvent):
 
 class PortRemove(PortEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_VIEWONLY
-    TYPE = 'port-remove'
+    TYPE = "port-remove"
 
     async def get_params(self) -> GenericJSONDict:
-        return {'id': self.get_port().get_id()}
+        return {"id": self.get_port().get_id()}
 
 
 class PortUpdate(PortEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_VIEWONLY
-    TYPE = 'port-update'
+    TYPE = "port-update"
 
     async def get_params(self) -> GenericJSONDict:
         return await self.get_port().to_json()
@@ -52,22 +52,13 @@ class PortUpdate(PortEvent):
 
 class ValueChange(PortEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_VIEWONLY
-    TYPE = 'value-change'
+    TYPE = "value-change"
 
-    def __init__(
-        self,
-        old_value: NullablePortValue,
-        new_value: NullablePortValue,
-        *args, **kwargs
-    ) -> None:
+    def __init__(self, old_value: NullablePortValue, new_value: NullablePortValue, *args, **kwargs) -> None:
         self.old_value = old_value
         self.new_value = new_value
 
         super().__init__(*args, **kwargs)
 
     async def get_params(self) -> GenericJSONDict:
-        return {
-            'id': self.get_port().get_id(),
-            'value': self.new_value,
-            'old_value': self.old_value
-        }
+        return {"id": self.get_port().get_id(), "value": self.new_value, "old_value": self.old_value}

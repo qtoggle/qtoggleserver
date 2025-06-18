@@ -9,8 +9,6 @@ import socket
 import struct
 import time
 
-from typing import Optional
-
 import psutil
 
 
@@ -25,7 +23,7 @@ SIOCSIFFLAGS = 0x8914
 DHCP_MESSAGETYPE = 0x35
 DHCP_EOF = 0xFF
 DHCP_MSGDISCOVER = 0x01
-DHCP_HOSTNAME = 0x0c
+DHCP_HOSTNAME = 0x0C
 DHCP_REQUEST = 0x1
 DHCP_REPLY = 0x2
 DHCP_MAGIC = 0x63825363
@@ -51,107 +49,98 @@ class DHCPTimeout(DHCPException):
 
 
 class DHCPReply:
-    def __init__(
-        self,
-        ip_address: str,
-        xid: int,
-        timestamp: float
-    ) -> None:
-
+    def __init__(self, ip_address: str, xid: int, timestamp: float) -> None:
         self.ip_address: str = ip_address
         self.xid: int = xid
         self.timestamp: float = timestamp
 
     def __str__(self) -> str:
-        return f'DHCP offer for {self.ip_address}'
+        return f"DHCP offer for {self.ip_address}"
 
 
 class _ifreq(ctypes.Structure):
-    _fields_ = [
-        ("ifr_ifrn", ctypes.c_char * 16),
-        ("ifr_flags", ctypes.c_short)
-    ]
+    _fields_ = [("ifr_ifrn", ctypes.c_char * 16), ("ifr_flags", ctypes.c_short)]
 
 
-def _build_dhcp_options(hostname: Optional[str]) -> bytes:
-    dhcp_opts = b''
-    dhcp_opts += struct.pack('BBB', DHCP_MESSAGETYPE, 1, DHCP_MSGDISCOVER)  # message type
+def _build_dhcp_options(hostname: str | None) -> bytes:
+    dhcp_opts = b""
+    dhcp_opts += struct.pack("BBB", DHCP_MESSAGETYPE, 1, DHCP_MSGDISCOVER)  # message type
     if hostname:
-        dhcp_opts += struct.pack('BB', DHCP_HOSTNAME, len(hostname))
+        dhcp_opts += struct.pack("BB", DHCP_HOSTNAME, len(hostname))
         dhcp_opts += hostname.encode()
-    dhcp_opts += struct.pack('B', DHCP_EOF)  # EOF
+    dhcp_opts += struct.pack("B", DHCP_EOF)  # EOF
 
     return dhcp_opts
 
 
 def _build_dhcp_header(mac_address: str, xid: int, own_ip_address: str) -> bytes:
-    own_ip_address = [int(p) for p in own_ip_address.split('.')]
+    own_ip_address_list = [int(p) for p in own_ip_address.split(".")]
 
-    dhcp_header = struct.pack('B', DHCP_REQUEST)  # opcode
-    dhcp_header += struct.pack('B', ARPHRD_ETHER)  # hardware address type
-    dhcp_header += struct.pack('B', 6)  # hardware address len
-    dhcp_header += struct.pack('B', 0)  # opcount
-    dhcp_header += struct.pack('!L', xid)  # transaction ID
-    dhcp_header += struct.pack('!H', 0)  # seconds
-    dhcp_header += struct.pack('!H', 0)  # flags
-    dhcp_header += struct.pack('BBBB', 0, 0, 0, 0)  # client IP
-    dhcp_header += struct.pack('BBBB', 0, 0, 0, 0)  # your IP
-    dhcp_header += struct.pack('BBBB', 0, 0, 0, 0)  # server IP
-    dhcp_header += struct.pack('BBBB', *own_ip_address)  # gateway IP
-    dhcp_header += bytes.fromhex(re.sub('[^a-fA-F0-9]', '', mac_address))  # client MAC
-    dhcp_header += b'\x00' * 10  # remaining hardware address space
-    dhcp_header += b'\x00' * 64  # server hostname
-    dhcp_header += b'\x00' * 128  # boot file name
-    dhcp_header += struct.pack('!L', DHCP_MAGIC)
+    dhcp_header = struct.pack("B", DHCP_REQUEST)  # opcode
+    dhcp_header += struct.pack("B", ARPHRD_ETHER)  # hardware address type
+    dhcp_header += struct.pack("B", 6)  # hardware address len
+    dhcp_header += struct.pack("B", 0)  # opcount
+    dhcp_header += struct.pack("!L", xid)  # transaction ID
+    dhcp_header += struct.pack("!H", 0)  # seconds
+    dhcp_header += struct.pack("!H", 0)  # flags
+    dhcp_header += struct.pack("BBBB", 0, 0, 0, 0)  # client IP
+    dhcp_header += struct.pack("BBBB", 0, 0, 0, 0)  # your IP
+    dhcp_header += struct.pack("BBBB", 0, 0, 0, 0)  # server IP
+    dhcp_header += struct.pack("BBBB", *own_ip_address_list)  # gateway IP
+    dhcp_header += bytes.fromhex(re.sub("[^a-fA-F0-9]", "", mac_address))  # client MAC
+    dhcp_header += b"\x00" * 10  # remaining hardware address space
+    dhcp_header += b"\x00" * 64  # server hostname
+    dhcp_header += b"\x00" * 128  # boot file name
+    dhcp_header += struct.pack("!L", DHCP_MAGIC)
 
     return dhcp_header
 
 
 def _build_udp_header(dhcp_packet: bytes) -> bytes:
-    udp_header = struct.pack('!H', DHCP_SRC_PORT)  # source port
-    udp_header += struct.pack('!H', DHCP_DST_PORT)  # dest port
-    udp_header += struct.pack('!H', 8 + len(dhcp_packet))  # UDP header + DHCP packet
-    udp_header += struct.pack('!H', 0)  # checksum
+    udp_header = struct.pack("!H", DHCP_SRC_PORT)  # source port
+    udp_header += struct.pack("!H", DHCP_DST_PORT)  # dest port
+    udp_header += struct.pack("!H", 8 + len(dhcp_packet))  # UDP header + DHCP packet
+    udp_header += struct.pack("!H", 0)  # checksum
 
     return udp_header
 
 
 def _build_ipv4_header(udp_packet: bytes) -> bytes:
-    ipv4_header = b'\x45'   # version + Length
-    ipv4_header += b'\x00'  # ToS
-    ipv4_header += struct.pack('!H', 20 + len(udp_packet))  # IP header + UDP packet
-    ipv4_header += struct.pack('!H', 0)  # ID
-    ipv4_header += struct.pack('!H', 0)  # fragment offset
-    ipv4_header += struct.pack('B', 64)  # TTL
-    ipv4_header += struct.pack('B', IPV4_PROTO_UDP)  # protocol
-    ipv4_header += struct.pack('!H', 0)  # checksum
-    ipv4_header += struct.pack('BBBB', 0, 0, 0, 0)  # source address
-    ipv4_header += struct.pack('BBBB', 255, 255, 255, 255)  # dest address
+    ipv4_header = b"\x45"  # version + Length
+    ipv4_header += b"\x00"  # ToS
+    ipv4_header += struct.pack("!H", 20 + len(udp_packet))  # IP header + UDP packet
+    ipv4_header += struct.pack("!H", 0)  # ID
+    ipv4_header += struct.pack("!H", 0)  # fragment offset
+    ipv4_header += struct.pack("B", 64)  # TTL
+    ipv4_header += struct.pack("B", IPV4_PROTO_UDP)  # protocol
+    ipv4_header += struct.pack("!H", 0)  # checksum
+    ipv4_header += struct.pack("BBBB", 0, 0, 0, 0)  # source address
+    ipv4_header += struct.pack("BBBB", 255, 255, 255, 255)  # dest address
 
     ipv4_checksum = 0
     for i in range(6):  # header length is 10x16 bytes
-        word = struct.unpack('!H', ipv4_header[i * 2: i * 2 + 2])[0]
+        word = struct.unpack("!H", ipv4_header[i * 2 : i * 2 + 2])[0]
         ipv4_checksum += word
 
     ipv4_checksum = (ipv4_checksum >> 16) + ipv4_checksum
     ipv4_checksum = (~ipv4_checksum) & 0xFFFF
 
-    ipv4_header = ipv4_header[0:10] + struct.pack('!H', ipv4_checksum) + ipv4_header[12:20]
+    ipv4_header = ipv4_header[0:10] + struct.pack("!H", ipv4_checksum) + ipv4_header[12:20]
 
     return ipv4_header
 
 
 def _build_ethernet_header(own_mac_address: str) -> bytes:
-    ethernet_header = b'\xFF\xFF\xFF\xFF\xFF\xFF'  # dest MAC
-    ethernet_header += bytes.fromhex(re.sub('[^a-fA-F0-9]', '', own_mac_address))
-    ethernet_header += struct.pack('!H', ETHERTYPE_IP)
+    ethernet_header = b"\xff\xff\xff\xff\xff\xff"  # dest MAC
+    ethernet_header += bytes.fromhex(re.sub("[^a-fA-F0-9]", "", own_mac_address))
+    ethernet_header += struct.pack("!H", ETHERTYPE_IP)
 
     return ethernet_header
 
 
-def _check_received_frame(frame: bytes, expected_xid: int) -> Optional[DHCPReply]:
+def _check_received_frame(frame: bytes, expected_xid: int) -> DHCPReply | None:
     if len(frame) < 282:
-        return
+        return None
 
     ethernet_header = frame[:14]
     ipv4_header = frame[14:34]
@@ -159,39 +148,36 @@ def _check_received_frame(frame: bytes, expected_xid: int) -> Optional[DHCPReply
     dhcp_header = frame[42:282]
     # dhcp_opts = frame[282:]
 
-    ethertype = struct.unpack('!H', ethernet_header[12:14])[0]
+    ethertype = struct.unpack("!H", ethernet_header[12:14])[0]
     if ethertype != ETHERTYPE_IP:
-        return
+        return None
 
     if ipv4_header[9] != IPV4_PROTO_UDP:
-        return
+        return None
 
-    src_port = struct.unpack('!H', udp_header[0:2])[0]
+    src_port = struct.unpack("!H", udp_header[0:2])[0]
     if src_port != DHCP_DST_PORT:
-        return
+        return None
 
-    dst_port = struct.unpack('!H', udp_header[2:4])[0]
+    dst_port = struct.unpack("!H", udp_header[2:4])[0]
     if (dst_port != DHCP_SRC_PORT) and (dst_port != DHCP_DST_PORT):
-        return
+        return None
 
     # At this point we can consider we're dealing with a DHCP reply
 
-    xid = struct.unpack('!L', dhcp_header[4:8])[0]
-    your_ip = dhcp_header[16:20]
-    your_ip = '{:d}.{:d}.{:d}.{:d}'.format(*your_ip)
-    dhcp_reply = DHCPReply(
-        ip_address=your_ip,
-        xid=xid,
-        timestamp=time.time()
-    )
+    xid = struct.unpack("!L", dhcp_header[4:8])[0]
+    your_ip_bytes = dhcp_header[16:20]
+    your_ip = "{:d}.{:d}.{:d}.{:d}".format(*your_ip_bytes)
+    dhcp_reply = DHCPReply(ip_address=your_ip, xid=xid, timestamp=time.time())
 
     if expected_xid == xid:
         return dhcp_reply
     else:  # not ours, queue it for other pending requests
         _dhcp_replies.append(dhcp_reply)
+        return None
 
 
-def _check_and_prune_pending_dhcp_replies(expected_xid: int) -> Optional[DHCPReply]:
+def _check_and_prune_pending_dhcp_replies(expected_xid: int) -> DHCPReply | None:
     global _dhcp_replies
 
     # Prune expired replies
@@ -207,17 +193,10 @@ def _check_and_prune_pending_dhcp_replies(expected_xid: int) -> Optional[DHCPRep
 
 
 async def request(
-    interface: str,
-    mac_address: str,
-    hostname: Optional[str] = None,
-    timeout: int = DEFAULT_TIMEOUT
+    interface: str, mac_address: str, hostname: str | None = None, timeout: int = DEFAULT_TIMEOUT
 ) -> DHCPReply:
-
     logger.debug(
-        'sending DHCP discovery for %s (%s) on %s',
-        mac_address,
-        hostname if hostname else '<no hostname>',
-        interface
+        "sending DHCP discovery for %s (%s) on %s", mac_address, hostname if hostname else "<no hostname>", interface
     )
 
     # Generate random transaction id
@@ -227,7 +206,7 @@ async def request(
     try:
         if_addrs = psutil.net_if_addrs()[interface]
     except KeyError:
-        raise DHCPException(f'Cannot find own address for interface {interface}')
+        raise DHCPException(f"Cannot find own address for interface {interface}")
 
     own_mac_address = None
     own_ip_address = None
@@ -238,7 +217,7 @@ async def request(
             own_ip_address = addr.address
 
     if not own_ip_address or not own_mac_address:
-        raise DHCPException(f'Cannot find own address for interface {interface}')
+        raise DHCPException(f"Cannot find own address for interface {interface}")
 
     dhcp_opts = _build_dhcp_options(hostname)
     dhcp_header = _build_dhcp_header(mac_address, xid, own_ip_address)
@@ -287,20 +266,20 @@ async def request(
 
     if offer:
         logger.debug(
-            'received DHCP offer for %s (%s) on %s: %s',
+            "received DHCP offer for %s (%s) on %s: %s",
             mac_address,
-            hostname if hostname else '<no hostname>',
+            hostname if hostname else "<no hostname>",
             interface,
-            offer.ip_address
+            offer.ip_address,
         )
 
         return offer
     else:
         logger.warning(
-            'timeout waiting for DHCP offer for %s (%s) on %s',
+            "timeout waiting for DHCP offer for %s (%s) on %s",
             mac_address,
-            hostname if hostname else '<no hostname>',
-            interface
+            hostname if hostname else "<no hostname>",
+            interface,
         )
 
         raise DHCPTimeout()

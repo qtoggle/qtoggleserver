@@ -1,12 +1,7 @@
 import pytest
 
-from qtoggleserver.core.expressions import (
-    ROLE_VALUE,
-    ExpressionArithmeticError,
-    Function,
-    InvalidNumberOfArguments,
-    arithmetic,
-)
+from qtoggleserver.core.expressions import ROLE_VALUE, Function, arithmetic
+from qtoggleserver.core.expressions.exceptions import ExpressionArithmeticError, InvalidNumberOfArguments
 
 
 async def test_add_simple(literal_one, literal_two, dummy_eval_context):
@@ -26,13 +21,13 @@ async def test_add_boolean(literal_one, literal_true, dummy_eval_context):
 
 
 def test_add_parse():
-    e = Function.parse(None, 'ADD(1, 2)', ROLE_VALUE, 0)
+    e = Function.parse(None, "ADD(1, 2)", ROLE_VALUE, 0)
     assert isinstance(e, arithmetic.AddFunction)
 
 
 def test_add_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'ADD(1)', ROLE_VALUE, 0)
+        Function.parse(None, "ADD(1)", ROLE_VALUE, 0)
 
 
 async def test_sub_simple(literal_one, literal_two, dummy_eval_context):
@@ -46,16 +41,16 @@ async def test_sub_boolean(literal_two, literal_true, dummy_eval_context):
 
 
 def test_sub_parse():
-    e = Function.parse(None, 'SUB(1, 2)', ROLE_VALUE, 0)
+    e = Function.parse(None, "SUB(1, 2)", ROLE_VALUE, 0)
     assert isinstance(e, arithmetic.SubFunction)
 
 
 def test_sub_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'SUB(1)', ROLE_VALUE, 0)
+        Function.parse(None, "SUB(1)", ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'SUB(1, 2, 3)', ROLE_VALUE, 0)
+        Function.parse(None, "SUB(1, 2, 3)", ROLE_VALUE, 0)
 
 
 async def test_mul_simple(literal_two, literal_ten, dummy_eval_context):
@@ -75,13 +70,13 @@ async def test_mul_boolean(literal_two, literal_true, dummy_eval_context):
 
 
 def test_mul_parse():
-    e = Function.parse(None, 'MUL(1, 2)', ROLE_VALUE, 0)
+    e = Function.parse(None, "MUL(1, 2)", ROLE_VALUE, 0)
     assert isinstance(e, arithmetic.MulFunction)
 
 
 def test_mul_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'MUL(1)', ROLE_VALUE, 0)
+        Function.parse(None, "MUL(1)", ROLE_VALUE, 0)
 
 
 async def test_div_integer(literal_ten, literal_two, dummy_eval_context):
@@ -103,16 +98,16 @@ async def test_div_boolean(literal_ten, literal_true, literal_false, dummy_eval_
 
 
 def test_div_parse():
-    e = Function.parse(None, 'DIV(1, 2)', ROLE_VALUE, 0)
+    e = Function.parse(None, "DIV(1, 2)", ROLE_VALUE, 0)
     assert isinstance(e, arithmetic.DivFunction)
 
 
 def test_div_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'DIV(1)', ROLE_VALUE, 0)
+        Function.parse(None, "DIV(1)", ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'DIV(1, 2, 3)', ROLE_VALUE, 0)
+        Function.parse(None, "DIV(1, 2, 3)", ROLE_VALUE, 0)
 
 
 async def test_mod_integer(literal_ten, literal_two, dummy_eval_context):
@@ -121,9 +116,9 @@ async def test_mod_integer(literal_ten, literal_two, dummy_eval_context):
 
 
 async def test_mod_float(literal_three, literal_two, dummy_eval_context):
-    result = await arithmetic.ModFunction(
-        [literal_three, literal_two], role=ROLE_VALUE
-    ).eval(context=dummy_eval_context)
+    result = await arithmetic.ModFunction([literal_three, literal_two], role=ROLE_VALUE).eval(
+        context=dummy_eval_context
+    )
     assert result == 1
 
 
@@ -136,16 +131,16 @@ async def test_mod_boolean(literal_ten, literal_true, literal_false, dummy_eval_
 
 
 def test_mod_parse():
-    e = Function.parse(None, 'MOD(1, 2)', ROLE_VALUE, 0)
+    e = Function.parse(None, "MOD(1, 2)", ROLE_VALUE, 0)
     assert isinstance(e, arithmetic.ModFunction)
 
 
 def test_mod_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'MOD(1)', ROLE_VALUE, 0)
+        Function.parse(None, "MOD(1)", ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'MOD(1, 2, 3)', ROLE_VALUE, 0)
+        Function.parse(None, "MOD(1, 2, 3)", ROLE_VALUE, 0)
 
 
 async def test_pow_integer(literal_ten, literal_two, dummy_eval_context):
@@ -154,9 +149,9 @@ async def test_pow_integer(literal_ten, literal_two, dummy_eval_context):
 
 
 async def test_pow_sqrt(literal_sixteen, literal_zero_point_five, dummy_eval_context):
-    result = await arithmetic.PowFunction(
-        [literal_sixteen, literal_zero_point_five], role=ROLE_VALUE
-    ).eval(context=dummy_eval_context)
+    result = await arithmetic.PowFunction([literal_sixteen, literal_zero_point_five], role=ROLE_VALUE).eval(
+        context=dummy_eval_context
+    )
     assert result == 4
 
 
@@ -164,20 +159,20 @@ async def test_pow_boolean(literal_ten, literal_true, literal_false, dummy_eval_
     result = await arithmetic.PowFunction([literal_ten, literal_true], role=ROLE_VALUE).eval(context=dummy_eval_context)
     assert result == 10
 
-    result = await arithmetic.PowFunction(
-        [literal_ten, literal_false], role=ROLE_VALUE
-    ).eval(context=dummy_eval_context)
+    result = await arithmetic.PowFunction([literal_ten, literal_false], role=ROLE_VALUE).eval(
+        context=dummy_eval_context
+    )
     assert result == 1
 
 
 def test_pow_parse():
-    e = Function.parse(None, 'POW(1, 2)', ROLE_VALUE, 0)
+    e = Function.parse(None, "POW(1, 2)", ROLE_VALUE, 0)
     assert isinstance(e, arithmetic.PowFunction)
 
 
 def test_pow_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'POW(1)', ROLE_VALUE, 0)
+        Function.parse(None, "POW(1)", ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'POW(1, 2, 3)', ROLE_VALUE, 0)
+        Function.parse(None, "POW(1, 2, 3)", ROLE_VALUE, 0)

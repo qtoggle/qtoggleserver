@@ -9,14 +9,14 @@ from .. import schema as api_schema
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def get_discovered(request: core_api.APIRequest) -> GenericJSONList:
-    timeout = request.query.get('timeout')
+    timeout = request.query.get("timeout")
     if timeout is None:
-        raise core_api.APIError(400, 'missing-field', field='timeout')
+        raise core_api.APIError(400, "missing-field", field="timeout")
 
     try:
         timeout = int(timeout)
     except ValueError:
-        raise core_api.APIError(400, 'invalid-field', field='timeout') from None
+        raise core_api.APIError(400, "invalid-field", field="timeout") from None
 
     discovered_devices = slaves_discover.get_discovered_devices()
     if discovered_devices is None:
@@ -37,9 +37,9 @@ async def patch_discovered_device(request: core_api.APIRequest, name: str, param
     discovered_devices = slaves_discover.get_discovered_devices() or {}
     discovered_device = discovered_devices.get(name)
     if not discovered_device:
-        raise core_api.APIError(404, 'no-such-device')
+        raise core_api.APIError(404, "no-such-device")
 
-    attrs = params['attrs']
+    attrs = params["attrs"]
     try:
         discovered_device = await slaves_discover.configure(discovered_device, attrs)
     except Exception as e:

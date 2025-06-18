@@ -3,13 +3,15 @@ from __future__ import annotations
 import functools
 import logging
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.typing import GenericJSONDict
+from qtoggleserver.web import APIHandler
 
 
-API_VERSION = '1.1'
+API_VERSION = "1.1"
 
 ACCESS_LEVEL_ADMIN = 30
 ACCESS_LEVEL_NORMAL = 20
@@ -17,14 +19,14 @@ ACCESS_LEVEL_VIEWONLY = 10
 ACCESS_LEVEL_NONE = 0
 
 ACCESS_LEVEL_MAPPING = {
-    ACCESS_LEVEL_ADMIN: 'admin',
-    ACCESS_LEVEL_NORMAL: 'normal',
-    ACCESS_LEVEL_VIEWONLY: 'viewonly',
-    ACCESS_LEVEL_NONE: 'none',
-    'admin': ACCESS_LEVEL_ADMIN,
-    'normal': ACCESS_LEVEL_NORMAL,
-    'viewonly': ACCESS_LEVEL_VIEWONLY,
-    'none': ACCESS_LEVEL_NONE
+    ACCESS_LEVEL_ADMIN: "admin",
+    ACCESS_LEVEL_NORMAL: "normal",
+    ACCESS_LEVEL_VIEWONLY: "viewonly",
+    ACCESS_LEVEL_NONE: "none",
+    "admin": ACCESS_LEVEL_ADMIN,
+    "normal": ACCESS_LEVEL_NORMAL,
+    "viewonly": ACCESS_LEVEL_VIEWONLY,
+    "none": ACCESS_LEVEL_NONE,
 }
 
 logger = logging.getLogger(__name__)
@@ -64,8 +66,8 @@ class APIRequest:
         return self.handler.username
 
     @property
-    def session_id(self) -> Optional[str]:
-        return self.handler.request.headers.get('Session-Id')
+    def session_id(self) -> str | None:
+        return self.handler.request.headers.get("Session-Id")
 
     @property
     def method(self) -> str:
@@ -96,9 +98,9 @@ def api_call(access_level: int = ACCESS_LEVEL_NONE) -> Callable:
 
             if request_handler.access_level < access_level:
                 if request_handler.access_level == ACCESS_LEVEL_NONE:  # indicates missing or invalid auth data
-                    raise APIError(401, 'authentication-required')
+                    raise APIError(401, "authentication-required")
                 else:
-                    raise APIError(403, 'forbidden', required_level=ACCESS_LEVEL_MAPPING.get(access_level))
+                    raise APIError(403, "forbidden", required_level=ACCESS_LEVEL_MAPPING.get(access_level))
 
             request = APIRequest(request_handler)
 
@@ -107,7 +109,3 @@ def api_call(access_level: int = ACCESS_LEVEL_NONE) -> Callable:
         return wrapper
 
     return decorator
-
-
-# Import this here to prevent errors due to circular imports
-from qtoggleserver.web import APIHandler  # noqa: E402

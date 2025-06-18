@@ -1,3 +1,5 @@
+# ruff: noqa: ANN001, ANN002, ANN201
+
 from __future__ import annotations
 
 import abc
@@ -5,7 +7,8 @@ import asyncio
 import functools
 import logging
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 import bleak
 
@@ -19,20 +22,20 @@ from qtoggleserver.core import ports as core_ports
 from . import polled
 
 
-BLUEZ_PROPERTIES_IFACE = 'org.freedesktop.DBus.Properties'
-BLUEZ_BUS_NAME = 'org.bluez'
-BLUEZ_DEVICE_IFACE = 'org.bluez.Device1'
-BLUEZ_AGENT_PATH = '/io/qtoggle/agent'
-BLUEZ_AGENT_IFACE = 'org.bluez.Agent1'
-BLUEZ_AGENT_MANAGER_IFACE = 'org.bluez.AgentManager1'
-BLUEZ_AGENT_MANAGER_PATH = '/org/bluez'
-BLUEZ_AGENT_CAPABILITY = 'KeyboardDisplay'
-BLUEZ_ADAPTER_PATH = '/org/bluez/hci0'
-BLUEZ_ADAPTER_IFACE = 'org.bluez.Adapter1'
+BLUEZ_PROPERTIES_IFACE = "org.freedesktop.DBus.Properties"
+BLUEZ_BUS_NAME = "org.bluez"
+BLUEZ_DEVICE_IFACE = "org.bluez.Device1"
+BLUEZ_AGENT_PATH = "/io/qtoggle/agent"
+BLUEZ_AGENT_IFACE = "org.bluez.Agent1"
+BLUEZ_AGENT_MANAGER_IFACE = "org.bluez.AgentManager1"
+BLUEZ_AGENT_MANAGER_PATH = "/org/bluez"
+BLUEZ_AGENT_CAPABILITY = "KeyboardDisplay"
+BLUEZ_ADAPTER_PATH = "/org/bluez/hci0"
+BLUEZ_ADAPTER_IFACE = "org.bluez.Adapter1"
 
 logger = logging.getLogger(__name__)
 
-agent: Optional[Agent] = None
+agent: Agent | None = None
 
 
 class BLEException(Exception):
@@ -52,122 +55,122 @@ class Agent(ServiceInterface):
         super().__init__(BLUEZ_AGENT_IFACE)
 
         self.bus: MessageBus = bus
-        self.secrets_by_address: dict[str, Optional[str]] = {}
+        self.secrets_by_address: dict[str, str | None] = {}
 
     async def set_trusted(self, path: str) -> None:
-        logger.debug('setting device at BT path %s as trusted', path)
+        logger.debug("setting device at BT path %s as trusted", path)
 
         introspection = await self.bus.introspect(BLUEZ_BUS_NAME, path)
         obj = self.bus.get_proxy_object(BLUEZ_BUS_NAME, path, introspection)
         props = obj.get_interface(BLUEZ_PROPERTIES_IFACE)
-        await props.call_set(BLUEZ_DEVICE_IFACE, 'Trusted', Variant('b', True))
+        await props.call_set(BLUEZ_DEVICE_IFACE, "Trusted", Variant("b", True))
 
-    def add_device(self, address: str, secret: Optional[str]) -> None:
+    def add_device(self, address: str, secret: str | None) -> None:
         self.secrets_by_address[address.lower()] = secret
 
     def rem_device(self, address: str) -> None:
         self.secrets_by_address.pop(address, None)
 
     @method()
-    async def Release(self):  # noqa
-        logger.debug('BT agent Release() called')
+    async def Release(self):
+        logger.debug("BT agent Release() called")
 
     @method()
-    async def Cancel(self):  # noqa
-        logger.debug('BT agent Cancel() called')
+    async def Cancel(self):
+        logger.debug("BT agent Cancel() called")
 
     @method()
-    async def AuthorizeService(self, device: 'o', uuid: 's'):  # noqa
-        logger.debug('BT agent AuthorizeService(%s, %s) called', device, uuid)
+    async def AuthorizeService(self, device, uuid):
+        logger.debug("BT agent AuthorizeService(%s, %s) called", device, uuid)
         address = self.address_from_device_path(device)
         if address not in self.secrets_by_address:
-            logger.warning('got BT service authorization request from unknown device %s', address)
-            raise DBusError('org.bluez.Error.Rejected', 'unknown device')
+            logger.warning("got BT service authorization request from unknown device %s", address)
+            raise DBusError("org.bluez.Error.Rejected", "unknown device")
 
     @method()
-    async def RequestConfirmation(self, device: 'o', passkey: 'u'):  # noqa
-        logger.debug('BT agent RequestConfirmation(%s, %s) called', device, passkey)
+    async def RequestConfirmation(self, device, passkey):
+        logger.debug("BT agent RequestConfirmation(%s, %s) called", device, passkey)
 
         _none = {}
         address = self.address_from_device_path(device)
         secret = self.secrets_by_address.get(address, _none)
         if secret is _none:
-            logger.warning('got BT request confirmation from unknown device %s', address)
-            raise DBusError('org.bluez.Error.Rejected', 'unknown device')
+            logger.warning("got BT request confirmation from unknown device %s", address)
+            raise DBusError("org.bluez.Error.Rejected", "unknown device")
 
         if not secret:
-            logger.warning('got BT passkey request from device %s with unconfigured secret', address)
-            raise DBusError('org.bluez.Error.Rejected', 'unconfigured secret')
+            logger.warning("got BT passkey request from device %s with unconfigured secret", address)
+            raise DBusError("org.bluez.Error.Rejected", "unconfigured secret")
 
         # `passkey` is a 0-padded 6-digit string
         while len(secret) < 6:
-            secret = '0' + secret
+            secret = "0" + secret
         if secret != passkey:
-            logger.warning('got BT request confirmation from device %s with invalid passkey %s', address, passkey)
-            raise DBusError('org.bluez.Error.Rejected', 'invalid passkey')
+            logger.warning("got BT request confirmation from device %s with invalid passkey %s", address, passkey)
+            raise DBusError("org.bluez.Error.Rejected", "invalid passkey")
 
     @method()
-    async def RequestAuthorization(self, device: 'o'):  # noqa
-        logger.debug('BT agent RequestAuthorization(%s) called', device)
+    async def RequestAuthorization(self, device):
+        logger.debug("BT agent RequestAuthorization(%s) called", device)
         address = self.address_from_device_path(device)
         if address not in self.secrets_by_address:
-            logger.warning('got BT authorization request from unknown device %s', address)
-            raise DBusError('org.bluez.Error.Rejected', 'unknown device')
+            logger.warning("got BT authorization request from unknown device %s", address)
+            raise DBusError("org.bluez.Error.Rejected", "unknown device")
 
     @method()
-    async def RequestPasskey(self, device: 'o') -> 'u':  # noqa
-        logger.debug('BT agent RequestPasskey(%s) called', device)
+    async def RequestPasskey(self, device):
+        logger.debug("BT agent RequestPasskey(%s) called", device)
 
         _none = {}
         address = self.address_from_device_path(device)
         secret = self.secrets_by_address.get(address, _none)
         if secret is _none:
-            logger.warning('got BT passkey request from unknown device %s', address)
-            raise DBusError('org.bluez.Error.Rejected', 'unknown device')
+            logger.warning("got BT passkey request from unknown device %s", address)
+            raise DBusError("org.bluez.Error.Rejected", "unknown device")
 
         if not secret:
-            logger.warning('got BT passkey request from device %s with unconfigured secret', address)
-            raise DBusError('org.bluez.Error.Rejected', 'unconfigured secret')
+            logger.warning("got BT passkey request from device %s with unconfigured secret", address)
+            raise DBusError("org.bluez.Error.Rejected", "unconfigured secret")
 
         await self.set_trusted(device)
         return int(secret)
 
     @method()
-    async def RequestPinCode(self, device: 'o') -> 's':  # noqa
-        logger.debug('BT agent RequestPinCode(%s) called', device)
+    async def RequestPinCode(self, device):
+        logger.debug("BT agent RequestPinCode(%s) called", device)
 
         _none = {}
         address = self.address_from_device_path(device)
         secret = self.secrets_by_address.get(address, _none)
         if secret is _none:
-            logger.warning('got BT pin code request from unknown device %s', address)
-            raise DBusError('org.bluez.Error.Rejected', 'unknown device')
+            logger.warning("got BT pin code request from unknown device %s", address)
+            raise DBusError("org.bluez.Error.Rejected", "unknown device")
 
         if not secret:
-            logger.warning('got BT passkey request from device %s with unconfigured secret', address)
-            raise DBusError('org.bluez.Error.Rejected', 'unconfigured secret')
+            logger.warning("got BT passkey request from device %s with unconfigured secret", address)
+            raise DBusError("org.bluez.Error.Rejected", "unconfigured secret")
 
         await self.set_trusted(device)
         return secret
 
     @method()
-    async def DisplayPasskey(self, device: 'o', passkey: 'u', entered: 'q'):  # noqa
-        logger.debug('BT agent DisplayPasskey(%s, %s, %s) called', device, passkey, entered)
+    async def DisplayPasskey(self, device, passkey, entered):
+        logger.debug("BT agent DisplayPasskey(%s, %s, %s) called", device, passkey, entered)
 
     @method()
-    async def DisplayPinCode(self, device: 'o', pincode: 's'):  # noqa
-        logger.debug('BT agent DisplayPinCode(%s, %s) called', device, pincode)
+    async def DisplayPinCode(self, device, pincode):
+        logger.debug("BT agent DisplayPinCode(%s, %s) called", device, pincode)
 
     @staticmethod
     def address_from_device_path(device_path: str) -> str:
-        return ':'.join(device_path.split('_')[-6:]).lower()
+        return ":".join(device_path.split("_")[-6:]).lower()
 
 
 async def get_agent() -> Agent:
     global agent
 
     if agent is None:
-        logger.debug('initializing BT agent')
+        logger.debug("initializing BT agent")
         bus = await MessageBus(bus_type=BusType.SYSTEM).connect()
         agent = Agent(bus)
 
@@ -187,10 +190,10 @@ async def get_agent() -> Agent:
         obj = bus.get_proxy_object(BLUEZ_BUS_NAME, BLUEZ_ADAPTER_PATH, introspection)
         props = obj.get_interface(BLUEZ_PROPERTIES_IFACE)
 
-        await props.call_set(BLUEZ_ADAPTER_IFACE, 'DiscoverableTimeout', Variant('u', 0))
-        await props.call_set(BLUEZ_ADAPTER_IFACE, 'Discoverable', Variant('b', True))
-        await props.call_set(BLUEZ_ADAPTER_IFACE, 'PairableTimeout', Variant('u', 0))
-        await props.call_set(BLUEZ_ADAPTER_IFACE, 'Pairable', Variant('b', True))
+        await props.call_set(BLUEZ_ADAPTER_IFACE, "DiscoverableTimeout", Variant("u", 0))
+        await props.call_set(BLUEZ_ADAPTER_IFACE, "Discoverable", Variant("b", True))
+        await props.call_set(BLUEZ_ADAPTER_IFACE, "PairableTimeout", Variant("u", 0))
+        await props.call_set(BLUEZ_ADAPTER_IFACE, "Pairable", Variant("b", True))
 
     return agent
 
@@ -207,19 +210,19 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
         self,
         *,
         address: str,
-        secret: Optional[str] = None,
+        secret: str | None = None,
         cmd_timeout: int = DEFAULT_CMD_TIMEOUT,
         retry_count: int = DEFAULT_RETRY_COUNT,
         retry_delay: int = DEFAULT_RETRY_DELAY,
-        **kwargs
+        **kwargs,
     ) -> None:
         self._address: str = address
-        self._secret: Optional[str] = secret
+        self._secret: str | None = secret
         self._cmd_timeout: int = cmd_timeout
         self._retry_count: int = retry_count
         self._retry_delay: int = retry_delay
         self._busy: bool = False
-        self._notification_data: Optional[bytes] = None
+        self._notification_data: bytes | None = None
 
         super().__init__(**kwargs)
 
@@ -246,7 +249,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
     async def write_wait_notify(self, handle: int, notify_handle: int, data: bytes) -> bytes:
         return await self._run_cmd(self._write_wait_notify, handle=handle, data=data, notify_handle=notify_handle)
 
-    async def _run_cmd(self, cmd_func: Callable, **kwargs) -> Optional[bytes]:
+    async def _run_cmd(self, cmd_func: Callable, **kwargs) -> bytes | None:
         # Wait for the peripheral to be ready (not busy)
         timeout = self._cmd_timeout
         while self._busy and timeout > 0:
@@ -263,11 +266,11 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
             try:
                 response = await asyncio.wait_for(cmd_func(timeout=timeout, **kwargs), timeout)
             except Exception:
-                self.error('command execution failed', exc_info=True)
+                self.error("command execution failed", exc_info=True)
 
                 if retry <= retry_count:
                     await asyncio.sleep(self._retry_delay)
-                    self.debug('retry %s/%s', retry, retry_count)
+                    self.debug("retry %s/%s", retry, retry_count)
                     retry += 1
                     continue
 
@@ -279,27 +282,29 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
                 self._busy = False
                 return response
 
+        return None
+
     async def _read(self, handle: int, timeout: int) -> bytes:
-        self.debug('connecting')
+        self.debug("connecting")
         async with bleak.BleakClient(self._address, timeout=timeout) as client:
-            self.debug('reading from %04X', handle)
+            self.debug("reading from %04X", handle)
             response = bytes(await client.read_gatt_char(handle))
-            self.debug('got response: %s', self.pretty_data(response))
-        self.debug('disconnected')
+            self.debug("got response: %s", self.pretty_data(response))
+        self.debug("disconnected")
 
         return response
 
     async def _write(self, handle: int, data: bytes, timeout: int) -> None:
-        self.debug('connecting')
+        self.debug("connecting")
         async with bleak.BleakClient(self._address, timeout=timeout) as client:
-            self.debug('writing at %04X: %s', handle, self.pretty_data(data))
+            self.debug("writing at %04X: %s", handle, self.pretty_data(data))
             await client.write_gatt_char(handle, data)
-        self.debug('disconnected')
+        self.debug("disconnected")
 
     async def _wait_notify(self, handle: int, timeout: int) -> bytes:
-        self.debug('connecting')
+        self.debug("connecting")
         async with bleak.BleakClient(self._address, timeout=timeout) as client:
-            self.debug('waiting for notification on %04X', handle)
+            self.debug("waiting for notification on %04X", handle)
             self._notification_data = None
             await client.start_notify(handle, self._notify_callback)
             try:
@@ -311,16 +316,16 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
                     raise NotificationTimeout()
             finally:
                 await client.stop_notify(handle)
-        self.debug('disconnected')
+        self.debug("disconnected")
 
         return self._notification_data
 
     async def _write_wait_notify(self, handle: int, notify_handle: int, data: bytes, timeout: int) -> bytes:
-        self.debug('connecting')
+        self.debug("connecting")
         async with bleak.BleakClient(self._address, timeout=timeout) as client:
-            self.debug('writing at %04X: %s', handle, self.pretty_data(data))
+            self.debug("writing at %04X: %s", handle, self.pretty_data(data))
             await client.write_gatt_char(handle, data)
-            self.debug('waiting for notification on %04X', notify_handle)
+            self.debug("waiting for notification on %04X", notify_handle)
             self._notification_data = None
             await client.start_notify(notify_handle, self._notify_callback)
             try:
@@ -332,17 +337,17 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
                     raise NotificationTimeout()
             finally:
                 await client.stop_notify(notify_handle)
-        self.debug('disconnected')
+        self.debug("disconnected")
 
         return self._notification_data
 
     def _notify_callback(self, handle: int, data: bytearray) -> None:
         self._notification_data = bytes(data)
-        self.debug('got notification on %04X: %s', handle, self.pretty_data(self._notification_data))
+        self.debug("got notification on %04X: %s", handle, self.pretty_data(self._notification_data))
 
     @staticmethod
     def pretty_data(data: bytes) -> str:
-        return ' '.join(map(lambda c: f'{c:02X}', data))
+        return " ".join(map(lambda c: f"{c:02X}", data))
 
 
 class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):

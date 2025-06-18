@@ -1,15 +1,14 @@
-from typing import Optional
-
 from qtoggleserver import persist, system
-from qtoggleserver.core import history
+from qtoggleserver.core import history as core_history
+from qtoggleserver.core import ports as core_ports
 
 from .base import EvalContext, EvalResult
 from .exceptions import EvalSkipped, ExpressionEvalError, PortValueUnavailable
 from .functions import Function, function
-from .port import PortRef
+from .ports import PortRef
 
 
-@function('AVAILABLE')
+@function("AVAILABLE")
 class AvailableFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
@@ -21,7 +20,7 @@ class AvailableFunction(Function):
             return False
 
 
-@function('DEFAULT')
+@function("DEFAULT")
 class DefaultFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -32,14 +31,14 @@ class DefaultFunction(Function):
             return await self.args[1].eval(context)
 
 
-@function('RISING')
+@function("RISING")
 class RisingFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value = await self.args[0].eval(context)
@@ -52,14 +51,14 @@ class RisingFunction(Function):
         return result
 
 
-@function('FALLING')
+@function("FALLING")
 class FallingFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value = await self.args[0].eval(context)
@@ -72,14 +71,14 @@ class FallingFunction(Function):
         return result
 
 
-@function('ACC')
+@function("ACC")
 class AccFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, accumulator = await self.eval_args(context)
@@ -93,14 +92,14 @@ class AccFunction(Function):
         return result
 
 
-@function('ACCINC')
+@function("ACCINC")
 class AccIncFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, accumulator = await self.eval_args(context)
@@ -114,7 +113,7 @@ class AccIncFunction(Function):
         return result
 
 
-@function('HYST')
+@function("HYST")
 class HystFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
 
@@ -126,13 +125,14 @@ class HystFunction(Function):
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, threshold1, threshold2 = await self.eval_args(context)
 
-        self._last_result = int((self._last_result == 0 and value > threshold2) or
-                                (self._last_result != 0 and value >= threshold1))
+        self._last_result = int(
+            (self._last_result == 0 and value > threshold2) or (self._last_result != 0 and value >= threshold1)
+        )
 
         return self._last_result
 
 
-@function('ONOFFAUTO')
+@function("ONOFFAUTO")
 class OnOffAutoFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -146,10 +146,10 @@ class OnOffAutoFunction(Function):
             return auto
 
 
-@function('SEQUENCE')
+@function("SEQUENCE")
 class SequenceFunction(Function):
     MIN_ARGS = 2
-    DEPS = {'asap'}
+    DEPS = {"asap"}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -186,7 +186,7 @@ class SequenceFunction(Function):
         return result
 
 
-@function('LUT')
+@function("LUT")
 class LUTFunction(Function):
     MIN_ARGS = 5
 
@@ -215,7 +215,7 @@ class LUTFunction(Function):
         return points[length - 1][1]
 
 
-@function('LUTLI')
+@function("LUTLI")
 class LUTLIFunction(Function):
     MIN_ARGS = 5
 
@@ -244,26 +244,28 @@ class LUTLIFunction(Function):
         return points[length - 1][1]
 
 
-@function('HISTORY')
+@function("HISTORY")
 class HistoryFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = {'second'}
+    DEPS = {"second"}
     ARG_KINDS = [PortRef]
-    ENABLED = history.is_enabled
+    ENABLED = core_history.is_enabled
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._cached_sample: Optional[persist.Sample] = None
+        self._cached_sample: persist.Sample | None = None
         self._cached_timestamp: int = 0
-        self._cached_max_diff: Optional[float] = None
+        self._cached_max_diff: float | None = None
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
         args = await self.eval_args(context)
-        port, timestamp, max_diff = args
+        port_id, timestamp, max_diff = args
+        port = core_ports.get(port_id)
+        assert port
 
         # Transform everything to milliseconds
         timestamp *= 1000
@@ -305,7 +307,9 @@ class HistoryFunction(Function):
             consider_curr_value = from_timestamp <= context.now_ms
 
         if from_timestamp is not None or to_timestamp is not None:
-            samples = await history.get_samples_slice(port, from_timestamp, to_timestamp, limit=1, sort_desc=sort_desc)
+            samples = await core_history.get_samples_slice(
+                port, from_timestamp, to_timestamp, limit=1, sort_desc=sort_desc
+            )
             samples = list(samples)
         else:
             samples = []

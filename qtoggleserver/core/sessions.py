@@ -4,8 +4,6 @@ import asyncio
 import logging
 import time
 
-from typing import Optional
-
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.utils import logging as logging_utils
@@ -16,7 +14,7 @@ SESSION_EXPIRY_FACTOR = 10
 logger = logging.getLogger(__name__)
 
 _sessions_by_id: dict[str, Session] = {}
-_sessions_event_handler: Optional[SessionsEventHandler] = None
+_sessions_event_handler: SessionsEventHandler | None = None
 
 
 class Session(logging_utils.LoggableMixin):
@@ -27,14 +25,14 @@ class Session(logging_utils.LoggableMixin):
         self.accessed: int = 0
         self.timeout: int = 0
         self.access_level: int = 0
-        self.future: Optional[asyncio.Future] = None
+        self.future: asyncio.Future | None = None
         self.queue: list[core_events.Event] = []
 
     def reset_and_wait(self, timeout: int, access_level: int) -> asyncio.Future:
-        self.debug('resetting (timeout=%s, access_level=%s)', timeout, access_level)
+        self.debug("resetting (timeout=%s, access_level=%s)", timeout, access_level)
 
         if self.future:
-            self.debug('already has a listening connection, responding')
+            self.debug("already has a listening connection, responding")
             self.respond()
 
         future = asyncio.get_running_loop().create_future()
@@ -45,7 +43,7 @@ class Session(logging_utils.LoggableMixin):
         self.future = future
 
         if self.queue:
-            self.debug('has queued events, responding right away')
+            self.debug("has queued events, responding right away")
             self.respond()
 
         return future
@@ -62,7 +60,7 @@ class Session(logging_utils.LoggableMixin):
         if not self.future:
             return
 
-        self.debug('serving %d events', len(events))
+        self.debug("serving %d events", len(events))
         self.future.set_result(reversed(events))
         self.future = None
 
@@ -75,19 +73,19 @@ class Session(logging_utils.LoggableMixin):
 
             for d in duplicates:
                 self.queue.remove(d)
-                self.debug('dropping duplicate event %s', d)
+                self.debug("dropping duplicate event %s", d)
 
         # Ensure max queue size
         while len(self.queue) >= settings.core.event_queue_size:
             # This is a debug and not a warning because we often expect event drops from queues belonging to sessions
             # that are no longer active and will simply no longer consume the events
-            self.debug('queue full, dropping oldest event')
+            self.debug("queue full, dropping oldest event")
             self.queue.pop()
 
         self.queue.insert(0, event)
 
     def __str__(self) -> str:
-        return f'session {self.id}'
+        return f"session {self.id}"
 
 
 class SessionsEventHandler(core_events.Handler):
@@ -111,7 +109,7 @@ def get(session_id: str) -> Session:
     if not session:
         session = Session(session_id)
         _sessions_by_id[session_id] = session
-        session.debug('created')
+        session.debug("created")
 
     return session
 
@@ -124,10 +122,10 @@ def update() -> None:
             continue
 
         if now - session.accessed > session.timeout and session.is_active():
-            session.debug('keep-alive')
+            session.debug("keep-alive")
             session.respond()
         elif now - session.accessed > session.timeout * SESSION_EXPIRY_FACTOR and not session.is_active():
-            session.debug('expired')
+            session.debug("expired")
             _sessions_by_id.pop(session_id)
 
 

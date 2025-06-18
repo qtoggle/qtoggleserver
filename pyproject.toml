@@ -1,23 +1,89 @@
-[tool.flake8]
-max-line-length = 120
-ignore = ['E129','E731','W504','ANN002','ANN003','ANN101','ANN102','ANN401']
-per-file-ignores = [
-    '**/__init__.py:F401,E402,F403',
-    'qtoggleserver/core/expressions/functions.py:F401,E402,F811'
+[project]
+name = "qtoggleserver"
+version = "0.0.0"
+description = "A fully fledged qToggle implementation written in Python"
+authors = [
+    {name = "Calin Crisan", email = "ccrisan@gmail.com"},
+]
+requires-python = "==3.10.*"
+readme = "README.md"
+license = {text = "Apache 2.0"}
+dependencies = [
+    "bleak>=0.14,<1",
+    "dbus-next>=0.2,<1",
+    "jinja2>=3,<4",
+    "jsonpointer>=2.0,<3",
+    "jsonschema>=2.5,<5",
+    "psutil>=5.5,<6",
+    "pyhocon>=0.3.50,<1",
+    "pyjwt>=2,<3",
+    "pytz",
+    "qui-server>=1.18",
+    "tornado>=6.0,<7",
 ]
 
-[tool.isort]
-profile = 'black'
-multi_line_output = 3
-py_version = 39
-line_length = 120
-lines_between_types = 1
-lines_after_imports = 2
-honor_noqa = true
-known_tests = ['tests']
-sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER', 'TESTS']
+[project.scripts]
+qtoggleserver = "qtoggleserver.commands.server:execute"
+qtoggleshell = "qtoggleserver.commands.shell:execute"
+
+[project.optional-dependencies]
+opt = [
+    "asyncpg",
+    "bleak",
+    "pymongo",
+    "redis",
+]
+
+[dependency-groups]
+dev = [
+    "fakeredis",
+    "freezegun",
+    "mongomock",
+    "pre-commit",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
+    "ruff",
+    "testing.postgresql",
+]
+
+[tool.setuptools]
+py-modules = [
+    "startup",
+    "version",
+]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+include = [
+    "qtoggleserver*",
+]
+exclude = [
+    "qtoggleserver.frontend.node_modules*",
+]
+
+[tool.setuptools.package-data]
+qtoggleserver = [
+    "frontend/dist/**",
+]
+
+[tool.uv]
+package = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+lint.extend-select = ["I", "RUF022", "ANN"]
+lint.extend-ignore = ["ANN002", "ANN003", "ANN401"]
+lint.isort.lines-after-imports = 2
+lint.isort.lines-between-types = 1
+lint.isort.force-wrap-aliases = true
 
 [tool.pytest.ini_options]
-testpaths = ['tests/qtoggleserver']
-asyncio_mode = 'auto'
-addopts = '-v'
+testpaths = ["tests/qtoggleserver"]
+asyncio_mode = "auto"
+addopts = "-v"
+
+[tool.mypy]
+explicit_package_bases = true
+ignore_missing_imports = true

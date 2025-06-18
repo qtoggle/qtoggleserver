@@ -18,7 +18,7 @@ async def test_insert_multiple(driver: BaseDriver) -> None:
     id2 = await driver.insert(data.COLL1, data.RECORD2)
     id3 = await driver.insert(data.COLL1, data.RECORD3)
 
-    results = await driver.query(data.COLL1, fields=None, filt={}, sort=[('id', False)], limit=None)
+    results = await driver.query(data.COLL1, fields=None, filt={}, sort=[("id", False)], limit=None)
     results = list(results)
     assert len(results) == 3
 
@@ -34,7 +34,7 @@ async def test_insert_empty(driver: BaseDriver) -> None:
     results = list(results)
     assert len(results) == 1
 
-    assert results[0] == {'id': id_}
+    assert results[0] == {"id": id_}
 
 
 async def test_insert_with_custom_id_simple(driver: BaseDriver) -> None:
@@ -42,7 +42,7 @@ async def test_insert_with_custom_id_simple(driver: BaseDriver) -> None:
     await driver.insert(data.COLL1, data.RECORD2)
     assert id_ == data.CUSTOM_ID_SIMPLE
 
-    results = await driver.query(data.COLL1, fields=None, filt={'id': id_}, sort=[], limit=None)
+    results = await driver.query(data.COLL1, fields=None, filt={"id": id_}, sort=[], limit=None)
     results = list(results)
     assert len(results) == 1
 
@@ -54,7 +54,7 @@ async def test_insert_with_custom_id_complex(driver: BaseDriver) -> None:
     await driver.insert(data.COLL1, data.RECORD2)
     assert id_ == data.CUSTOM_ID_COMPLEX
 
-    results = await driver.query(data.COLL1, fields=None, filt={'id': id_}, sort=[], limit=None)
+    results = await driver.query(data.COLL1, fields=None, filt={"id": id_}, sort=[], limit=None)
     results = list(results)
     assert len(results) == 1
 

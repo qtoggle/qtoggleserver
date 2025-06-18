@@ -1,7 +1,7 @@
-import datetime
 import time
 
-from typing import Iterable
+from collections.abc import Iterable
+from datetime import datetime
 
 import pytz
 
@@ -25,9 +25,12 @@ def has_set_date_support() -> bool:
     return bool(settings.system.date.set_cmd)
 
 
-def set_date(date: datetime.datetime) -> None:
+def set_date(date: datetime) -> None:
+    assert settings.system.date.set_format
+    assert settings.system.date.set_cmd
+
     date_str = date.strftime(settings.system.date.set_format)
-    run_set_cmd(settings.system.date.set_cmd, cmd_name='date', exc_class=DateError, date=date_str)
+    run_set_cmd(settings.system.date.set_cmd, cmd_name="date", exc_class=DateError, date=date_str)
 
 
 def has_timezone_support() -> bool:
@@ -35,16 +38,17 @@ def has_timezone_support() -> bool:
 
 
 def get_timezone() -> str:
+    assert settings.system.timezone.get_cmd
+
     return run_get_cmd(
-        settings.system.timezone.get_cmd,
-        cmd_name='timezone',
-        exc_class=DateError,
-        required_fields=['timezone']
-    )['timezone']
+        settings.system.timezone.get_cmd, cmd_name="timezone", exc_class=DateError, required_fields=["timezone"]
+    )["timezone"]
 
 
 def set_timezone(timezone: str) -> None:
-    run_set_cmd(settings.system.timezone.set_cmd, cmd_name='timezone', exc_class=DateError, timezone=timezone)
+    assert settings.system.timezone.set_cmd
+
+    run_set_cmd(settings.system.timezone.set_cmd, cmd_name="timezone", exc_class=DateError, timezone=timezone)
 
 
 def get_timezones() -> Iterable[str]:

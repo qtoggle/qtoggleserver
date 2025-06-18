@@ -1,4 +1,0 @@
-asyncpg
-bleak
-pymongo
-redis

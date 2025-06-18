@@ -8,9 +8,9 @@ async def test_eval_trigger_set_expression(mock_num_port1, mock_num_port2, mocke
     mock_num_port1.set_last_read_value(4)
     mock_num_port2.set_last_read_value(5)
     mock_num_port2.set_writable(True)
-    mocker.patch.object(mock_num_port2, 'transform_and_write_value')
+    mocker.patch.object(mock_num_port2, "transform_and_write_value")
 
-    await mock_num_port2.set_attr('expression', 'MUL($nid1, 10)')
+    await mock_num_port2.set_attr("expression", "MUL($nid1, 10)")
     await asyncio.sleep(0.1)
     mock_num_port2.transform_and_write_value.assert_called_once_with(40)
 
@@ -19,11 +19,11 @@ async def test_eval_trigger_value_change(mock_num_port1, mock_num_port2, mocker)
     mock_num_port1.set_last_read_value(4)
     mock_num_port2.set_last_read_value(5)
     mock_num_port2.set_writable(True)
-    await mock_num_port2.set_attr('expression', 'MUL($nid1, 10)')
+    await mock_num_port2.set_attr("expression", "MUL($nid1, 10)")
     await asyncio.sleep(0.1)  # eats up the eval() due to setting an expression
 
     mock_num_port1.set_next_value(6)
-    mocker.patch.object(mock_num_port2, 'transform_and_write_value')
+    mocker.patch.object(mock_num_port2, "transform_and_write_value")
     await main.update()
     await asyncio.sleep(0.1)
     mock_num_port2.transform_and_write_value.assert_called_once_with(60)
@@ -33,11 +33,11 @@ async def test_eval_trigger_value_change_self(mock_num_port1, mock_num_port2, mo
     mock_num_port1.set_last_read_value(4)
     mock_num_port2.set_last_read_value(5)
     mock_num_port2.set_writable(True)
-    await mock_num_port2.set_attr('expression', 'MUL($nid1, $nid2)')
+    await mock_num_port2.set_attr("expression", "MUL($nid1, $nid2)")
     await asyncio.sleep(0.1)  # eats up the eval() due to setting an expression
 
     mock_num_port1.set_next_value(6)
-    mocker.patch.object(mock_num_port2, 'transform_and_write_value')
+    mocker.patch.object(mock_num_port2, "transform_and_write_value")
 
     # Call main.update() multiple times to catch possible evaluation loops due to self reference
     await main.update()
@@ -83,12 +83,12 @@ async def test_eval_trigger_ignore_disabled_port(mock_num_port1, mock_num_port2,
     mock_num_port1.set_last_read_value(4)
     mock_num_port2.set_last_read_value(5)
     mock_num_port2.set_writable(True)
-    await mock_num_port2.set_attr('expression', 'MUL($nid1, 10)')
+    await mock_num_port2.set_attr("expression", "MUL($nid1, 10)")
     await mock_num_port2.disable()
     await asyncio.sleep(0.1)
 
     mock_num_port1.set_next_value(6)
-    mocker.patch.object(mock_num_port2, 'transform_and_write_value')
+    mocker.patch.object(mock_num_port2, "transform_and_write_value")
     await main.update()
     mock_num_port2.transform_and_write_value.assert_not_called()
 
@@ -97,21 +97,21 @@ async def test_eval_trigger_ignore_inexistent_port(mock_num_port1, mock_num_port
     mock_num_port1.set_last_read_value(4)
     mock_num_port2.set_last_read_value(5)
     mock_num_port2.set_writable(True)
-    await mock_num_port2.set_attr('expression', 'MUL($nid1, $inexistent)')
+    await mock_num_port2.set_attr("expression", "MUL($nid1, $inexistent)")
     await asyncio.sleep(0.1)
 
     mock_num_port1.set_next_value(6)
-    mocker.patch.object(mock_num_port2, 'transform_and_write_value')
+    mocker.patch.object(mock_num_port2, "transform_and_write_value")
     await main.update()
     mock_num_port2.transform_and_write_value.assert_not_called()
 
 
 async def test_asap_eval_paused(mock_num_port1, dummy_eval_context, mocker):
     mock_num_port1.set_writable(True)
-    await mock_num_port1.set_attr('expression', 'MILLISECOND()')
+    await mock_num_port1.set_attr("expression", "MILLISECOND()")
     e = mock_num_port1.get_expression()
 
-    mocker.patch.object(e, 'eval')
+    mocker.patch.object(e, "eval")
     await main.update()
     await asyncio.sleep(0.1)
     e.eval.assert_called()
@@ -124,7 +124,7 @@ async def test_asap_eval_paused(mock_num_port1, dummy_eval_context, mocker):
             break
 
     e.pause_asap_eval(time.time() * 1000 + 1000)
-    mocker.patch.object(e, 'eval')
+    mocker.patch.object(e, "eval")
     await main.update()
     await asyncio.sleep(0.1)
     e.eval.assert_not_called()
@@ -133,7 +133,7 @@ async def test_asap_eval_paused(mock_num_port1, dummy_eval_context, mocker):
 async def test_asap_eval_paused_value_change(mock_num_port1, mock_num_port2, dummy_eval_context, mocker):
     mock_num_port1.set_writable(True)
     mock_num_port2.set_last_read_value(4)
-    await mock_num_port1.set_attr('expression', 'ADD(MILLISECOND(), $nid2)')
+    await mock_num_port1.set_attr("expression", "ADD(MILLISECOND(), $nid2)")
     e = mock_num_port1.get_expression()
 
     # Reset eval queue
@@ -145,7 +145,7 @@ async def test_asap_eval_paused_value_change(mock_num_port1, mock_num_port2, dum
 
     mock_num_port2.set_next_value(5)
     e.pause_asap_eval(time.time() * 1000 + 1000)
-    mocker.patch.object(e, 'eval')
+    mocker.patch.object(e, "eval")
     await main.update()
     await asyncio.sleep(0.1)
     e.eval.assert_called()

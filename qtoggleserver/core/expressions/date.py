@@ -1,6 +1,7 @@
 import abc
 import calendar
-import datetime
+
+from datetime import datetime, time, timedelta, timezone
 
 from qtoggleserver import system
 
@@ -12,7 +13,7 @@ from .functions import Function, function
 class DateUnitFunction(Function, metaclass=abc.ABCMeta):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {'second'}
+    DEPS = {"second"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -23,65 +24,65 @@ class DateUnitFunction(Function, metaclass=abc.ABCMeta):
         else:
             timestamp = context.timestamp
 
-        return self.extract_unit(datetime.datetime.fromtimestamp(timestamp))
+        return self.extract_unit(datetime.fromtimestamp(timestamp))
 
     @abc.abstractmethod
-    def extract_unit(self, dt: datetime.datetime) -> int:
+    def extract_unit(self, dt: datetime) -> int:
         raise NotImplementedError()
 
 
-@function('YEAR')
+@function("YEAR")
 class YearFunction(DateUnitFunction):
-    def extract_unit(self, dt: datetime.datetime) -> int:
+    def extract_unit(self, dt: datetime) -> int:
         return dt.year
 
 
-@function('MONTH')
+@function("MONTH")
 class MonthFunction(DateUnitFunction):
-    def extract_unit(self, dt: datetime.datetime) -> int:
+    def extract_unit(self, dt: datetime) -> int:
         return dt.month
 
 
-@function('DAY')
+@function("DAY")
 class DayFunction(DateUnitFunction):
-    def extract_unit(self, dt: datetime.datetime) -> int:
+    def extract_unit(self, dt: datetime) -> int:
         return dt.day
 
 
-@function('DOW')
+@function("DOW")
 class DOWFunction(DateUnitFunction):
-    def extract_unit(self, dt: datetime.datetime) -> int:
+    def extract_unit(self, dt: datetime) -> int:
         return dt.weekday()
 
 
-@function('LDOM')
+@function("LDOM")
 class LDOMFunction(DateUnitFunction):
-    def extract_unit(self, dt: datetime.datetime) -> int:
+    def extract_unit(self, dt: datetime) -> int:
         return calendar.monthrange(dt.year, dt.month)[1]
 
 
-@function('HOUR')
+@function("HOUR")
 class HourFunction(DateUnitFunction):
-    def extract_unit(self, dt: datetime.datetime) -> int:
+    def extract_unit(self, dt: datetime) -> int:
         return dt.hour
 
 
-@function('MINUTE')
+@function("MINUTE")
 class MinuteFunction(DateUnitFunction):
-    def extract_unit(self, dt: datetime.datetime) -> int:
+    def extract_unit(self, dt: datetime) -> int:
         return dt.minute
 
 
-@function('SECOND')
+@function("SECOND")
 class SecondFunction(DateUnitFunction):
-    def extract_unit(self, dt: datetime.datetime) -> int:
+    def extract_unit(self, dt: datetime) -> int:
         return dt.second
 
 
-@function('MILLISECOND')
+@function("MILLISECOND")
 class MillisecondFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
-    DEPS = {'asap'}
+    DEPS = {"asap"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -90,23 +91,23 @@ class MillisecondFunction(Function):
         return int(context.now_ms % 1000)
 
 
-@function('MINUTEDAY')
+@function("MINUTEDAY")
 class MinuteDayFunction(DateUnitFunction):
-    def extract_unit(self, dt: datetime.datetime) -> int:
+    def extract_unit(self, dt: datetime) -> int:
         return dt.hour * 60 + dt.minute
 
 
-@function('SECONDDAY')
+@function("SECONDDAY")
 class SecondDayFunction(DateUnitFunction):
-    def extract_unit(self, dt: datetime.datetime) -> int:
+    def extract_unit(self, dt: datetime) -> int:
         return dt.hour * 3600 + dt.minute * 60 + dt.second
 
 
-@function('DATE')
+@function("DATE")
 class DateFunction(Function):
     MIN_ARGS = MAX_ARGS = 6
-    DEPS = {'second'}
-    UNIT_INDEX = {u: i + 1 for i, u in enumerate(('year', 'month', 'day', 'hour', 'minute', 'second'))}
+    DEPS = {"second"}
+    UNIT_INDEX = {u: i + 1 for i, u in enumerate(("year", "month", "day", "hour", "minute", "second"))}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -115,7 +116,7 @@ class DateFunction(Function):
         eval_args = [int(await self.args[i].eval(context)) for i in range(self.MIN_ARGS)]
 
         try:
-            return int(datetime.datetime(*eval_args).timestamp())
+            return int(datetime(*eval_args).timestamp())
         except ValueError as e:
             unit = str(e).split()[0]
             index = self.UNIT_INDEX.get(unit)
@@ -125,39 +126,39 @@ class DateFunction(Function):
             raise InvalidArgumentValue(index, eval_args[index])
 
 
-@function('BOY')
+@function("BOY")
 class BOYFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {'second'}
+    DEPS = {"second"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        now = datetime.datetime.fromtimestamp(context.timestamp)
+        now = datetime.fromtimestamp(context.timestamp)
 
         n = 0
         if len(self.args) > 0:
             n = int(await self.args[0].eval(context))
 
-        dt = datetime.datetime(now.year + n, 1, 1, 0, 0, 0)
-        dt = dt.astimezone(tz=datetime.timezone.utc)
+        dt = datetime(now.year + n, 1, 1, 0, 0, 0)
+        dt = dt.astimezone(tz=timezone.utc)
 
         return dt.timestamp()
 
 
-@function('BOM')
+@function("BOM")
 class BOMFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {'second'}
+    DEPS = {"second"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        now = datetime.datetime.fromtimestamp(context.timestamp)
+        now = datetime.fromtimestamp(context.timestamp)
         n = 0
         if len(self.args) > 0:
             n = int(await self.args[0].eval(context))
@@ -178,17 +179,17 @@ class BOMFunction(Function):
                     year -= 1
                     month = 12
 
-        dt = datetime.datetime(year, month, 1, 0, 0, 0)
-        dt = dt.astimezone(tz=datetime.timezone.utc)
+        dt = datetime(year, month, 1, 0, 0, 0)
+        dt = dt.astimezone(tz=timezone.utc)
 
         return dt.timestamp()
 
 
-@function('BOW')
+@function("BOW")
 class BOWFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 2
-    DEPS = {'second'}
+    DEPS = {"second"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -201,12 +202,12 @@ class BOWFunction(Function):
             if len(self.args) > 1:
                 s = int(await self.args[1].eval(context))
 
-        now = datetime.datetime.fromtimestamp(context.timestamp)
+        now = datetime.fromtimestamp(context.timestamp)
         dt = now.replace(hour=12)  # using midday practically avoids problems due to DST
         if s > 0:
-            dt -= datetime.timedelta(days=dt.weekday() + 7 - s)
+            dt -= timedelta(days=dt.weekday() + 7 - s)
         else:
-            dt -= datetime.timedelta(days=dt.weekday())
+            dt -= timedelta(days=dt.weekday())
 
         year, month, day = dt.year, dt.month, dt.day
         if n >= 0:
@@ -235,43 +236,43 @@ class BOWFunction(Function):
                     last_day = calendar.monthrange(year, month)[1]
                     day = last_day - 7 + day
 
-        dt = datetime.datetime(year, month, day)
-        dt = dt.astimezone(tz=datetime.timezone.utc)
+        dt = datetime(year, month, day)
+        dt = dt.astimezone(tz=timezone.utc)
 
         return dt.timestamp()
 
 
-@function('BOD')
+@function("BOD")
 class BODFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {'second'}
+    DEPS = {"second"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        now = datetime.datetime.fromtimestamp(context.timestamp)
+        now = datetime.fromtimestamp(context.timestamp)
         n = 0
         if len(self.args) > 0:
             n = int(await self.args[0].eval(context))
-        dt = now + datetime.timedelta(days=n)
+        dt = now + timedelta(days=n)
         dt = dt.replace(hour=0, minute=0, second=0, microsecond=0)
-        dt = dt.astimezone(tz=datetime.timezone.utc)
+        dt = dt.astimezone(tz=timezone.utc)
 
         return dt.timestamp()
 
 
-@function('HMSINTERVAL')
+@function("HMSINTERVAL")
 class HMSIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 6
-    DEPS = {'second'}
+    DEPS = {"second"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        now = datetime.datetime.fromtimestamp(context.timestamp).replace(microsecond=0)
+        now = datetime.fromtimestamp(context.timestamp).replace(microsecond=0)
 
         start_h, start_m, start_s, stop_h, stop_m, stop_s = await self.eval_args(context)
 
@@ -293,25 +294,25 @@ class HMSIntervalFunction(Function):
         if not (0 <= stop_s <= 59):
             raise InvalidArgumentValue(6, stop_s)
 
-        start_time = datetime.time(int(start_h), int(start_m), int(start_s))
-        stop_time = datetime.time(int(stop_h), int(stop_m), int(stop_s))
+        start_time = time(int(start_h), int(start_m), int(start_s))
+        stop_time = time(int(stop_h), int(stop_m), int(stop_s))
 
-        start_dt = datetime.datetime.combine(now.date(), start_time)
-        stop_dt = datetime.datetime.combine(now.date(), stop_time)
+        start_dt = datetime.combine(now.date(), start_time)
+        stop_dt = datetime.combine(now.date(), stop_time)
 
         return int(start_dt <= now <= stop_dt)
 
 
-@function('MDINTERVAL')
+@function("MDINTERVAL")
 class MDIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 4
-    DEPS = {'second'}
+    DEPS = {"second"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
             raise EvalSkipped()
 
-        now = datetime.datetime.fromtimestamp(context.timestamp).replace(microsecond=0)
+        now = datetime.fromtimestamp(context.timestamp).replace(microsecond=0)
         start_m, start_d, stop_m, stop_d = await self.eval_args(context)
 
         if not (1 <= start_m <= 12):

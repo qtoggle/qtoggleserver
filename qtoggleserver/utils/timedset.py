@@ -1,7 +1,7 @@
 import collections.abc
 import time
 
-from typing import Any, Iterable
+from typing import Any, Iterator
 
 
 class TimedSet(collections.abc.MutableSet):
@@ -31,5 +31,5 @@ class TimedSet(collections.abc.MutableSet):
     def __len__(self) -> int:
         return self._set.__len__()
 
-    def __iter__(self) -> Iterable[Any]:
+    def __iter__(self) -> Iterator[Any]:
         return self._set.__iter__()

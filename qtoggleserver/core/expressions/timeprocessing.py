@@ -1,23 +1,21 @@
-from typing import Optional
-
 from . import TIME_JUMP_THRESHOLD
 from .base import EvalContext, EvalResult
 from .exceptions import EvalSkipped
 from .functions import Function, function
 
 
-@function('DELAY')
+@function("DELAY")
 class DelayFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
-    DEPS = {'asap'}
+    DEPS = {"asap"}
     HISTORY_SIZE = 1024
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self._queue: list[tuple[int, float]] = []
-        self._last_value: Optional[float] = None
-        self._current_value: Optional[float] = None
+        self._last_value: float | None = None
+        self._current_value: float | None = None
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, delay = await self.eval_args(context)
@@ -47,15 +45,15 @@ class DelayFunction(Function):
         return self._current_value
 
 
-@function('SAMPLE')
+@function("SAMPLE")
 class SampleFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
-    DEPS = {'asap'}
+    DEPS = {"asap"}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
         self._last_duration_ms: int = 0
         self._last_time_ms: int = 0
 
@@ -70,15 +68,15 @@ class SampleFunction(Function):
         return self._last_value
 
 
-@function('FREEZE')
+@function("FREEZE")
 class FreezeFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
-    DEPS = {'asap'}
+    DEPS = {"asap"}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
         self._last_duration_ms: int = 0
         self._last_time_ms: int = 0
 
@@ -102,10 +100,10 @@ class FreezeFunction(Function):
         return self._last_value
 
 
-@function('HELD')
+@function("HELD")
 class HeldFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = {'asap'}
+    DEPS = {"asap"}
 
     STATE_OFF = 0
     STATE_WAITING = 1
@@ -114,7 +112,7 @@ class HeldFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._start_time_ms: Optional[int] = None
+        self._start_time_ms: int | None = None
         self._state = self.STATE_OFF
 
     async def _eval(self, context: EvalContext) -> EvalResult:
@@ -137,15 +135,15 @@ class HeldFunction(Function):
         return self._state == self.STATE_ON
 
 
-@function('DERIV')
+@function("DERIV")
 class DerivFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
-    DEPS = {'asap'}
+    DEPS = {"asap"}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
         self._last_time_ms: int = 0
 
     async def _eval(self, context: EvalContext) -> EvalResult:
@@ -171,15 +169,15 @@ class DerivFunction(Function):
         return result
 
 
-@function('INTEG')
+@function("INTEG")
 class IntegFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = {'asap'}
+    DEPS = {"asap"}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
         self._last_time_ms: int = 0
 
     async def _eval(self, context: EvalContext) -> EvalResult:
@@ -205,10 +203,10 @@ class IntegFunction(Function):
         return result
 
 
-@function('FMAVG')
+@function("FMAVG")
 class FMAvgFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = {'asap'}
+    DEPS = {"asap"}
     QUEUE_SIZE = 1024
 
     def __init__(self, *args, **kwargs) -> None:
@@ -238,15 +236,15 @@ class FMAvgFunction(Function):
         self._queue.append(value)
         self._last_time_ms = context.now_ms
 
-        queue = self._queue[-int(width):]
+        queue = self._queue[-int(width) :]
 
         return sum(queue) / len(queue)
 
 
-@function('FMEDIAN')
+@function("FMEDIAN")
 class FMedianFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = {'asap'}
+    DEPS = {"asap"}
     QUEUE_SIZE = 1024
 
     def __init__(self, *args, **kwargs) -> None:
@@ -276,7 +274,7 @@ class FMedianFunction(Function):
         self._queue.append(value)
         self._last_time_ms = context.now_ms
 
-        queue = self._queue[-int(width):]
+        queue = self._queue[-int(width) :]
         queue.sort()
 
         return queue[len(queue) // 2]

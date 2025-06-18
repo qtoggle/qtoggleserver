@@ -1,7 +1,8 @@
 import abc
 import asyncio
 
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
 from .typing import Id, Record, Sample, SampleValue
 
@@ -21,10 +22,10 @@ class BaseDriver(metaclass=abc.ABCMeta):
     async def query(
         self,
         collection: str,
-        fields: Optional[list[str]],
+        fields: list[str] | None,
         filt: dict[str, Any],
         sort: list[tuple[str, bool]],
-        limit: Optional[int]
+        limit: int | None,
     ) -> Iterable[Record]:
         """Return records from `collection`.
 
@@ -46,7 +47,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
 
         Return the associated record ID."""
 
-        return '1'
+        return "1"
 
     @abc.abstractmethod
     async def update(self, collection: str, record_part: Record, filt: dict[str, Any]) -> int:
@@ -82,9 +83,9 @@ class BaseDriver(metaclass=abc.ABCMeta):
         self,
         collection: str,
         obj_id: Id,
-        from_timestamp: Optional[int],
-        to_timestamp: Optional[int],
-        limit: Optional[int],
+        from_timestamp: int | None,
+        to_timestamp: int | None,
+        limit: int | None,
         sort_desc: bool,
     ) -> Iterable[Sample]:
         """Return the samples of `obj_id` from `collection`.
@@ -98,20 +99,20 @@ class BaseDriver(metaclass=abc.ABCMeta):
         Sort the results by timestamp according to the value of `sort_desc`."""
 
         filt: dict[str, Any] = {
-            'oid': obj_id,
+            "oid": obj_id,
         }
 
         if from_timestamp is not None:
-            filt.setdefault('ts', {})['ge'] = from_timestamp
+            filt.setdefault("ts", {})["ge"] = from_timestamp
 
         if to_timestamp is not None:
-            filt.setdefault('ts', {})['lt'] = to_timestamp
+            filt.setdefault("ts", {})["lt"] = to_timestamp
 
-        sort = [('ts', sort_desc)]
+        sort = [("ts", sort_desc)]
 
         results = await self.query(collection, fields=None, filt=filt, sort=sort, limit=limit)
 
-        return ((r['ts'], r['val']) for r in results)
+        return ((r["ts"], r["val"]) for r in results)
 
     async def get_samples_by_timestamp(
         self,
@@ -123,13 +124,13 @@ class BaseDriver(metaclass=abc.ABCMeta):
         before the (or at the exact) timestamp."""
 
         object_filter: dict[str, Any] = {
-            'oid': obj_id,
+            "oid": obj_id,
         }
 
         query_tasks = []
         for timestamp in timestamps:
-            filt = dict(object_filter, ts={'le': timestamp})
-            task = self.query(collection, fields=None, filt=filt, sort=[('ts', True)], limit=1)
+            filt = dict(object_filter, ts={"le": timestamp})
+            task = self.query(collection, fields=None, filt=filt, sort=[("ts", True)], limit=1)
             query_tasks.append(task)
 
         task_results = await asyncio.gather(*query_tasks)
@@ -138,7 +139,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
         for i, task_result in enumerate(task_results):
             query_results = list(task_result)
             if query_results:
-                sample = query_results[0]['val']
+                sample = query_results[0]["val"]
                 samples.append(sample)
             else:
                 samples.append(None)
@@ -148,20 +149,16 @@ class BaseDriver(metaclass=abc.ABCMeta):
     async def save_sample(self, collection: str, obj_id: Id, timestamp: int, value: SampleValue) -> None:
         """Save a sample of an object with `obj_id` at a given `timestamp` to a specified `collection`."""
 
-        record = {
-            'oid': obj_id,
-            'val': value,
-            'ts': timestamp
-        }
+        record = {"oid": obj_id, "val": value, "ts": timestamp}
 
         await self.insert(collection, record)
 
     async def remove_samples(
         self,
         collection: str,
-        obj_ids: Optional[list[Id]],
-        from_timestamp: Optional[int],
-        to_timestamp: Optional[int],
+        obj_ids: list[Id] | None,
+        from_timestamp: int | None,
+        to_timestamp: int | None,
     ) -> int:
         """Remove samples from `collection`.
 
@@ -174,13 +171,13 @@ class BaseDriver(metaclass=abc.ABCMeta):
 
         filt: dict[str, Any] = {}
         if obj_ids:
-            filt['oid'] = {'in': obj_ids}
+            filt["oid"] = {"in": obj_ids}
 
         if from_timestamp is not None:
-            filt.setdefault('ts', {})['ge'] = from_timestamp
+            filt.setdefault("ts", {})["ge"] = from_timestamp
 
         if to_timestamp is not None:
-            filt.setdefault('ts', {})['lt'] = to_timestamp
+            filt.setdefault("ts", {})["lt"] = to_timestamp
 
         return await self.remove(collection, filt)
 
@@ -189,7 +186,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
 
         return False
 
-    async def ensure_index(self, collection: str, index: Optional[list[tuple[str, bool]]]) -> None:
+    async def ensure_index(self, collection: str, index: list[tuple[str, bool]] | None) -> None:
         """Create an index on `collection` if not already present. `index` is a list of pairs of field names and
         "descending" direction flags.
 

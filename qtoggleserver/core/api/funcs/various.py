@@ -19,29 +19,24 @@ from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NONE)
 async def get_access(request: core_api.APIRequest) -> dict[str, str]:
-    return {
-        'level': core_api.ACCESS_LEVEL_MAPPING[request.access_level]
-    }
+    return {"level": core_api.ACCESS_LEVEL_MAPPING[request.access_level]}
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
-async def get_listen(
-    request: core_api.APIRequest
-) -> GenericJSONList:
-
-    session_id = request.headers.get('Session-Id')
+async def get_listen(request: core_api.APIRequest) -> GenericJSONList:
+    session_id = request.headers.get("Session-Id")
     if not session_id:
-        raise core_api.APIError(400, 'missing-header', header='Session-Id')
+        raise core_api.APIError(400, "missing-header", header="Session-Id")
 
-    timeout = request.query.get('timeout')
+    timeout = request.query.get("timeout")
     if timeout is not None:
         try:
             timeout = int(timeout)
         except ValueError:
-            raise core_api.APIError(400, 'invalid-field', field='timeout') from None
+            raise core_api.APIError(400, "invalid-field", field="timeout") from None
 
         if timeout < 1 or timeout > 3600:
-            raise core_api.APIError(400, 'invalid-field', field='timeout')
+            raise core_api.APIError(400, "invalid-field", field="timeout")
     else:
         timeout = 60  # default
 
@@ -55,10 +50,10 @@ async def get_listen(
 async def post_reset(request: core_api.APIRequest, params: GenericJSONDict) -> None:
     core_api_schema.validate(params, core_api_schema.POST_RESET)
 
-    factory = params.get('factory')
+    factory = params.get("factory")
 
     if factory:
-        core_api.logger.info('resetting to factory defaults')
+        core_api.logger.info("resetting to factory defaults")
 
         await core_ports.reset()
         await core_vports.reset()
@@ -88,12 +83,12 @@ async def post_introspect(request: core_api.APIRequest, params: GenericJSONDict)
     res_str = None
 
     try:
-        imports = params.get('imports', [])
+        imports = params.get("imports", [])
         extra_locals = {}
         for imp in imports:
-            extra_locals[imp.split('.')[0]] = importlib.__import__(imp)
+            extra_locals[imp.split(".")[0]] = importlib.__import__(imp)
 
-        result = eval(params['code'], globals(), dict(locals(), **extra_locals))
+        result = eval(params["code"], globals(), dict(locals(), **extra_locals))
         if inspect.isawaitable(result):
             result = await result
 
@@ -101,7 +96,4 @@ async def post_introspect(request: core_api.APIRequest, params: GenericJSONDict)
     except Exception:
         exc_str = traceback.format_exc()
 
-    return {
-        'result': res_str,
-        'exception': exc_str
-    }
+    return {"result": res_str, "exception": exc_str}

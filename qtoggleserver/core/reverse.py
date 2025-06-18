@@ -5,7 +5,6 @@ import logging
 import re
 
 from types import SimpleNamespace
-from typing import Optional
 
 from tornado import httputil
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest, HTTPResponse
@@ -20,13 +19,11 @@ from qtoggleserver.utils import json as json_utils
 
 
 # A list of API calls that are prohibited via reverse mechanism
-BLACKLIST_CALLS = [
-    ('GET', re.compile(r'^/listen'))
-]
+BLACKLIST_CALLS = [("GET", re.compile(r"^/listen"))]
 
 logger = logging.getLogger(__name__)
 
-_reverse: Optional[Reverse] = None
+_reverse: Reverse | None = None
 
 
 class ReverseError(Exception):
@@ -37,7 +34,7 @@ class InvalidParamError(ReverseError):
     def __init__(self, param: str) -> None:
         self.param: str = param
 
-        super().__init__(f'Invalid field: {param}')
+        super().__init__(f"Invalid field: {param}")
 
 
 class InvalidConsumerRequestError(ReverseError):
@@ -51,16 +48,15 @@ class UnauthorizedConsumerRequestError(ReverseError):
 class Reverse:
     def __init__(
         self,
-        scheme: Optional[str] = None,
-        host: Optional[str] = None,
-        port: Optional[int] = None,
-        path: Optional[str] = None,
-        device_id: Optional[str] = None,
-        password_hash: Optional[str] = None,
-        timeout: Optional[int] = None,
-        **kwargs
+        scheme: str | None = None,
+        host: str | None = None,
+        port: int | None = None,
+        path: str | None = None,
+        device_id: str | None = None,
+        password_hash: str | None = None,
+        timeout: int | None = None,
+        **kwargs,
     ) -> None:
-
         # The enabled value comes with kwargs but is ignored; the reverse object will be explicitly enabled afterwards
 
         self._scheme = scheme
@@ -72,25 +68,25 @@ class Reverse:
         self._timeout = timeout
 
         self._enabled: bool = False
-        self._url: Optional[str] = None
+        self._url: str | None = None
 
     def __str__(self) -> str:
-        s = 'reverse'
+        s = "reverse"
 
         if not self._enabled:
-            s += ' [disabled]'
+            s += " [disabled]"
 
         if self._scheme:
-            s += ' ' + self.get_url()
+            s += " " + self.get_url()
 
         return s
 
     def get_url(self) -> str:
         if not self._url:
-            if self._scheme == 'http' and self._port == 80 or self._scheme == 'https' and self._port == 443:
-                self._url = f'{self._scheme}://{self._host}{self._path}'
+            if self._scheme == "http" and self._port == 80 or self._scheme == "https" and self._port == 443:
+                self._url = f"{self._scheme}://{self._host}{self._path}"
             else:
-                self._url = f'{self._scheme}://{self._host}:{self._port}{self._path}'
+                self._url = f"{self._scheme}://{self._host}:{self._port}{self._path}"
 
         return self._url
 
@@ -101,7 +97,7 @@ class Reverse:
         if self._enabled:
             return
 
-        logger.debug('starting wait loop')
+        logger.debug("starting wait loop")
 
         self._enabled = True
         # TODO: properly handle session loop task
@@ -111,19 +107,19 @@ class Reverse:
         if not self._enabled:
             return
 
-        logger.debug('wait stopped')
+        logger.debug("wait stopped")
 
         self._enabled = False
 
     def to_json(self) -> GenericJSONDict:
         d = {
-            'enabled': self._enabled,
-            'scheme': self._scheme,
-            'host': self._host,
-            'port': self._port,
-            'path': self._path,
-            'device_id': self._device_id,
-            'timeout': self._timeout
+            "enabled": self._enabled,
+            "scheme": self._scheme,
+            "host": self._host,
+            "port": self._port,
+            "path": self._path,
+            "device_id": self._device_id,
+            "timeout": self._timeout,
         }
 
         return d
@@ -144,18 +140,12 @@ class Reverse:
             try:
                 api_request_dict = await self._wait(api_request_dict, api_response_dict)  # TODO properly implement me
             except UnauthorizedConsumerRequestError:
-                api_response_dict = {
-                    'status': 401,
-                    'body': json_utils.dumps({'error': 'authentication-required'})
-                }
+                api_response_dict = {"status": 401, "body": json_utils.dumps({"error": "authentication-required"})}
 
                 continue
             except Exception as e:
                 logger.error(
-                    'wait failed: %s, retrying in %s seconds',
-                    e,
-                    settings.reverse.retry_interval,
-                    exc_info=True
+                    "wait failed: %s, retrying in %s seconds", e, settings.reverse.retry_interval, exc_info=True
                 )
                 sleep_interval = settings.reverse.retry_interval
                 continue
@@ -167,7 +157,7 @@ class Reverse:
             try:
                 api_response_dict = await self._process_api_request(api_request_dict)
             except Exception as e:
-                logger.error('reverse API call failed: %s', e, exc_info=True)
+                logger.error("reverse API call failed: %s", e, exc_info=True)
                 sleep_interval = settings.reverse.retry_interval
                 api_response_dict = None
                 continue
@@ -176,40 +166,33 @@ class Reverse:
         url = self.get_url()
 
         headers = {
-            'Content-Type': json_utils.JSON_CONTENT_TYPE,
-            'Authorization': core_api_auth.make_auth_header(
-                core_api_auth.ORIGIN_DEVICE,
-                username=self._device_id,
-                password_hash=self._password_hash
-            )
+            "Content-Type": json_utils.JSON_CONTENT_TYPE,
+            "Authorization": core_api_auth.make_auth_header(
+                core_api_auth.ORIGIN_DEVICE, username=self._device_id, password_hash=self._password_hash
+            ),
         }
 
         body_str = None
         if api_response_dict:  # answer request
-            body_str = api_response_dict['body']
-            headers['Status'] = f'{api_response_dict["status"]} {httputil.responses[api_response_dict["status"]]}'
-            headers['Session-Id'] = api_request_dict['session_id']
+            body_str = api_response_dict["body"]
+            headers["Status"] = f"{api_response_dict['status']} {httputil.responses[api_response_dict['status']]}"
+            headers["Session-Id"] = api_request_dict["session_id"]
 
         http_client = AsyncHTTPClient()
         request = HTTPRequest(
-            url,
-            'POST',
-            headers=headers,
-            body=body_str,
-            connect_timeout=self._timeout,
-            request_timeout=self._timeout
+            url, "POST", headers=headers, body=body_str, connect_timeout=self._timeout, request_timeout=self._timeout
         )
 
         if api_response_dict:
             logger.debug(
-                'sending answer request to %s %s (API call id %s) to %s',
-                api_request_dict['method'],
-                api_request_dict['path'],
-                api_request_dict['session_id'],
-                url
+                "sending answer request to %s %s (API call id %s) to %s",
+                api_request_dict["method"],
+                api_request_dict["path"],
+                api_request_dict["session_id"],
+                url,
             )
         else:
-            logger.debug('sending initial request to %s', url)
+            logger.debug("sending initial request to %s", url)
 
         try:
             # This response is in fact an API request
@@ -226,14 +209,13 @@ class Reverse:
     def _parse_consumer_response(response: HTTPResponse) -> GenericJSONDict:
         body = core_responses.parse(response)  # will raise for non-2xx
 
-        auth = response.headers.get('Authorization')
+        auth = response.headers.get("Authorization")
         if not auth:
-            raise UnauthorizedConsumerRequestError('Missing authorization header')
+            raise UnauthorizedConsumerRequestError("Missing authorization header")
 
         try:
             usr = core_api_auth.parse_auth_header(
-                auth, core_api_auth.ORIGIN_CONSUMER,
-                core_api_auth.consumer_password_hash_func
+                auth, core_api_auth.ORIGIN_CONSUMER, core_api_auth.consumer_password_hash_func
             )
         except core_api_auth.AuthError as e:
             raise UnauthorizedConsumerRequestError(str(e)) from e
@@ -241,42 +223,37 @@ class Reverse:
         access_level = core_api.ACCESS_LEVEL_MAPPING[usr]
 
         try:
-            method = response.headers['Method']
+            method = response.headers["Method"]
         except KeyError:
-            raise InvalidConsumerRequestError('Missing Method header') from None
+            raise InvalidConsumerRequestError("Missing Method header") from None
 
         try:
-            path = response.headers['Path']
+            path = response.headers["Path"]
         except KeyError:
-            raise InvalidConsumerRequestError('Missing Path header') from None
+            raise InvalidConsumerRequestError("Missing Path header") from None
 
         try:
-            session_id = response.headers['Session-Id']
+            session_id = response.headers["Session-Id"]
         except KeyError:
-            raise InvalidConsumerRequestError('Missing Session-Id header') from None
+            raise InvalidConsumerRequestError("Missing Session-Id header") from None
 
         return {
-            'body': body,
-            'method': method,
-            'path': path,
-            'session_id': session_id,
-            'access_level': access_level,
-            'username': usr
+            "body": body,
+            "method": method,
+            "path": path,
+            "session_id": session_id,
+            "access_level": access_level,
+            "username": usr,
         }
 
     async def _process_api_request(self, request_dict: GenericJSONDict) -> GenericJSONDict:
         from qtoggleserver.web import server as web_server
 
         if self._request_is_black_listed(request_dict):
-            return {
-                'status': 404,
-                'body': json_utils.dumps({'error': 'no-such-function'})
-            }
+            return {"status": 404, "body": json_utils.dumps({"error": "no-such-function"})}
 
         request = httputil.HTTPServerRequest(
-            method=request_dict['method'],
-            uri=request_dict['path'],
-            body=request_dict['body']
+            method=request_dict["method"], uri=request_dict["path"], body=request_dict["body"]
         )
 
         dispatcher = web_server.get_application().find_handler(request)
@@ -285,39 +262,35 @@ class Reverse:
         status = dispatcher.handler.get_status()
         body = dispatcher.handler.get_response_body()
 
-        return {
-            'status': status,
-            'body': body
-        }
+        return {"status": status, "body": body}
 
     @staticmethod
     def _request_is_black_listed(request_dict: GenericJSONDict) -> bool:
         for method, path_re in BLACKLIST_CALLS:
-            if request_dict['method'] != method:
+            if request_dict["method"] != method:
                 continue
 
-            if path_re.match(request_dict['path']):
+            if path_re.match(request_dict["path"]):
                 return True
 
         return False
 
 
-def get() -> Optional[Reverse]:
+def get() -> Reverse | None:
     return _reverse
 
 
 def setup(
     enabled: bool,
-    scheme: Optional[str] = None,
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    path: Optional[str] = None,
-    device_id: Optional[str] = None,
-    password_hash: Optional[str] = None,
-    timeout: Optional[int] = None,
-    **kwargs
+    scheme: str | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    path: str | None = None,
+    device_id: str | None = None,
+    password_hash: str | None = None,
+    timeout: int | None = None,
+    **kwargs,
 ) -> None:
-
     global _reverse
 
     if _reverse and _reverse.is_enabled():
@@ -329,32 +302,32 @@ def setup(
 
 
 async def load() -> None:
-    data = await persist.get_value('reverse')
+    data = await persist.get_value("reverse")
     if data is None:
         setup(enabled=False)
-        logger.debug('loaded %s', _reverse)
+        logger.debug("loaded %s", _reverse)
 
         return
 
     setup(**data)
-    logger.debug('loaded %s', _reverse)
+    logger.debug("loaded %s", _reverse)
 
 
 async def save() -> None:
     if _reverse is None:
         return
 
-    logger.debug('saving persisted data')
-    await persist.set_value('reverse', _reverse.to_json())
+    logger.debug("saving persisted data")
+    await persist.set_value("reverse", _reverse.to_json())
 
 
 async def reset() -> None:
-    logger.debug('clearing persisted data')
-    await persist.remove('reverse')
+    logger.debug("clearing persisted data")
+    await persist.remove("reverse")
 
 
 async def init() -> None:
-    logger.debug('loading persisted data')
+    logger.debug("loading persisted data")
     await load()
 
 

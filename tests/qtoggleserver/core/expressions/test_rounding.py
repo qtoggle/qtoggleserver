@@ -1,6 +1,7 @@
 import pytest
 
-from qtoggleserver.core.expressions import ROLE_VALUE, Function, InvalidNumberOfArguments, rounding
+from qtoggleserver.core.expressions import ROLE_VALUE, Function, rounding
+from qtoggleserver.core.expressions.exceptions import InvalidNumberOfArguments
 
 
 async def test_floor_integer(literal_two, dummy_eval_context):
@@ -25,16 +26,16 @@ async def test_floor_negative(literal_minus_pi, literal_minus_ten_point_fifty_on
 
 
 def test_floor_parse():
-    e = Function.parse(None, 'FLOOR(1)', ROLE_VALUE, 0)
+    e = Function.parse(None, "FLOOR(1)", ROLE_VALUE, 0)
     assert isinstance(e, rounding.FloorFunction)
 
 
 def test_floor_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'FLOOR()', ROLE_VALUE, 0)
+        Function.parse(None, "FLOOR()", ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'FLOOR(1, 2)', ROLE_VALUE, 0)
+        Function.parse(None, "FLOOR(1, 2)", ROLE_VALUE, 0)
 
 
 async def test_ceil_integer(literal_two, dummy_eval_context):
@@ -59,16 +60,16 @@ async def test_ceil_negative(literal_minus_pi, literal_minus_ten_point_fifty_one
 
 
 def test_ceil_parse():
-    e = Function.parse(None, 'CEIL(1)', ROLE_VALUE, 0)
+    e = Function.parse(None, "CEIL(1)", ROLE_VALUE, 0)
     assert isinstance(e, rounding.CeilFunction)
 
 
 def test_ceil_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'CEIL()', ROLE_VALUE, 0)
+        Function.parse(None, "CEIL()", ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'CEIL(1, 2)', ROLE_VALUE, 0)
+        Function.parse(None, "CEIL(1, 2)", ROLE_VALUE, 0)
 
 
 async def test_round_integer(literal_two, dummy_eval_context):
@@ -98,13 +99,13 @@ async def test_round_decimals(literal_minus_pi, literal_two, dummy_eval_context)
 
 
 def test_round_parse():
-    e = Function.parse(None, 'ROUND(1)', ROLE_VALUE, 0)
+    e = Function.parse(None, "ROUND(1)", ROLE_VALUE, 0)
     assert isinstance(e, rounding.RoundFunction)
 
 
 def test_round_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'ROUND()', ROLE_VALUE, 0)
+        Function.parse(None, "ROUND()", ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'ROUND(1, 2, 3)', ROLE_VALUE, 0)
+        Function.parse(None, "ROUND(1, 2, 3)", ROLE_VALUE, 0)

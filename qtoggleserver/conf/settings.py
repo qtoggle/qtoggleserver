@@ -1,52 +1,40 @@
-import typing as _typing
+from typing import Any as _Any
 
 
-source: _typing.Optional[str] = None  # full path to the configuration file, automatically set at startup
+source: str | None = None  # full path to the configuration file, automatically set at startup
 
 debug: bool = False
 
-public_url: _typing.Optional[str] = None
+public_url: str | None = None
 
 
-logging: dict[str, _typing.Any] = {
-    'version': 1,
-    'memory_logs_buffer_len': 10000,
-    'formatters': {
-        'default': {
-            'format': '%(asctime)s: %(levelname)7s: [%(name)s] %(message)s',
-            'datefmt': '%Y-%m-%d %H:%M:%S'
-        }
+logging: dict[str, _Any] = {
+    "version": 1,
+    "memory_logs_buffer_len": 10000,
+    "formatters": {
+        "default": {"format": "%(asctime)s: %(levelname)7s: [%(name)s] %(message)s", "datefmt": "%Y-%m-%d %H:%M:%S"}
     },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'default'
-        }
-    },
-    'loggers': {
+    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "default"}},
+    "loggers": {
         # Double quotes are necessary to avoid HOCON key split
-        '"asyncio"': {'level': 'INFO'},
-        '"bleak"': {'level': 'INFO'},
-        '"qtoggleserver.core.sessions"': {'level': 'INFO'},
-        '"qtoggleserver.persist"': {'level': 'INFO'},
-        '"qtoggleserver.drivers.persist"': {'level': 'INFO'},
-        '"qtoggleserver.utils.cmd"': {'level': 'INFO'}
+        '"asyncio"': {"level": "INFO"},
+        '"bleak"': {"level": "INFO"},
+        '"qtoggleserver.core.sessions"': {"level": "INFO"},
+        '"qtoggleserver.persist"': {"level": "INFO"},
+        '"qtoggleserver.drivers.persist"': {"level": "INFO"},
+        '"qtoggleserver.utils.cmd"': {"level": "INFO"},
     },
-    'root': {
-        'level': 'DEBUG',
-        'handlers': ['console']
-    }
+    "root": {"level": "DEBUG", "handlers": ["console"]},
 }
 
 
 class core:
-
     class device_name:
-        get_cmd: _typing.Optional[str] = None
-        set_cmd: _typing.Optional[str] = None
+        get_cmd: str | None = None
+        set_cmd: str | None = None
 
     class passwords:
-        set_cmd: _typing.Optional[str] = None
+        set_cmd: str | None = None
 
     tick_interval: int = 50
     persist_interval: int = 2000
@@ -62,64 +50,64 @@ class core:
 
 
 class server:
-    addr: str = '0.0.0.0'
+    addr: str = "0.0.0.0"
     port: int = 8888
     compress_response: bool = True
 
     class https:
-        cert_file: _typing.Optional[str] = None
-        key_file: _typing.Optional[str] = None
+        cert_file: str | None = None
+        key_file: str | None = None
 
 
 class persist:
-    driver: str = 'qtoggleserver.drivers.persist.JSONDriver'
-    file_path: str = 'qtoggleserver-data.json'
+    driver: str = "qtoggleserver.drivers.persist.JSONDriver"
+    file_path: str = "qtoggleserver-data.json"
 
 
 class system:
-    setup_mode_cmd: _typing.Optional[str] = None
+    setup_mode_cmd: str | None = None
 
     class date:
-        set_cmd: _typing.Optional[str] = None
-        set_format: _typing.Optional[str] = '%Y-%m-%dT%H:%M:%SZ'
+        set_cmd: str | None = None
+        set_format: str | None = "%Y-%m-%dT%H:%M:%SZ"
 
     class timezone:
-        get_cmd: _typing.Optional[str] = None
-        set_cmd: _typing.Optional[str] = None
+        get_cmd: str | None = None
+        set_cmd: str | None = None
 
     class net:
         class wifi:
-            get_cmd: _typing.Optional[str] = None
-            set_cmd: _typing.Optional[str] = None
+            get_cmd: str | None = None
+            set_cmd: str | None = None
 
         class ip:
-            get_cmd: _typing.Optional[str] = None
-            set_cmd: _typing.Optional[str] = None
+            get_cmd: str | None = None
+            set_cmd: str | None = None
 
     class storage:
-        path: _typing.Optional[str] = None
+        path: str | None = None
 
     class temperature:
-        get_cmd: _typing.Optional[str] = None
-        sensor_name: _typing.Optional[str] = None
+        get_cmd: str | None = None
+        sensor_name: str | None = None
         sensor_index: int = 0
-        min: _typing.Optional[int] = 0
-        max: _typing.Optional[int] = 100
+        min: int | None = 0
+        max: int | None = 100
 
     class battery:
-        get_cmd: _typing.Optional[str] = None
+        get_cmd: str | None = None
 
     class fwupdate:
-        driver: _typing.Optional[str] = None
+        driver: str | None = None
 
 
 class frontend:
     enabled: bool = True
     debug: bool = False
-    static_url: str = None
-    display_name: str = 'qToggleServer'
-    display_short_name: str = 'qToggleServer'
-    description: str = 'An application to control qToggleServer'  # TODO: i18n
+    static_url: str | None = None
+    display_name: str = "qToggleServer"
+    display_short_name: str = "qToggleServer"
+    description: str = "An application to control qToggleServer"  # TODO: i18n
 
 
 class slaves:
@@ -133,22 +121,22 @@ class slaves:
     class discover:
         request_timeout: int = 5
         dhcp_timeout: int = 10
-        dhcp_interface: str = None
+        dhcp_interface: str | None = None
 
         class ap:
-            interface: str = None
-            interface_cmd: str = None
-            ssid: str = 'qToggleSetup'
-            psk: str = None
-            own_ip: str = '192.168.43.1'
+            interface: str | None = None
+            interface_cmd: str | None = None
+            ssid: str = "qToggleSetup"
+            psk: str | None = None
+            own_ip: str = "192.168.43.1"
             mask_len: int = 24
-            start_ip: str = '192.168.43.50'
-            stop_ip: str = '192.168.43.250'
-            hostapd_binary: str = None
-            hostapd_cli_binary: str = None
-            dnsmasq_binary: str = None
-            hostapd_log: str = '/tmp/hostapd.log'
-            dnsmasq_log: str = '/tmp/dnsmasq.log'
+            start_ip: str = "192.168.43.50"
+            stop_ip: str = "192.168.43.250"
+            hostapd_binary: str | None = None
+            hostapd_cli_binary: str | None = None
+            dnsmasq_binary: str | None = None
+            hostapd_log: str = "/tmp/hostapd.log"
+            dnsmasq_log: str = "/tmp/dnsmasq.log"
             finish_timeout: int = 300
 
 
@@ -161,10 +149,10 @@ class reverse:
     retry_interval: int = 5
 
 
-event_handlers: list[dict[str, _typing.Any]] = []
+event_handlers: list[dict[str, _Any]] = []
 
-peripherals: list[dict[str, _typing.Any]] = []
+peripherals: list[dict[str, _Any]] = []
 
-ports: list[dict[str, _typing.Any]] = []
+ports: list[dict[str, _Any]] = []
 
 port_mappings: dict[str, str] = {}

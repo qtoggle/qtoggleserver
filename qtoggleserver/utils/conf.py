@@ -12,7 +12,7 @@ _config_factory = pyhocon.ConfigFactory()
 def obj_to_dict(obj: Any) -> dict[str, Any]:
     d = {}
     for k, v in obj.__dict__.items():
-        if k.startswith('__') or isinstance(v, types.ModuleType):
+        if k.startswith("__") or isinstance(v, types.ModuleType):
             continue
 
         if isinstance(v, type):

@@ -2,23 +2,21 @@ from __future__ import annotations
 
 import abc
 
-from typing import Optional
-
 from qtoggleserver.core import ports as core_ports
 
 from .peripheral import Peripheral
 
 
 class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
-    ID = 'port'
+    ID = "port"
 
-    def __init__(self, peripheral: Peripheral, id: Optional[str] = None) -> None:
+    def __init__(self, peripheral: Peripheral, id: str | None = None) -> None:
         self._peripheral: Peripheral = peripheral
         self._initial_id: str = id or self.make_id()
 
         id_ = self._initial_id
         if self._peripheral.get_name():
-            id_ = f'{self._peripheral.get_name()}.{id_}'
+            id_ = f"{self._peripheral.get_name()}.{id_}"
 
         super().__init__(id_)
 

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class DummyEventHandler(filtereventhandler.FilterEventHandler):
     async def on_event(self, event: core_events.Event) -> None:
-        logger.debug('handling %s', event)
+        logger.debug("handling %s", event)
 
     async def on_value_change(
         self,
@@ -20,10 +20,9 @@ class DummyEventHandler(filtereventhandler.FilterEventHandler):
         port: core_ports.BasePort,
         old_value: NullablePortValue,
         new_value: NullablePortValue,
-        attrs: Attributes
+        attrs: Attributes,
     ) -> None:
-
-        logger.debug('handling value-change for %s', port)
+        logger.debug("handling value-change for %s", port)
 
     async def on_port_update(
         self,
@@ -33,16 +32,15 @@ class DummyEventHandler(filtereventhandler.FilterEventHandler):
         new_attrs: Attributes,
         changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
-        removed_attrs: Attributes
+        removed_attrs: Attributes,
     ) -> None:
-
-        logger.debug('handling port-update for %s', port)
+        logger.debug("handling port-update for %s", port)
 
     async def on_port_add(self, event: core_events.Event, port: core_ports.BasePort, attrs: Attributes) -> None:
-        logger.debug('handling port-add for %s', port)
+        logger.debug("handling port-add for %s", port)
 
     async def on_port_remove(self, event: core_events.Event, port: core_ports.BasePort, attrs: Attributes) -> None:
-        logger.debug('handling port-remove for %s', port)
+        logger.debug("handling port-remove for %s", port)
 
     async def on_device_update(
         self,
@@ -51,13 +49,12 @@ class DummyEventHandler(filtereventhandler.FilterEventHandler):
         new_attrs: Attributes,
         changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
-        removed_attrs: Attributes
+        removed_attrs: Attributes,
     ) -> None:
-
-        logger.debug('handling device-update')
+        logger.debug("handling device-update")
 
     async def on_full_update(self, event: core_events.Event) -> None:
-        logger.debug('handling full-update')
+        logger.debug("handling full-update")
 
     async def on_slave_device_update(
         self,
@@ -67,24 +64,16 @@ class DummyEventHandler(filtereventhandler.FilterEventHandler):
         new_attrs: Attributes,
         changed_attrs: dict[str, tuple[Attribute, Attribute]],
         added_attrs: Attributes,
-        removed_attrs: Attributes
+        removed_attrs: Attributes,
     ) -> None:
-
-        logger.debug('handling slave-device-update for %s', slave)
+        logger.debug("handling slave-device-update for %s", slave)
 
     async def on_slave_device_add(
-        self,
-        event: core_events.Event,
-        slave: slaves_devices.Slave,
-        attrs: Attributes
+        self, event: core_events.Event, slave: slaves_devices.Slave, attrs: Attributes
     ) -> None:
-
-        logger.debug('handling slave-device-add for %s', slave)
+        logger.debug("handling slave-device-add for %s", slave)
 
     async def on_slave_device_remove(
-        self,
-        event: core_events.Event,
-        slave: slaves_devices.Slave, attrs: Attributes
+        self, event: core_events.Event, slave: slaves_devices.Slave, attrs: Attributes
     ) -> None:
-
-        logger.debug('handling slave-device-remove for %s', slave)
+        logger.debug("handling slave-device-remove for %s", slave)

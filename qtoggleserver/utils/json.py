@@ -1,32 +1,33 @@
-import datetime
 import json
 import math
 
-from typing import Any, Union
+from datetime import date, datetime
+from typing import Any, cast
 
 import jsonpointer
 
 
-JSON_CONTENT_TYPE = 'application/json; charset=utf-8'
+JSON_CONTENT_TYPE = "application/json; charset=utf-8"
 
-TYPE_FIELD = '__t'
-VALUE_FIELD = '__v'
-DATE_FORMAT = '%Y-%m-%d'
-DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
-DATE_TYPE = '__d'
-DATETIME_TYPE = '__dt'
+TYPE_FIELD = "__t"
+VALUE_FIELD = "__v"
+DATE_FORMAT = "%Y-%m-%d"
+DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
+DATE_TYPE = "__d"
+DATETIME_TYPE = "__dt"
 
-DATETIME_FORMAT_ISO = '%Y-%m-%dT%H:%M:%SZ'
-DATE_FORMAT_ISO = '%Y-%m-%d'
+DATETIME_FORMAT_ISO = "%Y-%m-%dT%H:%M:%SZ"
+DATE_FORMAT_ISO = "%Y-%m-%d"
 DATETIME_FORMAT_ISO_LEN = len(DATETIME_FORMAT_ISO)
 DATE_FORMAT_ISO_LEN = len(DATE_FORMAT_ISO)
 
-EXTRA_TYPES_NONE = ''
-EXTRA_TYPES_ISO = 'iso'
-EXTRA_TYPES_EXTENDED = 'extended'
+EXTRA_TYPES_NONE = ""
+EXTRA_TYPES_ISO = "iso"
+EXTRA_TYPES_EXTENDED = "extended"
 
 
 def _replace_nan_inf_rec(obj: Any, replace_value: Any) -> Any:
+    new_obj: Any
     if isinstance(obj, dict):
         new_obj = {}
         for k, v in obj.items():
@@ -49,7 +50,7 @@ def _replace_nan_inf_rec(obj: Any, replace_value: Any) -> Any:
 
 def _resolve_refs_rec(obj: Any, root_obj: Any) -> Any:
     if isinstance(obj, dict):
-        if len(obj.keys()) == 1 and list(obj.keys())[0] == '$ref':
+        if len(obj.keys()) == 1 and list(obj.keys())[0] == "$ref":
             ref = list(obj.values())[0]
             ref = ref[1:]  # skip starting hash
             return jsonpointer.resolve_pointer(root_obj, ref)
@@ -64,9 +65,9 @@ def _resolve_refs_rec(obj: Any, root_obj: Any) -> Any:
 
 
 def encode_default_json_iso(obj: Any) -> Any:
-    if isinstance(obj, datetime.datetime):
+    if isinstance(obj, datetime):
         return obj.strftime(DATETIME_FORMAT_ISO)
-    elif isinstance(obj, datetime.date):
+    elif isinstance(obj, date):
         return obj.strftime(DATE_FORMAT)
     elif isinstance(obj, (set, tuple)):
         return list(obj)
@@ -75,16 +76,10 @@ def encode_default_json_iso(obj: Any) -> Any:
 
 
 def encode_default_json_extended(obj: Any) -> Any:
-    if isinstance(obj, datetime.datetime):
-        return {
-            TYPE_FIELD: DATETIME_TYPE,
-            VALUE_FIELD: obj.strftime(DATETIME_FORMAT)
-        }
-    elif isinstance(obj, datetime.date):
-        return {
-            TYPE_FIELD: DATE_TYPE,
-            VALUE_FIELD: obj.strftime(DATE_FORMAT)
-        }
+    if isinstance(obj, datetime):
+        return {TYPE_FIELD: DATETIME_TYPE, VALUE_FIELD: obj.strftime(DATETIME_FORMAT)}
+    elif isinstance(obj, date):
+        return {TYPE_FIELD: DATE_TYPE, VALUE_FIELD: obj.strftime(DATE_FORMAT)}
     elif isinstance(obj, (set, tuple)):
         return list(obj)
     else:
@@ -96,30 +91,30 @@ def decode_json_hook_iso(obj: dict) -> Any:
         if isinstance(v, str):
             if len(v) == DATETIME_FORMAT_ISO_LEN:
                 try:
-                    obj[k] = datetime.datetime.strptime(v, DATETIME_FORMAT_ISO)
+                    obj[k] = datetime.strptime(v, DATETIME_FORMAT_ISO)
                 except ValueError:
                     pass
             elif len(v) == DATE_FORMAT_ISO_LEN:
                 try:
-                    obj[k] = datetime.datetime.strptime(v, DATE_FORMAT_ISO).date()
+                    obj[k] = datetime.strptime(v, DATE_FORMAT_ISO).date()
                 except ValueError:
                     pass
 
     return obj
 
 
-def decode_json_hook_extended(obj: dict) -> Any:
+def decode_json_hook_extended(obj: dict[Any, Any]) -> Any:
     __t = obj.get(TYPE_FIELD)
     if __t is not None:
-        __v = obj.get(VALUE_FIELD)
+        __v = cast(str, obj.get(VALUE_FIELD))
         if __t == DATE_TYPE:
             try:
-                return datetime.datetime.strptime(__v, DATE_FORMAT).date()
+                return datetime.strptime(__v, DATE_FORMAT).date()
             except ValueError:
                 pass
         elif __t == DATETIME_TYPE:
             try:
-                return datetime.datetime.strptime(__v, DATETIME_FORMAT)
+                return datetime.strptime(__v, DATETIME_FORMAT)
             except ValueError:
                 pass
 
@@ -131,14 +126,14 @@ def dumps(obj: Any, extra_types: str = EXTRA_TYPES_NONE, **kwargs) -> str:
     if isinstance(obj, str):
         return '"' + obj + '"'
     elif isinstance(obj, bool):
-        return ['false', 'true'][obj]
+        return ["false", "true"][obj]
     elif isinstance(obj, (int, float)):
         if math.isinf(obj) or math.isnan(obj):
-            return 'null'
+            return "null"
 
         return str(obj)
     elif obj is None:
-        return 'null'
+        return "null"
     else:
         if extra_types == EXTRA_TYPES_EXTENDED:
             return json.dumps(obj, default=encode_default_json_extended, allow_nan=True, **kwargs)
@@ -153,7 +148,7 @@ def dumps(obj: Any, extra_types: str = EXTRA_TYPES_NONE, **kwargs) -> str:
                 return json.dumps(obj, allow_nan=False, **kwargs)
 
 
-def loads(s: Union[str, bytes], resolve_refs: bool = False, extra_types: str = EXTRA_TYPES_NONE, **kwargs) -> Any:
+def loads(s: str | bytes, resolve_refs: bool = False, extra_types: str = EXTRA_TYPES_NONE, **kwargs) -> Any:
     if extra_types == EXTRA_TYPES_EXTENDED:
         object_hook = decode_json_hook_extended
     elif extra_types == EXTRA_TYPES_ISO:

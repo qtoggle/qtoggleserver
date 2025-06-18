@@ -1,7 +1,5 @@
 import logging.handlers
 
-from typing import Optional
-
 
 class FifoMemoryHandler(logging.handlers.MemoryHandler):
     def __init__(self, capacity: int) -> None:
@@ -17,9 +15,9 @@ class FifoMemoryHandler(logging.handlers.MemoryHandler):
 
 
 class LoggableMixin:
-    def __init__(self, name: Optional[str], parent_logger: logging.Logger) -> None:
+    def __init__(self, name: str | None, parent_logger: logging.Logger) -> None:
         if name:
-            name = f'{parent_logger.name}.{name}'
+            name = f"{parent_logger.name}.{name}"
         else:
             name = parent_logger.name
 
@@ -43,6 +41,6 @@ class LoggableMixin:
 
     def set_logger_name(self, name: str) -> None:
         if name:
-            self._logger = logging.getLogger(f'{self._parent_logger.name}.{name}')
+            self._logger = logging.getLogger(f"{self._parent_logger.name}.{name}")
         else:
             self._logger = self._parent_logger

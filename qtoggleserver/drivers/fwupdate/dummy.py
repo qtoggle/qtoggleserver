@@ -5,9 +5,9 @@ from qtoggleserver.system import fwupdate
 
 
 _SLEEP_TIME = 1
-_DUMMY_VERSION = '1.0.2222-11-10'
-_DUMMY_URL = f'http://firmware.qtoggle.io/qtoggleserver/{_DUMMY_VERSION}'
-_DUMMY_DATE = '2222-11-10'
+_DUMMY_VERSION = "1.0.2222-11-10"
+_DUMMY_URL = f"http://firmware.qtoggle.io/qtoggleserver/{_DUMMY_VERSION}"
+_DUMMY_DATE = "2222-11-10"
 
 
 class DummyDriver(fwupdate.BaseDriver):

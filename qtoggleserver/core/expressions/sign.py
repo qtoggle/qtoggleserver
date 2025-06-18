@@ -2,7 +2,7 @@ from .base import EvalContext, EvalResult
 from .functions import Function, function
 
 
-@function('ABS')
+@function("ABS")
 class AbsFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 
@@ -10,7 +10,7 @@ class AbsFunction(Function):
         return abs((await self.eval_args(context))[0])
 
 
-@function('SGN')
+@function("SGN")
 class SgnFunction(Function):
     MIN_ARGS = MAX_ARGS = 1
 

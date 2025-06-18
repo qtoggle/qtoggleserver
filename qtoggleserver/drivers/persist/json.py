@@ -3,7 +3,8 @@ import logging
 import operator
 import os
 
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
 from qtoggleserver.conf import settings
 from qtoggleserver.persist import BaseDriver
@@ -11,20 +12,20 @@ from qtoggleserver.persist.typing import Id, Record
 from qtoggleserver.utils import json as json_utils
 
 
-DEFAULT_FILE_PATH = 'qtoggleserver-data.json'
+DEFAULT_FILE_PATH = "qtoggleserver-data.json"
 
 FILTER_OP_MAPPING = {
-    'gt': operator.gt,
-    'ge': operator.ge,
-    'lt': operator.lt,
-    'le': operator.le,
-    'in': lambda a, b: a in b
+    "gt": operator.gt,
+    "ge": operator.ge,
+    "lt": operator.lt,
+    "le": operator.le,
+    "in": lambda a, b: a in b,
 }
 
 
 logger = logging.getLogger(__name__)
 
-Collection = dict[int, Record]
+Collection = dict[str, Record]
 IndexedData = dict[str, Collection]
 UnindexedData = dict[str, list[Record]]
 
@@ -40,21 +41,21 @@ class DuplicateRecordId(JSONPersistError):
 class JSONDriver(BaseDriver):
     def __init__(
         self,
-        file_path: Optional[str] = DEFAULT_FILE_PATH,
-        pretty_format: Optional[bool] = None,
+        file_path: str | None = DEFAULT_FILE_PATH,
+        pretty_format: bool | None = None,
         use_backup: bool = True,
-        **kwargs
+        **kwargs,
     ) -> None:
         if file_path:
-            logger.debug('using file %s', file_path)
+            logger.debug("using file %s", file_path)
         else:
-            logger.warning('using in-memory storage')
+            logger.warning("using in-memory storage")
 
         # Pretty formatting follows general debug flag, by default
         if pretty_format is None:
             pretty_format = settings.debug
 
-        self._file_path: Optional[str] = file_path
+        self._file_path: str | None = file_path
         self._pretty_format: bool = pretty_format
         self._use_backup: bool = use_backup
 
@@ -63,18 +64,17 @@ class JSONDriver(BaseDriver):
     async def query(
         self,
         collection: str,
-        fields: Optional[list[str]],
+        fields: list[str] | None,
         filt: dict[str, Any],
         sort: list[tuple[str, bool]],
-        limit: Optional[int]
+        limit: int | None,
     ) -> Iterable[Record]:
-
         coll = self._data.get(collection, {})
         records = []
 
-        if isinstance(filt.get('id'), Id):  # look for specific record id
+        if isinstance(filt.get("id"), Id):  # look for specific record id
             filt = dict(filt)
-            id_ = filt.pop('id')
+            id_ = filt.pop("id")
             record = coll.get(id_)
 
             # Apply filter criteria
@@ -88,8 +88,8 @@ class JSONDriver(BaseDriver):
 
         # Sort
         for field, rev in reversed(sort):
-            if field == 'id':
-                records.sort(key=lambda r: int(r['id']), reverse=rev)
+            if field == "id":
+                records.sort(key=lambda r: int(r["id"]), reverse=rev)
             else:
                 records.sort(key=lambda r: r.get(field), reverse=rev)
 
@@ -112,7 +112,7 @@ class JSONDriver(BaseDriver):
     async def insert(self, collection: str, record: Record) -> Id:
         coll = self._data.setdefault(collection, {})
 
-        id_ = record.get('id')
+        id_ = record.get("id")
         if id_ is None:
             id_ = self._find_next_id(coll)
             record = dict(record, id=id_)
@@ -129,9 +129,9 @@ class JSONDriver(BaseDriver):
         coll = self._data.setdefault(collection, {})
         modified_count = 0
 
-        if isinstance(filt.get('id'), Id):
+        if isinstance(filt.get("id"), Id):
             filt = dict(filt)
-            id_ = filt.pop('id')
+            id_ = filt.pop("id")
 
             record = coll.get(id_)
             if record is not None:
@@ -160,7 +160,7 @@ class JSONDriver(BaseDriver):
         record = dict(record)
 
         # Never change record id with replace
-        record['id'] = id_
+        record["id"] = id_
         coll[id_] = record
 
         self._save(self._unindex(self._data))
@@ -171,9 +171,9 @@ class JSONDriver(BaseDriver):
         coll = self._data.setdefault(collection, {})
         removed_count = 0
 
-        if isinstance(filt.get('id'), Id):
+        if isinstance(filt.get("id"), Id):
             filt = dict(filt)
-            id_ = filt.pop('id')
+            id_ = filt.pop("id")
 
             record = coll.get(id_)
             if (record is not None) and self._filter_matches(record, filt):
@@ -228,30 +228,30 @@ class JSONDriver(BaseDriver):
 
         return str(max(int_ids) + 1)
 
-    def _get_backup_file_path(self) -> Optional[str]:
+    def _get_backup_file_path(self) -> str | None:
         if not self._file_path:
             return None
         path, ext = os.path.splitext(self._file_path)
-        return f'{path}_backup{ext}'
+        return f"{path}_backup{ext}"
 
     def _load(self) -> UnindexedData:
         if not self._file_path:
             return {}
 
-        logger.debug('loading from %s', self._file_path)
+        logger.debug("loading from %s", self._file_path)
 
         try:
             # If the file is accessible but empty, consider data loaded and return empty dictionary
             if os.stat(self._file_path).st_size == 0:
-                logger.debug('file %s is empty', self._file_path)
+                logger.debug("file %s is empty", self._file_path)
                 return {}
         except FileNotFoundError:
             # If the file does not exist, consider data loaded and return empty dictionary
-            logger.debug('file %s does not exist', self._file_path)
+            logger.debug("file %s does not exist", self._file_path)
             return {}
 
         try:
-            with open(self._file_path, 'rb') as f:
+            with open(self._file_path, "rb") as f:
                 data = f.read()
                 return json_utils.loads(data, extra_types=json_utils.EXTRA_TYPES_EXTENDED)
         except Exception as e:
@@ -259,13 +259,13 @@ class JSONDriver(BaseDriver):
                 raise
 
             # Upon failure, if using a backup, simply log the error and attempt to load from backup file
-            logger.error('failed to load from %s: %s', self._file_path, e, exc_info=True)
+            logger.error("failed to load from %s: %s", self._file_path, e, exc_info=True)
 
             backup_file_path = self._get_backup_file_path()
             if backup_file_path:
-                logger.warning('loading from backup %s', backup_file_path)
+                logger.warning("loading from backup %s", backup_file_path)
 
-                with open(backup_file_path, 'rb') as f:
+                with open(backup_file_path, "rb") as f:
                     return json_utils.loads(f.read(), extra_types=json_utils.EXTRA_TYPES_EXTENDED)
 
         return {}
@@ -278,12 +278,12 @@ class JSONDriver(BaseDriver):
             backup_file_path = self._get_backup_file_path()
             if not backup_file_path:
                 return
-            logger.debug('backing up %s to %s', self._file_path, backup_file_path)
+            logger.debug("backing up %s to %s", self._file_path, backup_file_path)
             os.rename(self._file_path, backup_file_path)
 
-        logger.debug('saving to %s', self._file_path)
+        logger.debug("saving to %s", self._file_path)
 
-        with open(self._file_path, 'wb') as f:
+        with open(self._file_path, "wb") as f:
             data = json_utils.dumps(
                 data, extra_types=json_utils.EXTRA_TYPES_EXTENDED, indent=4 if self._pretty_format else None
             )
@@ -293,7 +293,7 @@ class JSONDriver(BaseDriver):
     def _index(data: UnindexedData) -> IndexedData:
         indexed_data = {}
         for coll, records in data.items():
-            indexed_data[coll] = {r.get('id', ''): r for r in records}
+            indexed_data[coll] = {r.get("id", ""): r for r in records}
 
         return indexed_data
 

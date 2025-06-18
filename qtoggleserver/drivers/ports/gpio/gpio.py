@@ -1,6 +1,6 @@
 import os
 
-from typing import Optional, TextIO
+from typing import TextIO
 
 from qtoggleserver.core import ports
 from qtoggleserver.utils import json as json_utils
@@ -10,31 +10,31 @@ class GPIO(ports.Port):
     TYPE = ports.TYPE_BOOLEAN
 
     ADDITIONAL_ATTRDEFS = {
-        'output': {
-            'display_name': 'Is Output',
-            'description': 'Controls the port direction.',
-            'type': 'boolean',
-            'modifiable': True
+        "output": {
+            "display_name": "Is Output",
+            "description": "Controls the port direction.",
+            "type": "boolean",
+            "modifiable": True,
         }
     }
 
-    BASE_PATH = '/sys/class/gpio'
+    BASE_PATH = "/sys/class/gpio"
 
-    def __init__(self, no: int, def_value: Optional[bool] = None, def_output: Optional[bool] = None) -> None:
+    def __init__(self, no: int, def_value: bool | None = None, def_output: bool | None = None) -> None:
         self._no: int = no
-        self._def_value: Optional[bool] = def_value
-        self._def_output: Optional[bool] = def_output
+        self._def_value: bool | None = def_value
+        self._def_output: bool | None = def_output
 
-        self._val_file: Optional[TextIO] = None
-        self._dir_file: Optional[TextIO] = None
+        self._val_file: TextIO | None = None
+        self._dir_file: TextIO | None = None
 
-        super().__init__(port_id=f'gpio{no}')
+        super().__init__(port_id=f"gpio{no}")
 
     async def handle_enable(self) -> None:
         try:
             (self._val_file, self._dir_file) = self._configure()
         except Exception as e:
-            self.error('failed to configure %s: %s', self, e)
+            self.error("failed to configure %s: %s", self, e)
 
             raise
 
@@ -44,18 +44,18 @@ class GPIO(ports.Port):
     async def read_value(self) -> bool:
         self._val_file.seek(0)
 
-        return self._val_file.read(1) == '1'
+        return self._val_file.read(1) == "1"
 
-    async def write_value(self, value: Optional[bool]) -> None:
+    async def write_value(self, value: bool | None) -> None:
         if value is None:
             return
 
         self._val_file.seek(0)
 
         if value:
-            value = '1'
+            value = "1"
         else:
-            value = '0'
+            value = "0"
 
         self.debug('writing %s to "%s"', json_utils.dumps(value), self._val_file.name)
         self._val_file.write(value)
@@ -71,9 +71,9 @@ class GPIO(ports.Port):
         self._dir_file.seek(0)
 
         if output:
-            text = 'out'
+            text = "out"
         else:
-            text = 'in'
+            text = "in"
 
         self.debug('writing "%s" to "%s"', text, self._dir_file.name)
         self._dir_file.write(text)
@@ -91,17 +91,14 @@ class GPIO(ports.Port):
 
         self._dir_file.seek(0)
 
-        return self._dir_file.read(3) == 'out'
+        return self._dir_file.read(3) == "out"
 
     def _configure(self) -> tuple[TextIO, TextIO]:
-        path = os.path.join(self.BASE_PATH, f'gpio{self._no}')
+        path = os.path.join(self.BASE_PATH, f"gpio{self._no}")
 
         if not os.path.exists(path):
-            self.debug('exporting %s', self)
-            with open(os.path.join(self.BASE_PATH, 'export'), 'w') as f:
+            self.debug("exporting %s", self)
+            with open(os.path.join(self.BASE_PATH, "export"), "w") as f:
                 f.write(str(self._no))
 
-        return (
-            open(os.path.join(path, 'value'), 'r+'),
-            open(os.path.join(path, 'direction'), 'r+')
-        )
+        return open(os.path.join(path, "value"), "r+"), open(os.path.join(path, "direction"), "r+")

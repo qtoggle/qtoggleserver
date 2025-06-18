@@ -21,19 +21,19 @@ async def driver() -> BaseDriver:
         pg_server = TestingPostgreSQL()
 
     params = pg_server.dsn()
-    db = params['database']
+    db = params["database"]
 
-    conn = await asyncpg.connect(**dict(params, database='postgres'))
-    await conn.execute(f'DROP DATABASE IF EXISTS {db}')
-    await conn.execute(f'CREATE DATABASE {db}')
+    conn = await asyncpg.connect(**dict(params, database="postgres"))
+    await conn.execute(f"DROP DATABASE IF EXISTS {db}")
+    await conn.execute(f"CREATE DATABASE {db}")
     await conn.close()
 
     driver = postgresql.PostgreSQLDriver(
-        host=params['host'],
-        port=params['port'],
-        db=params['database'],
-        username=params['user'],
-        password=params.get('password')
+        host=params["host"],
+        port=params["port"],
+        db=params["database"],
+        username=params["user"],
+        password=params.get("password"),
     )
     await driver.init()
 

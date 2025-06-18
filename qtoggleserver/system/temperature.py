@@ -1,5 +1,3 @@
-from typing import Optional
-
 import psutil
 
 from qtoggleserver.conf import settings
@@ -14,14 +12,16 @@ def has_temperature_support() -> bool:
     return bool(settings.system.temperature.sensor_name) or bool(settings.system.temperature.get_cmd)
 
 
-def get_temperature() -> Optional[int]:
+def get_temperature() -> int | None:
     if settings.system.temperature.get_cmd:
-        return int(run_get_cmd(
-            settings.system.temperature.get_cmd,
-            cmd_name='temperature',
-            exc_class=TemperatureError,
-            required_fields=['value']
-        )['value'])
+        return int(
+            run_get_cmd(
+                settings.system.temperature.get_cmd,
+                cmd_name="temperature",
+                exc_class=TemperatureError,
+                required_fields=["value"],
+            )["value"]
+        )
 
     if settings.system.temperature.sensor_name:
         temperatures = psutil.sensors_temperatures()
@@ -29,3 +29,5 @@ def get_temperature() -> Optional[int]:
         temp_info = temp_info_list[settings.system.temperature.sensor_index]
 
         return int(temp_info.current)
+    else:
+        return None

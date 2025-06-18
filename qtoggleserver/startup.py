@@ -6,11 +6,11 @@ import signal
 import sys
 import types
 
-from typing import Any, Optional
+from typing import Any
 
 from tornado import httpclient, netutil
 
-from qtoggleserver import persist, slaves, system, version, web
+from qtoggleserver import peripherals, persist, slaves, system, version, web
 from qtoggleserver.conf import settings
 from qtoggleserver.core import device, events, history, main, ports, reverse, sessions, vports, webhooks
 from qtoggleserver.slaves import devices as slaves_devices
@@ -18,12 +18,8 @@ from qtoggleserver.utils import conf as conf_utils
 from qtoggleserver.utils import logging as logging_utils
 
 
-# Following import must be imported after `core.ports`
-from qtoggleserver import peripherals  # isort: split
-
-
-logger: Optional[logging.Logger] = None
-options: Optional[types.SimpleNamespace] = None
+logger: logging.Logger | None = None
+options: types.SimpleNamespace | None = None
 
 _stopping = False
 
@@ -31,12 +27,12 @@ _stopping = False
 def parse_args() -> None:
     global options
 
-    description = f'qToggleServer {version.VERSION}'
+    description = f"qToggleServer {version.VERSION}"
     epilog = None
 
     class VersionAction(argparse.Action):
         def __call__(self, *args, **kwargs) -> None:
-            sys.stdout.write(f'{description}\n')
+            sys.stdout.write(f"{description}\n")
             sys.exit()
 
     parser = argparse.ArgumentParser(
@@ -44,29 +40,19 @@ def parse_args() -> None:
         description=description,
         epilog=epilog,
         add_help=False,
-        formatter_class=argparse.RawTextHelpFormatter
+        formatter_class=argparse.RawTextHelpFormatter,
     )
 
-    parser.add_argument(
-        '-c',
-        help='specify the configuration file',
-        type=str,
-        dest='config_file'
-    )
+    parser.add_argument("-c", help="specify the configuration file", type=str, dest="config_file")
+
+    parser.add_argument("-h", help="print this help and exit", action="help", default=argparse.SUPPRESS)
 
     parser.add_argument(
-        '-h',
-        help='print this help and exit',
-        action='help',
-        default=argparse.SUPPRESS
-    )
-
-    parser.add_argument(
-        '-v',
-        help='print program version and exit',
+        "-v",
+        help="print program version and exit",
         action=VersionAction,
         default=argparse.SUPPRESS,
-        nargs=0
+        nargs=0,
     )
 
     options = parser.parse_args()
@@ -78,7 +64,7 @@ def init_settings() -> None:
     if options.config_file:
         try:
             parsed_config = conf_utils.config_from_file(options.config_file)
-        except IOError as e:
+        except OSError as e:
             sys.stderr.write(f'failed to open config file "{options.config_file}": {e}\n')
             sys.exit(-1)
         except Exception as e:
@@ -101,25 +87,25 @@ def init_settings() -> None:
 def init_logging() -> None:
     global logger
 
-    settings.logging['disable_existing_loggers'] = False
+    settings.logging["disable_existing_loggers"] = False
     logging.config.dictConfig(settings.logging)
 
     # Add memory logs handler
     root_logger = logging.getLogger()
-    main.memory_logs = logging_utils.FifoMemoryHandler(capacity=settings.logging['memory_logs_buffer_len'])
+    main.memory_logs = logging_utils.FifoMemoryHandler(capacity=settings.logging["memory_logs_buffer_len"])
     root_logger.addHandler(main.memory_logs)
 
-    logger = logging.getLogger('qtoggleserver')
+    logger = logging.getLogger("qtoggleserver")
 
-    logger.info('hello!')
-    logger.info('this is qToggleServer %s', version.VERSION)
+    logger.info("hello!")
+    logger.info("this is qToggleServer %s", version.VERSION)
 
     # We can't do this in init_settings() because we have no logging there
     if options.config_file:
-        logger.info('using config from %s', options.config_file)
+        logger.info("using config from %s", options.config_file)
 
     else:
-        logger.info('using default config')
+        logger.info("using default config")
 
 
 def init_signals() -> None:
@@ -129,13 +115,13 @@ def init_signals() -> None:
         global _stopping
 
         if _stopping:
-            logger.error('interrupt signal received again')
+            logger.error("interrupt signal received again")
             # TODO: commit suicide
             return
 
         _stopping = True
 
-        logger.info('interrupt signal received')
+        logger.info("interrupt signal received")
 
         loop.stop()
 
@@ -144,7 +130,7 @@ def init_signals() -> None:
 
 
 def handle_loop_exception(loop: asyncio.AbstractEventLoop, context: dict[str, Any]) -> None:
-    if isinstance(context.get('exception'), asyncio.CancelledError):
+    if isinstance(context.get("exception"), asyncio.CancelledError):
         return  # ignore any cancelled errors
 
     loop.default_exception_handler(context)
@@ -161,7 +147,7 @@ async def cleanup_loop() -> None:
     tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
 
     for task in tasks:
-        logger.debug(f'cancelling {task.get_coro()}')
+        logger.debug(f"cancelling {task.get_coro()}")
         task.cancel()
 
     await asyncio.gather(*tasks)
@@ -170,106 +156,106 @@ async def cleanup_loop() -> None:
 
 
 def init_tornado() -> None:
-    httpclient.AsyncHTTPClient.configure('tornado.simple_httpclient.SimpleAsyncHTTPClient', max_clients=1024)
+    httpclient.AsyncHTTPClient.configure("tornado.simple_httpclient.SimpleAsyncHTTPClient", max_clients=1024)
     netutil.Resolver.configure(
-        'tornado.netutil.OverrideResolver',
+        "tornado.netutil.OverrideResolver",
         mapping=system.dns.get_custom_dns_mapping_dict(),
-        resolver=netutil.DefaultExecutorResolver()
+        resolver=netutil.DefaultExecutorResolver(),
     )
 
 
 async def init_persist() -> None:
-    logger.info('initializing persistence')
+    logger.info("initializing persistence")
     try:
         await persist.init()
     except Exception as e:
-        logger.error('failed to initialize persistence: %s', e, exc_info=True)
+        logger.error("failed to initialize persistence: %s", e, exc_info=True)
         sys.exit(-1)
 
 
 async def cleanup_persist() -> None:
-    logger.info('cleaning up persistence')
+    logger.info("cleaning up persistence")
     await persist.cleanup()
 
 
 async def init_system() -> None:
-    logger.info('initializing system')
+    logger.info("initializing system")
     await system.init()
 
 
 async def cleanup_system() -> None:
-    logger.info('cleaning up system')
+    logger.info("cleaning up system")
     await system.cleanup()
 
 
 async def init_events() -> None:
-    logger.info('initializing events')
+    logger.info("initializing events")
     await events.init()
 
 
 async def cleanup_events() -> None:
-    logger.info('cleaning up events')
+    logger.info("cleaning up events")
     await events.cleanup()
 
 
 async def init_sessions() -> None:
-    logger.info('initializing sessions')
+    logger.info("initializing sessions")
     await sessions.init()
 
 
 async def cleanup_sessions() -> None:
-    logger.info('cleaning up sessions')
+    logger.info("cleaning up sessions")
     await sessions.cleanup()
 
 
 async def init_history() -> None:
     if history.is_enabled():
-        logger.info('initializing history')
+        logger.info("initializing history")
         await history.init()
 
 
 async def cleanup_history() -> None:
     if history.is_enabled():
-        logger.info('cleaning history')
+        logger.info("cleaning history")
         await history.cleanup()
 
 
 async def init_device() -> None:
-    logger.info('initializing device')
+    logger.info("initializing device")
     await device.init()
 
 
 async def cleanup_device() -> None:
-    logger.info('cleaning up device')
+    logger.info("cleaning up device")
     await device.cleanup()
 
 
 async def init_webhooks() -> None:
     if settings.webhooks.enabled:
-        logger.info('initializing webhooks')
+        logger.info("initializing webhooks")
         await webhooks.init()
 
 
 async def cleanup_webhooks() -> None:
     if settings.webhooks.enabled:
-        logger.info('cleaning up webhooks')
+        logger.info("cleaning up webhooks")
         await webhooks.cleanup()
 
 
 async def init_reverse() -> None:
     if settings.reverse.enabled:
-        logger.info('initializing reverse API calls')
+        logger.info("initializing reverse API calls")
         await reverse.init()
 
 
 async def cleanup_reverse() -> None:
     if settings.reverse.enabled:
-        logger.info('cleaning up reverse API calls')
+        logger.info("cleaning up reverse API calls")
         await reverse.cleanup()
 
 
 async def init_ports() -> None:
-    logger.info('initializing ports')
+    logger.info("initializing ports")
 
     await ports.init()
 
@@ -285,43 +271,43 @@ async def init_ports() -> None:
 
 
 async def cleanup_ports() -> None:
-    logger.info('cleaning up ports')
+    logger.info("cleaning up ports")
     await ports.cleanup()
 
 
 async def init_slaves() -> None:
     if settings.slaves.enabled:
-        logger.info('initializing slaves')
+        logger.info("initializing slaves")
         await slaves.init()
 
 
 async def cleanup_slaves() -> None:
     if settings.slaves.enabled:
-        logger.info('cleaning up slaves')
+        logger.info("cleaning up slaves")
         await slaves.cleanup()
 
 
 async def init_peripherals() -> None:
-    logger.info('initializing peripherals')
+    logger.info("initializing peripherals")
     await peripherals.init()
 
 
 async def cleanup_peripherals() -> None:
-    logger.info('cleaning up peripherals')
+    logger.info("cleaning up peripherals")
     await peripherals.cleanup()
 
 
 async def init_main() -> None:
-    logger.info('initializing main')
+    logger.info("initializing main")
     await main.init()
 
     # Wait until slaves are also ready before actually considering main loop ready
     if settings.slaves.enabled:
-        logger.debug('waiting for slaves to become ready')
+        logger.debug("waiting for slaves to become ready")
         while not slaves_devices.ready():
             await asyncio.sleep(1)
 
-        logger.debug('slaves are ready')
+        logger.debug("slaves are ready")
 
     # Mark main as ready after all slaves with their ports have been initialized and hopefully brought online. Allow an
     # extra second for pending loop tasks.
@@ -330,17 +316,17 @@ async def init_main() -> None:
 
 
 async def cleanup_main() -> None:
-    logger.info('cleaning up main')
+    logger.info("cleaning up main")
     await main.cleanup()
 
 
 async def init_web() -> None:
-    logger.info('initializing web')
+    logger.info("initializing web")
     await web.init()
 
 
 async def cleanup_web() -> None:
-    logger.info('cleaning up web')
+    logger.info("cleaning up web")
     await web.cleanup()
 
 

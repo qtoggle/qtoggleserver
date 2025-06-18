@@ -1,6 +1,6 @@
 import asyncio
 
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from qtoggleserver import startup
 
@@ -25,4 +25,4 @@ def execute(main_func: Callable[[], Awaitable[bool]]) -> None:
 
         loop.close()
 
-    startup.logger.info('bye!')
+    startup.logger.info("bye!")

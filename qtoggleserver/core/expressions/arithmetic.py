@@ -3,7 +3,7 @@ from .exceptions import ExpressionArithmeticError
 from .functions import Function, function
 
 
-@function('ADD')
+@function("ADD")
 class AddFunction(Function):
     MIN_ARGS = 2
 
@@ -11,7 +11,7 @@ class AddFunction(Function):
         return sum(await self.eval_args(context))
 
 
-@function('SUB')
+@function("SUB")
 class SubFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -20,7 +20,7 @@ class SubFunction(Function):
         return eval_args[0] - eval_args[1]
 
 
-@function('MUL')
+@function("MUL")
 class MulFunction(Function):
     MIN_ARGS = 2
 
@@ -32,7 +32,7 @@ class MulFunction(Function):
         return r
 
 
-@function('DIV')
+@function("DIV")
 class DivFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -45,7 +45,7 @@ class DivFunction(Function):
             raise ExpressionArithmeticError
 
 
-@function('MOD')
+@function("MOD")
 class ModFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
@@ -58,7 +58,7 @@ class ModFunction(Function):
             raise ExpressionArithmeticError
 
 
-@function('POW')
+@function("POW")
 class PowFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 

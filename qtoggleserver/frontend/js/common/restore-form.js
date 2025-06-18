@@ -132,7 +132,7 @@ class RestoreForm extends PageForm {
             try {
                 content = JSON.parse(content)
             }
-            catch (e) {
+            catch {
                 this.setError(new ValidationError(INVALID_BACKUP_FILE_MESSAGE))
                 return
             }

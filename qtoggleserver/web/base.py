@@ -3,7 +3,8 @@ import inspect
 import logging
 import re
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from tornado.iostream import StreamClosedError
 from tornado.web import HTTPError, RequestHandler
@@ -15,22 +16,22 @@ from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.utils import json as json_utils
 
 
-SESSION_ID_RE = re.compile(r'[a-zA-Z0-9]{1,32}')
+SESSION_ID_RE = re.compile(r"[a-zA-Z0-9]{1,32}")
 
 logger = logging.getLogger(__name__)
 
 
 class NoSuchFunction(HTTPError):
     def __init__(self) -> None:
-        super().__init__(404, 'no-such-function')
+        super().__init__(404, "no-such-function")
 
 
 class BaseHandler(RequestHandler):
-    _UNDEFINED = {}
+    _UNDEFINED: dict = {}
 
     def __init__(self, *args, **kwargs) -> None:
         self._json: Any = self._UNDEFINED
-        self._response_body: str = ''
+        self._response_body: str = ""
         self._response_body_json: Any = None
 
         super().__init__(*args, **kwargs)
@@ -40,13 +41,13 @@ class BaseHandler(RequestHandler):
             try:
                 self._json = json_utils.loads(self.request.body)
             except ValueError as e:
-                logger.error('could not decode json from request body: %s', e)
+                logger.error("could not decode json from request body: %s", e)
 
-                raise core_api.APIError(400, 'malformed-body') from e
+                raise core_api.APIError(400, "malformed-body") from e
 
         return self._json
 
-    def finish(self, chunk: Optional[str] = None) -> asyncio.Future:
+    def finish(self, chunk: str | None = None) -> asyncio.Future:
         self._response_body = chunk
 
         return super().finish(chunk)
@@ -55,9 +56,9 @@ class BaseHandler(RequestHandler):
         self._response_body_json = data
 
         data = json_utils.dumps(data)
-        data += '\n'
+        data += "\n"
 
-        self.set_header('Content-Type', 'application/json; charset=utf-8')
+        self.set_header("Content-Type", "application/json; charset=utf-8")
         return self.finish(data)
 
     def get_response_body(self) -> str:
@@ -77,17 +78,15 @@ class BaseHandler(RequestHandler):
     def _handle_request_exception(self, exception: Exception) -> None:
         try:
             if isinstance(exception, HTTPError):
-                logger.error('%s %s: %s', self.request.method, self.request.uri, exception)
+                logger.error("%s %s: %s", self.request.method, self.request.uri, exception)
                 self.set_status(exception.status_code)
                 self.finish_json(
-                    {
-                        'error': (exception.log_message or getattr(exception, 'reason', None) or str(exception))
-                    }
+                    {"error": (exception.log_message or getattr(exception, "reason", None) or str(exception))}
                 )
             else:
                 logger.error(str(exception), exc_info=True)
                 self.set_status(500)
-                self.finish_json({'error': 'internal server error'})
+                self.finish_json({"error": "internal server error"})
         except RuntimeError:
             pass  # nevermind
 
@@ -100,59 +99,55 @@ class APIHandler(BaseHandler):
 
     def __init__(self, *args, **kwargs) -> None:
         self.access_level: int = core_api.ACCESS_LEVEL_NONE
-        self.username: Optional[str] = None
+        self.username: str | None = None
 
         super().__init__(*args, **kwargs)
 
     def prepare(self) -> None:
         # Disable cache
-        self.set_header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
+        self.set_header("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
 
         if not self.AUTH_ENABLED:
             return
 
         # Parse auth header
-        auth = self.request.headers.get('Authorization')
+        auth = self.request.headers.get("Authorization")
         if auth:
             try:
                 usr = core_api_auth.parse_auth_header(
-                    auth,
-                    core_api_auth.ORIGIN_CONSUMER,
-                    core_api_auth.consumer_password_hash_func
+                    auth, core_api_auth.ORIGIN_CONSUMER, core_api_auth.consumer_password_hash_func
                 )
             except core_api_auth.AuthError as e:
                 logger.warning(str(e))
                 return
         else:
             if core_device_attrs.admin_password_hash == core_device_attrs.EMPTY_PASSWORD_HASH:
-                logger.debug('authenticating request as admin due to empty admin password')
-                usr = 'admin'
+                logger.debug("authenticating request as admin due to empty admin password")
+                usr = "admin"
             else:
-                logger.warning('missing authorization header')
+                logger.warning("missing authorization header")
                 return
 
         self.access_level = core_api.ACCESS_LEVEL_MAPPING[usr]
         self.username = usr
 
         logger.debug(
-            'granted access level %s (username=%s)',
-            core_api.ACCESS_LEVEL_MAPPING[self.access_level],
-            self.username
+            "granted access level %s (username=%s)", core_api.ACCESS_LEVEL_MAPPING[self.access_level], self.username
         )
 
         # Validate session id
-        session_id = self.request.headers.get('Session-Id')
+        session_id = self.request.headers.get("Session-Id")
         if session_id:
             if not SESSION_ID_RE.match(session_id):
-                raise core_api.APIError(400, 'invalid-header', header='Session-Id')
+                raise core_api.APIError(400, "invalid-header", header="Session-Id")
 
     async def call_api_func(self, func: Callable, default_status: int = 200, **kwargs) -> None:
         try:
-            if self.request.method in ('POST', 'PATCH', 'PUT'):
-                if self.request.headers.get('Content-Type', '').startswith('application/json'):
-                    kwargs['params'] = self.get_request_json()
+            if self.request.method in ("POST", "PATCH", "PUT"):
+                if self.request.headers.get("Content-Type", "").startswith("application/json"):
+                    kwargs["params"] = self.get_request_json()
                 else:
-                    raise core_api.APIError(400, 'invalid-header', header='Content-Type')
+                    raise core_api.APIError(400, "invalid-header", header="Content-Type")
 
             response = func(self, **kwargs)
             if inspect.isawaitable(response):
@@ -168,15 +163,15 @@ class APIHandler(BaseHandler):
 
     async def _handle_api_call_exception(self, func: Callable, kwargs: dict, error: Exception) -> None:
         kwargs = dict(kwargs)
-        params = kwargs.pop('params', None)
+        params = kwargs.pop("params", None)
         args = json_utils.dumps(kwargs)
-        body = params and json_utils.dumps(params) or '{}'
+        body = params and json_utils.dumps(params) or "{}"
 
         if isinstance(error, core_responses.HTTPError):
             error = core_api.APIError.from_http_error(error)
 
         if isinstance(error, core_api.APIError):
-            logger.error('api call %s failed: %s (args=%s, body=%s)', func.__name__, error, args, body)
+            logger.error("api call %s failed: %s (args=%s, body=%s)", func.__name__, error, args, body)
 
             self.set_status(error.status)
             if not self._finished:  # avoid finishing an already finished request
@@ -186,11 +181,11 @@ class APIHandler(BaseHandler):
             self.set_status(202)
             if not self._finished and error.response is not None:  # avoid finishing an already finished request
                 await self.finish_json(error.response)
-        elif isinstance(error, StreamClosedError) and func.__name__ == 'get_listen':
-            logger.debug('api call get_listen could not complete: stream closed')
+        elif isinstance(error, StreamClosedError) and func.__name__ == "get_listen":
+            logger.debug("api call get_listen could not complete: stream closed")
         else:
-            logger.error('api call %s failed: %s (args=%s, body=%s)', func.__name__, error, args, body, exc_info=True)
+            logger.error("api call %s failed: %s (args=%s, body=%s)", func.__name__, error, args, body, exc_info=True)
 
             self.set_status(500)
             if not self._finished:  # avoid finishing an already finished request
-                await self.finish_json({'error': str(error)})
+                await self.finish_json({"error": str(error)})

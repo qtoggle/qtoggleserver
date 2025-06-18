@@ -2,7 +2,8 @@ import asyncio
 import inspect
 import time
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any, cast
 
 from qtoggleserver import slaves
 from qtoggleserver.conf import settings
@@ -28,35 +29,27 @@ from qtoggleserver.utils import json as json_utils
 
 
 async def add_virtual_port(attrs: GenericJSONDict) -> core_ports.BasePort:
-    id_ = attrs['id']
-    type_ = attrs['type']
-    min_ = attrs.get('min')
-    max_ = attrs.get('max')
-    integer = attrs.get('integer')
-    step = attrs.get('step')
-    choices = attrs.get('choices')
+    id_ = attrs["id"]
+    type_ = attrs["type"]
+    min_ = attrs.get("min")
+    max_ = attrs.get("max")
+    integer = attrs.get("integer")
+    step = attrs.get("step")
+    choices = attrs.get("choices")
 
     core_api.logger.debug('adding port "%s"', id_)
 
     if core_ports.get(id_):
-        raise core_api.APIError(400, 'duplicate-port')
+        raise core_api.APIError(400, "duplicate-port")
 
     if len(core_vports.all_port_args()) >= settings.core.virtual_ports:
-        raise core_api.APIError(400, 'too-many-ports')
+        raise core_api.APIError(400, "too-many-ports")
 
     await core_vports.add(id_, type_, min_, max_, integer, step, choices)
     port = await core_ports.load_one(
-        'qtoggleserver.core.vports.VirtualPort',
-        {
-            'id_': id_,
-            'type_': type_,
-            'min_': min_,
-            'max_': max_,
-            'integer': integer,
-            'step': step,
-            'choices': choices
-        },
-        trigger_add=False  # will trigger add event manually, later, after we've enabled the port
+        "qtoggleserver.core.vports.VirtualPort",
+        {"id_": id_, "type_": type_, "min_": min_, "max_": max_, "integer": integer, "step": step, "choices": choices},
+        trigger_add=False,  # will trigger add event manually, later, after we've enabled the port
     )
 
     # A virtual port is enabled by default
@@ -72,20 +65,17 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
 
     def unexpected_field_code(field: str) -> str:
         if field in non_modifiable_attrs:
-            return 'attribute-not-modifiable'
+            return "attribute-not-modifiable"
         else:
-            return 'no-such-attribute'
+            return "no-such-attribute"
 
     schema = await port.get_schema()
     if ignore_extra_attrs:
         schema = dict(schema)
-        schema['additionalProperties'] = True  # ignore non-existent and non-modifiable attributes
+        schema["additionalProperties"] = True  # ignore non-existent and non-modifiable attributes
 
     core_api_schema.validate(
-        attrs,
-        schema,
-        unexpected_field_code=unexpected_field_code,
-        unexpected_field_name='attribute'
+        attrs, schema, unexpected_field_code=unexpected_field_code, unexpected_field_name="attribute"
     )
 
     # Step validation
@@ -95,15 +85,15 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
         if attrdef is None:
             continue
 
-        step = attrdef.get('step')
-        min_ = attrdef.get('min')
+        step = attrdef.get("step")
+        min_ = attrdef.get("min")
         if None not in (step, min_) and step != 0 and (value - min_) % step:
-            raise core_api.APIError(400, 'invalid-field', field=name)
+            raise core_api.APIError(400, "invalid-field", field=name)
 
     errors_by_name = {}
 
     async def set_attr(attr_name: str, attr_value: Attribute) -> None:
-        core_api.logger.debug('setting attribute %s = %s on %s', attr_name, json_utils.dumps(attr_value), port)
+        core_api.logger.debug("setting attribute %s = %s on %s", attr_name, json_utils.dumps(attr_value), port)
 
         try:
             await port.set_attr(attr_name, attr_value)
@@ -111,7 +101,7 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
             errors_by_name[attr_name] = e1
 
     _none = {}
-    value = attrs.pop('value', _none)
+    value = attrs.pop("value", _none)
 
     if attrs:
         await asyncio.wait([asyncio.create_task(set_attr(n, v)) for n, v in attrs.items()])
@@ -122,18 +112,18 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
         if isinstance(error, core_api.APIError):
             raise error
         elif isinstance(error, core_ports.InvalidAttributeValue):
-            raise core_api.APIError(400, 'invalid-field', field=name, details=error.details)
+            raise core_api.APIError(400, "invalid-field", field=name, details=error.details)
         elif isinstance(error, core_ports.PortTimeout):
-            raise core_api.APIError(504, 'port-timeout')
+            raise core_api.APIError(504, "port-timeout")
         elif isinstance(error, core_ports.PortError):
-            raise core_api.APIError(502, 'port-error', code=str(error))
+            raise core_api.APIError(502, "port-error", code=str(error))
         else:
             # Transform any unhandled exception into APIError(500)
-            raise core_api.APIError(500, 'unexpected-error', message=str(error)) from error
+            raise core_api.APIError(500, "unexpected-error", message=str(error)) from error
 
     # If value is supplied among attrs, use it to update port value, but in background and ignoring any errors
     if value is not _none and port.is_enabled():
-        asyncio_utils.fire_and_forget(port.transform_and_write_value(value))
+        asyncio_utils.fire_and_forget(port.transform_and_write_value(cast(NullablePortValue, value)))
 
     await port.save()
 
@@ -144,19 +134,9 @@ async def wrap_error_with_port_id(port_id: str, func: Callable, *args, **kwargs)
         if inspect.isawaitable(result):
             result = await result
     except core_api.APIError as e:
-        raise core_api.APIError(
-            status=e.status,
-            code=e.code,
-            id=port_id,
-            **e.params
-        )
+        raise core_api.APIError(status=e.status, code=e.code, id=port_id, **e.params)
     except Exception as e:
-        raise core_api.APIError(
-            status=500,
-            code='unexpected-error',
-            message=str(e),
-            id=port_id
-        )
+        raise core_api.APIError(status=500, code="unexpected-error", message=str(e), id=port_id)
 
     return result
 
@@ -169,14 +149,11 @@ async def get_ports(request: core_api.APIRequest) -> list[Attributes]:
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> None:
     if not settings.core.backup_support:
-        raise core_api.APIError(404, 'no-such-function')
+        raise core_api.APIError(404, "no-such-function")
 
-    core_api_schema.validate(
-        params,
-        core_api_schema.PUT_PORTS
-    )
+    core_api_schema.validate(params, core_api_schema.PUT_PORTS)
 
-    core_api.logger.debug('restoring ports')
+    core_api.logger.debug("restoring ports")
 
     # Disable event handling during the processing of this request, as we're going to trigger a full-update at the end
     core_events.disable()
@@ -200,41 +177,32 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
         for port in core_ports.get_all():
             await port.reset()
 
-        add_port_schema = dict(core_api_schema.POST_PORTS)
-        add_port_schema['additionalProperties'] = True
+        add_port_schema: GenericJSONDict = dict(core_api_schema.POST_PORTS)
+        add_port_schema["additionalProperties"] = True
 
         # Restore supplied attributes
         for attrs in params:
-            id_ = attrs.get('id')
+            id_ = attrs.get("id")
             if id_ is None:
-                core_api.logger.warning('ignoring entry without id')
+                core_api.logger.warning("ignoring entry without id")
                 continue
 
             port = core_ports.get(id_)
 
             # Virtual ports must be added first (unless they belong to a slave)
-            virtual = attrs.get('virtual')
+            virtual = attrs.get("virtual")
             if port is not None:  # port already exists so it probably belongs to a slave
                 virtual = False
             for slave in slaves_devices.get_all():
-                if id_.startswith(f'{slave.get_name()}.'):  # id indicates that port belongs to a slave
+                if id_.startswith(f"{slave.get_name()}."):  # id indicates that port belongs to a slave
                     virtual = False
                     break
-            if 'provisioning' in attrs:  # a clear indication that port belongs to a slave
+            if "provisioning" in attrs:  # a clear indication that port belongs to a slave
                 virtual = False
 
             if virtual:
-                await wrap_error_with_port_id(
-                    id_,
-                    core_api_schema.validate,
-                    attrs,
-                    add_port_schema
-                )
-                port = await wrap_error_with_port_id(
-                    id_,
-                    add_virtual_port,
-                    attrs
-                )
+                await wrap_error_with_port_id(id_, core_api_schema.validate, attrs, add_port_schema)
+                port = await wrap_error_with_port_id(id_, add_virtual_port, attrs)
 
             if port is None:
                 core_api.logger.warning('ignoring unknown port id "%s"', id_)
@@ -244,17 +212,11 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
                 core_api.logger.debug('restoring slave port "%s"', id_)
 
                 # For slave ports, ignore any attributes that are not kept on master
-                attrs = {n: v for n, v in attrs.items() if n in ('tag', 'expression', 'expires')}
+                attrs = {n: v for n, v in attrs.items() if n in ("tag", "expression", "expires")}
             else:
                 core_api.logger.debug('restoring local port "%s"', id_)
 
-            await wrap_error_with_port_id(
-                id_,
-                set_port_attrs,
-                port,
-                attrs,
-                ignore_extra_attrs=True
-            )
+            await wrap_error_with_port_id(id_, set_port_attrs, port, attrs, ignore_extra_attrs=True)
 
     finally:
         core_main.enable_updating()
@@ -262,14 +224,14 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
 
     await core_events.trigger_full_update()
 
-    core_api.logger.debug('ports restore done')
+    core_api.logger.debug("ports restore done")
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def patch_port(request: core_api.APIRequest, port_id: str, params: Attributes) -> None:
     port = core_ports.get(port_id)
     if port is None:
-        raise core_api.APIError(404, 'no-such-port')
+        raise core_api.APIError(404, "no-such-port")
 
     await set_port_attrs(port, params, ignore_extra_attrs=False)
 
@@ -286,10 +248,10 @@ async def post_ports(request: core_api.APIRequest, params: GenericJSONDict) -> A
 async def delete_port(request: core_api.APIRequest, port_id: str) -> None:
     port = core_ports.get(port_id)
     if not port:
-        raise core_api.APIError(404, 'no-such-port')
+        raise core_api.APIError(404, "no-such-port")
 
     if not isinstance(port, core_vports.VirtualPort):
-        raise core_api.APIError(400, 'port-not-removable')
+        raise core_api.APIError(400, "port-not-removable")
 
     await port.remove()
     await core_vports.remove(port_id)
@@ -299,15 +261,15 @@ async def delete_port(request: core_api.APIRequest, port_id: str) -> None:
 async def get_port_value(request: core_api.APIRequest, port_id: str) -> NullablePortValue:
     port = core_ports.get(port_id)
     if port is None:
-        raise core_api.APIError(404, 'no-such-port')
+        raise core_api.APIError(404, "no-such-port")
 
     if not port.is_enabled():
-        return
+        return None
 
     # TODO
-    # Given the fact that get_last_read_value() simply returns last cached read value, and the fact that API specs
-    # indicate that 502/504 be returned by GET /port/[id]/value in case of errors, we should remember the last error
-    # generated by read_value() and return it here, if any.
+    #  Given the fact that get_last_read_value() simply returns last cached read value, and the fact that API specs
+    #  indicate that 502/504 be returned by GET /port/[id]/value in case of errors, we should remember the last error
+    #  generated by read_value() and return it here, if any.
 
     return port.get_last_read_value()
 
@@ -316,41 +278,41 @@ async def get_port_value(request: core_api.APIRequest, port_id: str) -> Nullable
 async def patch_port_value(request: core_api.APIRequest, port_id: str, params: PortValue) -> None:
     port = core_ports.get(port_id)
     if port is None:
-        raise core_api.APIError(404, 'no-such-port')
+        raise core_api.APIError(404, "no-such-port")
 
     try:
         core_api_schema.validate(params, await port.get_value_schema())
     except core_api.APIError:
         # Transform any validation error into an invalid-field APIError for value
-        raise core_api.APIError(400, 'invalid-value') from None
+        raise core_api.APIError(400, "invalid-value") from None
 
     value = params
 
     # Step validation
-    step = await port.get_attr('step')
-    min_ = await port.get_attr('min')
+    step = await port.get_attr("step")
+    min_ = await port.get_attr("min")
     if None not in (step, min_) and step != 0 and (value - min_) % step:
-        raise core_api.APIError(400, 'invalid-value')
+        raise core_api.APIError(400, "invalid-value")
 
     if not port.is_enabled():
-        raise core_api.APIError(400, 'port-disabled')
+        raise core_api.APIError(400, "port-disabled")
 
     if not await port.is_writable():
-        raise core_api.APIError(400, 'read-only-port')
+        raise core_api.APIError(400, "read-only-port")
 
     old_value = port.get_last_read_value()
 
     try:
         await port.transform_and_write_value(value)
     except core_ports.PortTimeout as e:
-        raise core_api.APIError(504, 'port-timeout') from e
+        raise core_api.APIError(504, "port-timeout") from e
     except core_ports.PortError as e:
-        raise core_api.APIError(502, 'port-error', message=str(e)) from e
+        raise core_api.APIError(502, "port-error", message=str(e)) from e
     except core_api.APIError:
         raise
     except Exception as e:
         # Transform any unhandled exception into APIError(500)
-        raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
+        raise core_api.APIError(500, "unexpected-error", message=str(e)) from e
 
     await core_main.update()
 
@@ -365,111 +327,111 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
 async def patch_port_sequence(request: core_api.APIRequest, port_id: str, params: GenericJSONDict) -> None:
     port = core_ports.get(port_id)
     if port is None:
-        raise core_api.APIError(404, 'no-such-port')
+        raise core_api.APIError(404, "no-such-port")
 
     core_api_schema.validate(params, core_api_schema.PATCH_PORT_SEQUENCE)
 
-    values = params['values']
-    delays = params['delays']
-    repeat = params['repeat']
+    values = params["values"]
+    delays = params["delays"]
+    repeat = params["repeat"]
 
     if len(values) != len(delays):
-        raise core_api.APIError(400, 'invalid-field', field='delays')
+        raise core_api.APIError(400, "invalid-field", field="delays")
 
     value_schema = await port.get_value_schema()
-    step = await port.get_attr('step')
-    min_ = await port.get_attr('min')
+    step = await port.get_attr("step")
+    min_ = await port.get_attr("min")
     for value in values:
         # Translate any APIError generated when validating value schema into an invalid-field APIError on value
         try:
             core_api_schema.validate(value, value_schema)
         except core_api.APIError:
-            raise core_api.APIError(400, 'invalid-field', field='values') from None
+            raise core_api.APIError(400, "invalid-field", field="values") from None
 
         # Step validation
         if None not in (step, min_) and step != 0 and (value - min_) % step:
-            raise core_api.APIError(400, 'invalid-field', field='values')
+            raise core_api.APIError(400, "invalid-field", field="values")
 
     if not port.is_enabled():
-        raise core_api.APIError(400, 'port-disabled')
+        raise core_api.APIError(400, "port-disabled")
 
     if not await port.is_writable():
-        raise core_api.APIError(400, 'read-only-port')
+        raise core_api.APIError(400, "read-only-port")
 
-    if await port.get_attr('expression'):
-        raise core_api.APIError(400, 'port-with-expression')
+    if await port.get_attr("expression"):
+        raise core_api.APIError(400, "port-with-expression")
 
     try:
         await port.set_sequence(values, delays, repeat)
     except Exception as e:
         # Transform any unhandled exception into APIError(500)
-        raise core_api.APIError(500, 'unexpected-error', message=str(e)) from e
+        raise core_api.APIError(500, "unexpected-error", message=str(e)) from e
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
 async def get_port_history(request: core_api.APIRequest, port_id: str) -> GenericJSONList:
     port = core_ports.get(port_id)
     if port is None:
-        raise core_api.APIError(404, 'no-such-port')
+        raise core_api.APIError(404, "no-such-port")
 
     query = request.query
 
-    from_str = query.get('from')
-    timestamps_str = query.get('timestamps')
+    from_str = query.get("from")
+    timestamps_str = query.get("timestamps")
 
     if from_str is None and timestamps_str is None:
-        raise core_api.APIError(400, 'missing-field', field='from')
+        raise core_api.APIError(400, "missing-field", field="from")
 
     if from_str:
         try:
             from_timestamp = int(from_str)
         except ValueError:
-            raise core_api.APIError(400, 'invalid-field', field='from')
+            raise core_api.APIError(400, "invalid-field", field="from")
 
         if from_timestamp < 0:
-            raise core_api.APIError(400, 'invalid-field', field='from')
+            raise core_api.APIError(400, "invalid-field", field="from")
     else:
         from_timestamp = None
 
-    to_str = query.get('to')
+    to_str = query.get("to")
     to_timestamp = int(time.time() * 1000)
     if to_str is not None:
         try:
             to_timestamp = int(to_str)
         except ValueError:
-            raise core_api.APIError(400, 'invalid-field', field='to') from None
+            raise core_api.APIError(400, "invalid-field", field="to") from None
 
         if to_timestamp < 0:
-            raise core_api.APIError(400, 'invalid-field', field='to')
+            raise core_api.APIError(400, "invalid-field", field="to")
 
-    limit_str = query.get('limit')
+    limit_str = query.get("limit")
     limit = 1000  # default
     if limit_str is not None:
         try:
             limit = int(limit_str)
         except ValueError:
-            raise core_api.APIError(400, 'invalid-field', field='limit') from None
+            raise core_api.APIError(400, "invalid-field", field="limit") from None
 
         if limit < 1 or limit > 10000:
-            raise core_api.APIError(400, 'invalid-field', field='limit')
+            raise core_api.APIError(400, "invalid-field", field="limit")
 
     timestamps = None
     if timestamps_str is not None:
-        timestamps = timestamps_str.split(',')
+        timestamps = timestamps_str.split(",")
         try:
             timestamps = [int(t) for t in timestamps]
         except ValueError:
-            raise core_api.APIError(400, 'invalid-field', field='timestamps')
+            raise core_api.APIError(400, "invalid-field", field="timestamps")
 
         if any((t < 0) for t in timestamps):
-            raise core_api.APIError(400, 'invalid-field', field='timestamps')
+            raise core_api.APIError(400, "invalid-field", field="timestamps")
 
     if timestamps is not None:
         samples = await core_history.get_samples_by_timestamp(port, timestamps)
         samples = list(samples)
     else:
         samples = await core_history.get_samples_slice(port, from_timestamp, to_timestamp, limit)
-        samples = [{'timestamp': s[0], 'value': s[1]} for s in samples]
+        samples = [{"timestamp": s[0], "value": s[1]} for s in samples]
 
     return samples
 
@@ -478,32 +440,32 @@ async def get_port_history(request: core_api.APIRequest, port_id: str) -> Generi
 async def delete_port_history(request: core_api.APIRequest, port_id: str) -> None:
     port = core_ports.get(port_id)
     if port is None:
-        raise core_api.APIError(404, 'no-such-port')
+        raise core_api.APIError(404, "no-such-port")
 
     query = request.query
 
-    from_str = query.get('from')
+    from_str = query.get("from")
     if from_str is None:
-        raise core_api.APIError(400, 'missing-field', field='from')
+        raise core_api.APIError(400, "missing-field", field="from")
 
     try:
         from_timestamp = int(from_str)
     except ValueError:
-        raise core_api.APIError(400, 'invalid-field', field='from') from None
+        raise core_api.APIError(400, "invalid-field", field="from") from None
 
     if from_timestamp < 0:
-        raise core_api.APIError(400, 'invalid-field', field='from')
+        raise core_api.APIError(400, "invalid-field", field="from")
 
-    to_str = query.get('to')
+    to_str = query.get("to")
     if to_str is None:
-        raise core_api.APIError(400, 'missing-field', field='to')
+        raise core_api.APIError(400, "missing-field", field="to")
 
     try:
         to_timestamp = int(to_str)
     except ValueError:
-        raise core_api.APIError(400, 'invalid-field', field='to') from None
+        raise core_api.APIError(400, "invalid-field", field="to") from None
 
     if to_timestamp < 0:
-        raise core_api.APIError(400, 'invalid-field', field='to')
+        raise core_api.APIError(400, "invalid-field", field="to")
 
     await core_history.remove_samples([port], from_timestamp, to_timestamp)

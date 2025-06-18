@@ -2,7 +2,7 @@ from .base import EvalContext, EvalResult
 from .functions import Function, function
 
 
-@function('MIN')
+@function("MIN")
 class MinFunction(Function):
     MIN_ARGS = 2
 
@@ -17,7 +17,7 @@ class MinFunction(Function):
         return m
 
 
-@function('MAX')
+@function("MAX")
 class MaxFunction(Function):
     MIN_ARGS = 2
 
@@ -32,7 +32,7 @@ class MaxFunction(Function):
         return m
 
 
-@function('AVG')
+@function("AVG")
 class AvgFunction(Function):
     MIN_ARGS = 2
 

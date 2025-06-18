@@ -1,7 +1,7 @@
 import pytest
 
-from qtoggleserver.core.expressions import ROLE_VALUE, EvalSkipped, Function, InvalidNumberOfArguments, timeprocessing
-
+from qtoggleserver.core.expressions import ROLE_VALUE, Function, timeprocessing
+from qtoggleserver.core.expressions.exceptions import EvalSkipped, InvalidNumberOfArguments
 from tests.qtoggleserver.mock.expressions import MockExpression
 
 
@@ -19,16 +19,16 @@ async def test_delay(literal_one_thousand, dummy_eval_context, later_eval_contex
 
 
 def test_delay_parse():
-    e = Function.parse(None, 'DELAY(1, 2)', ROLE_VALUE, 0)
+    e = Function.parse(None, "DELAY(1, 2)", ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.DelayFunction)
 
 
 def test_delay_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'DELAY(1)', ROLE_VALUE, 0)
+        Function.parse(None, "DELAY(1)", ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'DELAY(1, 2, 3)', ROLE_VALUE, 0)
+        Function.parse(None, "DELAY(1, 2, 3)", ROLE_VALUE, 0)
 
 
 async def test_sample(literal_one_thousand, dummy_eval_context, later_eval_context):
@@ -45,16 +45,16 @@ async def test_sample(literal_one_thousand, dummy_eval_context, later_eval_conte
 
 
 def test_sample_parse():
-    e = Function.parse(None, 'SAMPLE(1, 2)', ROLE_VALUE, 0)
+    e = Function.parse(None, "SAMPLE(1, 2)", ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.SampleFunction)
 
 
 def test_sample_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'SAMPLE(1)', ROLE_VALUE, 0)
+        Function.parse(None, "SAMPLE(1)", ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'SAMPLE(1, 2, 3)', ROLE_VALUE, 0)
+        Function.parse(None, "SAMPLE(1, 2, 3)", ROLE_VALUE, 0)
 
 
 async def test_freeze(dummy_eval_context, later_eval_context):
@@ -81,16 +81,16 @@ async def test_freeze(dummy_eval_context, later_eval_context):
 
 
 def test_freeze_parse():
-    e = Function.parse(None, 'FREEZE(1, 2)', ROLE_VALUE, 0)
+    e = Function.parse(None, "FREEZE(1, 2)", ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.FreezeFunction)
 
 
 def test_freeze_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'FREEZE(1)', ROLE_VALUE, 0)
+        Function.parse(None, "FREEZE(1)", ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'FREEZE(1, 2, 3)', ROLE_VALUE, 0)
+        Function.parse(None, "FREEZE(1, 2, 3)", ROLE_VALUE, 0)
 
 
 async def test_held_fulfilled(literal_sixteen, dummy_eval_context, later_eval_context):
@@ -124,16 +124,16 @@ async def test_held_different_value(literal_sixteen, dummy_eval_context, later_e
 
 
 def test_held_parse():
-    e = Function.parse(None, 'HELD(1, 2, 3)', ROLE_VALUE, 0)
+    e = Function.parse(None, "HELD(1, 2, 3)", ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.HeldFunction)
 
 
 def test_held_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'HELD(1, 2)', ROLE_VALUE, 0)
+        Function.parse(None, "HELD(1, 2)", ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'HELD(1, 2, 3, 4)', ROLE_VALUE, 0)
+        Function.parse(None, "HELD(1, 2, 3, 4)", ROLE_VALUE, 0)
 
 
 async def test_deriv(dummy_eval_context, later_eval_context):
@@ -162,16 +162,16 @@ async def test_deriv(dummy_eval_context, later_eval_context):
 
 
 def test_deriv_parse():
-    e = Function.parse(None, 'DERIV(1, 2)', ROLE_VALUE, 0)
+    e = Function.parse(None, "DERIV(1, 2)", ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.DerivFunction)
 
 
 def test_deriv_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'DERIV(1)', ROLE_VALUE, 0)
+        Function.parse(None, "DERIV(1)", ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'DERIV(1, 2, 3)', ROLE_VALUE, 0)
+        Function.parse(None, "DERIV(1, 2, 3)", ROLE_VALUE, 0)
 
 
 async def test_integ(dummy_eval_context, later_eval_context):
@@ -206,16 +206,16 @@ async def test_integ(dummy_eval_context, later_eval_context):
 
 
 def test_integ_parse():
-    e = Function.parse(None, 'INTEG(1, 2, 3)', ROLE_VALUE, 0)
+    e = Function.parse(None, "INTEG(1, 2, 3)", ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.IntegFunction)
 
 
 def test_integ_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'INTEG(1, 2)', ROLE_VALUE, 0)
+        Function.parse(None, "INTEG(1, 2)", ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'INTEG(1, 2, 3, 4)', ROLE_VALUE, 0)
+        Function.parse(None, "INTEG(1, 2, 3, 4)", ROLE_VALUE, 0)
 
 
 async def test_fmavg(dummy_eval_context, later_eval_context):
@@ -262,16 +262,16 @@ async def test_fmavg(dummy_eval_context, later_eval_context):
 
 
 def test_fmavg_parse():
-    e = Function.parse(None, 'FMAVG(1, 2, 3)', ROLE_VALUE, 0)
+    e = Function.parse(None, "FMAVG(1, 2, 3)", ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.FMAvgFunction)
 
 
 def test_fmavg_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'FMAVG(1, 2)', ROLE_VALUE, 0)
+        Function.parse(None, "FMAVG(1, 2)", ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'FMAVG(1, 2, 3, 4)', ROLE_VALUE, 0)
+        Function.parse(None, "FMAVG(1, 2, 3, 4)", ROLE_VALUE, 0)
 
 
 async def test_fmedian(dummy_eval_context, later_eval_context):
@@ -318,13 +318,13 @@ async def test_fmedian(dummy_eval_context, later_eval_context):
 
 
 def test_fmedian_parse():
-    e = Function.parse(None, 'FMEDIAN(1, 2, 3)', ROLE_VALUE, 0)
+    e = Function.parse(None, "FMEDIAN(1, 2, 3)", ROLE_VALUE, 0)
     assert isinstance(e, timeprocessing.FMedianFunction)
 
 
 def test_fmedian_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'FMEDIAN(1, 2)', ROLE_VALUE, 0)
+        Function.parse(None, "FMEDIAN(1, 2)", ROLE_VALUE, 0)
 
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, 'FMEDIAN(1, 2, 3, 4)', ROLE_VALUE, 0)
+        Function.parse(None, "FMEDIAN(1, 2, 3, 4)", ROLE_VALUE, 0)
