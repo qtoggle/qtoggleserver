@@ -16,11 +16,11 @@ RUN apt-get update && \
     curl -sL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get install --no-install-recommends -y nodejs
 
-COPY . /tmp/build
 WORKDIR /tmp/build
+COPY qtoggleserver/frontend ./frontend
 
 # Build frontend
-RUN cd qtoggleserver/frontend && \
+RUN cd frontend && \
     npm install && npx webpack --mode=production
 
 
@@ -29,40 +29,32 @@ RUN cd qtoggleserver/frontend && \
 FROM python:3.10.18-slim-bullseye AS python-builder
 
 # Copy source with frontend that was just built above
-COPY --from=frontend-builder /tmp/build /tmp/build
 WORKDIR /tmp/build
-
-# Copy various stuff
-COPY docker/docker-entrypoint.sh /
-COPY extra/* /usr/share/qtoggleserver/
+COPY . .
+COPY --from=frontend-builder /tmp/build/frontend ./qtoggleserver/frontend
 
 RUN \
-    # Prepare user data dir
+    # Prepare default user data dir
     # Install OS deps
     apt-get update && \
     apt-get install --no-install-recommends -y build-essential libglib2.0-dev bluez && \
     # Prepare virtualenv
-    pip install uv && uv virtualenv /data && . /data/bin/activate && \
+    pip install uv && uv venv /data && . /data/bin/activate && \
     # Install python dependencies
     uv sync --active --no-dev --no-install-project --extra opt && \
     # Build and install our package
     uv build && uv pip install dist/qtoggleserver-*.tar.gz
 
+
 # Final image
 
-FROM python:3.10.18-slim-bullseye
+FROM python:3.10.18-slim-bullseye AS qtoggleserver
 
 # Copy data dir with virtualenv that was just created above
-COPY --from=python-builder /data /data
-WORKDIR /data
-
-# Copy various stuff
-COPY docker/docker-entrypoint.sh /
-COPY extra/* /usr/share/qtoggleserver/
+WORKDIR /data-default
+COPY --from=python-builder /data .
 
 RUN \
-    # Prepare user data dir
-    rm -rf /root/.local && ln -s /data /root/.local && \
     # Install OS deps
     apt-get update && \
     apt-get install --no-install-recommends -y procps less nano bluez hostapd dnsmasq iproute2 && \
@@ -70,6 +62,15 @@ RUN \
     pip install uv && \
     # Cleanups
     rm -rf /var/lib/apt/lists
+
+# Copy various stuff
+COPY docker/docker-entrypoint.sh /
+COPY docker/pip /usr/local/bin
+COPY extra/* /usr/share/qtoggleserver/
+
+ENV UV_NO_CACHE=1
+
+WORKDIR /data
 
 EXPOSE 8888
 
