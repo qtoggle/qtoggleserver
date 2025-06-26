@@ -27,7 +27,7 @@ build
 
 # Docker
 .dockerignore
-Dockerfile*
+docker/Dockerfile
 
 # Various
 work

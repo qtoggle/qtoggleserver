@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Wrapper for `uv pip`
+
+exec uv pip "${@}"
