@@ -51,8 +51,7 @@ RUN \
 FROM python:3.10.18-slim-bullseye AS qtoggleserver
 
 # Copy data dir with virtualenv that was just created above
-WORKDIR /data.default
-COPY --from=python-builder /data .
+COPY --from=python-builder /data /data.default
 
 RUN \
     # Install OS deps

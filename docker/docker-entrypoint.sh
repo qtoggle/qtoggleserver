@@ -8,11 +8,6 @@ DATA_DIR=/data
 
 # Ensure we have our data dir populated properly
 if ! [[ -f ${DATA_DIR}/bin/activate ]] || ! [[ -f ${DATA_DIR}/bin/python ]]; then
-    if ls ${DATA_DIR}/* &>/dev/null; then
-        echo "Refusing to start with a non-empty data directory that is not a Python virtualenv"
-        exit 1
-    fi
-
     echo "Setting up data directory"
     mkdir -p ${DATA_DIR} && cp -r ${DATA_DEFAULT_DIR}/* ${DATA_DIR}
 else
