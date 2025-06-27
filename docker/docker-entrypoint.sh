@@ -3,7 +3,7 @@
 set -e
 set -a
 
-DATA_DEFAULT_DIR=/data-default
+DATA_DEFAULT_DIR=/data.default
 DATA_DIR=/data
 
 # Ensure we have our data dir populated properly
@@ -27,9 +27,13 @@ if [[ "${DEFAULT_PYTHON_VER}" != "${DATA_PYTHON_VER}" ]]; then
     source ${DATA_DIR}/bin/activate
     uv pip list -q --format=freeze | grep -v 'qtoggleserver=' | cut -d '=' -f 1 > /tmp/installed-packages.txt
     deactivate
-    rm -r ${DATA_DIR:?}/*
+    rm -rf ${DATA_DIR:?}.bak/*
+    mkdir -p ${DATA_DIR}.bak
+    mv ${DATA_DIR}/* ${DATA_DIR}.bak/
     echo "Setting up data directory"
     cp -r ${DATA_DEFAULT_DIR}/* ${DATA_DIR}
+    mkdir -p ${DATA_DIR}/etc
+    test -f ${DATA_DIR}.bak/etc/qtoggleserver.conf && cp ${DATA_DIR}.bak/etc/qtoggleserver.conf ${DATA_DIR}/etc/
     source ${DATA_DIR}/bin/activate
     uv pip install -q -r /tmp/installed-packages.txt
 else
