@@ -56,7 +56,7 @@ COPY --from=python-builder /data /data.default
 RUN \
     # Install OS deps
     apt-get update && \
-    apt-get install --no-install-recommends -y procps less nano bluez hostapd dnsmasq iproute2 && \
+    apt-get install --no-install-recommends -y procps psmisc less nano bluez iw hostapd dnsmasq iproute2 && \
     # Install UV
     pip install uv && \
     # Cleanups
