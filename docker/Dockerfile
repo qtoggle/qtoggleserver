@@ -68,6 +68,7 @@ COPY docker/pip /usr/local/bin
 COPY extra/* /usr/share/qtoggleserver/
 
 ENV UV_NO_CACHE=1
+ENV UV_LINK_MODE=copy
 
 WORKDIR /data
 
