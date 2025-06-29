@@ -2,7 +2,7 @@ import asyncpg
 import pytest
 import testing.postgresql
 
-from qtoggleserver.drivers.persist import postgresql
+from qtoggleserver.drivers.persist import postgres
 from qtoggleserver.persist import BaseDriver
 
 from . import insert, misc, query, remove, replace, samples, update
@@ -28,7 +28,7 @@ async def driver() -> BaseDriver:
     await conn.execute(f"CREATE DATABASE {db}")
     await conn.close()
 
-    driver = postgresql.PostgreSQLDriver(
+    driver = postgres.PostgresDriver(
         host=params["host"],
         port=params["port"],
         db=params["database"],

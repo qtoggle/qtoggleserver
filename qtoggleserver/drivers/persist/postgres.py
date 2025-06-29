@@ -31,7 +31,7 @@ DT_FMT_LEN = 29
 DT_REGEX = re.compile(r"^__(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).(\d{6})Z$")
 
 
-class PostgreSQLDriver(BaseDriver):
+class PostgresDriver(BaseDriver):
     def __init__(
         self,
         host: str = "127.0.0.1",

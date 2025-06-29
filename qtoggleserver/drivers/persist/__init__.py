@@ -12,9 +12,9 @@ except ImportError:
     pass
 
 try:
-    from .postgresql import PostgreSQLDriver  # noqa: F401
+    from .postgres import PostgresDriver  # noqa: F401
 
-    __all__.append("PostgreSQLDriver")
+    __all__.append("PostgresDriver")
 except ImportError:
     pass
 
