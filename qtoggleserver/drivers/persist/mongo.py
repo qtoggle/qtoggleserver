@@ -31,10 +31,10 @@ class MongoDriver(BaseDriver):
 
     async def init(self) -> None:
         logger.debug("connecting to %s:%s/%s", self._host, self._port, self._db_name)
-        self._client: pymongo.MongoClient = pymongo.MongoClient(
+        self._client = pymongo.MongoClient(
             self._host, self._port, serverSelectionTimeoutMS=200, connectTimeoutMS=200
         )
-        self._db: pymongo.database.Database = self._client[self._db_name]
+        self._db = self._client[self._db_name]
 
     async def cleanup(self) -> None:
         logger.debug("disconnecting mongo client")
