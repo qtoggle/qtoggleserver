@@ -250,8 +250,12 @@ async def _discover(timeout: int) -> list[DiscoveredDevice]:
     if ap.is_running():
         await ap.stop()
 
+    interface = get_interface()
+    if not interface:
+        raise DiscoverException("No AP interface available")
+
     ap.start(
-        interface=get_interface(),
+        interface=interface,
         ssid=ap_settings.ssid,
         psk=ap_settings.psk,
         own_ip=ap_settings.own_ip,
