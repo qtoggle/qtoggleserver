@@ -1,9 +1,28 @@
+import errno
 import os
 
+from collections.abc import Callable
+from functools import wraps
 from typing import TextIO
 
 from qtoggleserver.core import ports
 from qtoggleserver.utils import json as json_utils
+
+
+def _retry_after_configure(func) -> Callable:
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except OSError as e:
+            # If for some reason the GPIO controller has been disconnected and reconnected in the meantime,
+            # we get an `ENODEV` and we retry after attempting a reconfiguration.
+            if e.errno == errno.ENODEV:
+                self._configure()
+                return func(*args, **kwargs)
+            raise
+
+    return wrapper
 
 
 class GPIO(ports.Port):
@@ -31,27 +50,22 @@ class GPIO(ports.Port):
         super().__init__(port_id=f"gpio{no}")
 
     async def handle_enable(self) -> None:
-        try:
-            (self._val_file, self._dir_file) = self._configure()
-        except Exception as e:
-            self.error("failed to configure %s: %s", self, e)
-
-            raise
+        self._configure()
 
         if self._def_output is not None:
             await self.attr_set_output(self._def_output)
 
+    @_retry_after_configure
     async def read_value(self) -> bool:
         self._val_file.seek(0)
-
         return self._val_file.read(1) == "1"
 
+    @_retry_after_configure
     async def write_value(self, value: bool | None) -> None:
         if value is None:
             return
 
         self._val_file.seek(0)
-
         if value:
             value = "1"
         else:
@@ -85,15 +99,22 @@ class GPIO(ports.Port):
     async def attr_is_output(self) -> bool:
         return self._is_output()
 
+    @_retry_after_configure
     def _is_output(self) -> bool:
         if not self._dir_file:
             return False
 
         self._dir_file.seek(0)
-
         return self._dir_file.read(3) == "out"
 
-    def _configure(self) -> tuple[TextIO, TextIO]:
+    def _configure(self) -> None:
+        try:
+            (self._val_file, self._dir_file) = self._open_files()
+        except Exception as e:
+            self.error("failed to configure %s: %s", self, e)
+            raise
+
+    def _open_files(self) -> tuple[TextIO, TextIO]:
         path = os.path.join(self.BASE_PATH, f"gpio{self._no}")
 
         if not os.path.exists(path):
