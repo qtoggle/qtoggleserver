@@ -9,9 +9,9 @@ from qtoggleserver.core import ports
 from qtoggleserver.utils import json as json_utils
 
 
-def _retry_after_configure(func) -> Callable:
+def _retry_after_configure(func: Callable) -> Callable:
     @wraps(func)
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self, *args, **kwargs):  # noqa: ANN001, ANN202
         try:
             return func(self, *args, **kwargs)
         except OSError as e:
@@ -19,7 +19,7 @@ def _retry_after_configure(func) -> Callable:
             # we get an `ENODEV` and we retry after attempting a reconfiguration.
             if e.errno == errno.ENODEV:
                 self._configure()
-                return func(*args, **kwargs)
+                return func(self, *args, **kwargs)
             raise
 
     return wrapper
