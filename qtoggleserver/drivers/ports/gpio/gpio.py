@@ -1,3 +1,4 @@
+import asyncio
 import errno
 import os
 
@@ -11,15 +12,17 @@ from qtoggleserver.utils import json as json_utils
 
 def _retry_after_configure(func: Callable) -> Callable:
     @wraps(func)
-    def wrapper(self, *args, **kwargs):  # noqa: ANN001, ANN202
+    async def wrapper(self, *args, **kwargs):  # noqa: ANN001, ANN202
         try:
-            return func(self, *args, **kwargs)
+            return await func(self, *args, **kwargs)
         except OSError as e:
             # If for some reason the GPIO controller has been disconnected and reconnected in the meantime,
             # we get an `ENODEV` and we retry after attempting a reconfiguration.
             if e.errno == errno.ENODEV:
+                self.error("GPIO device missing (controller disconnected?), retrying")
+                await asyncio.sleep(1)
                 self._configure()
-                return func(self, *args, **kwargs)
+                return await func(self, *args, **kwargs)
             raise
 
     return wrapper
@@ -76,7 +79,7 @@ class GPIO(ports.Port):
         self._val_file.flush()
 
     async def attr_is_writable(self) -> bool:
-        return self._is_output()
+        return await self._is_output()
 
     async def attr_set_output(self, output: bool) -> None:
         if not self._dir_file:
@@ -97,10 +100,10 @@ class GPIO(ports.Port):
             await self.write_value(self._def_value)
 
     async def attr_is_output(self) -> bool:
-        return self._is_output()
+        return await self._is_output()
 
     @_retry_after_configure
-    def _is_output(self) -> bool:
+    async def _is_output(self) -> bool:
         if not self._dir_file:
             return False
 
@@ -108,17 +111,18 @@ class GPIO(ports.Port):
         return self._dir_file.read(3) == "out"
 
     def _configure(self) -> None:
+        self.debug("configuring GPIO")
         try:
             (self._val_file, self._dir_file) = self._open_files()
         except Exception as e:
-            self.error("failed to configure %s: %s", self, e)
+            self.error("configuration failed: %s", e)
             raise
 
     def _open_files(self) -> tuple[TextIO, TextIO]:
         path = os.path.join(self.BASE_PATH, f"gpio{self._no}")
 
         if not os.path.exists(path):
-            self.debug("exporting %s", self)
+            self.debug("exporting GPIO")
             with open(os.path.join(self.BASE_PATH, "export"), "w") as f:
                 f.write(str(self._no))
 
