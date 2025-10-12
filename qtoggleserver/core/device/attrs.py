@@ -78,6 +78,13 @@ def attr_get_api_version() -> str:
     return core_api.API_VERSION
 
 
+async def attr_get_version() -> str:
+    if settings.system.fwupdate.driver:
+        return await fwupdate.get_current_version()
+    else:
+        return version.VERSION
+
+
 def attr_get_flags() -> list[str]:
     from qtoggleserver.core import history as core_history
 
@@ -154,7 +161,7 @@ ATTRDEFS = {
     "version": {
         "type": "string",
         "standard": True,
-        "getter": lambda: version.VERSION,
+        "getter": attr_get_version,
     },
     "firmware_auto_update": {
         "type": "boolean",
