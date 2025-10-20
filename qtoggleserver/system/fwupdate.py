@@ -41,6 +41,7 @@ class BaseDriver(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     async def get_latest(self) -> tuple[str, str, str]:
+        """Returns a tuple of (version, date, url)."""
         pass
 
     @abc.abstractmethod

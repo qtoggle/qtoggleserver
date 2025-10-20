@@ -34,7 +34,6 @@ COPY . .
 COPY --from=frontend-builder /tmp/build/frontend ./qtoggleserver/frontend
 
 RUN \
-    # Prepare default user data dir
     # Install OS deps
     apt-get update && \
     apt-get install --no-install-recommends -y build-essential libglib2.0-dev bluez && \
@@ -69,6 +68,7 @@ COPY extra/* /usr/share/qtoggleserver/
 
 ENV UV_NO_CACHE=1
 ENV UV_LINK_MODE=copy
+ENV VIRTUAL_ENV=/data
 
 WORKDIR /data
 
