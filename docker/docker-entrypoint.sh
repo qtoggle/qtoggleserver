@@ -42,4 +42,11 @@ if ! [[ -e ${DATA_DIR}/etc/qtoggleserver.conf ]]; then
     cp /usr/share/qtoggleserver/qtoggleserver.conf.sample ${DATA_DIR}/etc/qtoggleserver.conf
 fi
 
+# Ensure extra required packages are installed
+if [[ -f ${DATA_DIR}/requirements.txt ]]; then
+    echo "Installing packages from requirements.txt"
+    uv pip install -q -r ${DATA_DIR}/requirements.txt
+    rm ${DATA_DIR}/requirements.txt
+fi
+
 exec "${@}"

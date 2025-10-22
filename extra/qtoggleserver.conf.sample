@@ -3,7 +3,7 @@ debug = false
 
 #public_url = "https://qtoggle.example.com"
 
-# See https://docs.python.org/3.7/library/logging.config.html#logging-config-dictschema
+# See https://docs.python.org/3.10/library/logging.config.html#logging-config-dictschema
 logging = {
     root = {
         level = "INFO"
@@ -89,14 +89,14 @@ event_handlers = [
 
 peripherals = [
 #    {
-#        driver = "qtoggleserver.my.peripherals.Peripheral"
-#        param1 = "value1"
+#        driver = "qtoggleserver.my.peripheral.Driver"
+#        param1 = "my_peripheral"
 #    }
 ]
 
 ports = [
 #    {
-#        driver = "qtoggleserver.my.ports.PortDriver"
+#        driver = "qtoggleserver.my.port.Driver"
 #        no = 10
 #    }
 ]
