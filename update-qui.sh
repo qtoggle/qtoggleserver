@@ -6,6 +6,7 @@ if [ -z "$1" ]; then
 fi
 
 cd $(dirname $0)/qtoggleserver/frontend
+npm cache clean
 npm install @qtoggle/qui@$1
 git checkout package.json
 git commit -am "frontend: Update qui to $1"
