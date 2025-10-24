@@ -1,4 +1,3 @@
-# Build with:
 #     docker build -f docker/Dockerfile -t qtoggle/qtoggleserver .
 #
 # Run with:
@@ -28,38 +27,39 @@ RUN cd frontend && \
 
 FROM python:3.10.18-slim-bullseye AS python-builder
 
-# Copy source with frontend that was just built above
+# Copy source with frontend that has just been built in the previous stage
 WORKDIR /tmp/build
 COPY . .
 COPY --from=frontend-builder /tmp/build/frontend ./qtoggleserver/frontend
 
 RUN \
-    # Install OS deps
+    # Install build-time OS deps
     apt-get update && \
     apt-get install --no-install-recommends -y build-essential libglib2.0-dev bluez && \
-    # Prepare virtualenv
-    pip install uv && uv venv /data && . /data/bin/activate && \
-    # Install python dependencies
-    uv sync --active --no-dev --no-install-project --extra opt && \
-    # Build and install our package
-    uv build && uv pip install dist/qtoggleserver-*.tar.gz
+    pip install uv && \
+    # Build our package
+    uv build
 
 
 # Final image
 
 FROM python:3.10.18-slim-bullseye AS qtoggleserver
 
-# Copy data dir with virtualenv that was just created above
-COPY --from=python-builder /data /data.default
+# Copy our package that has just been built in the previous stage
+COPY --from=python-builder /tmp/build/dist/qtoggleserver-*.tar.gz /tmp/qtoggleserver.tar.gz
 
 RUN \
-    # Install OS deps
+    # Install run-time OS deps
     apt-get update && \
     apt-get install --no-install-recommends -y procps psmisc less nano bluez iw hostapd dnsmasq iproute2 && \
-    # Install UV
     pip install uv && \
+    # Install our package \
+    pip install /tmp/qtoggleserver.tar.gz && \
     # Cleanups
-    rm -rf /var/lib/apt/lists
+    rm -rf /var/lib/apt/lists /tmp/qtoggleserver.tar.gz
+
+# Fix shebangs to use python from virtualenv
+RUN sed -ri 's,^#!.*,#!/usr/bin/env python,' /usr/local/bin/qtoggleserver /usr/local/bin/qtoggleshell
 
 # Copy various stuff
 COPY docker/docker-entrypoint.sh /
