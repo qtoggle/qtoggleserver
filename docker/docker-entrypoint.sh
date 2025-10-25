@@ -16,8 +16,7 @@ fi
 # Ensure we run a virtualenv with our Python version
 WANTED_PYTHON_VER=$(/usr/local/bin/python -V | cut -d . -f 1,2 | cut -d ' ' -f 2)
 DATA_PYTHON_VER=$(${DATA_DIR}/bin/python -V | cut -d . -f 1,2 | cut -d ' ' -f 2)
-#if [[ "${WANTED_PYTHON_VER}" != "${DATA_PYTHON_VER}" ]]; then
-if true; then
+if [[ "${WANTED_PYTHON_VER}" != "${DATA_PYTHON_VER}" ]]; then
     echo "Migrating existing virtualenv from Python ${DATA_PYTHON_VER} to Python ${WANTED_PYTHON_VER}"
     echo "Backing up list of installed packages"
     source ${DATA_DIR}/bin/activate

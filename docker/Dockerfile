@@ -51,7 +51,8 @@ COPY --from=python-builder /tmp/build/dist/qtoggleserver-*.tar.gz /tmp/qtogglese
 RUN \
     # Install run-time OS deps
     apt-get update && \
-    apt-get install --no-install-recommends -y procps psmisc less nano bluez iw hostapd dnsmasq iproute2 && \
+    apt-get install --no-install-recommends -y procps psmisc less nano bluez iw hostapd dnsmasq iproute2 gcc \
+        python3-dev && \
     pip install uv && \
     # Install our package \
     pip install /tmp/qtoggleserver.tar.gz && \
