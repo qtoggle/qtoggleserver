@@ -29,7 +29,6 @@ qtoggleshell = "qtoggleserver.commands.shell:execute"
 [project.optional-dependencies]
 opt = [
     "asyncpg",
-    "bleak",
     "pymongo",
     "redis",
 ]

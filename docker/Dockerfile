@@ -47,6 +47,10 @@ FROM python:3.10.18-slim-bullseye AS qtoggleserver
 
 # Copy our package that has just been built in the previous stage
 COPY --from=python-builder /tmp/build/dist/qtoggleserver-*.tar.gz /tmp/qtoggleserver.tar.gz
+COPY --from=python-builder /tmp/build/pyproject.toml /tmp/
+COPY --from=python-builder /tmp/build/uv.lock /tmp/
+
+WORKDIR /tmp
 
 RUN \
     # Install run-time OS deps
@@ -54,10 +58,12 @@ RUN \
     apt-get install --no-install-recommends -y procps psmisc less nano bluez iw hostapd dnsmasq iproute2 gcc \
         python3-dev && \
     pip install uv && \
-    # Install our package \
-    pip install /tmp/qtoggleserver.tar.gz && \
+    # Install Python deps system-wide
+    UV_PROJECT_ENVIRONMENT=/usr/local uv sync --active --extra opt --no-install-project && \
+    # Install our package
+    uv pip install --system /tmp/qtoggleserver.tar.gz && \
     # Cleanups
-    rm -rf /var/lib/apt/lists /tmp/qtoggleserver.tar.gz
+    rm -rf /var/lib/apt/lists /tmp/qtoggleserver.tar.gz /tmp/uv.lock /tmp/pyproject.toml
 
 # Fix shebangs to use python from virtualenv
 RUN sed -ri 's,^#!.*,#!/usr/bin/env python,' /usr/local/bin/qtoggleserver /usr/local/bin/qtoggleshell
