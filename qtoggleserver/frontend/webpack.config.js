@@ -8,6 +8,9 @@ module.exports = function (env, options) {
     return webpackCommon.makeConfigs({
         isProduction: options.mode === 'production',
         appName: 'qtoggleserver',
-        appFullPath: __dirname
+        appFullPath: __dirname,
+        extraAliases: {
+            'chart.js': '$node/chart.js/dist/chart.esm.js'
+        }
     })
 }
