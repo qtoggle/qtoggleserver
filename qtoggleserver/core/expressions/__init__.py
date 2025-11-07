@@ -16,8 +16,19 @@ __all__ = [
     "EvalResult",
     "Expression",
     "Function",
+    "aggregation",
+    "arithmetic",
+    "bitwise",
     "check_loops",
+    "comparison",
+    "date",
+    "logic",
     "parse",
+    "rounding",
+    "sign",
+    "time",
+    "timeprocessing",
+    "various",
 ]
 
 ROLE_VALUE = 1
@@ -83,5 +94,18 @@ async def check_loops(port: core_ports.BasePort, expression: Expression) -> None
         raise CircularDependency(port.get_id())
 
 
+from . import (  # noqa: E402
+    aggregation,
+    arithmetic,
+    bitwise,
+    comparison,
+    date,
+    logic,
+    rounding,
+    sign,
+    time,
+    timeprocessing,
+    various,
+)
 from .functions import Function  # noqa: E402
 from .ports import PortExpression, PortValue  # noqa: E402

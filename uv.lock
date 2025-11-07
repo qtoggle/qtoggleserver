@@ -571,7 +571,6 @@ dependencies = [
 [package.optional-dependencies]
 opt = [
     { name = "asyncpg" },
-    { name = "bleak" },
     { name = "pymongo" },
     { name = "redis" },
 ]
@@ -593,7 +592,6 @@ dev = [
 requires-dist = [
     { name = "asyncpg", marker = "extra == 'opt'" },
     { name = "bleak", specifier = ">=0.14,<1" },
-    { name = "bleak", marker = "extra == 'opt'" },
     { name = "dbus-next", specifier = ">=0.2,<1" },
     { name = "jinja2", specifier = ">=3,<4" },
     { name = "jsonpointer", specifier = ">=2.0,<3" },
