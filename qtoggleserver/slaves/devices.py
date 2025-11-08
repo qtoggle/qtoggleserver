@@ -374,7 +374,7 @@ class Slave(logging_utils.LoggableMixin):
 
             await asyncio.sleep(1)
 
-        raise asyncio.TimeoutError("Timeout waiting for device to come online")
+        raise TimeoutError("Timeout waiting for device to come online")
 
     def to_json(self) -> GenericJSONDict:
         provisioning = list(self._provisioning_attrs)

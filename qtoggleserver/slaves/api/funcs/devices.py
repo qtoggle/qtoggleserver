@@ -124,7 +124,7 @@ async def wrap_error_with_index(index: int, func: Callable, *args, **kwargs) -> 
             result = await result
     except core_api.APIError as e:
         raise core_api.APIError(status=e.status, code=e.code, index=index, **e.params)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         raise core_api.APIError(status=504, code="device-timeout", index=index)
     except Exception as e:
         raise core_api.APIError(status=500, code="unexpected-error", message=str(e), index=index)
@@ -180,7 +180,7 @@ async def put_slave_devices(request: core_api.APIRequest, params: GenericJSONLis
 
         try:
             await asyncio.gather(*wait_online_futures)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             # Ignore timeouts; this is a best-effort API call
             pass
 
