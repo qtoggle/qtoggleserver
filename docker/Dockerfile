@@ -7,7 +7,7 @@
 # Frontend builder image
 
 # Always use BUILDPLATFORM for frontend-builder image, since it doesn't contain platform-specific binaries
-FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.10.18-slim-bullseye AS frontend-builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} python:3.11.14-slim-bookworm AS frontend-builder
 
 # Install OS deps
 RUN apt-get update && \
@@ -25,7 +25,7 @@ RUN cd frontend && \
 
 # Python builder image
 
-FROM python:3.10.18-slim-bullseye AS python-builder
+FROM python:3.11.14-slim-bookworm AS python-builder
 
 # Copy source with frontend that has just been built in the previous stage
 WORKDIR /tmp/build
@@ -43,7 +43,7 @@ RUN \
 
 # Final image
 
-FROM python:3.10.18-slim-bullseye AS qtoggleserver
+FROM python:3.11.14-slim-bookworm AS qtoggleserver
 
 # Copy our package that has just been built in the previous stage
 COPY --from=python-builder /tmp/build/dist/qtoggleserver-*.tar.gz /tmp/qtoggleserver.tar.gz
