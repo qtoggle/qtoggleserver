@@ -1,6 +1,6 @@
 import inspect
 
-from typing import Callable
+from collections.abc import Callable
 
 from cachetools import TTLCache, cached
 from cachetools_async import cached as async_cached

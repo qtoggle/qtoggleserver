@@ -14,8 +14,8 @@ from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import Attributes, GenericJSONDict
 from qtoggleserver.slaves import utils as salves_utils
 from qtoggleserver.system import ap, dhcp, dns, net
-from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import cmd as cmd_utils
+from qtoggleserver.utils.timer import Timer
 
 from .exceptions import DiscoverException
 
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 _discover_task: asyncio.Task | None = None
 _discovered_devices: dict[str, DiscoveredDevice] | None = None
-_finish_timer: asyncio_utils.Timer | None = None
+_finish_timer: Timer | None = None
 
 # TODO: replace these with a common cache service with integrated timeout management
 _interface: tuple[str] | None = None
@@ -108,7 +108,7 @@ async def discover(timeout: int) -> None:
     if _finish_timer:
         _finish_timer.cancel()
 
-    _finish_timer = asyncio_utils.Timer(settings.slaves.discover.ap.finish_timeout, _finish_timeout)
+    _finish_timer = Timer(settings.slaves.discover.ap.finish_timeout, _finish_timeout)
 
     devices_list = await _discover_task
 
