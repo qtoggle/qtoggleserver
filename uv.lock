@@ -110,6 +110,18 @@ wheels = [
 ]
 
 [[package]]
+name = "cachetools-async"
+version = "0.0.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cachetools" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/59/6d/01404fffea95b33d186a4d921b141918c0daf3ff74b6a715c0ac2de8f42e/cachetools_async-0.0.5.tar.gz", hash = "sha256:e99ec8f3a78e82b4f524e78f01d15b8746531481d862ac4f2d8af2a686e1c571", size = 24837, upload-time = "2025-06-09T08:11:28.925Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b5/fa/136f97313ab298286725fc8004d44f5fc352ea416c2b874b7a91e83df66a/cachetools_async-0.0.5-py3-none-any.whl", hash = "sha256:8f690c8bc291718a652395832e90afa797195c838e98d6a9e530dc1de66fbc34", size = 4750, upload-time = "2025-06-09T08:11:27.871Z" },
+]
+
+[[package]]
 name = "cfgv"
 version = "3.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -733,6 +745,7 @@ source = { editable = "." }
 dependencies = [
     { name = "bleak" },
     { name = "cachetools" },
+    { name = "cachetools-async" },
     { name = "dbus-next" },
     { name = "jinja2" },
     { name = "jsonpointer" },
@@ -770,6 +783,7 @@ requires-dist = [
     { name = "asyncpg", marker = "extra == 'opt'" },
     { name = "bleak", specifier = ">=0.14,<1" },
     { name = "cachetools", specifier = ">=6.2.1" },
+    { name = "cachetools-async", specifier = ">=0.0.5" },
     { name = "dbus-next", specifier = ">=0.2,<1" },
     { name = "jinja2", specifier = ">=3,<4" },
     { name = "jsonpointer", specifier = ">=2.0,<3" },

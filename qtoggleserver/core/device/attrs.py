@@ -16,6 +16,7 @@ from qtoggleserver import system, version
 from qtoggleserver.conf import settings
 from qtoggleserver.core.typing import AttributeDefinitions, Attributes, GenericJSONDict
 from qtoggleserver.system import fwupdate
+from qtoggleserver.utils import cache as cache_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_get_cmd, run_set_cmd
 
@@ -27,7 +28,6 @@ logger = logging.getLogger(__name__)
 
 EMPTY_PASSWORD_HASH = hashlib.sha256(b"").hexdigest()
 NETWORK_ATTRS_WATCH_INTERVAL = 5
-ATTRDEFS_CACHE_TIMEOUT = 10
 ATTRDEF_CALLABLE_FIELDS = {"modifiable", "min", "max", "enabled"}
 
 
@@ -72,12 +72,14 @@ def attr_set_display_name(value: str) -> None:
     display_name = value
 
 
+@cache_utils.ttl_cached(ttl=60)
 def attr_get_api_version() -> str:
     from qtoggleserver.core import api as core_api
 
     return core_api.API_VERSION
 
 
+@cache_utils.ttl_cached(ttl=60)
 async def attr_get_version() -> str:
     if settings.system.fwupdate.driver:
         return await fwupdate.get_current_version()
