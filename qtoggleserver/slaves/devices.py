@@ -25,6 +25,7 @@ from qtoggleserver.system import dns as system_dns
 from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
+from qtoggleserver.utils.parallel_caller import ParallelCaller
 
 from . import events, exceptions
 from .ports import SlavePort
@@ -103,7 +104,7 @@ class Slave(logging_utils.LoggableMixin):
         self._ready: bool = False
 
         # API call throttling
-        self._parallel_api_caller = asyncio_utils.ParallelCaller(_MAX_PARALLEL_API_CALLS, _MAX_QUEUED_API_CALLS)
+        self._parallel_api_caller = ParallelCaller(_MAX_PARALLEL_API_CALLS, _MAX_QUEUED_API_CALLS)
 
         # Indicates the listening session id, or None if no listen client is active
         self._listen_session_id: str | None = None
