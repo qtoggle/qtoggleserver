@@ -1,8 +1,8 @@
 import collections.abc
 import time
 
-from typing import Any
 from collections.abc import Iterator
+from typing import Any
 
 
 class TimedSet(collections.abc.MutableSet):

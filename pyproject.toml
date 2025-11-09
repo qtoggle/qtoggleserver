@@ -77,6 +77,9 @@ lint.isort.lines-after-imports = 2
 lint.isort.lines-between-types = 1
 lint.isort.force-wrap-aliases = true
 
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN001", "ANN201", "ANN202"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests/qtoggleserver"]
 asyncio_mode = "auto"
