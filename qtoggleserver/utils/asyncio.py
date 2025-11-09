@@ -1,12 +1,9 @@
-import abc
 import asyncio
 import inspect
 import logging
-import queue
 import sys
-import threading
 
-from collections.abc import Awaitable, Callable, Coroutine
+from collections.abc import Callable
 from typing import Any
 
 
@@ -105,74 +102,3 @@ class Timer:
                 await result
         finally:
             self._task = None
-
-
-class RunnerBusy(Exception):
-    pass
-
-
-class ThreadedRunner(threading.Thread, metaclass=abc.ABCMeta):
-    QUEUE_TIMEOUT = 1
-
-    def __init__(self, queue_size: int | None = None) -> None:
-        self._running: bool = False
-        self._loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
-        self._queue: queue.Queue = queue.Queue(queue_size or 0)
-        self._stopped_future: asyncio.Future = self._loop.create_future()
-
-        super().__init__()
-
-    def run(self) -> None:
-        while self._running:
-            try:
-                func, callback = self._queue.get(timeout=self.QUEUE_TIMEOUT)
-            except queue.Empty:
-                continue
-
-            try:
-                result = func()
-            except Exception as e:
-                self._loop.call_soon_threadsafe(callback, None, e)
-            else:
-                self._loop.call_soon_threadsafe(callback, result, None)
-
-        self._loop.call_soon_threadsafe(self._stopped_future.set_result, None)
-
-    def schedule_func(self, func: Callable, callback: Callable) -> None:
-        try:
-            self._queue.put_nowait((func, callback))
-        except queue.Full:
-            raise RunnerBusy() from None
-
-    def is_running(self) -> bool:
-        return self._running
-
-    def start(self) -> None:
-        self._running = True
-        super().start()
-
-    async def stop(self) -> None:
-        self._running = False
-
-        await self._stopped_future
-
-
-async def await_later(delay: float, aw: Awaitable) -> None:
-    await asyncio.sleep(delay)
-    await aw
-
-
-def fire_and_forget(coro: Coroutine[Any, Any, Any]) -> None:
-    """Schedule coro as a background task, log any exception and consume it."""
-    task = asyncio.create_task(coro)
-
-    def _on_done(t: asyncio.Task) -> None:
-        try:
-            t.result()
-        except Exception as e:
-            logger.error("Error while handling task: %s", e, exc_info=True)
-        except asyncio.CancelledError:
-            # Task was cancelled while we were handling it - nothing to do.
-            pass
-
-    task.add_done_callback(_on_done)

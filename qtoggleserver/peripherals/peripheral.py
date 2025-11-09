@@ -11,8 +11,8 @@ from typing import Any, cast
 
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import GenericJSONDict
-from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import logging as logging_utils
+from qtoggleserver.utils import runner as runner_utils
 
 from .exceptions import NotOurPort
 
@@ -21,7 +21,7 @@ logger = logging.getLogger(__package__)
 
 
 class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
-    RUNNER_CLASS = asyncio_utils.ThreadedRunner
+    RUNNER_CLASS = runner_utils.ThreadedRunner
     RUNNER_QUEUE_SIZE = 64
 
     logger = logger
@@ -47,7 +47,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._ports_by_id: dict[str, PeripheralPort] = {}
         self._enabled: bool = False
         self._online: bool = False
-        self._runner: asyncio_utils.ThreadedRunner | None = None
+        self._runner: runner_utils.ThreadedRunner | None = None
         self._port_update_task: asyncio.Task | None = None
 
         logging_utils.LoggableMixin.__init__(self, self.get_id(), self.logger)
@@ -206,13 +206,13 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._port_update_task = asyncio.create_task(self.trigger_port_update(save))
 
-    def get_runner(self) -> asyncio_utils.ThreadedRunner:
+    def get_runner(self) -> runner_utils.ThreadedRunner:
         if self._runner is None:
             self._runner = self.make_runner()
 
         return self._runner
 
-    def make_runner(self) -> asyncio_utils.ThreadedRunner:
+    def make_runner(self) -> runner_utils.ThreadedRunner:
         self.debug("starting threaded runner")
         runner = self.RUNNER_CLASS(queue_size=self.RUNNER_QUEUE_SIZE)
         runner.start()
