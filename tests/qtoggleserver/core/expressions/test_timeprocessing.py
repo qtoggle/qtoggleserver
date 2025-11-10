@@ -31,6 +31,32 @@ def test_delay_num_args():
         Function.parse(None, "DELAY(1, 2, 3)", ROLE_VALUE, 0)
 
 
+async def test_timer(literal_true, literal_false, literal_one_thousand, dummy_eval_context, later_eval_context):
+    value_expr = MockExpression(0)
+    expr = timeprocessing.TimerFunction([value_expr, literal_true, literal_false, literal_one_thousand], ROLE_VALUE)
+    assert await expr.eval(dummy_eval_context) == 0
+    assert await expr.eval(later_eval_context(500)) == 0
+    assert await expr.eval(later_eval_context(1100)) == 0
+
+    value_expr.set_value(1)
+    assert await expr.eval(dummy_eval_context) == 1
+    assert await expr.eval(later_eval_context(500)) == 1
+    assert await expr.eval(later_eval_context(1100)) == 0
+
+
+def test_timer_parse():
+    e = Function.parse(None, "TIMER(1, 2, 3, 4)", ROLE_VALUE, 0)
+    assert isinstance(e, timeprocessing.TimerFunction)
+
+
+def test_timer_num_args():
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, "TIMER(1, 2, 3)", ROLE_VALUE, 0)
+
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, "TIMER(1, 2, 3, 4, 5)", ROLE_VALUE, 0)
+
+
 async def test_sample(literal_one_thousand, dummy_eval_context, later_eval_context):
     value_expr = MockExpression(3)
     expr = timeprocessing.SampleFunction([value_expr, literal_one_thousand], ROLE_VALUE)

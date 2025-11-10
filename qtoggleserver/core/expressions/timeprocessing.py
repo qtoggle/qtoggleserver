@@ -45,6 +45,36 @@ class DelayFunction(Function):
         return self._current_value
 
 
+@function("TIMER")
+class TimerFunction(Function):
+    MIN_ARGS = MAX_ARGS = 4
+    DEPS = {"asap"}
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._start_time_ms: int = 0
+
+    async def _eval(self, context: EvalContext) -> EvalResult:
+        value, start_value, stop_value, timeout = await self.eval_args(context)
+
+        if self._start_time_ms:  # timer active
+            delta = context.now_ms - self._start_time_ms
+            if delta >= timeout:  # timer expired
+                self._start_time_ms = 0
+                return stop_value
+            else:
+                return start_value
+
+        else:  # timer inactive
+            if value:
+                self._start_time_ms = context.now_ms
+                self.pause_asap_eval(self._start_time_ms + timeout)
+                return start_value
+            else:
+                return stop_value
+
+
 @function("SAMPLE")
 class SampleFunction(Function):
     MIN_ARGS = MAX_ARGS = 2

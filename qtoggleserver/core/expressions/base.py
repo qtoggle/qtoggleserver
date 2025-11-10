@@ -25,12 +25,8 @@ class Expression(metaclass=abc.ABCMeta):
         self._asap_eval_paused_until_ms = 0
         try:
             return await self._eval(context)
-        except EvalSkipped:
-            raise
-        except ValueUnavailable:
-            raise
-        except ExpressionEvalError:
-            # Pause expression evaluation for 1 second, as it's very unlikely that a problematic expression become
+        except (EvalSkipped, ValueUnavailable, ExpressionEvalError):
+            # Pause expression evaluation for 1 second, as it's very unlikely that the expression become available or
             # fixed within a second. This is a small speed optimization for expressions that depend on millisecond.
             self.pause_asap_eval(context.now_ms + 1000)
             raise
