@@ -162,7 +162,7 @@ async def handle_value_changes(
             continue
 
         if full_eval or (port in forced_ports):
-            port.push_eval()
+            port.push_eval(now_ms)
             continue
 
         deps: set[str] = expression.get_deps()
@@ -181,7 +181,7 @@ async def handle_value_changes(
             if port.has_pending_eval():
                 continue
 
-        port.push_eval()
+        port.push_eval(now_ms)
 
 
 def force_eval_expressions(port: core_ports.BasePort | None = None) -> None:

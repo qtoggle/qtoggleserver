@@ -753,9 +753,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self.error("write value task error", exc_info=True)
                 await asyncio.sleep(1)
 
-    def push_eval(self) -> None:
+    def push_eval(self, now_ms: int) -> None:
         port_values = {p.get_id(): p.get_last_read_value() for p in get_all() if p.is_enabled()}
-        now_ms = int(time.time() * 1000)
 
         try:
             self._eval_queue.put_nowait(self._make_eval_context(port_values, now_ms))
@@ -793,7 +792,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._evaling = False
 
         value = await self.adapt_value_type(value)
-        if value != self.get_last_read_value():  # value changed after evaluation
+        if value is not None and value != self.get_last_read_value():  # value changed after evaluation
             self.debug('expression "%s" evaluated to %s', expression, json_utils.dumps(value))
             try:
                 await self.transform_and_write_value(value)
