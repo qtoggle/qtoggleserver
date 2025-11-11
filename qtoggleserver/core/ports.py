@@ -555,12 +555,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         try:
             self.debug('parsing expression "%s"', sexpression)
             expression = core_expressions.parse(self.get_id(), sexpression, role=core_expressions.ROLE_VALUE)
-
-            self.debug("checking for expression circular dependencies")
-            await core_expressions.check_loops(self, expression)
         except expressions_exceptions.ExpressionParseError as e:
             self.error('failed to set expression "%s": %s', sexpression, e)
-
             raise InvalidAttributeValue("expression", details=e.to_json()) from e
 
         self.debug('setting expression "%s"', expression)

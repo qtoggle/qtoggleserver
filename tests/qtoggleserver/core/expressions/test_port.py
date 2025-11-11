@@ -1,9 +1,6 @@
 import asyncio
 
-import pytest
-
-from qtoggleserver.core.expressions import ROLE_VALUE, check_loops, parse
-from qtoggleserver.core.expressions.exceptions import CircularDependency
+from qtoggleserver.core.expressions import ROLE_VALUE, parse
 from qtoggleserver.core.expressions.ports import PortRef, PortValue
 
 
@@ -26,16 +23,6 @@ def test_port_value_inexistent(mock_num_port1):
     assert isinstance(e, PortValue)
     assert e.port_id == "nid2"
     assert e.get_port() is None
-
-
-async def test_port_value_circular_dependency(mock_num_port1, mock_num_port2):
-    mock_num_port1.set_writable(True)
-    mock_num_port2.set_writable(True)
-
-    await mock_num_port1.set_attr("expression", "ADD($nid2, 10)")
-    e2 = parse("nid2", "ADD($nid1, 10)", role=ROLE_VALUE)
-    with pytest.raises(CircularDependency):
-        await check_loops(mock_num_port2, e2)
 
 
 async def test_port_value_self_immediate_value(mock_num_port1):

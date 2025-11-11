@@ -63,14 +63,6 @@ class UnexpectedEnd(ExpressionParseError):
         return {"reason": "unexpected-end"}
 
 
-class CircularDependency(ExpressionParseError):
-    def __init__(self, port_id: str) -> None:
-        super().__init__(f'Expression creates a dependency loop via port "{port_id}"')
-
-    def to_json(self) -> GenericJSONDict:
-        return {"reason": "circular-dependency"}
-
-
 class ExternalDependency(ExpressionParseError):
     def __init__(self, port_id: str, pos: int) -> None:
         self.port_id = port_id
