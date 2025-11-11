@@ -49,15 +49,16 @@ async def test_timer_straight(
 async def test_timer_reset(literal_true, literal_false, literal_one_thousand, dummy_eval_context, later_eval_context):
     """Should reset the timer when value becomes false."""
 
-    value_expr = MockExpression(0)
+    value_expr = MockExpression(1)
     expr = timeprocessing.TimerFunction([value_expr, literal_true, literal_false, literal_one_thousand], ROLE_VALUE)
-    assert await expr.eval(dummy_eval_context) == 0
-    assert await expr.eval(later_eval_context(500)) == 0
-    value_expr.set_value(1)
-    assert await expr.eval(later_eval_context(1600)) == 0
+    assert await expr.eval(dummy_eval_context) == 1
+    assert await expr.eval(later_eval_context(500)) == 1
     value_expr.set_value(0)
-    assert await expr.eval(later_eval_context(2500)) == 0
-    assert await expr.eval(later_eval_context(2700)) == 1
+    assert await expr.eval(later_eval_context(600)) == 0
+    value_expr.set_value(1)
+    assert await expr.eval(later_eval_context(700)) == 1
+    assert await expr.eval(later_eval_context(1600)) == 1
+    assert await expr.eval(later_eval_context(1800)) == 0
 
 
 def test_timer_parse():
