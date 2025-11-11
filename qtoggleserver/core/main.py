@@ -165,8 +165,7 @@ async def handle_value_changes(
             port.push_eval()
             continue
 
-        port_own_deps: set[str] = expression.get_deps()
-        deps: set[str] = port_own_deps - {f"${port.get_id()}"}
+        deps: set[str] = expression.get_deps()
 
         # Evaluate a port's expression only if one of its deps changed
         changed_deps = deps & changed_set_str
