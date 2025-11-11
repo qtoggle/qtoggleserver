@@ -98,38 +98,6 @@ class SampleFunction(Function):
         return self._last_value
 
 
-@function("FREEZE")
-class FreezeFunction(Function):
-    MIN_ARGS = MAX_ARGS = 2
-    DEPS = {"asap"}
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-
-        self._last_value: float | None = None
-        self._last_duration_ms: int = 0
-        self._last_time_ms: int = 0
-
-    async def _eval(self, context: EvalContext) -> EvalResult:
-        if self._last_time_ms == 0:  # idle
-            value = await self.args[0].eval(context)
-            if value != self._last_value:  # value change detected, start timer
-                self._last_time_ms = context.now_ms
-                self._last_duration_ms = await self.args[1].eval(context)
-                self._last_value = value
-            else:
-                self.pause_asap_eval()
-        else:  # timer active
-            if context.now_ms - self._last_time_ms > self._last_duration_ms:  # timer expired
-                self._last_time_ms = 0
-                # Call _eval() again, now that _last_time_ms is 0
-                return await self._eval(context)
-            else:
-                self.pause_asap_eval(self._last_time_ms + self._last_duration_ms)
-
-        return self._last_value
-
-
 @function("HELD")
 class HeldFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
