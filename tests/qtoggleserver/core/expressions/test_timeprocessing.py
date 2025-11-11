@@ -31,7 +31,9 @@ def test_delay_num_args():
         Function.parse(None, "DELAY(1, 2, 3)", ROLE_VALUE, 0)
 
 
-async def test_timer(literal_true, literal_false, literal_one_thousand, dummy_eval_context, later_eval_context):
+async def test_timer_straight(
+    literal_true, literal_false, literal_one_thousand, dummy_eval_context, later_eval_context
+):
     value_expr = MockExpression(0)
     expr = timeprocessing.TimerFunction([value_expr, literal_true, literal_false, literal_one_thousand], ROLE_VALUE)
     assert await expr.eval(dummy_eval_context) == 0
@@ -42,6 +44,20 @@ async def test_timer(literal_true, literal_false, literal_one_thousand, dummy_ev
     assert await expr.eval(dummy_eval_context) == 1
     assert await expr.eval(later_eval_context(500)) == 1
     assert await expr.eval(later_eval_context(1100)) == 0
+
+
+async def test_timer_reset(literal_true, literal_false, literal_one_thousand, dummy_eval_context, later_eval_context):
+    """Should reset the timer when value becomes false."""
+
+    value_expr = MockExpression(0)
+    expr = timeprocessing.TimerFunction([value_expr, literal_true, literal_false, literal_one_thousand], ROLE_VALUE)
+    assert await expr.eval(dummy_eval_context) == 0
+    assert await expr.eval(later_eval_context(500)) == 0
+    value_expr.set_value(1)
+    assert await expr.eval(later_eval_context(1600)) == 0
+    value_expr.set_value(0)
+    assert await expr.eval(later_eval_context(2500)) == 0
+    assert await expr.eval(later_eval_context(2700)) == 1
 
 
 def test_timer_parse():

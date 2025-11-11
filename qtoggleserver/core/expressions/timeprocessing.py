@@ -60,18 +60,21 @@ class TimerFunction(Function):
 
         if self._start_time_ms:  # timer active
             delta = context.now_ms - self._start_time_ms
-            if delta >= timeout:  # timer expired
+            if delta >= timeout or not value:  # timer expired or value became false
                 self._start_time_ms = 0
+                self.pause_asap_eval()
                 return stop_value
             else:
                 return start_value
 
         else:  # timer inactive
             if value:
+                # start timer
                 self._start_time_ms = context.now_ms
                 self.pause_asap_eval(self._start_time_ms + timeout)
                 return start_value
             else:
+                self.pause_asap_eval()
                 return stop_value
 
 
