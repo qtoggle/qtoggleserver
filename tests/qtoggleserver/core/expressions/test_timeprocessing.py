@@ -100,6 +100,42 @@ def test_sample_num_args():
         Function.parse(None, "SAMPLE(1, 2, 3)", ROLE_VALUE, 0)
 
 
+async def test_freeze(dummy_eval_context, later_eval_context):
+    value_expr = MockExpression(1)
+    time_expr = MockExpression(200)
+    expr = timeprocessing.FreezeFunction([value_expr, time_expr], ROLE_VALUE)
+    assert await expr.eval(dummy_eval_context) == 1
+
+    time_expr.set_value(50)
+    value_expr.set_value(2)
+    assert await expr.eval(later_eval_context(100)) == 1
+    assert await expr.eval(later_eval_context(199)) == 1
+
+    time_expr.set_value(200)
+    assert await expr.eval(later_eval_context(201)) == 2
+
+    value_expr.set_value(3)
+    assert await expr.eval(later_eval_context(500)) == 3
+
+    value_expr.set_value(4)
+    assert await expr.eval(later_eval_context(600)) == 3
+    assert await expr.eval(later_eval_context(699)) == 3
+    assert await expr.eval(later_eval_context(701)) == 4
+
+
+def test_freeze_parse():
+    e = Function.parse(None, "FREEZE(1, 2)", ROLE_VALUE, 0)
+    assert isinstance(e, timeprocessing.FreezeFunction)
+
+
+def test_freeze_num_args():
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, "FREEZE(1)", ROLE_VALUE, 0)
+
+    with pytest.raises(InvalidNumberOfArguments):
+        Function.parse(None, "FREEZE(1, 2, 3)", ROLE_VALUE, 0)
+
+
 async def test_held_fulfilled(literal_sixteen, dummy_eval_context, later_eval_context):
     value_expr = MockExpression(16)
     time_expr = MockExpression(200)
