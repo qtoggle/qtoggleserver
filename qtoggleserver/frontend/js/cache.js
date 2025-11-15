@@ -374,7 +374,9 @@ export function load(accessLevel, showModalProgress) {
             progressMessage.setMessage(gettext('Reconnecting...'))
         }
         else {
-            Toast.error(errorMsg)
+            if (NotificationsAPI.isConnected()) {
+                Toast.error(errorMsg)
+            }
         }
 
         return promise.then(function () {

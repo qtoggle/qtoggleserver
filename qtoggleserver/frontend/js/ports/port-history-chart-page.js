@@ -11,7 +11,7 @@ import ChartPage                        from '$app/common/chart-page.js'
 import {ChartPageOptionsForm}           from '$app/common/chart-page.js'
 import HistoryDownloadManager           from '$app/common/history-download-manager.js'
 import {HistoryDownloadTooManyRequests} from '$app/common/history-download-manager.js'
-import {decimate, movingAverage}        from '$app/utils.js'
+import * as Utils                       from '$app/utils.js'
 
 
 const MAX_DATA_POINTS_LEN = 1000
@@ -106,24 +106,24 @@ class PortHistoryChartPage extends ChartPage {
             this.clearProgress()
             this.showHistory(history)
 
-        }.bind(this)).catch(function (e) {
+        }.bind(this)).catch(function (error) {
 
-            if (e instanceof HistoryDownloadTooManyRequests) {
+            if (error instanceof HistoryDownloadTooManyRequests) {
                 let msg = gettext('Please choose a smaller interval of time!')
                 Toast.error(msg)
                 logger.warn('too many requests while downloading history')
                 this.clearProgress()
             }
             else {
-                logger.errorStack('history load failed', e)
-                this.setError(e)
+                logger.errorStack('history load failed', error)
+                this.setError(error)
             }
 
         }.bind(this))
     }
 
     showHistory(history) {
-        history = decimate(history, MAX_DATA_POINTS_LEN, /* xField = */ 'timestamp', /* yField = */ 'value')
+        history = Utils.decimate(history, MAX_DATA_POINTS_LEN, /* xField = */ 'timestamp', /* yField = */ 'value')
 
         let data
         if (this._isBoolean) {
@@ -151,7 +151,7 @@ class PortHistoryChartPage extends ChartPage {
             return data
         }
 
-        return movingAverage(data, wLength, /* xField = */ 0, /* yField = */ 1)
+        return Utils.movingAverage(data, wLength, /* xField = */ 0, /* yField = */ 1)
     }
 
     makeBottom() {

@@ -290,8 +290,8 @@ function wait(firstQuick = false) {
         syncListenError = null
         listenErrorCount = 0
 
-        /* This code is enclosed in a dedicated try...catch block so that possible errors do not slip into the
-         * following .catch(), thus resulting in a second, parallel wait() chain */
+        /* This code is enclosed in a dedicated try...catch block so that potential errors do not slip into the
+         * following `.catch()`, thus resulting in a second, parallel wait() chain */
         try {
             syncListenCallbacks.forEach(c => PromiseUtils.asap().then(c))
 
@@ -436,6 +436,15 @@ export function stopListening() {
  */
 export function isListening() {
     return Boolean(listeningTime)
+}
+
+/**
+ * Tell if the client is currently connected to the server and listening to events.
+ * @alias qtoggle.api.notifications.isConnected
+ * @returns {Boolean}
+ */
+export function isConnected() {
+    return isListening() && (syncListenError == null)
 }
 
 /**

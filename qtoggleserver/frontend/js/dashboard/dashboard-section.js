@@ -11,6 +11,7 @@ import * as NotificationsAPI      from '$app/api/notifications.js'
 import * as Cache                 from '$app/cache.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
 import {Section}                  from '$app/sections.js'
+import * as Utils                 from '$app/utils.js'
 
 import * as Dashboard   from './dashboard.js'
 import Group            from './group.js'
@@ -73,7 +74,7 @@ class DashboardSection extends Section {
         }).catch(function (error) {
 
             logger.errorStack('loading panels failed', error)
-            Toast.error(error.message)
+            Utils.showToastError(error)
 
             throw error
 
@@ -276,7 +277,7 @@ class DashboardSection extends Section {
         }.bind(this)).catch(function (error) {
 
             logger.errorStack('loading panels failed', error)
-            Toast.error(error.message)
+            Utils.showToastError(error)
 
         })
     }

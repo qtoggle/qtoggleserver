@@ -9,7 +9,6 @@ import {OptionsForm}         from '$qui/forms/common-forms/common-forms.js'
 import StockIcon             from '$qui/icons/stock-icon.js'
 import {ANIMATION_SPIN}      from '$qui/icons/icons.js'
 import {SimpleMessageForm}   from '$qui/messages/common-message-forms/common-message-forms.js'
-import * as Toast            from '$qui/messages/toast.js'
 import {PushButtonTableCell} from '$qui/tables/common-cells/common-cells.js'
 import {SimpleTableCell}     from '$qui/tables/common-cells/common-cells.js'
 import {PageTable}           from '$qui/tables/common-tables/common-tables.js'
@@ -17,6 +16,7 @@ import * as ArrayUtils       from '$qui/utils/array.js'
 
 import * as MasterSlaveAPI from '$app/api/master-slave.js'
 import * as Cache          from '$app/cache.js'
+import * as Utils          from '$app/utils.js'
 
 import * as Devices from './devices.js'
 
@@ -290,11 +290,11 @@ class DiscoveredDevicesTable extends PageTable {
 
             logger.debug(`successfully added device ${name}`)
 
-        }).catch(function (e) {
+        }).catch(function (error) {
 
-            logger.errorStack(`failed to adopt device ${name}`, e)
-            Toast.error(e.toString())
-            throw e
+            logger.errorStack(`failed to adopt device ${name}`, error)
+            Utils.showToastError(error)
+            throw error
 
         })
     }

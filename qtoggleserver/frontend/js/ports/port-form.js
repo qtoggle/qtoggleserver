@@ -24,6 +24,7 @@ import * as APIConstants from '$app/api/constants.js'
 import * as PortsAPI     from '$app/api/ports.js'
 import * as Cache        from '$app/cache.js'
 import AttrdefFormMixin  from '$app/common/attrdef-form-mixin.js'
+import * as Utils        from '$app/utils.js'
 
 import PortHistoryChartPage from './port-history-chart-page.js'
 import * as Ports           from './ports.js'
@@ -566,7 +567,7 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 }).catch(function (error) {
 
                     logger.errorStack(`failed to remove port "${port.id}"`, error)
-                    Toast.error(error.message)
+                    Utils.showToastError(error)
 
                 })
 

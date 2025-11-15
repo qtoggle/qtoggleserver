@@ -5,11 +5,11 @@ import {PageForm}           from '$qui/forms/common-forms/common-forms.js'
 import FormButton           from '$qui/forms/form-button.js'
 import {ConfirmMessageForm} from '$qui/messages/common-message-forms/common-message-forms.js'
 import * as Messages        from '$qui/messages/messages.js'
-import * as Toast           from '$qui/messages/toast.js'
 import * as ObjectUtils     from '$qui/utils/object.js'
 import * as StringUtils     from '$qui/utils/string.js'
 
 import * as PeripheralsAPI from '$app/api/peripherals.js'
+import * as Utils          from '$app/utils.js'
 
 import * as Peripherals from './peripherals.js'
 
@@ -133,7 +133,7 @@ class PeripheralForm extends PageForm {
                 }.bind(this)).catch(function (error) {
 
                     logger.errorStack(`failed to remove peripheral "${this._peripheralId}"`, error)
-                    Toast.error(error.message)
+                    Utils.showToastError(error)
 
                 }.bind(this))
 

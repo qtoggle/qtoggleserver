@@ -1,6 +1,6 @@
 
-import $      from '$qui/lib/jquery.module.js'
-import Logger from '$qui/lib/logger.module.js'
+import $                     from '$qui/lib/jquery.module.js'
+import Logger                from '$qui/lib/logger.module.js'
 
 import ConditionVariable    from '$qui/base/condition-variable.js'
 import {TimeoutError}       from '$qui/base/errors.js'
@@ -9,7 +9,6 @@ import {mix}                from '$qui/base/mixwith.js'
 import StockIcon            from '$qui/icons/stock-icon.js'
 import {ConfirmMessageForm} from '$qui/messages/common-message-forms/common-message-forms.js'
 import * as Messages        from '$qui/messages/messages.js'
-import * as Toast           from '$qui/messages/toast.js'
 import * as Navigation      from '$qui/navigation.js'
 import * as Theme           from '$qui/theme.js'
 import * as CSS             from '$qui/utils/css.js'
@@ -22,6 +21,7 @@ import * as AuthAPI      from '$app/api/auth.js'
 import * as APIConstants from '$app/api/constants.js'
 import * as PortsAPI     from '$app/api/ports.js'
 import * as Cache        from '$app/cache.js'
+import * as Utils        from '$app/utils.js'
 
 import MoveWidgetForm   from './move-widget-form.js'
 import WidgetConfigForm from './widget-config-form.js'
@@ -1212,7 +1212,7 @@ class Widget extends mix().with(ViewMixin) {
                 this.showCurrentValue() /* This will normally revert to previous value */
             }
 
-            Toast.error(error.message)
+            Utils.showToastError(error)
 
         }.bind(this))
     }
@@ -1258,7 +1258,7 @@ class Widget extends mix().with(ViewMixin) {
                 this.showCurrentValue() /* This will normally revert to previous value */
             }
 
-            Toast.error(error.message)
+            Utils.showToastError(error)
 
         }.bind(this))
     }

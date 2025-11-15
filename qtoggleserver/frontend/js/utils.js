@@ -2,7 +2,10 @@
  * @namespace qtoggle.utils
  */
 
+import * as Toast       from '$qui/messages/toast.js'
 import * as ObjectUtils from '$qui/utils/object.js'
+
+import * as NotificationsAPI from '$app/api/notifications.js'
 
 
 /**
@@ -270,4 +273,15 @@ export function movingAverage(data, length, xField, yField) {
     }
 
     return filteredHistory
+}
+
+/**
+ * Show a toast error message according to the given error object.
+ * @param {Error} error the error to show as toast message
+ */
+export function showToastError(error) {
+    /* Don't show a toast message if disconnected, since the user already sees the "connecting..." dialog */
+    if (NotificationsAPI.isConnected()) {
+        Toast.error(error.message)
+    }
 }

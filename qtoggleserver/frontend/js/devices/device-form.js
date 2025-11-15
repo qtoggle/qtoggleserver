@@ -15,7 +15,6 @@ import {ValidationError}    from '$qui/forms/forms.js'
 import StockIcon            from '$qui/icons/stock-icon.js'
 import {ConfirmMessageForm} from '$qui/messages/common-message-forms/common-message-forms.js'
 import * as Messages        from '$qui/messages/messages.js'
-import * as Toast           from '$qui/messages/toast.js'
 import * as Navigation      from '$qui/navigation.js'
 import * as Theme           from '$qui/theme.js'
 import * as DateUtils       from '$qui/utils/date.js'
@@ -40,6 +39,7 @@ import RebootDeviceMixin       from '$app/common/reboot-device-mixin.js'
 import RestoreForm             from '$app/common/restore-form.js'
 import UpdateFirmwareForm      from '$app/common/update-firmware-form.js'
 import WaitDeviceMixin         from '$app/common/wait-device-mixin.js'
+import * as Utils              from '$app/utils.js'
 
 import * as Devices from './devices.js'
 
@@ -603,7 +603,7 @@ class DeviceForm extends mix(PageForm).with(
                 }).catch(function (error) {
 
                     logger.errorStack(`failed to remove device "${device.name}" at url ${deviceURL}`, error)
-                    Toast.error(error.message)
+                    Utils.showToastError(error)
 
                 })
 
