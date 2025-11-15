@@ -64,7 +64,7 @@ export class APIError extends Error {
      */
     static fromHTTPResponse(data, status, msg) {
         let errorCode = data['error'] || msg
-        let pretty = errorCode
+        let pretty = null
         let params = ObjectUtils.copy(data, /* deep = */ true)
         delete params['error']
 
@@ -97,11 +97,11 @@ export class APIError extends Error {
                     break
 
                 case AuthAPI.ACCESS_LEVEL_NORMAL:
-                    pretty = gettext('Normal access level required.')
+                    pretty = gettext('Normal access level or higher required.')
                     break
 
                 case AuthAPI.ACCESS_LEVEL_VIEWONLY:
-                    pretty = gettext('View-only access level required.')
+                    pretty = gettext('View-only access level or higher required.')
                     break
             }
         }
@@ -111,6 +111,7 @@ export class APIError extends Error {
         }
         else if (status === 0) {
             if (msg === 'timeout') {
+                errorCode = 'timeout'
                 pretty = gettext('Timeout waiting for a response from the server.')
             }
             else { /* Assuming disconnected */
@@ -129,6 +130,10 @@ export class APIError extends Error {
             pretty: pretty,
             params: params
         })
+    }
+
+    toString() {
+        return this.pretty
     }
 
 }
