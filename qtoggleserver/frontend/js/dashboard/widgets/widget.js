@@ -1179,14 +1179,14 @@ class Widget extends mix().with(ViewMixin) {
             this._valueChangeWaitPortId = null
         }
 
+        this._whenValueChange = new ConditionVariable()
+        this._valueChangeWaitPortId = portId
+
         return PortsAPI.patchPortValue(portId, value).then(function () {
 
             if (value === prevValue || timeout === 0) {
                 return /* Value was already set or we're not interested in waiting */
             }
-
-            this._valueChangeWaitPortId = portId
-            this._whenValueChange = new ConditionVariable()
 
             setTimeout(function () {
                 /* Cancel waiting after timeout */
