@@ -56,7 +56,7 @@ function initConfig() {
 function handleAccessLevelChange(oldLevel, newLevel) {
     /* Whenever access level changes, reload all required data */
     if (newLevel > AuthAPI.ACCESS_LEVEL_NONE) {
-        Cache.load(newLevel, /* showModalProgress = */ true)
+        Cache.load(newLevel, /* showModalProgress = */ true, /* useCache = */ true)
         /* There's no need for load().catch() since it retries indefinitely until success */
     }
 
@@ -178,7 +178,7 @@ function main() {
                     logger.info('application became active, (re)starting listening mechanism')
 
                     /* (Re)start the listening mechanism while triggering a full cache reload. */
-                    Cache.setReloadNeeded(/* reloadNow = */ true)
+                    Cache.reload(/* now = */ true)
                 }
             }
             else {

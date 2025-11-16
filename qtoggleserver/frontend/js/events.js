@@ -494,7 +494,7 @@ export function init() {
 
                 logger.info('reconnected to server')
 
-                Cache.setReloadNeeded()
+                Cache.reload()
             }
         }
 

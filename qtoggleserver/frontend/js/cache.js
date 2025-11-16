@@ -9,6 +9,7 @@ import {AssertionError}  from '$qui/base/errors.js'
 import {gettext}         from '$qui/base/i18n.js'
 import Config            from '$qui/config.js'
 import * as Toast        from '$qui/messages/toast.js'
+import Debouncer         from '$qui/utils/debouncer.js'
 import {asap}            from '$qui/utils/misc.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
@@ -40,6 +41,9 @@ const DEVICE_POLLED_ATTRIBUTES = [
     'battery_level'
 ]
 
+const STORAGE_KEY_PREFIX = 'cache'
+const STORAGE_SET_DEBOUNCE_DELAY = 5000
+
 const logger = Logger.get('qtoggle.cache')
 
 
@@ -64,6 +68,20 @@ let reloadNeeded = false
 
 /* The name of a device to be continuously polled */
 let polledDeviceName = null
+
+/* Debouncers for cache setters */
+const slaveDevicesSetLocalStorageCacheDebouncer = new Debouncer((slaveDevices) => {
+    logger.debug('saving slave devices to cache')
+    setLocalStorageCache('slave-devices', slaveDevices)
+}, /* delay = */ STORAGE_SET_DEBOUNCE_DELAY)
+const allPortsSetLocalStorageCacheDebouncer = new Debouncer((allPorts) => {
+    logger.debug('saving all ports to cache')
+    setLocalStorageCache('all-ports', allPorts)
+}, /* delay = */ STORAGE_SET_DEBOUNCE_DELAY)
+const mainDeviceSetLocalStorageCacheDebouncer = new Debouncer((mainDevice) => {
+    logger.debug('saving main device to cache')
+    setLocalStorageCache('main-device', mainDevice)
+}, /* delay = */ STORAGE_SET_DEBOUNCE_DELAY)
 
 
 /* Some ready condition variables */
@@ -115,29 +133,54 @@ export const whenProvisioningConfigsCacheReady = new ConditionVariable()
  */
 export let whenCacheReady = new ConditionVariable()
 
+function makeLocalStorageCacheKey(key) {
+    return `${STORAGE_KEY_PREFIX}.${key}`
+}
+
+/**
+ * Retrieve a value from local storage cache.
+ * @param {String} key
+ * @return the cached value, or `null` if not found in cache
+ */
+export function getLocalStorageCache(key) {
+    let value = window.localStorage.getItem(makeLocalStorageCacheKey(key))
+    if (value == null) {
+        return null
+    }
+
+    return JSON.parse(value)
+}
+
+/**
+ * Store a value in local storage cache.
+ * @param {String} key
+ * @param value
+ */
+export function setLocalStorageCache(key, value) {
+    window.localStorage.setItem(makeLocalStorageCacheKey(key), JSON.stringify(value))
+}
+
 
 /**
  * @alias qtoggle.cache.loadDevice
  * @returns {Promise}
+ * @param {Boolean} useCache
  */
-export function loadDevice() {
+export function loadDevice(useCache) {
     logger.debug('loading main device')
 
-    return DevicesAPI.getDevice().then(function (attrs) {
+    let loadPromise = DevicesAPI.getDevice().then(function (attrs) {
 
         if (mainDevice == null) {
             mainDevice = attrs
-
+            setLocalStorageCache('main-device', attrs)
             whenDeviceCacheReady.fulfill()
         }
         else {
-            if (!ObjectUtils.deepEquals(mainDevice, attrs)) {
-                logger.debug('main device has been updated since last server connection')
-                NotificationsAPI.fakeServerEvent('device-update', attrs)
-            }
+            NotificationsAPI.fakeServerEvent('device-update', attrs)
         }
 
-        logger.debug('loaded main device')
+        logger.debug('loaded main device from server')
 
     }).catch(function (error) {
 
@@ -145,19 +188,34 @@ export function loadDevice() {
         throw error
 
     })
+
+    if (useCache && mainDevice == null) {
+        let cachedAttrs = getLocalStorageCache('main-device')
+        if (cachedAttrs != null) {
+            mainDevice = cachedAttrs
+            whenDeviceCacheReady.fulfill()
+            logger.debug('loaded main device from cache')
+
+            return Promise.resolve()
+        }
+    }
+
+    return loadPromise
 }
 
 /**
  * @alias qtoggle.cache.loadPorts
  * @returns {Promise}
+ * @param {Boolean} useCache
  */
-export function loadPorts() {
+export function loadPorts(useCache) {
     logger.debug('loading ports')
 
-    return PortsAPI.getPorts().then(function (ports) {
+    let loadPromise = PortsAPI.getPorts().then(function (ports) {
 
         if (allPorts == null) {
             allPorts = ObjectUtils.fromEntries(ports.map(p => [p.id, p]))
+            setLocalStorageCache('all-ports', allPorts)
             whenPortsCacheReady.fulfill()
         }
         else {
@@ -211,7 +269,7 @@ export function loadPorts() {
             })
         }
 
-        logger.debug(`loaded ${ports.length} ports`)
+        logger.debug(`loaded ${ports.length} ports from server`)
 
     }).catch(function (error) {
 
@@ -220,19 +278,34 @@ export function loadPorts() {
         throw error
 
     })
+
+    if (useCache && allPorts == null) {
+        let cachedPorts = getLocalStorageCache('all-ports')
+        if (cachedPorts != null) {
+            allPorts = cachedPorts
+            whenPortsCacheReady.fulfill()
+            logger.debug(`loaded ${Object.keys(cachedPorts).length} ports from cache`)
+
+            return Promise.resolve()
+        }
+    }
+
+    return loadPromise
 }
 
 /**
  * @alias qtoggle.cache.loadSlaveDevices
  * @returns {Promise}
+ * @param {Boolean} useCache
  */
-export function loadSlaveDevices() {
+export function loadSlaveDevices(useCache) {
     logger.debug('loading slave devices')
 
-    return MasterSlaveAPI.getSlaveDevices().then(function (devices) {
+    let loadPromise = MasterSlaveAPI.getSlaveDevices().then(function (devices) {
 
         if (slaveDevices == null) {
             slaveDevices = ObjectUtils.fromEntries(devices.map(d => [d.name, d]))
+            setLocalStorageCache('slave-devices', slaveDevices)
             whenSlaveDevicesCacheReady.fulfill()
         }
         else {
@@ -265,7 +338,7 @@ export function loadSlaveDevices() {
             })
         }
 
-        logger.debug(`loaded ${devices.length} slave devices`)
+        logger.debug(`loaded ${devices.length} slave devices from server`)
 
     }).catch(function (error) {
 
@@ -273,23 +346,38 @@ export function loadSlaveDevices() {
         throw error
 
     })
+
+    if (useCache && slaveDevices == null) {
+        let cachedSlaveDevices = getLocalStorageCache('slave-devices')
+        if (cachedSlaveDevices != null) {
+            slaveDevices = cachedSlaveDevices
+            whenSlaveDevicesCacheReady.fulfill()
+            logger.debug(`loaded ${Object.keys(cachedSlaveDevices).length} slave devices from cache`)
+
+            return Promise.resolve()
+        }
+    }
+
+    return loadPromise
 }
 
 /**
  * @alias qtoggle.cache.loadPrefs
  * @returns {Promise}
+ * @param {Boolean} useCache
  */
-export function loadPrefs() {
+export function loadPrefs(useCache) {
     logger.debug('loading prefs')
 
-    return PrefsAPI.getPrefs().then(function (p) {
+    let loadPromise = PrefsAPI.getPrefs().then(function (p) {
 
         if (prefs == null) {
             whenPrefsCacheReady.fulfill()
         }
         prefs = p
+        setLocalStorageCache('prefs', prefs)
 
-        logger.debug('loaded prefs')
+        logger.debug('loaded prefs from server')
 
     }).catch(function (error) {
 
@@ -297,16 +385,30 @@ export function loadPrefs() {
         throw error
 
     })
+
+    if (useCache && prefs == null) {
+        let cachedPrefs = getLocalStorageCache('prefs')
+        if (cachedPrefs != null) {
+            prefs = cachedPrefs
+            whenPrefsCacheReady.fulfill()
+            logger.debug(`loaded prefs from cache`)
+
+            return Promise.resolve()
+        }
+    }
+
+    return loadPromise
 }
 
 /**
  * @alias qtoggle.cache.loadProvisioningConfigs
  * @returns {Promise}
+ * @param {Boolean} useCache
  */
-export function loadProvisioningConfigs() {
+export function loadProvisioningConfigs(useCache) {
     logger.debug('loading provisioning configs')
 
-    return ProvisioningAPI.getProvisioningConfigs().catch(function (error) {
+    let loadPromise = ProvisioningAPI.getProvisioningConfigs().catch(function (error) {
 
         /* Ignore errors when fetching provisioning configs - they aren't important for the app's well functioning */
 
@@ -319,19 +421,34 @@ export function loadProvisioningConfigs() {
             whenProvisioningConfigsCacheReady.fulfill()
         }
         provisioningConfigs = p
+        setLocalStorageCache('provisioning-configs', provisioningConfigs)
 
-        logger.debug('loaded provisioning configs')
+        logger.debug('loaded provisioning configs from server')
 
     })
+
+    if (useCache && provisioningConfigs == null) {
+        let cachedProvisioningConfigs = getLocalStorageCache('provisioning-configs')
+        if (cachedProvisioningConfigs != null) {
+            provisioningConfigs = cachedProvisioningConfigs
+            whenProvisioningConfigsCacheReady.fulfill()
+            logger.debug(`loaded provisioning configs from cache`)
+
+            return Promise.resolve()
+        }
+    }
+
+    return loadPromise
 }
 
 /**
  * @alias qtoggle.cache.load
  * @param {Number} accessLevel
  * @param {Boolean} showModalProgress
+ * @param {Boolean} useCache
  * @returns {Promise}
  */
-export function load(accessLevel, showModalProgress) {
+export function load(accessLevel, showModalProgress, useCache) {
     let loadPromises = []
     let progressMessage = null
     if (showModalProgress) {
@@ -339,23 +456,23 @@ export function load(accessLevel, showModalProgress) {
     }
 
     if (accessLevel >= AuthAPI.ACCESS_LEVEL_ADMIN) {
-        loadPromises.push(loadDevice())
+        loadPromises.push(loadDevice(useCache))
     }
 
     if (accessLevel >= AuthAPI.ACCESS_LEVEL_VIEWONLY) {
-        loadPromises.push(loadPorts())
+        loadPromises.push(loadPorts(useCache))
     }
 
     if (accessLevel >= AuthAPI.ACCESS_LEVEL_ADMIN && Config.slavesEnabled) {
-        loadPromises.push(loadSlaveDevices())
+        loadPromises.push(loadSlaveDevices(useCache))
     }
 
     if (accessLevel >= AuthAPI.ACCESS_LEVEL_VIEWONLY) {
-        loadPromises.push(loadPrefs())
+        loadPromises.push(loadPrefs(useCache))
     }
 
     if (accessLevel >= AuthAPI.ACCESS_LEVEL_ADMIN) {
-        loadPromises.push(loadProvisioningConfigs())
+        loadPromises.push(loadProvisioningConfigs(useCache))
     }
 
     let loadPromise = Promise.all(loadPromises)
@@ -380,7 +497,7 @@ export function load(accessLevel, showModalProgress) {
         }
 
         return promise.then(function () {
-            return load(accessLevel, showModalProgress)
+            return load(accessLevel, showModalProgress, useCache)
         })
 
     })
@@ -416,6 +533,7 @@ export function updateFromEvent(event) {
         case 'slave-device-update': {
             if (event.params.name in slaveDevices) {
                 slaveDevices[event.params.name] = ObjectUtils.copy(event.params, /* deep = */ true)
+                slaveDevicesSetLocalStorageCacheDebouncer.call(slaveDevices)
             }
             else {
                 logger.warn(`received slave-device-update event for unknown device "${event.params.name}"`)
@@ -427,6 +545,7 @@ export function updateFromEvent(event) {
         case 'slave-device-polling-update': {
             if (event.params.name in slaveDevices) {
                 Object.assign(slaveDevices[event.params.name].attrs, event.params.attrs)
+                slaveDevicesSetLocalStorageCacheDebouncer.call(slaveDevices)
             }
             else {
                 logger.warn(`received slave-device-polling-update event for unknown device "${event.params.name}"`)
@@ -441,6 +560,7 @@ export function updateFromEvent(event) {
             }
 
             slaveDevices[event.params.name] = ObjectUtils.copy(event.params, /* deep = */ true)
+            slaveDevicesSetLocalStorageCacheDebouncer.call(slaveDevices)
 
             break
         }
@@ -449,6 +569,7 @@ export function updateFromEvent(event) {
             device = slaveDevices[event.params.name]
             if (device) {
                 delete slaveDevices[event.params.name]
+                slaveDevicesSetLocalStorageCacheDebouncer.call(slaveDevices)
             }
             else {
                 logger.warn(`received slave-device-remove event for unknown device "${event.params.name}"`)
@@ -468,6 +589,7 @@ export function updateFromEvent(event) {
                 if (port.value != null) {
                     port.last_sync = Math.round(new Date().getTime() / 1000)
                 }
+                allPortsSetLocalStorageCacheDebouncer.call(allPorts)
             }
             else {
                 logger.warn(`received value-change event for unknown port "${event.params.id}"`)
@@ -482,6 +604,7 @@ export function updateFromEvent(event) {
             }
 
             allPorts[event.params.id] = ObjectUtils.copy(event.params, /* deep = */ true)
+            allPortsSetLocalStorageCacheDebouncer.call(allPorts)
 
             break
         }
@@ -492,6 +615,7 @@ export function updateFromEvent(event) {
             }
 
             allPorts[event.params.id] = ObjectUtils.copy(event.params, /* deep = */ true)
+            allPortsSetLocalStorageCacheDebouncer.call(allPorts)
 
             break
         }
@@ -500,6 +624,7 @@ export function updateFromEvent(event) {
             port = allPorts[event.params.id]
             if (port) {
                 delete allPorts[event.params.id]
+                allPortsSetLocalStorageCacheDebouncer.call(allPorts)
             }
             else {
                 logger.warn(`received port-remove event for unknown port "${event.params.id}"`)
@@ -510,18 +635,20 @@ export function updateFromEvent(event) {
 
         case 'device-update': {
             mainDevice = event.params
+            mainDeviceSetLocalStorageCacheDebouncer.call(mainDevice)
 
             break
         }
 
         case 'full-update': {
-            setReloadNeeded(/* reloadNow = */ true)
+            reload(/* now = */ true)
 
             break
         }
 
         case 'device-polling-update': {
             Object.assign(mainDevice, event.params)
+            mainDeviceSetLocalStorageCacheDebouncer.call(mainDevice)
 
             break
         }
@@ -764,14 +891,14 @@ export function getProvisioningConfigs() {
 
 /**
  * Set the *reload needed* flag, determining a {@link qtoggle.cache.load} upon next listen response.
- * @alias qtoggle.cache.setReloadNeeded
- * @param {Boolean} [reloadNow] set to `true` to reload asap instead of waiting till the next listen request
+ * @alias qtoggle.cache.reload
+ * @param {Boolean} [now] set to `true` to reload asap instead of waiting till the next listen request
  */
-export function setReloadNeeded(reloadNow = false) {
+export function reload(now = false) {
     logger.debug('cache will be reloaded asap')
     reloadNeeded = true
 
-    if (reloadNow) {
+    if (now) {
         if (NotificationsAPI.isListening()) {
             NotificationsAPI.stopListening()
         }
@@ -880,7 +1007,7 @@ export function init() {
         if (!error) { /* Successful listen response */
             if (reloadNeeded) {
                 reloadNeeded = false
-                load(AuthAPI.getCurrentAccessLevel(), /* showModalProgress = */ false)
+                load(AuthAPI.getCurrentAccessLevel(), /* showModalProgress = */ false, /* useCache = */ false)
             }
         }
 

@@ -6,6 +6,7 @@ import * as ObjectUtils  from '$qui/utils/object.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
 
 import * as AuthAPI               from '$app/api/auth.js'
+import * as BaseAPI               from '$app/api/base.js'
 import * as DashboardAPI          from '$app/api/dashboard.js'
 import * as NotificationsAPI      from '$app/api/notifications.js'
 import * as Cache                 from '$app/cache.js'
@@ -50,9 +51,7 @@ class DashboardSection extends Section {
     preload() {
         return Cache.whenCacheReady.then(function () {
 
-            return this.whenPanelsLoaded().then(function (panels) {
-                this._panels = panels
-            }.bind(this))
+            return this.whenPanelsLoaded()
 
         }.bind(this))
     }
@@ -63,15 +62,18 @@ class DashboardSection extends Section {
 
     _loadPanels() {
         logger.debug('loading panels')
-        let progressMessage = getGlobalProgressMessage().show()
-        progressMessage.setMessage(gettext('Loading panels...'))
 
-        return DashboardAPI.getDashboardPanels().then(function (panels) {
+        let progressMessage = null
+        let loadPromise = DashboardAPI.getDashboardPanels().then(function (panels) {
 
             logger.debug('panels loaded')
-            return panels
+            Cache.setLocalStorageCache('dashboard-panels', panels)
 
-        }).catch(function (error) {
+            if (this._panels == null || !ObjectUtils.deepEquals(panels, this._panels)) {
+                NotificationsAPI.fakeServerEvent('dashboard-update', {panels}, BaseAPI.getSessionId())
+            }
+
+        }.bind(this)).catch(function (error) {
 
             logger.errorStack('loading panels failed', error)
             Utils.showToastError(error)
@@ -80,9 +82,24 @@ class DashboardSection extends Section {
 
         }).finally(function () {
 
-            progressMessage.hide()
+            if (progressMessage) {
+                progressMessage.hide()
+            }
 
         })
+
+        if (this._panels == null) {
+            let cachedPanels = Cache.getLocalStorageCache('dashboard-panels')
+            if (cachedPanels != null) {
+                logger.debug('loaded panels from cache')
+                this._panels = cachedPanels
+                return Promise.resolve()
+            }
+        }
+
+        progressMessage = getGlobalProgressMessage().show()
+        progressMessage.setMessage(gettext('Loading panels...'))
+        return loadPromise
     }
 
     /**
@@ -231,8 +248,9 @@ class DashboardSection extends Section {
         let currentPanel = Dashboard.getCurrentPanel()
 
         this._panels = panels
+        Cache.setLocalStorageCache('dashboard-panels', panels)
 
-        logger.info('another session has edited the dashboard')
+        logger.info('the dashboard has been changed on the server')
 
         /* Exit edit mode */
         if (!byCurrentSession && currentPanel && currentPanel.isEditEnabled()) {
@@ -242,7 +260,7 @@ class DashboardSection extends Section {
         /* Warn user of external edit */
         if (!byCurrentSession) {
             if (this.isCurrent()) {
-                let msg = gettext('The dashboard is currently being edited in another session.')
+                let msg = gettext('The dashboard has been changed.')
                 Toast.warning(msg)
             }
 
