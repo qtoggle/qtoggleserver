@@ -69,8 +69,11 @@ class DashboardSection extends Section {
             logger.debug('panels loaded')
             Cache.setLocalStorageCache('dashboard-panels', panels)
 
-            if (this._panels == null || !ObjectUtils.deepEquals(panels, this._panels)) {
-                NotificationsAPI.fakeServerEvent('dashboard-update', {panels}, BaseAPI.getSessionId())
+            if (this._panels == null) {
+                this._panels = panels
+            }
+            else if (!ObjectUtils.deepEquals(panels, this._panels)) {
+                NotificationsAPI.fakeServerEvent('dashboard-update', {panels, load: true})
             }
 
         }.bind(this)).catch(function (error) {
@@ -168,7 +171,17 @@ class DashboardSection extends Section {
             }
 
             case 'dashboard-update': {
-                this._handleDashboardUpdate(event.params['panels'], event.byCurrentSession())
+                let source
+                if (event.byCurrentSession()) {
+                    source = 'current-session'
+                }
+                else if (event.params['load']) {
+                    source = 'load'
+                }
+                else {
+                    source = 'server'
+                }
+                this._handleDashboardUpdate(event.params['panels'], source)
 
                 break
             }
@@ -244,7 +257,7 @@ class DashboardSection extends Section {
         }.bind(this))
     }
 
-    _handleDashboardUpdate(panels, byCurrentSession) {
+    _handleDashboardUpdate(panels, source) {
         let currentPanel = Dashboard.getCurrentPanel()
 
         this._panels = panels
@@ -253,13 +266,13 @@ class DashboardSection extends Section {
         logger.info('the dashboard has been updated on the server')
 
         /* Exit edit mode */
-        if (!byCurrentSession && currentPanel && currentPanel.isEditEnabled()) {
+        if (source !== 'current-session' && currentPanel && currentPanel.isEditEnabled()) {
             currentPanel.disableEditing()
         }
 
         /* Warn user of external edit */
-        if (!byCurrentSession) {
-            if (this.isCurrent()) {
+        if (source !== 'current-session') {
+            if (this.isCurrent() && source !== 'load') {
                 let msg = gettext('The dashboard has been changed.')
                 Toast.warning(msg)
             }
