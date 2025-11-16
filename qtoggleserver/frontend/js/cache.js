@@ -43,6 +43,7 @@ const DEVICE_POLLED_ATTRIBUTES = [
 
 const STORAGE_KEY_PREFIX = 'cache'
 const STORAGE_SET_DEBOUNCE_DELAY = 5000
+const SAVE_PREFS_DEBOUNCE_DELAY = 1000
 
 const logger = Logger.get('qtoggle.cache')
 
@@ -61,7 +62,10 @@ let provisioningConfigs = null
 
 /* User preferences */
 let prefs = null
-let pendingSavePrefsTimeoutHandle = null
+const savePrefsDebouncer = new Debouncer(() => {
+    logger.debug('saving prefs')
+    PrefsAPI.putPrefs(prefs)
+}, /* delay = */ SAVE_PREFS_DEBOUNCE_DELAY)
 
 /* Indicates that cache needs a reload asap */
 let reloadNeeded = false
@@ -862,18 +866,8 @@ export function setPrefs(path, value) {
         setPrefsRec(prefs, path.split('.'))
     }
 
-    if (pendingSavePrefsTimeoutHandle) {
-        clearTimeout(pendingSavePrefsTimeoutHandle)
-    }
-
-    pendingSavePrefsTimeoutHandle = asap(function () {
-
-        logger.debug('saving prefs')
-        pendingSavePrefsTimeoutHandle = null
-
-        PrefsAPI.putPrefs(prefs)
-
-    })
+    savePrefsDebouncer.call()
+    setLocalStorageCache('prefs', prefs)
 }
 
 /**
