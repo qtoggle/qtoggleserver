@@ -250,7 +250,7 @@ class DashboardSection extends Section {
         this._panels = panels
         Cache.setLocalStorageCache('dashboard-panels', panels)
 
-        logger.info('the dashboard has been changed on the server')
+        logger.info('the dashboard has been updated on the server')
 
         /* Exit edit mode */
         if (!byCurrentSession && currentPanel && currentPanel.isEditEnabled()) {

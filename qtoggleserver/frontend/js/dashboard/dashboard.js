@@ -5,6 +5,7 @@
 import Logger from '$qui/lib/logger.module.js'
 
 import StockIcon from '$qui/icons/stock-icon.js'
+import Debouncer from '$qui/utils/debouncer.js'
 
 import * as DashboardAPI from '$app/api/dashboard.js'
 
@@ -36,7 +37,12 @@ export const GROUP_ICON = new StockIcon({name: 'panel-group', stockName: 'qtoggl
  */
 export const logger = Logger.get('qtoggle.dashboard')
 
-let pendingSavePanelsTimeoutHandle = null
+const savePanelsDebouncer = new Debouncer(() => {
+    logger.debug('saving panels')
+    let panels = rootGroup.getChildren().map(p => p.toJSON())
+    DashboardAPI.putDashboardPanels(panels)
+}, PANELS_SAVE_INTERVAL)
+
 let rootGroup = null
 let currentPanel = null
 
@@ -45,19 +51,7 @@ let currentPanel = null
  * @alias qtoggle.dashboard.savePanels
  */
 export function savePanels() {
-    if (pendingSavePanelsTimeoutHandle) {
-        clearTimeout(pendingSavePanelsTimeoutHandle)
-    }
-
-    pendingSavePanelsTimeoutHandle = setTimeout(function () {
-
-        logger.debug('saving panels')
-        pendingSavePanelsTimeoutHandle = null
-        let panels = rootGroup.getChildren().map(p => p.toJSON())
-
-        DashboardAPI.putDashboardPanels(panels)
-
-    }, PANELS_SAVE_INTERVAL)
+    savePanelsDebouncer.call()
 }
 
 /**
@@ -65,7 +59,7 @@ export function savePanels() {
  * @returns {Boolean}
  */
 export function hasPendingSave() {
-    return pendingSavePanelsTimeoutHandle != null
+    return savePanelsDebouncer.isPending()
 }
 
 /**
