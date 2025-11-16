@@ -4,10 +4,12 @@ import {CheckField}        from '$qui/forms/common-fields/common-fields.js'
 import {OptionsForm}       from '$qui/forms/common-forms/common-forms.js'
 import {IconLabelListItem} from '$qui/lists/common-items/common-items.js'
 import {PageList}          from '$qui/lists/common-lists/common-lists.js'
+import Debouncer           from '$qui/utils/debouncer.js'
 import * as ArrayUtils     from '$qui/utils/array.js'
 
-import * as Cache from '$app/cache.js'
-import * as Utils from '$app/utils.js'
+import * as Cache     from '$app/cache.js'
+import * as Constants from '$app/constants.js'
+import * as Utils     from '$app/utils.js'
 
 import * as Ports from './ports.js'
 import PortsList  from './ports-list.js'
@@ -59,7 +61,7 @@ class DevicesList extends PageList {
         })
 
         this.portsList = null
-        this._updateUIASAPHandle = null
+        this._updateUIDebouncer = new Debouncer(() => this.updateUI(), Constants.COMMON_DEBOUNCE_DELAY)
     }
 
     init() {
@@ -70,16 +72,7 @@ class DevicesList extends PageList {
      * Call updateUI asap, deduplicating calls.
      */
     updateUIASAP() {
-        if (this._updateUIASAPHandle != null) {
-            clearTimeout(this._updateUIASAPHandle)
-        }
-
-        this._updateUIASAPHandle = asap(function () {
-
-            this._updateUIASAPHandle = null
-            this.updateUI()
-
-        }.bind(this))
+        this._updateUIDebouncer.call()
     }
 
     /**

@@ -7,10 +7,12 @@ import {OptionsForm}       from '$qui/forms/common-forms/common-forms.js'
 import {IconLabelListItem} from '$qui/lists/common-items/common-items.js'
 import {PageList}          from '$qui/lists/common-lists/common-lists.js'
 import * as ArrayUtils     from '$qui/utils/array.js'
+import Debouncer           from '$qui/utils/debouncer.js'
 import {asap}              from '$qui/utils/misc.js'
 
-import * as Cache from '$app/cache.js'
-import * as Utils from '$app/utils.js'
+import * as Cache     from '$app/cache.js'
+import * as Constants from '$app/constants.js'
+import * as Utils     from '$app/utils.js'
 
 import AddPortForm from './add-port-form.js'
 import PortForm    from './port-form.js'
@@ -104,7 +106,7 @@ class PortsList extends PageList {
         }
 
         this._deviceName = deviceName
-        this._updateUIASAPHandle = null
+        this._updateUIDebouncer = new Debouncer(() => this.updateUI(), Constants.COMMON_DEBOUNCE_DELAY)
         this.portForm = null
 
         this.setTitle(title)
@@ -118,16 +120,7 @@ class PortsList extends PageList {
      * Call updateUI asap, deduplicating calls.
      */
     updateUIASAP() {
-        if (this._updateUIASAPHandle != null) {
-            clearTimeout(this._updateUIASAPHandle)
-        }
-
-        this._updateUIASAPHandle = asap(function () {
-
-            this._updateUIASAPHandle = null
-            this.updateUI()
-
-        }.bind(this))
+        this._updateUIDebouncer.call()
     }
 
     /**

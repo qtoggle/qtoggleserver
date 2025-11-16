@@ -1,15 +1,15 @@
 
 import {gettext}         from '$qui/base/i18n.js'
 import * as Toast        from '$qui/messages/toast.js'
-import {asap}            from '$qui/utils/misc.js'
+import Debouncer         from '$qui/utils/debouncer.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
 
 import * as AuthAPI               from '$app/api/auth.js'
-import * as BaseAPI               from '$app/api/base.js'
 import * as DashboardAPI          from '$app/api/dashboard.js'
 import * as NotificationsAPI      from '$app/api/notifications.js'
 import * as Cache                 from '$app/cache.js'
+import * as Constants             from '$app/constants.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
 import {Section}                  from '$app/sections.js'
 import * as Utils                 from '$app/utils.js'
@@ -45,7 +45,12 @@ class DashboardSection extends Section {
 
         this._whenPanelsLoaded = null
         this._panels = null
-        this._updateWidgetConfigPortsASAPHandle = null
+        this._updateWidgetConfigPortsDebouncer = new Debouncer(() => {
+            let currentPage = this.getCurrentPage()
+            if (currentPage instanceof WidgetConfigForm) {
+                currentPage.updatePortFields()
+            }
+        }, Constants.COMMON_DEBOUNCE_DELAY)
     }
 
     preload() {
@@ -241,20 +246,7 @@ class DashboardSection extends Section {
     }
 
     _updateWidgetConfigPorts() {
-        if (this._updateWidgetConfigPortsASAPHandle != null) {
-            clearTimeout(this._updateWidgetConfigPortsASAPHandle)
-        }
-
-        this._updateWidgetConfigPortsASAPHandle = asap(function () {
-
-            this._updateWidgetConfigPortsASAPHandle = null
-
-            let currentPage = this.getCurrentPage()
-            if (currentPage instanceof WidgetConfigForm) {
-                currentPage.updatePortFields()
-            }
-
-        }.bind(this))
+        this._updateWidgetConfigPortsDebouncer.call()
     }
 
     _handleDashboardUpdate(panels, source) {

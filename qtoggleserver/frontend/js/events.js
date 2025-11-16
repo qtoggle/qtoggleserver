@@ -9,6 +9,7 @@ import * as Status      from '$qui/main-ui/status.js'
 import * as Messages    from '$qui/messages/messages.js'
 import * as Toast       from '$qui/messages/toast.js'
 import * as ArrayUtils  from '$qui/utils/array.js'
+import Debouncer        from '$qui/utils/debouncer.js'
 import {asap}           from '$qui/utils/misc.js'
 import * as ObjectUtils from '$qui/utils/object.js'
 import * as StringUtils from '$qui/utils/string.js'
@@ -17,6 +18,7 @@ import * as BaseAPI               from '$app/api/base.js'
 import * as NotificationsAPI      from '$app/api/notifications.js'
 import * as Cache                 from '$app/cache.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
+import * as Constants             from '$app/constants.js'
 import * as Sections              from '$app/sections.js'
 
 
@@ -38,6 +40,8 @@ let syncListenError = null
 
 /* Progress message for recent listen error */
 let listenErrorProgressMessage = null
+
+let toastMessageDebouncer = new Debouncer((params) => Toast.show(params), Constants.COMMON_DEBOUNCE_DELAY)
 
 
 /* This function is given all events received with a single request, so that it has a general overview on all generated
@@ -387,9 +391,9 @@ function showMessageFromEvents(events) {
         }
     })
 
-    /* Actually show the message */
+    /* Show the message, if any */
     if (message) {
-        Toast.show({message: message, type: messageType})
+        toastMessageDebouncer.call({message: message, type: messageType})
     }
 }
 

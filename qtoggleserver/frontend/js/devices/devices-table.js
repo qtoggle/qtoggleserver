@@ -6,12 +6,14 @@ import {IconLabelTableCell} from '$qui/tables/common-cells/common-cells.js'
 import {SimpleTableCell}    from '$qui/tables/common-cells/common-cells.js'
 import {PageTable}          from '$qui/tables/common-tables/common-tables.js'
 import * as Tables          from '$qui/tables/tables.js'
+import Debouncer            from '$qui/utils/debouncer.js'
 import * as ArrayUtils      from '$qui/utils/array.js'
 import {asap}               from '$qui/utils/misc.js'
 import * as Window          from '$qui/window.js'
 
-import * as Cache from '$app/cache.js'
-import * as Utils from '$app/utils.js'
+import * as Cache     from '$app/cache.js'
+import * as Constants from '$app/constants.js'
+import * as Utils     from '$app/utils.js'
 
 import AddDeviceForm          from './add-device-form.js'
 import DeviceForm             from './device-form.js'
@@ -95,7 +97,7 @@ class DevicesTable extends PageTable {
         })
 
         this.deviceForm = null
-        this._updateUIASAPHandle = null
+        this._updateUIDebouncer = new Debouncer(() => this.updateUI(this), Constants.COMMON_DEBOUNCE_DELAY)
     }
 
     init() {
@@ -116,16 +118,7 @@ class DevicesTable extends PageTable {
      * Call updateUI asap, deduplicating calls.
      */
     updateUIASAP() {
-        if (this._updateUIASAPHandle != null) {
-            clearTimeout(this._updateUIASAPHandle)
-        }
-
-        this._updateUIASAPHandle = asap(function () {
-
-            this._updateUIASAPHandle = null
-            this.updateUI()
-
-        }.bind(this))
+        this._updateUIDebouncer.call()
     }
 
     /**
