@@ -30,3 +30,34 @@ div.ports-history-chart-page-navigation {
     }
 
 }
+
+div.qui-list.ports-list {
+
+    div.qui-icon-label-view {
+
+        div.port-flags {
+            display: inline-block;
+            height: 2.5em;
+
+            div.flag {
+                font-family: monospace;
+                font-size: 70%;
+                font-weight: bold;
+                border-radius: 0.3em;
+                border: 0.08em solid transparent;
+                color: @background-color;
+                margin-top: 0.2em;
+                text-align: center;
+                width: 1.3em;
+                height: 1.3em;
+                line-height: 1.5em;
+            }
+        }
+
+        &.selected div.port-flags div.flag {
+             border-color: @background-color;
+        }
+
+    }
+
+}

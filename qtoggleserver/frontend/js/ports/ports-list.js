@@ -1,18 +1,18 @@
-
+import * as Cache          from '$app/cache.js'
+import * as Constants      from '$app/constants.js'
+import * as Utils          from '$app/utils.js'
 import {AssertionError}    from '$qui/base/errors.js'
 import {gettext}           from '$qui/base/i18n.js'
 import Config              from '$qui/config.js'
 import {CheckField}        from '$qui/forms/common-fields/common-fields.js'
 import {OptionsForm}       from '$qui/forms/common-forms/common-forms.js'
+import $                   from '$qui/lib/jquery.module.js'
 import {IconLabelListItem} from '$qui/lists/common-items/common-items.js'
 import {PageList}          from '$qui/lists/common-lists/common-lists.js'
+import * as Theme          from '$qui/theme.js'
 import * as ArrayUtils     from '$qui/utils/array.js'
 import Debouncer           from '$qui/utils/debouncer.js'
 import {asap}              from '$qui/utils/misc.js'
-
-import * as Cache     from '$app/cache.js'
-import * as Constants from '$app/constants.js'
-import * as Utils     from '$app/utils.js'
 
 import AddPortForm from './add-port-form.js'
 import PortForm    from './port-form.js'
@@ -68,6 +68,37 @@ class PortsListOptionsForm extends OptionsForm {
 
 
 /**
+ * alias qtoggle.ports.PortIconLabelListItem
+ * @extends qui.lists.commonitems.IconLabelListItem
+ */
+class PortIconLabelListItem extends IconLabelListItem {
+
+    constructor({flags = [], ...args} = {}) {
+        super(args)
+
+        this._flags = flags
+        this._flagsElement = null
+    }
+
+    makeIconLabelContainer() {
+        let container = super.makeIconLabelContainer()
+
+        this._flagsElement = $('<div></div>', {class: 'port-flags'})
+        this._flags.forEach(({text, color, active}) => {
+            let flagElement = $(`<div></div>`, {class: 'flag', text})
+            flagElement.css('background', color)
+            flagElement.css('visibility', active ? 'visible' : 'hidden')
+            this._flagsElement.append(flagElement)
+        })
+        container.append(this._flagsElement)
+
+        return container
+    }
+
+}
+
+
+/**
  * @alias qtoggle.ports.PortsList
  * @extends qui.lists.commonlists.PageList
  */
@@ -83,7 +114,8 @@ class PortsList extends PageList {
             pathId: `~${deviceName || Cache.getMainDevice().name}`,
             title: gettext('Ports'),
             icon: Ports.PORT_ICON,
-            searchEnabled: true
+            searchEnabled: true,
+            cssClass: 'ports-list'
         })
 
         let title
@@ -210,12 +242,20 @@ class PortsList extends PageList {
             }
         }
 
-        return new IconLabelListItem({
+        return new PortIconLabelListItem({
             label: label,
             subLabel: subLabel,
             icon: Ports.makePortIcon(port),
+            flags: this._makePortFlags(port),
             data: port.id
         })
+    }
+
+    _makePortFlags(port) {
+        return [
+            {text: 'W', color: Theme.getVar('orange-color'), active: port.writable},
+            {text: 'V', color: Theme.getVar('magenta-color'), active: port.virtual}
+        ]
     }
 
     /**
