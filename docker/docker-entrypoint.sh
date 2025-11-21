@@ -37,6 +37,10 @@ if [[ "${WANTED_PYTHON_VER}" != "${DATA_PYTHON_VER}" ]]; then
     source ${DATA_DIR}/bin/activate
     echo "Installing previously installed packages"
     uv pip install -r /tmp/installed-packages.txt
+    echo "Copying user dir"
+    if [[ -d ${DATA_DIR}.bak/user ]]; then
+        cp -r ${DATA_DIR}.bak/user ${DATA_DIR}
+    fi
 else
     echo "Activating virtualenv with Python ${DATA_PYTHON_VER} in data directory"
     source ${DATA_DIR}/bin/activate
