@@ -87,6 +87,20 @@ async def attr_get_version() -> str:
         return version.VERSION
 
 
+@cache_utils.ttl_cached(ttl=60)
+async def attr_is_auto_update_enabled() -> bool:
+    if settings.system.fwupdate.driver:
+        return await fwupdate.is_auto_update_enabled()
+    else:
+        return False
+
+
+async def attr_set_auto_update_enabled(value: bool) -> None:
+    if settings.system.fwupdate.driver:
+        await fwupdate.set_auto_update_enabled(value)
+        attr_is_auto_update_enabled.cache_clear()
+
+
 def attr_get_flags() -> list[str]:
     from qtoggleserver.core import history as core_history
 
@@ -170,8 +184,8 @@ ATTRDEFS = {
         "modifiable": True,
         "standard": True,
         "enabled": lambda: bool(settings.system.fwupdate.driver),
-        "getter": fwupdate.is_auto_update_enabled,
-        "setter": fwupdate.set_auto_update_enabled,
+        "getter": attr_is_auto_update_enabled,
+        "setter": attr_set_auto_update_enabled,
     },
     "api_version": {
         "type": "string",
