@@ -63,15 +63,15 @@ class UnexpectedEnd(ExpressionParseError):
         return {"reason": "unexpected-end"}
 
 
-class ExternalDependency(ExpressionParseError):
+class NonSelfDependency(ExpressionParseError):
     def __init__(self, port_id: str, pos: int) -> None:
         self.port_id = port_id
         self.pos = pos
 
-        super().__init__(f'External dependency on port "{port_id}"')
+        super().__init__(f'Non-self dependency on port "{port_id}"')
 
     def to_json(self) -> GenericJSONDict:
-        return {"reason": "external-dependency", "token": self.port_id, "pos": self.pos}
+        return {"reason": "non-self-dependency", "token": self.port_id, "pos": self.pos}
 
 
 class UnexpectedCharacter(ExpressionParseError):
@@ -90,7 +90,7 @@ class EmptyExpression(ExpressionParseError):
         super().__init__("Expression is empty")
 
     def to_json(self) -> GenericJSONDict:
-        return {"reason": "empty-expression"}
+        return {"reason": "empty"}
 
 
 class ExpressionEvalError(ExpressionException):

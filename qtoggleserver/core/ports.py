@@ -583,11 +583,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             deps = transform_read.get_deps()
             for dep in deps:
-                if not dep.startswith("$"):
-                    continue
-
-                if dep != f"${self._id}":
-                    raise expressions_exceptions.ExternalDependency(port_id=dep[1:], pos=stransform_read.index(dep))
+                if dep.startswith("$") and len(dep) > 1:
+                    raise expressions_exceptions.NonSelfDependency(port_id=dep[1:], pos=stransform_read.index(dep))
 
             self.debug('setting read transform "%s"', transform_read)
             self._transform_read = transform_read
@@ -622,11 +619,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             deps = transform_write.get_deps()
             for dep in deps:
-                if not dep.startswith("$"):
-                    continue
-
-                if dep != f"${self._id}":
-                    raise expressions_exceptions.ExternalDependency(port_id=dep[1:], pos=stransform_write.index(dep))
+                if dep.startswith("$") and len(dep) > 1:
+                    raise expressions_exceptions.NonSelfDependency(port_id=dep[1:], pos=stransform_write.index(dep))
 
             self.debug('setting write transform "%s"', transform_write)
             self._transform_write = transform_write
