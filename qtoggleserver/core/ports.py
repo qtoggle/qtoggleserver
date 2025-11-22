@@ -472,7 +472,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if self._expression:
             sexpression = str(self._expression)
             self.debug('resetting expression "%s"', sexpression)
-            self._expression = core_expressions.parse(self.get_id(), sexpression, role=core_expressions.ROLE_VALUE)
+            self._expression = core_expressions.parse(self.get_id(), sexpression, role=core_expressions.Role.VALUE)
 
             main.force_eval_expressions(self)
 
@@ -554,7 +554,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         try:
             self.debug('parsing expression "%s"', sexpression)
-            expression = core_expressions.parse(self.get_id(), sexpression, role=core_expressions.ROLE_VALUE)
+            expression = core_expressions.parse(self.get_id(), sexpression, role=core_expressions.Role.VALUE)
         except expressions_exceptions.ExpressionParseError as e:
             self.error('failed to set expression "%s": %s', sexpression, e)
             raise InvalidAttributeValue("expression", details=e.to_json()) from e
@@ -578,7 +578,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         try:
             self.debug('parsing expression "%s"', stransform_read)
             transform_read = core_expressions.parse(
-                self.get_id(), stransform_read, role=core_expressions.ROLE_TRANSFORM_READ
+                self.get_id(), stransform_read, role=core_expressions.Role.TRANSFORM_READ
             )
 
             deps = transform_read.get_deps()
@@ -614,7 +614,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         try:
             self.debug('parsing expression "%s"', stransform_write)
             transform_write = core_expressions.parse(
-                self.get_id(), stransform_write, role=core_expressions.ROLE_TRANSFORM_WRITE
+                self.get_id(), stransform_write, role=core_expressions.Role.TRANSFORM_WRITE
             )
 
             deps = transform_write.get_deps()

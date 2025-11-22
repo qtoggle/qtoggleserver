@@ -1,18 +1,15 @@
 from __future__ import annotations
 
-from .base import EvalContext, EvalResult, Expression
+from .base import EvalContext, EvalResult, Expression, Role
 from .literalvalues import LiteralValue
 
 
 __all__ = [
-    "ROLE_FILTER",
-    "ROLE_TRANSFORM_READ",
-    "ROLE_TRANSFORM_WRITE",
-    "ROLE_VALUE",
     "EvalContext",
     "EvalResult",
     "Expression",
     "Function",
+    "Role",
     "aggregation",
     "arithmetic",
     "bitwise",
@@ -27,16 +24,12 @@ __all__ = [
     "various",
 ]
 
-ROLE_VALUE = 1
-ROLE_TRANSFORM_READ = 2
-ROLE_TRANSFORM_WRITE = 3
-ROLE_FILTER = 4
 
 # A time jump of more than one day will prevent the evaluation of expressions such as time-processing
 TIME_JUMP_THRESHOLD = 86_400_000
 
 
-def parse(self_port_id: str | None, sexpression: str, role: int, pos: int = 1) -> Expression:
+def parse(self_port_id: str | None, sexpression: str, role: Role, pos: int = 1) -> Expression:
     while sexpression and sexpression[0].isspace():
         sexpression = sexpression[1:]
         pos += 1

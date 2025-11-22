@@ -5,7 +5,7 @@ import re
 from collections.abc import Callable
 
 from . import exceptions, parse
-from .base import EvalContext, EvalResult, Expression
+from .base import EvalContext, EvalResult, Expression, Role
 from .literalvalues import LiteralValue
 from .ports import PortValue
 
@@ -31,7 +31,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
     ARG_KINDS = []
     ENABLED = True
 
-    def __init__(self, args: list[Expression], role: int) -> None:
+    def __init__(self, args: list[Expression], role: Role) -> None:
         super().__init__(role)
 
         self.args: list[Expression] = args
@@ -66,7 +66,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
                 raise exceptions.InvalidArgumentKind(cls.NAME, pos_list[i], i + 1)
 
     @staticmethod
-    def parse(self_port_id: str | None, sexpression: str, role: int, pos: int) -> Expression:
+    def parse(self_port_id: str | None, sexpression: str, role: Role, pos: int) -> Expression:
         # Remove leading whitespace
         while sexpression and sexpression[0].isspace():
             sexpression = sexpression[1:]

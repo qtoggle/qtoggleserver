@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 
+from enum import IntEnum
 from typing import TypeAlias
 
 from qtoggleserver.core.typing import NullablePortValue
@@ -9,9 +10,18 @@ from qtoggleserver.core.typing import NullablePortValue
 from .exceptions import EvalSkipped, ExpressionEvalError, ValueUnavailable
 
 
+class Role(IntEnum):
+    """Available expression roles."""
+
+    VALUE = 1
+    TRANSFORM_READ = 2
+    TRANSFORM_WRITE = 3
+    FILTER = 4
+
+
 class Expression(metaclass=abc.ABCMeta):
-    def __init__(self, role: int) -> None:
-        self.role: int = role
+    def __init__(self, role: Role) -> None:
+        self.role: Role = role
         self._asap_eval_paused_until_ms: int = 0
         self._cached_deps: set[str] | None = None
 
@@ -48,7 +58,7 @@ class Expression(metaclass=abc.ABCMeta):
 
     @staticmethod
     @abc.abstractmethod
-    def parse(self_port_id: str | None, sexpression: str, role: int, pos: int) -> Expression:
+    def parse(self_port_id: str | None, sexpression: str, role: Role, pos: int) -> Expression:
         raise NotImplementedError()
 
 

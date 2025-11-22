@@ -2,12 +2,12 @@ import re
 
 from qtoggleserver.core.typing import NullablePortValue as CoreNullablePortValue
 
-from .base import EvalContext, EvalResult, Expression
+from .base import EvalContext, EvalResult, Expression, Role
 from .exceptions import EmptyExpression, UnexpectedCharacter, ValueUnavailable
 
 
 class LiteralValue(Expression):
-    def __init__(self, value: CoreNullablePortValue, sexpression: str, role: int) -> None:
+    def __init__(self, value: CoreNullablePortValue, sexpression: str, role: Role) -> None:
         super().__init__(role)
 
         self.value: CoreNullablePortValue = value
@@ -23,7 +23,7 @@ class LiteralValue(Expression):
         return float(self.value)
 
     @staticmethod
-    def parse(self_port_id: str | None, sexpression: str, role: int, pos: int) -> Expression:
+    def parse(self_port_id: str | None, sexpression: str, role: Role, pos: int) -> Expression:
         while sexpression and sexpression[0].isspace():
             sexpression = sexpression[1:]
             pos += 1
