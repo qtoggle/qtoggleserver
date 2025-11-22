@@ -4,8 +4,8 @@ import abc
 import re
 
 from qtoggleserver.core import ports as core_ports
+from qtoggleserver.core.typing import NullablePortValue
 
-from . import ROLE_TRANSFORM_READ, ROLE_TRANSFORM_WRITE
 from .base import EvalContext, EvalResult, Expression
 from .exceptions import DisabledPort, PortValueUnavailable, UnexpectedCharacter, UnknownPortId
 
@@ -58,6 +58,9 @@ class PortValue(PortExpression):
     def _get_deps(self) -> set[str]:
         return {f"${self.port_id}"}
 
+    def _get_value(self, context: EvalContext) -> NullablePortValue:
+        return context.port_values.get(self.port_id)
+
     async def _eval(self, context: EvalContext) -> EvalResult:
         port = self.get_port()
         if not port:
@@ -66,7 +69,7 @@ class PortValue(PortExpression):
         if not port.is_enabled():
             raise DisabledPort(self.port_id)
 
-        value = context.port_values.get(self.port_id)
+        value = self._get_value(context)
         if value is None:
             raise PortValueUnavailable(self.port_id)
 
@@ -77,22 +80,8 @@ class SelfPortValue(PortValue):
     def __str__(self) -> str:
         return self.prefix
 
-    async def _eval(self, context: EvalContext) -> EvalResult:
-        if self.role in (ROLE_TRANSFORM_READ, ROLE_TRANSFORM_WRITE):
-            return await super()._eval(context)
-
-        port = self.get_port()
-        if not port:
-            raise UnknownPortId(self.port_id)
-
-        if not port.is_enabled():
-            raise DisabledPort(self.port_id)
-
-        value = port.get_last_read_value()
-        if value is None:
-            raise PortValueUnavailable(self.port_id)
-
-        return value
+    def _get_deps(self) -> set[str]:
+        return set()
 
 
 class PortRef(PortExpression):
