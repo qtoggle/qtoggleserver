@@ -2,9 +2,19 @@ import asyncio
 import logging
 import time
 
+from datetime import datetime
+
 from qtoggleserver.conf import settings
 from qtoggleserver.core import ports as core_ports
-from qtoggleserver.core.expressions import DEP_ASAP, DEP_SECOND
+from qtoggleserver.core.expressions import (
+    DEP_ASAP,
+    DEP_DAY,
+    DEP_HOUR,
+    DEP_MINUTE,
+    DEP_MONTH,
+    DEP_SECOND,
+    DEP_YEAR,
+)
 from qtoggleserver.core.typing import NullablePortValue
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
@@ -24,6 +34,12 @@ _ready: bool = False
 _updating_enabled: bool = True
 _start_time: float = time.time()
 _last_time: int = 0
+_last_minute: int = 0
+_last_hour: int = 0
+_last_day: int = 0
+_last_week: int = 0
+_last_month: int = 0
+_last_year: int = 0
 _force_eval_expression_ports: set[core_ports.BasePort] = set()
 _force_eval_all_expressions: bool = False
 _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
@@ -34,6 +50,12 @@ async def update() -> None:
     from . import ports, sessions
 
     global _last_time
+    global _last_minute
+    global _last_hour
+    global _last_day
+    global _last_week
+    global _last_month
+    global _last_year
     global _update_lock
 
     if not _updating_enabled:
@@ -53,6 +75,29 @@ async def update() -> None:
             _last_time = now_int
             second_changed = True
             changed_set.add(DEP_SECOND)
+
+            now_minute = now_int // 60
+            if now_minute != _last_minute:
+                _last_minute = now_minute
+                changed_set.add(DEP_MINUTE)
+
+                now_hour = now_minute // 60
+                if now_hour != _last_hour:
+                    _last_hour = now_hour
+                    changed_set.add(DEP_HOUR)
+
+                    now_dt = datetime.fromtimestamp(now)
+                    if now_dt.day != _last_day:
+                        _last_day = now_dt.day
+                        changed_set.add(DEP_DAY)
+
+                        if now_dt.month != _last_month:
+                            _last_month = now_dt.month
+                            changed_set.add(DEP_MONTH)
+
+                            if now_dt.year != _last_year:
+                                _last_year = now_dt.year
+                                changed_set.add(DEP_YEAR)
 
         for port in ports.get_all():
             if not port.is_enabled():

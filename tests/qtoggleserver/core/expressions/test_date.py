@@ -181,44 +181,44 @@ def test_millisecond_num_args():
         Function.parse(None, "MILLISECOND(1)", Role.VALUE, 0)
 
 
-async def test_minuteday_simple(dummy_local_datetime, dummy_eval_context):
-    result = await date.MinuteDayFunction([], role=Role.VALUE).eval(dummy_eval_context)
+async def test_minute_of_day_simple(dummy_local_datetime, dummy_eval_context):
+    result = await date.MinuteOfDayFunction([], role=Role.VALUE).eval(dummy_eval_context)
     assert result == dummy_local_datetime.hour * 60 + dummy_local_datetime.minute
 
 
-async def test_minuteday_argument(dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
-    result = await date.MinuteDayFunction([literal_dummy_timestamp], role=Role.VALUE).eval(dummy_eval_context)
+async def test_minute_of_day_argument(dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
+    result = await date.MinuteOfDayFunction([literal_dummy_timestamp], role=Role.VALUE).eval(dummy_eval_context)
     assert result == dummy_local_datetime.hour * 60 + dummy_local_datetime.minute
 
 
-def test_minuteday_parse():
-    e = Function.parse(None, "MINUTEDAY()", Role.VALUE, 0)
-    assert isinstance(e, date.MinuteDayFunction)
+def test_minute_of_day_parse():
+    e = Function.parse(None, "MINUTEOFDAY()", Role.VALUE, 0)
+    assert isinstance(e, date.MinuteOfDayFunction)
 
 
-def test_minuteday_num_args():
+def test_minute_of_day_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "MINUTEDAY(1, 2)", Role.VALUE, 0)
+        Function.parse(None, "MINUTEOFDAY(1, 2)", Role.VALUE, 0)
 
 
-async def test_secondday_simple(dummy_local_datetime, dummy_eval_context):
-    result = await date.SecondDayFunction([], role=Role.VALUE).eval(dummy_eval_context)
+async def test_second_of_day_simple(dummy_local_datetime, dummy_eval_context):
+    result = await date.SecondOfDayFunction([], role=Role.VALUE).eval(dummy_eval_context)
     assert result == dummy_local_datetime.hour * 3600 + dummy_local_datetime.minute * 60 + dummy_local_datetime.second
 
 
-async def test_secondday_argument(dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
-    result = await date.SecondDayFunction([literal_dummy_timestamp], role=Role.VALUE).eval(dummy_eval_context)
+async def test_second_of_day_argument(dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
+    result = await date.SecondOfDayFunction([literal_dummy_timestamp], role=Role.VALUE).eval(dummy_eval_context)
     assert result == dummy_local_datetime.hour * 3600 + dummy_local_datetime.minute * 60 + dummy_local_datetime.second
 
 
-def test_secondday_parse():
-    e = Function.parse(None, "SECONDDAY()", Role.VALUE, 0)
-    assert isinstance(e, date.SecondDayFunction)
+def test_second_of_day_parse():
+    e = Function.parse(None, "SECONDOFDAY()", Role.VALUE, 0)
+    assert isinstance(e, date.SecondOfDayFunction)
 
 
-def test_secondday_num_args():
+def test_second_of_day_num_args():
     with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "SECONDDAY(1, 2)", Role.VALUE, 0)
+        Function.parse(None, "SECONDOFDAY(1, 2)", Role.VALUE, 0)
 
 
 async def test_date(dummy_local_datetime, dummy_timestamp, dummy_eval_context):

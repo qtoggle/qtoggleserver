@@ -12,6 +12,11 @@ from .exceptions import ExpressionEvalException
 
 DEP_ASAP = "asap"
 DEP_SECOND = "second"
+DEP_MINUTE = "minute"
+DEP_HOUR = "hour"
+DEP_DAY = "day"
+DEP_MONTH = "month"
+DEP_YEAR = "year"
 
 
 class Role(IntEnum):

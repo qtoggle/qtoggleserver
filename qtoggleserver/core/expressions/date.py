@@ -5,7 +5,7 @@ from datetime import datetime, time, timedelta, timezone
 
 from qtoggleserver import system
 
-from .base import DEP_ASAP, DEP_SECOND, EvalContext, EvalResult
+from .base import DEP_ASAP, DEP_DAY, DEP_HOUR, DEP_MINUTE, DEP_MONTH, DEP_SECOND, DEP_YEAR, EvalContext, EvalResult
 from .exceptions import EvalSkipped, InvalidArgumentValue
 from .functions import Function, function
 
@@ -13,7 +13,6 @@ from .functions import Function, function
 class DateUnitFunction(Function, metaclass=abc.ABCMeta):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {DEP_SECOND}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -33,48 +32,64 @@ class DateUnitFunction(Function, metaclass=abc.ABCMeta):
 
 @function("YEAR")
 class YearFunction(DateUnitFunction):
+    DEPS = {DEP_YEAR}
+
     def extract_unit(self, dt: datetime) -> int:
         return dt.year
 
 
 @function("MONTH")
 class MonthFunction(DateUnitFunction):
+    DEPS = {DEP_MONTH}
+
     def extract_unit(self, dt: datetime) -> int:
         return dt.month
 
 
 @function("DAY")
 class DayFunction(DateUnitFunction):
+    DEPS = {DEP_DAY}
+
     def extract_unit(self, dt: datetime) -> int:
         return dt.day
 
 
 @function("DOW")
 class DOWFunction(DateUnitFunction):
+    DEPS = {DEP_DAY}
+
     def extract_unit(self, dt: datetime) -> int:
         return dt.weekday()
 
 
 @function("LDOM")
 class LDOMFunction(DateUnitFunction):
+    DEPS = {DEP_MONTH}
+
     def extract_unit(self, dt: datetime) -> int:
         return calendar.monthrange(dt.year, dt.month)[1]
 
 
 @function("HOUR")
 class HourFunction(DateUnitFunction):
+    DEPS = {DEP_HOUR}
+
     def extract_unit(self, dt: datetime) -> int:
         return dt.hour
 
 
 @function("MINUTE")
 class MinuteFunction(DateUnitFunction):
+    DEPS = {DEP_MINUTE}
+
     def extract_unit(self, dt: datetime) -> int:
         return dt.minute
 
 
 @function("SECOND")
 class SecondFunction(DateUnitFunction):
+    DEPS = {DEP_SECOND}
+
     def extract_unit(self, dt: datetime) -> int:
         return dt.second
 
@@ -91,14 +106,18 @@ class MillisecondFunction(Function):
         return int(context.now_ms % 1000)
 
 
-@function("MINUTEDAY")
-class MinuteDayFunction(DateUnitFunction):
+@function("MINUTEOFDAY")
+class MinuteOfDayFunction(DateUnitFunction):
+    DEPS = {DEP_MINUTE}
+
     def extract_unit(self, dt: datetime) -> int:
         return dt.hour * 60 + dt.minute
 
 
-@function("SECONDDAY")
-class SecondDayFunction(DateUnitFunction):
+@function("SECONDOFDAY")
+class SecondOfDayFunction(DateUnitFunction):
+    DEPS = {DEP_SECOND}
+
     def extract_unit(self, dt: datetime) -> int:
         return dt.hour * 3600 + dt.minute * 60 + dt.second
 
@@ -106,7 +125,6 @@ class SecondDayFunction(DateUnitFunction):
 @function("DATE")
 class DateFunction(Function):
     MIN_ARGS = MAX_ARGS = 6
-    DEPS = {DEP_SECOND}
     UNIT_INDEX = {u: i + 1 for i, u in enumerate(("year", "month", "day", "hour", "minute", "second"))}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
@@ -130,7 +148,7 @@ class DateFunction(Function):
 class BOYFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {DEP_SECOND}
+    DEPS = {DEP_YEAR}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -152,7 +170,7 @@ class BOYFunction(Function):
 class BOMFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {DEP_SECOND}
+    DEPS = {DEP_MONTH}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -189,7 +207,7 @@ class BOMFunction(Function):
 class BOWFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 2
-    DEPS = {DEP_SECOND}
+    DEPS = {DEP_DAY}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -246,7 +264,7 @@ class BOWFunction(Function):
 class BODFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {DEP_SECOND}
+    DEPS = {DEP_DAY}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -306,7 +324,7 @@ class HMSIntervalFunction(Function):
 @function("MDINTERVAL")
 class MDIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 4
-    DEPS = {DEP_SECOND}
+    DEPS = {DEP_DAY}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
