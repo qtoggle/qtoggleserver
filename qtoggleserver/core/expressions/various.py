@@ -3,7 +3,7 @@ from qtoggleserver.core import history as core_history
 from qtoggleserver.core import ports as core_ports
 
 from .base import DEP_ASAP, DEP_SECOND, EvalContext, EvalResult
-from .exceptions import EvalSkipped, ExpressionEvalException, PortValueUnavailable
+from .exceptions import EvalSkipped, PortValueUnavailable, ValueUnavailable
 from .functions import Function, function
 from .ports import PortRef
 
@@ -16,7 +16,7 @@ class AvailableFunction(Function):
         try:
             await self.args[0].eval(context)
             return True
-        except ExpressionEvalException:
+        except ValueUnavailable:
             return False
 
 
@@ -27,7 +27,7 @@ class DefaultFunction(Function):
     async def _eval(self, context: EvalContext) -> EvalResult:
         try:
             return await self.args[0].eval(context)
-        except ExpressionEvalException:
+        except ValueUnavailable:
             return await self.args[1].eval(context)
 
 
