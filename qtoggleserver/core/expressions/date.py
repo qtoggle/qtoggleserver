@@ -13,6 +13,7 @@ from .functions import Function, function
 class DateUnitFunction(Function, metaclass=abc.ABCMeta):
     MIN_ARGS = 0
     MAX_ARGS = 1
+    TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -98,6 +99,7 @@ class SecondFunction(DateUnitFunction):
 class MillisecondFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
     DEPS = {DEP_ASAP}
+    TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -149,6 +151,7 @@ class BOYFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
     DEPS = {DEP_YEAR}
+    TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -171,6 +174,7 @@ class BOMFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
     DEPS = {DEP_MONTH}
+    TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -208,6 +212,7 @@ class BOWFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 2
     DEPS = {DEP_DAY}
+    TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -265,6 +270,7 @@ class BODFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
     DEPS = {DEP_DAY}
+    TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -285,6 +291,7 @@ class BODFunction(Function):
 class HMSIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 6
     DEPS = {DEP_SECOND}
+    TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -325,6 +332,7 @@ class HMSIntervalFunction(Function):
 class MDIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 4
     DEPS = {DEP_DAY}
+    TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():

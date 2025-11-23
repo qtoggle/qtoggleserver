@@ -150,6 +150,7 @@ class OnOffAutoFunction(Function):
 class SequenceFunction(Function):
     MIN_ARGS = 2
     DEPS = {DEP_ASAP}
+    TRANSFORM_OK = False
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -250,6 +251,7 @@ class HistoryFunction(Function):
     DEPS = {DEP_SECOND}
     ARG_KINDS = [PortRef]
     ENABLED = core_history.is_enabled
+    TRANSFORM_OK = False
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

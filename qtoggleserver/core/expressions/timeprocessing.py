@@ -9,6 +9,7 @@ class DelayFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
     DEPS = {DEP_ASAP}
     HISTORY_SIZE = 1024
+    TRANSFORM_OK = False
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -49,6 +50,7 @@ class DelayFunction(Function):
 class TimerFunction(Function):
     MIN_ARGS = MAX_ARGS = 4
     DEPS = {DEP_ASAP}
+    TRANSFORM_OK = False
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -82,6 +84,7 @@ class TimerFunction(Function):
 class SampleFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
     DEPS = {DEP_ASAP}
+    TRANSFORM_OK = False
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -105,6 +108,7 @@ class SampleFunction(Function):
 class FreezeFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
     DEPS = {DEP_ASAP}
+    TRANSFORM_OK = False
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -137,6 +141,7 @@ class FreezeFunction(Function):
 class HeldFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
     DEPS = {DEP_ASAP}
+    TRANSFORM_OK = False
 
     STATE_OFF = 0
     STATE_WAITING = 1
@@ -172,6 +177,7 @@ class HeldFunction(Function):
 class DerivFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
     DEPS = {DEP_ASAP}
+    TRANSFORM_OK = False
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -206,6 +212,7 @@ class DerivFunction(Function):
 class IntegFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
     DEPS = {DEP_ASAP}
+    TRANSFORM_OK = False
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -241,6 +248,7 @@ class FMAvgFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
     DEPS = {DEP_ASAP}
     QUEUE_SIZE = 1024
+    TRANSFORM_OK = False
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -279,6 +287,7 @@ class FMedianFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
     DEPS = {DEP_ASAP}
     QUEUE_SIZE = 1024
+    TRANSFORM_OK = False
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

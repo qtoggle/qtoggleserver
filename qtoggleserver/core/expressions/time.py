@@ -6,6 +6,7 @@ from .functions import Function, function
 class TimeFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
     DEPS = {DEP_SECOND}
+    TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         return context.timestamp
@@ -15,6 +16,7 @@ class TimeFunction(Function):
 class TimeMSFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
     DEPS = {DEP_ASAP}
+    TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         return context.now_ms

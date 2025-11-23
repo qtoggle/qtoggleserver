@@ -30,6 +30,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
     DEPS = set()
     ARG_KINDS = []
     ENABLED = True
+    TRANSFORM_OK = True
 
     def __init__(self, args: list[Expression], role: Role) -> None:
         super().__init__(role)
@@ -132,6 +133,9 @@ class Function(Expression, metaclass=abc.ABCMeta):
             raise exceptions.UnknownFunction(func_name, pos)
 
         if not func_class.ENABLED or callable(func_class.ENABLED) and not func_class.ENABLED():
+            raise exceptions.UnknownFunction(func_name, pos)
+
+        if role in (Role.TRANSFORM_READ, Role.TRANSFORM_WRITE) and not func_class.TRANSFORM_OK:
             raise exceptions.UnknownFunction(func_name, pos)
 
         if func_class.MIN_ARGS is not None and len(sargs) < func_class.MIN_ARGS:
