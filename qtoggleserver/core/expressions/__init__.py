@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from .base import EvalContext, EvalResult, Expression, Role
+from .base import DEP_ASAP, DEP_SECOND, EvalContext, EvalResult, Expression, Role
 from .literalvalues import LiteralValue
 
 
 __all__ = [
+    "DEP_ASAP",
+    "DEP_SECOND",
     "EvalContext",
     "EvalResult",
     "Expression",

@@ -5,7 +5,7 @@ from datetime import datetime, time, timedelta, timezone
 
 from qtoggleserver import system
 
-from .base import EvalContext, EvalResult
+from .base import DEP_ASAP, DEP_SECOND, EvalContext, EvalResult
 from .exceptions import EvalSkipped, InvalidArgumentValue
 from .functions import Function, function
 
@@ -13,7 +13,7 @@ from .functions import Function, function
 class DateUnitFunction(Function, metaclass=abc.ABCMeta):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {"second"}
+    DEPS = {DEP_SECOND}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -82,7 +82,7 @@ class SecondFunction(DateUnitFunction):
 @function("MILLISECOND")
 class MillisecondFunction(Function):
     MIN_ARGS = MAX_ARGS = 0
-    DEPS = {"asap"}
+    DEPS = {DEP_ASAP}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -106,7 +106,7 @@ class SecondDayFunction(DateUnitFunction):
 @function("DATE")
 class DateFunction(Function):
     MIN_ARGS = MAX_ARGS = 6
-    DEPS = {"second"}
+    DEPS = {DEP_SECOND}
     UNIT_INDEX = {u: i + 1 for i, u in enumerate(("year", "month", "day", "hour", "minute", "second"))}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
@@ -130,7 +130,7 @@ class DateFunction(Function):
 class BOYFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {"second"}
+    DEPS = {DEP_SECOND}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -152,7 +152,7 @@ class BOYFunction(Function):
 class BOMFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {"second"}
+    DEPS = {DEP_SECOND}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -189,7 +189,7 @@ class BOMFunction(Function):
 class BOWFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 2
-    DEPS = {"second"}
+    DEPS = {DEP_SECOND}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -246,7 +246,7 @@ class BOWFunction(Function):
 class BODFunction(Function):
     MIN_ARGS = 0
     MAX_ARGS = 1
-    DEPS = {"second"}
+    DEPS = {DEP_SECOND}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -266,7 +266,7 @@ class BODFunction(Function):
 @function("HMSINTERVAL")
 class HMSIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 6
-    DEPS = {"second"}
+    DEPS = {DEP_SECOND}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
@@ -306,7 +306,7 @@ class HMSIntervalFunction(Function):
 @function("MDINTERVAL")
 class MDIntervalFunction(Function):
     MIN_ARGS = MAX_ARGS = 4
-    DEPS = {"second"}
+    DEPS = {DEP_SECOND}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():

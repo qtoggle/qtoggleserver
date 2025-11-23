@@ -4,6 +4,7 @@ import time
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import ports as core_ports
+from qtoggleserver.core.expressions import DEP_ASAP, DEP_SECOND
 from qtoggleserver.core.typing import NullablePortValue
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
@@ -42,7 +43,7 @@ async def update() -> None:
         _update_lock = asyncio.Lock()
 
     async with _update_lock:
-        changed_set: set[core_ports.BasePort | str] = {"asap"}
+        changed_set: set[core_ports.BasePort | str] = {DEP_ASAP}
         value_pairs = {}
 
         now = time.time()
@@ -51,7 +52,7 @@ async def update() -> None:
         if now_int != _last_time:
             _last_time = now_int
             second_changed = True
-            changed_set.add("second")
+            changed_set.add(DEP_SECOND)
 
         for port in ports.get_all():
             if not port.is_enabled():
@@ -133,14 +134,14 @@ async def handle_value_changes(
     now_ms = int(now * 1000)
 
     # Transform `changed_set` into a set of strings so that we can compare it with deps
-    changed_set_str = set()
+    changed_set_str: set[str] = set()
 
     # Trigger value-change events; save persisted ports; build changed_set_str
     for port in changed_set:
         if isinstance(port, core_ports.BasePort):
             changed_set_str.add(f"${port.get_id()}")
         else:
-            changed_set_str.add(port)
+            changed_set_str.add(port)  # `port` is actually a string here
             continue
 
         if not await port.is_internal():
@@ -172,7 +173,7 @@ async def handle_value_changes(
         if not changed_deps:
             continue
 
-        if ("asap" in deps) and (len(changed_deps) == 1):
+        if changed_deps == {DEP_ASAP}:
             # Skip asap evaling if explicitly paused
             if expression.is_asap_eval_paused(now_ms):
                 continue

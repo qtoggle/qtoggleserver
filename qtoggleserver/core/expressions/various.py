@@ -2,7 +2,7 @@ from qtoggleserver import persist, system
 from qtoggleserver.core import history as core_history
 from qtoggleserver.core import ports as core_ports
 
-from .base import EvalContext, EvalResult
+from .base import DEP_ASAP, DEP_SECOND, EvalContext, EvalResult
 from .exceptions import EvalSkipped, ExpressionEvalError, PortValueUnavailable
 from .functions import Function, function
 from .ports import PortRef
@@ -149,7 +149,7 @@ class OnOffAutoFunction(Function):
 @function("SEQUENCE")
 class SequenceFunction(Function):
     MIN_ARGS = 2
-    DEPS = {"asap"}
+    DEPS = {DEP_ASAP}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -247,7 +247,7 @@ class LUTLIFunction(Function):
 @function("HISTORY")
 class HistoryFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = {"second"}
+    DEPS = {DEP_SECOND}
     ARG_KINDS = [PortRef]
     ENABLED = core_history.is_enabled
 

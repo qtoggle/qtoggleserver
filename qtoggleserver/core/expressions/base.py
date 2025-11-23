@@ -10,6 +10,10 @@ from qtoggleserver.core.typing import NullablePortValue
 from .exceptions import EvalSkipped, ExpressionEvalError, ValueUnavailable
 
 
+DEP_ASAP = "asap"
+DEP_SECOND = "second"
+
+
 class Role(IntEnum):
     """Available expression roles."""
 

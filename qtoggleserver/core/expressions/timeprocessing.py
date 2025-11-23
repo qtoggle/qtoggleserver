@@ -1,5 +1,5 @@
 from . import TIME_JUMP_THRESHOLD
-from .base import EvalContext, EvalResult
+from .base import DEP_ASAP, EvalContext, EvalResult
 from .exceptions import EvalSkipped
 from .functions import Function, function
 
@@ -7,7 +7,7 @@ from .functions import Function, function
 @function("DELAY")
 class DelayFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
-    DEPS = {"asap"}
+    DEPS = {DEP_ASAP}
     HISTORY_SIZE = 1024
 
     def __init__(self, *args, **kwargs) -> None:
@@ -48,7 +48,7 @@ class DelayFunction(Function):
 @function("TIMER")
 class TimerFunction(Function):
     MIN_ARGS = MAX_ARGS = 4
-    DEPS = {"asap"}
+    DEPS = {DEP_ASAP}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -81,7 +81,7 @@ class TimerFunction(Function):
 @function("SAMPLE")
 class SampleFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
-    DEPS = {"asap"}
+    DEPS = {DEP_ASAP}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -104,7 +104,7 @@ class SampleFunction(Function):
 @function("FREEZE")
 class FreezeFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
-    DEPS = {"asap"}
+    DEPS = {DEP_ASAP}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -136,7 +136,7 @@ class FreezeFunction(Function):
 @function("HELD")
 class HeldFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = {"asap"}
+    DEPS = {DEP_ASAP}
 
     STATE_OFF = 0
     STATE_WAITING = 1
@@ -171,7 +171,7 @@ class HeldFunction(Function):
 @function("DERIV")
 class DerivFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
-    DEPS = {"asap"}
+    DEPS = {DEP_ASAP}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -205,7 +205,7 @@ class DerivFunction(Function):
 @function("INTEG")
 class IntegFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = {"asap"}
+    DEPS = {DEP_ASAP}
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -239,7 +239,7 @@ class IntegFunction(Function):
 @function("FMAVG")
 class FMAvgFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = {"asap"}
+    DEPS = {DEP_ASAP}
     QUEUE_SIZE = 1024
 
     def __init__(self, *args, **kwargs) -> None:
@@ -277,7 +277,7 @@ class FMAvgFunction(Function):
 @function("FMEDIAN")
 class FMedianFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
-    DEPS = {"asap"}
+    DEPS = {DEP_ASAP}
     QUEUE_SIZE = 1024
 
     def __init__(self, *args, **kwargs) -> None:
