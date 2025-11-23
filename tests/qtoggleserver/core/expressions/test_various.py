@@ -30,6 +30,8 @@ async def test_available_port_value(mock_num_port1):
     expr = various.AvailableFunction([port_expr], Role.VALUE)
     assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
+    # TODO: test port disabled
+
 
 async def test_available_port_ref(mock_num_port1, dummy_eval_context):
     port_expr = MockPortRef(mock_num_port1)
@@ -81,6 +83,8 @@ async def test_default(mock_num_port1):
 
     mock_num_port1.set_last_read_value(16)
     assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 16
+
+    # TODO: test port disabled
 
 
 def test_default_parse():
