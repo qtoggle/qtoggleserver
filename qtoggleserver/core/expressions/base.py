@@ -7,7 +7,7 @@ from typing import TypeAlias
 
 from qtoggleserver.core.typing import NullablePortValue
 
-from .exceptions import EvalSkipped, ExpressionEvalError, ValueUnavailable
+from .exceptions import ExpressionEvalException
 
 
 DEP_ASAP = "asap"
@@ -39,7 +39,7 @@ class Expression(metaclass=abc.ABCMeta):
         self._asap_eval_paused_until_ms = 0
         try:
             return await self._eval(context)
-        except (EvalSkipped, ValueUnavailable, ExpressionEvalError):
+        except ExpressionEvalException:
             # Pause expression evaluation for 1 second, as it's very unlikely that the expression become available or
             # fixed within a second. This is a small speed optimization for expressions that depend on millisecond.
             self.pause_asap_eval(context.now_ms + 1000)
@@ -74,6 +74,9 @@ class EvalContext:
     @property
     def timestamp(self) -> int:
         return int(self.now_ms / 1000)
+
+    def __str__(self) -> str:
+        return f"EvalContext(now_ms={self.now_ms}, port_values={self.port_values})"
 
 
 EvalResult: TypeAlias = bool | int | float | str

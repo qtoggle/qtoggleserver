@@ -83,7 +83,7 @@ async def update() -> None:
 
             if new_value != old_value:
                 old_value_str = json_utils.dumps(old_value) if old_value is not None else "(unavailable)"
-                new_value_str = json_utils.dumps(new_value)
+                new_value_str = json_utils.dumps(new_value) if new_value is not None else "(unavailable)"
 
                 logger.debug("detected %s value change: %s -> %s", port, old_value_str, new_value_str)
 

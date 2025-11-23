@@ -775,9 +775,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         try:
             self._evaling = True
             value = await expression.eval(context)
-        except expressions_exceptions.ValueUnavailable:
-            value = None
-        except expressions_exceptions.ExpressionEvalError:
+        except expressions_exceptions.ExpressionEvalException:
             return
         except Exception as e:
             self.error('failed to evaluate expression "%s": %s', expression, e, exc_info=True)

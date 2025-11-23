@@ -93,16 +93,16 @@ class EmptyExpression(ExpressionParseError):
         return {"reason": "empty"}
 
 
-class ExpressionEvalError(ExpressionException):
+class ExpressionEvalException(ExpressionException):
     pass
 
 
-class ValueUnavailable(ExpressionEvalError):
+class ValueUnavailable(ExpressionEvalException):
     def __init__(self, msg: str | None = None) -> None:
         super().__init__(msg or "Value is unavailable")
 
 
-class InvalidArgumentValue(ExpressionEvalError):
+class InvalidArgumentValue(ExpressionEvalException):
     def __init__(self, arg_no: int, value: CorePortValue) -> None:
         self.arg_no: int = arg_no
         self.value: CorePortValue = value
@@ -110,14 +110,14 @@ class InvalidArgumentValue(ExpressionEvalError):
         super().__init__(f"Invalid argument {self.arg_no}: {self.value}")
 
 
-class UnknownPortId(ExpressionEvalError):
+class UnknownPortId(ExpressionEvalException):
     def __init__(self, port_id: str) -> None:
         self.port_id = port_id
 
         super().__init__(f'Unknown port "{port_id}"')
 
 
-class DisabledPort(ExpressionEvalError):
+class DisabledPort(ExpressionEvalException):
     def __init__(self, port_id: str) -> None:
         self.port_id = port_id
 
@@ -131,11 +131,11 @@ class PortValueUnavailable(ValueUnavailable):
         super().__init__(f'Port "{port_id}" value is unavailable')
 
 
-class ExpressionArithmeticError(ExpressionEvalError):
+class ExpressionArithmeticError(ExpressionEvalException):
     def __init__(self) -> None:
         super().__init__("Expression arithmetic error")
 
 
-class EvalSkipped(ExpressionEvalError):
+class EvalSkipped(ExpressionEvalException):
     def __init__(self) -> None:
         super().__init__("Evaluation skipped")
