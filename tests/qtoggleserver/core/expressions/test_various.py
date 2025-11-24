@@ -10,39 +10,30 @@ from qtoggleserver.core.expressions.exceptions import (
 from tests.qtoggleserver.mock.expressions import MockExpression, MockPortRef, MockPortValue
 
 
-async def test_available_literal(literal_three, literal_false, dummy_eval_context):
-    expr = various.AvailableFunction([literal_three], Role.VALUE)
+async def test_available_value_available(mock_num_port1, dummy_eval_context):
+    """Should return 1 if value is available (not None)."""
+
+    mock_expr = MockExpression(16)
+    expr = various.AvailableFunction([mock_expr], Role.VALUE)
     assert await expr.eval(dummy_eval_context) == 1
 
-    expr = various.AvailableFunction([literal_false], Role.VALUE)
+    mock_expr = MockExpression(16)
+    mock_expr.set_value(0)
     assert await expr.eval(dummy_eval_context) == 1
 
 
-async def test_available_port_value(mock_num_port1):
-    port_expr = MockPortValue(mock_num_port1)
-    expr = various.AvailableFunction([port_expr], Role.VALUE)
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
+async def test_available_value_none(mock_num_port1, dummy_eval_context):
+    """Should return 0 if value is None."""
 
-    mock_num_port1.set_last_read_value(16)
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 1
-
-    port_expr = MockPortValue(None, port_id="some-id")
-    expr = various.AvailableFunction([port_expr], Role.VALUE)
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
-
-    # TODO: test port disabled
+    mock_expr = MockExpression(None)
+    expr = various.AvailableFunction([mock_expr], Role.VALUE)
+    assert await expr.eval(dummy_eval_context) == 0
 
 
-async def test_available_port_ref(mock_num_port1, dummy_eval_context):
-    port_expr = MockPortRef(mock_num_port1)
-    expr = various.AvailableFunction([port_expr], Role.VALUE)
-    assert await expr.eval(dummy_eval_context) == 1
+async def test_available_value_unavailable(mock_num_port1, literal_unavailable, dummy_eval_context):
+    """Should return 0 if value is unavailable."""
 
-    mock_num_port1.set_last_read_value(16)
-    assert await expr.eval(dummy_eval_context) == 1
-
-    port_expr = MockPortRef(None, port_id="some-id")
-    expr = various.AvailableFunction([port_expr], Role.VALUE)
+    expr = various.AvailableFunction([literal_unavailable], Role.VALUE)
     assert await expr.eval(dummy_eval_context) == 0
 
 
@@ -56,7 +47,7 @@ async def test_available_func(mock_num_port1):
     mock_num_port1.set_last_read_value(16)
     assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 1
 
-    port_expr = MockPortValue(None, port_id="some-id")
+    port_expr = MockPortValue(None, port_id="inexistent_id")
     func_expr = various.AccFunction([port_expr, acc_expr], Role.VALUE)
     expr = various.AvailableFunction([func_expr], Role.VALUE)
     assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
@@ -75,16 +66,33 @@ def test_available_num_args():
         Function.parse(None, "AVAILABLE(1, 2)", Role.VALUE, 0)
 
 
-async def test_default(mock_num_port1):
-    port_expr = MockPortValue(mock_num_port1)
+async def test_default_value_available(mock_num_port1, dummy_eval_context):
+    """Should return value when available (not None)."""
+
+    mock_expr = MockExpression(16)
     def_expr = MockExpression(13)
-    expr = various.DefaultFunction([port_expr, def_expr], Role.VALUE)
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 13
+    expr = various.DefaultFunction([mock_expr, def_expr], Role.VALUE)
+    assert await expr.eval(dummy_eval_context) == 16
 
-    mock_num_port1.set_last_read_value(16)
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 16
+    mock_expr.set_value(0)
+    assert await expr.eval(dummy_eval_context) == 0
 
-    # TODO: test port disabled
+
+async def test_default_value_none(mock_num_port1, dummy_eval_context):
+    """Should return default value when value is None."""
+
+    mock_expr = MockExpression(None)
+    def_expr = MockExpression(13)
+    expr = various.DefaultFunction([mock_expr, def_expr], Role.VALUE)
+    assert await expr.eval(dummy_eval_context) == 13
+
+
+async def test_default_value_unavailable(mock_num_port1, literal_unavailable, dummy_eval_context):
+    """Should return default value when value is unavailable."""
+
+    def_expr = MockExpression(13)
+    expr = various.DefaultFunction([literal_unavailable, def_expr], Role.VALUE)
+    assert await expr.eval(dummy_eval_context) == 13
 
 
 def test_default_parse():

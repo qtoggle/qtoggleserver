@@ -14,8 +14,7 @@ class AvailableFunction(Function):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         try:
-            await self.args[0].eval(context)
-            return True
+            return await self.args[0].eval(context) is not None
         except ValueUnavailable:
             return False
 
@@ -25,10 +24,15 @@ class DefaultFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
     async def _eval(self, context: EvalContext) -> EvalResult:
+        default = await self.args[1].eval(context)
         try:
-            return await self.args[0].eval(context)
+            value = await self.args[0].eval(context)
+            if value is not None:
+                return value
+            else:
+                return default
         except ValueUnavailable:
-            return await self.args[1].eval(context)
+            return default
 
 
 @function("RISING")
