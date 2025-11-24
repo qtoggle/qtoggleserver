@@ -6,6 +6,7 @@ from qtoggleserver.core.expressions.exceptions import (
     InvalidArgumentKind,
     InvalidNumberOfArguments,
     PortValueUnavailable,
+    UnknownFunction,
 )
 from tests.qtoggleserver.mock.expressions import MockExpression, MockPortRef, MockPortValue
 
@@ -367,6 +368,12 @@ def test_sequence_num_args():
         Function.parse(None, "SEQUENCE(1)", Role.VALUE, 0)
 
 
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_sequence_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "SEQUENCE(1)", role, 0)
+
+
 async def test_lut(
     literal_two,
     literal_three,
@@ -717,3 +724,9 @@ def test_history_num_args(mock_persist_driver):
 
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, "HISTORY(@some_id, 1, 2, 3)", Role.VALUE, 0)
+
+
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_history_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "HISTORY(@some_id, 1, 2)", role, 0)
