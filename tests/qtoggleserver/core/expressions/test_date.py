@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 
 from qtoggleserver.core.expressions import Function, Role, date, literalvalues
-from qtoggleserver.core.expressions.exceptions import InvalidNumberOfArguments
+from qtoggleserver.core.expressions.exceptions import InvalidNumberOfArguments, UnknownFunction
 
 
 async def test_year_simple(dummy_local_datetime, dummy_eval_context):
@@ -26,6 +26,12 @@ def test_year_num_args():
         Function.parse(None, "YEAR(1, 2)", Role.VALUE, 0)
 
 
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_year_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "YEAR()", role, 0)
+
+
 async def test_month_simple(dummy_local_datetime, dummy_eval_context):
     result = await date.MonthFunction([], role=Role.VALUE).eval(dummy_eval_context)
     assert result == dummy_local_datetime.month
@@ -44,6 +50,12 @@ def test_month_parse():
 def test_month_num_args():
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, "MONTH(1, 2)", Role.VALUE, 0)
+
+
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_month_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "MONTH()", role, 0)
 
 
 async def test_day_simple(dummy_local_datetime, dummy_eval_context):
@@ -66,6 +78,12 @@ def test_day_num_args():
         Function.parse(None, "DAY(1, 2)", Role.VALUE, 0)
 
 
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_day_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "DAY()", role, 0)
+
+
 async def test_dow_simple(dummy_local_datetime, dummy_eval_context):
     result = await date.DOWFunction([], role=Role.VALUE).eval(dummy_eval_context)
     assert result == dummy_local_datetime.weekday()
@@ -84,6 +102,12 @@ def test_dow_parse():
 def test_dow_num_args():
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, "DOW(1, 2)", Role.VALUE, 0)
+
+
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_dow_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "DOW()", role, 0)
 
 
 async def test_ldom_simple(dummy_local_datetime, dummy_eval_context):
@@ -106,6 +130,12 @@ def test_ldom_num_args():
         Function.parse(None, "LDOM(1, 2)", Role.VALUE, 0)
 
 
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_ldom_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "LDOM()", role, 0)
+
+
 async def test_hour_simple(dummy_local_datetime, dummy_eval_context):
     result = await date.HourFunction([], role=Role.VALUE).eval(dummy_eval_context)
     assert result == dummy_local_datetime.hour
@@ -124,6 +154,12 @@ def test_hour_parse():
 def test_hour_num_args():
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, "HOUR(1, 2)", Role.VALUE, 0)
+
+
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_hour_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "HOUR()", role, 0)
 
 
 async def test_minute_simple(dummy_local_datetime, dummy_eval_context):
@@ -146,6 +182,12 @@ def test_minute_num_args():
         Function.parse(None, "MINUTE(1, 2)", Role.VALUE, 0)
 
 
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_minute_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "MINUTE()", role, 0)
+
+
 async def test_second_simple(dummy_local_datetime, dummy_eval_context):
     result = await date.SecondFunction([], role=Role.VALUE).eval(dummy_eval_context)
     assert result == dummy_local_datetime.second
@@ -166,6 +208,12 @@ def test_second_num_args():
         Function.parse(None, "SECOND(1, 2)", Role.VALUE, 0)
 
 
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_second_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "SECOND()", role, 0)
+
+
 async def test_millisecond(dummy_local_datetime, dummy_eval_context):
     result = await date.MillisecondFunction([], role=Role.VALUE).eval(dummy_eval_context)
     assert result == dummy_local_datetime.microsecond // 1000
@@ -179,6 +227,12 @@ def test_millisecond_parse():
 def test_millisecond_num_args():
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, "MILLISECOND(1)", Role.VALUE, 0)
+
+
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_millisecond_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "MILLISECOND()", role, 0)
 
 
 async def test_minute_of_day_simple(dummy_local_datetime, dummy_eval_context):
@@ -201,6 +255,12 @@ def test_minute_of_day_num_args():
         Function.parse(None, "MINUTEOFDAY(1, 2)", Role.VALUE, 0)
 
 
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_minute_of_day_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "MINUTEOFDAY()", role, 0)
+
+
 async def test_second_of_day_simple(dummy_local_datetime, dummy_eval_context):
     result = await date.SecondOfDayFunction([], role=Role.VALUE).eval(dummy_eval_context)
     assert result == dummy_local_datetime.hour * 3600 + dummy_local_datetime.minute * 60 + dummy_local_datetime.second
@@ -219,6 +279,12 @@ def test_second_of_day_parse():
 def test_second_of_day_num_args():
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, "SECONDOFDAY(1, 2)", Role.VALUE, 0)
+
+
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_second_of_day_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "SECONDOFDAY()", role, 0)
 
 
 async def test_date(dummy_local_datetime, dummy_timestamp, dummy_eval_context):
@@ -291,6 +357,12 @@ def test_boy_num_args():
         Function.parse(None, "BOY(1, 2)", Role.VALUE, 0)
 
 
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_boy_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "BOY()", role, 0)
+
+
 async def test_bom_simple(dummy_local_datetime, local_tz_info, dummy_eval_context):
     result = await date.BOMFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
@@ -343,6 +415,12 @@ def test_bom_parse():
 def test_bom_num_args():
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, "BOM(1, 2)", Role.VALUE, 0)
+
+
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_bom_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "BOM()", role, 0)
 
 
 async def test_bow_simple(dummy_local_datetime, local_tz_info, dummy_eval_context):
@@ -416,6 +494,12 @@ def test_bow_parse():
 def test_bow_num_args():
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, "BOW(1, 2, 3)", Role.VALUE, 0)
+
+
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_bow_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "BOW()", role, 0)
 
 
 async def test_hmsinterval_hours(dummy_local_datetime, dummy_eval_context):
@@ -597,6 +681,12 @@ def test_hmsinterval_num_args():
         Function.parse(None, "HMSINTERVAL(1, 2, 3, 4, 5, 6, 7)", Role.VALUE, 0)
 
 
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_hmsinterval_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "HMSINTERVAL(1, 1, 1, 2, 2, 2)", role, 0)
+
+
 async def test_mdinterval_months(dummy_local_datetime, dummy_eval_context):
     result = await date.MDIntervalFunction(
         [
@@ -715,3 +805,9 @@ def test_mdinterval_num_args():
 
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, "MDINTERVAL(1, 2, 3, 4, 5)", Role.VALUE, 0)
+
+
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_mdinterval_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "MDINTERVAL(1, 1, 2, 2)", role, 0)

@@ -1,7 +1,7 @@
 import pytest
 
 from qtoggleserver.core.expressions import Function, Role, timeprocessing
-from qtoggleserver.core.expressions.exceptions import EvalSkipped, InvalidNumberOfArguments
+from qtoggleserver.core.expressions.exceptions import EvalSkipped, InvalidNumberOfArguments, UnknownFunction
 from tests.qtoggleserver.mock.expressions import MockExpression
 
 
@@ -29,6 +29,12 @@ def test_delay_num_args():
 
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, "DELAY(1, 2, 3)", Role.VALUE, 0)
+
+
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_delay_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "DELAY()", role, 0)
 
 
 async def test_timer_straight(
@@ -74,6 +80,12 @@ def test_timer_num_args():
         Function.parse(None, "TIMER(1, 2, 3, 4, 5)", Role.VALUE, 0)
 
 
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_timer_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "TIMER()", role, 0)
+
+
 async def test_sample(literal_one_thousand, dummy_eval_context, later_eval_context):
     value_expr = MockExpression(3)
     expr = timeprocessing.SampleFunction([value_expr, literal_one_thousand], Role.VALUE)
@@ -98,6 +110,12 @@ def test_sample_num_args():
 
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, "SAMPLE(1, 2, 3)", Role.VALUE, 0)
+
+
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_sample_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "SAMPLE()", role, 0)
 
 
 async def test_freeze(dummy_eval_context, later_eval_context):
@@ -134,6 +152,12 @@ def test_freeze_num_args():
 
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, "FREEZE(1, 2, 3)", Role.VALUE, 0)
+
+
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_freeze_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "FREEZE()", role, 0)
 
 
 async def test_held_fulfilled(literal_sixteen, dummy_eval_context, later_eval_context):
@@ -179,6 +203,12 @@ def test_held_num_args():
         Function.parse(None, "HELD(1, 2, 3, 4)", Role.VALUE, 0)
 
 
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_held_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "HELD()", role, 0)
+
+
 async def test_deriv(dummy_eval_context, later_eval_context):
     value_expr = MockExpression(0)
     time_expr = MockExpression(100)
@@ -215,6 +245,12 @@ def test_deriv_num_args():
 
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, "DERIV(1, 2, 3)", Role.VALUE, 0)
+
+
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_deriv_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "DERIV()", role, 0)
 
 
 async def test_integ(dummy_eval_context, later_eval_context):
@@ -259,6 +295,12 @@ def test_integ_num_args():
 
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, "INTEG(1, 2, 3, 4)", Role.VALUE, 0)
+
+
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_integ_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "INTEG()", role, 0)
 
 
 async def test_fmavg(dummy_eval_context, later_eval_context):
@@ -317,6 +359,12 @@ def test_fmavg_num_args():
         Function.parse(None, "FMAVG(1, 2, 3, 4)", Role.VALUE, 0)
 
 
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_fmavg_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "FMAVG()", role, 0)
+
+
 async def test_fmedian(dummy_eval_context, later_eval_context):
     value_expr = MockExpression(0)
     width_expr = MockExpression(4)
@@ -371,3 +419,9 @@ def test_fmedian_num_args():
 
     with pytest.raises(InvalidNumberOfArguments):
         Function.parse(None, "FMEDIAN(1, 2, 3, 4)", Role.VALUE, 0)
+
+
+@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+def test_fmedian_no_transform(role):
+    with pytest.raises(UnknownFunction):
+        Function.parse(None, "FMEDIAN()", role, 0)
