@@ -1,11 +1,11 @@
 import pytest
 
-from qtoggleserver.core.expressions import Function, Role, time
+from qtoggleserver.core.expressions import DEP_ASAP, DEP_SECOND, Function, Role, time
 from qtoggleserver.core.expressions.exceptions import InvalidNumberOfArguments, UnknownFunction
 
 
 class TestTime:
-    async def test_time(self, dummy_utc_datetime, dummy_timestamp, dummy_eval_context):
+    async def test_time(self, dummy_timestamp, dummy_eval_context):
         result = await time.TimeFunction([], role=Role.VALUE).eval(dummy_eval_context)
         assert result == int(dummy_timestamp)
 
@@ -22,9 +22,12 @@ class TestTime:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "TIME()", role, 0)
 
+    def test_time_trigger_eval(self):
+        assert time.TimeFunction.DEPS == {DEP_SECOND}
+
 
 class TestTimeMS:
-    async def test_timems(self, dummy_utc_datetime, dummy_timestamp, dummy_eval_context):
+    async def test_timems(self, dummy_timestamp, dummy_eval_context):
         result = await time.TimeMSFunction([], role=Role.VALUE).eval(dummy_eval_context)
         assert result == int(dummy_timestamp * 1000)
 
@@ -40,3 +43,6 @@ class TestTimeMS:
     def test_timems_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "TIMEMS()", role, 0)
+
+    def test_timems_trigger_eval(self):
+        assert time.TimeMSFunction.DEPS == {DEP_ASAP}

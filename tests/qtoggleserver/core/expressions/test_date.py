@@ -2,7 +2,19 @@ from datetime import datetime
 
 import pytest
 
-from qtoggleserver.core.expressions import Function, Role, date, literalvalues
+from qtoggleserver.core.expressions import (
+    DEP_ASAP,
+    DEP_DAY,
+    DEP_HOUR,
+    DEP_MINUTE,
+    DEP_MONTH,
+    DEP_SECOND,
+    DEP_YEAR,
+    Function,
+    Role,
+    date,
+    literalvalues,
+)
 from qtoggleserver.core.expressions.exceptions import InvalidNumberOfArguments, UnknownFunction
 
 
@@ -28,6 +40,9 @@ class TestYear:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "YEAR()", role, 0)
 
+    def test_year_trigger_eval(self):
+        assert date.YearFunction.DEPS == {DEP_YEAR}
+
 
 class TestMonth:
     async def test_month_simple(self, dummy_local_datetime, dummy_eval_context):
@@ -50,6 +65,9 @@ class TestMonth:
     def test_month_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "MONTH()", role, 0)
+
+    def test_month_trigger_eval(self):
+        assert date.MonthFunction.DEPS == {DEP_MONTH}
 
 
 class TestDay:
@@ -74,6 +92,9 @@ class TestDay:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "DAY()", role, 0)
 
+    def test_year_trigger_eval(self):
+        assert date.DayFunction.DEPS == {DEP_DAY}
+
 
 class TestDOW:
     async def test_dow_simple(self, dummy_local_datetime, dummy_eval_context):
@@ -96,6 +117,9 @@ class TestDOW:
     def test_dow_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "DOW()", role, 0)
+
+    def test_dow_trigger_eval(self):
+        assert date.DOWFunction.DEPS == {DEP_DAY}
 
 
 class TestLDOM:
@@ -120,6 +144,9 @@ class TestLDOM:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "LDOM()", role, 0)
 
+    def test_ldom_trigger_eval(self):
+        assert date.LDOMFunction.DEPS == {DEP_MONTH}
+
 
 class TestHour:
     async def test_hour_simple(self, dummy_local_datetime, dummy_eval_context):
@@ -142,6 +169,9 @@ class TestHour:
     def test_hour_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "HOUR()", role, 0)
+
+    def test_hour_trigger_eval(self):
+        assert date.HourFunction.DEPS == {DEP_HOUR}
 
 
 class TestMinute:
@@ -166,6 +196,9 @@ class TestMinute:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "MINUTE()", role, 0)
 
+    def test_minute_trigger_eval(self):
+        assert date.MinuteFunction.DEPS == {DEP_MINUTE}
+
 
 class TestSecond:
     async def test_second_simple(self, dummy_local_datetime, dummy_eval_context):
@@ -189,6 +222,9 @@ class TestSecond:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "SECOND()", role, 0)
 
+    def test_second_trigger_eval(self):
+        assert date.SecondFunction.DEPS == {DEP_SECOND}
+
 
 class TestMillisecond:
     async def test_millisecond(self, dummy_local_datetime, dummy_eval_context):
@@ -207,6 +243,9 @@ class TestMillisecond:
     def test_millisecond_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "MILLISECOND()", role, 0)
+
+    def test_millisecond_trigger_eval(self):
+        assert date.MillisecondFunction.DEPS == {DEP_ASAP}
 
 
 class TestMinuteOfDay:
@@ -230,6 +269,9 @@ class TestMinuteOfDay:
     def test_minute_of_day_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "MINUTEOFDAY()", role, 0)
+
+    def test_minute_of_day_trigger_eval(self):
+        assert date.MinuteOfDayFunction.DEPS == {DEP_MINUTE}
 
 
 class TestSecondOfDay:
@@ -257,6 +299,9 @@ class TestSecondOfDay:
     def test_second_of_day_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "SECONDOFDAY()", role, 0)
+
+    def test_second_of_day_trigger_eval(self):
+        assert date.SecondFunction.DEPS == {DEP_SECOND}
 
 
 class TestDate:
@@ -329,6 +374,9 @@ class TestBOY:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "BOY()", role, 0)
 
+    def test_boy_trigger_eval(self):
+        assert date.BOYFunction.DEPS == {DEP_YEAR}
+
 
 class TestBOM:
     async def test_bom_simple(self, dummy_local_datetime, local_tz_info, dummy_eval_context):
@@ -384,6 +432,9 @@ class TestBOM:
     def test_bom_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "BOM()", role, 0)
+
+    def test_bom_trigger_eval(self):
+        assert date.BOMFunction.DEPS == {DEP_MONTH}
 
 
 class TestBOW:
@@ -457,6 +508,9 @@ class TestBOW:
     def test_bow_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "BOW()", role, 0)
+
+    def test_bow_trigger_eval(self):
+        assert date.BOWFunction.DEPS == {DEP_DAY}
 
 
 class TestHMSInterval:
@@ -637,6 +691,9 @@ class TestHMSInterval:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "HMSINTERVAL(1, 1, 1, 2, 2, 2)", role, 0)
 
+    def test_hmsinterval_trigger_eval(self):
+        assert date.HMSIntervalFunction.DEPS == {DEP_SECOND}
+
 
 class TestMDInterval:
     async def test_mdinterval_months(self, dummy_local_datetime, dummy_eval_context):
@@ -757,3 +814,6 @@ class TestMDInterval:
     def test_mdinterval_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "MDINTERVAL(1, 1, 2, 2)", role, 0)
+
+    def test_mdnterval_trigger_eval(self):
+        assert date.MDIntervalFunction.DEPS == {DEP_DAY}

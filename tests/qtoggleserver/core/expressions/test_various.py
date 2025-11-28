@@ -1,7 +1,7 @@
 import pytest
 
 from qtoggleserver.core import history
-from qtoggleserver.core.expressions import EvalContext, Function, Role, various
+from qtoggleserver.core.expressions import DEP_ASAP, DEP_SECOND, EvalContext, Function, Role, various
 from qtoggleserver.core.expressions.exceptions import (
     InvalidArgumentKind,
     InvalidNumberOfArguments,
@@ -323,7 +323,6 @@ class TestOnOffAuto:
 class TestSequence:
     async def test_sequence(
         self,
-        dummy_local_datetime,
         literal_two,
         literal_three,
         literal_sixteen,
@@ -344,13 +343,27 @@ class TestSequence:
             Role.VALUE,
         )
         assert await expr.eval(dummy_eval_context) == 3
+        assert expr.is_asap_eval_paused(dummy_eval_context.now_ms)
+        assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 99)
         assert await expr.eval(later_eval_context(99)) == 3
+        assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 101)
+
         assert await expr.eval(later_eval_context(101)) == 16
+        assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 101)
+        assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 299)
         assert await expr.eval(later_eval_context(200)) == 16
         assert await expr.eval(later_eval_context(299)) == 16
+        assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 300)
+
         assert await expr.eval(later_eval_context(301)) == 2
+        assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 301)
+        assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 399)
         assert await expr.eval(later_eval_context(399)) == 2
+        assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 400)
         assert await expr.eval(later_eval_context(401)) == 3
+        assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 401)
+        assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 499)
+        assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 500)
 
     def test_sequence_parse(self):
         e = Function.parse(None, "SEQUENCE(1, 2, 3, 4)", Role.VALUE, 0)
@@ -364,6 +377,9 @@ class TestSequence:
     def test_sequence_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "SEQUENCE(1)", role, 0)
+
+    async def test_sequence_deps(self):
+        assert various.SequenceFunction.DEPS == {DEP_ASAP}
 
 
 class TestLUT:
@@ -712,3 +728,6 @@ class TestHistory:
     def test_history_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "HISTORY(@some_id, 1, 2)", role, 0)
+
+    def test_history_deps(self):
+        assert various.HistoryFunction.DEPS == {DEP_SECOND}
