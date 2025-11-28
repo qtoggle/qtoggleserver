@@ -22,7 +22,7 @@ class TestTime:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "TIME()", role, 0)
 
-    def test_time_trigger_eval(self):
+    def test_time_deps(self):
         assert time.TimeFunction.DEPS == {DEP_SECOND}
 
 
@@ -44,5 +44,5 @@ class TestTimeMS:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "TIMEMS()", role, 0)
 
-    def test_timems_trigger_eval(self):
+    def test_timems_deps(self):
         assert time.TimeMSFunction.DEPS == {DEP_ASAP}

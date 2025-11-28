@@ -1,6 +1,6 @@
 import pytest
 
-from qtoggleserver.core.expressions import Function, Role, timeprocessing
+from qtoggleserver.core.expressions import DEP_ASAP, Function, Role, timeprocessing
 from qtoggleserver.core.expressions.exceptions import EvalSkipped, InvalidNumberOfArguments, UnknownFunction
 from tests.qtoggleserver.mock.expressions import MockExpression
 
@@ -33,6 +33,9 @@ class TestDelay:
     def test_delay_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "DELAY()", role, 0)
+
+    def test_delay_deps(self):
+        assert timeprocessing.DelayFunction.DEPS == {DEP_ASAP}
 
 
 class TestTimer:
@@ -82,6 +85,9 @@ class TestTimer:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "TIMER()", role, 0)
 
+    def test_timer_deps(self):
+        assert timeprocessing.TimerFunction.DEPS == {DEP_ASAP}
+
 
 class TestSample:
     async def test_sample(self, literal_one_thousand, dummy_eval_context, later_eval_context):
@@ -111,6 +117,9 @@ class TestSample:
     def test_sample_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "SAMPLE()", role, 0)
+
+    def test_sample_deps(self):
+        assert timeprocessing.SampleFunction.DEPS == {DEP_ASAP}
 
 
 class TestFreeze:
@@ -151,6 +160,9 @@ class TestFreeze:
     def test_freeze_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "FREEZE()", role, 0)
+
+    def test_freeze_deps(self):
+        assert timeprocessing.FreezeFunction.DEPS == {DEP_ASAP}
 
 
 class TestHeld:
@@ -197,6 +209,9 @@ class TestHeld:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "HELD()", role, 0)
 
+    def test_held_deps(self):
+        assert timeprocessing.HeldFunction.DEPS == {DEP_ASAP}
+
 
 class TestDeriv:
     async def test_deriv(self, dummy_eval_context, later_eval_context):
@@ -238,6 +253,9 @@ class TestDeriv:
     def test_deriv_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "DERIV()", role, 0)
+
+    def test_deriv_deps(self):
+        assert timeprocessing.DerivFunction.DEPS == {DEP_ASAP}
 
 
 class TestInteg:
@@ -286,6 +304,9 @@ class TestInteg:
     def test_integ_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "INTEG()", role, 0)
+
+    def test_integ_deps(self):
+        assert timeprocessing.IntegFunction.DEPS == {DEP_ASAP}
 
 
 class TestFMAvg:
@@ -347,6 +368,9 @@ class TestFMAvg:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "FMAVG()", role, 0)
 
+    def test_fmavg_deps(self):
+        assert timeprocessing.FMAvgFunction.DEPS == {DEP_ASAP}
+
 
 class TestFMedian:
     async def test_fmedian(self, dummy_eval_context, later_eval_context):
@@ -406,3 +430,6 @@ class TestFMedian:
     def test_fmedian_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "FMEDIAN()", role, 0)
+
+    def test_fmedian_deps(self):
+        assert timeprocessing.FMedianFunction.DEPS == {DEP_ASAP}

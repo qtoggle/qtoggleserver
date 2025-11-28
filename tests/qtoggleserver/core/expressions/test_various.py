@@ -378,7 +378,7 @@ class TestSequence:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "SEQUENCE(1)", role, 0)
 
-    async def test_sequence_deps(self):
+    def test_sequence_deps(self):
         assert various.SequenceFunction.DEPS == {DEP_ASAP}
 
 

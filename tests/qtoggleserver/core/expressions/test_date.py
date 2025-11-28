@@ -40,7 +40,7 @@ class TestYear:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "YEAR()", role, 0)
 
-    def test_year_trigger_eval(self):
+    def test_year_deps(self):
         assert date.YearFunction.DEPS == {DEP_YEAR}
 
 
@@ -66,7 +66,7 @@ class TestMonth:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "MONTH()", role, 0)
 
-    def test_month_trigger_eval(self):
+    def test_month_deps(self):
         assert date.MonthFunction.DEPS == {DEP_MONTH}
 
 
@@ -92,7 +92,7 @@ class TestDay:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "DAY()", role, 0)
 
-    def test_year_trigger_eval(self):
+    def test_year_deps(self):
         assert date.DayFunction.DEPS == {DEP_DAY}
 
 
@@ -118,7 +118,7 @@ class TestDOW:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "DOW()", role, 0)
 
-    def test_dow_trigger_eval(self):
+    def test_dow_deps(self):
         assert date.DOWFunction.DEPS == {DEP_DAY}
 
 
@@ -144,7 +144,7 @@ class TestLDOM:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "LDOM()", role, 0)
 
-    def test_ldom_trigger_eval(self):
+    def test_ldom_deps(self):
         assert date.LDOMFunction.DEPS == {DEP_MONTH}
 
 
@@ -170,7 +170,7 @@ class TestHour:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "HOUR()", role, 0)
 
-    def test_hour_trigger_eval(self):
+    def test_hour_deps(self):
         assert date.HourFunction.DEPS == {DEP_HOUR}
 
 
@@ -196,7 +196,7 @@ class TestMinute:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "MINUTE()", role, 0)
 
-    def test_minute_trigger_eval(self):
+    def test_minute_deps(self):
         assert date.MinuteFunction.DEPS == {DEP_MINUTE}
 
 
@@ -222,7 +222,7 @@ class TestSecond:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "SECOND()", role, 0)
 
-    def test_second_trigger_eval(self):
+    def test_second_deps(self):
         assert date.SecondFunction.DEPS == {DEP_SECOND}
 
 
@@ -244,7 +244,7 @@ class TestMillisecond:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "MILLISECOND()", role, 0)
 
-    def test_millisecond_trigger_eval(self):
+    def test_millisecond_deps(self):
         assert date.MillisecondFunction.DEPS == {DEP_ASAP}
 
 
@@ -270,7 +270,7 @@ class TestMinuteOfDay:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "MINUTEOFDAY()", role, 0)
 
-    def test_minute_of_day_trigger_eval(self):
+    def test_minute_of_day_deps(self):
         assert date.MinuteOfDayFunction.DEPS == {DEP_MINUTE}
 
 
@@ -300,7 +300,7 @@ class TestSecondOfDay:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "SECONDOFDAY()", role, 0)
 
-    def test_second_of_day_trigger_eval(self):
+    def test_second_of_day_deps(self):
         assert date.SecondFunction.DEPS == {DEP_SECOND}
 
 
@@ -374,7 +374,7 @@ class TestBOY:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "BOY()", role, 0)
 
-    def test_boy_trigger_eval(self):
+    def test_boy_deps(self):
         assert date.BOYFunction.DEPS == {DEP_YEAR}
 
 
@@ -433,7 +433,7 @@ class TestBOM:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "BOM()", role, 0)
 
-    def test_bom_trigger_eval(self):
+    def test_bom_deps(self):
         assert date.BOMFunction.DEPS == {DEP_MONTH}
 
 
@@ -509,7 +509,7 @@ class TestBOW:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "BOW()", role, 0)
 
-    def test_bow_trigger_eval(self):
+    def test_bow_deps(self):
         assert date.BOWFunction.DEPS == {DEP_DAY}
 
 
@@ -691,7 +691,7 @@ class TestHMSInterval:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "HMSINTERVAL(1, 1, 1, 2, 2, 2)", role, 0)
 
-    def test_hmsinterval_trigger_eval(self):
+    def test_hmsinterval_deps(self):
         assert date.HMSIntervalFunction.DEPS == {DEP_SECOND}
 
 
@@ -815,5 +815,5 @@ class TestMDInterval:
         with pytest.raises(UnknownFunction):
             Function.parse(None, "MDINTERVAL(1, 1, 2, 2)", role, 0)
 
-    def test_mdnterval_trigger_eval(self):
+    def test_mdnterval_deps(self):
         assert date.MDIntervalFunction.DEPS == {DEP_DAY}
