@@ -159,11 +159,11 @@ class SequenceFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._last_time_ms: int = 0
+        self._start_time_ms: int = 0
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        if self._last_time_ms == 0:
-            self._last_time_ms = context.now_ms
+        if self._start_time_ms == 0:
+            self._start_time_ms = context.now_ms
 
         args = await self.eval_args(context)
         num_values = len(args) // 2
@@ -178,13 +178,14 @@ class SequenceFunction(Function):
         if len(delays) < len(values):
             delays.append(0)
 
-        delta = context.now_ms - self._last_time_ms
+        delta = context.now_ms - self._start_time_ms
         delta = delta % total_delay  # work modulo total_delay, to create repeat effect
         delay_so_far = 0
         result = values[0]
         for i in range(num_values):
             delay_so_far += delays[i]
             if delay_so_far >= delta:
+                self.pause_asap_eval(context.now_ms + delay_so_far - delta)
                 result = values[i]
                 break
 
