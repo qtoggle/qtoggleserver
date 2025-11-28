@@ -11,722 +11,704 @@ from qtoggleserver.core.expressions.exceptions import (
 from tests.qtoggleserver.mock.expressions import MockExpression, MockPortRef, MockPortValue
 
 
-async def test_available_value_available(mock_num_port1, dummy_eval_context):
-    """Should return 1 if value is available (not None)."""
+class TestAvailable:
+    async def test_available_value_available(self, mock_num_port1, dummy_eval_context):
+        """Should return 1 if value is available (not None)."""
 
-    mock_expr = MockExpression(16)
-    expr = various.AvailableFunction([mock_expr], Role.VALUE)
-    assert await expr.eval(dummy_eval_context) == 1
+        mock_expr = MockExpression(16)
+        expr = various.AvailableFunction([mock_expr], Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 1
 
-    mock_expr = MockExpression(16)
-    mock_expr.set_value(0)
-    assert await expr.eval(dummy_eval_context) == 1
+        mock_expr = MockExpression(16)
+        mock_expr.set_value(0)
+        assert await expr.eval(dummy_eval_context) == 1
 
+    async def test_available_value_none(self, mock_num_port1, dummy_eval_context):
+        """Should return 0 if value is None."""
 
-async def test_available_value_none(mock_num_port1, dummy_eval_context):
-    """Should return 0 if value is None."""
+        mock_expr = MockExpression(None)
+        expr = various.AvailableFunction([mock_expr], Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 0
 
-    mock_expr = MockExpression(None)
-    expr = various.AvailableFunction([mock_expr], Role.VALUE)
-    assert await expr.eval(dummy_eval_context) == 0
+    async def test_available_value_unavailable(self, mock_num_port1, literal_unavailable, dummy_eval_context):
+        """Should return 0 if value is unavailable."""
 
+        expr = various.AvailableFunction([literal_unavailable], Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 0
 
-async def test_available_value_unavailable(mock_num_port1, literal_unavailable, dummy_eval_context):
-    """Should return 0 if value is unavailable."""
+    async def test_available_func(self, mock_num_port1):
+        port_expr = MockPortValue(mock_num_port1)
+        acc_expr = MockExpression(13)
+        func_expr = various.AccFunction([port_expr, acc_expr], Role.VALUE)
+        expr = various.AvailableFunction([func_expr], Role.VALUE)
+        assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
-    expr = various.AvailableFunction([literal_unavailable], Role.VALUE)
-    assert await expr.eval(dummy_eval_context) == 0
+        mock_num_port1.set_last_read_value(16)
+        assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 1
 
+        port_expr = MockPortValue(None, port_id="inexistent_id")
+        func_expr = various.AccFunction([port_expr, acc_expr], Role.VALUE)
+        expr = various.AvailableFunction([func_expr], Role.VALUE)
+        assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
-async def test_available_func(mock_num_port1):
-    port_expr = MockPortValue(mock_num_port1)
-    acc_expr = MockExpression(13)
-    func_expr = various.AccFunction([port_expr, acc_expr], Role.VALUE)
-    expr = various.AvailableFunction([func_expr], Role.VALUE)
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
+    def test_available_parse(self):
+        e = Function.parse(None, "AVAILABLE(1)", Role.VALUE, 0)
+        assert isinstance(e, various.AvailableFunction)
 
-    mock_num_port1.set_last_read_value(16)
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 1
+    def test_available_num_args(self):
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "AVAILABLE()", Role.VALUE, 0)
 
-    port_expr = MockPortValue(None, port_id="inexistent_id")
-    func_expr = various.AccFunction([port_expr, acc_expr], Role.VALUE)
-    expr = various.AvailableFunction([func_expr], Role.VALUE)
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "AVAILABLE(1, 2)", Role.VALUE, 0)
 
 
-def test_available_parse():
-    e = Function.parse(None, "AVAILABLE(1)", Role.VALUE, 0)
-    assert isinstance(e, various.AvailableFunction)
+class TestDefault:
+    async def test_default_value_available(self, mock_num_port1, dummy_eval_context):
+        """Should return value when available (not None)."""
 
+        mock_expr = MockExpression(16)
+        def_expr = MockExpression(13)
+        expr = various.DefaultFunction([mock_expr, def_expr], Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 16
 
-def test_available_num_args():
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "AVAILABLE()", Role.VALUE, 0)
+        mock_expr.set_value(0)
+        assert await expr.eval(dummy_eval_context) == 0
 
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "AVAILABLE(1, 2)", Role.VALUE, 0)
+    async def test_default_value_none(self, mock_num_port1, dummy_eval_context):
+        """Should return default value when value is None."""
 
+        mock_expr = MockExpression(None)
+        def_expr = MockExpression(13)
+        expr = various.DefaultFunction([mock_expr, def_expr], Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 13
 
-async def test_default_value_available(mock_num_port1, dummy_eval_context):
-    """Should return value when available (not None)."""
+    async def test_default_value_unavailable(self, mock_num_port1, literal_unavailable, dummy_eval_context):
+        """Should return default value when value is unavailable."""
 
-    mock_expr = MockExpression(16)
-    def_expr = MockExpression(13)
-    expr = various.DefaultFunction([mock_expr, def_expr], Role.VALUE)
-    assert await expr.eval(dummy_eval_context) == 16
+        def_expr = MockExpression(13)
+        expr = various.DefaultFunction([literal_unavailable, def_expr], Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 13
 
-    mock_expr.set_value(0)
-    assert await expr.eval(dummy_eval_context) == 0
+    def test_default_parse(self):
+        e = Function.parse(None, "DEFAULT(1, 2)", Role.VALUE, 0)
+        assert isinstance(e, various.DefaultFunction)
 
+    def test_default_num_args(self):
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "DEFAULT(1)", Role.VALUE, 0)
 
-async def test_default_value_none(mock_num_port1, dummy_eval_context):
-    """Should return default value when value is None."""
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "AVAILABLE(1, 2, 3)", Role.VALUE, 0)
 
-    mock_expr = MockExpression(None)
-    def_expr = MockExpression(13)
-    expr = various.DefaultFunction([mock_expr, def_expr], Role.VALUE)
-    assert await expr.eval(dummy_eval_context) == 13
 
+class TestRising:
+    async def test_rising(self, mock_num_port1):
+        port_expr = MockPortValue(mock_num_port1)
+        expr = various.RisingFunction([port_expr], Role.VALUE)
 
-async def test_default_value_unavailable(mock_num_port1, literal_unavailable, dummy_eval_context):
-    """Should return default value when value is unavailable."""
+        mock_num_port1.set_last_read_value(10)
+        assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
+        assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
-    def_expr = MockExpression(13)
-    expr = various.DefaultFunction([literal_unavailable, def_expr], Role.VALUE)
-    assert await expr.eval(dummy_eval_context) == 13
+        mock_num_port1.set_last_read_value(13)
+        assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 1
+        assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
+        mock_num_port1.set_last_read_value(9)
+        assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
-def test_default_parse():
-    e = Function.parse(None, "DEFAULT(1, 2)", Role.VALUE, 0)
-    assert isinstance(e, various.DefaultFunction)
+    def test_rising_parse(self):
+        e = Function.parse(None, "RISING(1)", Role.VALUE, 0)
+        assert isinstance(e, various.RisingFunction)
 
+    def test_rising_num_args(self):
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "RISING()", Role.VALUE, 0)
 
-def test_default_num_args():
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "DEFAULT(1)", Role.VALUE, 0)
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "RISING(1, 2)", Role.VALUE, 0)
 
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "AVAILABLE(1, 2, 3)", Role.VALUE, 0)
 
+class TestFalling:
+    async def test_falling(self, mock_num_port1):
+        port_expr = MockPortValue(mock_num_port1)
+        expr = various.FallingFunction([port_expr], Role.VALUE)
 
-async def test_rising(mock_num_port1):
-    port_expr = MockPortValue(mock_num_port1)
-    expr = various.RisingFunction([port_expr], Role.VALUE)
+        mock_num_port1.set_last_read_value(13)
+        assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
+        assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
-    mock_num_port1.set_last_read_value(10)
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
+        mock_num_port1.set_last_read_value(10)
+        assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 1
+        assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
-    mock_num_port1.set_last_read_value(13)
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 1
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
+        mock_num_port1.set_last_read_value(14)
+        assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
-    mock_num_port1.set_last_read_value(9)
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
+    def test_falling_parse(self):
+        e = Function.parse(None, "FALLING(1)", Role.VALUE, 0)
+        assert isinstance(e, various.FallingFunction)
 
+    def test_falling_num_args(self):
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "FALLING()", Role.VALUE, 0)
 
-def test_rising_parse():
-    e = Function.parse(None, "RISING(1)", Role.VALUE, 0)
-    assert isinstance(e, various.RisingFunction)
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "FALLING(1, 2)", Role.VALUE, 0)
 
 
-def test_rising_num_args():
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "RISING()", Role.VALUE, 0)
+class TestAcc:
+    async def test_acc(self, dummy_eval_context):
+        value_expr = MockExpression(16)
+        acc_expr = MockExpression(13)
+        expr = various.AccFunction([value_expr, acc_expr], Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 13
 
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "RISING(1, 2)", Role.VALUE, 0)
+        acc_expr.set_value(-5)
+        assert await expr.eval(dummy_eval_context) == -5
 
+        value_expr.set_value(26)
+        assert await expr.eval(dummy_eval_context) == 5
 
-async def test_falling(mock_num_port1):
-    port_expr = MockPortValue(mock_num_port1)
-    expr = various.FallingFunction([port_expr], Role.VALUE)
+        value_expr.set_value(20)
+        acc_expr.set_value(5)
+        assert await expr.eval(dummy_eval_context) == -1
 
-    mock_num_port1.set_last_read_value(13)
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
+    def test_acc_parse(self):
+        e = Function.parse(None, "ACC(1, 2)", Role.VALUE, 0)
+        assert isinstance(e, various.AccFunction)
 
-    mock_num_port1.set_last_read_value(10)
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 1
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
+    def test_acc_num_args(self):
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "ACC(1)", Role.VALUE, 0)
 
-    mock_num_port1.set_last_read_value(14)
-    assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "ACC(1, 2, 3)", Role.VALUE, 0)
 
 
-def test_falling_parse():
-    e = Function.parse(None, "FALLING(1)", Role.VALUE, 0)
-    assert isinstance(e, various.FallingFunction)
+class TestAccInc:
+    async def test_accinc(self, dummy_eval_context):
+        value_expr = MockExpression(16)
+        acc_expr = MockExpression(13)
+        expr = various.AccIncFunction([value_expr, acc_expr], Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 13
 
+        acc_expr.set_value(-5)
+        assert await expr.eval(dummy_eval_context) == -5
 
-def test_falling_num_args():
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "FALLING()", Role.VALUE, 0)
+        value_expr.set_value(26)
+        assert await expr.eval(dummy_eval_context) == 5
 
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "FALLING(1, 2)", Role.VALUE, 0)
+        value_expr.set_value(20)
+        acc_expr.set_value(5)
+        assert await expr.eval(dummy_eval_context) == 5
 
+    def test_accinc_parse(self):
+        e = Function.parse(None, "ACCINC(1, 2)", Role.VALUE, 0)
+        assert isinstance(e, various.AccIncFunction)
 
-async def test_acc(dummy_eval_context):
-    value_expr = MockExpression(16)
-    acc_expr = MockExpression(13)
-    expr = various.AccFunction([value_expr, acc_expr], Role.VALUE)
-    assert await expr.eval(dummy_eval_context) == 13
+    def test_accinc_num_args(self):
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "ACCINC(1)", Role.VALUE, 0)
 
-    acc_expr.set_value(-5)
-    assert await expr.eval(dummy_eval_context) == -5
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "ACCINC(1, 2, 3)", Role.VALUE, 0)
 
-    value_expr.set_value(26)
-    assert await expr.eval(dummy_eval_context) == 5
 
-    value_expr.set_value(20)
-    acc_expr.set_value(5)
-    assert await expr.eval(dummy_eval_context) == -1
+class TestHyst:
+    async def test_hyst_rise(self, literal_three, literal_sixteen, dummy_eval_context):
+        value_expr = MockExpression(1)
+        expr = various.HystFunction([value_expr, literal_three, literal_sixteen], Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 0
 
+        value_expr.set_value(2)
+        assert await expr.eval(dummy_eval_context) == 0
 
-def test_acc_parse():
-    e = Function.parse(None, "ACC(1, 2)", Role.VALUE, 0)
-    assert isinstance(e, various.AccFunction)
+        value_expr.set_value(3)
+        assert await expr.eval(dummy_eval_context) == 0
 
+        value_expr.set_value(4)
+        assert await expr.eval(dummy_eval_context) == 0
 
-def test_acc_num_args():
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "ACC(1)", Role.VALUE, 0)
+        value_expr.set_value(16)
+        assert await expr.eval(dummy_eval_context) == 0
 
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "ACC(1, 2, 3)", Role.VALUE, 0)
+        value_expr.set_value(10)
+        assert await expr.eval(dummy_eval_context) == 0
 
+        value_expr.set_value(2)
+        assert await expr.eval(dummy_eval_context) == 0
 
-async def test_accinc(dummy_eval_context):
-    value_expr = MockExpression(16)
-    acc_expr = MockExpression(13)
-    expr = various.AccIncFunction([value_expr, acc_expr], Role.VALUE)
-    assert await expr.eval(dummy_eval_context) == 13
+        value_expr.set_value(17)
+        assert await expr.eval(dummy_eval_context) == 1
 
-    acc_expr.set_value(-5)
-    assert await expr.eval(dummy_eval_context) == -5
+        value_expr.set_value(20)
+        assert await expr.eval(dummy_eval_context) == 1
 
-    value_expr.set_value(26)
-    assert await expr.eval(dummy_eval_context) == 5
+    async def test_hyst_fall(self, literal_three, literal_sixteen, dummy_eval_context):
+        value_expr = MockExpression(20)
+        expr = various.HystFunction([value_expr, literal_three, literal_sixteen], Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 1
 
-    value_expr.set_value(20)
-    acc_expr.set_value(5)
-    assert await expr.eval(dummy_eval_context) == 5
+        value_expr.set_value(17)
+        assert await expr.eval(dummy_eval_context) == 1
 
+        value_expr.set_value(16)
+        assert await expr.eval(dummy_eval_context) == 1
 
-def test_accinc_parse():
-    e = Function.parse(None, "ACCINC(1, 2)", Role.VALUE, 0)
-    assert isinstance(e, various.AccIncFunction)
+        value_expr.set_value(10)
+        assert await expr.eval(dummy_eval_context) == 1
 
+        value_expr.set_value(4)
+        assert await expr.eval(dummy_eval_context) == 1
 
-def test_accinc_num_args():
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "ACCINC(1)", Role.VALUE, 0)
+        value_expr.set_value(20)
+        assert await expr.eval(dummy_eval_context) == 1
 
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "ACCINC(1, 2, 3)", Role.VALUE, 0)
+        value_expr.set_value(3)
+        assert await expr.eval(dummy_eval_context) == 1
 
+        value_expr.set_value(2)
+        assert await expr.eval(dummy_eval_context) == 0
 
-async def test_hyst_rise(literal_three, literal_sixteen, dummy_eval_context):
-    value_expr = MockExpression(1)
-    expr = various.HystFunction([value_expr, literal_three, literal_sixteen], Role.VALUE)
-    assert await expr.eval(dummy_eval_context) == 0
+        value_expr.set_value(0)
+        assert await expr.eval(dummy_eval_context) == 0
 
-    value_expr.set_value(2)
-    assert await expr.eval(dummy_eval_context) == 0
+    def test_hyst_parse(self):
+        e = Function.parse(None, "HYST(1, 2, 3)", Role.VALUE, 0)
+        assert isinstance(e, various.HystFunction)
 
-    value_expr.set_value(3)
-    assert await expr.eval(dummy_eval_context) == 0
+    def test_hyst_num_args(self):
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "HYST(1, 2)", Role.VALUE, 0)
+
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "HYST(1, 2, 3, 4)", Role.VALUE, 0)
+
+
+class TestOnOffAuto:
+    async def test_onoffauto(self, dummy_eval_context):
+        value_expr = MockExpression(0)
+        auto_expr = MockExpression(13)
+        expr = various.OnOffAutoFunction([value_expr, auto_expr], Role.VALUE)
+
+        value_expr.set_value(0)
+        assert await expr.eval(dummy_eval_context) == 13
+
+        value_expr.set_value(-1)
+        assert await expr.eval(dummy_eval_context) is False
+
+        value_expr.set_value(-10)
+        assert await expr.eval(dummy_eval_context) is False
+
+        value_expr.set_value(1)
+        assert await expr.eval(dummy_eval_context) is True
+
+        value_expr.set_value(10)
+        assert await expr.eval(dummy_eval_context) is True
+
+    def test_onoffauto_parse(self):
+        e = Function.parse(None, "ONOFFAUTO(1, 2)", Role.VALUE, 0)
+        assert isinstance(e, various.OnOffAutoFunction)
+
+    def test_onoffauto_num_args(self):
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "ONOFFAUTO(1)", Role.VALUE, 0)
+
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "ONOFFAUTO(1, 2, 3)", Role.VALUE, 0)
+
+
+class TestSequence:
+    async def test_sequence(
+        self,
+        dummy_local_datetime,
+        literal_two,
+        literal_three,
+        literal_sixteen,
+        literal_one_hundred,
+        literal_two_hundreds,
+        dummy_eval_context,
+        later_eval_context,
+    ):
+        expr = various.SequenceFunction(
+            [
+                literal_three,
+                literal_one_hundred,
+                literal_sixteen,
+                literal_two_hundreds,
+                literal_two,
+                literal_one_hundred,
+            ],
+            Role.VALUE,
+        )
+        assert await expr.eval(dummy_eval_context) == 3
+        assert await expr.eval(later_eval_context(99)) == 3
+        assert await expr.eval(later_eval_context(101)) == 16
+        assert await expr.eval(later_eval_context(200)) == 16
+        assert await expr.eval(later_eval_context(299)) == 16
+        assert await expr.eval(later_eval_context(301)) == 2
+        assert await expr.eval(later_eval_context(399)) == 2
+        assert await expr.eval(later_eval_context(401)) == 3
+
+    def test_sequence_parse(self):
+        e = Function.parse(None, "SEQUENCE(1, 2, 3, 4)", Role.VALUE, 0)
+        assert isinstance(e, various.SequenceFunction)
+
+    def test_sequence_num_args(self):
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "SEQUENCE(1)", Role.VALUE, 0)
+
+    @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+    def test_sequence_no_transform(self, role):
+        with pytest.raises(UnknownFunction):
+            Function.parse(None, "SEQUENCE(1)", role, 0)
+
+
+class TestLUT:
+    async def test_lut(
+        self,
+        literal_two,
+        literal_three,
+        literal_sixteen,
+        literal_one_hundred,
+        literal_two_hundreds,
+        literal_one_thousand,
+        dummy_eval_context,
+    ):
+        value_expr = MockExpression(0)
+        expr = various.LUTFunction(
+            [
+                value_expr,
+                literal_three,
+                literal_two_hundreds,
+                literal_sixteen,
+                literal_one_thousand,
+                literal_two,
+                literal_one_hundred,
+            ],
+            Role.VALUE,
+        )
+        assert await expr.eval(dummy_eval_context) == 100
+
+        value_expr.set_value(2)
+        assert await expr.eval(dummy_eval_context) == 100
+
+        value_expr.set_value(2.4)
+        assert await expr.eval(dummy_eval_context) == 100
+
+        value_expr.set_value(2.6)
+        assert await expr.eval(dummy_eval_context) == 200
+
+        value_expr.set_value(3)
+        assert await expr.eval(dummy_eval_context) == 200
+
+        value_expr.set_value(5)
+        assert await expr.eval(dummy_eval_context) == 200
+
+        value_expr.set_value(9.4)
+        assert await expr.eval(dummy_eval_context) == 200
+
+        value_expr.set_value(9.6)
+        assert await expr.eval(dummy_eval_context) == 1000
+
+        value_expr.set_value(100)
+        assert await expr.eval(dummy_eval_context) == 1000
+
+    def test_lut_parse(self):
+        e = Function.parse(None, "LUT(1, 2, 3, 4, 5)", Role.VALUE, 0)
+        assert isinstance(e, various.LUTFunction)
+
+    def test_lut_num_args(self):
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "LUT(1)", Role.VALUE, 0)
+
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "LUT(1, 2)", Role.VALUE, 0)
+
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "LUT(1, 2, 3, 4)", Role.VALUE, 0)
+
+
+class TestLUTLI:
+    async def test_lutli(
+        self,
+        literal_two,
+        literal_three,
+        literal_sixteen,
+        literal_one_hundred,
+        literal_two_hundreds,
+        literal_one_thousand,
+        dummy_eval_context,
+    ):
+        value_expr = MockExpression(0)
+        expr = various.LUTLIFunction(
+            [
+                value_expr,
+                literal_three,
+                literal_two_hundreds,
+                literal_sixteen,
+                literal_one_thousand,
+                literal_two,
+                literal_one_hundred,
+            ],
+            Role.VALUE,
+        )
+        assert await expr.eval(dummy_eval_context) == 100
+
+        value_expr.set_value(2)
+        assert await expr.eval(dummy_eval_context) == 100
+
+        value_expr.set_value(2.4)
+        assert await expr.eval(dummy_eval_context) == 140
+
+        value_expr.set_value(2.6)
+        assert await expr.eval(dummy_eval_context) == 160
+
+        value_expr.set_value(3)
+        assert await expr.eval(dummy_eval_context) == 200
+
+        value_expr.set_value(5)
+        assert round(await expr.eval(dummy_eval_context), 2) == 323.08
+
+        value_expr.set_value(9.4)
+        assert round(await expr.eval(dummy_eval_context), 2) == 593.85
+
+        value_expr.set_value(9.6)
+        assert round(await expr.eval(dummy_eval_context), 2) == 606.15
+
+        value_expr.set_value(16)
+        assert round(await expr.eval(dummy_eval_context), 2) == 1000
+
+        value_expr.set_value(100)
+        assert round(await expr.eval(dummy_eval_context), 2) == 1000
+
+    def test_lutli_parse(self):
+        e = Function.parse(None, "LUTLI(1, 2, 3, 4, 5)", Role.VALUE, 0)
+        assert isinstance(e, various.LUTLIFunction)
+
+    def test_lutli_num_args(self):
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "LUTLI(1)", Role.VALUE, 0)
+
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "LUTLI(1, 2)", Role.VALUE, 0)
+
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "LUTLI(1, 2, 3, 4)", Role.VALUE, 0)
+
+
+class TestHistory:
+    async def test_history_older_past(
+        self, freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
+    ):
+        freezer.move_to(dummy_utc_datetime)
+        mock_persist_driver.enable_samples_support()
+
+        port_expr = MockPortRef(mock_num_port1)
+        ts_expr = MockExpression(dummy_timestamp - 3600)
+        diff_expr = MockExpression(-3600)
+
+        expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
+
+        mock_num_port1.set_last_read_value(-8)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
+        mock_num_port1.set_last_read_value(-2)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 2000) * 1000)
+        mock_num_port1.set_last_read_value(0.01)
+
+        with pytest.raises(PortValueUnavailable):
+            await expr.eval(dummy_eval_context)
+
+        mock_num_port1.set_last_read_value(-6)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 6000) * 1000)
+        assert await expr.eval(dummy_eval_context) == -6
+
+        mock_num_port1.set_last_read_value(-4)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 4000) * 1000)
+        diff_expr.set_value(-3601)  # invalidates history expression internal cache
+        assert await expr.eval(dummy_eval_context) == -4
+
+    async def test_history_older_future(
+        self, freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
+    ):
+        freezer.move_to(dummy_utc_datetime)
+        mock_persist_driver.enable_samples_support()
+
+        port_expr = MockPortRef(mock_num_port1)
+        ts_expr = MockExpression(dummy_timestamp + 7200)
+        diff_expr = MockExpression(-3600)
+
+        expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
+
+        mock_num_port1.set_last_read_value(-8)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
+
+        mock_num_port1.set_last_read_value(0.01)
+        assert await expr.eval(dummy_eval_context) == 0.01
+
+    async def test_history_older_current(
+        self, freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
+    ):
+        freezer.move_to(dummy_utc_datetime)
+        mock_persist_driver.enable_samples_support()
+
+        port_expr = MockPortRef(mock_num_port1)
+        ts_expr = MockExpression(dummy_timestamp + 1800)
+        diff_expr = MockExpression(-3600)
+
+        expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
+
+        mock_num_port1.set_last_read_value(-2)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 2000) * 1000)
+        mock_num_port1.set_last_read_value(-1)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 1000) * 1000)
+
+        mock_num_port1.set_last_read_value(0.01)
+        assert await expr.eval(dummy_eval_context) == 0.01
+
+    async def test_history_newer_past(
+        self, freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
+    ):
+        freezer.move_to(dummy_utc_datetime)
+        mock_persist_driver.enable_samples_support()
+
+        port_expr = MockPortRef(mock_num_port1)
+        ts_expr = MockExpression(dummy_timestamp - 7200)
+        diff_expr = MockExpression(3600)
+
+        expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
+
+        mock_num_port1.set_last_read_value(-8)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
+        mock_num_port1.set_last_read_value(-2)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 2000) * 1000)
+        mock_num_port1.set_last_read_value(0.01)
+
+        with pytest.raises(PortValueUnavailable):
+            await expr.eval(dummy_eval_context)
+
+        mock_num_port1.set_last_read_value(-4)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 4000) * 1000)
+        assert await expr.eval(dummy_eval_context) == -4
+
+        mock_num_port1.set_last_read_value(-6)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 6000) * 1000)
+        diff_expr.set_value(3601)  # invalidates history expression internal cache
+        assert await expr.eval(dummy_eval_context) == -6
+
+    async def test_history_newer_future(
+        self, freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
+    ):
+        freezer.move_to(dummy_utc_datetime)
+        mock_persist_driver.enable_samples_support()
 
-    value_expr.set_value(4)
-    assert await expr.eval(dummy_eval_context) == 0
+        port_expr = MockPortRef(mock_num_port1)
+        ts_expr = MockExpression(dummy_timestamp + 3600)
+        diff_expr = MockExpression(3600)
 
-    value_expr.set_value(16)
-    assert await expr.eval(dummy_eval_context) == 0
+        expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
 
-    value_expr.set_value(10)
-    assert await expr.eval(dummy_eval_context) == 0
-
-    value_expr.set_value(2)
-    assert await expr.eval(dummy_eval_context) == 0
-
-    value_expr.set_value(17)
-    assert await expr.eval(dummy_eval_context) == 1
-
-    value_expr.set_value(20)
-    assert await expr.eval(dummy_eval_context) == 1
-
-
-async def test_hyst_fall(literal_three, literal_sixteen, dummy_eval_context):
-    value_expr = MockExpression(20)
-    expr = various.HystFunction([value_expr, literal_three, literal_sixteen], Role.VALUE)
-    assert await expr.eval(dummy_eval_context) == 1
-
-    value_expr.set_value(17)
-    assert await expr.eval(dummy_eval_context) == 1
-
-    value_expr.set_value(16)
-    assert await expr.eval(dummy_eval_context) == 1
-
-    value_expr.set_value(10)
-    assert await expr.eval(dummy_eval_context) == 1
-
-    value_expr.set_value(4)
-    assert await expr.eval(dummy_eval_context) == 1
-
-    value_expr.set_value(20)
-    assert await expr.eval(dummy_eval_context) == 1
-
-    value_expr.set_value(3)
-    assert await expr.eval(dummy_eval_context) == 1
-
-    value_expr.set_value(2)
-    assert await expr.eval(dummy_eval_context) == 0
-
-    value_expr.set_value(0)
-    assert await expr.eval(dummy_eval_context) == 0
-
-
-def test_hyst_parse():
-    e = Function.parse(None, "HYST(1, 2, 3)", Role.VALUE, 0)
-    assert isinstance(e, various.HystFunction)
-
-
-def test_hyst_num_args():
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "HYST(1, 2)", Role.VALUE, 0)
-
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "HYST(1, 2, 3, 4)", Role.VALUE, 0)
-
-
-async def test_onoffauto(dummy_eval_context):
-    value_expr = MockExpression(0)
-    auto_expr = MockExpression(13)
-    expr = various.OnOffAutoFunction([value_expr, auto_expr], Role.VALUE)
-
-    value_expr.set_value(0)
-    assert await expr.eval(dummy_eval_context) == 13
-
-    value_expr.set_value(-1)
-    assert await expr.eval(dummy_eval_context) is False
-
-    value_expr.set_value(-10)
-    assert await expr.eval(dummy_eval_context) is False
-
-    value_expr.set_value(1)
-    assert await expr.eval(dummy_eval_context) is True
-
-    value_expr.set_value(10)
-    assert await expr.eval(dummy_eval_context) is True
-
-
-def test_onoffauto_parse():
-    e = Function.parse(None, "ONOFFAUTO(1, 2)", Role.VALUE, 0)
-    assert isinstance(e, various.OnOffAutoFunction)
-
-
-def test_onoffauto_num_args():
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "ONOFFAUTO(1)", Role.VALUE, 0)
-
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "ONOFFAUTO(1, 2, 3)", Role.VALUE, 0)
-
-
-async def test_sequence(
-    dummy_local_datetime,
-    literal_two,
-    literal_three,
-    literal_sixteen,
-    literal_one_hundred,
-    literal_two_hundreds,
-    dummy_eval_context,
-    later_eval_context,
-):
-    expr = various.SequenceFunction(
-        [literal_three, literal_one_hundred, literal_sixteen, literal_two_hundreds, literal_two, literal_one_hundred],
-        Role.VALUE,
-    )
-    assert await expr.eval(dummy_eval_context) == 3
-    assert await expr.eval(later_eval_context(99)) == 3
-    assert await expr.eval(later_eval_context(101)) == 16
-    assert await expr.eval(later_eval_context(200)) == 16
-    assert await expr.eval(later_eval_context(299)) == 16
-    assert await expr.eval(later_eval_context(301)) == 2
-    assert await expr.eval(later_eval_context(399)) == 2
-    assert await expr.eval(later_eval_context(401)) == 3
-
-
-def test_sequence_parse():
-    e = Function.parse(None, "SEQUENCE(1, 2, 3, 4)", Role.VALUE, 0)
-    assert isinstance(e, various.SequenceFunction)
-
-
-def test_sequence_num_args():
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "SEQUENCE(1)", Role.VALUE, 0)
-
-
-@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-def test_sequence_no_transform(role):
-    with pytest.raises(UnknownFunction):
-        Function.parse(None, "SEQUENCE(1)", role, 0)
-
-
-async def test_lut(
-    literal_two,
-    literal_three,
-    literal_sixteen,
-    literal_one_hundred,
-    literal_two_hundreds,
-    literal_one_thousand,
-    dummy_eval_context,
-):
-    value_expr = MockExpression(0)
-    expr = various.LUTFunction(
-        [
-            value_expr,
-            literal_three,
-            literal_two_hundreds,
-            literal_sixteen,
-            literal_one_thousand,
-            literal_two,
-            literal_one_hundred,
-        ],
-        Role.VALUE,
-    )
-    assert await expr.eval(dummy_eval_context) == 100
-
-    value_expr.set_value(2)
-    assert await expr.eval(dummy_eval_context) == 100
-
-    value_expr.set_value(2.4)
-    assert await expr.eval(dummy_eval_context) == 100
-
-    value_expr.set_value(2.6)
-    assert await expr.eval(dummy_eval_context) == 200
-
-    value_expr.set_value(3)
-    assert await expr.eval(dummy_eval_context) == 200
-
-    value_expr.set_value(5)
-    assert await expr.eval(dummy_eval_context) == 200
-
-    value_expr.set_value(9.4)
-    assert await expr.eval(dummy_eval_context) == 200
-
-    value_expr.set_value(9.6)
-    assert await expr.eval(dummy_eval_context) == 1000
-
-    value_expr.set_value(100)
-    assert await expr.eval(dummy_eval_context) == 1000
-
-
-def test_lut_parse():
-    e = Function.parse(None, "LUT(1, 2, 3, 4, 5)", Role.VALUE, 0)
-    assert isinstance(e, various.LUTFunction)
-
-
-def test_lut_num_args():
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "LUT(1)", Role.VALUE, 0)
-
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "LUT(1, 2)", Role.VALUE, 0)
-
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "LUT(1, 2, 3, 4)", Role.VALUE, 0)
-
-
-async def test_lutli(
-    literal_two,
-    literal_three,
-    literal_sixteen,
-    literal_one_hundred,
-    literal_two_hundreds,
-    literal_one_thousand,
-    dummy_eval_context,
-):
-    value_expr = MockExpression(0)
-    expr = various.LUTLIFunction(
-        [
-            value_expr,
-            literal_three,
-            literal_two_hundreds,
-            literal_sixteen,
-            literal_one_thousand,
-            literal_two,
-            literal_one_hundred,
-        ],
-        Role.VALUE,
-    )
-    assert await expr.eval(dummy_eval_context) == 100
-
-    value_expr.set_value(2)
-    assert await expr.eval(dummy_eval_context) == 100
-
-    value_expr.set_value(2.4)
-    assert await expr.eval(dummy_eval_context) == 140
-
-    value_expr.set_value(2.6)
-    assert await expr.eval(dummy_eval_context) == 160
-
-    value_expr.set_value(3)
-    assert await expr.eval(dummy_eval_context) == 200
-
-    value_expr.set_value(5)
-    assert round(await expr.eval(dummy_eval_context), 2) == 323.08
-
-    value_expr.set_value(9.4)
-    assert round(await expr.eval(dummy_eval_context), 2) == 593.85
-
-    value_expr.set_value(9.6)
-    assert round(await expr.eval(dummy_eval_context), 2) == 606.15
-
-    value_expr.set_value(16)
-    assert round(await expr.eval(dummy_eval_context), 2) == 1000
-
-    value_expr.set_value(100)
-    assert round(await expr.eval(dummy_eval_context), 2) == 1000
-
-
-def test_lutli_parse():
-    e = Function.parse(None, "LUTLI(1, 2, 3, 4, 5)", Role.VALUE, 0)
-    assert isinstance(e, various.LUTLIFunction)
-
-
-def test_lutli_num_args():
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "LUTLI(1)", Role.VALUE, 0)
-
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "LUTLI(1, 2)", Role.VALUE, 0)
-
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "LUTLI(1, 2, 3, 4)", Role.VALUE, 0)
-
-
-async def test_history_older_past(
-    freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
-):
-    freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_samples_support()
-
-    port_expr = MockPortRef(mock_num_port1)
-    ts_expr = MockExpression(dummy_timestamp - 3600)
-    diff_expr = MockExpression(-3600)
-
-    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
-
-    mock_num_port1.set_last_read_value(-8)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
-    mock_num_port1.set_last_read_value(-2)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 2000) * 1000)
-    mock_num_port1.set_last_read_value(0.01)
-
-    with pytest.raises(PortValueUnavailable):
-        await expr.eval(dummy_eval_context)
-
-    mock_num_port1.set_last_read_value(-6)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 6000) * 1000)
-    assert await expr.eval(dummy_eval_context) == -6
-
-    mock_num_port1.set_last_read_value(-4)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 4000) * 1000)
-    diff_expr.set_value(-3601)  # invalidates history expression internal cache
-    assert await expr.eval(dummy_eval_context) == -4
-
-
-async def test_history_older_future(
-    freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
-):
-    freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_samples_support()
-
-    port_expr = MockPortRef(mock_num_port1)
-    ts_expr = MockExpression(dummy_timestamp + 7200)
-    diff_expr = MockExpression(-3600)
-
-    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
-
-    mock_num_port1.set_last_read_value(-8)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
-
-    mock_num_port1.set_last_read_value(0.01)
-    assert await expr.eval(dummy_eval_context) == 0.01
-
-
-async def test_history_older_current(
-    freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
-):
-    freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_samples_support()
-
-    port_expr = MockPortRef(mock_num_port1)
-    ts_expr = MockExpression(dummy_timestamp + 1800)
-    diff_expr = MockExpression(-3600)
-
-    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
-
-    mock_num_port1.set_last_read_value(-2)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 2000) * 1000)
-    mock_num_port1.set_last_read_value(-1)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 1000) * 1000)
-
-    mock_num_port1.set_last_read_value(0.01)
-    assert await expr.eval(dummy_eval_context) == 0.01
-
-
-async def test_history_newer_past(
-    freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
-):
-    freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_samples_support()
-
-    port_expr = MockPortRef(mock_num_port1)
-    ts_expr = MockExpression(dummy_timestamp - 7200)
-    diff_expr = MockExpression(3600)
-
-    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
-
-    mock_num_port1.set_last_read_value(-8)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
-    mock_num_port1.set_last_read_value(-2)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 2000) * 1000)
-    mock_num_port1.set_last_read_value(0.01)
-
-    with pytest.raises(PortValueUnavailable):
-        await expr.eval(dummy_eval_context)
-
-    mock_num_port1.set_last_read_value(-4)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 4000) * 1000)
-    assert await expr.eval(dummy_eval_context) == -4
-
-    mock_num_port1.set_last_read_value(-6)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 6000) * 1000)
-    diff_expr.set_value(3601)  # invalidates history expression internal cache
-    assert await expr.eval(dummy_eval_context) == -6
-
-
-async def test_history_newer_future(
-    freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
-):
-    freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_samples_support()
-
-    port_expr = MockPortRef(mock_num_port1)
-    ts_expr = MockExpression(dummy_timestamp + 3600)
-    diff_expr = MockExpression(3600)
-
-    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
-
-    mock_num_port1.set_last_read_value(-8)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
-
-    mock_num_port1.set_last_read_value(0.01)
-    with pytest.raises(PortValueUnavailable):
-        await expr.eval(dummy_eval_context)
-
-
-async def test_history_newer_current(
-    freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
-):
-    freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_samples_support()
-
-    port_expr = MockPortRef(mock_num_port1)
-    ts_expr = MockExpression(dummy_timestamp - 1800)
-    diff_expr = MockExpression(3600)
-
-    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
-
-    mock_num_port1.set_last_read_value(-2)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 2000) * 1000)
-    mock_num_port1.set_last_read_value(-1)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 1000) * 1000)
-
-    mock_num_port1.set_last_read_value(0.01)
-    assert await expr.eval(dummy_eval_context) == -1
-
-
-async def test_history_newer_unlimited_past(
-    freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
-):
-    freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_samples_support()
-
-    port_expr = MockPortRef(mock_num_port1)
-    ts_expr = MockExpression(dummy_timestamp - 7200)
-    diff_expr = MockExpression(0)
-
-    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
-
-    mock_num_port1.set_last_read_value(-8)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
-
-    mock_num_port1.set_last_read_value(0.01)
-    assert await expr.eval(dummy_eval_context) == 0.01
-
-    mock_num_port1.set_last_read_value(-4)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 4000) * 1000)
-    assert await expr.eval(dummy_eval_context) == -4
-
-    mock_num_port1.set_last_read_value(-6)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 6000) * 1000)
-    diff_expr.set_value(3601)  # invalidates history expression internal cache
-    assert await expr.eval(dummy_eval_context) == -6
-
-
-async def test_history_newer_unlimited_future(
-    freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
-):
-    freezer.move_to(dummy_utc_datetime)
-    mock_persist_driver.enable_samples_support()
-
-    port_expr = MockPortRef(mock_num_port1)
-    ts_expr = MockExpression(dummy_timestamp + 7200)
-    diff_expr = MockExpression(0)
-
-    expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
-
-    mock_num_port1.set_last_read_value(-8)
-    await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
-
-    mock_num_port1.set_last_read_value(0.01)
-    with pytest.raises(PortValueUnavailable):
-        await expr.eval(dummy_eval_context)
-
-
-def test_history_parse(mock_persist_driver):
-    mock_persist_driver.enable_samples_support()
-
-    e = Function.parse(None, "HISTORY(@some_id, 1, 2)", Role.VALUE, 0)
-    assert isinstance(e, various.HistoryFunction)
-
-
-def test_history_arg_type(mock_persist_driver):
-    mock_persist_driver.enable_samples_support()
-
-    with pytest.raises(InvalidArgumentKind) as exc_info:
-        Function.parse(None, "HISTORY(1, 2, 3)", Role.VALUE, 0)
-
-    assert exc_info.value.name == "HISTORY"
-    assert exc_info.value.num == 1
-    assert exc_info.value.pos == 9
-
-
-def test_history_num_args(mock_persist_driver):
-    mock_persist_driver.enable_samples_support()
-
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "HISTORY(@some_id, 1)", Role.VALUE, 0)
-
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "HISTORY(@some_id, 1, 2, 3)", Role.VALUE, 0)
-
-
-@pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-def test_history_no_transform(role):
-    with pytest.raises(UnknownFunction):
-        Function.parse(None, "HISTORY(@some_id, 1, 2)", role, 0)
+        mock_num_port1.set_last_read_value(-8)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
+
+        mock_num_port1.set_last_read_value(0.01)
+        with pytest.raises(PortValueUnavailable):
+            await expr.eval(dummy_eval_context)
+
+    async def test_history_newer_current(
+        self, freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
+    ):
+        freezer.move_to(dummy_utc_datetime)
+        mock_persist_driver.enable_samples_support()
+
+        port_expr = MockPortRef(mock_num_port1)
+        ts_expr = MockExpression(dummy_timestamp - 1800)
+        diff_expr = MockExpression(3600)
+
+        expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
+
+        mock_num_port1.set_last_read_value(-2)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 2000) * 1000)
+        mock_num_port1.set_last_read_value(-1)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 1000) * 1000)
+
+        mock_num_port1.set_last_read_value(0.01)
+        assert await expr.eval(dummy_eval_context) == -1
+
+    async def test_history_newer_unlimited_past(
+        self, freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
+    ):
+        freezer.move_to(dummy_utc_datetime)
+        mock_persist_driver.enable_samples_support()
+
+        port_expr = MockPortRef(mock_num_port1)
+        ts_expr = MockExpression(dummy_timestamp - 7200)
+        diff_expr = MockExpression(0)
+
+        expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
+
+        mock_num_port1.set_last_read_value(-8)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
+
+        mock_num_port1.set_last_read_value(0.01)
+        assert await expr.eval(dummy_eval_context) == 0.01
+
+        mock_num_port1.set_last_read_value(-4)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 4000) * 1000)
+        assert await expr.eval(dummy_eval_context) == -4
+
+        mock_num_port1.set_last_read_value(-6)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 6000) * 1000)
+        diff_expr.set_value(3601)  # invalidates history expression internal cache
+        assert await expr.eval(dummy_eval_context) == -6
+
+    async def test_history_newer_unlimited_future(
+        self, freezer, mock_persist_driver, dummy_utc_datetime, dummy_timestamp, mock_num_port1, dummy_eval_context
+    ):
+        freezer.move_to(dummy_utc_datetime)
+        mock_persist_driver.enable_samples_support()
+
+        port_expr = MockPortRef(mock_num_port1)
+        ts_expr = MockExpression(dummy_timestamp + 7200)
+        diff_expr = MockExpression(0)
+
+        expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
+
+        mock_num_port1.set_last_read_value(-8)
+        await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
+
+        mock_num_port1.set_last_read_value(0.01)
+        with pytest.raises(PortValueUnavailable):
+            await expr.eval(dummy_eval_context)
+
+    def test_history_parse(self, mock_persist_driver):
+        mock_persist_driver.enable_samples_support()
+
+        e = Function.parse(None, "HISTORY(@some_id, 1, 2)", Role.VALUE, 0)
+        assert isinstance(e, various.HistoryFunction)
+
+    def test_history_arg_type(self, mock_persist_driver):
+        mock_persist_driver.enable_samples_support()
+
+        with pytest.raises(InvalidArgumentKind) as exc_info:
+            Function.parse(None, "HISTORY(1, 2, 3)", Role.VALUE, 0)
+
+        assert exc_info.value.name == "HISTORY"
+        assert exc_info.value.num == 1
+        assert exc_info.value.pos == 9
+
+    def test_history_num_args(self, mock_persist_driver):
+        mock_persist_driver.enable_samples_support()
+
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "HISTORY(@some_id, 1)", Role.VALUE, 0)
+
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "HISTORY(@some_id, 1, 2, 3)", Role.VALUE, 0)
+
+    @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+    def test_history_no_transform(self, role):
+        with pytest.raises(UnknownFunction):
+            Function.parse(None, "HISTORY(@some_id, 1, 2)", role, 0)

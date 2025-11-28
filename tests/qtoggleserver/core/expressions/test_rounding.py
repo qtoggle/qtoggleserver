@@ -4,108 +4,104 @@ from qtoggleserver.core.expressions import Function, Role, rounding
 from qtoggleserver.core.expressions.exceptions import InvalidNumberOfArguments
 
 
-async def test_floor_integer(literal_two, dummy_eval_context):
-    result = await rounding.FloorFunction([literal_two], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == 2
+class TestFloor:
+    async def test_floor_integer(self, literal_two, dummy_eval_context):
+        result = await rounding.FloorFunction([literal_two], role=Role.VALUE).eval(dummy_eval_context)
+        assert result == 2
+
+    async def test_floor_positive(self, literal_pi, literal_ten_point_fifty_one, dummy_eval_context):
+        result = await rounding.FloorFunction([literal_pi], role=Role.VALUE).eval(dummy_eval_context)
+        assert result == 3
+
+        result = await rounding.FloorFunction([literal_ten_point_fifty_one], role=Role.VALUE).eval(dummy_eval_context)
+        assert result == 10
+
+    async def test_floor_negative(self, literal_minus_pi, literal_minus_ten_point_fifty_one, dummy_eval_context):
+        result = await rounding.FloorFunction([literal_minus_pi], role=Role.VALUE).eval(dummy_eval_context)
+        assert result == -4
+
+        result = await rounding.FloorFunction([literal_minus_ten_point_fifty_one], role=Role.VALUE).eval(
+            dummy_eval_context
+        )
+        assert result == -11
+
+    def test_floor_parse(self):
+        e = Function.parse(None, "FLOOR(1)", Role.VALUE, 0)
+        assert isinstance(e, rounding.FloorFunction)
+
+    def test_floor_num_args(self):
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "FLOOR()", Role.VALUE, 0)
+
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "FLOOR(1, 2)", Role.VALUE, 0)
 
 
-async def test_floor_positive(literal_pi, literal_ten_point_fifty_one, dummy_eval_context):
-    result = await rounding.FloorFunction([literal_pi], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == 3
+class TestCeil:
+    async def test_ceil_integer(self, literal_two, dummy_eval_context):
+        result = await rounding.CeilFunction([literal_two], role=Role.VALUE).eval(dummy_eval_context)
+        assert result == 2
 
-    result = await rounding.FloorFunction([literal_ten_point_fifty_one], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == 10
+    async def test_ceil_positive(self, literal_pi, literal_ten_point_fifty_one, dummy_eval_context):
+        result = await rounding.CeilFunction([literal_pi], role=Role.VALUE).eval(dummy_eval_context)
+        assert result == 4
 
+        result = await rounding.CeilFunction([literal_ten_point_fifty_one], role=Role.VALUE).eval(dummy_eval_context)
+        assert result == 11
 
-async def test_floor_negative(literal_minus_pi, literal_minus_ten_point_fifty_one, dummy_eval_context):
-    result = await rounding.FloorFunction([literal_minus_pi], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == -4
+    async def test_ceil_negative(self, literal_minus_pi, literal_minus_ten_point_fifty_one, dummy_eval_context):
+        result = await rounding.CeilFunction([literal_minus_pi], role=Role.VALUE).eval(dummy_eval_context)
+        assert result == -3
 
-    result = await rounding.FloorFunction([literal_minus_ten_point_fifty_one], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == -11
+        result = await rounding.CeilFunction([literal_minus_ten_point_fifty_one], role=Role.VALUE).eval(
+            dummy_eval_context
+        )
+        assert result == -10
 
+    def test_ceil_parse(self):
+        e = Function.parse(None, "CEIL(1)", Role.VALUE, 0)
+        assert isinstance(e, rounding.CeilFunction)
 
-def test_floor_parse():
-    e = Function.parse(None, "FLOOR(1)", Role.VALUE, 0)
-    assert isinstance(e, rounding.FloorFunction)
+    def test_ceil_num_args(self):
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "CEIL()", Role.VALUE, 0)
 
-
-def test_floor_num_args():
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "FLOOR()", Role.VALUE, 0)
-
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "FLOOR(1, 2)", Role.VALUE, 0)
-
-
-async def test_ceil_integer(literal_two, dummy_eval_context):
-    result = await rounding.CeilFunction([literal_two], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == 2
-
-
-async def test_ceil_positive(literal_pi, literal_ten_point_fifty_one, dummy_eval_context):
-    result = await rounding.CeilFunction([literal_pi], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == 4
-
-    result = await rounding.CeilFunction([literal_ten_point_fifty_one], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == 11
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "CEIL(1, 2)", Role.VALUE, 0)
 
 
-async def test_ceil_negative(literal_minus_pi, literal_minus_ten_point_fifty_one, dummy_eval_context):
-    result = await rounding.CeilFunction([literal_minus_pi], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == -3
+class TestRound:
+    async def test_round_integer(self, literal_two, dummy_eval_context):
+        result = await rounding.RoundFunction([literal_two], role=Role.VALUE).eval(dummy_eval_context)
+        assert result == 2
 
-    result = await rounding.CeilFunction([literal_minus_ten_point_fifty_one], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == -10
+    async def test_round_positive(self, literal_pi, literal_ten_point_fifty_one, dummy_eval_context):
+        result = await rounding.RoundFunction([literal_pi], role=Role.VALUE).eval(dummy_eval_context)
+        assert result == 3
 
+        result = await rounding.RoundFunction([literal_ten_point_fifty_one], role=Role.VALUE).eval(dummy_eval_context)
+        assert result == 11
 
-def test_ceil_parse():
-    e = Function.parse(None, "CEIL(1)", Role.VALUE, 0)
-    assert isinstance(e, rounding.CeilFunction)
+    async def test_round_negative(self, literal_minus_pi, literal_minus_ten_point_fifty_one, dummy_eval_context):
+        result = await rounding.RoundFunction([literal_minus_pi], role=Role.VALUE).eval(dummy_eval_context)
+        assert result == -3
 
+        result = await rounding.RoundFunction([literal_minus_ten_point_fifty_one], role=Role.VALUE).eval(
+            dummy_eval_context
+        )
+        assert result == -11
 
-def test_ceil_num_args():
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "CEIL()", Role.VALUE, 0)
+    async def test_round_decimals(self, literal_minus_pi, literal_two, dummy_eval_context):
+        result = await rounding.RoundFunction([literal_minus_pi, literal_two], role=Role.VALUE).eval(dummy_eval_context)
+        assert result == -3.14
 
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "CEIL(1, 2)", Role.VALUE, 0)
+    def test_round_parse(self):
+        e = Function.parse(None, "ROUND(1)", Role.VALUE, 0)
+        assert isinstance(e, rounding.RoundFunction)
 
+    def test_round_num_args(self):
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "ROUND()", Role.VALUE, 0)
 
-async def test_round_integer(literal_two, dummy_eval_context):
-    result = await rounding.RoundFunction([literal_two], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == 2
-
-
-async def test_round_positive(literal_pi, literal_ten_point_fifty_one, dummy_eval_context):
-    result = await rounding.RoundFunction([literal_pi], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == 3
-
-    result = await rounding.RoundFunction([literal_ten_point_fifty_one], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == 11
-
-
-async def test_round_negative(literal_minus_pi, literal_minus_ten_point_fifty_one, dummy_eval_context):
-    result = await rounding.RoundFunction([literal_minus_pi], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == -3
-
-    result = await rounding.RoundFunction([literal_minus_ten_point_fifty_one], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == -11
-
-
-async def test_round_decimals(literal_minus_pi, literal_two, dummy_eval_context):
-    result = await rounding.RoundFunction([literal_minus_pi, literal_two], role=Role.VALUE).eval(dummy_eval_context)
-    assert result == -3.14
-
-
-def test_round_parse():
-    e = Function.parse(None, "ROUND(1)", Role.VALUE, 0)
-    assert isinstance(e, rounding.RoundFunction)
-
-
-def test_round_num_args():
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "ROUND()", Role.VALUE, 0)
-
-    with pytest.raises(InvalidNumberOfArguments):
-        Function.parse(None, "ROUND(1, 2, 3)", Role.VALUE, 0)
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "ROUND(1, 2, 3)", Role.VALUE, 0)
