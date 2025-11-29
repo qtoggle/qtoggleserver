@@ -6,6 +6,7 @@ from qtoggleserver.core.expressions.exceptions import (
     InvalidArgumentKind,
     InvalidNumberOfArguments,
     PortValueUnavailable,
+    RealDateTimeUnavailable,
     UnknownFunction,
 )
 from tests.qtoggleserver.mock.expressions import MockExpression, MockPortRef, MockPortValue
@@ -331,6 +332,7 @@ class TestSequence:
         dummy_eval_context,
         later_eval_context,
     ):
+        time_expr = MockExpression(100)
         expr = various.SequenceFunction(
             [
                 literal_three,
@@ -338,32 +340,36 @@ class TestSequence:
                 literal_sixteen,
                 literal_two_hundreds,
                 literal_two,
-                literal_one_hundred,
+                time_expr,
             ],
             Role.VALUE,
         )
         assert await expr.eval(dummy_eval_context) == 3
         assert expr.is_asap_eval_paused(dummy_eval_context.now_ms)
         assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 99)
-        assert await expr.eval(later_eval_context(99)) == 3
-        assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 101)
+        assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 100)
+        assert await expr.eval(later_eval_context(100)) == 3
 
         assert await expr.eval(later_eval_context(101)) == 16
         assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 101)
         assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 299)
-        assert await expr.eval(later_eval_context(200)) == 16
-        assert await expr.eval(later_eval_context(299)) == 16
         assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 300)
+        assert await expr.eval(later_eval_context(200)) == 16
+        assert await expr.eval(later_eval_context(300)) == 16
 
         assert await expr.eval(later_eval_context(301)) == 2
         assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 301)
         assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 399)
-        assert await expr.eval(later_eval_context(399)) == 2
         assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 400)
-        assert await expr.eval(later_eval_context(401)) == 3
-        assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 401)
-        assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 499)
-        assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 500)
+        assert await expr.eval(later_eval_context(399)) == 2
+
+        # Changing the time argument should be taken into account
+        time_expr.set_value(200)
+        assert await expr.eval(later_eval_context(401)) == 2
+        assert await expr.eval(later_eval_context(501)) == 3
+        assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 501)
+        assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 599)
+        assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 600)
 
     def test_sequence_parse(self):
         e = Function.parse(None, "SEQUENCE(1, 2, 3, 4)", Role.VALUE, 0)
@@ -731,3 +737,13 @@ class TestHistory:
 
     def test_history_deps(self):
         assert various.HistoryFunction.DEPS == {DEP_SECOND}
+
+    async def test_history_real_date_time_unavailable(
+        self, mocker, mock_persist_driver, dummy_local_datetime, mock_num_port1, dummy_eval_context
+    ):
+        port_expr = MockPortRef(mock_num_port1)
+        ts_expr = MockExpression()
+        diff_expr = MockExpression()
+        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
+            with pytest.raises(RealDateTimeUnavailable):
+                await various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE).eval(dummy_eval_context)

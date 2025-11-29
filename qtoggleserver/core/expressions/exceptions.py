@@ -136,6 +136,6 @@ class ExpressionArithmeticError(ExpressionEvalException):
         super().__init__("Expression arithmetic error")
 
 
-class EvalSkipped(ExpressionEvalException):
+class RealDateTimeUnavailable(ValueUnavailable):
     def __init__(self) -> None:
-        super().__init__("Evaluation skipped")
+        super().__init__("Real date/time is unavailable")

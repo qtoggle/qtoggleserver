@@ -3,7 +3,7 @@ from qtoggleserver.core import history as core_history
 from qtoggleserver.core import ports as core_ports
 
 from .base import DEP_ASAP, DEP_SECOND, EvalContext, EvalResult
-from .exceptions import EvalSkipped, PortValueUnavailable, ValueUnavailable
+from .exceptions import PortValueUnavailable, RealDateTimeUnavailable, ValueUnavailable
 from .functions import Function, function
 from .ports import PortRef
 
@@ -267,7 +267,7 @@ class HistoryFunction(Function):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
-            raise EvalSkipped()
+            raise RealDateTimeUnavailable()
 
         args = await self.eval_args(context)
         port_id, timestamp, max_diff = args

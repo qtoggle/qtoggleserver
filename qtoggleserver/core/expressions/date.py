@@ -6,7 +6,7 @@ from datetime import datetime, time, timedelta, timezone
 from qtoggleserver import system
 
 from .base import DEP_ASAP, DEP_DAY, DEP_HOUR, DEP_MINUTE, DEP_MONTH, DEP_SECOND, DEP_YEAR, EvalContext, EvalResult
-from .exceptions import EvalSkipped, InvalidArgumentValue
+from .exceptions import InvalidArgumentValue, RealDateTimeUnavailable
 from .functions import Function, function
 
 
@@ -17,7 +17,7 @@ class DateUnitFunction(Function, metaclass=abc.ABCMeta):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
-            raise EvalSkipped()
+            raise RealDateTimeUnavailable()
 
         if len(self.args) > 0:
             timestamp = int(await self.args[0].eval(context))
@@ -103,7 +103,7 @@ class MillisecondFunction(Function):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
-            raise EvalSkipped()
+            raise RealDateTimeUnavailable()
 
         return int(context.now_ms % 1000)
 
@@ -130,9 +130,6 @@ class DateFunction(Function):
     UNIT_INDEX = {u: i + 1 for i, u in enumerate(("year", "month", "day", "hour", "minute", "second"))}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        if not system.date.has_real_date_time():
-            raise EvalSkipped()
-
         eval_args = [int(await self.args[i].eval(context)) for i in range(self.MIN_ARGS)]
 
         try:
@@ -155,7 +152,7 @@ class BOYFunction(Function):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
-            raise EvalSkipped()
+            raise RealDateTimeUnavailable()
 
         now = datetime.fromtimestamp(context.timestamp)
 
@@ -178,7 +175,7 @@ class BOMFunction(Function):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
-            raise EvalSkipped()
+            raise RealDateTimeUnavailable()
 
         now = datetime.fromtimestamp(context.timestamp)
         n = 0
@@ -216,7 +213,7 @@ class BOWFunction(Function):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
-            raise EvalSkipped()
+            raise RealDateTimeUnavailable()
 
         n = 0
         s = 0
@@ -274,7 +271,7 @@ class BODFunction(Function):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
-            raise EvalSkipped()
+            raise RealDateTimeUnavailable()
 
         now = datetime.fromtimestamp(context.timestamp)
         n = 0
@@ -295,7 +292,7 @@ class HMSIntervalFunction(Function):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
-            raise EvalSkipped()
+            raise RealDateTimeUnavailable()
 
         now = datetime.fromtimestamp(context.timestamp).replace(microsecond=0)
 
@@ -336,7 +333,7 @@ class MDIntervalFunction(Function):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if not system.date.has_real_date_time():
-            raise EvalSkipped()
+            raise RealDateTimeUnavailable()
 
         now = datetime.fromtimestamp(context.timestamp).replace(microsecond=0)
         start_m, start_d, stop_m, stop_d = await self.eval_args(context)
