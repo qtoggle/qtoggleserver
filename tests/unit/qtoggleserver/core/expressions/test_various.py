@@ -9,7 +9,7 @@ from qtoggleserver.core.expressions.exceptions import (
     RealDateTimeUnavailable,
     UnknownFunction,
 )
-from tests.qtoggleserver.mock.expressions import MockExpression, MockPortRef, MockPortValue
+from tests.unit.qtoggleserver.mock.expressions import MockExpression, MockPortRef, MockPortValue
 
 
 class TestAvailable:
@@ -744,6 +744,6 @@ class TestHistory:
         port_expr = MockPortRef(mock_num_port1)
         ts_expr = MockExpression()
         diff_expr = MockExpression()
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE).eval(dummy_eval_context)

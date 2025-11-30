@@ -1,3 +1,4 @@
+from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core.ports import TYPE_BOOLEAN, TYPE_NUMBER, Port, SkipRead
 from qtoggleserver.core.typing import NullablePortValue
 
@@ -31,6 +32,10 @@ class MockPort(Port):
 
     def get_last_written_value(self) -> NullablePortValue:
         return self._last_written_value
+
+    def set_expression(self, sexpression: str) -> None:
+        expression = core_expressions.parse(self.get_id(), sexpression, role=core_expressions.Role.VALUE)
+        self._expression = expression
 
 
 class MockBooleanPort(MockPort):

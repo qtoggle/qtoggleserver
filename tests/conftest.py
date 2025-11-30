@@ -12,10 +12,10 @@ from freezegun import freeze_time
 from qtoggleserver import peripherals, persist
 from qtoggleserver.conf import settings
 from qtoggleserver.core import ports as core_ports
-from tests.qtoggleserver.mock.api import MockAPIRequest
-from tests.qtoggleserver.mock.peripherals import MockPeripheral
-from tests.qtoggleserver.mock.persist import MockPersistDriver
-from tests.qtoggleserver.mock.ports import MockBooleanPort, MockNumberPort
+from tests.unit.qtoggleserver.mock.api import MockAPIRequest
+from tests.unit.qtoggleserver.mock.peripherals import MockPeripheral
+from tests.unit.qtoggleserver.mock.persist import MockPersistDriver
+from tests.unit.qtoggleserver.mock.ports import MockBooleanPort, MockNumberPort
 
 
 tz_info = pytz.timezone("Europe/Bucharest")
@@ -25,6 +25,11 @@ tz_info = pytz.timezone("Europe/Bucharest")
 def init_settings():
     settings.persist.driver = "qtoggleserver.drivers.persist.JSONDriver"
     settings.persist.file_path = ""
+
+
+@pytest.fixture(scope="session")
+def dummy_timestamp():
+    return 1552559696.654321
 
 
 @pytest.fixture(scope="session")
@@ -55,11 +60,6 @@ def freezer(dummy_local_datetime):
     frozen_time = freezer.start()
     yield frozen_time
     freezer.stop()
-
-
-@pytest.fixture(scope="session")
-def dummy_timestamp():
-    return 1552559696.654321
 
 
 @pytest.fixture
@@ -112,7 +112,7 @@ async def mock_bool_port2(mocker) -> MockBooleanPort:
 async def mock_peripheral1() -> MockPeripheral:
     peripheral = await peripherals.add(
         {
-            "driver": "tests.qtoggleserver.mock.peripherals.MockPeripheral",
+            "driver": "tests.unit.qtoggleserver.mock.peripherals.MockPeripheral",
             "dummy_param": "dummy_value1",
             "name": "peripheral1",
         }
@@ -125,7 +125,7 @@ async def mock_peripheral1() -> MockPeripheral:
 async def mock_peripheral2() -> MockPeripheral:
     peripheral = await peripherals.add(
         {
-            "driver": "tests.qtoggleserver.mock.peripherals.MockPeripheral",
+            "driver": "tests.unit.qtoggleserver.mock.peripherals.MockPeripheral",
             "dummy_param": "dummy_value2",
             "name": "peripheral2",
         }

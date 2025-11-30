@@ -2,11 +2,11 @@ import pytest
 
 from qtoggleserver.core import api as core_api
 from qtoggleserver.peripherals.api import funcs as peripherals_api_funcs
-from tests.qtoggleserver.mock.peripherals import MockPeripheral
+from tests.unit.qtoggleserver.mock.peripherals import MockPeripheral
 
 
 MOCK_PERIPHERAL1_DATA = {
-    "driver": "tests.qtoggleserver.mock.peripherals.MockPeripheral",
+    "driver": "tests.unit.qtoggleserver.mock.peripherals.MockPeripheral",
     "dummy_param": "dummy_value1",
     "name": "peripheral1",
     "id": "peripheral1",
@@ -14,7 +14,7 @@ MOCK_PERIPHERAL1_DATA = {
 }
 
 MOCK_PERIPHERAL2_DATA = {
-    "driver": "tests.qtoggleserver.mock.peripherals.MockPeripheral",
+    "driver": "tests.unit.qtoggleserver.mock.peripherals.MockPeripheral",
     "dummy_param": "dummy_value2",
     "name": "peripheral2",
     "id": "peripheral2",
@@ -22,7 +22,7 @@ MOCK_PERIPHERAL2_DATA = {
 }
 
 MOCK_PERIPHERAL3_DATA = {
-    "driver": "tests.qtoggleserver.mock.peripherals.MockPeripheral",
+    "driver": "tests.unit.qtoggleserver.mock.peripherals.MockPeripheral",
     "dummy_param": "dummy_value3",
     "name": "peripheral3",
     "id": "peripheral3",

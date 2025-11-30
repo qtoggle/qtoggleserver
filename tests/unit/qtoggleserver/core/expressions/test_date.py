@@ -16,7 +16,7 @@ from qtoggleserver.core.expressions import (
     literalvalues,
 )
 from qtoggleserver.core.expressions.exceptions import InvalidNumberOfArguments, RealDateTimeUnavailable, UnknownFunction
-from tests.qtoggleserver.mock.expressions import MockExpression
+from tests.unit.qtoggleserver.mock.expressions import MockExpression
 
 
 class TestYear:
@@ -45,9 +45,9 @@ class TestYear:
         assert date.YearFunction.DEPS == {DEP_YEAR}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.YearFunction([], role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.YearFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestMonth:
@@ -76,9 +76,9 @@ class TestMonth:
         assert date.MonthFunction.DEPS == {DEP_MONTH}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.MonthFunction([], role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.MonthFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestDay:
@@ -107,9 +107,9 @@ class TestDay:
         assert date.DayFunction.DEPS == {DEP_DAY}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.DayFunction([], role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.DayFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestDOW:
@@ -138,9 +138,9 @@ class TestDOW:
         assert date.DOWFunction.DEPS == {DEP_DAY}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.DOWFunction([], role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.DOWFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestLDOM:
@@ -169,9 +169,9 @@ class TestLDOM:
         assert date.LDOMFunction.DEPS == {DEP_MONTH}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.LDOMFunction([], role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.LDOMFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestHour:
@@ -200,9 +200,9 @@ class TestHour:
         assert date.HourFunction.DEPS == {DEP_HOUR}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.HourFunction([], role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.HourFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestMinute:
@@ -231,9 +231,9 @@ class TestMinute:
         assert date.MinuteFunction.DEPS == {DEP_MINUTE}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.MinuteFunction([], role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.MinuteFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestSecond:
@@ -262,9 +262,9 @@ class TestSecond:
         assert date.SecondFunction.DEPS == {DEP_SECOND}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.SecondFunction([], role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.SecondFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestMillisecond:
@@ -289,9 +289,9 @@ class TestMillisecond:
         assert date.MillisecondFunction.DEPS == {DEP_ASAP}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.MillisecondFunction([], role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.MillisecondFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestMinuteOfDay:
@@ -320,9 +320,9 @@ class TestMinuteOfDay:
         assert date.MinuteOfDayFunction.DEPS == {DEP_MINUTE}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.MinuteOfDayFunction([], role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.MinuteOfDayFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestSecondOfDay:
@@ -355,9 +355,9 @@ class TestSecondOfDay:
         assert date.SecondFunction.DEPS == {DEP_SECOND}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.SecondOfDayFunction([], role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.SecondOfDayFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestDate:
@@ -434,9 +434,9 @@ class TestBOY:
         assert date.BOYFunction.DEPS == {DEP_YEAR}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.BOYFunction([], role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.BOYFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestBOM:
@@ -498,9 +498,9 @@ class TestBOM:
         assert date.BOMFunction.DEPS == {DEP_MONTH}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.BOMFunction([], role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.BOMFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestBOW:
@@ -579,9 +579,9 @@ class TestBOW:
         assert date.BOWFunction.DEPS == {DEP_DAY}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.BOWFunction([], role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.BOWFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestHMSInterval:
@@ -766,9 +766,9 @@ class TestHMSInterval:
         assert date.HMSIntervalFunction.DEPS == {DEP_SECOND}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.HMSIntervalFunction([MockExpression()] * 6, role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.HMSIntervalFunction([MockExpression()] * 6, role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestMDInterval:
@@ -895,6 +895,6 @@ class TestMDInterval:
         assert date.MDIntervalFunction.DEPS == {DEP_DAY}
 
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
-        with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
-            with pytest.raises(RealDateTimeUnavailable):
-                await date.MDIntervalFunction([MockExpression()] * 4, role=Role.VALUE).eval(dummy_eval_context)
+        mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+        with pytest.raises(RealDateTimeUnavailable):
+            await date.MDIntervalFunction([MockExpression()] * 4, role=Role.VALUE).eval(dummy_eval_context)

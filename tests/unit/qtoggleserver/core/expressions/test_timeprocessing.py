@@ -2,7 +2,7 @@ import pytest
 
 from qtoggleserver.core.expressions import DEP_ASAP, Function, Role, timeprocessing
 from qtoggleserver.core.expressions.exceptions import InvalidNumberOfArguments, UnknownFunction
-from tests.qtoggleserver.mock.expressions import MockExpression
+from tests.unit.qtoggleserver.mock.expressions import MockExpression
 
 
 class TestDelay:

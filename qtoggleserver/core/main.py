@@ -70,6 +70,9 @@ async def update() -> None:
 
         now = time.time()
         now_int = int(now)
+        now_ms = int(now * 1000)
+
+        # Determine which time units have changed since last update
         second_changed = False
         if now_int != _last_time:
             _last_time = now_int
@@ -136,7 +139,7 @@ async def update() -> None:
                 changed_set.add(port)
                 value_pairs[port] = old_value, new_value
 
-        await handle_value_changes(changed_set, value_pairs, now)
+        await handle_value_changes(changed_set, value_pairs, now_ms)
 
         sessions.update()
 
@@ -158,7 +161,7 @@ async def update_loop() -> None:
 async def handle_value_changes(
     changed_set: set[core_ports.BasePort | str],
     value_pairs: dict[core_ports.BasePort, tuple[NullablePortValue, NullablePortValue]],
-    now: float,
+    now_ms: int,
 ) -> None:
     global _force_eval_all_expressions
 
@@ -175,8 +178,6 @@ async def handle_value_changes(
 
     full_eval = _force_eval_all_expressions
     _force_eval_all_expressions = False
-
-    now_ms = int(now * 1000)
 
     # Transform `changed_set` into a set of strings so that we can compare it with deps
     changed_set_str: set[str] = set()
