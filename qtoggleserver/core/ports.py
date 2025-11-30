@@ -731,7 +731,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         try:
             self._evaling = True
             value = await expression.eval(context)
-        except expressions_exceptions.ExpressionEvalException:
+        except expressions_exceptions.ExpressionEvalException as e:
+            self.debug('evaluation did not complete for expression "%s": %s', expression, e)
             return
         except Exception as e:
             self.error('failed to evaluate expression "%s": %s', expression, e, exc_info=True)
@@ -739,11 +740,16 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         finally:
             self._evaling = False
 
-        value = await self.adapt_value_type(value)
-        if value is not None:
-            self.debug('expression "%s" evaluated to %s', expression, json_utils.dumps(value))
+        adapted_value = await self.adapt_value_type(value)
+        if adapted_value is not None:
+            self.debug(
+                'expression "%s" evaluated to %s (adapted to %s)',
+                expression,
+                json_utils.dumps(value),
+                json_utils.dumps(adapted_value),
+            )
             try:
-                await self.transform_and_write_value(value)
+                await self.transform_and_write_value(adapted_value)
             except Exception as e:
                 self.error("failed to write value: %s", e)
 
