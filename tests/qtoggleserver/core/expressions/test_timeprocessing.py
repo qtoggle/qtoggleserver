@@ -6,7 +6,7 @@ from tests.qtoggleserver.mock.expressions import MockExpression
 
 
 class TestDelay:
-    async def test_delay(self, dummy_eval_context, later_eval_context):
+    async def test(self, dummy_eval_context, later_eval_context):
         value_expr = MockExpression(3)
         delay_expr = MockExpression(1000)
         expr = timeprocessing.DelayFunction([value_expr, delay_expr], Role.VALUE)
@@ -32,11 +32,11 @@ class TestDelay:
         assert await expr.eval(later_eval_context(1700)) == 16
         assert await expr.eval(later_eval_context(10000)) == 16
 
-    def test_delay_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "DELAY(1, 2)", Role.VALUE, 0)
         assert isinstance(e, timeprocessing.DelayFunction)
 
-    def test_delay_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "DELAY(1)", Role.VALUE, 0)
 
@@ -44,16 +44,16 @@ class TestDelay:
             Function.parse(None, "DELAY(1, 2, 3)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_delay_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "DELAY()", role, 0)
 
-    def test_delay_deps(self):
+    def test_deps(self):
         assert timeprocessing.DelayFunction.DEPS == {DEP_ASAP}
 
 
 class TestTimer:
-    async def test_timer(self, literal_true, literal_false, dummy_eval_context, later_eval_context):
+    async def test(self, literal_true, literal_false, dummy_eval_context, later_eval_context):
         value_expr = MockExpression(0)
         timeout_expr = MockExpression(1000)
 
@@ -81,11 +81,11 @@ class TestTimer:
         assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 2899)
         assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 2900)
 
-    def test_timer_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "TIMER(1, 2, 3, 4)", Role.VALUE, 0)
         assert isinstance(e, timeprocessing.TimerFunction)
 
-    def test_timer_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "TIMER(1, 2, 3)", Role.VALUE, 0)
 
@@ -93,16 +93,16 @@ class TestTimer:
             Function.parse(None, "TIMER(1, 2, 3, 4, 5)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_timer_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "TIMER()", role, 0)
 
-    def test_timer_deps(self):
+    def test_deps(self):
         assert timeprocessing.TimerFunction.DEPS == {DEP_ASAP}
 
 
 class TestSample:
-    async def test_sample(self, dummy_eval_context, later_eval_context):
+    async def test(self, dummy_eval_context, later_eval_context):
         value_expr = MockExpression(3)
         duration_expr = MockExpression(1000)
         expr = timeprocessing.SampleFunction([value_expr, duration_expr], Role.VALUE)
@@ -127,11 +127,11 @@ class TestSample:
         assert await expr.eval(later_eval_context(2199)) == 16
         assert await expr.eval(later_eval_context(2200)) == 23
 
-    def test_sample_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "SAMPLE(1, 2)", Role.VALUE, 0)
         assert isinstance(e, timeprocessing.SampleFunction)
 
-    def test_sample_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "SAMPLE(1)", Role.VALUE, 0)
 
@@ -139,16 +139,16 @@ class TestSample:
             Function.parse(None, "SAMPLE(1, 2, 3)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_sample_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "SAMPLE()", role, 0)
 
-    def test_sample_deps(self):
+    def test_deps(self):
         assert timeprocessing.SampleFunction.DEPS == {DEP_ASAP}
 
 
 class TestFreeze:
-    async def test_freeze(self, dummy_eval_context, later_eval_context):
+    async def test(self, dummy_eval_context, later_eval_context):
         value_expr = MockExpression(1)
         duration_expr = MockExpression(1000)
         expr = timeprocessing.FreezeFunction([value_expr, duration_expr], Role.VALUE)
@@ -174,11 +174,11 @@ class TestFreeze:
         assert await expr.eval(later_eval_context(4699)) == 3
         assert await expr.eval(later_eval_context(4700)) == 4
 
-    def test_freeze_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "FREEZE(1, 2)", Role.VALUE, 0)
         assert isinstance(e, timeprocessing.FreezeFunction)
 
-    def test_freeze_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "FREEZE(1)", Role.VALUE, 0)
 
@@ -186,16 +186,16 @@ class TestFreeze:
             Function.parse(None, "FREEZE(1, 2, 3)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_freeze_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "FREEZE()", role, 0)
 
-    def test_freeze_deps(self):
+    def test_deps(self):
         assert timeprocessing.FreezeFunction.DEPS == {DEP_ASAP}
 
 
 class TestHeld:
-    async def test_held(self, literal_sixteen, dummy_eval_context, later_eval_context):
+    async def test(self, literal_sixteen, dummy_eval_context, later_eval_context):
         value_expr = MockExpression(3)
         duration_expr = MockExpression(200)
         expr = timeprocessing.HeldFunction([value_expr, literal_sixteen, duration_expr], Role.VALUE)
@@ -213,11 +213,11 @@ class TestHeld:
         assert await expr.eval(later_eval_context(1201)) == 1
         assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 1e6)
 
-    def test_held_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "HELD(1, 2, 3)", Role.VALUE, 0)
         assert isinstance(e, timeprocessing.HeldFunction)
 
-    def test_held_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "HELD(1, 2)", Role.VALUE, 0)
 
@@ -225,16 +225,16 @@ class TestHeld:
             Function.parse(None, "HELD(1, 2, 3, 4)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_held_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "HELD()", role, 0)
 
-    def test_held_deps(self):
+    def test_deps(self):
         assert timeprocessing.HeldFunction.DEPS == {DEP_ASAP}
 
 
 class TestDeriv:
-    async def test_deriv(self, dummy_eval_context, later_eval_context):
+    async def test(self, dummy_eval_context, later_eval_context):
         value_expr = MockExpression(0)
         interval_expr = MockExpression(200)
         expr = timeprocessing.DerivFunction([value_expr, interval_expr], Role.VALUE)
@@ -268,7 +268,7 @@ class TestDeriv:
         assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 1199)
         assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 1200)
 
-    async def test_deriv_time_jump_detection(self, dummy_eval_context, later_eval_context):
+    async def test_time_jump_detection(self, dummy_eval_context, later_eval_context):
         value_expr = MockExpression(0)
         interval_expr = MockExpression(200)
         expr = timeprocessing.DerivFunction([value_expr, interval_expr], Role.VALUE)
@@ -282,11 +282,11 @@ class TestDeriv:
         assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 1e10 + 199)
         assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 1e10 + 200)
 
-    def test_deriv_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "DERIV(1, 2)", Role.VALUE, 0)
         assert isinstance(e, timeprocessing.DerivFunction)
 
-    def test_deriv_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "DERIV(1)", Role.VALUE, 0)
 
@@ -294,16 +294,16 @@ class TestDeriv:
             Function.parse(None, "DERIV(1, 2, 3)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_deriv_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "DERIV()", role, 0)
 
-    def test_deriv_deps(self):
+    def test_deps(self):
         assert timeprocessing.DerivFunction.DEPS == {DEP_ASAP}
 
 
 class TestInteg:
-    async def test_integ(self, dummy_eval_context, later_eval_context):
+    async def test(self, dummy_eval_context, later_eval_context):
         acc_expr = MockExpression(0)
         value_expr = MockExpression(0)
         interval_expr = MockExpression(200)
@@ -344,7 +344,7 @@ class TestInteg:
         acc_expr.set_value(7.5)
         assert round(await expr.eval(later_eval_context(1000)), 1) == 6.5
 
-    async def test_integ_time_jump_detection(self, dummy_eval_context, later_eval_context):
+    async def test_time_jump_detection(self, dummy_eval_context, later_eval_context):
         acc_expr = MockExpression(3)
         value_expr = MockExpression(0)
         interval_expr = MockExpression(200)
@@ -359,11 +359,11 @@ class TestInteg:
         assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 1e10 + 199)
         assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 1e10 + 200)
 
-    def test_integ_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "INTEG(1, 2, 3)", Role.VALUE, 0)
         assert isinstance(e, timeprocessing.IntegFunction)
 
-    def test_integ_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "INTEG(1, 2)", Role.VALUE, 0)
 
@@ -371,16 +371,16 @@ class TestInteg:
             Function.parse(None, "INTEG(1, 2, 3, 4)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_integ_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "INTEG()", role, 0)
 
-    def test_integ_deps(self):
+    def test_deps(self):
         assert timeprocessing.IntegFunction.DEPS == {DEP_ASAP}
 
 
 class TestFMAvg:
-    async def test_fmavg(self, dummy_eval_context, later_eval_context):
+    async def test(self, dummy_eval_context, later_eval_context):
         value_expr = MockExpression(0)
         width_expr = MockExpression(4)
         time_expr = MockExpression(100)
@@ -428,11 +428,11 @@ class TestFMAvg:
         assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 899)
         assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 900)
 
-    def test_fmavg_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "FMAVG(1, 2, 3)", Role.VALUE, 0)
         assert isinstance(e, timeprocessing.FMAvgFunction)
 
-    def test_fmavg_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "FMAVG(1, 2)", Role.VALUE, 0)
 
@@ -440,16 +440,16 @@ class TestFMAvg:
             Function.parse(None, "FMAVG(1, 2, 3, 4)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_fmavg_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "FMAVG()", role, 0)
 
-    def test_fmavg_deps(self):
+    def test_deps(self):
         assert timeprocessing.FMAvgFunction.DEPS == {DEP_ASAP}
 
 
 class TestFMedian:
-    async def test_fmedian(self, dummy_eval_context, later_eval_context):
+    async def test(self, dummy_eval_context, later_eval_context):
         value_expr = MockExpression(0)
         width_expr = MockExpression(4)
         time_expr = MockExpression(100)
@@ -497,11 +497,11 @@ class TestFMedian:
         assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 899)
         assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 900)
 
-    def test_fmedian_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "FMEDIAN(1, 2, 3)", Role.VALUE, 0)
         assert isinstance(e, timeprocessing.FMedianFunction)
 
-    def test_fmedian_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "FMEDIAN(1, 2)", Role.VALUE, 0)
 
@@ -509,9 +509,9 @@ class TestFMedian:
             Function.parse(None, "FMEDIAN(1, 2, 3, 4)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_fmedian_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "FMEDIAN()", role, 0)
 
-    def test_fmedian_deps(self):
+    def test_deps(self):
         assert timeprocessing.FMedianFunction.DEPS == {DEP_ASAP}

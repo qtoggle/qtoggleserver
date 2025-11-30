@@ -20,348 +20,348 @@ from tests.qtoggleserver.mock.expressions import MockExpression
 
 
 class TestYear:
-    async def test_year_simple(self, dummy_local_datetime, dummy_eval_context):
+    async def test_simple(self, dummy_local_datetime, dummy_eval_context):
         result = await date.YearFunction([], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.year
 
-    async def test_year_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
+    async def test_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
         result = await date.YearFunction([literal_dummy_timestamp], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.year
 
-    def test_year_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "YEAR()", Role.VALUE, 0)
         assert isinstance(e, date.YearFunction)
 
-    def test_year_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "YEAR(1, 2)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_year_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "YEAR()", role, 0)
 
-    def test_year_deps(self):
+    def test_deps(self):
         assert date.YearFunction.DEPS == {DEP_YEAR}
 
-    async def test_year_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.YearFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestMonth:
-    async def test_month_simple(self, dummy_local_datetime, dummy_eval_context):
+    async def test_simple(self, dummy_local_datetime, dummy_eval_context):
         result = await date.MonthFunction([], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.month
 
-    async def test_month_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
+    async def test_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
         result = await date.MonthFunction([literal_dummy_timestamp], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.month
 
-    def test_month_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "MONTH()", Role.VALUE, 0)
         assert isinstance(e, date.MonthFunction)
 
-    def test_month_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "MONTH(1, 2)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_month_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "MONTH()", role, 0)
 
-    def test_month_deps(self):
+    def test_deps(self):
         assert date.MonthFunction.DEPS == {DEP_MONTH}
 
-    async def test_month_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.MonthFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestDay:
-    async def test_day_simple(self, dummy_local_datetime, dummy_eval_context):
+    async def test_simple(self, dummy_local_datetime, dummy_eval_context):
         result = await date.DayFunction([], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.day
 
-    async def test_day_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
+    async def test_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
         result = await date.DayFunction([literal_dummy_timestamp], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.day
 
-    def test_day_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "DAY()", Role.VALUE, 0)
         assert isinstance(e, date.DayFunction)
 
-    def test_day_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "DAY(1, 2)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_day_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "DAY()", role, 0)
 
-    def test_year_deps(self):
+    def test_deps(self):
         assert date.DayFunction.DEPS == {DEP_DAY}
 
-    async def test_day_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.DayFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestDOW:
-    async def test_dow_simple(self, dummy_local_datetime, dummy_eval_context):
+    async def test_simple(self, dummy_local_datetime, dummy_eval_context):
         result = await date.DOWFunction([], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.weekday()
 
-    async def test_dow_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
+    async def test_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
         result = await date.DOWFunction([literal_dummy_timestamp], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.weekday()
 
-    def test_dow_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "DOW()", Role.VALUE, 0)
         assert isinstance(e, date.DOWFunction)
 
-    def test_dow_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "DOW(1, 2)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_dow_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "DOW()", role, 0)
 
-    def test_dow_deps(self):
+    def test_deps(self):
         assert date.DOWFunction.DEPS == {DEP_DAY}
 
-    async def test_dow_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.DOWFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestLDOM:
-    async def test_ldom_simple(self, dummy_local_datetime, dummy_eval_context):
+    async def test_simple(self, dummy_local_datetime, dummy_eval_context):
         result = await date.LDOMFunction([], role=Role.VALUE).eval(dummy_eval_context)
         assert result == 31
 
-    async def test_ldom_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
+    async def test_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
         result = await date.LDOMFunction([literal_dummy_timestamp], role=Role.VALUE).eval(dummy_eval_context)
         assert result == 31
 
-    def test_ldom_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "LDOM()", Role.VALUE, 0)
         assert isinstance(e, date.LDOMFunction)
 
-    def test_ldom_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "LDOM(1, 2)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_ldom_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "LDOM()", role, 0)
 
-    def test_ldom_deps(self):
+    def test_deps(self):
         assert date.LDOMFunction.DEPS == {DEP_MONTH}
 
-    async def test_ldom_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.LDOMFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestHour:
-    async def test_hour_simple(self, dummy_local_datetime, dummy_eval_context):
+    async def test_simple(self, dummy_local_datetime, dummy_eval_context):
         result = await date.HourFunction([], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.hour
 
-    async def test_hour_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
+    async def test_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
         result = await date.HourFunction([literal_dummy_timestamp], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.hour
 
-    def test_hour_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "HOUR()", Role.VALUE, 0)
         assert isinstance(e, date.HourFunction)
 
-    def test_hour_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "HOUR(1, 2)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_hour_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "HOUR()", role, 0)
 
-    def test_hour_deps(self):
+    def test_deps(self):
         assert date.HourFunction.DEPS == {DEP_HOUR}
 
-    async def test_hour_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.HourFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestMinute:
-    async def test_minute_simple(self, dummy_local_datetime, dummy_eval_context):
+    async def test_simple(self, dummy_local_datetime, dummy_eval_context):
         result = await date.MinuteFunction([], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.minute
 
-    async def test_minute_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
+    async def test_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
         result = await date.MinuteFunction([literal_dummy_timestamp], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.minute
 
-    def test_minute_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "MINUTE()", Role.VALUE, 0)
         assert isinstance(e, date.MinuteFunction)
 
-    def test_minute_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "MINUTE(1, 2)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_minute_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "MINUTE()", role, 0)
 
-    def test_minute_deps(self):
+    def test_deps(self):
         assert date.MinuteFunction.DEPS == {DEP_MINUTE}
 
-    async def test_minute_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.MinuteFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestSecond:
-    async def test_second_simple(self, dummy_local_datetime, dummy_eval_context):
+    async def test_simple(self, dummy_local_datetime, dummy_eval_context):
         result = await date.SecondFunction([], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.second
 
-    async def test_second_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
+    async def test_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
         result = await date.SecondFunction([literal_dummy_timestamp], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.second
 
-    def test_second_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "SECOND()", Role.VALUE, 0)
         assert isinstance(e, date.SecondFunction)
 
-    def test_second_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "SECOND(1, 2)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_second_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "SECOND()", role, 0)
 
-    def test_second_deps(self):
+    def test_deps(self):
         assert date.SecondFunction.DEPS == {DEP_SECOND}
 
-    async def test_second_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.SecondFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestMillisecond:
-    async def test_millisecond(self, dummy_local_datetime, dummy_eval_context):
+    async def test(self, dummy_local_datetime, dummy_eval_context):
         result = await date.MillisecondFunction([], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.microsecond // 1000
 
-    def test_millisecond_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "MILLISECOND()", Role.VALUE, 0)
         assert isinstance(e, date.MillisecondFunction)
 
-    def test_millisecond_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "MILLISECOND(1)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_millisecond_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "MILLISECOND()", role, 0)
 
-    def test_millisecond_deps(self):
+    def test_deps(self):
         assert date.MillisecondFunction.DEPS == {DEP_ASAP}
 
-    async def test_millisecond_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.MillisecondFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestMinuteOfDay:
-    async def test_minute_of_day_simple(self, dummy_local_datetime, dummy_eval_context):
+    async def test_simple(self, dummy_local_datetime, dummy_eval_context):
         result = await date.MinuteOfDayFunction([], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.hour * 60 + dummy_local_datetime.minute
 
-    async def test_minute_of_day_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
+    async def test_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
         result = await date.MinuteOfDayFunction([literal_dummy_timestamp], role=Role.VALUE).eval(dummy_eval_context)
         assert result == dummy_local_datetime.hour * 60 + dummy_local_datetime.minute
 
-    def test_minute_of_day_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "MINUTEOFDAY()", Role.VALUE, 0)
         assert isinstance(e, date.MinuteOfDayFunction)
 
-    def test_minute_of_day_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "MINUTEOFDAY(1, 2)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_minute_of_day_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "MINUTEOFDAY()", role, 0)
 
-    def test_minute_of_day_deps(self):
+    def test_deps(self):
         assert date.MinuteOfDayFunction.DEPS == {DEP_MINUTE}
 
-    async def test_minute_of_day_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.MinuteOfDayFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestSecondOfDay:
-    async def test_second_of_day_simple(self, dummy_local_datetime, dummy_eval_context):
+    async def test_simple(self, dummy_local_datetime, dummy_eval_context):
         result = await date.SecondOfDayFunction([], role=Role.VALUE).eval(dummy_eval_context)
         assert (
             result == dummy_local_datetime.hour * 3600 + dummy_local_datetime.minute * 60 + dummy_local_datetime.second
         )
 
-    async def test_second_of_day_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
+    async def test_argument(self, dummy_local_datetime, literal_dummy_timestamp, dummy_eval_context):
         result = await date.SecondOfDayFunction([literal_dummy_timestamp], role=Role.VALUE).eval(dummy_eval_context)
         assert (
             result == dummy_local_datetime.hour * 3600 + dummy_local_datetime.minute * 60 + dummy_local_datetime.second
         )
 
-    def test_second_of_day_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "SECONDOFDAY()", Role.VALUE, 0)
         assert isinstance(e, date.SecondOfDayFunction)
 
-    def test_second_of_day_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "SECONDOFDAY(1, 2)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_second_of_day_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "SECONDOFDAY()", role, 0)
 
-    def test_second_of_day_deps(self):
+    def test_deps(self):
         assert date.SecondFunction.DEPS == {DEP_SECOND}
 
-    async def test_second_of_day_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.SecondOfDayFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestDate:
-    async def test_date(self, dummy_local_datetime, dummy_timestamp, dummy_eval_context):
+    async def test(self, dummy_local_datetime, dummy_timestamp, dummy_eval_context):
         result = await date.DateFunction(
             [
                 literalvalues.LiteralValue(dummy_local_datetime.year, "", Role.VALUE),
@@ -375,11 +375,11 @@ class TestDate:
         ).eval(dummy_eval_context)
         assert result == int(dummy_timestamp)
 
-    def test_date_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "DATE(2019, 3, 14, 1, 2, 3)", Role.VALUE, 0)
         assert isinstance(e, date.DateFunction)
 
-    def test_date_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "DATE(2019, 3, 14, 1, 2)", Role.VALUE, 0)
 
@@ -388,14 +388,14 @@ class TestDate:
 
 
 class TestBOY:
-    async def test_boy_simple(self, dummy_local_datetime, local_tz_info, dummy_eval_context):
+    async def test(self, dummy_local_datetime, local_tz_info, dummy_eval_context):
         result = await date.BOYFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
         dt = dummy_local_datetime.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         dt = dt.astimezone(local_tz_info)
         assert result == dt.timestamp()
 
-    async def test_boy_negative(self, dummy_local_datetime, dummy_timestamp, local_tz_info, dummy_eval_context):
+    async def test_negative(self, dummy_local_datetime, dummy_timestamp, local_tz_info, dummy_eval_context):
         result = await date.BOYFunction([literalvalues.LiteralValue(-30, "", Role.VALUE)], role=Role.VALUE).eval(
             dummy_eval_context
         )
@@ -406,7 +406,7 @@ class TestBOY:
         dt = dt.astimezone(local_tz_info)
         assert result == dt.timestamp()
 
-    async def test_boy_positive(self, dummy_local_datetime, dummy_timestamp, local_tz_info, dummy_eval_context):
+    async def test_positive(self, dummy_local_datetime, dummy_timestamp, local_tz_info, dummy_eval_context):
         result = await date.BOYFunction([literalvalues.LiteralValue(100, "", Role.VALUE)], role=Role.VALUE).eval(
             dummy_eval_context
         )
@@ -417,37 +417,37 @@ class TestBOY:
         dt = dt.astimezone(local_tz_info)
         assert result == dt.timestamp()
 
-    def test_boy_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "BOY()", Role.VALUE, 0)
         assert isinstance(e, date.BOYFunction)
 
-    def test_boy_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "BOY(1, 2)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_boy_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "BOY()", role, 0)
 
-    def test_boy_deps(self):
+    def test_deps(self):
         assert date.BOYFunction.DEPS == {DEP_YEAR}
 
-    async def test_boy_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.BOYFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestBOM:
-    async def test_bom_simple(self, dummy_local_datetime, local_tz_info, dummy_eval_context):
+    async def test(self, dummy_local_datetime, local_tz_info, dummy_eval_context):
         result = await date.BOMFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
         dt = dummy_local_datetime.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         dt = dt.astimezone(local_tz_info)
         assert result == dt.timestamp()
 
-    async def test_bom_negative(self, dummy_local_datetime, dummy_timestamp, local_tz_info, dummy_eval_context):
+    async def test_negative(self, dummy_local_datetime, dummy_timestamp, local_tz_info, dummy_eval_context):
         result = await date.BOMFunction([literalvalues.LiteralValue(-13, "", Role.VALUE)], role=Role.VALUE).eval(
             dummy_eval_context
         )
@@ -464,7 +464,7 @@ class TestBOM:
         dt = dt.astimezone(local_tz_info)
         assert result == dt.timestamp()
 
-    async def test_bom_positive(self, dummy_local_datetime, dummy_timestamp, local_tz_info, dummy_eval_context):
+    async def test_positive(self, dummy_local_datetime, dummy_timestamp, local_tz_info, dummy_eval_context):
         result = await date.BOMFunction([literalvalues.LiteralValue(13, "", Role.VALUE)], role=Role.VALUE).eval(
             dummy_eval_context
         )
@@ -481,30 +481,30 @@ class TestBOM:
         dt = dt.astimezone(local_tz_info)
         assert result == dt.timestamp()
 
-    def test_bom_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "BOM()", Role.VALUE, 0)
         assert isinstance(e, date.BOMFunction)
 
-    def test_bom_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "BOM(1, 2)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_bom_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "BOM()", role, 0)
 
-    def test_bom_deps(self):
+    def test_deps(self):
         assert date.BOMFunction.DEPS == {DEP_MONTH}
 
-    async def test_bom_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.BOMFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestBOW:
-    async def test_bow_simple(self, dummy_local_datetime, local_tz_info, dummy_eval_context):
+    async def test(self, dummy_local_datetime, local_tz_info, dummy_eval_context):
         result = await date.BOWFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
         dt = dummy_local_datetime.replace(
@@ -513,7 +513,7 @@ class TestBOW:
         dt = dt.astimezone(local_tz_info)
         assert result == dt.timestamp()
 
-    async def test_bow_negative(self, dummy_local_datetime, local_tz_info, dummy_eval_context):
+    async def test_negative(self, dummy_local_datetime, local_tz_info, dummy_eval_context):
         result = await date.BOWFunction([literalvalues.LiteralValue(-54, "", Role.VALUE)], role=Role.VALUE).eval(
             dummy_eval_context
         )
@@ -522,7 +522,7 @@ class TestBOW:
         dt = dt.astimezone(local_tz_info)
         assert result == dt.timestamp()
 
-    async def test_bow_positive(self, dummy_local_datetime, local_tz_info, dummy_eval_context):
+    async def test_positive(self, dummy_local_datetime, local_tz_info, dummy_eval_context):
         result = await date.BOWFunction([literalvalues.LiteralValue(54, "", Role.VALUE)], role=Role.VALUE).eval(
             dummy_eval_context
         )
@@ -531,7 +531,7 @@ class TestBOW:
         dt = dt.astimezone(local_tz_info)
         assert result == dt.timestamp()
 
-    async def test_bow_sunday(self, dummy_local_datetime, literal_zero, local_tz_info, dummy_eval_context):
+    async def test_sunday(self, dummy_local_datetime, literal_zero, local_tz_info, dummy_eval_context):
         result = await date.BOWFunction(
             [literal_zero, literalvalues.LiteralValue(6, "", Role.VALUE)], role=Role.VALUE
         ).eval(dummy_eval_context)
@@ -542,7 +542,7 @@ class TestBOW:
         dt = dt.astimezone(local_tz_info)
         assert result == dt.timestamp()
 
-    async def test_bow_sunday_negative(self, dummy_local_datetime, local_tz_info, dummy_eval_context):
+    async def test_sunday_negative(self, dummy_local_datetime, local_tz_info, dummy_eval_context):
         result = await date.BOWFunction(
             [literalvalues.LiteralValue(-54, "", Role.VALUE), literalvalues.LiteralValue(6, "", Role.VALUE)],
             role=Role.VALUE,
@@ -552,7 +552,7 @@ class TestBOW:
         dt = dt.astimezone(local_tz_info)
         assert result == dt.timestamp()
 
-    async def test_bow_sunday_positive(self, dummy_local_datetime, local_tz_info, dummy_eval_context):
+    async def test_sunday_positive(self, dummy_local_datetime, local_tz_info, dummy_eval_context):
         result = await date.BOWFunction(
             [literalvalues.LiteralValue(54, "", Role.VALUE), literalvalues.LiteralValue(6, "", Role.VALUE)],
             role=Role.VALUE,
@@ -562,30 +562,30 @@ class TestBOW:
         dt = dt.astimezone(local_tz_info)
         assert result == dt.timestamp()
 
-    def test_bow_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "BOW()", Role.VALUE, 0)
         assert isinstance(e, date.BOWFunction)
 
-    def test_bow_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "BOW(1, 2, 3)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_bow_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "BOW()", role, 0)
 
-    def test_bow_deps(self):
+    def test_deps(self):
         assert date.BOWFunction.DEPS == {DEP_DAY}
 
-    async def test_bow_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.BOWFunction([], role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestHMSInterval:
-    async def test_hmsinterval_hours(self, dummy_local_datetime, dummy_eval_context):
+    async def test_hours(self, dummy_local_datetime, dummy_eval_context):
         result = await date.HMSIntervalFunction(
             [
                 literalvalues.LiteralValue(dummy_local_datetime.hour - 1, "", Role.VALUE),
@@ -625,7 +625,7 @@ class TestHMSInterval:
         ).eval(dummy_eval_context)
         assert result == 0
 
-    async def test_hmsinterval_minutes(self, dummy_local_datetime, dummy_eval_context):
+    async def test_minutes(self, dummy_local_datetime, dummy_eval_context):
         result = await date.HMSIntervalFunction(
             [
                 literalvalues.LiteralValue(dummy_local_datetime.hour, "", Role.VALUE),
@@ -665,7 +665,7 @@ class TestHMSInterval:
         ).eval(dummy_eval_context)
         assert result == 0
 
-    async def test_hmsinterval_seconds(self, dummy_local_datetime, dummy_eval_context):
+    async def test_seconds(self, dummy_local_datetime, dummy_eval_context):
         result = await date.HMSIntervalFunction(
             [
                 literalvalues.LiteralValue(dummy_local_datetime.hour, "", Role.VALUE),
@@ -705,7 +705,7 @@ class TestHMSInterval:
         ).eval(dummy_eval_context)
         assert result == 0
 
-    async def test_hmsinterval_limit(self, dummy_local_datetime, dummy_eval_context):
+    async def test_limit(self, dummy_local_datetime, dummy_eval_context):
         result = await date.HMSIntervalFunction(
             [
                 literalvalues.LiteralValue(dummy_local_datetime.hour, "", Role.VALUE),
@@ -732,7 +732,7 @@ class TestHMSInterval:
         ).eval(dummy_eval_context)
         assert result == 1
 
-    async def test_hmsinterval_reversed(self, dummy_local_datetime, dummy_eval_context):
+    async def test_reversed(self, dummy_local_datetime, dummy_eval_context):
         result = await date.HMSIntervalFunction(
             [
                 literalvalues.LiteralValue(dummy_local_datetime.hour + 1, "", Role.VALUE),
@@ -746,11 +746,11 @@ class TestHMSInterval:
         ).eval(dummy_eval_context)
         assert result == 0
 
-    def test_hmsinterval_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "HMSINTERVAL(1, 1, 1, 2, 2, 2)", Role.VALUE, 0)
         assert isinstance(e, date.HMSIntervalFunction)
 
-    def test_hmsinterval_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "HMSINTERVAL(1, 2, 3, 4, 5)", Role.VALUE, 0)
 
@@ -758,21 +758,21 @@ class TestHMSInterval:
             Function.parse(None, "HMSINTERVAL(1, 2, 3, 4, 5, 6, 7)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_hmsinterval_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "HMSINTERVAL(1, 1, 1, 2, 2, 2)", role, 0)
 
-    def test_hmsinterval_deps(self):
+    def test_deps(self):
         assert date.HMSIntervalFunction.DEPS == {DEP_SECOND}
 
-    async def test_hmsinterval_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.HMSIntervalFunction([MockExpression()] * 6, role=Role.VALUE).eval(dummy_eval_context)
 
 
 class TestMDInterval:
-    async def test_mdinterval_months(self, dummy_local_datetime, dummy_eval_context):
+    async def test_months(self, dummy_local_datetime, dummy_eval_context):
         result = await date.MDIntervalFunction(
             [
                 literalvalues.LiteralValue(dummy_local_datetime.month - 1, "", Role.VALUE),
@@ -806,7 +806,7 @@ class TestMDInterval:
         ).eval(dummy_eval_context)
         assert result == 0
 
-    async def test_mdinterval_days(self, dummy_local_datetime, dummy_eval_context):
+    async def test_days(self, dummy_local_datetime, dummy_eval_context):
         result = await date.MDIntervalFunction(
             [
                 literalvalues.LiteralValue(dummy_local_datetime.month, "", Role.VALUE),
@@ -840,7 +840,7 @@ class TestMDInterval:
         ).eval(dummy_eval_context)
         assert result == 0
 
-    async def test_mdinterval_limit(self, dummy_local_datetime, dummy_eval_context):
+    async def test_limit(self, dummy_local_datetime, dummy_eval_context):
         result = await date.MDIntervalFunction(
             [
                 literalvalues.LiteralValue(dummy_local_datetime.month, "", Role.VALUE),
@@ -863,7 +863,7 @@ class TestMDInterval:
         ).eval(dummy_eval_context)
         assert result == 1
 
-    async def test_mdinterval_reversed(self, dummy_local_datetime, dummy_eval_context):
+    async def test_reversed(self, dummy_local_datetime, dummy_eval_context):
         result = await date.MDIntervalFunction(
             [
                 literalvalues.LiteralValue(dummy_local_datetime.month + 1, "", Role.VALUE),
@@ -875,11 +875,11 @@ class TestMDInterval:
         ).eval(dummy_eval_context)
         assert result == 0
 
-    def test_mdinterval_parse(self):
+    def test_parse(self):
         e = Function.parse(None, "MDINTERVAL(1, 1, 2, 2)", Role.VALUE, 0)
         assert isinstance(e, date.MDIntervalFunction)
 
-    def test_mdinterval_num_args(self):
+    def test_num_args(self):
         with pytest.raises(InvalidNumberOfArguments):
             Function.parse(None, "MDINTERVAL(1, 2, 3)", Role.VALUE, 0)
 
@@ -887,14 +887,14 @@ class TestMDInterval:
             Function.parse(None, "MDINTERVAL(1, 2, 3, 4, 5)", Role.VALUE, 0)
 
     @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
-    def test_mdinterval_no_transform(self, role):
+    def test_no_transform(self, role):
         with pytest.raises(UnknownFunction):
             Function.parse(None, "MDINTERVAL(1, 1, 2, 2)", role, 0)
 
-    def test_mdinterval_deps(self):
+    def test_deps(self):
         assert date.MDIntervalFunction.DEPS == {DEP_DAY}
 
-    async def test_mdinterval_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
+    async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         with mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False):
             with pytest.raises(RealDateTimeUnavailable):
                 await date.MDIntervalFunction([MockExpression()] * 4, role=Role.VALUE).eval(dummy_eval_context)
