@@ -111,24 +111,20 @@ class InvalidArgumentValue(ExpressionEvalException):
 
 
 class PortValueUnavailable(ValueUnavailable):
+    MSG = 'Port "%s" is unavailable'
+
     def __init__(self, port_id: str) -> None:
         self.port_id = port_id
 
-        super().__init__(f'Port "{port_id}" value is unavailable')
+        super().__init__(self.MSG % port_id)
 
 
 class UnknownPortId(PortValueUnavailable):
-    def __init__(self, port_id: str) -> None:
-        self.port_id = port_id
-
-        super().__init__(f'Unknown port "{port_id}"')
+    MSG = 'Unknown port "%s"'
 
 
 class DisabledPort(PortValueUnavailable):
-    def __init__(self, port_id: str) -> None:
-        self.port_id = port_id
-
-        super().__init__(f'Port "{port_id}" is disabled')
+    MSG = 'Port "%s" is disabled'
 
 
 class ExpressionArithmeticError(ExpressionEvalException):
