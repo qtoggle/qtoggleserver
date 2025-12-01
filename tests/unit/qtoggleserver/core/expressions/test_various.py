@@ -103,6 +103,28 @@ class TestDefault:
             Function.parse(None, "AVAILABLE(1, 2, 3)", Role.VALUE, 0)
 
 
+class TestIgnChg:
+    async def test(self, dummy_eval_context):
+        """Should simply return value."""
+
+        mock_expr = MockExpression(16)
+        expr = various.IgnChgFunction([mock_expr], Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 16
+
+    async def test_deps(self):
+        mock_expr = MockExpression(16)
+        expr = various.IgnChgFunction([mock_expr], Role.VALUE)
+        assert len(expr.get_deps()) == 0
+
+    def test_parse(self):
+        e = Function.parse(None, "IGNCHG(1)", Role.VALUE, 0)
+        assert isinstance(e, various.IgnChgFunction)
+
+    def test_num_args(self):
+        with pytest.raises(InvalidNumberOfArguments):
+            Function.parse(None, "IGNCHG(1, 2)", Role.VALUE, 0)
+
+
 class TestRising:
     async def test(self, mock_num_port1):
         port_expr = MockPortValue(mock_num_port1)

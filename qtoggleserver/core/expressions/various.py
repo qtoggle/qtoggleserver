@@ -35,6 +35,17 @@ class DefaultFunction(Function):
             return default
 
 
+@function("IGNCHG")
+class IgnChgFunction(Function):
+    MIN_ARGS = MAX_ARGS = 1
+
+    async def _eval(self, context: EvalContext) -> EvalResult:
+        return await self.args[0].eval(context)
+
+    def _get_deps(self) -> set[str]:
+        return set()
+
+
 @function("RISING")
 class RisingFunction(Function):
     MIN_ARGS = MAX_ARGS = 1

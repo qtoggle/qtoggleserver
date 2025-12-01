@@ -97,15 +97,15 @@ class TestUpdate:
 
 
 class TestHandleValueChanges:
-    async def test_self_port_value_no_trigger_eval(self, mocker, mock_num_port1):
-        """Should not trigger a port's expression evaluation if the expression depends on itself through `$`."""
+    async def test_self_port_value_trigger_eval(self, mocker, mock_num_port1):
+        """Should trigger a port's expression evaluation if the expression depends on itself through `$`."""
 
         mock_num_port1.set_writable(True)
         mock_num_port1.set_expression("MUL($, 2)")
         mocker.patch.object(mock_num_port1, "push_eval")
 
         await handle_value_changes(changed_set={mock_num_port1}, value_pairs={mock_num_port1: (10, 20)}, now_ms=0)
-        mock_num_port1.push_eval.assert_not_called()
+        mock_num_port1.push_eval.assert_called_once()
 
     async def test_own_port_value_trigger_eval(self, mocker, mock_num_port1):
         """Should trigger a port's expression evaluation if the expression depends on itself through `$<own_id>`."""

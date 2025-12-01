@@ -80,9 +80,6 @@ class SelfPortValue(PortValue):
     def __str__(self) -> str:
         return self.prefix
 
-    def _get_deps(self) -> set[str]:
-        return set()
-
 
 class PortRef(PortExpression):
     def __str__(self) -> str:
