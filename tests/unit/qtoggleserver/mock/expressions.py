@@ -1,5 +1,5 @@
-from qtoggleserver.core.expressions import EvalContext, EvalResult, Expression, Role
-from qtoggleserver.core.expressions.exceptions import PortValueUnavailable, UnknownPortId
+from qtoggleserver.core.expressions import EvalContext, EvalResult, Expression, Function, Role
+from qtoggleserver.core.expressions.exceptions import PortValueUnavailable, UnknownPortId, ValueUnavailable
 from qtoggleserver.core.expressions.ports import PortRef, PortValue
 from qtoggleserver.core.ports import BasePort
 
@@ -14,6 +14,8 @@ class MockExpression(Expression):
         self.value = value
 
     async def _eval(self, context: EvalContext) -> EvalResult:
+        if self.value is None:
+            raise ValueUnavailable()
         return self.value
 
     @staticmethod
@@ -49,3 +51,13 @@ class MockPortRef(PortRef):
             return self.port.get_id()
         else:
             raise UnknownPortId(self.port_id)
+
+
+class MockFunction(Function):
+    def __init__(self, value: EvalResult = 0, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._value: EvalResult = value
+
+    async def _eval(self, context: EvalContext) -> EvalResult:
+        return self._value

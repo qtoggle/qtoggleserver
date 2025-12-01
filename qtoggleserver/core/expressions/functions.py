@@ -4,7 +4,7 @@ import re
 
 from collections.abc import Callable
 
-from . import exceptions, parse
+from . import DEP_ASAP, exceptions, parse
 from .base import EvalContext, EvalResult, Expression, Role
 from .literalvalues import LiteralValue
 from .ports import PortValue
@@ -51,6 +51,16 @@ class Function(Expression, metaclass=abc.ABCMeta):
             deps |= arg.get_deps()
 
         return deps
+
+    def is_asap_eval_paused(self, now_ms: int) -> bool:
+        return now_ms < self._get_min_asap_eval_paused_until_ms()
+
+    def _get_min_asap_eval_paused_until_ms(self) -> int:
+        min_asap_eval_paused_until_ms = self._asap_eval_paused_until_ms if DEP_ASAP in self.DEPS else 1e13
+        min_asap_eval_paused_until_ms_args = [
+            arg._get_min_asap_eval_paused_until_ms() for arg in self.args if isinstance(arg, Function)
+        ]
+        return min([min_asap_eval_paused_until_ms, *min_asap_eval_paused_until_ms_args])
 
     async def eval_args(self, context: EvalContext) -> list[EvalResult]:
         return list(await asyncio.gather(*(a.eval(context) for a in self.args)))
@@ -148,7 +158,3 @@ class Function(Expression, metaclass=abc.ABCMeta):
         func_class.validate_arg_kinds(args, [pos + spos + 1 for (_, spos) in sargs])
 
         return func_class(args, role)
-
-
-# These imports are here just because we need all modules to be imported, so that @function decorator registers all
-# defined functions.
