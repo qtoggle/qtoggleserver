@@ -32,6 +32,9 @@ class TestDelay:
         assert await expr.eval(later_eval_context(1700)) == 16
         assert await expr.eval(later_eval_context(10000)) == 16
 
+        # Test that eval is paused after the last queued value has been processed
+        assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 1e6)
+
     def test_parse(self):
         e = Function.parse(None, "DELAY(1, 2)", Role.VALUE, 0)
         assert isinstance(e, timeprocessing.DelayFunction)
@@ -173,6 +176,11 @@ class TestFreeze:
         assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 4700)
         assert await expr.eval(later_eval_context(4699)) == 3
         assert await expr.eval(later_eval_context(4700)) == 4
+
+        # Test that eval is paused while timer is active
+        assert await expr.eval(later_eval_context(5000)) == 4
+        assert expr.is_asap_eval_paused(dummy_eval_context.now_ms + 5899)
+        assert not expr.is_asap_eval_paused(dummy_eval_context.now_ms + 5900)
 
     def test_parse(self):
         e = Function.parse(None, "FREEZE(1, 2)", Role.VALUE, 0)

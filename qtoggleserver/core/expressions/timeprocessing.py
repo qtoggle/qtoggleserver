@@ -125,7 +125,7 @@ class FreezeFunction(Function):
             if value != self._last_value:  # value change detected, start timer
                 self._last_time_ms = context.now_ms
                 self._last_value = value
-                self.pause_asap_eval(context.now_ms + duration_ms)
+                self.pause_asap_eval(self._last_time_ms + duration_ms)
             else:
                 self.pause_asap_eval()
         else:  # timer active
@@ -134,9 +134,11 @@ class FreezeFunction(Function):
                 if value != self._last_value:  # value change detected, start timer
                     self._last_time_ms = context.now_ms
                     self._last_value = value
-                    self.pause_asap_eval(context.now_ms + duration_ms)
+                    self.pause_asap_eval(self._last_time_ms + duration_ms)
                 else:
                     self.pause_asap_eval()
+            else:
+                self.pause_asap_eval(self._last_time_ms + duration_ms)
 
         return self._last_value
 
