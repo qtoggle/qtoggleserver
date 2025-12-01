@@ -120,11 +120,11 @@ class PortValueUnavailable(ValueUnavailable):
 
 
 class UnknownPortId(PortValueUnavailable):
-    pass
+    MSG = 'Unknown port "%s"'
 
 
 class DisabledPort(PortValueUnavailable):
-    pass
+    MSG = 'Port "%s" is disabled'
 
 
 class ExpressionArithmeticError(ExpressionEvalException):
