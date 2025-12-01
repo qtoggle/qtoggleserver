@@ -222,8 +222,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._last_read_value: NullablePortValue = None
         self._read_value_lock = asyncio.Lock()
 
-        self._write_value_lock = asyncio.Lock()
         self._pending_value: NullablePortValue = None
+        self._last_write_value: NullablePortValue = None
+        self._write_value_lock = asyncio.Lock()
 
         self._eval_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
         self._eval_task: asyncio.Task | None = None
@@ -639,9 +640,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def read_value(self) -> NullablePortValue:
         return None
 
-    async def write_value(self, value: NullablePortValue) -> None:
-        pass
-
     def get_last_read_value(self) -> NullablePortValue:
         return self._last_read_value
 
@@ -668,39 +666,27 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def is_reading(self) -> bool:
         return self._read_value_lock.locked()
 
-    async def transform_and_write_value(self, value: NullablePortValue) -> None:
-        value_str = json_utils.dumps(value)
-
-        if self._transform_write:
-            context = self._make_eval_context(port_values={self.get_id(): value})
-            try:
-                value = await self.adapt_value_type(await self._transform_write.eval(context))
-            except expressions_exceptions.ValueUnavailable:
-                value = None
-            value_str = f"{value_str} ({json_utils.dumps(value)} after write transform)"
-
-        try:
-            self.debug("writing value %s", value_str)
-            await self._write_value(value)
-            self.debug("wrote value %s", value_str)
-        except Exception:
-            self.error("failed to write value %s", value_str, exc_info=True)
-            raise
-
-    def is_writing(self) -> bool:
-        return self._write_value_lock.locked()
+    async def write_value(self, value: NullablePortValue) -> None:
+        pass
 
     async def _write_value(self, value: NullablePortValue) -> None:
         async with self._write_value_lock:
             try:
                 self._pending_value = value
                 await self.write_value(value)
+                self._last_write_value = value
             finally:
                 self._pending_value = None
 
         # Do an update after every confirmed write
         await asyncio.sleep(settings.core.tick_interval / 1000.0)
         await main.update()
+
+    def is_writing(self) -> bool:
+        return self._write_value_lock.locked()
+
+    def get_last_write_value(self) -> NullablePortValue:
+        return self._last_write_value
 
     def push_eval(self, now_ms: int) -> None:
         port_values = {p.get_id(): p.get_last_read_value() for p in get_all() if p.is_enabled()}
@@ -748,10 +734,32 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 json_utils.dumps(value),
                 json_utils.dumps(adapted_value),
             )
+
+            # Only write value to port if it differs from the last written value
+            if self._last_write_value != adapted_value:
+                try:
+                    await self.transform_and_write_value(adapted_value)
+                except Exception as e:
+                    self.error("failed to write value: %s", e)
+
+    async def transform_and_write_value(self, value: NullablePortValue) -> None:
+        value_str = json_utils.dumps(value)
+
+        if self._transform_write:
+            context = self._make_eval_context(port_values={self.get_id(): value})
             try:
-                await self.transform_and_write_value(adapted_value)
-            except Exception as e:
-                self.error("failed to write value: %s", e)
+                value = await self.adapt_value_type(await self._transform_write.eval(context))
+            except expressions_exceptions.ValueUnavailable:
+                value = None
+            value_str = f"{value_str} ({json_utils.dumps(value)} after write transform)"
+
+        try:
+            self.debug("writing value %s", value_str)
+            await self._write_value(value)
+            self.debug("wrote value %s", value_str)
+        except Exception:
+            self.error("failed to write value %s", value_str, exc_info=True)
+            raise
 
     def _make_eval_context(
         self, port_values: dict[str, NullablePortValue], now_ms: int = 0
