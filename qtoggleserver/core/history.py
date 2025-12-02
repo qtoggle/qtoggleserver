@@ -146,9 +146,7 @@ async def get_samples_slice(
     )
 
     # Transform samples according to port type
-    type_ = await port.get_type()
-    integer = await port.get_attr("integer")
-    samples = ((s[0], port.adapt_value_type_sync(type_, integer, s[1])) for s in samples)
+    samples = ((s[0], port.adapt_value_type(s[1])) for s in samples)
 
     return samples
 
@@ -173,9 +171,7 @@ async def get_samples_by_timestamp(port: core_ports.BasePort, timestamps: list[i
         samples = list(samples)
 
         # Transform samples according to port type
-        type_ = await port.get_type()
-        integer = await port.get_attr("integer")
-        samples = [port.adapt_value_type_sync(type_, integer, s) for s in samples]
+        samples = [port.adapt_value_type(s) for s in samples]
 
         for i, timestamp in enumerate(missed_timestamps):
             results[timestamp] = samples[i]

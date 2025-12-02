@@ -41,8 +41,8 @@ _ports_by_id: dict[str, BasePort] = {}
 _save_loop_task: asyncio.Task | None = None
 
 
-async def _attrdef_unit_enabled(port: BasePort) -> bool:
-    return await port.get_type() == TYPE_NUMBER
+def _attrdef_unit_enabled(port: BasePort) -> bool:
+    return port.get_type() == TYPE_NUMBER
 
 
 STANDARD_ATTRDEFS = {
@@ -157,9 +157,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     TYPE = TYPE_BOOLEAN
     DISPLAY_NAME = ""
     UNIT = ""
+    TAG = ""
     WRITABLE = False
     CHOICES = None
-    TAG = ""
+    INTEGER = False
     PERSISTED = False
     INTERNAL = False
 
@@ -422,7 +423,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if choice["value"] == value:
                     return choice["display_name"]
 
-        if await self.get_type() == TYPE_BOOLEAN:
+        if self.get_type() == TYPE_BOOLEAN:
             value_str = "on" if value else "off"  # TODO: i18n
         else:
             value_str = str(value)
@@ -440,8 +441,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.debug("mapped to %s", new_id)
         self.set_logger_name(new_id)
 
-    async def get_type(self) -> str:
-        return await self.get_attr("type")
+    def get_type(self) -> str:
+        return self.TYPE
 
     async def is_writable(self) -> bool:
         return await self.get_attr("writable")
@@ -451,6 +452,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def is_internal(self) -> bool:
         return await self.get_attr("internal")
+
+    def is_integer(self) -> bool:
+        return self.INTEGER
 
     def is_enabled(self) -> bool:
         return self._enabled
@@ -657,7 +661,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if self._transform_read:
             context = self._make_eval_context(port_values={self.get_id(): value})
             try:
-                value = await self.adapt_value_type(await self._transform_read.eval(context))
+                value = self.adapt_value_type(await self._transform_read.eval(context))
             except expressions_exceptions.ValueUnavailable:
                 value = None
 
@@ -726,7 +730,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         finally:
             self._evaling = False
 
-        adapted_value = await self.adapt_value_type(value)
+        adapted_value = self.adapt_value_type(value)
         if adapted_value is not None:
             self.debug(
                 'expression "%s" evaluated to %s (adapted to %s)',
@@ -748,7 +752,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if self._transform_write:
             context = self._make_eval_context(port_values={self.get_id(): value})
             try:
-                value = await self.adapt_value_type(await self._transform_write.eval(context))
+                value = self.adapt_value_type(await self._transform_write.eval(context))
             except expressions_exceptions.ValueUnavailable:
                 value = None
             value_str = f"{value_str} ({json_utils.dumps(value)} after write transform)"
@@ -788,21 +792,15 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return None
 
-    async def adapt_value_type(self, value: NullablePortValue) -> NullablePortValue:
-        return self.adapt_value_type_sync(await self.get_type(), await self.get_attr("integer"), value)
-
-    @staticmethod
-    def adapt_value_type_sync(type_: str, integer: bool, value: NullablePortValue) -> NullablePortValue:
+    def adapt_value_type(self, value: NullablePortValue) -> NullablePortValue:
         if value is None:
             return None
 
-        if type_ == TYPE_BOOLEAN:
+        if self.get_type() == TYPE_BOOLEAN:
             return bool(value)
-        elif isinstance(value, BasePort):
-            return None
         else:
             # Round the value if port accepts only integers
-            if integer:
+            if self.is_integer():
                 return int(value)
 
             return float(value)
@@ -923,7 +921,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 value = data["value"]
                 if self._transform_write:
                     try:
-                        value = await self.adapt_value_type(
+                        value = self.adapt_value_type(
                             await self._transform_write.eval(
                                 self._make_eval_context(port_values={self.get_id(): value})
                             )
@@ -1080,9 +1078,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if m is not None:
                     self._value_schema["maximum"] = m
 
-                if await self.get_attr("integer"):
+                if self.is_integer():
                     self._value_schema["type"] = "integer"
-                elif await self.get_type() == TYPE_BOOLEAN:
+                elif self.get_type() == TYPE_BOOLEAN:
                     self._value_schema["type"] = "boolean"
                 else:  # assuming number
                     self._value_schema["type"] = "number"

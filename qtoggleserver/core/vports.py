@@ -39,6 +39,9 @@ class VirtualPort(core_ports.Port):
     def map_id(self, new_id: str) -> None:
         raise core_ports.PortError("Virtual ports cannot be mapped")
 
+    def is_integer(self) -> bool:
+        return bool(self._integer)
+
     async def read_value(self) -> NullablePortValue:
         return self._virtual_value
 
