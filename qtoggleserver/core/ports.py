@@ -219,11 +219,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._schema: GenericJSONDict | None = None
         self._value_schema: GenericJSONDict | None = None
 
-        self._last_read_value: NullablePortValue = None
+        self._last_read_value: tuple[NullablePortValue, int] | None = None
         self._read_value_lock = asyncio.Lock()
 
         self._pending_value: NullablePortValue = None
-        self._last_write_value: NullablePortValue = None
+        self._last_written_value: tuple[NullablePortValue, int] | None = None
         self._write_value_lock = asyncio.Lock()
 
         self._eval_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
@@ -641,10 +641,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return None
 
     def get_last_read_value(self) -> NullablePortValue:
-        return self._last_read_value
+        return self._last_read_value[0] if self._last_read_value else None
 
     def set_last_read_value(self, value: NullablePortValue) -> None:
-        self._last_read_value = value
+        self._last_read_value = value, int(time.time() * 1000)
 
     async def read_transformed_value(self) -> NullablePortValue:
         value = None
@@ -674,7 +674,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             try:
                 self._pending_value = value
                 await self.write_value(value)
-                self._last_write_value = value
+                self._last_written_value = value, int(time.time() * 1000)
             finally:
                 self._pending_value = None
 
@@ -685,11 +685,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def is_writing(self) -> bool:
         return self._write_value_lock.locked()
 
-    def get_last_write_value(self) -> NullablePortValue:
-        return self._last_write_value
+    def get_last_written_value(self) -> NullablePortValue:
+        return self._last_written_value[0] if self._last_written_value else None
 
     def push_eval(self, now_ms: int) -> None:
-        port_values = {p.get_id(): p.get_last_read_value() for p in get_all() if p.is_enabled()}
+        port_values = {p.get_id(): p.get_last_value() for p in get_all() if p.is_enabled()}
         context = self._make_eval_context(port_values, now_ms)
 
         try:
@@ -736,7 +736,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             )
 
             # Only write value to port if it differs from the last written value
-            if self._last_write_value != adapted_value:
+            if not self._last_written_value or self._last_written_value[0] != adapted_value:
                 try:
                     await self.transform_and_write_value(adapted_value)
                 except Exception as e:
@@ -766,6 +766,27 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     ) -> core_expressions.EvalContext:
         now_ms = now_ms or int(time.time() * 1000)
         return core_expressions.EvalContext(port_values, now_ms)
+
+    def get_last_value(self) -> NullablePortValue:
+        """Returns the most recent value known to the port, preferring pending and last written values over last read
+        value.
+        """
+
+        # Pending value is always the most recent known value
+        if self._pending_value is not None:
+            return self._pending_value
+
+        if self._last_written_value:
+            if self._last_read_value:
+                if self._last_read_value[1] > self._last_written_value[1]:
+                    return self._last_read_value[0]
+
+            return self._last_written_value[0]
+
+        if self._last_read_value:
+            return self._last_read_value[0]
+
+        return None
 
     async def adapt_value_type(self, value: NullablePortValue) -> NullablePortValue:
         return self.adapt_value_type_sync(await self.get_type(), await self.get_attr("integer"), value)
@@ -818,7 +839,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         attrs = dict(attrs)
 
         if self._enabled:
-            attrs["value"] = self._last_read_value
+            attrs["value"] = self._last_read_value[0] if self._last_read_value else None
             attrs["pending_value"] = self._pending_value
         else:
             attrs["value"] = None
@@ -894,12 +915,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         # value
         if await self.is_persisted() and data.get("value") is not None:
-            self._last_read_value = data["value"]
-            self.debug("loaded value = %s", json_utils.dumps(self._last_read_value))
+            self._last_read_value = data["value"], int(time.time() * 1000)
+            self.debug("loaded value = %s", json_utils.dumps(data["value"]))
 
             if await self.is_writable():
                 # Write the just-loaded value to the port
-                value = self._last_read_value
+                value = data["value"]
                 if self._transform_write:
                     try:
                         value = await self.adapt_value_type(
@@ -919,8 +940,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             except Exception as e:
                 self.error("failed to read value: %s", e, exc_info=True)
             else:
-                self._last_read_value = value
-                self.debug("read value = %s", json_utils.dumps(self._last_read_value))
+                self._last_read_value = value, int(time.time() * 1000)
+                self.debug("read value = %s", json_utils.dumps(value))
 
         # various
         self._history_last_timestamp = data.get("history_last_timestamp", 0)
@@ -945,7 +966,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         }
 
         if await self.is_persisted():
-            d["value"] = self._last_read_value
+            d["value"] = self._last_read_value[0] if self._last_read_value else None
         else:
             d["value"] = None
 

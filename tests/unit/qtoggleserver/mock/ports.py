@@ -10,7 +10,6 @@ class MockPort(Port):
         self.set_last_read_value(value)
         self._writable: bool = False
         self._next_value: NullablePortValue = None
-        self._last_written_value: NullablePortValue = None
 
     async def read_value(self) -> NullablePortValue:
         if self._next_value is None:
@@ -21,7 +20,7 @@ class MockPort(Port):
         return value
 
     async def write_value(self, value: NullablePortValue) -> None:
-        self._last_written_value = value
+        pass
 
     def set_next_value(self, value: NullablePortValue) -> None:
         self._next_value = value
@@ -29,9 +28,6 @@ class MockPort(Port):
     def set_writable(self, writable: bool) -> None:
         self._writable = writable
         self.invalidate_attrs()
-
-    def get_last_written_value(self) -> NullablePortValue:
-        return self._last_written_value
 
     def set_expression(self, sexpression: str) -> None:
         expression = core_expressions.parse(self.get_id(), sexpression, role=core_expressions.Role.VALUE)
