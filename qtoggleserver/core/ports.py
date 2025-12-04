@@ -8,6 +8,7 @@ import inspect
 import logging
 import time
 
+from collections import deque
 from collections.abc import Callable
 from typing import Any
 
@@ -167,7 +168,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     PERSISTED = False
     INTERNAL = False
 
-    WRITE_VALUE_QUEUE_SIZE = 1024
+    WRITE_QUEUE_SIZE = 16
 
     STANDARD_ATTRDEFS = STANDARD_ATTRDEFS
 
@@ -233,18 +234,18 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._last_read_value: tuple[NullablePortValue, int] | None = None
         self._read_value_lock = asyncio.Lock()
 
-        self._pending_value: NullablePortValue = None
+        # Value that's currently being written
+        self._writing_value: NullablePortValue = None
         self._last_written_value: tuple[NullablePortValue, int] | None = None
         self._write_value_lock = asyncio.Lock()
 
-        self._eval_queue: asyncio.Queue = asyncio.Queue(maxsize=self.WRITE_VALUE_QUEUE_SIZE)
-        self._eval_task: asyncio.Task | None = None
+        self._write_queue: deque[PortValue] = deque(maxlen=self.WRITE_QUEUE_SIZE)
+        self._write_task: asyncio.Task | None = None
         try:
             asyncio.get_running_loop()
-            self._eval_task = asyncio.create_task(self._eval_loop())
+            self._write_task = asyncio.create_task(self._write_loop())
         except RuntimeError:
             pass
-        self._evaling: bool = False
 
         self._save_lock: asyncio.Lock = asyncio.Lock()
         self._pending_save: bool = False
@@ -679,53 +680,41 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def write_value(self, value: NullablePortValue) -> None:
         pass
 
-    async def _write_value(self, value: NullablePortValue) -> None:
+    async def _write_value_safe(self, value: NullablePortValue) -> None:
+        """Write a value to the port, ensuring only one write at a time and updating the last written value."""
+
         async with self._write_value_lock:
             try:
-                self._pending_value = value
+                self._writing_value = value
                 await self.write_value(value)
                 self._last_written_value = value, int(time.time() * 1000)
             finally:
-                self._pending_value = None
+                self._writing_value = None
 
         # Do an update after every confirmed write
         await asyncio.sleep(settings.core.tick_interval / 1000.0)
         await main.update()
 
-    def is_writing(self) -> bool:
-        return self._write_value_lock.locked()
+    def get_pending_value(self) -> NullablePortValue:
+        """Return the most recent value that's about to be written to the port but hasn't been, yet."""
+
+        try:
+            return self._write_queue[-1]
+        except IndexError:
+            return self._writing_value
 
     def get_last_written_value(self) -> NullablePortValue:
         return self._last_written_value[0] if self._last_written_value else None
 
-    def push_eval(self, now_ms: int) -> None:
+    async def eval_and_push_write(self, now_ms: int) -> None:
+        """Evaluate the port's expression and push the resulting value to the write queue. Shield any evaluation
+        exceptions from caller, but make sure to log them."""
+
         port_values = {p.get_id(): p.get_last_value() for p in get_all() if p.is_enabled()}
         context = self._make_eval_context(port_values, now_ms)
-
-        try:
-            self._eval_queue.put_nowait(context)
-        except asyncio.QueueFull:
-            self.warning("eval queue full")
-
-    def has_pending_eval(self) -> bool:
-        return (self._eval_queue.qsize() > 0) or self._evaling
-
-    async def _eval_loop(self) -> None:
-        while True:
-            try:
-                context = await self._eval_queue.get()
-                await self._eval_and_write(context)
-            except Exception:
-                self.error("eval failed", exc_info=True)
-            except asyncio.CancelledError:
-                self.debug("eval task cancelled")
-                break
-
-    async def _eval_and_write(self, context: core_expressions.EvalContext) -> None:
         expression = self.get_expression()
 
         try:
-            self._evaling = True
             value = await expression.eval(context)
         except expressions_exceptions.ExpressionEvalException as e:
             self.debug('evaluation did not complete for expression "%s": %s', expression, e)
@@ -733,8 +722,50 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         except Exception as e:
             self.error('failed to evaluate expression "%s": %s', expression, e, exc_info=True)
             return
-        finally:
-            self._evaling = False
+
+        if value is None:
+            return
+
+        adapted_value = self.adapt_value_type(value)
+        self.debug(
+            'expression "%s" evaluated to %s (adapted to %s)',
+            expression,
+            json_utils.dumps(value),
+            json_utils.dumps(adapted_value),
+        )
+
+        # Only write value to port if it differs from the last value
+        if self.get_last_value() != adapted_value:
+            self._write_queue.append(adapted_value)
+
+    async def _write_loop(self) -> None:
+        try:
+            while True:
+                try:
+                    value = self._write_queue.pop()
+                except IndexError:
+                    await asyncio.sleep(settings.core.tick_interval / 1000.0)
+                    continue
+
+                try:
+                    await self.transform_and_write_value(value)
+                except Exception:
+                    self.error("eval failed", exc_info=True)
+                    await asyncio.sleep(settings.core.tick_interval / 1000.0)
+        except asyncio.CancelledError:
+            self.debug("eval task cancelled")
+
+    async def _eval_and_write(self, context: core_expressions.EvalContext) -> None:
+        expression = self.get_expression()
+
+        try:
+            value = await expression.eval(context)
+        except expressions_exceptions.ExpressionEvalException as e:
+            self.debug('evaluation did not complete for expression "%s": %s', expression, e)
+            return
+        except Exception as e:
+            self.error('failed to evaluate expression "%s": %s', expression, e, exc_info=True)
+            return
 
         adapted_value = self.adapt_value_type(value)
         if adapted_value is not None:
@@ -753,6 +784,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     self.error("failed to write value: %s", e)
 
     async def transform_and_write_value(self, value: NullablePortValue) -> None:
+        """Apply write transform (if any) and write the value to the port."""
+
         value_str = json_utils.dumps(value)
 
         if self._transform_write:
@@ -765,7 +798,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         try:
             self.debug("writing value %s", value_str)
-            await self._write_value(value)
+            await self._write_value_safe(value)
             self.debug("wrote value %s", value_str)
         except Exception:
             self.error("failed to write value %s", value_str, exc_info=True)
@@ -783,8 +816,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         """
 
         # Pending value is always the most recent known value
-        if self._pending_value is not None:
-            return self._pending_value
+        pending_value = self.get_pending_value()
+        if pending_value is not None:
+            return pending_value
 
         if self._last_written_value:
             if self._last_read_value:
@@ -844,7 +878,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         if self._enabled:
             attrs["value"] = self._last_read_value[0] if self._last_read_value else None
-            attrs["pending_value"] = self._pending_value
+            attrs["pending_value"] = self.get_pending_value()
         else:
             attrs["value"] = None
             attrs["pending_value"] = None
@@ -992,10 +1026,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return self._pending_save
 
     async def cleanup(self) -> None:
-        if self._eval_task:
-            self._eval_task.cancel()
-            await self._eval_task
-            self._eval_task = None
+        if self._write_task:
+            self._write_task.cancel()
+            await self._write_task
+            self._write_task = None
 
     def is_loaded(self) -> bool:
         return self._loaded
