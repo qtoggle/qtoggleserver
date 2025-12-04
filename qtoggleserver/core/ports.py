@@ -41,8 +41,8 @@ _ports_by_id: dict[str, BasePort] = {}
 _save_loop_task: asyncio.Task | None = None
 
 
-async def _attrdef_unit_enabled(port: BasePort) -> bool:
-    return await port.get_type() == TYPE_NUMBER
+def _attrdef_unit_enabled(port: BasePort) -> bool:
+    return port.get_type() == TYPE_NUMBER
 
 
 STANDARD_ATTRDEFS = {
@@ -154,12 +154,16 @@ def skip_write_unavailable(func: Callable) -> Callable:
 class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     PERSIST_COLLECTION = "ports"
 
-    TYPE = TYPE_BOOLEAN
     DISPLAY_NAME = ""
-    UNIT = ""
+    TYPE = TYPE_BOOLEAN
     WRITABLE = False
-    CHOICES = None
+    UNIT = ""
     TAG = ""
+    CHOICES = None
+    MIN = None
+    MAX = None
+    INTEGER = False
+    STEP = None
     PERSISTED = False
     INTERNAL = False
 
@@ -193,10 +197,17 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         logging_utils.LoggableMixin.__init__(self, port_id, logger)
 
         self._id: str = port_id
-        self._enabled: bool = False
         self._display_name: str | None = self.DISPLAY_NAME
+        self._type: str = self.TYPE
+        self._writable = self.WRITABLE
+        self._enabled: bool = False
         self._unit: str | None = self.UNIT
         self._tag: str = self.TAG
+        self._choices: list[dict[str, str | int]] | None = self.CHOICES
+        self._min: int | float | None = self.MIN
+        self._max: int | float | None = self.MAX
+        self._integer: bool = self.INTEGER
+        self._step: int | float | None = self.STEP
         self._persisted: bool = self.PERSISTED
         self._internal: bool = self.INTERNAL
 
@@ -316,18 +327,17 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         method = getattr(self, "attr_get_" + name, getattr(self, "attr_is_" + name, None))
         if method:
-            value = await method()
+            value = method()
+            if inspect.isawaitable(value):
+                value = await value
             if value is not None:
                 self._attrs_cache[name] = value
-            return value
+                return value
 
-        try:
-            value = getattr(self, "_" + name)
-            if value is not None:
-                self._attrs_cache[name] = value
+        value = getattr(self, "_" + name, None)
+        if value is not None:
+            self._attrs_cache[name] = value
             return value
-        except AttributeError:
-            pass
 
         value = await self.attr_get_value(name)
         if value is not None:
@@ -336,30 +346,29 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         method = getattr(self, "attr_get_default_" + name, getattr(self, "attr_is_default_" + name, None))
         if method:
-            value = await method()
+            value = method()
+            if inspect.isawaitable(value):
+                value = await value
             if value is not None:
                 self._attrs_cache[name] = value
-            return value
-
-        try:
-            value = getattr(self, name.upper())
-            if value is not None:
-                self._attrs_cache[name] = value
-            return value
-        except AttributeError:
-            pass
+                return value
 
         return None  # unsupported attribute
 
     async def set_attr(self, name: str, value: Attribute) -> None:
         old_value = await self.get_attr(name)
         if old_value is None:
-            return  # refuse to set an unsupported attribute
+            return
+
+        if old_value == value:
+            return
 
         method = getattr(self, "attr_set_" + name, None)
         if method:
             try:
-                await method(value)
+                result = method(value)
+                if inspect.isawaitable(result):
+                    await result
             except Exception:
                 self.error("failed to set attribute %s = %s", name, json_utils.dumps(value), exc_info=True)
 
@@ -369,23 +378,18 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         else:
             await self.attr_set_value(name, value)
 
+        # New attributes might have been added or removed after setting an attribute; therefore new definitions might
+        # have appeared or disappeared; this will also invalidate attributes cache.
+        self.invalidate_attrdefs()
+
         if self.is_loaded():
             await main.update()  # TODO: don't update immediately, batch multiple attribute sets
 
-        # New attributes might have been added or removed after setting an attribute; therefore new definitions might
-        # have appeared or disappeared
-        self.invalidate_attrdefs()
+            # Skip an IO loop iteration, allowing setting multiple attributes before triggering a port-update
+            await asyncio.sleep(0)
+            await self.trigger_update()  # TODO: don't trigger immediately, batch multiple attribute sets
 
-        self._attrs_cache[name] = value
-        if old_value != value:
             await self.handle_attr_change(name, value)
-
-        if not self.is_loaded():
-            return
-
-        # Skip an IO loop iteration, allowing setting multiple attributes before triggering a port-update
-        await asyncio.sleep(0)
-        await self.trigger_update()  # TODO: don't trigger immediately, batch multiple attribute sets
 
     def invalidate_attr(self, name: str) -> None:
         self._attrs_cache.pop(name, None)
@@ -422,7 +426,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if choice["value"] == value:
                     return choice["display_name"]
 
-        if await self.get_type() == TYPE_BOOLEAN:
+        if self.get_type() == TYPE_BOOLEAN:
             value_str = "on" if value else "off"  # TODO: i18n
         else:
             value_str = str(value)
@@ -440,8 +444,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.debug("mapped to %s", new_id)
         self.set_logger_name(new_id)
 
-    async def get_type(self) -> str:
-        return await self.get_attr("type")
+    def get_type(self) -> str:
+        # This shorthand method is not implemented as an attribute getter to avoid overhead of async calls
+        return self._type
 
     async def is_writable(self) -> bool:
         return await self.get_attr("writable")
@@ -452,7 +457,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def is_internal(self) -> bool:
         return await self.get_attr("internal")
 
+    def is_integer(self) -> bool:
+        # This shorthand method is not implemented as an attribute getter to avoid overhead of async calls
+        return self._integer
+
     def is_enabled(self) -> bool:
+        # This shorthand method is not implemented as an attribute getter to avoid overhead of async calls
         return self._enabled
 
     async def enable(self) -> None:
@@ -657,7 +667,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if self._transform_read:
             context = self._make_eval_context(port_values={self.get_id(): value})
             try:
-                value = await self.adapt_value_type(await self._transform_read.eval(context))
+                value = self.adapt_value_type(await self._transform_read.eval(context))
             except expressions_exceptions.ValueUnavailable:
                 value = None
 
@@ -726,7 +736,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         finally:
             self._evaling = False
 
-        adapted_value = await self.adapt_value_type(value)
+        adapted_value = self.adapt_value_type(value)
         if adapted_value is not None:
             self.debug(
                 'expression "%s" evaluated to %s (adapted to %s)',
@@ -748,7 +758,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if self._transform_write:
             context = self._make_eval_context(port_values={self.get_id(): value})
             try:
-                value = await self.adapt_value_type(await self._transform_write.eval(context))
+                value = self.adapt_value_type(await self._transform_write.eval(context))
             except expressions_exceptions.ValueUnavailable:
                 value = None
             value_str = f"{value_str} ({json_utils.dumps(value)} after write transform)"
@@ -788,21 +798,15 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return None
 
-    async def adapt_value_type(self, value: NullablePortValue) -> NullablePortValue:
-        return self.adapt_value_type_sync(await self.get_type(), await self.get_attr("integer"), value)
-
-    @staticmethod
-    def adapt_value_type_sync(type_: str, integer: bool, value: NullablePortValue) -> NullablePortValue:
+    def adapt_value_type(self, value: NullablePortValue) -> NullablePortValue:
         if value is None:
             return None
 
-        if type_ == TYPE_BOOLEAN:
+        if self.get_type() == TYPE_BOOLEAN:
             return bool(value)
-        elif isinstance(value, BasePort):
-            return None
         else:
             # Round the value if port accepts only integers
-            if integer:
+            if self.is_integer():
                 return int(value)
 
             return float(value)
@@ -923,7 +927,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 value = data["value"]
                 if self._transform_write:
                     try:
-                        value = await self.adapt_value_type(
+                        value = self.adapt_value_type(
                             await self._transform_write.eval(
                                 self._make_eval_context(port_values={self.get_id(): value})
                             )
@@ -1080,9 +1084,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if m is not None:
                     self._value_schema["maximum"] = m
 
-                if await self.get_attr("integer"):
+                if self.is_integer():
                     self._value_schema["type"] = "integer"
-                elif await self.get_type() == TYPE_BOOLEAN:
+                elif self.get_type() == TYPE_BOOLEAN:
                     self._value_schema["type"] = "boolean"
                 else:  # assuming number
                     self._value_schema["type"] = "number"
