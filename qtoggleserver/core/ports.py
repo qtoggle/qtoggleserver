@@ -154,13 +154,16 @@ def skip_write_unavailable(func: Callable) -> Callable:
 class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     PERSIST_COLLECTION = "ports"
 
-    TYPE = TYPE_BOOLEAN
     DISPLAY_NAME = ""
+    TYPE = TYPE_BOOLEAN
+    WRITABLE = False
     UNIT = ""
     TAG = ""
-    WRITABLE = False
     CHOICES = None
+    MIN = None
+    MAX = None
     INTEGER = False
+    STEP = None
     PERSISTED = False
     INTERNAL = False
 
@@ -194,10 +197,17 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         logging_utils.LoggableMixin.__init__(self, port_id, logger)
 
         self._id: str = port_id
-        self._enabled: bool = False
         self._display_name: str | None = self.DISPLAY_NAME
+        self._type: str = self.TYPE
+        self._writable = self.WRITABLE
+        self._enabled: bool = False
         self._unit: str | None = self.UNIT
         self._tag: str = self.TAG
+        self._choices: list[dict[str, str | int]] | None = self.CHOICES
+        self._min: int | float | None = self.MIN
+        self._max: int | float | None = self.MAX
+        self._integer: bool = self.INTEGER
+        self._step: int | float | None = self.STEP
         self._persisted: bool = self.PERSISTED
         self._internal: bool = self.INTERNAL
 
@@ -342,20 +352,15 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self._attrs_cache[name] = value
             return value
 
-        try:
-            value = getattr(self, name.upper())
-            if value is not None:
-                self._attrs_cache[name] = value
-            return value
-        except AttributeError:
-            pass
-
         return None  # unsupported attribute
 
     async def set_attr(self, name: str, value: Attribute) -> None:
         old_value = await self.get_attr(name)
         if old_value is None:
             return  # refuse to set an unsupported attribute
+
+        if old_value == value:
+            return
 
         method = getattr(self, "attr_set_" + name, None)
         if method:
@@ -373,20 +378,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if self.is_loaded():
             await main.update()  # TODO: don't update immediately, batch multiple attribute sets
 
-        # New attributes might have been added or removed after setting an attribute; therefore new definitions might
-        # have appeared or disappeared
-        self.invalidate_attrdefs()
+            # Skip an IO loop iteration, allowing setting multiple attributes before triggering a port-update
+            await asyncio.sleep(0)
+            await self.trigger_update()  # TODO: don't trigger immediately, batch multiple attribute sets
 
-        self._attrs_cache[name] = value
-        if old_value != value:
             await self.handle_attr_change(name, value)
-
-        if not self.is_loaded():
-            return
-
-        # Skip an IO loop iteration, allowing setting multiple attributes before triggering a port-update
-        await asyncio.sleep(0)
-        await self.trigger_update()  # TODO: don't trigger immediately, batch multiple attribute sets
 
     def invalidate_attr(self, name: str) -> None:
         self._attrs_cache.pop(name, None)
@@ -442,7 +438,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.set_logger_name(new_id)
 
     def get_type(self) -> str:
-        return self.TYPE
+        return self._type
 
     async def is_writable(self) -> bool:
         return await self.get_attr("writable")
@@ -454,7 +450,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return await self.get_attr("internal")
 
     def is_integer(self) -> bool:
-        return self.INTEGER
+        return self._integer
 
     def is_enabled(self) -> bool:
         return self._enabled
