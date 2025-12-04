@@ -327,18 +327,17 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         method = getattr(self, "attr_get_" + name, getattr(self, "attr_is_" + name, None))
         if method:
-            value = await method()
+            value = method()
+            if inspect.isawaitable(value):
+                value = await value
             if value is not None:
                 self._attrs_cache[name] = value
-            return value
+                return value
 
-        try:
-            value = getattr(self, "_" + name)
-            if value is not None:
-                self._attrs_cache[name] = value
+        value = getattr(self, "_" + name, None)
+        if value is not None:
+            self._attrs_cache[name] = value
             return value
-        except AttributeError:
-            pass
 
         value = await self.attr_get_value(name)
         if value is not None:
@@ -347,17 +346,19 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         method = getattr(self, "attr_get_default_" + name, getattr(self, "attr_is_default_" + name, None))
         if method:
-            value = await method()
+            value = method()
+            if inspect.isawaitable(value):
+                value = await value
             if value is not None:
                 self._attrs_cache[name] = value
-            return value
+                return value
 
         return None  # unsupported attribute
 
     async def set_attr(self, name: str, value: Attribute) -> None:
         old_value = await self.get_attr(name)
         if old_value is None:
-            return  # refuse to set an unsupported attribute
+            return
 
         if old_value == value:
             return
@@ -365,7 +366,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         method = getattr(self, "attr_set_" + name, None)
         if method:
             try:
-                await method(value)
+                result = method(value)
+                if inspect.isawaitable(result):
+                    await result
             except Exception:
                 self.error("failed to set attribute %s = %s", name, json_utils.dumps(value), exc_info=True)
 
@@ -374,6 +377,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             setattr(self, "_" + name, value)
         else:
             await self.attr_set_value(name, value)
+
+        # New attributes might have been added or removed after setting an attribute; therefore new definitions might
+        # have appeared or disappeared; this will also invalidate attributes cache.
+        self.invalidate_attrdefs()
 
         if self.is_loaded():
             await main.update()  # TODO: don't update immediately, batch multiple attribute sets
@@ -438,6 +445,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.set_logger_name(new_id)
 
     def get_type(self) -> str:
+        # This shorthand method is not implemented as an attribute getter to avoid overhead of async calls
         return self._type
 
     async def is_writable(self) -> bool:
@@ -450,9 +458,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return await self.get_attr("internal")
 
     def is_integer(self) -> bool:
+        # This shorthand method is not implemented as an attribute getter to avoid overhead of async calls
         return self._integer
 
     def is_enabled(self) -> bool:
+        # This shorthand method is not implemented as an attribute getter to avoid overhead of async calls
         return self._enabled
 
     async def enable(self) -> None:
