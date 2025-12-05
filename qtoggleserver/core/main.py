@@ -209,7 +209,7 @@ async def handle_value_changes(
             continue
 
         if full_eval or (port in forced_ports):
-            port.push_eval(now_ms)
+            await port.eval_and_push_write(now_ms)
             continue
 
         deps: set[str] = expression.get_deps()
@@ -224,11 +224,7 @@ async def handle_value_changes(
             if expression.is_asap_eval_paused(now_ms):
                 continue
 
-            # Don't flood port with evals
-            if port.has_pending_eval():
-                continue
-
-        port.push_eval(now_ms)
+        await port.eval_and_push_write(now_ms)
 
 
 def force_eval_expressions(port: core_ports.BasePort | None = None) -> None:

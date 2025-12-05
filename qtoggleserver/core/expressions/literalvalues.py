@@ -20,7 +20,10 @@ class LiteralValue(Expression):
         if self.value is None:
             raise ValueUnavailable
 
-        return float(self.value)
+        if isinstance(self.value, int):
+            return self.value
+        else:
+            return float(self.value)
 
     @staticmethod
     def parse(self_port_id: str | None, sexpression: str, role: Role, pos: int) -> Expression:

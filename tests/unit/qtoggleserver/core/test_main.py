@@ -102,20 +102,20 @@ class TestHandleValueChanges:
 
         mock_num_port1.set_writable(True)
         mock_num_port1.set_expression("MUL($, 2)")
-        mocker.patch.object(mock_num_port1, "push_eval")
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         await handle_value_changes(changed_set={mock_num_port1}, value_pairs={mock_num_port1: (10, 20)}, now_ms=0)
-        mock_num_port1.push_eval.assert_called_once()
+        mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_own_port_value_trigger_eval(self, mocker, mock_num_port1):
         """Should trigger a port's expression evaluation if the expression depends on itself through `$<own_id>`."""
 
         mock_num_port1.set_writable(True)
         mock_num_port1.set_expression("MUL($nid1, 2)")
-        mocker.patch.object(mock_num_port1, "push_eval")
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         await handle_value_changes(changed_set={mock_num_port1}, value_pairs={mock_num_port1: (10, 20)}, now_ms=0)
-        mock_num_port1.push_eval.assert_called_once()
+        mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_disabled_port_no_trigger_eval(self, mocker, mock_num_port1):
         """Should not trigger a port's expression evaluation if the port is disabled."""
@@ -124,21 +124,21 @@ class TestHandleValueChanges:
         mock_num_port1.set_expression("TIMEMS()")
         force_eval_expressions(mock_num_port1)
 
-        (mocker.patch.object(mock_num_port1, "push_eval"),)
+        (mocker.patch.object(mock_num_port1, "eval_and_push_write"),)
         (mocker.patch.object(mock_num_port1, "is_enabled", return_value=False),)
 
         await handle_value_changes(changed_set=set(), value_pairs={}, now_ms=0)
-        mock_num_port1.push_eval.assert_not_called()
+        mock_num_port1.eval_and_push_write.assert_not_called()
 
     async def test_asap_trigger_eval(self, mocker, mock_num_port1):
         """Should trigger a port's expression evaluation if the expression depends on ASAP."""
 
         mock_num_port1.set_writable(True)
         mock_num_port1.set_expression("TIMEMS()")
-        mocker.patch.object(mock_num_port1, "push_eval")
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         await handle_value_changes(changed_set={DEP_ASAP}, value_pairs={}, now_ms=0)
-        mock_num_port1.push_eval.assert_called_once()
+        mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_asap_eval_paused_no_trigger_eval(self, mocker, mock_num_port1):
         """Should not trigger a port's expression evaluation if the expression depends on ASAP but is paused."""
@@ -146,11 +146,11 @@ class TestHandleValueChanges:
         mock_num_port1.set_writable(True)
         mock_num_port1.set_expression("TIMEMS()")
         e = mock_num_port1.get_expression()
-        mocker.patch.object(mock_num_port1, "push_eval")
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         e.pause_asap_eval(1000)
         await handle_value_changes(changed_set={DEP_ASAP}, value_pairs={}, now_ms=999)
-        mock_num_port1.push_eval.assert_not_called()
+        mock_num_port1.eval_and_push_write.assert_not_called()
 
     async def test_asap_eval_not_paused_trigger_eval(self, mocker, mock_num_port1):
         """Should trigger a port's expression evaluation if the expression depends on ASAP and pause expired."""
@@ -158,8 +158,8 @@ class TestHandleValueChanges:
         mock_num_port1.set_writable(True)
         mock_num_port1.set_expression("TIMEMS()")
         e = mock_num_port1.get_expression()
-        mocker.patch.object(mock_num_port1, "push_eval")
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         e.pause_asap_eval(1000)
         await handle_value_changes(changed_set={DEP_ASAP}, value_pairs={}, now_ms=1000)
-        mock_num_port1.push_eval.assert_called_once()
+        mock_num_port1.eval_and_push_write.assert_called_once()

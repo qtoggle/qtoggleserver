@@ -1,8 +1,11 @@
+from qtoggleserver.core.expressions.exceptions import ValueUnavailable
+
+
 class TestPortGetLastValue:
-    def test_pending(self, mock_num_port1):
+    def test_pending(self, mock_num_port1, mocker):
         """Should return the pending value, since it's not None."""
 
-        mock_num_port1._pending_value = 100
+        mocker.patch.object(mock_num_port1, "get_pending_value", return_value=100)
         mock_num_port1._last_written_value = None
         mock_num_port1._last_read_value = None
         assert mock_num_port1.get_last_value() == 100
@@ -11,10 +14,10 @@ class TestPortGetLastValue:
         mock_num_port1._last_read_value = (300, 1000)
         assert mock_num_port1.get_last_value() == 100
 
-    def test_last_written(self, mock_num_port1):
+    def test_last_written(self, mock_num_port1, mocker):
         """Should return the last written value."""
 
-        mock_num_port1._pending_value = None
+        mocker.patch.object(mock_num_port1, "get_pending_value", return_value=None)
         mock_num_port1._last_written_value = (200, 2000)
         mock_num_port1._last_read_value = None
         assert mock_num_port1.get_last_value() == 200
@@ -22,10 +25,10 @@ class TestPortGetLastValue:
         mock_num_port1._last_read_value = (300, 1000)  # older timestamp
         assert mock_num_port1.get_last_value() == 200
 
-    def test_last_read(self, mock_num_port1):
+    def test_last_read(self, mock_num_port1, mocker):
         """Should return the last read value."""
 
-        mock_num_port1._pending_value = None
+        mocker.patch.object(mock_num_port1, "get_pending_value", return_value=None)
         mock_num_port1._last_written_value = None
         mock_num_port1._last_read_value = (300, 2000)
         assert mock_num_port1.get_last_value() == 300
@@ -34,21 +37,64 @@ class TestPortGetLastValue:
         assert mock_num_port1.get_last_value() == 300
 
 
-class TestPortPushEval:
-    def test(self, mock_num_port1, mock_num_port2, mocker):
-        """Should schedule an expression evaluation. Should gather all ports using `core.ports.get_all()` and call
-        `get_last_value()` on each of them to build the eval context."""
+class TestPortEvalAndPushWrite:
+    async def test(self, mock_num_port1, mock_num_port2, mocker):
+        """Should gather all ports using `core.ports.get_all()` and call `get_last_value()` on each of them to build the
+        eval context. Should then evaluate the expression and push the result to the write queue."""
 
         mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1, mock_num_port2])
         mocker.patch.object(mock_num_port1, "_make_eval_context", return_value="dummy_eval_context")
         mocker.patch.object(mock_num_port1, "get_last_value", return_value=42)
         mocker.patch.object(mock_num_port2, "get_last_value", return_value=84)
-        mocker.patch.object(mock_num_port1._eval_queue, "put_nowait")
 
-        mock_num_port1.push_eval(1234)
+        mock_expression = mocker.Mock()
+        mock_expression.eval = mocker.AsyncMock(return_value=99)
+        mocker.patch.object(mock_num_port1, "get_expression", return_value=mock_expression)
+
+        mocker.patch.object(mock_num_port1, "adapt_value_type", return_value=100)
+        mock_num_port1._write_queue = mocker.Mock()
+
+        await mock_num_port1.eval_and_push_write(1234)
 
         mock_num_port1._make_eval_context.assert_called_once_with({"nid1": 42, "nid2": 84}, 1234)
-        mock_num_port1._eval_queue.put_nowait.assert_called_once_with("dummy_eval_context")
+        mock_num_port1.adapt_value_type.assert_called_once_with(mock_expression.eval.return_value)
+        mock_num_port1._write_queue.append.assert_called_once_with(100)
+        mock_expression.eval.assert_called_once_with("dummy_eval_context")
+
+    async def test_unavailable_not_written(self, mock_num_port1, mocker):
+        """Should not push anything to the write queue if the expression evaluation raises due to value being
+        unavailable."""
+
+        mock_num_port1._expression = mocker.Mock()
+        mocker.patch.object(mock_num_port1, "get_last_value", return_value=42)
+        mock_num_port1._write_queue = mocker.Mock()
+
+        mock_num_port1._expression.eval = mocker.AsyncMock(side_effect=ValueUnavailable)
+        await mock_num_port1.eval_and_push_write(1234)
+        mock_num_port1._write_queue.append.assert_not_called()
+
+
+class TestPortGetPendingValue:
+    def test_no_pending_value(self, mock_num_port1):
+        """Should return `None` if there's no writing value and writing queue is empty."""
+
+        mock_num_port1._writing_value = None
+        assert mock_num_port1.get_pending_value() is None
+
+    def test_with_queue(self, mock_num_port1):
+        """Should return the most recent value from writing queue."""
+
+        mock_num_port1._writing_value = 1
+        mock_num_port1._write_queue.append(2)
+        mock_num_port1._write_queue.append(3)
+        mock_num_port1._write_queue.append(4)
+        assert mock_num_port1.get_pending_value() == 4
+
+    def test_empty_queue(self, mock_num_port1):
+        """Should return the currently writing value, since writing queue is empty."""
+
+        mock_num_port1._writing_value = 1
+        assert mock_num_port1.get_pending_value() == 1
 
 
 class TestPortGetAttr:
