@@ -4,37 +4,40 @@ from qtoggleserver.core.expressions import Role, literalvalues, parse
 from qtoggleserver.core.expressions.exceptions import ValueUnavailable
 
 
-def test_literal_parse_bool():
-    e = parse(None, "false", role=Role.VALUE)
-    assert isinstance(e, literalvalues.LiteralValue)
-    assert e.value == 0
+class TestLiteralValue:
+    async def test_eval(self, dummy_eval_context):
+        e = literalvalues.LiteralValue(42, "42", role=Role.VALUE)
+        assert await e._eval(dummy_eval_context) == 42
 
-    e = parse(None, "true", role=Role.VALUE)
-    assert isinstance(e, literalvalues.LiteralValue)
-    assert e.value == 1
+        e.value = 84.5
+        assert await e._eval(dummy_eval_context) == 84.5
 
+        e.value = False
+        assert await e._eval(dummy_eval_context) is False
 
-def test_literal_parse_num():
-    e = parse(None, "16384", role=Role.VALUE)
-    assert isinstance(e, literalvalues.LiteralValue)
-    assert e.value == 16384
+        e.value = None
+        with pytest.raises(ValueUnavailable):
+            await e._eval(dummy_eval_context)
 
-    e = parse(None, "-3.14", role=Role.VALUE)
-    assert isinstance(e, literalvalues.LiteralValue)
-    assert e.value == -3.14
+    def test_bool(self):
+        e = parse(None, "false", role=Role.VALUE)
+        assert isinstance(e, literalvalues.LiteralValue)
+        assert e.value == 0
 
+        e = parse(None, "true", role=Role.VALUE)
+        assert isinstance(e, literalvalues.LiteralValue)
+        assert e.value == 1
 
-async def test_literal_unavailable(dummy_eval_context):
-    e = parse(None, "unavailable", role=Role.VALUE)
-    with pytest.raises(ValueUnavailable):
-        await e.eval(dummy_eval_context)
+    def test_num(self):
+        e = parse(None, "16384", role=Role.VALUE)
+        assert isinstance(e, literalvalues.LiteralValue)
+        assert e.value == 16384
 
+        e = parse(None, "-3.14", role=Role.VALUE)
+        assert isinstance(e, literalvalues.LiteralValue)
+        assert e.value == -3.14
 
-def test_literal_parse_unavailable():
-    e = parse(None, "unavailable", role=Role.VALUE)
-    assert isinstance(e, literalvalues.LiteralValue)
-    assert e.value is None
-
-    e = parse(None, "-3.14", role=Role.VALUE)
-    assert isinstance(e, literalvalues.LiteralValue)
-    assert e.value == -3.14
+    async def test_unavailable(self, dummy_eval_context):
+        e = parse(None, "unavailable", role=Role.VALUE)
+        assert isinstance(e, literalvalues.LiteralValue)
+        assert e.value is None
