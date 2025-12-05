@@ -107,6 +107,10 @@ class SlavePort(core_ports.BasePort):
 
         super().__init__(port_id)
 
+        # These attributes must also be directly available to their direct getters, not just via `get_attr`
+        self._type = attrs.get("type", core_ports.TYPE_BOOLEAN)
+        self._integer = attrs.get("integer", False)
+
         self.update_cached_attrs(attrs)
 
         if self.get_last_remote_value() is not None:
