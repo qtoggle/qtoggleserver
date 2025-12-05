@@ -1,3 +1,6 @@
+from qtoggleserver.core.expressions.exceptions import ValueUnavailable
+
+
 class TestPortGetLastValue:
     def test_pending(self, mock_num_port1, mocker):
         """Should return the pending value, since it's not None."""
@@ -57,6 +60,18 @@ class TestPortEvalAndPushWrite:
         mock_num_port1.adapt_value_type.assert_called_once_with(mock_expression.eval.return_value)
         mock_num_port1._write_queue.append.assert_called_once_with(100)
         mock_expression.eval.assert_called_once_with("dummy_eval_context")
+
+    async def test_unavailable_not_written(self, mock_num_port1, mocker):
+        """Should not push anything to the write queue if the expression evaluation raises due to value being
+        unavailable."""
+
+        mock_num_port1._expression = mocker.Mock()
+        mocker.patch.object(mock_num_port1, "get_last_value", return_value=42)
+        mock_num_port1._write_queue = mocker.Mock()
+
+        mock_num_port1._expression.eval = mocker.AsyncMock(side_effect=ValueUnavailable)
+        await mock_num_port1.eval_and_push_write(1234)
+        mock_num_port1._write_queue.append.assert_not_called()
 
 
 class TestPortGetPendingValue:

@@ -723,8 +723,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.error('failed to evaluate expression "%s": %s', expression, e, exc_info=True)
             return
 
-        if value is None:
-            return
+        assert value is not None, "Expression evaluated to None"
 
         adapted_value = self.adapt_value_type(value)
         self.debug(
