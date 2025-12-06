@@ -26,7 +26,7 @@ class VirtualPort(core_ports.Port):
     ) -> None:
         super().__init__(id_)
 
-        self._type: str = type_
+        self._type = type_
         self._min: float | None = min_
         self._max: float | None = max_
         self._integer: bool | None = integer
