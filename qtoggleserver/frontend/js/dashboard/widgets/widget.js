@@ -106,6 +106,7 @@ class Widget extends mix().with(ViewMixin) {
 
         this._valueChangeWaitPortId = null
         this._whenValueChange = null
+        this._valueChangeTimeoutHandle = null
 
         this.logger = Logger.get(this.makeLogName())
     }
@@ -1132,6 +1133,8 @@ class Widget extends mix().with(ViewMixin) {
             this._whenValueChange.fulfill()
             this._whenValueChange = null
             this._valueChangeWaitPortId = null
+            clearTimeout(this._valueChangeTimeoutHandle)
+            this._valueChangeTimeoutHandle = null
         }
 
         this.onPortValueChange(portId, value)
@@ -1177,6 +1180,8 @@ class Widget extends mix().with(ViewMixin) {
             this._whenValueChange.fulfill()
             this._whenValueChange = null
             this._valueChangeWaitPortId = null
+            clearTimeout(this._valueChangeTimeoutHandle)
+            this._valueChangeTimeoutHandle = null
         }
 
         this._whenValueChange = new ConditionVariable()
@@ -1188,13 +1193,14 @@ class Widget extends mix().with(ViewMixin) {
                 return /* Value was already set or we're not interested in waiting */
             }
 
-            setTimeout(function () {
+            this._valueChangeTimeoutHandle = setTimeout(function () {
                 /* Cancel waiting after timeout */
                 if (this._whenValueChange) {
                     let msg = gettext('Timeout waiting for value to take effect.')
                     this._whenValueChange.cancel(new TimeoutError(msg))
                     this._whenValueChange = null
                     this._valueChangeWaitPortId = null
+                    this._valueChangeTimeoutHandle = null
                 }
 
             }.bind(this), timeout * 1000)
