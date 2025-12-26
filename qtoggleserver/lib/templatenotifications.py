@@ -3,8 +3,6 @@ import logging
 
 from datetime import datetime
 
-from jinja2 import Environment, Template
-
 from qtoggleserver.conf import settings
 from qtoggleserver.core import device
 from qtoggleserver.core import events as core_events
@@ -12,6 +10,7 @@ from qtoggleserver.core import main as core_main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import Attribute, Attributes, NullablePortValue
 from qtoggleserver.slaves import devices as slaves_devices
+from qtoggleserver.utils import template as template_utils
 
 from .filtereventhandler import FilterEventHandler
 
@@ -69,33 +68,26 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         if templates is None:
             templates = self.DEFAULT_TEMPLATES
 
-        # Convert template strings to jinja2 templates
-        self._j2env: Environment = Environment(enable_async=True)
-        self._templates: dict[str, None | Template | dict[str, Template]] = {}
+        # Convert template strings to templates
+        self._templates: dict[str, template_utils.Template | dict[str, template_utils.Template | None] | None] = {}
         for type_, ts in templates.items():
             if isinstance(ts, dict):
                 self._templates[type_] = {}
                 for k, t in ts.items():
-                    self._templates[type_][k] = self.make_template(t) if t is not None else None
+                    self._templates[type_][k] = template_utils.make(t) if t is not None else None
             elif isinstance(ts, str):
-                self._templates[type_] = self.make_template(ts)
+                self._templates[type_] = template_utils.make(ts)
             else:
                 self._templates[type_] = None
 
         super().__init__(name=name, filter=filter)
 
-    def get_j2env(self) -> Environment:
-        return self._j2env
-
-    def make_template(self, source: str) -> Template:
-        return self.get_j2env().from_string(source)
-
-    async def render(self, event_type: str, context: dict) -> None | str | dict[str, str]:
+    async def render(self, event_type: str, context: dict) -> str | dict[str, str] | None:
         template = self._templates[event_type]
 
         if isinstance(template, dict):
             return {k: await t.render_async(context) if t is not None else None for k, t in template.items()}
-        elif isinstance(template, Template):
+        elif isinstance(template, template_utils.Template):
             return await template.render_async(context)
         else:
             return None
