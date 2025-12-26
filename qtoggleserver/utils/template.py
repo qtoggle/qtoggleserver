@@ -4,6 +4,20 @@ from jinja2 import Environment, Template
 from jinja2.nativetypes import NativeEnvironment, NativeTemplate
 
 
+__all__ = [
+    "Environment",
+    "NativeEnvironment",
+    "NativeTemplate",
+    "Template",
+    "get_env",
+    "get_native_env",
+    "make",
+    "make_native",
+    "render",
+    "render_async",
+    "render_native",
+]
+
 _environment: Environment | None = None
 _native_environment: NativeEnvironment | None = None
 
