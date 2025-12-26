@@ -5,7 +5,7 @@ from jinja2.nativetypes import NativeEnvironment, NativeTemplate
 
 
 _environment: Environment | None = None
-_native_environment: Environment | None = None
+_native_environment: NativeEnvironment | None = None
 
 
 def get_env() -> Environment:
@@ -13,7 +13,6 @@ def get_env() -> Environment:
 
     if _environment is None:
         _environment = Environment(enable_async=True)
-        _environment.globals.update(__builtins__)
 
     return _environment
 
@@ -23,7 +22,6 @@ def get_native_env() -> NativeEnvironment:
 
     if _native_environment is None:
         _native_environment = NativeEnvironment(enable_async=True)
-        _native_environment.globals.update(__builtins__)
 
     return _native_environment
 
