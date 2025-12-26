@@ -5,7 +5,7 @@ on: push
 jobs:
   lint-python:
     name: Lint Python
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Lint Python code
         uses: qtoggle/actions-common/actions/lint-python@v1
@@ -13,7 +13,7 @@ jobs:
           source-dir: qtoggleserver
   lint-js:
     name: Lint JavaScript
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Lint JavaScript code
         uses: qtoggle/actions-common/actions/lint-js@v1
@@ -22,7 +22,7 @@ jobs:
           source-dir: js
   test:
     name: Run Tests
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Source code checkout
         uses: actions/checkout@v4
@@ -52,7 +52,7 @@ jobs:
       - lint-python
       - lint-js
       - test
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -87,7 +87,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/version-')
     needs:
       - build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Fetch dist folder
         uses: actions/download-artifact@v4
@@ -104,7 +104,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/version-')
     needs:
       - build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Fetch dist folder
         uses: actions/download-artifact@v4
@@ -124,7 +124,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/version-')
     needs:
       - build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Source code checkout
         uses: actions/checkout@v4
