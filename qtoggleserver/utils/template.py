@@ -18,14 +18,14 @@ def get_env() -> Environment:
     return _environment
 
 
-def get_native_env() -> Environment:
+def get_native_env() -> NativeEnvironment:
     global _native_environment
 
     if _native_environment is None:
         _native_environment = NativeEnvironment(enable_async=True)
         _native_environment.globals.update(__builtins__)
 
-    return _environment
+    return _native_environment
 
 
 def make(source: str) -> Template:
@@ -37,16 +37,12 @@ def make_native(source: str) -> NativeTemplate:
 
 
 def render(source: str, context: dict[str, Any]) -> str:
-    return get_env().from_string(source).render(context)
+    return make(source).render(context)
 
 
 async def render_async(source: str, context: dict[str, Any]) -> str:
-    return await get_env().from_string(source).render_async(context)
+    return await make(source).render_async(context)
 
 
-def render_native(source: str, context: dict[str, Any]) -> Any:
-    return get_native_env().from_string(source).render(context)
-
-
-async def render_native_async(source: str, context: dict[str, Any]) -> Any:
-    return await get_native_env().from_string(source).render_async(context)
+async def render_native(source: str, context: dict[str, Any]) -> Any:
+    return await make_native(source).render_async(context)
