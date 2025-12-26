@@ -208,7 +208,7 @@ def test_get_schema_first_call():
     assert "name" in properties
 
     for prop in properties.values():
-        for attr in ["min", "max", "choices", "modifiable", "standard", "getter", "setter", "reboot"]:
+        for attr in ["min", "max", "choices", "step", "modifiable", "standard", "getter", "setter", "reconnect"]:
             assert attr not in prop
 
 
@@ -378,8 +378,8 @@ async def test_set_attrs(mocker):
 
 
 async def test_set_attrs_reboot(mocker):
-    """Should return True, indicating that reboot is required, if at least one of the supplied attributes requires
-    reboot."""
+    """Should return True, indicating that reboot is required, if at least one of the supplied attributes has the
+    `reconnect` field set."""
 
     mocker.patch.object(
         device_attrs,
@@ -394,7 +394,7 @@ async def test_set_attrs_reboot(mocker):
             "name2": {
                 "type": "string",
                 "modifiable": True,
-                "reboot": True,
+                "reconnect": True,
                 "getter": mock.MagicMock(),
                 "setter": mock.MagicMock(),
             },
@@ -427,7 +427,7 @@ async def test_set_attrs_ignore_extra(mocker):
             "name2": {
                 "type": "string",
                 "modifiable": True,
-                "reboot": True,
+                "reconnect": True,
                 "getter": mock.MagicMock(),
                 "setter": mock.MagicMock(),
             },
@@ -499,7 +499,7 @@ async def test_to_json(mocker):
                 "type": "string",
                 "modifiable": True,
                 "pattern": "^.*$",
-                "reboot": False,
+                "reconnect": False,
                 "getter": lambda: "dummy1",
                 "standard": False,
                 "choices": [
@@ -510,7 +510,7 @@ async def test_to_json(mocker):
             "name2": {
                 "type": "number",
                 "pattern": "^.*$",
-                "reboot": False,
+                "reconnect": False,
                 "modifiable": False,
                 "getter": lambda: 2,
                 "standard": True,
@@ -518,7 +518,7 @@ async def test_to_json(mocker):
             "name3": {
                 "type": "boolean",
                 "pattern": "^.*$",
-                "reboot": False,
+                "reconnect": False,
                 "modifiable": False,
                 "getter": lambda: True,
                 "standard": False,
@@ -535,6 +535,7 @@ async def test_to_json(mocker):
             "name1": {
                 "type": "string",
                 "modifiable": True,
+                "pattern": "^.*$",
                 "choices": [
                     {"display_name": "Choice 1", "value": "choice1"},
                     {"display_name": "Choice 2", "value": "choice2"},
@@ -543,6 +544,7 @@ async def test_to_json(mocker):
             "name3": {
                 "type": "boolean",
                 "modifiable": False,
+                "pattern": "^.*$",
             },
         },
     }

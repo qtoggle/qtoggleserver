@@ -261,7 +261,7 @@ ATTRDEFS = {
         "modifiable": True,
         "standard": True,
         "enabled": system.net.has_wifi_support,
-        "reboot": True,
+        "reconnect": True,
         "getter": {
             "call": system.net.get_wifi_config,
             "key": "ssid",
@@ -277,7 +277,7 @@ ATTRDEFS = {
         "modifiable": True,
         "standard": True,
         "enabled": system.net.has_wifi_support,
-        "reboot": True,
+        "reconnect": True,
         "getter": {
             "call": system.net.get_wifi_config,
             "key": "psk",
@@ -293,7 +293,7 @@ ATTRDEFS = {
         "modifiable": True,
         "standard": True,
         "enabled": system.net.has_wifi_support,
-        "reboot": True,
+        "reconnect": True,
         "getter": {
             "call": system.net.get_wifi_config,
             "key": "bssid",
@@ -330,7 +330,7 @@ ATTRDEFS = {
         "modifiable": True,
         "standard": True,
         "enabled": system.net.has_ip_support,
-        "reboot": True,
+        "reconnect": True,
         "getter": {
             "call": system.net.get_ip_config,
             "key": "address",
@@ -348,7 +348,7 @@ ATTRDEFS = {
         "modifiable": True,
         "standard": True,
         "enabled": system.net.has_ip_support,
-        "reboot": True,
+        "reconnect": True,
         "getter": {"call": system.net.get_ip_config, "key": "netmask", "transform": lambda v: v or 0},
         "setter": {"call": system.net.set_ip_config, "key": "netmask", "transform": lambda v: str(v)},
     },
@@ -358,7 +358,7 @@ ATTRDEFS = {
         "modifiable": True,
         "standard": True,
         "enabled": system.net.has_ip_support,
-        "reboot": True,
+        "reconnect": True,
         "getter": {
             "call": system.net.get_ip_config,
             "key": "gateway",
@@ -374,7 +374,7 @@ ATTRDEFS = {
         "modifiable": True,
         "standard": True,
         "enabled": system.net.has_ip_support,
-        "reboot": True,
+        "reconnect": True,
         "getter": {
             "call": system.net.get_ip_config,
             "key": "dns",
@@ -496,7 +496,7 @@ def get_attrdefs() -> AttributeDefinitions:
 def get_schema(loose: bool = False) -> GenericJSONDict:
     global _schema
 
-    # Use cached value, but only when loose is false, as loose schema is never cached
+    # Use cached value, but only when `loose` is false, as `loose` schema is never cached
     if _schema is not None and not loose:
         return _schema
 
@@ -526,12 +526,8 @@ def get_schema(loose: bool = False) -> GenericJSONDict:
         if "choices" in attrdef:
             attr_schema["enum"] = [c["value"] for c in attr_schema.pop("choices")]
 
-        attr_schema.pop("modifiable", None)
-        attr_schema.pop("standard", None)
-        attr_schema.pop("persisted", None)
-        attr_schema.pop("getter", None)
-        attr_schema.pop("setter", None)
-        attr_schema.pop("reboot", None)
+        for field in ("modifiable", "standard", "persisted", "getter", "setter", "reconnect"):
+            attr_schema.pop(field, None)
 
         schema["properties"][n] = attr_schema
 
@@ -629,7 +625,7 @@ async def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
             else:
                 raise DeviceAttributeError("attribute-not-modifiable", n)
 
-        reboot_required = reboot_required or attrdef.get("reboot", False)
+        reboot_required = reboot_required or attrdef.get("reconnect", False)
 
         # Used by `PUT /device` API call to restore passwords stored as hashes
         if n.endswith("_password_hash") and hasattr(core_device_attrs, n):
@@ -685,12 +681,13 @@ async def to_json() -> GenericJSONDict:
             continue
 
         # Remove unwanted fields from attribute definition
+        for field in ("persisted", "setter", "getter"):
+            attrdef.pop(field, None)
 
-        attrdef.pop("reboot", None)
-        attrdef.pop("persisted", None)
-        attrdef.pop("pattern", None)  # TODO: remove this line once pattern becomes an API-defined attrdef field
-        attrdef.pop("setter", None)
-        attrdef.pop("getter", None)
+        # Remove optional boolean fields that are false
+        for field in ("integer", "reconnect"):
+            if not attrdef.get(field):
+                attrdef.pop(field, None)
 
         for key in list(attrdef):
             if key.startswith("_"):

@@ -19,14 +19,12 @@ class BaseDriver(metaclass=abc.ABCMeta):
     PATTERN: str | None = None
     RECONNECT: bool = False
 
+    PERSISTED: bool = False
     CACHE_LIFETIME: int = 0
 
     def __init__(self) -> None:
         self._cached_value: Attribute | None = None
         self._cached_timestamp: float = 0
-
-    def is_enabled(self) -> bool:
-        return True
 
     def get_name(self) -> str:
         return self.NAME
@@ -66,6 +64,12 @@ class BaseDriver(metaclass=abc.ABCMeta):
 
     def needs_reconnect(self) -> bool:
         return self.RECONNECT
+
+    def is_enabled(self) -> bool:
+        return True
+
+    def is_persisted(self) -> bool:
+        return self.PERSISTED
 
     @abc.abstractmethod
     async def get_value(self) -> Attribute:
