@@ -816,7 +816,11 @@ def test_load_dynamic_attrdef_valid_driver(mocker):
 
     mocker.patch("qtoggleserver.utils.dynload.load_attr", return_value=mock_driver_class)
 
-    params = {"driver": "qtoggleserver.drivers.device_attrs.dummy.DummyAttrDef", "display_name": "Test", "description": "Test description"}
+    params = {
+        "driver": "qtoggleserver.drivers.device_attrs.dummy.DummyAttrDef",
+        "display_name": "Test",
+        "description": "Test description",
+    }
     result = device_attrs.load_dynamic_attrdef("test_attr", params)
 
     assert result == mock_attrdef
@@ -859,7 +863,11 @@ def test_load_dynamic_attrdef_parameter_passing(mocker):
 
     # Verify that 'driver' is not passed to the constructor
     mock_driver_class.assert_called_once_with(
-        display_name="Test Attr", description="Test description", type="string", get_cmd="echo test", set_cmd="echo $value"
+        display_name="Test Attr",
+        description="Test description",
+        type="string",
+        get_cmd="echo test",
+        set_cmd="echo $value",
     )
 
 
@@ -885,8 +893,12 @@ def test_load_dynamic_attrdefs_success(mocker):
 
     assert result == {"attr1": mock_attrdef1, "attr2": mock_attrdef2}
     assert mock_load_dynamic_attrdef.call_count == 2
-    mock_load_dynamic_attrdef.assert_any_call("attr1", {"driver": "driver.path.one", "param1": "value1"})
-    mock_load_dynamic_attrdef.assert_any_call("attr2", {"driver": "driver.path.two", "param2": "value2"})
+    mock_load_dynamic_attrdef.assert_any_call(
+        "attr1", {"driver": "driver.path.one", "param1": "value1"}
+    )
+    mock_load_dynamic_attrdef.assert_any_call(
+        "attr2", {"driver": "driver.path.two", "param2": "value2"}
+    )
 
 
 def test_load_dynamic_attrdefs_error_handling(mocker):
