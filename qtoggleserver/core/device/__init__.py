@@ -32,7 +32,7 @@ async def load() -> None:
     attrdefs = device_attrs.get_attrdefs()
     attrs = {}
     for name, attrdef in attrdefs.items():
-        if attrdef.get("persisted") and data.get(name) is not None:
+        if attrdef.get("persisted") and attrdef.get("modifiable") and data.get(name) is not None:
             attrs[name] = data[name]
     if attrs:
         await device_attrs.set_attrs(attrs)
