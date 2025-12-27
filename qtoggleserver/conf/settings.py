@@ -158,3 +158,5 @@ peripherals: list[dict[str, _Any]] = []
 ports: list[dict[str, _Any]] = []
 
 port_mappings: dict[str, str] = {}
+
+metadata: list[dict[str, _Any]] = []
