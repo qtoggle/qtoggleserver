@@ -48,6 +48,8 @@ class core:
     tls_support: bool = True
     virtual_ports: int = 1024
 
+    device_attrs: list[dict[str, _Any]] = []
+
 
 class server:
     addr: str = "0.0.0.0"

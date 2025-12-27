@@ -2,14 +2,13 @@ import importlib
 import logging
 
 from qtoggleserver import persist
-from qtoggleserver.utils import json as json_utils
 
 from . import attrs as device_attrs
 
 
-_PERSISTED_MODULE_ATTRS = ["admin_password_hash", "normal_password_hash", "viewonly_password_hash"]
-
 logger = logging.getLogger(__name__)
+
+_PASSWORD_HASH_ATTRS = ("admin_password_hash", "normal_password_hash", "viewonly_password_hash")
 
 
 def get_display_name() -> str:
@@ -21,18 +20,13 @@ async def load() -> None:
     data = await persist.get_value("device", default={})
 
     # Load persisted module attributes
-    for name in _PERSISTED_MODULE_ATTRS:
+    for name in _PASSWORD_HASH_ATTRS:
         value = data.get(name)
         if value is None:
             continue
 
-        # A few attributes may carry sensitive information, so treat them separately and do not log their values
-        if name.count("password") or name == "wifi_key":
-            logger.debug("loaded %s", name)
-        else:
-            logger.debug("loaded %s = %s", name, json_utils.dumps(value))
-
         setattr(device_attrs, name, value)
+        logger.debug("loaded %s", name)
 
     # Load persisted device attributes
     attrdefs = device_attrs.get_attrdefs()
@@ -43,17 +37,14 @@ async def load() -> None:
     if attrs:
         await device_attrs.set_attrs(attrs)
 
-    # Hash empty passwords
-    if not device_attrs.admin_password_hash:
-        device_attrs.admin_password_hash = device_attrs.EMPTY_PASSWORD_HASH
-    if not device_attrs.normal_password_hash:
-        device_attrs.normal_password_hash = device_attrs.EMPTY_PASSWORD_HASH
-    if not device_attrs.viewonly_password_hash:
-        device_attrs.viewonly_password_hash = device_attrs.EMPTY_PASSWORD_HASH
+    # Fill out with empty hashes for empty passwords
+    for name in _PASSWORD_HASH_ATTRS:
+        if not getattr(device_attrs, name):
+            setattr(device_attrs, name, device_attrs.EMPTY_PASSWORD_HASH)
 
 
 async def save() -> None:
-    data = {name: getattr(device_attrs, name) for name in _PERSISTED_MODULE_ATTRS}
+    data = {name: getattr(device_attrs, name) for name in _PASSWORD_HASH_ATTRS}
 
     attrdefs = device_attrs.get_attrdefs()
     attrs = await device_attrs.get_attrs()
