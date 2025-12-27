@@ -139,7 +139,7 @@ class AttrDefDriver(metaclass=abc.ABCMeta):
 
     def to_attrdef(self) -> AttributeDefinition:
         attrdef = {
-            "enabled": self.is_enabled,  # intentionally supplied as callabable
+            "enabled": self.is_enabled,  # intentionally supplied as callable
             "display_name": self.get_display_name(),
             "description": self.get_description(),
             "type": self.get_type(),
