@@ -1,3 +1,4 @@
+import abc
 import asyncio
 import copy
 import hashlib
@@ -14,13 +15,15 @@ from typing import Any
 
 from qtoggleserver import system, version
 from qtoggleserver.conf import settings
-from qtoggleserver.core.typing import AttributeDefinitions, Attributes, GenericJSONDict
+from qtoggleserver.core.typing import Attribute, AttributeDefinition, AttributeDefinitions, Attributes, GenericJSONDict
 from qtoggleserver.system import fwupdate
 from qtoggleserver.utils import cache as cache_utils
+from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_get_cmd, run_set_cmd
 
 from . import events as device_events
+from .exceptions import DeviceAttributeError, NoSuchDriver
 
 
 logger = logging.getLogger(__name__)
@@ -44,6 +47,118 @@ viewonly_password_hash: str | None = None
 _schema: GenericJSONDict | None = None
 _attrdefs: AttributeDefinitions | None = None
 _attrs_watch_task: asyncio.Task | None = None
+
+
+class AttrDefDriver(metaclass=abc.ABCMeta):
+    DISPLAY_NAME: str | None = None
+    DESCRIPTION: str | None = None
+    TYPE: str = "boolean"
+    MODIFIABLE: bool = False
+    UNIT: str | None = None
+    MIN: float | None = None
+    MAX: float | None = None
+    INTEGER: bool = False
+    STEP: float | None = None
+    CHOICES: list[dict] | None = None
+    PATTERN: str | None = None
+    RECONNECT: bool = False
+
+    PERSISTED: bool = False
+    CACHE_LIFETIME: int = 0
+
+    def __init__(self) -> None:
+        self._cached_value: Attribute | None = None
+        self._cached_timestamp: float = 0
+
+    def get_display_name(self) -> str | None:
+        return self.DISPLAY_NAME
+
+    def get_description(self) -> str | None:
+        return self.DESCRIPTION
+
+    def get_type(self) -> str:
+        return self.TYPE
+
+    def is_modifiable(self) -> bool:
+        return self.MODIFIABLE
+
+    def get_unit(self) -> str | None:
+        return self.UNIT
+
+    def get_min(self) -> float | None:
+        return self.MIN
+
+    def get_max(self) -> float | None:
+        return self.MAX
+
+    def is_integer(self) -> bool:
+        return self.INTEGER
+
+    def get_step(self) -> float | None:
+        return self.STEP
+
+    def get_choices(self) -> list[dict] | None:
+        return self.CHOICES
+
+    def get_pattern(self) -> str | None:
+        return self.PATTERN
+
+    def needs_reconnect(self) -> bool:
+        return self.RECONNECT
+
+    def is_enabled(self) -> bool:
+        return True
+
+    def is_persisted(self) -> bool:
+        return self.PERSISTED
+
+    @abc.abstractmethod
+    async def get_value(self) -> Attribute:
+        pass
+
+    async def set_value(self, value: Attribute) -> None:
+        # Not an abstract method as we don't implement this method for non-modifiable attributes
+        pass
+
+    async def _getter(self) -> Attribute:
+        if (
+            self.CACHE_LIFETIME > 0
+            and self._cached_value is not None
+            and time.time() - self._cached_timestamp < self.CACHE_LIFETIME
+        ):
+            return self._cached_value
+
+        self._cached_value = await self.get_value()
+        self._cached_timestamp = time.time()
+
+        return self._cached_value
+
+    async def _setter(self, value: Attribute) -> None:
+        self._cached_timestamp = 0
+        await self.set_value(value)
+
+    def to_attrdef(self) -> AttributeDefinition:
+        attrdef = {
+            "enabled": self.is_enabled,  # intentionally supplied as callable
+            "display_name": self.get_display_name(),
+            "description": self.get_description(),
+            "type": self.get_type(),
+            "modifiable": self.is_modifiable(),
+            "unit": self.get_unit(),
+            "min": self.get_min(),
+            "max": self.get_max(),
+            "integer": self.is_integer() or None,
+            "step": self.get_step(),
+            "choices": self.get_choices(),
+            "pattern": self.get_pattern(),
+            "reconnect": self.needs_reconnect() or None,
+            "persisted": self.is_persisted() or None,
+            "getter": self._getter,
+            "setter": self._setter,
+        }
+
+        # Keep only non-null fields
+        return {k: v for k, v in attrdef.items() if v is not None}
 
 
 def attr_get_name() -> str:
@@ -261,7 +376,7 @@ ATTRDEFS = {
         "modifiable": True,
         "standard": True,
         "enabled": system.net.has_wifi_support,
-        "reboot": True,
+        "reconnect": True,
         "getter": {
             "call": system.net.get_wifi_config,
             "key": "ssid",
@@ -277,7 +392,7 @@ ATTRDEFS = {
         "modifiable": True,
         "standard": True,
         "enabled": system.net.has_wifi_support,
-        "reboot": True,
+        "reconnect": True,
         "getter": {
             "call": system.net.get_wifi_config,
             "key": "psk",
@@ -293,7 +408,7 @@ ATTRDEFS = {
         "modifiable": True,
         "standard": True,
         "enabled": system.net.has_wifi_support,
-        "reboot": True,
+        "reconnect": True,
         "getter": {
             "call": system.net.get_wifi_config,
             "key": "bssid",
@@ -330,7 +445,7 @@ ATTRDEFS = {
         "modifiable": True,
         "standard": True,
         "enabled": system.net.has_ip_support,
-        "reboot": True,
+        "reconnect": True,
         "getter": {
             "call": system.net.get_ip_config,
             "key": "address",
@@ -348,7 +463,7 @@ ATTRDEFS = {
         "modifiable": True,
         "standard": True,
         "enabled": system.net.has_ip_support,
-        "reboot": True,
+        "reconnect": True,
         "getter": {"call": system.net.get_ip_config, "key": "netmask", "transform": lambda v: v or 0},
         "setter": {"call": system.net.set_ip_config, "key": "netmask", "transform": lambda v: str(v)},
     },
@@ -358,7 +473,7 @@ ATTRDEFS = {
         "modifiable": True,
         "standard": True,
         "enabled": system.net.has_ip_support,
-        "reboot": True,
+        "reconnect": True,
         "getter": {
             "call": system.net.get_ip_config,
             "key": "gateway",
@@ -374,7 +489,7 @@ ATTRDEFS = {
         "modifiable": True,
         "standard": True,
         "enabled": system.net.has_ip_support,
-        "reboot": True,
+        "reconnect": True,
         "getter": {
             "call": system.net.get_ip_config,
             "key": "dns",
@@ -468,10 +583,35 @@ ATTRDEFS = {
 }
 
 
-class DeviceAttributeError(Exception):
-    def __init__(self, error: str, attribute: str) -> None:
-        self.error: str = error
-        self.attribute: str = attribute
+def load_dynamic_attrdef(name: str, params: dict[str, Any]) -> AttributeDefinition:
+    params = dict(params)
+    class_path = params.pop("driver")
+
+    logger.debug('creating device attribute "%s" with driver "%s"', name, class_path)
+    try:
+        peripheral_class = dynload_utils.load_attr(class_path)
+    except Exception:
+        raise NoSuchDriver(class_path)
+
+    return peripheral_class(**params).to_attrdef()
+
+
+def load_dynamic_attrdefs() -> AttributeDefinitions:
+    attrdefs = {}
+
+    for params in settings.core.device_attrs:
+        params = dict(params)
+        name = params.pop("name")
+
+        try:
+            attrdef = load_dynamic_attrdef(name, params)
+        except Exception as e:
+            logger.error('failed to load dynamic attribute "%s": %s', name, e, exc_info=True)
+            continue
+
+        attrdefs[name] = attrdef
+
+    return attrdefs
 
 
 def get_attrdefs() -> AttributeDefinitions:
@@ -479,7 +619,7 @@ def get_attrdefs() -> AttributeDefinitions:
 
     if _attrdefs is None:
         logger.debug("initializing attribute definitions")
-        _attrdefs = copy.deepcopy(ATTRDEFS)
+        _attrdefs = copy.deepcopy(ATTRDEFS) | load_dynamic_attrdefs()
 
         # Transform some callable values into corresponding results
         for n, attrdef in list(_attrdefs.items()):
@@ -496,7 +636,7 @@ def get_attrdefs() -> AttributeDefinitions:
 def get_schema(loose: bool = False) -> GenericJSONDict:
     global _schema
 
-    # Use cached value, but only when loose is false, as loose schema is never cached
+    # Use cached value, but only when `loose` is false, as `loose` schema is never cached
     if _schema is not None and not loose:
         return _schema
 
@@ -526,12 +666,8 @@ def get_schema(loose: bool = False) -> GenericJSONDict:
         if "choices" in attrdef:
             attr_schema["enum"] = [c["value"] for c in attr_schema.pop("choices")]
 
-        attr_schema.pop("modifiable", None)
-        attr_schema.pop("standard", None)
-        attr_schema.pop("persisted", None)
-        attr_schema.pop("getter", None)
-        attr_schema.pop("setter", None)
-        attr_schema.pop("reboot", None)
+        for field in ("modifiable", "standard", "persisted", "getter", "setter", "reconnect"):
+            attr_schema.pop(field, None)
 
         schema["properties"][n] = attr_schema
 
@@ -629,7 +765,7 @@ async def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
             else:
                 raise DeviceAttributeError("attribute-not-modifiable", n)
 
-        reboot_required = reboot_required or attrdef.get("reboot", False)
+        reboot_required = reboot_required or attrdef.get("reconnect", False)
 
         # Used by `PUT /device` API call to restore passwords stored as hashes
         if n.endswith("_password_hash") and hasattr(core_device_attrs, n):
@@ -685,12 +821,13 @@ async def to_json() -> GenericJSONDict:
             continue
 
         # Remove unwanted fields from attribute definition
+        for field in ("persisted", "setter", "getter"):
+            attrdef.pop(field, None)
 
-        attrdef.pop("reboot", None)
-        attrdef.pop("persisted", None)
-        attrdef.pop("pattern", None)  # TODO: remove this line once pattern becomes an API-defined attrdef field
-        attrdef.pop("setter", None)
-        attrdef.pop("getter", None)
+        # Remove optional boolean fields that are false
+        for field in ("integer", "reconnect"):
+            if not attrdef.get(field):
+                attrdef.pop(field, None)
 
         for key in list(attrdef):
             if key.startswith("_"):
