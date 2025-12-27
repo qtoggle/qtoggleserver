@@ -243,20 +243,19 @@ class TestAttrDefDriver:
         attrdef_driver._getter.assert_not_called()
         attrdef_driver._setter.assert_not_called()
 
+    async def test_to_attrdef_no_return_none(self):
+        """Should call all the getter methods to obtain various attribute definition fields, but should leave out fields
+        that are None."""
 
-async def test_to_attrdef_no_return_none():
-    """Should call all the getter methods to obtain various attribute definition fields, but should leave out fields
-    that are None."""
+        attrdef_driver = MockAttrDefDriver()
 
-    attrdef_driver = MockAttrDefDriver()
-
-    assert attrdef_driver.to_attrdef() == {
-        "enabled": attrdef_driver.is_enabled,
-        "type": "boolean",
-        "modifiable": False,
-        "getter": attrdef_driver._getter,
-        "setter": attrdef_driver._setter,
-    }
+        assert attrdef_driver.to_attrdef() == {
+            "enabled": attrdef_driver.is_enabled,
+            "type": "boolean",
+            "modifiable": False,
+            "getter": attrdef_driver._getter,
+            "setter": attrdef_driver._setter,
+        }
 
 
 def test_attr_get_name_internal(mocker):
