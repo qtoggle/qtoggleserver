@@ -798,3 +798,232 @@ async def test_to_json(mocker):
             },
         },
     }
+
+
+class TestLoadDynamicAttrDef:
+    def test_successful_load(self, mocker):
+        """Should successfully load a dynamic attribute definition from a valid driver class."""
+
+        mock_driver_instance = mocker.Mock(spec=device_attrs.AttrDefDriver)
+        mock_attrdef = {
+            "type": "string",
+            "modifiable": True,
+            "getter": mocker.Mock(),
+            "setter": mocker.Mock(),
+        }
+        mock_driver_instance.to_attrdef.return_value = mock_attrdef
+
+        mock_driver_class = mocker.Mock(return_value=mock_driver_instance)
+        spy_load_attr = mocker.patch(
+            "qtoggleserver.utils.dynload.load_attr",
+            return_value=mock_driver_class,
+        )
+
+        params = {"driver": "module.path.DriverClass", "param1": "value1", "param2": "value2"}
+        result = device_attrs.load_dynamic_attrdef("test_attr", params)
+
+        spy_load_attr.assert_called_once_with("module.path.DriverClass")
+        mock_driver_class.assert_called_once_with(param1="value1", param2="value2")
+        mock_driver_instance.to_attrdef.assert_called_once()
+        assert result == mock_attrdef
+
+    def test_successful_load_no_params(self, mocker):
+        """Should successfully load a dynamic attribute definition without additional parameters."""
+
+        mock_driver_instance = mocker.Mock(spec=device_attrs.AttrDefDriver)
+        mock_attrdef = {"type": "boolean", "getter": mocker.Mock()}
+        mock_driver_instance.to_attrdef.return_value = mock_attrdef
+
+        mock_driver_class = mocker.Mock(return_value=mock_driver_instance)
+        spy_load_attr = mocker.patch(
+            "qtoggleserver.utils.dynload.load_attr",
+            return_value=mock_driver_class,
+        )
+
+        params = {"driver": "module.path.DriverClass"}
+        result = device_attrs.load_dynamic_attrdef("test_attr", params)
+
+        spy_load_attr.assert_called_once_with("module.path.DriverClass")
+        mock_driver_class.assert_called_once_with()
+        assert result == mock_attrdef
+
+    def test_driver_not_found(self, mocker):
+        """Should raise `NoSuchDriver` exception when the driver class cannot be loaded."""
+
+        spy_load_attr = mocker.patch(
+            "qtoggleserver.utils.dynload.load_attr",
+            side_effect=AttributeError("Module not found"),
+        )
+
+        params = {"driver": "module.path.NonExistentDriver"}
+
+        with pytest.raises(device_attrs.NoSuchDriver) as exc_info:
+            device_attrs.load_dynamic_attrdef("test_attr", params)
+
+        assert str(exc_info.value) == "module.path.NonExistentDriver"
+        spy_load_attr.assert_called_once_with("module.path.NonExistentDriver")
+
+    def test_import_error(self, mocker):
+        """Should raise NoSuchDriver exception when the driver module fails to import."""
+
+        spy_load_attr = mocker.patch(
+            "qtoggleserver.utils.dynload.load_attr",
+            side_effect=ImportError("Cannot import module"),
+        )
+
+        params = {"driver": "module.path.DriverClass"}
+
+        with pytest.raises(device_attrs.NoSuchDriver):
+            device_attrs.load_dynamic_attrdef("test_attr", params)
+
+        spy_load_attr.assert_called_once()
+
+    def test_params_not_mutated(self, mocker):
+        """Should not mutate the original params dictionary."""
+
+        mock_driver_instance = mocker.Mock(spec=device_attrs.AttrDefDriver)
+        mock_driver_instance.to_attrdef.return_value = {}
+        mock_driver_class = mocker.Mock(return_value=mock_driver_instance)
+        mocker.patch("qtoggleserver.utils.dynload.load_attr", return_value=mock_driver_class)
+
+        original_params = {"driver": "module.path.DriverClass", "param1": "value1"}
+        params_copy = dict(original_params)
+
+        device_attrs.load_dynamic_attrdef("test_attr", original_params)
+
+        assert original_params == params_copy
+
+
+class TestLoadDynamicAttrDefs:
+    def test_load_multiple_attrdefs(self, mocker):
+        """Should successfully load multiple dynamic attribute definitions from configuration."""
+
+        mock_driver_instance1 = mocker.Mock(spec=device_attrs.AttrDefDriver)
+        mock_attrdef1 = {"type": "string", "getter": mocker.Mock()}
+        mock_driver_instance1.to_attrdef.return_value = mock_attrdef1
+
+        mock_driver_instance2 = mocker.Mock(spec=device_attrs.AttrDefDriver)
+        mock_attrdef2 = {"type": "number", "getter": mocker.Mock()}
+        mock_driver_instance2.to_attrdef.return_value = mock_attrdef2
+
+        mock_driver_class1 = mocker.Mock(return_value=mock_driver_instance1)
+        mock_driver_class2 = mocker.Mock(return_value=mock_driver_instance2)
+
+        def load_attr_side_effect(class_path):
+            if class_path == "module.Driver1":
+                return mock_driver_class1
+            elif class_path == "module.Driver2":
+                return mock_driver_class2
+            else:
+                return None
+
+        spy_load_attr = mocker.patch(
+            "qtoggleserver.utils.dynload.load_attr",
+            side_effect=load_attr_side_effect,
+        )
+
+        mocker.patch(
+            "qtoggleserver.conf.settings.core.device_attrs",
+            [
+                {"name": "attr1", "driver": "module.Driver1", "param": "value1"},
+                {"name": "attr2", "driver": "module.Driver2", "param": "value2"},
+            ],
+        )
+
+        result = device_attrs.load_dynamic_attrdefs()
+
+        assert len(result) == 2
+        assert "attr1" in result
+        assert "attr2" in result
+        assert result["attr1"] == mock_attrdef1
+        assert result["attr2"] == mock_attrdef2
+
+        assert spy_load_attr.call_count == 2
+        mock_driver_class1.assert_called_once_with(param="value1")
+        mock_driver_class2.assert_called_once_with(param="value2")
+
+    def test_load_empty_config(self, mocker):
+        """Should return an empty dictionary when no dynamic attributes are configured."""
+
+        mocker.patch("qtoggleserver.conf.settings.core.device_attrs", [])
+
+        result = device_attrs.load_dynamic_attrdefs()
+
+        assert result == {}
+
+    def test_skip_failed_attribute(self, mocker):
+        """Should log error and skip attributes that fail to load, but continue loading others."""
+
+        mock_driver_instance = mocker.Mock(spec=device_attrs.AttrDefDriver)
+        mock_attrdef = {"type": "boolean", "getter": mocker.Mock()}
+        mock_driver_instance.to_attrdef.return_value = mock_attrdef
+        mock_driver_class = mocker.Mock(return_value=mock_driver_instance)
+
+        def load_attr_side_effect(class_path):
+            if class_path == "module.FailingDriver":
+                raise ImportError("Cannot import module")
+            return mock_driver_class
+
+        mocker.patch("qtoggleserver.utils.dynload.load_attr", side_effect=load_attr_side_effect)
+
+        mocker.patch(
+            "qtoggleserver.conf.settings.core.device_attrs",
+            [
+                {"name": "attr1", "driver": "module.FailingDriver"},
+                {"name": "attr2", "driver": "module.WorkingDriver"},
+            ],
+        )
+
+        spy_logger_error = mocker.patch("qtoggleserver.core.device.attrs.logger.error")
+
+        result = device_attrs.load_dynamic_attrdefs()
+
+        assert len(result) == 1
+        assert "attr2" in result
+        assert "attr1" not in result
+        assert result["attr2"] == mock_attrdef
+
+        spy_logger_error.assert_called_once()
+        assert "attr1" in str(spy_logger_error.call_args[0])
+
+    def test_all_attributes_fail(self, mocker):
+        """Should return an empty dictionary and log errors when all attributes fail to load."""
+
+        mocker.patch(
+            "qtoggleserver.utils.dynload.load_attr",
+            side_effect=ImportError("Cannot import module"),
+        )
+
+        mocker.patch(
+            "qtoggleserver.conf.settings.core.device_attrs",
+            [
+                {"name": "attr1", "driver": "module.Driver1"},
+                {"name": "attr2", "driver": "module.Driver2"},
+            ],
+        )
+
+        spy_logger_error = mocker.patch("qtoggleserver.core.device.attrs.logger.error")
+
+        result = device_attrs.load_dynamic_attrdefs()
+
+        assert result == {}
+        assert spy_logger_error.call_count == 2
+
+    def test_original_config_not_mutated(self, mocker):
+        """Should not mutate the original configuration items."""
+
+        mock_driver_instance = mocker.Mock(spec=device_attrs.AttrDefDriver)
+        mock_driver_instance.to_attrdef.return_value = {}
+        mock_driver_class = mocker.Mock(return_value=mock_driver_instance)
+        mocker.patch("qtoggleserver.utils.dynload.load_attr", return_value=mock_driver_class)
+
+        original_config = [
+            {"name": "attr1", "driver": "module.Driver1", "param": "value1"},
+        ]
+        config_copy = [dict(item) for item in original_config]
+
+        mocker.patch("qtoggleserver.conf.settings.core.device_attrs", original_config)
+
+        device_attrs.load_dynamic_attrdefs()
+
+        assert original_config == config_copy
