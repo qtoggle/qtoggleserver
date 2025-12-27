@@ -213,7 +213,7 @@ class TestCmdLineAttrDef:
             "echo 'set'",
             cmd_name="attrdef setter",
             exc_class=DeviceAttributeException,
-            value=3.14,
+            value="3.14",
         )
 
     async def test_set_value_with_boolean(self, mocker):
@@ -235,5 +235,5 @@ class TestCmdLineAttrDef:
             "echo 'set'",
             cmd_name="attrdef setter",
             exc_class=DeviceAttributeException,
-            value=True,
+            value="true",
         )
