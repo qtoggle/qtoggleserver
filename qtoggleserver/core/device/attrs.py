@@ -583,7 +583,7 @@ ATTRDEFS = {
 }
 
 
-def load_dynamic_attrdef(params: dict[str, Any]) -> AttributeDefinition:
+def load_dynamic_attrdef(name: str, params: dict[str, Any]) -> AttributeDefinition:
     params = dict(params)
     class_path = params.pop("driver")
 
@@ -600,10 +600,11 @@ def load_dynamic_attrdefs() -> AttributeDefinitions:
     attrdefs = {}
 
     for params in settings.core.device_attrs:
+        params = dict(params)
         name = params.pop("name")
 
         try:
-            attrdef = load_dynamic_attrdef(params)
+            attrdef = load_dynamic_attrdef(name, params)
         except Exception as e:
             logger.error('failed to load dynamic attribute "%s": %s', name, e, exc_info=True)
             continue

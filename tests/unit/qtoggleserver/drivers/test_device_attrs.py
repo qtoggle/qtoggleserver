@@ -107,7 +107,7 @@ class TestCmdLineAttrDef:
 
     @pytest.mark.parametrize("str_value", ("false", "FALSE", "something else"))
     async def test_get_value_boolean_false(self, str_value, mocker):
-        """Should execute get_cmd and return False for boolean type when value is not 'true' or "TRUE"."""
+        """Should execute get_cmd and return False for boolean type when value is not `true` or "TRUE"."""
 
         mocker.patch("qtoggleserver.drivers.device_attrs.cmdline.run_get_cmd", return_value={"value": str_value})
 
@@ -217,7 +217,7 @@ class TestCmdLineAttrDef:
         )
 
     async def test_set_value_with_boolean(self, mocker):
-        """Should pass boolean value to run_set_cmd."""
+        """Should pass boolean value to `run_set_cmd`."""
 
         mock_run_set_cmd = mocker.patch("qtoggleserver.drivers.device_attrs.cmdline.run_set_cmd")
 
