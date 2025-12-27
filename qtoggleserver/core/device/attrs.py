@@ -49,7 +49,7 @@ _attrdefs: AttributeDefinitions | None = None
 _attrs_watch_task: asyncio.Task | None = None
 
 
-class AttrdefDriver(metaclass=abc.ABCMeta):
+class AttrDefDriver(metaclass=abc.ABCMeta):
     DISPLAY_NAME: str | None = None
     DESCRIPTION: str | None = None
     TYPE: str = "boolean"

@@ -2,7 +2,7 @@ from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import Attribute
 
 
-class DummyDriver(core_device_attrs.AttrdefDriver):
+class DummyAttrDef(core_device_attrs.AttrDefDriver):
     TYPE = "string"
     MODIFIABLE = True
     PERSISTED = True

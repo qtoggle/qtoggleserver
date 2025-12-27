@@ -10,79 +10,79 @@ from qtoggleserver.core.device import attrs as device_attrs
 from qtoggleserver.core.typing import Attribute
 
 
-class MockAttrdefDriver(device_attrs.AttrdefDriver):
+class MockAttrDefDriver(device_attrs.AttrDefDriver):
     async def get_value(self) -> Attribute:
         return 13
 
 
-class TestAttrdefDriver:
+class TestAttrDefDriver:
     def test_get_display_name(self):
         """Should return the `DISPLAY_NAME` class attribute."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         attrdef_driver.DISPLAY_NAME = "dummy_display_name"
         assert attrdef_driver.get_display_name() == "dummy_display_name"
 
     def test_get_description(self):
         """Should return the `DESCRIPTION` class attribute."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         attrdef_driver.DESCRIPTION = "dummy_description"
         assert attrdef_driver.get_description() == "dummy_description"
 
     def test_get_type(self):
         """Should return the `TYPE` class attribute."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         attrdef_driver.TYPE = "string"
         assert attrdef_driver.get_type() == "string"
 
     def test_is_modifiable(self):
         """Should return the `MODIFIABLE` class attribute."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         attrdef_driver.MODIFIABLE = True
         assert attrdef_driver.is_modifiable()
 
     def test_get_unit(self):
         """Should return the `UNIT` class attribute."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         attrdef_driver.UNIT = "dummy_unit"
         assert attrdef_driver.get_unit() == "dummy_unit"
 
     def test_get_min(self):
         """Should return the `MIN` class attribute."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         attrdef_driver.MIN = -123
         assert attrdef_driver.get_min() == -123
 
     def test_get_max(self):
         """Should return the `MAX` class attribute."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         attrdef_driver.MAX = 123
         assert attrdef_driver.get_max() == 123
 
     def test_is_integer(self):
         """Should return the `INTEGER` class attribute."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         attrdef_driver.INTEGER = True
         assert attrdef_driver.is_integer()
 
     def test_get_step(self):
         """Should return the `STEP` class attribute."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         attrdef_driver.STEP = 100
         assert attrdef_driver.get_step() == 100
 
     def test_get_choices(self):
         """Should return the `CHOICES` class attribute."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         choices = [{"value": 1, "display_name": "One"}, {"value": 2, "display_name": "Two"}]
         attrdef_driver.CHOICES = choices
         assert attrdef_driver.get_choices() == choices
@@ -90,34 +90,34 @@ class TestAttrdefDriver:
     def test_get_pattern(self):
         """Should return the `PATTERN` class attribute."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         attrdef_driver.PATTERN = "^a-z$"
         assert attrdef_driver.get_pattern() == "^a-z$"
 
     def test_needs_reconnect(self):
         """Should return the `RECONNECT` class attribute."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         attrdef_driver.RECONNECT = True
         assert attrdef_driver.needs_reconnect()
 
     def test_is_enabled(self):
         """Should return `True` by default."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         assert attrdef_driver.is_enabled()
 
     def test_is_persisted(self):
         """Should return the `PERSISTED` class attribute."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         attrdef_driver.PERSISTED = True
         assert attrdef_driver.is_persisted()
 
     async def test_getter_first_call(self, mocker):
         """Should call `get_value()` to obtain the returned value."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         mocker.patch.object(attrdef_driver, "get_value", return_value=16)
 
         value = await attrdef_driver._getter()
@@ -128,7 +128,7 @@ class TestAttrdefDriver:
     async def test_getter_second_call_no_cache(self, mocker):
         """Should call `get_value()` a second time as well since the caching mechanism is disabled."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         mocker.patch.object(attrdef_driver, "get_value", return_value=16)
         await attrdef_driver._getter()
         attrdef_driver.get_value.reset_mock()
@@ -143,7 +143,7 @@ class TestAttrdefDriver:
         enabled."""
 
         freezer.move_to(dummy_utc_datetime)
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         attrdef_driver.CACHE_LIFETIME = 1000
         mocker.patch.object(attrdef_driver, "get_value", return_value=16)
         await attrdef_driver._getter()
@@ -159,7 +159,7 @@ class TestAttrdefDriver:
         """Should call `get_value()` a second time, as the cache expired."""
 
         freezer.move_to(dummy_utc_datetime)
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         attrdef_driver.CACHE_LIFETIME = 1000
         mocker.patch.object(attrdef_driver, "get_value", return_value=16)
         await attrdef_driver._getter()
@@ -174,7 +174,7 @@ class TestAttrdefDriver:
     async def test_setter(self, mocker):
         """Should call `set_value()` with supplied value and invalidate cache."""
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         attrdef_driver._cached_timestamp = 1234
         mocker.patch.object(attrdef_driver, "set_value")
 
@@ -189,7 +189,7 @@ class TestAttrdefDriver:
 
         choices = [{"value": 1, "display_name": "One"}, {"value": 2, "display_name": "Two"}]
 
-        attrdef_driver = MockAttrdefDriver()
+        attrdef_driver = MockAttrDefDriver()
         mocker.patch.object(attrdef_driver, "is_enabled")
         mocker.patch.object(attrdef_driver, "get_display_name", return_value="dummy_display_name")
         mocker.patch.object(attrdef_driver, "get_description", return_value="dummy_description")
@@ -248,7 +248,7 @@ async def test_to_attrdef_no_return_none(self, mocker):
     """Should call all the getter methods to obtain various attribute definition fields, but should leave out fields
     that are None."""
 
-    attrdef_driver = MockAttrdefDriver()
+    attrdef_driver = MockAttrDefDriver()
 
     assert attrdef_driver.to_attrdef() == {
         "enabled": attrdef_driver.is_enabled,

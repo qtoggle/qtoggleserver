@@ -2,11 +2,15 @@ class DeviceException(Exception):
     pass
 
 
-class DeviceAttributeError(DeviceException):
+class DeviceAttributeException(DeviceException):
+    pass
+
+
+class DeviceAttributeError(DeviceAttributeException):
     def __init__(self, error: str, attribute: str) -> None:
         self.error: str = error
         self.attribute: str = attribute
 
 
-class NoSuchDriver(DeviceException):
+class NoSuchDriver(DeviceAttributeException):
     pass
