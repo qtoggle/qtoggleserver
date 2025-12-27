@@ -1,3 +1,4 @@
+import copy
 import logging
 
 from typing import Any
@@ -5,19 +6,20 @@ from typing import Any
 from qtoggleserver.conf import settings
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_get_cmd
+from qtoggleserver.utils.conf import DottedDict
 
 
 logger = logging.getLogger(__name__)
 
-_metadata_entries: dict[str, Any] = {}
+_metadata_entries: DottedDict = DottedDict()
 
 
 def get(key: str, default: Any = None) -> Any:
     return _metadata_entries.get(key, default)
 
 
-def get_all() -> dict[str, Any]:
-    return dict(_metadata_entries)
+def get_all() -> DottedDict:
+    return copy.deepcopy(_metadata_entries)
 
 
 async def load_metadata(params: dict) -> None:

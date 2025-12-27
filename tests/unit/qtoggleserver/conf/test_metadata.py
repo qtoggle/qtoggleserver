@@ -1,13 +1,20 @@
 import pytest
 
 from qtoggleserver.conf import metadata
+from qtoggleserver.utils.conf import DottedDict
+
+
+def test_uses_dotted_dict():
+    """Ensure that a dotted dictionary is used as metadata catalog."""
+
+    assert isinstance(metadata._metadata_entries, DottedDict)
 
 
 class TestGet:
     def test_existing_key(self):
         """Should return the value associated with the key from the metadata entries."""
 
-        metadata._metadata_entries = {"test_key": "test_value", "another_key": 123}
+        metadata._metadata_entries = DottedDict({"test_key": "test_value", "another_key": 123})
 
         result = metadata.get("test_key")
 
@@ -16,7 +23,7 @@ class TestGet:
     def test_nonexistent_key_default_none(self):
         """Should return None when the key does not exist and no default is provided."""
 
-        metadata._metadata_entries = {"test_key": "test_value"}
+        metadata._metadata_entries = DottedDict({"test_key": "test_value"})
 
         result = metadata.get("nonexistent_key")
 
@@ -25,46 +32,38 @@ class TestGet:
     def test_nonexistent_key_with_default(self):
         """Should return the provided default value when the key does not exist."""
 
-        metadata._metadata_entries = {"test_key": "test_value"}
+        metadata._metadata_entries = DottedDict({"test_key": "test_value"})
 
         result = metadata.get("nonexistent_key", "default_value")
 
         assert result == "default_value"
-
-    def test_empty_metadata(self):
-        """Should return `None` when metadata entries are empty and no default is provided."""
-
-        metadata._metadata_entries = {}
-
-        result = metadata.get("any_key")
-
-        assert result is None
 
 
 class TestGetAll:
     def test_all_entries(self):
         """Should return all entries present in the metadata catalog."""
 
-        entries = {"test_key": "test_value", "another_key": 123}
+        entries = DottedDict({"test_key": "test_value", "another_key": 123})
         metadata._metadata_entries = entries
         result = metadata.get_all()
+        assert isinstance(result, DottedDict)
         assert result == entries
 
     def test_clone(self):
         """Should return a *copy* of the entries."""
 
-        metadata._metadata_entries = {"test_key": "test_value", "another_key": 123}
+        metadata._metadata_entries = DottedDict({"test_key": "test_value", "another_key": {"subkey1": 13}})
         result = metadata.get_all()
-        result["yet_another_key"] = 234
+        result["another_key"] = {"subkey2": 14}
 
-        assert "yet_another_key" not in metadata._metadata_entries
+        assert "subkey2" not in metadata._metadata_entries["another_key"]
 
 
 class TestLoadMetadata:
     async def test_with_value(self, mocker):
         """Should load metadata with a direct value parameter."""
 
-        metadata._metadata_entries = {}
+        metadata._metadata_entries = DottedDict()
         spy_logger = mocker.patch("qtoggleserver.conf.metadata.logger")
 
         await metadata.load_metadata({"name": "test_meta", "value": "test_value"})
@@ -75,7 +74,7 @@ class TestLoadMetadata:
     async def test_with_value_complex(self, mocker):
         """Should load metadata with a complex value (dict)."""
 
-        metadata._metadata_entries = {}
+        metadata._metadata_entries = DottedDict()
         mocker.patch("qtoggleserver.conf.metadata.logger")
         complex_value = {"nested": {"key": "value"}, "list": [1, 2, 3]}
 
@@ -86,7 +85,7 @@ class TestLoadMetadata:
     async def test_with_cmd(self, mocker):
         """Should call run_get_cmd with the cmd parameter and load the returned value."""
 
-        metadata._metadata_entries = {}
+        metadata._metadata_entries = DottedDict()
         mocker.patch("qtoggleserver.conf.metadata.logger")
         spy_run_get_cmd = mocker.patch("qtoggleserver.conf.metadata.run_get_cmd", return_value={"value": "cmd_result"})
 
@@ -98,7 +97,7 @@ class TestLoadMetadata:
     async def test_with_sensitive_value(self, mocker):
         """Should not log the value when sensitive parameter is True."""
 
-        metadata._metadata_entries = {}
+        metadata._metadata_entries = DottedDict()
         spy_logger = mocker.patch("qtoggleserver.conf.metadata.logger")
 
         await metadata.load_metadata({"name": "secret_meta", "value": "secret_value", "sensitive": True})
@@ -121,7 +120,7 @@ class TestLoadMetadata:
     async def test_value_priority_over_cmd(self, mocker):
         """Should use the value parameter when both value and cmd are provided."""
 
-        metadata._metadata_entries = {}
+        metadata._metadata_entries = DottedDict()
         mocker.patch("qtoggleserver.conf.metadata.logger")
         spy_run_get_cmd = mocker.patch("qtoggleserver.conf.metadata.run_get_cmd")
 
@@ -135,7 +134,7 @@ class TestInit:
     async def test_multiple_metadata(self, mocker):
         """Should load metadata entries from settings."""
 
-        metadata._metadata_entries = {}
+        metadata._metadata_entries = DottedDict()
         settings_metadata = [
             {"name": "meta1", "value": "value1"},
             {"name": "meta2", "value": "value2"},
@@ -154,7 +153,7 @@ class TestInit:
     async def test_exception_handling(self, mocker):
         """Should log an error and continue when load_metadata raises an exception."""
 
-        metadata._metadata_entries = {}
+        metadata._metadata_entries = DottedDict()
         settings_metadata = [
             {"name": "meta1", "value": "value1"},
             {"name": "meta2", "value": "value2"},
@@ -176,7 +175,7 @@ class TestInit:
     async def test_all_fail_continues(self, mocker):
         """Should continue processing even if all metadata entries fail to load."""
 
-        metadata._metadata_entries = {}
+        metadata._metadata_entries = DottedDict()
         settings_metadata = [
             {"name": "meta1", "value": "value1"},
             {"name": "meta2", "value": "value2"},

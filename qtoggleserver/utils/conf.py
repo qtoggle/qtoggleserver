@@ -9,6 +9,60 @@ import pyhocon
 _config_factory = pyhocon.ConfigFactory()
 
 
+class DottedDict(dict):
+    """
+    DottedDict is a dictionary subclass that supports accessing nested dictionary values using dot-separated keys
+    (e.g., "parent.child.value"). It automatically creates intermediate DottedDict instances when setting nested values.
+    """
+
+    SEP = "."
+
+    def __getitem__(self, key: str) -> Any:
+        if isinstance(key, str) and self.SEP in key:
+            *parents, leaf = key.split(self.SEP)
+            d = self
+            for part in parents:
+                if part not in d or not isinstance(d[part], DottedDict):
+                    raise KeyError(f"Missing path segment: {part}")
+                d = d[part]
+            if leaf not in d:
+                raise KeyError(leaf)
+            return d[leaf]
+        return super().__getitem__(key)
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        if isinstance(key, str) and self.SEP in key:
+            *parents, leaf = key.split(self.SEP)
+            d = self
+            for part in parents:
+                if part not in d:
+                    d[part] = DottedDict()  # Use subclass for recursion
+                elif not isinstance(d[part], DottedDict):
+                    raise ValueError(f"Cannot overwrite non-dict {part}")
+                d = d[part]
+            d[leaf] = value
+        else:
+            super().__setitem__(key, value)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def update(self, other: dict = None, **kwargs) -> None:
+        if other is None:
+            other = {}
+        if hasattr(other, "items"):
+            items = other.items()
+        else:
+            items = other
+        for k, v in items:
+            self[k] = v
+        for k, v in kwargs.items():
+            self[k] = v
+
+
 def obj_to_dict(obj: Any) -> dict[str, Any]:
     d = {}
     for k, v in obj.__dict__.items():
