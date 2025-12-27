@@ -147,7 +147,7 @@ class AttrDefDriver(metaclass=abc.ABCMeta):
             "unit": self.get_unit(),
             "min": self.get_min(),
             "max": self.get_max(),
-            "integer": self.is_integer(),
+            "integer": self.is_integer() or None,
             "step": self.get_step(),
             "choices": self.get_choices(),
             "pattern": self.get_pattern(),
