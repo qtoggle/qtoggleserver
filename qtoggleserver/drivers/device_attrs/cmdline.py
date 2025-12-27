@@ -3,6 +3,7 @@ import logging
 from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.device.exceptions import DeviceAttributeException
 from qtoggleserver.core.typing import Attribute
+from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils.cmd import run_get_cmd, run_set_cmd
 
 
@@ -59,4 +60,5 @@ class CmdLineAttrDef(core_device_attrs.AttrDefDriver):
             return value
 
     async def set_value(self, value: Attribute) -> None:
-        run_set_cmd(self._set_cmd, cmd_name="attrdef setter", exc_class=DeviceAttributeException, value=value)
+        value_str = json_utils.dumps(value)
+        run_set_cmd(self._set_cmd, cmd_name="attrdef setter", exc_class=DeviceAttributeException, value=value_str)
