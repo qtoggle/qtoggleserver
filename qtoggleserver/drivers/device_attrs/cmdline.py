@@ -11,7 +11,13 @@ logger = logging.getLogger(__name__)
 
 class CmdLineAttrDef(core_device_attrs.AttrDefDriver):
     def __init__(
-        self, display_name: str, description: str, type: str, get_cmd: str, set_cmd: str | None = None
+        self,
+        display_name: str,
+        description: str,
+        type: str,
+        get_cmd: str,
+        set_cmd: str | None = None,
+        cache_lifetime: int = 0,
     ) -> None:
         if type not in ("boolean", "number", "string"):
             raise ValueError(f"Invalid attribute type {type}")
@@ -21,6 +27,7 @@ class CmdLineAttrDef(core_device_attrs.AttrDefDriver):
         self._type: str = type
         self._get_cmd: str = get_cmd
         self._set_cmd: str | None = set_cmd
+        self._cache_lifetime: int = cache_lifetime
 
         super().__init__()
 
@@ -35,6 +42,9 @@ class CmdLineAttrDef(core_device_attrs.AttrDefDriver):
 
     def is_modifiable(self) -> bool:
         return self._set_cmd is not None
+
+    def get_cache_lifetime(self) -> int:
+        return self._cache_lifetime
 
     async def get_value(self) -> Attribute:
         result = run_get_cmd(

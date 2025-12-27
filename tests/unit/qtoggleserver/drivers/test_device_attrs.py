@@ -80,6 +80,19 @@ class TestCmdLineAttrDef:
         )
         assert attrdef.is_modifiable() is False
 
+    def test_get_cache_lifetime(self):
+        """Should return the supplied `cache_lifetime` value."""
+
+        attrdef = CmdLineAttrDef(
+            display_name="Test Attr",
+            description="Test description",
+            type="string",
+            get_cmd="echo 'QS_VALUE=test'",
+            set_cmd="echo 'set'",
+            cache_lifetime=12345,
+        )
+        assert attrdef.get_cache_lifetime() == 12345
+
     async def test_get_value_string(self, mocker):
         """Should execute `get_cmd` and return string value."""
 

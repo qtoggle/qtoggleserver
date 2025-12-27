@@ -112,6 +112,9 @@ class AttrDefDriver(metaclass=abc.ABCMeta):
     def is_persisted(self) -> bool:
         return self.PERSISTED
 
+    def get_cache_lifetime(self) -> int:
+        return self.CACHE_LIFETIME
+
     @abc.abstractmethod
     async def get_value(self) -> Attribute:
         pass
@@ -121,10 +124,11 @@ class AttrDefDriver(metaclass=abc.ABCMeta):
         pass
 
     async def _getter(self) -> Attribute:
+        cache_lifetime = self.get_cache_lifetime()
         if (
-            self.CACHE_LIFETIME > 0
+            cache_lifetime > 0
             and self._cached_value is not None
-            and time.time() - self._cached_timestamp < self.CACHE_LIFETIME
+            and time.time() - self._cached_timestamp < cache_lifetime
         ):
             return self._cached_value
 

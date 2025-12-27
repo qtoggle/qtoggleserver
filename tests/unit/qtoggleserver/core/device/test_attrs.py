@@ -114,6 +114,13 @@ class TestAttrDefDriver:
         attrdef_driver.PERSISTED = True
         assert attrdef_driver.is_persisted()
 
+    def test_get_cache_lifetime(self):
+        """Should return the `CACHE_LIFETIME` class attribute."""
+
+        attrdef_driver = MockAttrDefDriver()
+        attrdef_driver.CACHE_LIFETIME = 12345
+        assert attrdef_driver.get_cache_lifetime() == 12345
+
     async def test_getter_first_call(self, mocker):
         """Should call `get_value()` to obtain the returned value."""
 
