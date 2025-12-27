@@ -866,6 +866,8 @@ def _check_net_data_changed(data: dict) -> bool:
 
 
 async def _attrs_watch_loop() -> None:
+    # TODO: also watch dynamic attributes
+
     last_net_data = {}
 
     try:

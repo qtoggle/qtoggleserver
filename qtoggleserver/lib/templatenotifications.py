@@ -3,7 +3,7 @@ import logging
 
 from datetime import datetime
 
-from qtoggleserver.conf import settings
+from qtoggleserver.conf import metadata, settings
 from qtoggleserver.core import device
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import main as core_main
@@ -110,6 +110,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
             "port_values": self.get_port_values(),
             "port_attrs": self.get_port_attrs(),
             "slave_attrs": self.get_slave_attrs(),
+            "metadata": metadata.get_all(),
         }
 
     async def push_message(self, event: core_events.Event, title: str, body: str | None = None, **kwargs) -> None:
