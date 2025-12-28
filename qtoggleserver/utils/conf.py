@@ -38,7 +38,7 @@ class DottedDict(dict):
                 if part not in d:
                     d[part] = DottedDict()  # Use subclass for recursion
                 elif not isinstance(d[part], DottedDict):
-                    raise ValueError(f"Cannot overwrite non-dict {part}")
+                    raise ValueError(f"Cannot traverse through non-dict value at key '{part}'")
                 d = d[part]
             d[leaf] = value
         else:
