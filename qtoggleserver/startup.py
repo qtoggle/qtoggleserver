@@ -11,7 +11,7 @@ from typing import Any
 from tornado import httpclient, netutil
 
 from qtoggleserver import peripherals, persist, slaves, system, version, web
-from qtoggleserver.conf import settings
+from qtoggleserver.conf import metadata, settings
 from qtoggleserver.core import device, events, history, main, ports, reverse, sessions, vports, webhooks
 from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.utils import conf as conf_utils
@@ -103,7 +103,6 @@ def init_logging() -> None:
     # We can't do this in init_settings() because we have no logging there
     if options.config_file:
         logger.info("using config from %s", options.config_file)
-
     else:
         logger.info("using default config")
 
@@ -176,6 +175,11 @@ async def init_persist() -> None:
 async def cleanup_persist() -> None:
     logger.info("cleaning up persistence")
     await persist.cleanup()
+
+
+async def init_metadata() -> None:
+    logger.info("initializing metadata")
+    await metadata.init()
 
 
 async def init_system() -> None:
@@ -338,6 +342,7 @@ async def init() -> None:
     init_signals()
     init_tornado()
 
+    await init_metadata()
     await init_system()
     await init_persist()
     await init_peripherals()
