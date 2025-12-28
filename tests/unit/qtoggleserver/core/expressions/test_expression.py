@@ -4,7 +4,7 @@ from qtoggleserver.core.expressions import EvalContext, Expression, Role
 from qtoggleserver.core.expressions.exceptions import ValueUnavailable
 
 
-class TestableExpression(Expression):
+class _TestableExpression(Expression):
     async def _eval(self, context: EvalContext):
         return 42
 
@@ -17,7 +17,7 @@ class TestExpression:
     async def test_eval(self, dummy_eval_context):
         """Should call `_eval()` with supplied context. Should reset the asap eval pause flag."""
 
-        e = TestableExpression(role=Role.VALUE)
+        e = _TestableExpression(role=Role.VALUE)
         e._asap_eval_paused_until_ms = 1234
         assert await e.eval(dummy_eval_context) == 42
         assert e._asap_eval_paused_until_ms == 0
@@ -25,7 +25,7 @@ class TestExpression:
     async def test_eval_exception(self, dummy_eval_context, mocker):
         """Should pause asap eval on `ExpressionEvalException` and re-raise."""
 
-        class TempExpression(TestableExpression):
+        class TempExpression(_TestableExpression):
             async def _eval(self, context: EvalContext):
                 raise ValueUnavailable("unavailable")
 
