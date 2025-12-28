@@ -15,14 +15,20 @@ _metadata_entries: DottedDict = DottedDict()
 
 
 def get(key: str, default: Any = None) -> Any:
+    """Look up a value from the metadata catalog."""
+
     return _metadata_entries.get(key, default)
 
 
 def get_all() -> DottedDict:
+    """Get a copy of all metadata entries in the catalog."""
+
     return copy.deepcopy(_metadata_entries)
 
 
 async def load_metadata(params: dict) -> None:
+    """Load metadata from given params into the metadata catalog."""
+
     try:
         name = params["name"]
     except KeyError:
@@ -48,6 +54,8 @@ async def load_metadata(params: dict) -> None:
 
 
 async def init() -> None:
+    """Initialize the metadata subsystem."""
+
     for params in settings.metadata:
         try:
             await load_metadata(params)

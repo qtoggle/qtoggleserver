@@ -75,7 +75,7 @@ class TestDottedDict:
     def test_setitem_dotted_key_overwrite_non_dict_raises(self):
         """Should raise ValueError when trying to traverse through a non-dict value."""
         d = DottedDict({"parent": "not_a_dict"})
-        with pytest.raises(ValueError, match="Cannot overwrite non-dict parent"):
+        with pytest.raises(ValueError, match="Cannot traverse through non-dict value at key 'parent'"):
             d["parent.child"] = "value"
 
     def test_setitem_dotted_key_replaces_leaf(self):
