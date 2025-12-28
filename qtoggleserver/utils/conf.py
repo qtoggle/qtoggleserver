@@ -53,12 +53,16 @@ class DottedDict(dict):
     def update(self, other: dict = None, **kwargs) -> None:
         if other is None:
             other = {}
-        if hasattr(other, "items"):
-            items = other.items()
+
+        # Emulate dict.update semantics:
+        # - if 'other' is a mapping (has 'keys'), update from its keys
+        # - otherwise, expect an iterable of (key, value) pairs
+        if hasattr(other, "keys"):
+            for k in other:
+                self[k] = other[k]
         else:
-            items = other
-        for k, v in items:
-            self[k] = v
+            for k, v in other:
+                self[k] = v
         for k, v in kwargs.items():
             self[k] = v
 
