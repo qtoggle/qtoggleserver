@@ -204,7 +204,7 @@ class TestMake:
         mock_env = mocker.Mock()
         spy_get_env = mocker.patch("qtoggleserver.utils.template.get_env", return_value=mock_env)
 
-        tmpl = make("{{some_source}}")
+        tmpl = make("{{some_source}}", sync=False)
 
         spy_get_env.assert_called_once_with(False)
         mock_env.from_string.assert_called_once_with("{{some_source}}")
@@ -245,7 +245,7 @@ class TestMakeNative:
         mock_env = mocker.Mock()
         spy_get_native_env = mocker.patch("qtoggleserver.utils.template.get_native_env", return_value=mock_env)
 
-        tmpl = make_native("{{some_source}}")
+        tmpl = make_native("{{some_source}}", sync=False)
 
         spy_get_native_env.assert_called_once_with(False)
         mock_env.from_string.assert_called_once_with("{{some_source}}")
