@@ -1,6 +1,7 @@
 
 import {gettext}         from '$qui/base/i18n.js'
 import * as Toast        from '$qui/messages/toast.js'
+import * as Navigation   from '$qui/navigation.js'
 import Debouncer         from '$qui/utils/debouncer.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
@@ -272,6 +273,8 @@ class DashboardSection extends Section {
             let rootGroup = this.getMainPage()
             if (rootGroup) {
                 let promise = Promise.resolve()
+                let currentPanel = Dashboard.getCurrentPanel()
+                let currentPath = Navigation.getCurrentPath()
                 if (rootGroup.getNext()) {
                     promise = rootGroup.getNext().close()
                 }
@@ -280,6 +283,10 @@ class DashboardSection extends Section {
                     /* Update all groups and panels */
                     rootGroup.fromJSON({children: panels})
                     rootGroup.updateUI(/* recursive = */ true)
+                }).then(function () {
+                    if (currentPanel) {
+                        return Navigation.navigate({path: currentPath})
+                    }
                 })
             }
         }
