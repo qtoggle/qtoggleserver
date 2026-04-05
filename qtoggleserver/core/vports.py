@@ -12,7 +12,6 @@ _vport_args: dict[str, GenericJSONDict] = {}
 
 class VirtualPort(core_ports.Port):
     WRITABLE = True
-    VIRTUAL = True
 
     def __init__(
         self,
@@ -41,6 +40,9 @@ class VirtualPort(core_ports.Port):
 
     def is_integer(self) -> bool:
         return bool(self._integer)
+
+    def attr_is_virtual(self) -> bool:
+        return True
 
     async def read_value(self) -> NullablePortValue:
         return self._virtual_value
