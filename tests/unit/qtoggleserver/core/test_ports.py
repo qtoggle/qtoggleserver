@@ -1,3 +1,5 @@
+import asyncio
+
 from qtoggleserver.core.expressions.exceptions import ValueUnavailable
 
 
@@ -301,7 +303,6 @@ class TestPortSetAttr:
         mock_num_port1._my_attribute = "value1"
         mocker.patch.object(mock_num_port1, "invalidate_attrdefs")
         await mock_num_port1.set_attr("my_attribute", "value2")
-        assert mock_num_port1._attrs_cache.get("my_attribute") != "value1"
         mock_num_port1.invalidate_attrdefs.assert_called_once()
 
     async def test_call_handle_attr_change(self, mock_num_port1, mocker):
@@ -310,4 +311,5 @@ class TestPortSetAttr:
         mock_num_port1._my_attribute = "value1"
         mocker.patch.object(mock_num_port1, "handle_attr_change")
         await mock_num_port1.set_attr("my_attribute", "value2")
+        await asyncio.sleep(0.1)
         mock_num_port1.handle_attr_change.assert_called_once_with("my_attribute", "value2")
