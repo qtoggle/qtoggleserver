@@ -6,6 +6,7 @@ from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.expressions import exceptions as expression_exceptions
+from qtoggleserver.core.expressions.exceptions import ExpressionEvalException
 from qtoggleserver.core.typing import Attribute, Attributes, NullablePortValue
 from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.slaves import events as slaves_events
@@ -275,7 +276,11 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             elif isinstance(self._filter_port_value, core_expressions.Expression):  # an expression
                 port_values = {p.get_id(): p.get_last_read_value() for p in core_ports.get_all() if p.is_enabled()}
                 eval_context = core_expressions.EvalContext(port_values=port_values, now_ms=int(time.time() * 1000))
-                if new_value != await self._filter_port_value.eval(context=eval_context):
+                try:
+                    if new_value != await self._filter_port_value.eval(context=eval_context):
+                        return False
+                except ExpressionEvalException as e:
+                    self.warning('Expression evaluation failed for "%s": %s', self._filter_port_value, e)
                     return False
             elif new_value != self._filter_port_value:
                 return False
@@ -339,7 +344,11 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         if self._filter_expression:
             port_values = {p.get_id(): p.get_last_read_value() for p in core_ports.get_all() if p.is_enabled()}
             eval_context = core_expressions.EvalContext(port_values=port_values, now_ms=int(time.time() * 1000))
-            if not await self._filter_expression.eval(context=eval_context):
+            try:
+                if not await self._filter_expression.eval(context=eval_context):
+                    return False
+            except ExpressionEvalException as e:
+                self.warning('Expression evaluation failed for "%s": %s', self._filter_expression, e)
                 return False
 
         return True

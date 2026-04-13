@@ -151,6 +151,18 @@ class TestFilterEventHandlerAcceptsPortValue(FilterEventHandlerTestBase):
         handler = self.make_dummy_handler({"port_value": "50"})
         assert await handler.accepts_port_value(self.make_dummy_event(), (None, 40)) is False
 
+    async def test_expression_eval_error_blocks(self, mocker):
+        """Should reject when port_value expression evaluation raises ExpressionEvalException."""
+
+        mocker.patch("qtoggleserver.core.ports.get_all", return_value=[])
+        handler = self.make_dummy_handler({"port_value": "50"})
+        mocker.patch.object(
+            handler._filter_port_value,
+            "eval",
+            new=mocker.AsyncMock(side_effect=expression_exceptions.ExpressionEvalException("eval error")),
+        )
+        assert await handler.accepts_port_value(self.make_dummy_event(), (None, 50)) is False
+
 
 class TestFilterEventHandlerAcceptsPort(FilterEventHandlerTestBase):
     async def test_no_filter_passes(self, mock_num_port1):
@@ -255,6 +267,20 @@ class TestFilterEventHandlerAccepts(FilterEventHandlerTestBase):
         handler = ConcreteFilterEventHandler(filter={"expression": "GT($nid1, 50)"})
         event = core_events.ValueChange(None, 40, mock_num_port1)
         assert await handler.accepts(event, (None, 40), {}, {}, {}, {}, {}) is False
+
+    async def test_expression_eval_error_blocks(self, mock_num_port1, mocker):
+        """Should reject when filter expression evaluation raises ExpressionEvalException."""
+
+        mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
+        handler = ConcreteFilterEventHandler(filter={"expression": "GT($nid1, 50)"})
+        handler._prepare_filter()
+        mocker.patch.object(
+            handler._filter_expression,
+            "eval",
+            new=mocker.AsyncMock(side_effect=expression_exceptions.ExpressionEvalException("eval error")),
+        )
+        event = core_events.ValueChange(None, 60, mock_num_port1)
+        assert await handler.accepts(event, (None, 60), {}, {}, {}, {}, {}) is False
 
     async def test_invalid_expression(self, mock_num_port1):
         """Should raise ExpressionParseError when the filter expression is syntactically invalid."""
