@@ -41,6 +41,8 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         self._filter_slave_attr_transitions: dict[str, tuple[Attribute, Attribute]] = {}
         self._filter_slave_attr_names: set[str] = set()
 
+        self._filter_expression: core_expressions.Expression | None = None
+
         # Maintain an internal "last" state for all objects, so we can detect changes in attributes and values
         self._device_attrs: Attributes | dict[str, list[Attribute]] = {}
         self._port_values: dict[str, NullablePortValue] = {}
@@ -112,6 +114,18 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
         self._filter_slave_attr_names.update(self._filter_slave_attrs.keys())
         self._filter_slave_attr_names.update(self._filter_slave_attr_transitions.keys())
+
+        filter_sexpression = self._filter.get("expression")
+        if isinstance(filter_sexpression, str):
+            try:
+                self.debug('using filter expression "%s"', filter_sexpression)
+                self._filter_expression = core_expressions.parse(
+                    self_port_id=None, sexpression=filter_sexpression, role=core_expressions.Role.FILTER
+                )
+            except expression_exceptions.ExpressionParseError as e:
+                self.error('failed to parse filter expression "%s": %s', filter_sexpression, e)
+
+                raise
 
         self._filter_prepared = True
         self.debug("filter prepared")
@@ -321,6 +335,12 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             event, old_attrs, new_attrs
         ):
             return False
+
+        if self._filter_expression:
+            port_values = {p.get_id(): p.get_last_read_value() for p in core_ports.get_all() if p.is_enabled()}
+            eval_context = core_expressions.EvalContext(port_values=port_values, now_ms=int(time.time() * 1000))
+            if not await self._filter_expression.eval(context=eval_context):
+                return False
 
         return True
 
