@@ -18,6 +18,7 @@ from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import history as core_history
 from qtoggleserver.core import sequences as core_sequences
+from qtoggleserver.core.expressions import EvalContext
 from qtoggleserver.core.expressions import exceptions as expressions_exceptions
 from qtoggleserver.core.typing import (
     Attribute,
@@ -224,7 +225,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         # Attributes cache is used to prevent computing an attribute value more than once per core iteration
         self._attrs_cache: Attributes = {}
-        # `_get_attrs_cache` simply caches the `get_attrs()` result for
+        # `_get_attrs_cache` simply caches the `get_attrs()` result
         self._get_attrs_cache: Attributes | None = None
 
         # Cache attribute definitions
@@ -312,7 +313,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def get_attrs(self) -> Attributes:
         if self._get_attrs_cache is not None:
-            return self._get_attrs_cache
+            return dict(self._get_attrs_cache)
 
         self._get_attrs_cache = {}
         for name in await self.get_attrdefs():
@@ -674,7 +675,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 raise
 
         if self._transform_read:
-            context = self._make_eval_context(port_values={self.get_id(): value})
+            context = EvalContext(port_values={self.get_id(): value})
             try:
                 value = self.adapt_value_type(await self._transform_read.eval(context))
             except expressions_exceptions.ValueUnavailable:
@@ -720,7 +721,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         port_values = {p.get_id(): p.get_last_value() for p in get_all() if p.is_enabled()}
         # TODO: eval attrs
-        context = self._make_eval_context(port_values, now_ms)
+        context = EvalContext(port_values, now_ms)
         expression = self.get_expression()
 
         try:
@@ -769,7 +770,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         value_str = json_utils.dumps(value)
 
         if self._transform_write:
-            context = self._make_eval_context(port_values={self.get_id(): value})
+            context = EvalContext(port_values={self.get_id(): value})
             try:
                 value = self.adapt_value_type(await self._transform_write.eval(context))
             except expressions_exceptions.ValueUnavailable:
@@ -783,12 +784,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         except Exception:
             self.error("failed to write value %s", value_str, exc_info=True)
             raise
-
-    def _make_eval_context(
-        self, port_values: dict[str, NullablePortValue], now_ms: int = 0
-    ) -> core_expressions.EvalContext:
-        now_ms = now_ms or int(time.time() * 1000)
-        return core_expressions.EvalContext(port_values, now_ms)
 
     def get_last_value(self) -> NullablePortValue:
         """Returns the most recent value known to the port, preferring pending and last written values over last read
@@ -942,9 +937,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if self._transform_write:
                     try:
                         value = self.adapt_value_type(
-                            await self._transform_write.eval(
-                                self._make_eval_context(port_values={self.get_id(): value})
-                            )
+                            await self._transform_write.eval(EvalContext(port_values={self.get_id(): value}))
                         )
                     except expressions_exceptions.ValueUnavailable:
                         value = None
@@ -1010,6 +1003,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._write_task.cancel()
             await self._write_task
             self._write_task = None
+
+        await self._after_set_attr_debounced.stop()
 
     def is_loaded(self) -> bool:
         return self._loaded

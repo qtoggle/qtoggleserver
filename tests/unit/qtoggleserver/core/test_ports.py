@@ -43,7 +43,7 @@ class TestPortEvalAndPushWrite:
         eval context. Should then evaluate the expression and push the result to the write queue."""
 
         mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1, mock_num_port2])
-        mocker.patch.object(mock_num_port1, "_make_eval_context", return_value="dummy_eval_context")
+        mock_eval_context = mocker.patch("qtoggleserver.core.ports.EvalContext", return_value="dummy_eval_context")
         mocker.patch.object(mock_num_port1, "get_last_value", return_value=42)
         mocker.patch.object(mock_num_port2, "get_last_value", return_value=84)
 
@@ -56,7 +56,7 @@ class TestPortEvalAndPushWrite:
 
         await mock_num_port1.eval_and_push_write(1234)
 
-        mock_num_port1._make_eval_context.assert_called_once_with({"nid1": 42, "nid2": 84}, 1234)
+        mock_eval_context.assert_called_once_with({"nid1": 42, "nid2": 84}, 1234)
         mock_num_port1.adapt_value_type.assert_called_once_with(mock_expression.eval.return_value)
         mock_num_port1._write_queue.append.assert_called_once_with(100)
         mock_expression.eval.assert_called_once_with("dummy_eval_context")
