@@ -6,12 +6,12 @@ from collections.abc import Callable
 from functools import reduce
 
 
-__all__ = ["Debouncer"]
+__all__ = ["Debounced"]
 
 logger = logging.getLogger(__name__)
 
 
-class Debouncer:
+class Debounced:
     """
     Utility to debounce calls to a function.
 

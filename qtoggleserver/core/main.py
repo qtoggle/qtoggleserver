@@ -199,7 +199,7 @@ async def handle_value_changes(
         if await port.is_persisted():
             port.save_asap()
 
-    # Reevaluate the expressions depending on changed ports
+    # Reevaluate all port expressions depending on changed ports
     for port in core_ports.get_all():
         if not port.is_enabled():
             continue

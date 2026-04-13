@@ -711,6 +711,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         exceptions from caller, but make sure to log them."""
 
         port_values = {p.get_id(): p.get_last_value() for p in get_all() if p.is_enabled()}
+        # TODO: eval attrs
         context = self._make_eval_context(port_values, now_ms)
         expression = self.get_expression()
 

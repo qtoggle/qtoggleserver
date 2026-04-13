@@ -275,6 +275,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                     return False
             elif isinstance(self._filter_port_value, core_expressions.Expression):  # an expression
                 port_values = {p.get_id(): p.get_last_read_value() for p in core_ports.get_all() if p.is_enabled()}
+                # TODO: eval attrs
                 eval_context = core_expressions.EvalContext(port_values=port_values, now_ms=int(time.time() * 1000))
                 try:
                     if new_value != await self._filter_port_value.eval(context=eval_context):
@@ -343,6 +344,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
         if self._filter_expression:
             port_values = {p.get_id(): p.get_last_read_value() for p in core_ports.get_all() if p.is_enabled()}
+            # TODO: eval attrs
             eval_context = core_expressions.EvalContext(port_values=port_values, now_ms=int(time.time() * 1000))
             try:
                 if not await self._filter_expression.eval(context=eval_context):
