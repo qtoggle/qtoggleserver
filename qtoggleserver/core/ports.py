@@ -31,6 +31,7 @@ from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
+from qtoggleserver.utils.debounced import Debounced
 
 
 TYPE_BOOLEAN = "boolean"
@@ -251,6 +252,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._pending_save: bool = False
 
         self._loaded: bool = False
+        self._after_set_attr_debounced = Debounced(self._after_set_attr)
 
     def __str__(self) -> str:
         return f"port {self._id}"
@@ -384,12 +386,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.invalidate_attrdefs()
 
         if self.is_loaded():
-            await main.update()  # TODO: don't update immediately, batch multiple attribute sets
+            self._after_set_attr_debounced.call(name, value)
 
-            # Skip an IO loop iteration, allowing setting multiple attributes before triggering a port-update
-            await asyncio.sleep(0)
-            await self.trigger_update()  # TODO: don't trigger immediately, batch multiple attribute sets
-
+    async def _after_set_attr(self, *args) -> None:
+        await main.update()
+        await self.trigger_update()
+        for name, value in args:
             await self.handle_attr_change(name, value)
 
     def invalidate_attr(self, name: str) -> None:

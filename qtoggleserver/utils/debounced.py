@@ -48,9 +48,11 @@ class Debounced:
     async def _run(self) -> None:
         await asyncio.sleep(self._delay)
 
-        args = self._args
+        args = list(self._args)
         if self._args_reducer:
             args += reduce(self._args_reducer, (q[0] for q in self._queue))
+        else:
+            args += (q[0] for q in self._queue)
 
         kwargs = self._kwargs
         if self._kwargs_reducer:
