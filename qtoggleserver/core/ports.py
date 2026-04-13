@@ -224,6 +224,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         # Attributes cache is used to prevent computing an attribute value more than once per core iteration
         self._attrs_cache: Attributes = {}
+        # `_get_attrs_cache` simply caches the `get_attrs()` result for
+        self._get_attrs_cache: Attributes | None = None
 
         # Cache attribute definitions
         self._standard_attrdefs_cache: AttributeDefinitions | None = None
@@ -295,7 +297,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return self.ADDITIONAL_ATTRDEFS
 
     def invalidate_attrdefs(self) -> None:
-        self._attrs_cache = {}
+        self.invalidate_attrs()
         self._standard_attrdefs_cache = None
         self._additional_attrdefs_cache = None
         self._schema = None
@@ -309,19 +311,22 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return {n for (n, v) in attrdefs.items() if v.get("modifiable")}
 
     async def get_attrs(self) -> Attributes:
-        d = {}
+        if self._get_attrs_cache is not None:
+            return self._get_attrs_cache
 
+        self._get_attrs_cache = {}
         for name in await self.get_attrdefs():
             v = await self.get_attr(name)
             if v is None:
                 continue
 
-            d[name] = v
+            self._get_attrs_cache[name] = v
 
-        return d
+        return self._get_attrs_cache
 
     def invalidate_attrs(self) -> None:
         self._attrs_cache = {}
+        self._get_attrs_cache = None
 
     async def get_attr(self, name: str) -> Attribute | None:
         value = self._attrs_cache.get(name)
@@ -396,6 +401,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def invalidate_attr(self, name: str) -> None:
         self._attrs_cache.pop(name, None)
+        self._get_attrs_cache = None
 
     async def handle_attr_change(self, name: str, value: Attribute) -> None:
         method_name = f"handle_{name}"
