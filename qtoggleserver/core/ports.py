@@ -754,34 +754,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         except asyncio.CancelledError:
             self.debug("eval task cancelled")
 
-    async def _eval_and_write(self, context: core_expressions.EvalContext) -> None:
-        expression = self.get_expression()
-
-        try:
-            value = await expression.eval(context)
-        except expressions_exceptions.ExpressionEvalException as e:
-            self.debug('evaluation did not complete for expression "%s": %s', expression, e)
-            return
-        except Exception as e:
-            self.error('failed to evaluate expression "%s": %s', expression, e, exc_info=True)
-            return
-
-        adapted_value = self.adapt_value_type(value)
-        if adapted_value is not None:
-            self.debug(
-                'expression "%s" evaluated to %s (adapted to %s)',
-                expression,
-                json_utils.dumps(value),
-                json_utils.dumps(adapted_value),
-            )
-
-            # Only write value to port if it differs from the last written value
-            if not self._last_written_value or self._last_written_value[0] != adapted_value:
-                try:
-                    await self.transform_and_write_value(adapted_value)
-                except Exception as e:
-                    self.error("failed to write value: %s", e)
-
     async def transform_and_write_value(self, value: NullablePortValue) -> None:
         """Apply write transform (if any) and write the value to the port."""
 
