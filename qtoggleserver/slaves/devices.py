@@ -416,7 +416,7 @@ class Slave(logging_utils.LoggableMixin):
             "attrs": self._cached_attrs.copy(),
             "webhooks": self._cached_webhooks.copy(),
             "reverse": self._cached_reverse.copy(),
-            "provisioning_attrs": self._provisioning_attrs.copy(),
+            "provisioning_attrs": list(sorted(self._provisioning_attrs)),
             "provisioning_webhooks": self._provisioning_webhooks,
             "provisioning_reverse": self._provisioning_reverse,
         }

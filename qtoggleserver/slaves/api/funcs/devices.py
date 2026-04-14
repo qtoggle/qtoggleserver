@@ -154,7 +154,7 @@ async def put_slave_devices(request: core_api.APIRequest, params: GenericJSONLis
 
     try:
         # Remove all slave devices
-        for slave in slaves_devices.get_all():
+        for slave in list(slaves_devices.get_all()):
             await slaves_devices.remove(slave)
 
         add_device_schema: GenericJSONDict = api_schema.POST_SLAVE_DEVICES.copy()
