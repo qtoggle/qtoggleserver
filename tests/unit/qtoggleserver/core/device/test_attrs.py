@@ -418,10 +418,10 @@ class TestPasswordAttrs:
 
 class TestAttrdefs:
     def test_get_first_call(self, mocker):
-        """Should initialize attrdefs, calling callable fields, filtering out disabled attributes and returning the resulted
-        dictionary."""
+        """Should initialize attrdefs, calling callable fields, filtering out disabled attributes and returning the
+        resulted dictionary."""
 
-        mocker.patch.object(device_attrs, "_attrdefs", None)
+        mocker.patch.object(device_attrs, "_attrdefs_cache", None)
         attrdefs = device_attrs.get_attrdefs()
         assert attrdefs is not None
         assert isinstance(attrdefs, dict)
@@ -436,14 +436,14 @@ class TestAttrdefs:
     def test_get_subsequent_call(self, mocker):
         """Should return cached _attrdefs module member, without initializing attrdefs again."""
 
-        attrdefs_mock = mocker.patch.object(device_attrs, "_attrdefs")
+        attrdefs_mock = mocker.patch.object(device_attrs, "_attrdefs_cache")
         assert device_attrs.get_attrdefs() is attrdefs_mock
 
 
 class TestGetSchema:
     def test_get_first_call(self):
-        """Should initialize a JSON schema corresponding to device attribute definitions and return it. The schema should
-        not contain attribute definition metadata."""
+        """Should initialize a JSON schema corresponding to device attribute definitions and return it. The schema
+        should not contain attribute definition metadata."""
 
         schema = device_attrs.get_schema()
         assert isinstance(schema, dict)
@@ -762,8 +762,8 @@ class TestSetAttrs:
         assert result is True  # reboot required
 
     async def test_set_ignore_extra(self, mocker):
-        """Should raise exception when supplying an undefined attribute and `ignore_extra` is set to false; Should silently
-        ignore undefined attribute when `ignore_extra` is set to true."""
+        """Should raise exception when supplying an undefined attribute and `ignore_extra` is set to false; Should
+        silently ignore undefined attribute when `ignore_extra` is set to true."""
 
         mocker.patch.object(
             device_attrs,
@@ -842,6 +842,7 @@ class TestToJSON:
     async def test(self, mocker):
         """Should return a dictionary with all attribute values along with their definitions, for non-standard ones."""
 
+        mocker.patch.object(device_attrs, "_filtered_attrdefs_cache", None)
         mocker.patch.object(
             device_attrs,
             "get_attrdefs",
@@ -899,6 +900,31 @@ class TestToJSON:
                 },
             },
         }
+
+    async def test_filtered_attrdefs_cached(self, mocker):
+        """Should compute filtered attrdefs only once; subsequent calls reuse the cached object."""
+
+        mocker.patch.object(device_attrs, "_filtered_attrdefs_cache", None)
+        get_attrdefs_mock = mocker.patch.object(
+            device_attrs,
+            "get_attrdefs",
+            return_value={
+                "name1": {
+                    "type": "string",
+                    "modifiable": True,
+                    "pattern": "^.*$",
+                    "reconnect": False,
+                    "getter": lambda: "dummy1",
+                    "standard": False,
+                },
+            },
+        )
+
+        result1 = await device_attrs.to_json()
+        result2 = await device_attrs.to_json()
+
+        assert result1["definitions"] is result2["definitions"]
+        get_attrdefs_mock.assert_called_once()
 
 
 class TestLoadDynamicAttrDef:

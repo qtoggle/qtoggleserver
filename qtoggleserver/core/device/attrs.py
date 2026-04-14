@@ -45,7 +45,8 @@ normal_password_hash: str | None = None
 viewonly_password_hash: str | None = None
 
 _schema: GenericJSONDict | None = None
-_attrdefs: AttributeDefinitions | None = None
+_attrdefs_cache: AttributeDefinitions | None = None
+_filtered_attrdefs_cache: AttributeDefinitions | None = None
 _attrs_watch_task: asyncio.Task | None = None
 _attrs_cache: Attributes | None = None
 
@@ -594,11 +595,11 @@ def load_dynamic_attrdef(name: str, params: dict[str, Any]) -> AttributeDefiniti
 
     logger.debug('creating device attribute "%s" with driver "%s"', name, class_path)
     try:
-        peripheral_class = dynload_utils.load_attr(class_path)
+        attrdef_driver_class = dynload_utils.load_attr(class_path)
     except Exception:
         raise NoSuchDriver(class_path)
 
-    return peripheral_class(**params).to_attrdef()
+    return attrdef_driver_class(**params).to_attrdef()
 
 
 def load_dynamic_attrdefs() -> AttributeDefinitions:
@@ -620,22 +621,22 @@ def load_dynamic_attrdefs() -> AttributeDefinitions:
 
 
 def get_attrdefs() -> AttributeDefinitions:
-    global _attrdefs
+    global _attrdefs_cache
 
-    if _attrdefs is None:
+    if _attrdefs_cache is None:
         logger.debug("initializing attribute definitions")
-        _attrdefs = copy.deepcopy(ATTRDEFS) | load_dynamic_attrdefs()
+        _attrdefs_cache = copy.deepcopy(ATTRDEFS) | load_dynamic_attrdefs()
 
         # Transform some callable values into corresponding results
-        for n, attrdef in list(_attrdefs.items()):
+        for n, attrdef in list(_attrdefs_cache.items()):
             for k, v in attrdef.items():
                 if callable(v) and k in ATTRDEF_CALLABLE_FIELDS:
                     attrdef[k] = v()
 
             if attrdef.pop("enabled", True) is False:
-                _attrdefs.pop(n)
+                _attrdefs_cache.pop(n)
 
-    return _attrdefs
+    return _attrdefs_cache
 
 
 def get_schema(loose: bool = False) -> GenericJSONDict:
@@ -830,30 +831,43 @@ def invalidate_attrs() -> None:
     _attrs_cache = None
 
 
+def invalidate_attrdefs() -> None:
+    global _filtered_attrdefs_cache
+    global _attrdefs_cache
+
+    _filtered_attrdefs_cache = None
+    _attrdefs_cache = None
+
+
 async def to_json() -> GenericJSONDict:
-    attrdefs: AttributeDefinitions = copy.deepcopy(get_attrdefs())
-    filtered_attrdefs: AttributeDefinitions = {}
-    for attr_name, attrdef in attrdefs.items():
-        if attrdef.pop("standard", False):
-            continue
+    global _filtered_attrdefs_cache
 
-        # Remove unwanted fields from attribute definition
-        for field in ("persisted", "setter", "getter"):
-            attrdef.pop(field, None)
+    if _filtered_attrdefs_cache is None:
+        attrdefs: AttributeDefinitions = copy.deepcopy(get_attrdefs())
+        filtered_attrdefs: AttributeDefinitions = {}
+        for attr_name, attrdef in attrdefs.items():
+            if attrdef.pop("standard", False):
+                continue
 
-        # Remove optional boolean fields that are false
-        for field in ("integer", "reconnect"):
-            if not attrdef.get(field):
+            # Remove unwanted fields from attribute definition
+            for field in ("persisted", "setter", "getter"):
                 attrdef.pop(field, None)
 
-        for key in list(attrdef):
-            if key.startswith("_"):
-                attrdef.pop(key)
+            # Remove optional boolean fields that are false
+            for field in ("integer", "reconnect"):
+                if not attrdef.get(field):
+                    attrdef.pop(field, None)
 
-        filtered_attrdefs[attr_name] = attrdef
+            for key in list(attrdef):
+                if key.startswith("_"):
+                    attrdef.pop(key)
 
-    result: dict[str, Any] = (await get_attrs()).copy()
-    result["definitions"] = filtered_attrdefs
+            filtered_attrdefs[attr_name] = attrdef
+
+        _filtered_attrdefs_cache = filtered_attrdefs
+
+    result: dict[str, Any] = await get_attrs()
+    result["definitions"] = _filtered_attrdefs_cache
 
     return result
 
