@@ -8,6 +8,7 @@ import re
 import time
 import types
 
+from collections.abc import ValuesView
 from typing import Any
 
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
@@ -1618,8 +1619,8 @@ async def _handle_rename(slave: Slave, new_name: str) -> None:
         await slave.wait_online(timeout=settings.slaves.long_timeout)
 
 
-def get_all() -> list[Slave]:
-    return list(_slaves_by_name.values())
+def get_all() -> ValuesView[Slave]:
+    return _slaves_by_name.values()
 
 
 def _slave_ready(slave: Slave) -> bool:

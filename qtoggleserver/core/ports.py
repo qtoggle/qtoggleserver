@@ -9,7 +9,7 @@ import logging
 import time
 
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, ValuesView
 from typing import Any
 
 from qtoggleserver import persist
@@ -1194,8 +1194,8 @@ def get(port_id: str) -> BasePort | None:
     return _ports_by_id.get(port_id)
 
 
-def get_all() -> list[BasePort]:
-    return list(_ports_by_id.values())
+def get_all() -> ValuesView[BasePort]:
+    return _ports_by_id.values()
 
 
 async def save_loop() -> None:

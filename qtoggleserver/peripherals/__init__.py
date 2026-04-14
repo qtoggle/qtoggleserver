@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from collections.abc import ValuesView
 from typing import Any
 
 from qtoggleserver import persist
@@ -20,8 +21,8 @@ logger = logging.getLogger(__name__)
 _registered_peripherals: dict[str, Peripheral] = {}
 
 
-def get_all() -> list[Peripheral]:
-    return list(_registered_peripherals.values())
+def get_all() -> ValuesView[Peripheral]:
+    return _registered_peripherals.values()
 
 
 def get(peripheral_id: str) -> Peripheral | None:
