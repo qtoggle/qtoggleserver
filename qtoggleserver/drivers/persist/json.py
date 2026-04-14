@@ -60,6 +60,7 @@ class JSONDriver(BaseDriver):
         self._use_backup: bool = use_backup
 
         self._data: IndexedData = self._index(self._load())
+        self._max_ids: dict[str, int] = self._compute_max_ids(self._data)
 
     async def query(
         self,
@@ -114,10 +115,17 @@ class JSONDriver(BaseDriver):
 
         id_ = record.get("id")
         if id_ is None:
-            id_ = self._find_next_id(coll)
+            next_id = self._max_ids.get(collection, 0) + 1
+            self._max_ids[collection] = next_id
+            id_ = str(next_id)
             record = dict(record, id=id_)
         elif id_ in coll:
             raise DuplicateRecordId(id_)
+        else:
+            try:
+                self._max_ids[collection] = max(self._max_ids.get(collection, 0), int(id_))
+            except (ValueError, TypeError):
+                pass
 
         coll[id_] = record
 
@@ -218,15 +226,17 @@ class JSONDriver(BaseDriver):
             return db_record_value == filt_value
 
     @staticmethod
-    def _find_next_id(coll: Collection) -> Id:
-        int_ids = [0]
-        for id_ in coll.keys():
-            try:
-                int_ids.append(int(id_))
-            except ValueError:
-                continue
-
-        return str(max(int_ids) + 1)
+    def _compute_max_ids(data: IndexedData) -> dict[str, int]:
+        max_ids: dict[str, int] = {}
+        for coll, records in data.items():
+            max_id = 0
+            for id_ in records:
+                try:
+                    max_id = max(max_id, int(id_))
+                except (ValueError, TypeError):
+                    pass
+            max_ids[coll] = max_id
+        return max_ids
 
     def _get_backup_file_path(self) -> str | None:
         if not self._file_path:
