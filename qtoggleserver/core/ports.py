@@ -334,7 +334,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if value is not None:
             return value
 
-        method = getattr(self, "attr_get_" + name) or getattr(self, "attr_is_" + name, None)
+        method = getattr(self, "attr_get_" + name, None) or getattr(self, "attr_is_" + name, None)
         if method:
             value = method()
             if inspect.isawaitable(value):
@@ -353,7 +353,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._attrs_cache[name] = value
             return value
 
-        method = getattr(self, "attr_get_default_" + name) or getattr(self, "attr_is_default_" + name, None)
+        method = getattr(self, "attr_get_default_" + name, None) or getattr(self, "attr_is_default_" + name, None)
         if method:
             value = method()
             if inspect.isawaitable(value):
