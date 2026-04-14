@@ -47,6 +47,7 @@ viewonly_password_hash: str | None = None
 _schema: GenericJSONDict | None = None
 _attrdefs: AttributeDefinitions | None = None
 _attrs_watch_task: asyncio.Task | None = None
+_attrs_cache: Attributes | None = None
 
 
 class AttrDefDriver(metaclass=abc.ABCMeta):
@@ -682,6 +683,11 @@ def get_schema(loose: bool = False) -> GenericJSONDict:
 
 
 async def get_attrs() -> Attributes:
+    global _attrs_cache
+
+    if _attrs_cache is not None:
+        return _attrs_cache.copy()
+
     attrdefs = get_attrdefs()
 
     # Do a first round to gather all required calls and ensure we only call each function once, caching its result
@@ -699,7 +705,7 @@ async def get_attrs() -> Attributes:
         call_results[call] = result
 
     # Do a second round to prepare attribute values
-    attrs = {}
+    _attrs_cache = {}
     for n, attrdef in attrdefs.items():
         getter = attrdef["getter"]
         if not getter:
@@ -721,13 +727,14 @@ async def get_attrs() -> Attributes:
         else:
             continue
 
-        attrs[n] = value
+        _attrs_cache[n] = value
 
-    return attrs
+    return _attrs_cache.copy()
 
 
 async def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
     core_device_attrs = sys.modules[__name__]
+    invalidate_attrs()
 
     reboot_required = False
     attrdefs = get_attrdefs()
@@ -817,6 +824,12 @@ async def set_attrs(attrs: Attributes, ignore_extra: bool = False) -> bool:
     return reboot_required
 
 
+def invalidate_attrs() -> None:
+    global _attrs_cache
+
+    _attrs_cache = None
+
+
 async def to_json() -> GenericJSONDict:
     attrdefs: AttributeDefinitions = copy.deepcopy(get_attrdefs())
     filtered_attrdefs: AttributeDefinitions = {}
@@ -881,6 +894,7 @@ async def _attrs_watch_loop() -> None:
                 logger.error("network attributes data check failed: %s", e, exc_info=True)
 
             if changed:
+                invalidate_attrs()
                 await device_events.trigger_update()
 
             await asyncio.sleep(NETWORK_ATTRS_WATCH_INTERVAL)
