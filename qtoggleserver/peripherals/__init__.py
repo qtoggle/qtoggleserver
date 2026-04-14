@@ -29,7 +29,7 @@ def get(peripheral_id: str) -> Peripheral | None:
 
 
 async def add(peripheral_params: dict[str, Any], static: bool = False) -> Peripheral:
-    params = dict(peripheral_params)
+    params = peripheral_params.copy()
     class_path = params.pop("driver")
     params.pop("static", None)
 
@@ -48,7 +48,7 @@ async def add(peripheral_params: dict[str, Any], static: bool = False) -> Periph
     _registered_peripherals[p.get_id()] = p
 
     if not static:
-        peripheral_params = dict(peripheral_params)
+        peripheral_params = peripheral_params.copy()
         peripheral_params.pop("static", None)
         await persist.replace("peripherals", p.get_id(), peripheral_params)
 

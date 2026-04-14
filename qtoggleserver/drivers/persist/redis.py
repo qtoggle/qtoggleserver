@@ -50,7 +50,7 @@ class RedisDriver(BaseDriver):
         db_records = []
 
         if isinstance(filt.get("id"), Id):  # look for specific record id
-            filt = dict(filt)
+            filt = filt.copy()
             id_ = filt.pop("id")
             db_record = self._client.hgetall(self._make_record_key(collection, id_))
 
@@ -89,7 +89,7 @@ class RedisDriver(BaseDriver):
 
     async def insert(self, collection: str, record: Record) -> Id:
         # Make sure we have an id
-        record = dict(record)
+        record = record.copy()
         id_ = record.pop("id", None)
         if id_ is None:
             id_ = self._get_next_id(collection)
@@ -120,7 +120,7 @@ class RedisDriver(BaseDriver):
         modified_count = 0
 
         if isinstance(filt.get("id"), Id):
-            filt = dict(filt)
+            filt = filt.copy()
             id_ = filt.pop("id")
             key = self._make_record_key(collection, id_)
 
@@ -181,7 +181,7 @@ class RedisDriver(BaseDriver):
         removed_count = 0
 
         if isinstance(filt.get("id"), Id):
-            filt = dict(filt)
+            filt = filt.copy()
             id_ = filt.pop("id")
             key = self._make_record_key(collection, id_)
             db_record = self._client.hgetall(key)

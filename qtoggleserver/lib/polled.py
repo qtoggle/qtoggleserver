@@ -151,7 +151,7 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
     async def get_additional_attrdefs(self) -> AttributeDefinitions:
         attrdefs: AttributeDefinitions = {}
         if self.READ_INTERVAL_MIN is not None:
-            attrdef: AttributeDefinition = dict(READ_INTERVAL_ATTRDEF)
+            attrdef: AttributeDefinition = READ_INTERVAL_ATTRDEF.copy()
 
             unit = self.READ_INTERVAL_UNIT
             if unit is None:

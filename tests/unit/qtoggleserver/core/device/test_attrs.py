@@ -988,7 +988,7 @@ class TestLoadDynamicAttrDef:
         mocker.patch("qtoggleserver.utils.dynload.load_attr", return_value=mock_driver_class)
 
         original_params = {"driver": "module.path.DriverClass", "param1": "value1"}
-        params_copy = dict(original_params)
+        params_copy = original_params.copy()
 
         device_attrs.load_dynamic_attrdef("test_attr", original_params)
 
@@ -1121,7 +1121,7 @@ class TestLoadDynamicAttrDefs:
         original_config = [
             {"name": "attr1", "driver": "module.Driver1", "param": "value1"},
         ]
-        config_copy = [dict(item) for item in original_config]
+        config_copy = [item.copy() for item in original_config]
 
         mocker.patch("qtoggleserver.conf.settings.core.device_attrs", original_config)
 

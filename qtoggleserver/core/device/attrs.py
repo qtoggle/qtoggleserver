@@ -589,7 +589,7 @@ ATTRDEFS = {
 
 
 def load_dynamic_attrdef(name: str, params: dict[str, Any]) -> AttributeDefinition:
-    params = dict(params)
+    params = params.copy()
     class_path = params.pop("driver")
 
     logger.debug('creating device attribute "%s" with driver "%s"', name, class_path)
@@ -605,7 +605,7 @@ def load_dynamic_attrdefs() -> AttributeDefinitions:
     attrdefs = {}
 
     for params in settings.core.device_attrs:
-        params = dict(params)
+        params = params.copy()
         name = params.pop("name")
 
         try:
@@ -651,7 +651,7 @@ def get_schema(loose: bool = False) -> GenericJSONDict:
         if not attrdef.get("modifiable"):
             continue
 
-        attr_schema = dict(attrdef)
+        attr_schema = attrdef.copy()
         if attr_schema["type"] == "string":
             if "min" in attr_schema:
                 attr_schema["minLength"] = attr_schema.pop("min")
@@ -852,7 +852,7 @@ async def to_json() -> GenericJSONDict:
 
         filtered_attrdefs[attr_name] = attrdef
 
-    result: dict[str, Any] = dict(await get_attrs())
+    result: dict[str, Any] = (await get_attrs()).copy()
     result["definitions"] = filtered_attrdefs
 
     return result

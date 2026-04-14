@@ -177,7 +177,7 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
         for port in core_ports.get_all():
             await port.reset()
 
-        add_port_schema: GenericJSONDict = dict(core_api_schema.POST_PORTS)
+        add_port_schema: GenericJSONDict = core_api_schema.POST_PORTS.copy()
         add_port_schema["additionalProperties"] = True
 
         # Restore supplied attributes

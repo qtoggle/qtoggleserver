@@ -62,7 +62,7 @@ class TestPostPeripherals:
             dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"],
         )
 
-        payload = dict(MOCK_PERIPHERAL2_DATA)
+        payload = MOCK_PERIPHERAL2_DATA.copy()
         payload.pop("static")
         request = mock_api_request_maker("POST", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_ADMIN)
 
@@ -81,7 +81,7 @@ class TestPostPeripherals:
             dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"],
         )
 
-        payload = dict(MOCK_PERIPHERAL2_DATA)
+        payload = MOCK_PERIPHERAL2_DATA.copy()
         payload.pop("static")
         payload.pop("id")
         request = mock_api_request_maker("POST", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_ADMIN)
@@ -101,7 +101,7 @@ class TestPostPeripherals:
             dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"],
         )
 
-        payload = dict(MOCK_PERIPHERAL2_DATA)
+        payload = MOCK_PERIPHERAL2_DATA.copy()
         payload.pop("static")
         payload.pop("name")
         request = mock_api_request_maker("POST", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_ADMIN)
@@ -118,7 +118,7 @@ class TestPostPeripherals:
     async def test_ok_no_name_no_id(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"])
 
-        payload = dict(MOCK_PERIPHERAL2_DATA)
+        payload = MOCK_PERIPHERAL2_DATA.copy()
         payload.pop("static")
         payload.pop("name")
         payload.pop("id")
@@ -135,7 +135,7 @@ class TestPostPeripherals:
         assert result == dict(payload, name=None, static=False)
 
     async def test_no_such_driver(self, mock_api_request_maker, mock_peripheral1):
-        payload = dict(MOCK_PERIPHERAL2_DATA)
+        payload = MOCK_PERIPHERAL2_DATA.copy()
         payload.pop("static")
         payload["driver"] = "does.not.exist"
         request = mock_api_request_maker("POST", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_ADMIN)
@@ -145,7 +145,7 @@ class TestPostPeripherals:
         assert e.value.status == 404
 
     async def test_duplicate_peripheral(self, mock_api_request_maker, mock_peripheral1):
-        payload = dict(MOCK_PERIPHERAL1_DATA)
+        payload = MOCK_PERIPHERAL1_DATA.copy()
         payload.pop("static")
         request = mock_api_request_maker("POST", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_ADMIN)
 
@@ -154,7 +154,7 @@ class TestPostPeripherals:
         assert e.value.status == 400
 
     async def test_normal_user_permissions(self, mock_api_request_maker, mock_peripheral1):
-        payload = dict(MOCK_PERIPHERAL2_DATA)
+        payload = MOCK_PERIPHERAL2_DATA.copy()
         payload.pop("static")
         request = mock_api_request_maker("POST", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_NORMAL)
 
@@ -163,7 +163,7 @@ class TestPostPeripherals:
         assert e.value.status == 403
 
     async def test_viewonly_user_permissions(self, mock_api_request_maker, mock_peripheral1):
-        payload = dict(MOCK_PERIPHERAL2_DATA)
+        payload = MOCK_PERIPHERAL2_DATA.copy()
         payload.pop("static")
         request = mock_api_request_maker("POST", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_VIEWONLY)
 
@@ -172,7 +172,7 @@ class TestPostPeripherals:
         assert e.value.status == 403
 
     async def test_anonymous_user_permissions(self, mock_api_request_maker, mock_peripheral1):
-        payload = dict(MOCK_PERIPHERAL2_DATA)
+        payload = MOCK_PERIPHERAL2_DATA.copy()
         payload.pop("static")
         request = mock_api_request_maker("POST", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_NONE)
 
@@ -229,8 +229,8 @@ class TestPutPeripherals:
             name=MOCK_PERIPHERAL3_DATA["name"],
             dummy_param=MOCK_PERIPHERAL3_DATA["dummy_param"],
         )
-        payload2 = dict(MOCK_PERIPHERAL2_DATA)
-        payload3 = dict(MOCK_PERIPHERAL3_DATA)
+        payload2 = MOCK_PERIPHERAL2_DATA.copy()
+        payload3 = MOCK_PERIPHERAL3_DATA.copy()
         payload2.pop("static")
         payload3.pop("static")
 

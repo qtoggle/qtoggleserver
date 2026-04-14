@@ -73,7 +73,7 @@ class JSONDriver(BaseDriver):
         records = []
 
         if isinstance(filt.get("id"), Id):  # look for specific record id
-            filt = dict(filt)
+            filt = filt.copy()
             id_ = filt.pop("id")
             record = coll.get(id_)
 
@@ -130,7 +130,7 @@ class JSONDriver(BaseDriver):
         modified_count = 0
 
         if isinstance(filt.get("id"), Id):
-            filt = dict(filt)
+            filt = filt.copy()
             id_ = filt.pop("id")
 
             record = coll.get(id_)
@@ -157,7 +157,7 @@ class JSONDriver(BaseDriver):
         if coll.get(id_) is None:
             return False  # no record found, no replacing
 
-        record = dict(record)
+        record = record.copy()
 
         # Never change record id with replace
         record["id"] = id_
@@ -172,7 +172,7 @@ class JSONDriver(BaseDriver):
         removed_count = 0
 
         if isinstance(filt.get("id"), Id):
-            filt = dict(filt)
+            filt = filt.copy()
             id_ = filt.pop("id")
 
             record = coll.get(id_)

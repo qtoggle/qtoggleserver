@@ -127,7 +127,7 @@ class SlavePort(core_ports.BasePort):
             if slave_name not in self._cached_attrs:
                 break
 
-            attrdefs[master_name] = dict(self._DEVICE_EXPRESSION_ATTRDEF)
+            attrdefs[master_name] = self._DEVICE_EXPRESSION_ATTRDEF.copy()
 
         # device_*history_interval
         for i in range(1, 10):
@@ -136,7 +136,7 @@ class SlavePort(core_ports.BasePort):
             if slave_name not in self._cached_attrs:
                 break
 
-            attrdefs[master_name] = dict(self._DEVICE_HISTORY_INTERVAL_ATTRDEF)
+            attrdefs[master_name] = self._DEVICE_HISTORY_INTERVAL_ATTRDEF.copy()
 
         # device_*history_retention
         for i in range(1, 10):
@@ -145,12 +145,12 @@ class SlavePort(core_ports.BasePort):
             if slave_name not in self._cached_attrs:
                 break
 
-            attrdefs[master_name] = dict(self._DEVICE_HISTORY_RETENTION_ATTRDEF)
+            attrdefs[master_name] = self._DEVICE_HISTORY_RETENTION_ATTRDEF.copy()
 
         # Various master-specific standard attributes
-        attrdefs["last_sync"] = dict(self._LAST_SYNC_ATTRDEF)
-        attrdefs["expires"] = dict(self._EXPIRES_ATTRDEF)
-        attrdefs["provisioning"] = dict(self._PROVISIONING_ATTRDEF)
+        attrdefs["last_sync"] = self._LAST_SYNC_ATTRDEF.copy()
+        attrdefs["expires"] = self._EXPIRES_ATTRDEF.copy()
+        attrdefs["provisioning"] = self._PROVISIONING_ATTRDEF.copy()
 
         return attrdefs
 
@@ -210,10 +210,10 @@ class SlavePort(core_ports.BasePort):
         return self._cached_attrs.get(name)
 
     def get_cached_attrs(self) -> Attributes:
-        return dict(self._cached_attrs)
+        return self._cached_attrs.copy()
 
     def update_cached_attrs(self, attrs: Attributes) -> None:
-        self._cached_attrs = dict(attrs)
+        self._cached_attrs = attrs.copy()
 
         # Value can be found among attrs, but we don't want it as attribute
         if "value" in attrs:

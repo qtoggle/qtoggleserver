@@ -268,7 +268,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def get_attrdefs(self) -> AttributeDefinitions:
         if self._standard_attrdefs_cache is None:
-            self._standard_attrdefs_cache = dict(await self.get_standard_attrdefs())
+            self._standard_attrdefs_cache = (await self.get_standard_attrdefs()).copy()
             for name, attrdef in list(self._standard_attrdefs_cache.items()):
                 enabled = attrdef.get("enabled", True)
                 if callable(enabled):
@@ -279,7 +279,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     self._standard_attrdefs_cache.pop(name)
 
         if self._additional_attrdefs_cache is None:
-            self._additional_attrdefs_cache = dict(await self.get_additional_attrdefs())
+            self._additional_attrdefs_cache = (await self.get_additional_attrdefs()).copy()
             for name, attrdef in list(self._additional_attrdefs_cache.items()):
                 enabled = attrdef.get("enabled", True)
                 if callable(enabled):
@@ -313,7 +313,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def get_attrs(self) -> Attributes:
         if self._get_attrs_cache is not None:
-            return dict(self._get_attrs_cache)
+            return self._get_attrs_cache.copy()
 
         self._get_attrs_cache = {}
         for name in await self.get_attrdefs():
@@ -323,7 +323,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             self._get_attrs_cache[name] = v
 
-        return self._get_attrs_cache
+        return self._get_attrs_cache.copy()
 
     def invalidate_attrs(self) -> None:
         self._attrs_cache = {}
@@ -849,7 +849,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def to_json(self) -> GenericJSONDict:
         attrs: GenericJSONDict = await self.get_attrs()
-        attrs = dict(attrs)
 
         if self._enabled:
             attrs["value"] = self._last_read_value[0] if self._last_read_value else None
@@ -1113,7 +1112,7 @@ async def load(port_args: list[dict[str, Any]], trigger_add: bool = True) -> lis
 
     # Create ports
     for ps in port_args:
-        ps = dict(ps)
+        ps = ps.copy()
         driver = ps.pop("driver", None)
         if not driver:
             raise PortLoadError("Missing port driver")

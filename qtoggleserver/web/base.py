@@ -162,7 +162,7 @@ class APIHandler(BaseHandler):
             await self._handle_api_call_exception(func, kwargs, e)
 
     async def _handle_api_call_exception(self, func: Callable, kwargs: dict, error: Exception) -> None:
-        kwargs = dict(kwargs)
+        kwargs = kwargs.copy()
         params = kwargs.pop("params", None)
         args = json_utils.dumps(kwargs)
         body = params and json_utils.dumps(params) or "{}"
