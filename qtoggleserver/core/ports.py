@@ -231,6 +231,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         # Cache attribute definitions
         self._standard_attrdefs_cache: AttributeDefinitions | None = None
         self._additional_attrdefs_cache: AttributeDefinitions | None = None
+        self._to_json_attrdefs_cache: AttributeDefinitions | None = None
 
         self._schema: GenericJSONDict | None = None
         self._value_schema: GenericJSONDict | None = None
@@ -301,6 +302,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.invalidate_attrs()
         self._standard_attrdefs_cache = None
         self._additional_attrdefs_cache = None
+        self._to_json_attrdefs_cache = None
         self._schema = None
 
     async def get_non_modifiable_attrs(self) -> set[str]:
@@ -857,15 +859,17 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             attrs["value"] = None
             attrs["pending_value"] = None
 
-        attrdefs: AttributeDefinitions = copy.deepcopy(await self.get_additional_attrdefs())
-        for attrdef in attrdefs.values():
-            # Remove unwanted fields from attribute definition
-            for name in list(attrdef):
-                if name.startswith("_"):
-                    attrdef.pop(name)
-            attrdef.pop("pattern", None)
+        if self._to_json_attrdefs_cache is None:
+            attrdefs: AttributeDefinitions = copy.deepcopy(await self.get_additional_attrdefs())
+            for attrdef in attrdefs.values():
+                # Remove unwanted fields from attribute definition
+                for name in list(attrdef):
+                    if name.startswith("_"):
+                        attrdef.pop(name)
+                attrdef.pop("pattern", None)
+            self._to_json_attrdefs_cache = attrdefs
 
-        attrs["definitions"] = attrdefs
+        attrs["definitions"] = self._to_json_attrdefs_cache
 
         return attrs
 

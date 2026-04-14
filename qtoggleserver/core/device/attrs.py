@@ -46,7 +46,7 @@ viewonly_password_hash: str | None = None
 
 _schema: GenericJSONDict | None = None
 _attrdefs_cache: AttributeDefinitions | None = None
-_filtered_attrdefs_cache: AttributeDefinitions | None = None
+_to_json_attrdefs_cache: AttributeDefinitions | None = None
 _attrs_watch_task: asyncio.Task | None = None
 _attrs_cache: Attributes | None = None
 
@@ -832,17 +832,17 @@ def invalidate_attrs() -> None:
 
 
 def invalidate_attrdefs() -> None:
-    global _filtered_attrdefs_cache
+    global _to_json_attrdefs_cache
     global _attrdefs_cache
 
-    _filtered_attrdefs_cache = None
+    _to_json_attrdefs_cache = None
     _attrdefs_cache = None
 
 
 async def to_json() -> GenericJSONDict:
-    global _filtered_attrdefs_cache
+    global _to_json_attrdefs_cache
 
-    if _filtered_attrdefs_cache is None:
+    if _to_json_attrdefs_cache is None:
         attrdefs: AttributeDefinitions = copy.deepcopy(get_attrdefs())
         filtered_attrdefs: AttributeDefinitions = {}
         for attr_name, attrdef in attrdefs.items():
@@ -864,10 +864,10 @@ async def to_json() -> GenericJSONDict:
 
             filtered_attrdefs[attr_name] = attrdef
 
-        _filtered_attrdefs_cache = filtered_attrdefs
+        _to_json_attrdefs_cache = filtered_attrdefs
 
     result: dict[str, Any] = await get_attrs()
-    result["definitions"] = _filtered_attrdefs_cache
+    result["definitions"] = _to_json_attrdefs_cache
 
     return result
 

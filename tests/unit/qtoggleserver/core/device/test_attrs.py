@@ -842,7 +842,7 @@ class TestToJSON:
     async def test(self, mocker):
         """Should return a dictionary with all attribute values along with their definitions, for non-standard ones."""
 
-        mocker.patch.object(device_attrs, "_filtered_attrdefs_cache", None)
+        mocker.patch.object(device_attrs, "_to_json_attrdefs_cache", None)
         mocker.patch.object(
             device_attrs,
             "get_attrdefs",
@@ -904,7 +904,7 @@ class TestToJSON:
     async def test_filtered_attrdefs_cached(self, mocker):
         """Should compute filtered attrdefs only once; subsequent calls reuse the cached object."""
 
-        mocker.patch.object(device_attrs, "_filtered_attrdefs_cache", None)
+        mocker.patch.object(device_attrs, "_to_json_attrdefs_cache", None)
         get_attrdefs_mock = mocker.patch.object(
             device_attrs,
             "get_attrdefs",
