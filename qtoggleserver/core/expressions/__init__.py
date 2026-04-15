@@ -50,12 +50,9 @@ TIME_JUMP_THRESHOLD = 86_400_000
 
 
 def parse(self_port_id: str | None, sexpression: str, role: Role, pos: int = 1) -> Expression:
-    while sexpression and sexpression[0].isspace():
-        sexpression = sexpression[1:]
-        pos += 1
-
-    while sexpression and sexpression[-1].isspace():
-        sexpression = sexpression[:-1]
+    stripped = sexpression.lstrip()
+    pos += len(sexpression) - len(stripped)
+    sexpression = stripped.rstrip()
 
     if sexpression and sexpression[0] in ("$", "@"):
         return PortExpression.parse(self_port_id, sexpression, role, pos)
