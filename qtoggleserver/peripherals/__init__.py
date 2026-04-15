@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from collections.abc import ValuesView
 from typing import Any
 
 from qtoggleserver import persist
@@ -20,8 +21,8 @@ logger = logging.getLogger(__name__)
 _registered_peripherals: dict[str, Peripheral] = {}
 
 
-def get_all() -> list[Peripheral]:
-    return list(_registered_peripherals.values())
+def get_all() -> ValuesView[Peripheral]:
+    return _registered_peripherals.values()
 
 
 def get(peripheral_id: str) -> Peripheral | None:
@@ -29,7 +30,7 @@ def get(peripheral_id: str) -> Peripheral | None:
 
 
 async def add(peripheral_params: dict[str, Any], static: bool = False) -> Peripheral:
-    params = dict(peripheral_params)
+    params = peripheral_params.copy()
     class_path = params.pop("driver")
     params.pop("static", None)
 
@@ -48,7 +49,7 @@ async def add(peripheral_params: dict[str, Any], static: bool = False) -> Periph
     _registered_peripherals[p.get_id()] = p
 
     if not static:
-        peripheral_params = dict(peripheral_params)
+        peripheral_params = peripheral_params.copy()
         peripheral_params.pop("static", None)
         await persist.replace("peripherals", p.get_id(), peripheral_params)
 

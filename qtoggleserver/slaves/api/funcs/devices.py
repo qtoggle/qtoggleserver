@@ -33,7 +33,7 @@ _LONG_TIMEOUT_API_CALLS = [
 
 
 async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
-    properties = dict(properties)  # work on copy, don't mess up incoming argument
+    properties = properties.copy()  # work on copy, don't mess up incoming argument
 
     scheme = properties.pop("scheme")
     host = properties.pop("host")
@@ -154,10 +154,10 @@ async def put_slave_devices(request: core_api.APIRequest, params: GenericJSONLis
 
     try:
         # Remove all slave devices
-        for slave in slaves_devices.get_all():
+        for slave in list(slaves_devices.get_all()):
             await slaves_devices.remove(slave)
 
-        add_device_schema: GenericJSONDict = dict(api_schema.POST_SLAVE_DEVICES)
+        add_device_schema: GenericJSONDict = api_schema.POST_SLAVE_DEVICES.copy()
         add_device_schema["additionalProperties"] = True
 
         # Validate supplied slave properties

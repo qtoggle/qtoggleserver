@@ -8,6 +8,7 @@ import re
 import time
 import types
 
+from collections.abc import ValuesView
 from typing import Any
 
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
@@ -184,7 +185,7 @@ class Slave(logging_utils.LoggableMixin):
         return self._cached_attrs.get(name)
 
     def get_cached_attrs(self) -> Attributes:
-        return self._cached_attrs
+        return self._cached_attrs.copy()
 
     async def update_cached_attrs(self, attrs: Attributes, partial: bool = False) -> None:
         # If the name has changed remove the device and re-add the device from scratch
@@ -397,7 +398,7 @@ class Slave(logging_utils.LoggableMixin):
             "last_sync": self._last_sync,
             "online": self._online,
             "provisioning": provisioning,
-            "attrs": self._cached_attrs,
+            "attrs": self.get_cached_attrs(),
         }
 
     def prepare_for_save(self) -> GenericJSONDict:
@@ -412,10 +413,10 @@ class Slave(logging_utils.LoggableMixin):
             "poll_interval": self._poll_interval,
             "listen_enabled": self._listen_enabled,
             "last_sync": self._last_sync,
-            "attrs": self._cached_attrs,
-            "webhooks": self._cached_webhooks,
-            "reverse": self._cached_reverse,
-            "provisioning_attrs": list(self._provisioning_attrs),
+            "attrs": self._cached_attrs.copy(),
+            "webhooks": self._cached_webhooks.copy(),
+            "reverse": self._cached_reverse.copy(),
+            "provisioning_attrs": list(sorted(self._provisioning_attrs)),
             "provisioning_webhooks": self._provisioning_webhooks,
             "provisioning_reverse": self._provisioning_reverse,
         }
@@ -1160,7 +1161,7 @@ class Slave(logging_utils.LoggableMixin):
         provisioning_attrs = self.get_provisioning_attrs()
 
         # We're working on a copy, just to be sure we can safely pop stuff from it
-        attrs = dict(attrs)
+        attrs = attrs.copy()
 
         for name in attrs:
             if name in provisioning_attrs:
@@ -1484,7 +1485,7 @@ class Slave(logging_utils.LoggableMixin):
                 field = error.params.get("field", "")
                 m = _INVALID_EXPRESSION_FIELD_RE.match(field) or _INVALID_HISTORY_FIELD_RE.match(field)
                 if m:
-                    params = dict(error.params)
+                    params = error.params.copy()
                     params["field"] = "device_" + m.group(1)
                     return core_responses.HTTPError(error.status, error.code, **params)
 
@@ -1618,8 +1619,8 @@ async def _handle_rename(slave: Slave, new_name: str) -> None:
         await slave.wait_online(timeout=settings.slaves.long_timeout)
 
 
-def get_all() -> list[Slave]:
-    return list(_slaves_by_name.values())
+def get_all() -> ValuesView[Slave]:
+    return _slaves_by_name.values()
 
 
 def _slave_ready(slave: Slave) -> bool:

@@ -64,7 +64,7 @@ async def put_peripherals(request: core_api.APIRequest, params: GenericJSONList)
 
     logger.debug("restoring peripherals")
 
-    for p in peripherals.get_all():
+    for p in list(peripherals.get_all()):
         if p.is_static():
             continue
         await p.cleanup_ports(persisted_data=True)

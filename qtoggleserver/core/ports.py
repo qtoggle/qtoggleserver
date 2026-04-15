@@ -9,7 +9,7 @@ import logging
 import time
 
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, ValuesView
 from typing import Any
 
 from qtoggleserver import persist
@@ -18,6 +18,7 @@ from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import history as core_history
 from qtoggleserver.core import sequences as core_sequences
+from qtoggleserver.core.expressions import EvalContext
 from qtoggleserver.core.expressions import exceptions as expressions_exceptions
 from qtoggleserver.core.typing import (
     Attribute,
@@ -31,6 +32,7 @@ from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
+from qtoggleserver.utils.debounced import Debounced
 
 
 TYPE_BOOLEAN = "boolean"
@@ -223,10 +225,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         # Attributes cache is used to prevent computing an attribute value more than once per core iteration
         self._attrs_cache: Attributes = {}
+        # `_get_attrs_cache` simply caches the `get_attrs()` result
+        self._get_attrs_cache: Attributes | None = None
 
         # Cache attribute definitions
         self._standard_attrdefs_cache: AttributeDefinitions | None = None
         self._additional_attrdefs_cache: AttributeDefinitions | None = None
+        self._to_json_attrdefs_cache: AttributeDefinitions | None = None
 
         self._schema: GenericJSONDict | None = None
         self._value_schema: GenericJSONDict | None = None
@@ -251,6 +256,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._pending_save: bool = False
 
         self._loaded: bool = False
+        self._after_set_attr_debounced = Debounced(self._after_set_attr)
 
     def __str__(self) -> str:
         return f"port {self._id}"
@@ -263,7 +269,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def get_attrdefs(self) -> AttributeDefinitions:
         if self._standard_attrdefs_cache is None:
-            self._standard_attrdefs_cache = dict(await self.get_standard_attrdefs())
+            self._standard_attrdefs_cache = (await self.get_standard_attrdefs()).copy()
             for name, attrdef in list(self._standard_attrdefs_cache.items()):
                 enabled = attrdef.get("enabled", True)
                 if callable(enabled):
@@ -274,7 +280,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     self._standard_attrdefs_cache.pop(name)
 
         if self._additional_attrdefs_cache is None:
-            self._additional_attrdefs_cache = dict(await self.get_additional_attrdefs())
+            self._additional_attrdefs_cache = (await self.get_additional_attrdefs()).copy()
             for name, attrdef in list(self._additional_attrdefs_cache.items()):
                 enabled = attrdef.get("enabled", True)
                 if callable(enabled):
@@ -293,9 +299,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return self.ADDITIONAL_ATTRDEFS
 
     def invalidate_attrdefs(self) -> None:
-        self._attrs_cache = {}
+        self.invalidate_attrs()
         self._standard_attrdefs_cache = None
         self._additional_attrdefs_cache = None
+        self._to_json_attrdefs_cache = None
         self._schema = None
 
     async def get_non_modifiable_attrs(self) -> set[str]:
@@ -307,26 +314,29 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return {n for (n, v) in attrdefs.items() if v.get("modifiable")}
 
     async def get_attrs(self) -> Attributes:
-        d = {}
+        if self._get_attrs_cache is not None:
+            return self._get_attrs_cache.copy()
 
+        self._get_attrs_cache = {}
         for name in await self.get_attrdefs():
             v = await self.get_attr(name)
             if v is None:
                 continue
 
-            d[name] = v
+            self._get_attrs_cache[name] = v
 
-        return d
+        return self._get_attrs_cache.copy()
 
     def invalidate_attrs(self) -> None:
         self._attrs_cache = {}
+        self._get_attrs_cache = None
 
     async def get_attr(self, name: str) -> Attribute | None:
         value = self._attrs_cache.get(name)
         if value is not None:
             return value
 
-        method = getattr(self, "attr_get_" + name, getattr(self, "attr_is_" + name, None))
+        method = getattr(self, "attr_get_" + name, None) or getattr(self, "attr_is_" + name, None)
         if method:
             value = method()
             if inspect.isawaitable(value):
@@ -345,7 +355,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._attrs_cache[name] = value
             return value
 
-        method = getattr(self, "attr_get_default_" + name, getattr(self, "attr_is_default_" + name, None))
+        method = getattr(self, "attr_get_default_" + name, None) or getattr(self, "attr_is_default_" + name, None)
         if method:
             value = method()
             if inspect.isawaitable(value):
@@ -384,16 +394,17 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.invalidate_attrdefs()
 
         if self.is_loaded():
-            await main.update()  # TODO: don't update immediately, batch multiple attribute sets
+            self._after_set_attr_debounced.call(name, value)
 
-            # Skip an IO loop iteration, allowing setting multiple attributes before triggering a port-update
-            await asyncio.sleep(0)
-            await self.trigger_update()  # TODO: don't trigger immediately, batch multiple attribute sets
-
+    async def _after_set_attr(self, *args) -> None:
+        await main.update()
+        await self.trigger_update()
+        for name, value in args:
             await self.handle_attr_change(name, value)
 
     def invalidate_attr(self, name: str) -> None:
         self._attrs_cache.pop(name, None)
+        self._get_attrs_cache = None
 
     async def handle_attr_change(self, name: str, value: Attribute) -> None:
         method_name = f"handle_{name}"
@@ -666,7 +677,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 raise
 
         if self._transform_read:
-            context = self._make_eval_context(port_values={self.get_id(): value})
+            context = EvalContext(port_values={self.get_id(): value})
             try:
                 value = self.adapt_value_type(await self._transform_read.eval(context))
             except expressions_exceptions.ValueUnavailable:
@@ -711,7 +722,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         exceptions from caller, but make sure to log them."""
 
         port_values = {p.get_id(): p.get_last_value() for p in get_all() if p.is_enabled()}
-        context = self._make_eval_context(port_values, now_ms)
+        # TODO: eval attrs
+        context = EvalContext(port_values, now_ms)
         expression = self.get_expression()
 
         try:
@@ -754,41 +766,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         except asyncio.CancelledError:
             self.debug("eval task cancelled")
 
-    async def _eval_and_write(self, context: core_expressions.EvalContext) -> None:
-        expression = self.get_expression()
-
-        try:
-            value = await expression.eval(context)
-        except expressions_exceptions.ExpressionEvalException as e:
-            self.debug('evaluation did not complete for expression "%s": %s', expression, e)
-            return
-        except Exception as e:
-            self.error('failed to evaluate expression "%s": %s', expression, e, exc_info=True)
-            return
-
-        adapted_value = self.adapt_value_type(value)
-        if adapted_value is not None:
-            self.debug(
-                'expression "%s" evaluated to %s (adapted to %s)',
-                expression,
-                json_utils.dumps(value),
-                json_utils.dumps(adapted_value),
-            )
-
-            # Only write value to port if it differs from the last written value
-            if not self._last_written_value or self._last_written_value[0] != adapted_value:
-                try:
-                    await self.transform_and_write_value(adapted_value)
-                except Exception as e:
-                    self.error("failed to write value: %s", e)
-
     async def transform_and_write_value(self, value: NullablePortValue) -> None:
         """Apply write transform (if any) and write the value to the port."""
 
         value_str = json_utils.dumps(value)
 
         if self._transform_write:
-            context = self._make_eval_context(port_values={self.get_id(): value})
+            context = EvalContext(port_values={self.get_id(): value})
             try:
                 value = self.adapt_value_type(await self._transform_write.eval(context))
             except expressions_exceptions.ValueUnavailable:
@@ -802,12 +786,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         except Exception:
             self.error("failed to write value %s", value_str, exc_info=True)
             raise
-
-    def _make_eval_context(
-        self, port_values: dict[str, NullablePortValue], now_ms: int = 0
-    ) -> core_expressions.EvalContext:
-        now_ms = now_ms or int(time.time() * 1000)
-        return core_expressions.EvalContext(port_values, now_ms)
 
     def get_last_value(self) -> NullablePortValue:
         """Returns the most recent value known to the port, preferring pending and last written values over last read
@@ -873,7 +851,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def to_json(self) -> GenericJSONDict:
         attrs: GenericJSONDict = await self.get_attrs()
-        attrs = dict(attrs)
 
         if self._enabled:
             attrs["value"] = self._last_read_value[0] if self._last_read_value else None
@@ -882,15 +859,17 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             attrs["value"] = None
             attrs["pending_value"] = None
 
-        attrdefs: AttributeDefinitions = copy.deepcopy(await self.get_additional_attrdefs())
-        for attrdef in attrdefs.values():
-            # Remove unwanted fields from attribute definition
-            for name in list(attrdef):
-                if name.startswith("_"):
-                    attrdef.pop(name)
-            attrdef.pop("pattern", None)
+        if self._to_json_attrdefs_cache is None:
+            attrdefs: AttributeDefinitions = copy.deepcopy(await self.get_additional_attrdefs())
+            for attrdef in attrdefs.values():
+                # Remove unwanted fields from attribute definition
+                for name in list(attrdef):
+                    if name.startswith("_"):
+                        attrdef.pop(name)
+                attrdef.pop("pattern", None)
+            self._to_json_attrdefs_cache = attrdefs
 
-        attrs["definitions"] = attrdefs
+        attrs["definitions"] = self._to_json_attrdefs_cache
 
         return attrs
 
@@ -961,9 +940,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if self._transform_write:
                     try:
                         value = self.adapt_value_type(
-                            await self._transform_write.eval(
-                                self._make_eval_context(port_values={self.get_id(): value})
-                            )
+                            await self._transform_write.eval(EvalContext(port_values={self.get_id(): value}))
                         )
                     except expressions_exceptions.ValueUnavailable:
                         value = None
@@ -1029,6 +1006,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._write_task.cancel()
             await self._write_task
             self._write_task = None
+
+        await self._after_set_attr_debounced.stop()
 
     def is_loaded(self) -> bool:
         return self._loaded
@@ -1137,7 +1116,7 @@ async def load(port_args: list[dict[str, Any]], trigger_add: bool = True) -> lis
 
     # Create ports
     for ps in port_args:
-        ps = dict(ps)
+        ps = ps.copy()
         driver = ps.pop("driver", None)
         if not driver:
             raise PortLoadError("Missing port driver")
@@ -1219,14 +1198,14 @@ def get(port_id: str) -> BasePort | None:
     return _ports_by_id.get(port_id)
 
 
-def get_all() -> list[BasePort]:
-    return list(_ports_by_id.values())
+def get_all() -> ValuesView[BasePort]:
+    return _ports_by_id.values()
 
 
 async def save_loop() -> None:
     while True:
         try:
-            for port in get_all():
+            for port in list(get_all()):
                 if not port.is_pending_save():
                     continue
 

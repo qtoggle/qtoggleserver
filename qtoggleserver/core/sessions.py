@@ -4,6 +4,8 @@ import asyncio
 import logging
 import time
 
+from collections import deque
+
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.utils import logging as logging_utils
@@ -26,7 +28,7 @@ class Session(logging_utils.LoggableMixin):
         self.timeout: int = 0
         self.access_level: int = 0
         self.future: asyncio.Future | None = None
-        self.queue: list[core_events.Event] = []
+        self.queue: deque[core_events.Event] = deque()
 
     def reset_and_wait(self, timeout: int, access_level: int) -> asyncio.Future:
         self.debug("resetting (timeout=%s, access_level=%s)", timeout, access_level)
@@ -37,7 +39,7 @@ class Session(logging_utils.LoggableMixin):
 
         future = asyncio.get_running_loop().create_future()
 
-        self.accessed = time.time()
+        self.accessed = int(time.time())
         self.timeout = timeout
         self.access_level = access_level
         self.future = future
@@ -56,7 +58,7 @@ class Session(logging_utils.LoggableMixin):
 
     def respond(self) -> None:
         events = list(self.queue)
-        self.queue = []
+        self.queue = deque()
         if not self.future:
             return
 
@@ -65,15 +67,12 @@ class Session(logging_utils.LoggableMixin):
         self.future = None
 
     def push(self, event: core_events.Event) -> None:
-        # Deduplicate events
-        while True:
-            duplicates = [e for e in self.queue if event.is_duplicate(e)]
-            if not duplicates:
-                break
-
-            for d in duplicates:
-                self.queue.remove(d)
-                self.debug("dropping duplicate event %s", d)
+        # Deduplicate events in a single pass, replacing the queue with a filtered copy
+        filtered = deque(e for e in self.queue if not event.is_duplicate(e))
+        dropped = len(self.queue) - len(filtered)
+        if dropped:
+            self.debug("dropped %d duplicate event(s) %s", dropped, event)
+        self.queue = filtered
 
         # Ensure max queue size
         while len(self.queue) >= settings.core.event_queue_size:
@@ -82,7 +81,7 @@ class Session(logging_utils.LoggableMixin):
             self.debug("queue full, dropping oldest event")
             self.queue.pop()
 
-        self.queue.insert(0, event)
+        self.queue.appendleft(event)
 
     def __str__(self) -> str:
         return f"session {self.id}"

@@ -1,3 +1,5 @@
+import asyncio
+
 from qtoggleserver.core.expressions.exceptions import ValueUnavailable
 
 
@@ -43,7 +45,7 @@ class TestPortEvalAndPushWrite:
         eval context. Should then evaluate the expression and push the result to the write queue."""
 
         mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1, mock_num_port2])
-        mocker.patch.object(mock_num_port1, "_make_eval_context", return_value="dummy_eval_context")
+        mock_eval_context = mocker.patch("qtoggleserver.core.ports.EvalContext", return_value="dummy_eval_context")
         mocker.patch.object(mock_num_port1, "get_last_value", return_value=42)
         mocker.patch.object(mock_num_port2, "get_last_value", return_value=84)
 
@@ -56,7 +58,7 @@ class TestPortEvalAndPushWrite:
 
         await mock_num_port1.eval_and_push_write(1234)
 
-        mock_num_port1._make_eval_context.assert_called_once_with({"nid1": 42, "nid2": 84}, 1234)
+        mock_eval_context.assert_called_once_with({"nid1": 42, "nid2": 84}, 1234)
         mock_num_port1.adapt_value_type.assert_called_once_with(mock_expression.eval.return_value)
         mock_num_port1._write_queue.append.assert_called_once_with(100)
         mock_expression.eval.assert_called_once_with("dummy_eval_context")
@@ -301,7 +303,6 @@ class TestPortSetAttr:
         mock_num_port1._my_attribute = "value1"
         mocker.patch.object(mock_num_port1, "invalidate_attrdefs")
         await mock_num_port1.set_attr("my_attribute", "value2")
-        assert mock_num_port1._attrs_cache.get("my_attribute") != "value1"
         mock_num_port1.invalidate_attrdefs.assert_called_once()
 
     async def test_call_handle_attr_change(self, mock_num_port1, mocker):
@@ -310,4 +311,82 @@ class TestPortSetAttr:
         mock_num_port1._my_attribute = "value1"
         mocker.patch.object(mock_num_port1, "handle_attr_change")
         await mock_num_port1.set_attr("my_attribute", "value2")
+        await asyncio.sleep(0.1)
         mock_num_port1.handle_attr_change.assert_called_once_with("my_attribute", "value2")
+
+
+class TestPortToJSON:
+    async def test_definitions_filtered(self, mock_num_port1, mocker):
+        """Should strip private (`_`-prefixed) fields and `pattern` from additional attrdefs in the result."""
+
+        mocker.patch.object(
+            mock_num_port1,
+            "get_additional_attrdefs",
+            return_value={
+                "extra_attr": {
+                    "type": "string",
+                    "modifiable": True,
+                    "pattern": "^.*$",
+                    "_internal": "should_be_removed",
+                },
+            },
+        )
+        mock_num_port1._to_json_attrdefs_cache = None
+
+        result = await mock_num_port1.to_json()
+
+        assert "definitions" in result
+        assert result["definitions"] == {
+            "extra_attr": {
+                "type": "string",
+                "modifiable": True,
+            },
+        }
+
+    async def test_additional_attrdefs_cached(self, mock_num_port1, mocker):
+        """Should compute filtered additional attrdefs only once; subsequent calls reuse the cached object."""
+
+        mocker.patch.object(
+            mock_num_port1,
+            "get_additional_attrdefs",
+            return_value={
+                "extra_attr": {
+                    "type": "string",
+                    "modifiable": True,
+                    "pattern": "^.*$",
+                },
+            },
+        )
+        mock_num_port1._to_json_attrdefs_cache = None
+
+        result1 = await mock_num_port1.to_json()
+        result2 = await mock_num_port1.to_json()
+
+        assert result1["definitions"] is result2["definitions"]
+        mock_num_port1.get_additional_attrdefs.assert_called_once()
+
+    async def test_invalidate_attrdefs_clears_cache(self, mock_num_port1, mocker):
+        """Should recompute additional attrdefs after `invalidate_attrdefs()` is called."""
+
+        call_count = 0
+        attrdefs_versions = [
+            {"extra_attr": {"type": "string", "modifiable": True}},
+            {"extra_attr": {"type": "number", "modifiable": False}},
+        ]
+
+        async def get_additional_attrdefs():
+            nonlocal call_count
+            r = attrdefs_versions[min(call_count, 1)]
+            call_count += 1
+            return r
+
+        mocker.patch.object(mock_num_port1, "get_additional_attrdefs", side_effect=get_additional_attrdefs)
+        mock_num_port1._to_json_attrdefs_cache = None
+
+        result1 = await mock_num_port1.to_json()
+        mock_num_port1.invalidate_attrdefs()
+        result2 = await mock_num_port1.to_json()
+
+        assert result1["definitions"]["extra_attr"]["type"] == "string"
+        assert result2["definitions"]["extra_attr"]["type"] == "number"
+        assert result1["definitions"] is not result2["definitions"]

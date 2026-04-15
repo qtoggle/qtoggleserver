@@ -14,7 +14,7 @@ class TestUpdate:
         await update()
         spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
         await update()
-        spy_handle_value_changes.assert_called_once_with({DEP_ASAP}, {}, int(time.time() * 1000))
+        spy_handle_value_changes.assert_called_once_with([mock_num_port1], {DEP_ASAP}, {}, int(time.time() * 1000))
 
     async def test_change_time_second(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
         """Should call `handle_value_changes` with {DEP_ASAP, DEP_SECOND} when second changes."""
@@ -25,7 +25,9 @@ class TestUpdate:
         freezer.move_to(dummy_utc_datetime + timedelta(seconds=1))
         spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
         await update()
-        spy_handle_value_changes.assert_called_once_with({DEP_ASAP, DEP_SECOND}, {}, int(time.time() * 1000))
+        spy_handle_value_changes.assert_called_once_with(
+            [mock_num_port1], {DEP_ASAP, DEP_SECOND}, {}, int(time.time() * 1000)
+        )
 
     async def test_change_time_minute(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
         """Should call `handle_value_changes` with {DEP_ASAP, DEP_SECOND, DEP_MINUTE} when minute changes."""
@@ -37,7 +39,7 @@ class TestUpdate:
         spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
         await update()
         spy_handle_value_changes.assert_called_once_with(
-            {DEP_ASAP, DEP_SECOND, DEP_MINUTE}, {}, int(time.time() * 1000)
+            [mock_num_port1], {DEP_ASAP, DEP_SECOND, DEP_MINUTE}, {}, int(time.time() * 1000)
         )
 
     async def test_change_time_hour(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
@@ -50,7 +52,7 @@ class TestUpdate:
         spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
         await update()
         spy_handle_value_changes.assert_called_once_with(
-            {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR}, {}, int(time.time() * 1000)
+            [mock_num_port1], {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR}, {}, int(time.time() * 1000)
         )
 
     async def test_change_time_day(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
@@ -64,7 +66,7 @@ class TestUpdate:
         spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
         await update()
         spy_handle_value_changes.assert_called_once_with(
-            {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY}, {}, int(time.time() * 1000)
+            [mock_num_port1], {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY}, {}, int(time.time() * 1000)
         )
 
     async def test_change_time_month(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
@@ -78,7 +80,10 @@ class TestUpdate:
         spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
         await update()
         spy_handle_value_changes.assert_called_once_with(
-            {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY, DEP_MONTH}, {}, int(time.time() * 1000)
+            [mock_num_port1],
+            {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY, DEP_MONTH},
+            {},
+            int(time.time() * 1000),
         )
 
     async def test_change_time_year(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
@@ -92,7 +97,10 @@ class TestUpdate:
         spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
         await update()
         spy_handle_value_changes.assert_called_once_with(
-            {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY, DEP_MONTH, DEP_YEAR}, {}, int(time.time() * 1000)
+            [mock_num_port1],
+            {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY, DEP_MONTH, DEP_YEAR},
+            {},
+            int(time.time() * 1000),
         )
 
 
@@ -104,7 +112,9 @@ class TestHandleValueChanges:
         mock_num_port1.set_expression("MUL($, 2)")
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
-        await handle_value_changes(changed_set={mock_num_port1}, value_pairs={mock_num_port1: (10, 20)}, now_ms=0)
+        await handle_value_changes(
+            [mock_num_port1], changed_set={mock_num_port1}, value_pairs={mock_num_port1: (10, 20)}, now_ms=0
+        )
         mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_own_port_value_trigger_eval(self, mocker, mock_num_port1):
@@ -114,7 +124,9 @@ class TestHandleValueChanges:
         mock_num_port1.set_expression("MUL($nid1, 2)")
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
-        await handle_value_changes(changed_set={mock_num_port1}, value_pairs={mock_num_port1: (10, 20)}, now_ms=0)
+        await handle_value_changes(
+            [mock_num_port1], changed_set={mock_num_port1}, value_pairs={mock_num_port1: (10, 20)}, now_ms=0
+        )
         mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_disabled_port_no_trigger_eval(self, mocker, mock_num_port1):
@@ -127,7 +139,7 @@ class TestHandleValueChanges:
         (mocker.patch.object(mock_num_port1, "eval_and_push_write"),)
         (mocker.patch.object(mock_num_port1, "is_enabled", return_value=False),)
 
-        await handle_value_changes(changed_set=set(), value_pairs={}, now_ms=0)
+        await handle_value_changes([mock_num_port1], changed_set=set(), value_pairs={}, now_ms=0)
         mock_num_port1.eval_and_push_write.assert_not_called()
 
     async def test_asap_trigger_eval(self, mocker, mock_num_port1):
@@ -137,7 +149,7 @@ class TestHandleValueChanges:
         mock_num_port1.set_expression("TIMEMS()")
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
-        await handle_value_changes(changed_set={DEP_ASAP}, value_pairs={}, now_ms=0)
+        await handle_value_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=0)
         mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_asap_eval_paused_no_trigger_eval(self, mocker, mock_num_port1):
@@ -149,7 +161,7 @@ class TestHandleValueChanges:
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         e.pause_asap_eval(1000)
-        await handle_value_changes(changed_set={DEP_ASAP}, value_pairs={}, now_ms=999)
+        await handle_value_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=999)
         mock_num_port1.eval_and_push_write.assert_not_called()
 
     async def test_asap_eval_not_paused_trigger_eval(self, mocker, mock_num_port1):
@@ -161,5 +173,5 @@ class TestHandleValueChanges:
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         e.pause_asap_eval(1000)
-        await handle_value_changes(changed_set={DEP_ASAP}, value_pairs={}, now_ms=1000)
+        await handle_value_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=1000)
         mock_num_port1.eval_and_push_write.assert_called_once()

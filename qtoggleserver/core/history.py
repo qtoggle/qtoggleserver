@@ -60,7 +60,7 @@ async def sampling_task() -> None:
                 continue  # don't record history unless we've got real date/time
 
             now_ms = int(time.time() * 1000)
-            for port in core_ports.get_all():
+            for port in list(core_ports.get_all()):
                 if not port.is_enabled():
                     continue
 
@@ -93,7 +93,7 @@ async def janitor_task() -> None:
                 continue
 
             now = int(time.time())
-            for port in core_ports.get_all():
+            for port in list(core_ports.get_all()):
                 history_retention = await port.get_history_retention()
                 if history_retention <= 0:
                     continue

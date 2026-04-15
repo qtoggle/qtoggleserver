@@ -55,7 +55,7 @@ class MongoDriver(BaseDriver):
                 fields["_id"] = 0
 
         if "id" in filt:
-            filt = dict(filt)
+            filt = filt.copy()
             filt["_id"] = self._id_to_db_rec(filt.pop("id"))
 
         db_filt = self._filt_to_db(filt)
@@ -72,7 +72,7 @@ class MongoDriver(BaseDriver):
         return self._query_gen_wrapper(q)
 
     async def insert(self, collection: str, record: Record) -> Id:
-        record = dict(record)
+        record = record.copy()
         if "id" in record:
             record["_id"] = self._id_to_db(record.pop("id"))
 
@@ -80,11 +80,11 @@ class MongoDriver(BaseDriver):
 
     async def update(self, collection: str, record_part: Record, filt: dict[str, Any]) -> int:
         if "id" in record_part:
-            record_part = dict(record_part)
+            record_part = record_part.copy()
             record_part["_id"] = self._id_to_db(record_part.pop("id"))
 
         if "id" in filt:
-            filt = dict(filt)
+            filt = filt.copy()
             filt["_id"] = self._id_to_db_rec(filt.pop("id"))
 
         db_filt = self._filt_to_db(filt)
@@ -92,7 +92,7 @@ class MongoDriver(BaseDriver):
         return self._db[collection].update_many(db_filt, {"$set": record_part}, upsert=False).modified_count
 
     async def replace(self, collection: str, id_: Id, record: Record) -> bool:
-        record = dict(record)
+        record = record.copy()
         id_ = self._id_to_db(id_)
         record["_id"] = id_
 
@@ -102,7 +102,7 @@ class MongoDriver(BaseDriver):
 
     async def remove(self, collection: str, filt: dict[str, Any]) -> int:
         if "id" in filt:
-            filt = dict(filt)
+            filt = filt.copy()
             filt["_id"] = self._id_to_db_rec(filt.pop("id"))
 
         db_filt = self._filt_to_db(filt)

@@ -163,7 +163,7 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
 
     try:
         # Remove all (local) virtual ports
-        for port in core_ports.get_all():
+        for port in list(core_ports.get_all()):
             if not isinstance(port, core_vports.VirtualPort):
                 continue
 
@@ -174,10 +174,10 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
         await core_ports.reset()
         if settings.slaves.enabled:
             await slaves.reset_ports()
-        for port in core_ports.get_all():
+        for port in list(core_ports.get_all()):
             await port.reset()
 
-        add_port_schema: GenericJSONDict = dict(core_api_schema.POST_PORTS)
+        add_port_schema: GenericJSONDict = core_api_schema.POST_PORTS.copy()
         add_port_schema["additionalProperties"] = True
 
         # Restore supplied attributes
