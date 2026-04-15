@@ -416,9 +416,10 @@ class TestPasswordAttrs:
         )
 
 
-def test_get_attrdefs_first_call(mocker):
-    """Should initialize attrdefs, calling callable fields, filtering out disabled attributes and returning the resulted
-    dictionary."""
+class TestGetAttrdefs:
+    def test_get_attrdefs_first_call(self, mocker):
+        """Should initialize attrdefs, calling callable fields, filtering out disabled attributes and returning the resulted
+        dictionary."""
 
         mocker.patch.object(device_attrs, "_attrdefs_cache", None)
         attrdefs = device_attrs.get_attrdefs()
