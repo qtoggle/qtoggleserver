@@ -14,9 +14,9 @@ class AvailableFunction(Function):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         try:
-            return await self.args[0].eval(context) is not None
+            return bool(await self.args[0].eval(context) is not None)
         except ValueUnavailable:
-            return False
+            return 0
 
 
 @function("DEFAULT")
@@ -154,9 +154,9 @@ class OnOffAutoFunction(Function):
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, auto = await self.eval_args(context)
         if value > 0:
-            return True
+            return 1
         elif value < 0:
-            return False
+            return 0
         else:
             return auto
 
