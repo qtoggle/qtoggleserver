@@ -12,18 +12,17 @@ class LiteralValue(Expression):
 
         self.value: CoreNullablePortValue = value
         self.sexpression: str = sexpression
+        self._coerced_value: EvalResult | None = value
+        if isinstance(value, bool):
+            self._coerced_value = int(value)
 
     def __str__(self) -> str:
         return self.sexpression
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        if self.value is None:
+        if self._coerced_value is None:
             raise ValueUnavailable
-
-        if isinstance(self.value, int):
-            return self.value
-        else:
-            return float(self.value)
+        return self._coerced_value
 
     @staticmethod
     def parse(self_port_id: str | None, sexpression: str, role: Role, pos: int) -> Expression:
