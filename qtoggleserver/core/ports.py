@@ -256,6 +256,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._pending_save: bool = False
 
         self._loaded: bool = False
+        self._removed: bool = False
         self._after_set_attr_debounced = Debounced(self._after_set_attr)
 
     def __str__(self) -> str:
@@ -879,7 +880,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         data = await persist.get(self.PERSIST_COLLECTION, self.get_id()) or {}
         await self.load_from_data(data)
 
-        self.set_loaded()
+        self._loaded = True
         self.initialize()
 
     async def reset(self) -> None:
@@ -1012,13 +1013,14 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def is_loaded(self) -> bool:
         return self._loaded
 
-    def set_loaded(self) -> None:
-        self._loaded = True
+    def is_removed(self) -> bool:
+        return self._removed
 
     async def remove(self, persisted_data: bool = True) -> None:
         await self.cleanup()
 
         self.debug("removing port")
+        self._removed = True
         _ports_by_id.pop(self._id, None)
 
         if persisted_data:

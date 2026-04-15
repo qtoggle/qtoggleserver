@@ -92,3 +92,32 @@ class TestPortRef:
         with pytest.raises(UnknownPortId) as exc_info:
             await e._eval(dummy_eval_context)
         assert exc_info.value.port_id == "inexistent"
+
+
+class TestGetPortCache:
+    def test_cache_populated_on_first_call(self, mock_num_port1):
+        """get_port() should populate the cache after the first lookup."""
+
+        e = PortValue("nid1", prefix="$", role=Role.VALUE)
+        assert e._cached_port is None
+        port = e.get_port()
+        assert port is mock_num_port1
+        assert e._cached_port is mock_num_port1
+
+    def test_cache_hit_on_second_call(self, mock_num_port1):
+        """get_port() called twice should return the same object without re-lookup."""
+
+        e = PortValue("nid1", prefix="$", role=Role.VALUE)
+        port1 = e.get_port()
+        port2 = e.get_port()
+        assert port1 is port2 is mock_num_port1
+
+    async def test_cache_invalidated_on_port_removal(self, mock_num_port1):
+        """get_port() should return None after the port is removed."""
+
+        e = PortValue("nid1", prefix="$", role=Role.VALUE)
+        assert e.get_port() is mock_num_port1
+
+        await mock_num_port1.remove(persisted_data=False)
+        assert mock_num_port1.is_removed()
+        assert e.get_port() is None
