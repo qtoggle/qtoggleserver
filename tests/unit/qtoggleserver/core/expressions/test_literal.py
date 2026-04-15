@@ -9,13 +9,16 @@ class TestLiteralValue:
         e = literalvalues.LiteralValue(42, "42", role=Role.VALUE)
         assert await e._eval(dummy_eval_context) == 42
 
-        e.value = 84.5
+        e = literalvalues.LiteralValue(84.5, "84.5", role=Role.VALUE)
         assert await e._eval(dummy_eval_context) == 84.5
 
-        e.value = False
-        assert await e._eval(dummy_eval_context) is False
+        e = literalvalues.LiteralValue(False, "false", role=Role.VALUE)
+        assert await e._eval(dummy_eval_context) == 0
 
-        e.value = None
+        e = literalvalues.LiteralValue(True, "true", role=Role.VALUE)
+        assert await e._eval(dummy_eval_context) == 1
+
+        e = literalvalues.LiteralValue(None, "unavailable", role=Role.VALUE)
         with pytest.raises(ValueUnavailable):
             await e._eval(dummy_eval_context)
 
