@@ -2,6 +2,8 @@ import importlib
 import inspect
 import traceback
 
+from asyncio import CancelledError
+
 from qtoggleserver import slaves, system
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
@@ -41,7 +43,11 @@ async def get_listen(request: core_api.APIRequest) -> GenericJSONList:
         timeout = 60  # default
 
     session = core_sessions.get(session_id)
-    events = await session.reset_and_wait(timeout, request.access_level)
+    try:
+        events = await session.reset_and_wait(timeout, request.access_level)
+    except CancelledError:
+        session.debug("waiting cancelled")
+        return []
 
     return [await e.to_json() for e in events]
 
