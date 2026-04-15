@@ -1205,7 +1205,7 @@ def get_all() -> ValuesView[BasePort]:
 async def save_loop() -> None:
     while True:
         try:
-            for port in get_all():
+            for port in list(get_all()):
                 if not port.is_pending_save():
                     continue
 
