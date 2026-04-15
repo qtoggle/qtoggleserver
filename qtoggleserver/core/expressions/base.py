@@ -77,8 +77,5 @@ class EvalContext:
         self.now_ms: int = now_ms
         self.timestamp: int = now_ms // 1000
 
-    def __str__(self) -> str:
-        return f"EvalContext(now_ms={self.now_ms}, port_values={self.port_values})"
-
 
 EvalResult: TypeAlias = int | float | str

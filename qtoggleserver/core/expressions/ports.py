@@ -27,14 +27,9 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
 
     @staticmethod
     def parse(self_port_id: str | None, sexpression: str, role: Role, pos: int) -> Expression:
-        # Remove leading whitespace
-        while sexpression and sexpression[0].isspace():
-            sexpression = sexpression[1:]
-            pos += 1
-
-        # Remove trailing whitespace
-        while sexpression and sexpression[-1].isspace():
-            sexpression = sexpression[:-1]
+        stripped = sexpression.lstrip()
+        pos += len(sexpression) - len(stripped)
+        sexpression = stripped.rstrip()
 
         prefix = sexpression[0]
         port_id = sexpression[1:]
