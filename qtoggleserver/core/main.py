@@ -47,7 +47,7 @@ _update_lock: asyncio.Lock | None = None
 
 
 async def update() -> None:
-    from . import ports, sessions
+    from . import sessions
 
     global _last_time
     global _last_minute
@@ -102,7 +102,8 @@ async def update() -> None:
                                 _last_year = now_dt.year
                                 changed_set.add(DEP_YEAR)
 
-        for port in ports.get_all():
+        all_ports = list(core_ports.get_all())
+        for port in all_ports:
             if not port.is_enabled():
                 continue
 
@@ -139,7 +140,7 @@ async def update() -> None:
                 changed_set.add(port)
                 value_pairs[port] = old_value, new_value
 
-        await handle_value_changes(changed_set, value_pairs, now_ms)
+        await handle_value_changes(all_ports, changed_set, value_pairs, now_ms)
 
         sessions.update()
 
@@ -159,6 +160,7 @@ async def update_loop() -> None:
 
 
 async def handle_value_changes(
+    all_ports: list[core_ports.BasePort],
     changed_set: set[core_ports.BasePort | str],
     value_pairs: dict[core_ports.BasePort, tuple[NullablePortValue, NullablePortValue]],
     now_ms: int,
@@ -200,7 +202,7 @@ async def handle_value_changes(
             port.save_asap()
 
     # Reevaluate all port expressions depending on changed ports
-    for port in core_ports.get_all():
+    for port in all_ports:
         if not port.is_enabled():
             continue
 
