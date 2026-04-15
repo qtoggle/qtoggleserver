@@ -81,4 +81,4 @@ class EvalContext:
         return f"EvalContext(now_ms={self.now_ms}, port_values={self.port_values})"
 
 
-EvalResult: TypeAlias = bool | int | float | str
+EvalResult: TypeAlias = int | float | str
