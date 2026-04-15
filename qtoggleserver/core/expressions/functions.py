@@ -36,6 +36,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
         super().__init__(role)
 
         self.args: list[Expression] = args
+        self._function_args: list[Function] = [arg for arg in args if isinstance(arg, Function)]
 
     def __str__(self) -> str:
         s = getattr(self, "_str", None)
@@ -56,11 +57,12 @@ class Function(Expression, metaclass=abc.ABCMeta):
         return now_ms < self._get_min_asap_eval_paused_until_ms()
 
     def _get_min_asap_eval_paused_until_ms(self) -> int:
-        min_asap_eval_paused_until_ms = self._asap_eval_paused_until_ms if DEP_ASAP in self.DEPS else 1e13
-        min_asap_eval_paused_until_ms_args = [
-            arg._get_min_asap_eval_paused_until_ms() for arg in self.args if isinstance(arg, Function)
-        ]
-        return min([min_asap_eval_paused_until_ms, *min_asap_eval_paused_until_ms_args])
+        result = self._asap_eval_paused_until_ms if DEP_ASAP in self.DEPS else int(1e13)
+        for arg in self._function_args:
+            child = arg._get_min_asap_eval_paused_until_ms()
+            if child < result:
+                result = child
+        return result
 
     async def eval_args(self, context: EvalContext) -> list[EvalResult]:
         return list(await asyncio.gather(*(a.eval(context) for a in self.args)))
