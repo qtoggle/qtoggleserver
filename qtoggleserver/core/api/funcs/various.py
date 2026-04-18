@@ -47,6 +47,7 @@ async def get_listen(request: core_api.APIRequest) -> GenericJSONList:
         events = await session.reset_and_wait(timeout, request.access_level)
     except CancelledError:
         session.debug("waiting cancelled")
+        session.cancel()
         return []
 
     return [await e.to_json() for e in events]

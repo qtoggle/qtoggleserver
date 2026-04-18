@@ -66,6 +66,13 @@ class Session(logging_utils.LoggableMixin):
         self.future.set_result(reversed(events))
         self.future = None
 
+    def cancel(self) -> None:
+        if self.future:
+            self.debug("canceling future")
+            if not self.future.done():
+                self.future.cancel()
+            self.future = None
+
     def push(self, event: core_events.Event) -> None:
         # Deduplicate events in a single pass, replacing the queue with a filtered copy
         filtered = deque(e for e in self.queue if not event.is_duplicate(e))
