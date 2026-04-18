@@ -186,7 +186,7 @@ class TestGetNativeEnv:
 class TestMake:
     def test_default(self, mocker):
         """Should obtain the environment using `get_env(False)` and call `from_string()` on it with the source,
-        returning the resulted template."""
+        returning the resulting template."""
 
         mock_env = mocker.Mock()
         spy_get_env = mocker.patch("qtoggleserver.utils.template.get_env", return_value=mock_env)
@@ -199,7 +199,7 @@ class TestMake:
 
     def test_async(self, mocker):
         """Should obtain the environment using `get_env(False)` and call `from_string()` on it with the source,
-        returning the resulted template."""
+        returning the resulting template."""
 
         mock_env = mocker.Mock()
         spy_get_env = mocker.patch("qtoggleserver.utils.template.get_env", return_value=mock_env)
@@ -212,7 +212,7 @@ class TestMake:
 
     def test_sync(self, mocker):
         """Should obtain the environment using `get_env(True)` and call `from_string()` on it with the source,
-        returning the resulted template."""
+        returning the resulting template."""
 
         mock_env = mocker.Mock()
         spy_get_env = mocker.patch("qtoggleserver.utils.template.get_env", return_value=mock_env)
@@ -227,7 +227,7 @@ class TestMake:
 class TestMakeNative:
     def test_default(self, mocker):
         """Should obtain the environment using `get_native_env(False)` and call `from_string()` on it with the source,
-        returning the resulted template."""
+        returning the resulting template."""
 
         mock_env = mocker.Mock()
         spy_get_native_env = mocker.patch("qtoggleserver.utils.template.get_native_env", return_value=mock_env)
@@ -240,7 +240,7 @@ class TestMakeNative:
 
     def test_async(self, mocker):
         """Should obtain the environment using `get_native_env(False)` and call `from_string()` on it with the source,
-        returning the resulted template."""
+        returning the resulting template."""
 
         mock_env = mocker.Mock()
         spy_get_native_env = mocker.patch("qtoggleserver.utils.template.get_native_env", return_value=mock_env)
@@ -253,7 +253,7 @@ class TestMakeNative:
 
     def test_sync(self, mocker):
         """Should obtain the environment using `get_native_env(True)` and call `from_string()` on it with the source,
-        returning the resulted template."""
+        returning the resulting template."""
 
         mock_env = mocker.Mock()
         spy_get_native_env = mocker.patch("qtoggleserver.utils.template.get_native_env", return_value=mock_env)
