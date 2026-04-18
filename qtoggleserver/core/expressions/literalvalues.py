@@ -1,16 +1,15 @@
 import re
 
-from qtoggleserver.core.typing import NullablePortValue as CoreNullablePortValue
+from qtoggleserver.core.typing import NullablePortValue
 
 from .base import EvalContext, EvalResult, Expression, Role
 from .exceptions import EmptyExpression, UnexpectedCharacter, ValueUnavailable
 
 
 class LiteralValue(Expression):
-    def __init__(self, value: CoreNullablePortValue, sexpression: str, role: Role) -> None:
+    def __init__(self, value: NullablePortValue, sexpression: str, role: Role) -> None:
         super().__init__(role)
 
-        self.value: CoreNullablePortValue = value
         self.sexpression: str = sexpression
         self._coerced_value: EvalResult | None = value
         if isinstance(value, bool):
