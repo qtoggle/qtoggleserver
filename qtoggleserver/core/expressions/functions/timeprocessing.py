@@ -1,8 +1,8 @@
 from collections import deque
 
-from . import TIME_JUMP_THRESHOLD
-from .base import DEP_ASAP, EvalContext, EvalResult
-from .functions import Function, function
+from .. import TIME_JUMP_THRESHOLD
+from ..base import DEP_ASAP, EvalContext, EvalResult
+from . import Function, function
 
 
 @function("DELAY")

@@ -1,5 +1,5 @@
-from .base import DEP_ASAP, DEP_SECOND, EvalContext, EvalResult
-from .functions import Function, function
+from ..base import DEP_ASAP, DEP_SECOND, EvalContext, EvalResult
+from . import Function, function
 
 
 @function("TIME")

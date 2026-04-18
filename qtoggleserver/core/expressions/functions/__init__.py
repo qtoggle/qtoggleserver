@@ -4,10 +4,10 @@ import re
 
 from collections.abc import Callable
 
-from . import DEP_ASAP, exceptions, parse
-from .base import EvalContext, EvalResult, Expression, Role
-from .literalvalues import LiteralValue
-from .ports import PortValue
+from .. import DEP_ASAP, exceptions, parse
+from ..base import EvalContext, EvalResult, Expression, Role
+from ..literalvalues import LiteralValue
+from ..ports import PortValue
 
 
 FUNCTIONS = {}

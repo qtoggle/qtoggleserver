@@ -1,5 +1,5 @@
-from .base import EvalContext, EvalResult
-from .functions import Function, function
+from ..base import EvalContext, EvalResult
+from . import Function, function
 
 
 @function("MIN")

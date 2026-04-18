@@ -62,7 +62,8 @@ def parse(self_port_id: str | None, sexpression: str, role: Role, pos: int = 1) 
         return LiteralValue.parse(self_port_id, sexpression, role, pos)
 
 
-from . import (  # noqa: E402
+from .functions import (  # noqa: E402
+    Function,  # noqa: E402
     aggregation,
     arithmetic,
     bitwise,
@@ -76,5 +77,4 @@ from . import (  # noqa: E402
     timeprocessing,
     various,
 )
-from .functions import Function  # noqa: E402
 from .ports import PortExpression  # noqa: E402
