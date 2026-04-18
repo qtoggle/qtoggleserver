@@ -14,7 +14,7 @@ class AvailableFunction(Function):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         try:
-            return bool(await self.args[0].eval(context) is not None)
+            return int(await self.args[0].eval(context) is not None)
         except ValueUnavailable:
             return 0
 
@@ -58,9 +58,9 @@ class RisingFunction(Function):
     async def _eval(self, context: EvalContext) -> EvalResult:
         value = await self.args[0].eval(context)
 
-        result = False
+        result = 0
         if self._last_value is not None and value > self._last_value:
-            result = True
+            result = 1
         self._last_value = value
 
         return result
@@ -78,9 +78,9 @@ class FallingFunction(Function):
     async def _eval(self, context: EvalContext) -> EvalResult:
         value = await self.args[0].eval(context)
 
-        result = False
+        result = 0
         if self._last_value is not None and value < self._last_value:
-            result = True
+            result = 1
         self._last_value = value
 
         return result

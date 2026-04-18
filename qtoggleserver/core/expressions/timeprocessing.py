@@ -166,7 +166,7 @@ class HeldFunction(Function):
             self._start_time_ms = 0  # stop timer
             self.pause_asap_eval()
 
-        return self._start_time_ms > 0 and context.now_ms - self._start_time_ms >= duration
+        return int(self._start_time_ms > 0 and context.now_ms - self._start_time_ms >= duration)
 
 
 @function("DERIV")
@@ -259,7 +259,7 @@ class FMAvgFunction(Function):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, width, sampling_interval = await self.eval_args(context)
-        width = min(int(width), self.MAX_QUEUE_SIZE)
+        width = max(1, min(int(width), self.MAX_QUEUE_SIZE))
 
         if self._last_time_ms > 0:
             if context.now_ms - self._last_time_ms < sampling_interval:
@@ -295,7 +295,7 @@ class FMedianFunction(Function):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, width, sampling_interval = await self.eval_args(context)
-        width = min(int(width), self.MAX_QUEUE_SIZE)
+        width = max(1, min(int(width), self.MAX_QUEUE_SIZE))
 
         if self._last_time_ms > 0:
             if context.now_ms - self._last_time_ms < sampling_interval:
