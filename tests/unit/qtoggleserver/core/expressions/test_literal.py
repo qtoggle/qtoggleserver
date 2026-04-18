@@ -25,22 +25,22 @@ class TestLiteralValue:
     def test_bool(self):
         e = parse(None, "false", role=Role.VALUE)
         assert isinstance(e, literalvalues.LiteralValue)
-        assert e.value == 0
+        assert e._coerced_value == 0
 
         e = parse(None, "true", role=Role.VALUE)
         assert isinstance(e, literalvalues.LiteralValue)
-        assert e.value == 1
+        assert e._coerced_value == 1
 
     def test_num(self):
         e = parse(None, "16384", role=Role.VALUE)
         assert isinstance(e, literalvalues.LiteralValue)
-        assert e.value == 16384
+        assert e._coerced_value == 16384
 
         e = parse(None, "-3.14", role=Role.VALUE)
         assert isinstance(e, literalvalues.LiteralValue)
-        assert e.value == -3.14
+        assert e._coerced_value == -3.14
 
     async def test_unavailable(self, dummy_eval_context):
         e = parse(None, "unavailable", role=Role.VALUE)
         assert isinstance(e, literalvalues.LiteralValue)
-        assert e.value is None
+        assert e._coerced_value is None
