@@ -1,38 +1,33 @@
 import re
 
-from qtoggleserver.core.typing import NullablePortValue as CoreNullablePortValue
+from qtoggleserver.core.typing import NullablePortValue
 
 from .base import EvalContext, EvalResult, Expression, Role
 from .exceptions import EmptyExpression, UnexpectedCharacter, ValueUnavailable
 
 
 class LiteralValue(Expression):
-    def __init__(self, value: CoreNullablePortValue, sexpression: str, role: Role) -> None:
+    def __init__(self, value: NullablePortValue, sexpression: str, role: Role) -> None:
         super().__init__(role)
 
-        self.value: CoreNullablePortValue = value
         self.sexpression: str = sexpression
+        self._coerced_value: EvalResult | None = value
+        if isinstance(value, bool):
+            self._coerced_value = int(value)
 
     def __str__(self) -> str:
         return self.sexpression
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        if self.value is None:
+        if self._coerced_value is None:
             raise ValueUnavailable
-
-        if isinstance(self.value, int):
-            return self.value
-        else:
-            return float(self.value)
+        return self._coerced_value
 
     @staticmethod
     def parse(self_port_id: str | None, sexpression: str, role: Role, pos: int) -> Expression:
-        while sexpression and sexpression[0].isspace():
-            sexpression = sexpression[1:]
-            pos += 1
-
-        while sexpression and sexpression[-1].isspace():
-            sexpression = sexpression[:-1]
+        stripped = sexpression.lstrip()
+        pos += len(sexpression) - len(stripped)
+        sexpression = stripped.rstrip()
 
         if not sexpression:
             raise EmptyExpression()

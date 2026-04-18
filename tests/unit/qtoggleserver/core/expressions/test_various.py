@@ -320,16 +320,16 @@ class TestOnOffAuto:
         assert await expr.eval(dummy_eval_context) == 13
 
         value_expr.set_value(-1)
-        assert await expr.eval(dummy_eval_context) is False
+        assert await expr.eval(dummy_eval_context) == 0
 
         value_expr.set_value(-10)
-        assert await expr.eval(dummy_eval_context) is False
+        assert await expr.eval(dummy_eval_context) == 0
 
         value_expr.set_value(1)
-        assert await expr.eval(dummy_eval_context) is True
+        assert await expr.eval(dummy_eval_context) == 1
 
         value_expr.set_value(10)
-        assert await expr.eval(dummy_eval_context) is True
+        assert await expr.eval(dummy_eval_context) == 1
 
     def test_parse(self):
         e = Function.parse(None, "ONOFFAUTO(1, 2)", Role.VALUE, 0)

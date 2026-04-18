@@ -1,3 +1,5 @@
+from collections import deque
+
 from . import TIME_JUMP_THRESHOLD
 from .base import DEP_ASAP, EvalContext, EvalResult
 from .functions import Function, function
@@ -13,7 +15,7 @@ class DelayFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._queue: list[tuple[int, float]] = []
+        self._queue: deque[tuple[int, float]] = deque(maxlen=self.HISTORY_SIZE)
         self._last_value: float | None = None
         self._current_value: float | None = None
 
@@ -28,16 +30,11 @@ class DelayFunction(Function):
         # Detect value transitions and build history
         if value != self._last_value:
             self._last_value = value
-
-            # Drop elements from queue if history size reached
-            while len(self._queue) >= self.HISTORY_SIZE:
-                self._queue.pop(0)
-
             self._queue.append((context.now_ms, value))
 
         # Process history
         while self._queue and (context.now_ms - self._queue[0][0]) >= delay:
-            self._current_value = self._queue.pop(0)[1]
+            self._current_value = self._queue.popleft()[1]
 
         if self._queue:
             self.pause_asap_eval(self._queue[0][0] + delay)
@@ -169,7 +166,7 @@ class HeldFunction(Function):
             self._start_time_ms = 0  # stop timer
             self.pause_asap_eval()
 
-        return self._start_time_ms > 0 and context.now_ms - self._start_time_ms >= duration
+        return int(self._start_time_ms > 0 and context.now_ms - self._start_time_ms >= duration)
 
 
 @function("DERIV")
@@ -256,13 +253,13 @@ class FMAvgFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._queue: list[float] = []
+        self._queue: deque[float] = deque()
         self._last_time_ms: int = 0
         self._last_result: float = 0
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, width, sampling_interval = await self.eval_args(context)
-        width = min(width, self.MAX_QUEUE_SIZE)
+        width = max(1, min(int(width), self.MAX_QUEUE_SIZE))
 
         if self._last_time_ms > 0:
             if context.now_ms - self._last_time_ms < sampling_interval:
@@ -271,13 +268,12 @@ class FMAvgFunction(Function):
 
         # Make room for the new element
         while len(self._queue) >= width:
-            self._queue.pop(0)
+            self._queue.popleft()
 
         self._queue.append(value)
         self._last_time_ms = context.now_ms
 
-        queue = self._queue[-int(width) :]
-        self._last_result = sum(queue) / len(queue)
+        self._last_result = sum(self._queue) / len(self._queue)
         self.pause_asap_eval(self._last_time_ms + sampling_interval)
 
         return self._last_result
@@ -293,30 +289,28 @@ class FMedianFunction(Function):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._queue: list[float] = []
+        self._queue: deque[float] = deque()
         self._last_time_ms: int = 0
         self._last_result: float = 0
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, width, sampling_interval = await self.eval_args(context)
-        width = min(width, self.MAX_QUEUE_SIZE)
+        width = max(1, min(int(width), self.MAX_QUEUE_SIZE))
 
         if self._last_time_ms > 0:
             if context.now_ms - self._last_time_ms < sampling_interval:
-                self.pause_asap_eval(self._last_time_ms + sampling_interval)
                 self.pause_asap_eval(self._last_time_ms + sampling_interval)
                 return self._last_result
 
         # Make room for the new element
         while len(self._queue) >= width:
-            self._queue.pop(0)
+            self._queue.popleft()
 
         self._queue.append(value)
         self._last_time_ms = context.now_ms
         self.pause_asap_eval(self._last_time_ms + sampling_interval)
 
-        queue = self._queue[-int(width) :]
-        queue.sort()
+        queue = sorted(self._queue)
         self._last_result = queue[len(queue) // 2]
 
         return self._last_result

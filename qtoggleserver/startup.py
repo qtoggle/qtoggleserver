@@ -146,7 +146,7 @@ async def cleanup_loop() -> None:
     tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
 
     for task in tasks:
-        logger.debug(f"cancelling {task.get_coro()}")
+        logger.debug(f"canceling {task.get_coro()}")
         task.cancel()
 
     await asyncio.gather(*tasks)

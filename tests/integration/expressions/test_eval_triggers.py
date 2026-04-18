@@ -4,7 +4,7 @@ from qtoggleserver.core import main
 
 
 async def test_eval_trigger_set_expression(mock_num_port1, mock_num_port2, mocker):
-    """Should trigger expression evaluation and write resulted value when setting an expression to a port."""
+    """Should trigger expression evaluation and write resulting value when setting an expression to a port."""
 
     mock_num_port1.set_last_read_value(4)
     mock_num_port2.set_last_read_value(5)
@@ -17,7 +17,7 @@ async def test_eval_trigger_set_expression(mock_num_port1, mock_num_port2, mocke
 
 
 async def test_eval_trigger_value_change(mock_num_port1, mock_num_port2, mocker):
-    """Should trigger expression evaluation and write resulted value when a dependent port's value changes."""
+    """Should trigger expression evaluation and write resulting value when a dependent port's value changes."""
 
     mock_num_port1.set_last_read_value(4)
     mock_num_port2.set_last_read_value(5)
@@ -32,7 +32,7 @@ async def test_eval_trigger_value_change(mock_num_port1, mock_num_port2, mocker)
 
 
 async def test_eval_trigger_value_change_own(mock_num_port1, mock_num_port2, mocker):
-    """Should trigger expression evaluation and write resulted value when own port value changes, as a regular dep."""
+    """Should trigger expression evaluation and write resulting value when own port value changes, as a regular dep."""
 
     mock_num_port1.set_last_read_value(4)
     mock_num_port2.set_last_read_value(5)
@@ -62,7 +62,7 @@ async def test_eval_trigger_ignore_inexistent_port(mock_num_port1, mock_num_port
 
 
 async def test_eval_trigger_port_enabled(mock_num_port1, mocker):
-    """Should trigger expression evaluation and write resulted value when port becomes enabled."""
+    """Should trigger expression evaluation and write resulting value when port becomes enabled."""
 
     mock_num_port1.set_last_read_value(4)
     mock_num_port1.set_writable(True)

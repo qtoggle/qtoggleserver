@@ -75,13 +75,7 @@ class EvalContext:
     def __init__(self, port_values: dict[str, NullablePortValue], now_ms: int = 0) -> None:
         self.port_values: dict[str, NullablePortValue] = port_values
         self.now_ms: int = now_ms
-
-    @property
-    def timestamp(self) -> int:
-        return int(self.now_ms / 1000)
-
-    def __str__(self) -> str:
-        return f"EvalContext(now_ms={self.now_ms}, port_values={self.port_values})"
+        self.timestamp: int = now_ms // 1000
 
 
-EvalResult: TypeAlias = bool | int | float | str
+EvalResult: TypeAlias = int | float | str

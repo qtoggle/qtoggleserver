@@ -14,9 +14,9 @@ class AvailableFunction(Function):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         try:
-            return await self.args[0].eval(context) is not None
+            return int(await self.args[0].eval(context) is not None)
         except ValueUnavailable:
-            return False
+            return 0
 
 
 @function("DEFAULT")
@@ -58,9 +58,9 @@ class RisingFunction(Function):
     async def _eval(self, context: EvalContext) -> EvalResult:
         value = await self.args[0].eval(context)
 
-        result = False
+        result = 0
         if self._last_value is not None and value > self._last_value:
-            result = True
+            result = 1
         self._last_value = value
 
         return result
@@ -78,9 +78,9 @@ class FallingFunction(Function):
     async def _eval(self, context: EvalContext) -> EvalResult:
         value = await self.args[0].eval(context)
 
-        result = False
+        result = 0
         if self._last_value is not None and value < self._last_value:
-            result = True
+            result = 1
         self._last_value = value
 
         return result
@@ -154,9 +154,9 @@ class OnOffAutoFunction(Function):
     async def _eval(self, context: EvalContext) -> EvalResult:
         value, auto = await self.eval_args(context)
         if value > 0:
-            return True
+            return 1
         elif value < 0:
-            return False
+            return 0
         else:
             return auto
 
@@ -171,33 +171,25 @@ class SequenceFunction(Function):
         super().__init__(*args, **kwargs)
 
         self._start_time_ms: int = 0
+        self._num_values: int = len(self.args) // 2
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         if self._start_time_ms == 0:
             self._start_time_ms = context.now_ms
 
         args = await self.eval_args(context)
-        num_values = len(args) // 2
-        values = []
-        delays = []
         total_delay = 0
-        for i in range(num_values):
-            values.append(args[i * 2])
-            delays.append(args[i * 2 + 1])
+        for i in range(self._num_values):
             total_delay += args[i * 2 + 1]
 
-        if len(delays) < len(values):
-            delays.append(0)
-
-        delta = context.now_ms - self._start_time_ms
-        delta = delta % total_delay  # work modulo total_delay, to create repeat effect
+        delta = (context.now_ms - self._start_time_ms) % total_delay
         delay_so_far = 0
-        result = values[0]
-        for i in range(num_values):
-            delay_so_far += delays[i]
+        result = args[0]
+        for i in range(self._num_values):
+            delay_so_far += args[i * 2 + 1]
             if delay_so_far >= delta:
                 self.pause_asap_eval(context.now_ms + delay_so_far - delta)
-                result = values[i]
+                result = args[i * 2]
                 break
 
         return result
