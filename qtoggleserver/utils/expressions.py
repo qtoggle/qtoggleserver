@@ -6,6 +6,18 @@ from qtoggleserver.slaves import devices as slaves_devices
 
 
 async def build_context(now_ms: int) -> EvalContext:
+    """Build an expression evaluation context for the current system state.
+
+    Gathers port values and attributes for all enabled ports, collects device-level attributes,
+    and includes slave device attributes if slaves are enabled. Returns a complete EvalContext
+    ready for expression evaluation.
+
+    Args:
+        now_ms: Current time in milliseconds since epoch.
+
+    Returns:
+        EvalContext with port values, port attributes, device attributes, and timestamp.
+    """
     port_values = {}
     port_attrs = {}
     for port in core_ports.get_all():

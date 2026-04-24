@@ -12,9 +12,9 @@ def dummy_eval_context(dummy_local_datetime):
 def later_eval_context(dummy_eval_context):
     def wrapper_advance_eval_context_time(milliseconds: int) -> EvalContext:
         return EvalContext(
-            port_values=dummy_eval_context.port_values,
-            port_attrs=dummy_eval_context.port_attrs,
-            device_attrs=dummy_eval_context.device_attrs,
+            port_values=dummy_eval_context.port_values.copy(),
+            port_attrs=dummy_eval_context.port_attrs.copy(),
+            device_attrs=dummy_eval_context.device_attrs.copy(),
             now_ms=dummy_eval_context.now_ms + milliseconds,
         )
 
