@@ -11,7 +11,12 @@ def dummy_eval_context(dummy_local_datetime):
 @pytest.fixture()
 def later_eval_context(dummy_eval_context):
     def wrapper_advance_eval_context_time(milliseconds: int) -> EvalContext:
-        return EvalContext(dummy_eval_context.port_values, dummy_eval_context.now_ms + milliseconds)
+        return EvalContext(
+            port_values=dummy_eval_context.port_values,
+            port_attrs=dummy_eval_context.port_attrs,
+            device_attrs=dummy_eval_context.device_attrs,
+            now_ms=dummy_eval_context.now_ms + milliseconds,
+        )
 
     return wrapper_advance_eval_context_time
 

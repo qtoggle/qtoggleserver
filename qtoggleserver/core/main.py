@@ -14,8 +14,10 @@ from qtoggleserver.core.expressions import (
     DEP_MONTH,
     DEP_SECOND,
     DEP_YEAR,
+    EvalContext,
 )
 from qtoggleserver.core.typing import NullablePortValue
+from qtoggleserver.utils import expressions as expressions_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
 from qtoggleserver.utils import timedset
@@ -201,6 +203,8 @@ async def handle_value_changes(
         if await port.is_persisted():
             port.save_asap()
 
+    eval_context: EvalContext | None = None
+
     # Reevaluate all port expressions depending on changed ports
     for port in all_ports:
         if not port.is_enabled():
@@ -210,23 +214,23 @@ async def handle_value_changes(
         if not expression:
             continue
 
-        if full_eval or (port in forced_ports):
-            await port.eval_and_push_write(now_ms)
-            continue
+        if not full_eval and (port not in forced_ports):
+            deps: set[str] = expression.get_deps()
 
-        deps: set[str] = expression.get_deps()
-
-        # Evaluate a port's expression only if one of its deps changed
-        changed_deps = deps & changed_set_str
-        if not changed_deps:
-            continue
-
-        if changed_deps == {DEP_ASAP}:
-            # Skip asap evaling if explicitly paused
-            if expression.is_asap_eval_paused(now_ms):
+            # Evaluate a port's expression only if one of its deps changed
+            changed_deps = deps & changed_set_str
+            if not changed_deps:
                 continue
 
-        await port.eval_and_push_write(now_ms)
+            if changed_deps == {DEP_ASAP}:
+                # Skip asap evaling if explicitly paused
+                if expression.is_asap_eval_paused(now_ms):
+                    continue
+
+        if not eval_context:
+            eval_context = await expressions_utils.build_context(now_ms)
+
+        await port.eval_and_push_write(eval_context)
 
 
 def force_eval_expressions(port: core_ports.BasePort | None = None) -> None:
