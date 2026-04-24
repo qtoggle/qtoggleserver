@@ -16,10 +16,11 @@ class TestBuildContext:
         mocker.patch.object(mock_num_port2, "get_id", return_value="nid2")
         mocker.patch.object(mock_num_port1, "get_last_value", return_value=42)
         mocker.patch.object(mock_num_port2, "get_last_value", return_value=84)
-        mocker.patch.object(mock_num_port1, "get_attrs", return_value={"attr1": "val1"})
-        mocker.patch.object(mock_num_port2, "get_attrs", return_value={"attr2": "val2"})
+        mocker.patch.object(mock_num_port1, "get_attrs", new_callable=mocker.AsyncMock, return_value={"attr1": "val1"})
+        mocker.patch.object(mock_num_port2, "get_attrs", new_callable=mocker.AsyncMock, return_value={"attr2": "val2"})
         mocker.patch(
             "qtoggleserver.utils.expressions.core_device_attrs.get_attrs",
+            new_callable=mocker.AsyncMock,
             return_value={"device_attr": "device_val"},
         )
         mocker.patch("qtoggleserver.utils.expressions.settings.slaves.enabled", False)
@@ -44,9 +45,10 @@ class TestBuildContext:
         mocker.patch.object(mock_num_port2, "is_enabled", return_value=False)
         mocker.patch.object(mock_num_port1, "get_id", return_value="nid1")
         mocker.patch.object(mock_num_port1, "get_last_value", return_value=42)
-        mocker.patch.object(mock_num_port1, "get_attrs", return_value={})
+        mocker.patch.object(mock_num_port1, "get_attrs", new_callable=mocker.AsyncMock, return_value={})
         mocker.patch(
             "qtoggleserver.utils.expressions.core_device_attrs.get_attrs",
+            new_callable=mocker.AsyncMock,
             return_value={},
         )
         mocker.patch("qtoggleserver.utils.expressions.settings.slaves.enabled", False)
@@ -66,6 +68,7 @@ class TestBuildContext:
         )
         mocker.patch(
             "qtoggleserver.utils.expressions.core_device_attrs.get_attrs",
+            new_callable=mocker.AsyncMock,
             return_value={"device_attr": "device_val"},
         )
         mocker.patch("qtoggleserver.utils.expressions.settings.slaves.enabled", False)
@@ -88,9 +91,10 @@ class TestBuildContext:
         mocker.patch.object(mock_num_port1, "is_enabled", return_value=True)
         mocker.patch.object(mock_num_port1, "get_id", return_value="nid1")
         mocker.patch.object(mock_num_port1, "get_last_value", return_value=42)
-        mocker.patch.object(mock_num_port1, "get_attrs", return_value={})
+        mocker.patch.object(mock_num_port1, "get_attrs", new_callable=mocker.AsyncMock, return_value={})
         mocker.patch(
             "qtoggleserver.utils.expressions.core_device_attrs.get_attrs",
+            new_callable=mocker.AsyncMock,
             return_value={"device_attr": "device_val"},
         )
         mocker.patch("qtoggleserver.utils.expressions.settings.slaves.enabled", True)
@@ -122,9 +126,10 @@ class TestBuildContext:
         mocker.patch.object(mock_num_port1, "is_enabled", return_value=True)
         mocker.patch.object(mock_num_port1, "get_id", return_value="nid1")
         mocker.patch.object(mock_num_port1, "get_last_value", return_value=42)
-        mocker.patch.object(mock_num_port1, "get_attrs", return_value={})
+        mocker.patch.object(mock_num_port1, "get_attrs", new_callable=mocker.AsyncMock, return_value={})
         mocker.patch(
             "qtoggleserver.utils.expressions.core_device_attrs.get_attrs",
+            new_callable=mocker.AsyncMock,
             return_value={"device_attr": "device_val"},
         )
         mocker.patch("qtoggleserver.utils.expressions.settings.slaves.enabled", True)
@@ -156,9 +161,10 @@ class TestBuildContext:
         mocker.patch.object(mock_num_port1, "is_enabled", return_value=True)
         mocker.patch.object(mock_num_port1, "get_id", return_value="nid1")
         mocker.patch.object(mock_num_port1, "get_last_value", return_value=0)
-        mocker.patch.object(mock_num_port1, "get_attrs", return_value={})
+        mocker.patch.object(mock_num_port1, "get_attrs", new_callable=mocker.AsyncMock, return_value={})
         mocker.patch(
             "qtoggleserver.utils.expressions.core_device_attrs.get_attrs",
+            new_callable=mocker.AsyncMock,
             return_value={},
         )
         mocker.patch("qtoggleserver.utils.expressions.settings.slaves.enabled", False)
