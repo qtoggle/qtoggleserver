@@ -705,10 +705,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             finally:
                 self._writing_value = None
 
-        # Do an update after every confirmed write
-        await asyncio.sleep(settings.core.tick_interval / 1000.0)
-        await main.read_ports()  # TODO: is this needed? Does it make sense?
-
     def get_pending_value(self) -> NullablePortValue:
         """Return the most recent value that's about to be written to the port but hasn't been, yet."""
 
