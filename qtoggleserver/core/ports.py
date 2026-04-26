@@ -398,7 +398,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._after_set_attr_debounced.call(name, value)
 
     async def _after_set_attr(self, *args) -> None:
-        await main.update()
+        await (
+            main.read_ports()
+        )  # TODO: why is this necessary? it should be replaced by a port-update event handler anyway
         await self.trigger_update()
         for name, value in args:
             await self.handle_attr_change(name, value)
@@ -705,7 +707,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         # Do an update after every confirmed write
         await asyncio.sleep(settings.core.tick_interval / 1000.0)
-        await main.update()
+        await main.read_ports()  # TODO: is this needed? Does it make sense?
 
     def get_pending_value(self) -> NullablePortValue:
         """Return the most recent value that's about to be written to the port but hasn't been, yet."""

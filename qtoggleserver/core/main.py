@@ -48,7 +48,7 @@ _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
 _update_lock: asyncio.Lock | None = None
 
 
-async def update() -> None:
+async def read_ports() -> None:
     from . import sessions
 
     global _last_time
@@ -152,7 +152,7 @@ async def update_loop() -> None:
         try:
             try:
                 if _ready:
-                    await update()
+                    await read_ports()
             except Exception as e:
                 logger.error("update failed: %s", e, exc_info=True)
             await asyncio.sleep(settings.core.tick_interval / 1000.0)

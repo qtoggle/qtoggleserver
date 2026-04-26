@@ -10,13 +10,13 @@ async def test_expression_port_write_only_changed(mock_num_port1, mocker):
     mocker.patch.object(mock_num_port1, "transform_and_write_value")
 
     mocker.patch.object(mock_num_port1, "get_pending_value", return_value=40)
-    await main.update()
+    await main.read_ports()
     await asyncio.sleep(0.1)
     mock_num_port1.transform_and_write_value.assert_called_once_with(30)
 
     mocker.patch.object(mock_num_port1, "get_pending_value", return_value=30)
     mock_num_port1.transform_and_write_value.reset_mock()
-    await main.update()
+    await main.read_ports()
     await asyncio.sleep(0.1)
     mock_num_port1.transform_and_write_value.assert_not_called()
 

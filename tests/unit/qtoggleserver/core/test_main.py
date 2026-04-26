@@ -3,28 +3,28 @@ import time
 from datetime import datetime, timedelta
 
 from qtoggleserver.core.expressions import DEP_ASAP, DEP_DAY, DEP_HOUR, DEP_MINUTE, DEP_MONTH, DEP_SECOND, DEP_YEAR
-from qtoggleserver.core.main import force_eval_expressions, handle_value_changes, update
+from qtoggleserver.core.main import force_eval_expressions, handle_value_changes, read_ports
 
 
-class TestUpdate:
+class TestReadPorts:
     async def test_change_time_asap(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
         """Should call `handle_value_changes` with {DEP_ASAP}, regardless of time changes."""
 
         freezer.move_to(dummy_utc_datetime)
-        await update()
+        await read_ports()
         spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
-        await update()
+        await read_ports()
         spy_handle_value_changes.assert_called_once_with([mock_num_port1], {DEP_ASAP}, {}, int(time.time() * 1000))
 
     async def test_change_time_second(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
         """Should call `handle_value_changes` with {DEP_ASAP, DEP_SECOND} when second changes."""
 
         freezer.move_to(dummy_utc_datetime)
-        await update()
+        await read_ports()
 
         freezer.move_to(dummy_utc_datetime + timedelta(seconds=1))
         spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
-        await update()
+        await read_ports()
         spy_handle_value_changes.assert_called_once_with(
             [mock_num_port1], {DEP_ASAP, DEP_SECOND}, {}, int(time.time() * 1000)
         )
@@ -33,11 +33,11 @@ class TestUpdate:
         """Should call `handle_value_changes` with {DEP_ASAP, DEP_SECOND, DEP_MINUTE} when minute changes."""
 
         freezer.move_to(dummy_utc_datetime)
-        await update()
+        await read_ports()
 
         freezer.move_to(dummy_utc_datetime + timedelta(minutes=1))
         spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
-        await update()
+        await read_ports()
         spy_handle_value_changes.assert_called_once_with(
             [mock_num_port1], {DEP_ASAP, DEP_SECOND, DEP_MINUTE}, {}, int(time.time() * 1000)
         )
@@ -46,11 +46,11 @@ class TestUpdate:
         """Should call `handle_value_changes` with {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR} when hour changes."""
 
         freezer.move_to(dummy_utc_datetime)
-        await update()
+        await read_ports()
 
         freezer.move_to(dummy_utc_datetime + timedelta(hours=1))
         spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
-        await update()
+        await read_ports()
         spy_handle_value_changes.assert_called_once_with(
             [mock_num_port1], {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR}, {}, int(time.time() * 1000)
         )
@@ -60,11 +60,11 @@ class TestUpdate:
         changes."""
 
         freezer.move_to(datetime(2019, 1, 30, 23, 30, 30))
-        await update()
+        await read_ports()
 
         freezer.move_to(datetime(2019, 1, 31, 0, 0, 0))
         spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
-        await update()
+        await read_ports()
         spy_handle_value_changes.assert_called_once_with(
             [mock_num_port1], {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY}, {}, int(time.time() * 1000)
         )
@@ -74,11 +74,11 @@ class TestUpdate:
         month changes."""
 
         freezer.move_to(datetime(2019, 1, 31, 23, 30, 30))
-        await update()
+        await read_ports()
 
         freezer.move_to(datetime(2019, 2, 1, 0, 0, 0))
         spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
-        await update()
+        await read_ports()
         spy_handle_value_changes.assert_called_once_with(
             [mock_num_port1],
             {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY, DEP_MONTH},
@@ -91,11 +91,11 @@ class TestUpdate:
         DEP_YEAR} when year changes."""
 
         freezer.move_to(datetime(2019, 12, 31, 23, 30, 30))
-        await update()
+        await read_ports()
 
         freezer.move_to(datetime(2020, 1, 1, 0, 0, 0))
         spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
-        await update()
+        await read_ports()
         spy_handle_value_changes.assert_called_once_with(
             [mock_num_port1],
             {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY, DEP_MONTH, DEP_YEAR},

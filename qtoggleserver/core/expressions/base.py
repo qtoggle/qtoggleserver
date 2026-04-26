@@ -60,9 +60,6 @@ class Expression(metaclass=abc.ABCMeta):
         return self._cached_deps
 
     def _get_deps(self) -> set[str]:
-        # Special deps:
-        #  * 'second' - used to indicate dependency on system time (seconds)
-        #  * 'asap' - used to indicate that evaluation should be done as soon as possible
         return set()
 
     @staticmethod
