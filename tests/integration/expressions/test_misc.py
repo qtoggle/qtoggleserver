@@ -1,5 +1,6 @@
 import asyncio
 
+from qtoggleserver.conf import settings
 from qtoggleserver.core import main
 
 
@@ -11,13 +12,13 @@ async def test_expression_port_write_only_changed(mock_num_port1, mocker):
 
     mocker.patch.object(mock_num_port1, "get_pending_value", return_value=40)
     await main.read_ports()
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(settings.core.tick_interval / 1000)
     mock_num_port1.transform_and_write_value.assert_called_once_with(30)
 
     mocker.patch.object(mock_num_port1, "get_pending_value", return_value=30)
     mock_num_port1.transform_and_write_value.reset_mock()
     await main.read_ports()
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(settings.core.tick_interval / 1000)
     mock_num_port1.transform_and_write_value.assert_not_called()
 
 
@@ -25,9 +26,9 @@ async def test_expression_port_self_value(mock_num_port1):
     """Test that a port can reference its own value using `$`."""
 
     mock_num_port1.set_writable(True)
-    await mock_num_port1.set_attr("expression", "ADD($, 1)")
     mock_num_port1.set_last_read_value(15)
-    await asyncio.sleep(0.1)
+    await mock_num_port1.set_attr("expression", "ADD($, 1)")
+    await asyncio.sleep(settings.core.tick_interval / 1000)
     assert mock_num_port1.get_last_written_value() == 16
 
 
@@ -35,9 +36,9 @@ async def test_expression_port_own_value(mock_num_port1):
     """Test that a port can reference its own value using its id."""
 
     mock_num_port1.set_writable(True)
-    await mock_num_port1.set_attr("expression", "ADD($nid1, 1)")
     mock_num_port1.set_last_read_value(15)
-    await asyncio.sleep(0.1)
+    await mock_num_port1.set_attr("expression", "ADD($nid1, 1)")
+    await asyncio.sleep(settings.core.tick_interval / 1000)
     assert mock_num_port1.get_last_written_value() == 16
 
 
