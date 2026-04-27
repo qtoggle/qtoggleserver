@@ -103,6 +103,43 @@ class TestReadPorts:
             int(time.time() * 1000),
         )
 
+    async def test_ports_to_read_specific_ports(
+        self, freezer, mocker, mock_num_port1, mock_num_port2, dummy_utc_datetime
+    ):
+        """Should only read specified ports when `ports_to_read` is provided, while passing all ports to
+        handle_value_changes."""
+
+        freezer.move_to(dummy_utc_datetime)
+        await read_ports()
+        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
+
+        await read_ports(ports_to_read=[mock_num_port2])
+        spy_handle_value_changes.assert_called_once_with(
+            [mock_num_port1, mock_num_port2], {DEP_ASAP}, {}, int(time.time() * 1000)
+        )
+
+    async def test_ports_to_read_skip_time_changes(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """Should not add time dependencies when `ports_to_read` is provided, even if time changes."""
+
+        freezer.move_to(dummy_utc_datetime)
+        await read_ports()
+
+        freezer.move_to(dummy_utc_datetime + timedelta(seconds=1))
+        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
+
+        await read_ports(ports_to_read=[mock_num_port1])
+        spy_handle_value_changes.assert_called_once_with([mock_num_port1], {DEP_ASAP}, {}, int(time.time() * 1000))
+
+    async def test_ports_to_read_empty_list(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """Should handle empty ports list gracefully when `ports_to_read` is an empty list."""
+
+        freezer.move_to(dummy_utc_datetime)
+        await read_ports()
+        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
+
+        await read_ports(ports_to_read=[])
+        spy_handle_value_changes.assert_called_once_with([mock_num_port1], {DEP_ASAP}, {}, int(time.time() * 1000))
+
 
 class TestHandleValueChanges:
     async def test_self_port_value_trigger_eval(self, mocker, mock_num_port1):

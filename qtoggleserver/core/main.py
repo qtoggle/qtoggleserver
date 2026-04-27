@@ -48,7 +48,7 @@ _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
 _update_lock: asyncio.Lock | None = None
 
 
-async def read_ports() -> None:
+async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> None:
     from . import sessions
 
     global _last_time
@@ -74,38 +74,43 @@ async def read_ports() -> None:
         now_int = int(now)
         now_ms = int(now * 1000)
 
-        # Determine which time units have changed since last update
+        # Determine which time units have changed since last update. But only do this during regular port reading
+        # update calls, when no specific `ports_to_read` are supplied.
         second_changed = False
-        if now_int != _last_time:
-            _last_time = now_int
-            second_changed = True
-            changed_set.add(DEP_SECOND)
+        if not ports_to_read:
+            if now_int != _last_time:
+                _last_time = now_int
+                second_changed = True
+                changed_set.add(DEP_SECOND)
 
-            now_minute = now_int // 60
-            if now_minute != _last_minute:
-                _last_minute = now_minute
-                changed_set.add(DEP_MINUTE)
+                now_minute = now_int // 60
+                if now_minute != _last_minute:
+                    _last_minute = now_minute
+                    changed_set.add(DEP_MINUTE)
 
-                now_hour = now_minute // 60
-                if now_hour != _last_hour:
-                    _last_hour = now_hour
-                    changed_set.add(DEP_HOUR)
+                    now_hour = now_minute // 60
+                    if now_hour != _last_hour:
+                        _last_hour = now_hour
+                        changed_set.add(DEP_HOUR)
 
-                    now_dt = datetime.fromtimestamp(now)
-                    if now_dt.day != _last_day:
-                        _last_day = now_dt.day
-                        changed_set.add(DEP_DAY)
+                        now_dt = datetime.fromtimestamp(now)
+                        if now_dt.day != _last_day:
+                            _last_day = now_dt.day
+                            changed_set.add(DEP_DAY)
 
-                        if now_dt.month != _last_month:
-                            _last_month = now_dt.month
-                            changed_set.add(DEP_MONTH)
+                            if now_dt.month != _last_month:
+                                _last_month = now_dt.month
+                                changed_set.add(DEP_MONTH)
 
-                            if now_dt.year != _last_year:
-                                _last_year = now_dt.year
-                                changed_set.add(DEP_YEAR)
+                                if now_dt.year != _last_year:
+                                    _last_year = now_dt.year
+                                    changed_set.add(DEP_YEAR)
 
         all_ports = list(core_ports.get_all())
-        for port in all_ports:
+        if not ports_to_read:
+            ports_to_read = all_ports
+
+        for port in ports_to_read:
             if not port.is_enabled():
                 continue
 
@@ -187,11 +192,12 @@ async def handle_value_changes(
     changed_set_str: set[str] = set()
 
     # Trigger value-change events; save persisted ports; build changed_set_str
-    for port in changed_set:
-        if isinstance(port, core_ports.BasePort):
+    for changed in changed_set:
+        if isinstance(changed, core_ports.BasePort):
+            port = changed
             changed_set_str.add(f"${port.get_id()}")
         else:
-            changed_set_str.add(port)  # `port` is actually a string here
+            changed_set_str.add(changed)  # `port` is actually a string here
             continue
 
         if not await port.is_internal():
@@ -205,7 +211,7 @@ async def handle_value_changes(
 
     eval_context: EvalContext | None = None
 
-    # Reevaluate all port expressions depending on changed ports
+    # Reevaluate all port expressions depending on changed set
     for port in all_ports:
         if not port.is_enabled():
             continue
