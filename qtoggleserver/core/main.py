@@ -33,7 +33,7 @@ loop: asyncio.AbstractEventLoop | None = None
 
 _update_loop_task: asyncio.Task | None = None
 _ready: bool = False
-_updating_enabled: bool = True
+_paused: bool = False
 _start_time: float = time.time()
 _last_time: int = 0
 _last_minute: int = 0
@@ -60,7 +60,7 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
     global _last_year
     global _update_lock
 
-    if not _updating_enabled:
+    if _paused:
         return
 
     if _update_lock is None:
@@ -147,7 +147,7 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
                 changed_set.add(port)
                 value_pairs[port] = old_value, new_value
 
-        await handle_value_changes(all_ports, changed_set, value_pairs, now_ms)
+        await handle_changes(all_ports, changed_set, value_pairs, now_ms)
 
         sessions.update()
 
@@ -166,7 +166,7 @@ async def update_loop() -> None:
             break
 
 
-async def handle_value_changes(
+async def handle_changes(
     all_ports: list[core_ports.BasePort],
     changed_set: set[core_ports.BasePort | str],
     value_pairs: dict[core_ports.BasePort, tuple[NullablePortValue, NullablePortValue]],
@@ -196,8 +196,8 @@ async def handle_value_changes(
         if isinstance(changed, core_ports.BasePort):
             port = changed
             changed_set_str.add(f"${port.get_id()}")
-        else:
-            changed_set_str.add(changed)  # `port` is actually a string here
+        else:  # time string
+            changed_set_str.add(changed)
             continue
 
         if not await port.is_internal():
@@ -250,20 +250,20 @@ def force_eval_expressions(port: core_ports.BasePort | None = None) -> None:
         _force_eval_all_expressions = True
 
 
-def enable_updating() -> None:
-    global _updating_enabled
+def resume() -> None:
+    global _paused
 
-    if not _updating_enabled:
-        logger.debug("enabling update mechanism")
-        _updating_enabled = True
+    if _paused:
+        logger.debug("resuming ports reading loop")
+        _paused = False
 
 
-def disable_updating() -> None:
-    global _updating_enabled
+def pause() -> None:
+    global _paused
 
-    if _updating_enabled:
-        logger.debug("disabling update mechanism")
-        _updating_enabled = False
+    if not _paused:
+        logger.debug("pausing ports reading loop")
+        _paused = True
 
 
 def is_ready() -> bool:

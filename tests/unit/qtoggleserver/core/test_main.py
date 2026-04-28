@@ -2,82 +2,85 @@ import time
 
 from datetime import datetime, timedelta
 
+import pytest
+
+from qtoggleserver.core import main as core_main
 from qtoggleserver.core.expressions import DEP_ASAP, DEP_DAY, DEP_HOUR, DEP_MINUTE, DEP_MONTH, DEP_SECOND, DEP_YEAR
-from qtoggleserver.core.main import force_eval_expressions, handle_value_changes, read_ports
+from qtoggleserver.core.main import force_eval_expressions, handle_changes, pause, read_ports, resume
 
 
 class TestReadPorts:
     async def test_change_time_asap(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
-        """Should call `handle_value_changes` with {DEP_ASAP}, regardless of time changes."""
+        """Should call `handle_changes` with {DEP_ASAP}, regardless of time changes."""
 
         freezer.move_to(dummy_utc_datetime)
         await read_ports()
-        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
+        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_changes")
         await read_ports()
         spy_handle_value_changes.assert_called_once_with([mock_num_port1], {DEP_ASAP}, {}, int(time.time() * 1000))
 
     async def test_change_time_second(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
-        """Should call `handle_value_changes` with {DEP_ASAP, DEP_SECOND} when second changes."""
+        """Should call `handle_changes` with {DEP_ASAP, DEP_SECOND} when second changes."""
 
         freezer.move_to(dummy_utc_datetime)
         await read_ports()
 
         freezer.move_to(dummy_utc_datetime + timedelta(seconds=1))
-        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
+        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_changes")
         await read_ports()
         spy_handle_value_changes.assert_called_once_with(
             [mock_num_port1], {DEP_ASAP, DEP_SECOND}, {}, int(time.time() * 1000)
         )
 
     async def test_change_time_minute(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
-        """Should call `handle_value_changes` with {DEP_ASAP, DEP_SECOND, DEP_MINUTE} when minute changes."""
+        """Should call `handle_changes` with {DEP_ASAP, DEP_SECOND, DEP_MINUTE} when minute changes."""
 
         freezer.move_to(dummy_utc_datetime)
         await read_ports()
 
         freezer.move_to(dummy_utc_datetime + timedelta(minutes=1))
-        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
+        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_changes")
         await read_ports()
         spy_handle_value_changes.assert_called_once_with(
             [mock_num_port1], {DEP_ASAP, DEP_SECOND, DEP_MINUTE}, {}, int(time.time() * 1000)
         )
 
     async def test_change_time_hour(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
-        """Should call `handle_value_changes` with {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR} when hour changes."""
+        """Should call `handle_changes` with {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR} when hour changes."""
 
         freezer.move_to(dummy_utc_datetime)
         await read_ports()
 
         freezer.move_to(dummy_utc_datetime + timedelta(hours=1))
-        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
+        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_changes")
         await read_ports()
         spy_handle_value_changes.assert_called_once_with(
             [mock_num_port1], {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR}, {}, int(time.time() * 1000)
         )
 
     async def test_change_time_day(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
-        """Should call `handle_value_changes` with {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY} when day
+        """Should call `handle_changes` with {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY} when day
         changes."""
 
         freezer.move_to(datetime(2019, 1, 30, 23, 30, 30))
         await read_ports()
 
         freezer.move_to(datetime(2019, 1, 31, 0, 0, 0))
-        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
+        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_changes")
         await read_ports()
         spy_handle_value_changes.assert_called_once_with(
             [mock_num_port1], {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY}, {}, int(time.time() * 1000)
         )
 
     async def test_change_time_month(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
-        """Should call `handle_value_changes` with {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY, DEP_MONTH} when
+        """Should call `handle_changes` with {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY, DEP_MONTH} when
         month changes."""
 
         freezer.move_to(datetime(2019, 1, 31, 23, 30, 30))
         await read_ports()
 
         freezer.move_to(datetime(2019, 2, 1, 0, 0, 0))
-        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
+        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_changes")
         await read_ports()
         spy_handle_value_changes.assert_called_once_with(
             [mock_num_port1],
@@ -87,14 +90,14 @@ class TestReadPorts:
         )
 
     async def test_change_time_year(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
-        """Should call `handle_value_changes` with {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY, DEP_MONTH,
+        """Should call `handle_changes` with {DEP_ASAP, DEP_SECOND, DEP_MINUTE, DEP_HOUR, DEP_DAY, DEP_MONTH,
         DEP_YEAR} when year changes."""
 
         freezer.move_to(datetime(2019, 12, 31, 23, 30, 30))
         await read_ports()
 
         freezer.move_to(datetime(2020, 1, 1, 0, 0, 0))
-        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
+        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_changes")
         await read_ports()
         spy_handle_value_changes.assert_called_once_with(
             [mock_num_port1],
@@ -107,11 +110,11 @@ class TestReadPorts:
         self, freezer, mocker, mock_num_port1, mock_num_port2, dummy_utc_datetime
     ):
         """Should only read specified ports when `ports_to_read` is provided, while passing all ports to
-        handle_value_changes."""
+        handle_changes."""
 
         freezer.move_to(dummy_utc_datetime)
         await read_ports()
-        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
+        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_changes")
 
         await read_ports(ports_to_read=[mock_num_port2])
         spy_handle_value_changes.assert_called_once_with(
@@ -125,7 +128,7 @@ class TestReadPorts:
         await read_ports()
 
         freezer.move_to(dummy_utc_datetime + timedelta(seconds=1))
-        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
+        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_changes")
 
         await read_ports(ports_to_read=[mock_num_port1])
         spy_handle_value_changes.assert_called_once_with([mock_num_port1], {DEP_ASAP}, {}, int(time.time() * 1000))
@@ -135,13 +138,13 @@ class TestReadPorts:
 
         freezer.move_to(dummy_utc_datetime)
         await read_ports()
-        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_value_changes")
+        spy_handle_value_changes = mocker.patch("qtoggleserver.core.main.handle_changes")
 
         await read_ports(ports_to_read=[])
         spy_handle_value_changes.assert_called_once_with([mock_num_port1], {DEP_ASAP}, {}, int(time.time() * 1000))
 
 
-class TestHandleValueChanges:
+class TestHandleChanges:
     async def test_self_port_value_trigger_eval(self, mocker, mock_num_port1):
         """Should trigger a port's expression evaluation if the expression depends on itself through `$`."""
 
@@ -149,7 +152,7 @@ class TestHandleValueChanges:
         mock_num_port1.set_expression("MUL($, 2)")
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
-        await handle_value_changes(
+        await handle_changes(
             [mock_num_port1], changed_set={mock_num_port1}, value_pairs={mock_num_port1: (10, 20)}, now_ms=0
         )
         mock_num_port1.eval_and_push_write.assert_called_once()
@@ -161,7 +164,7 @@ class TestHandleValueChanges:
         mock_num_port1.set_expression("MUL($nid1, 2)")
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
-        await handle_value_changes(
+        await handle_changes(
             [mock_num_port1], changed_set={mock_num_port1}, value_pairs={mock_num_port1: (10, 20)}, now_ms=0
         )
         mock_num_port1.eval_and_push_write.assert_called_once()
@@ -176,7 +179,7 @@ class TestHandleValueChanges:
         (mocker.patch.object(mock_num_port1, "eval_and_push_write"),)
         (mocker.patch.object(mock_num_port1, "is_enabled", return_value=False),)
 
-        await handle_value_changes([mock_num_port1], changed_set=set(), value_pairs={}, now_ms=0)
+        await handle_changes([mock_num_port1], changed_set=set(), value_pairs={}, now_ms=0)
         mock_num_port1.eval_and_push_write.assert_not_called()
 
     async def test_asap_trigger_eval(self, mocker, mock_num_port1):
@@ -186,7 +189,7 @@ class TestHandleValueChanges:
         mock_num_port1.set_expression("TIMEMS()")
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
-        await handle_value_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=0)
+        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=0)
         mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_asap_eval_paused_no_trigger_eval(self, mocker, mock_num_port1):
@@ -198,7 +201,7 @@ class TestHandleValueChanges:
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         e.pause_asap_eval(1000)
-        await handle_value_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=999)
+        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=999)
         mock_num_port1.eval_and_push_write.assert_not_called()
 
     async def test_asap_eval_not_paused_trigger_eval(self, mocker, mock_num_port1):
@@ -210,5 +213,76 @@ class TestHandleValueChanges:
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         e.pause_asap_eval(1000)
-        await handle_value_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=1000)
+        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=1000)
         mock_num_port1.eval_and_push_write.assert_called_once()
+
+
+class TestPauseResume:
+    @pytest.fixture(autouse=True)
+    def reset_paused(self):
+        """Ensure _paused is False before each test and restored after."""
+        core_main._paused = False
+        yield
+        core_main._paused = False
+
+    async def test_resume_allows_read_ports(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """Should allow read_ports() to call handle_changes after resume()."""
+
+        freezer.move_to(dummy_utc_datetime)
+        await read_ports()  # prime last-time state
+        spy = mocker.patch("qtoggleserver.core.main.handle_changes")
+        resume()
+        await read_ports()
+        spy.assert_called_once()
+
+    async def test_pause_skips_read_ports(self, mocker, mock_num_port1):
+        """Should skip handle_changes call in read_ports() after pause()."""
+
+        spy = mocker.patch("qtoggleserver.core.main.handle_changes")
+        pause()
+        await read_ports()
+        spy.assert_not_called()
+
+    async def test_resume_from_paused_state(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """Should resume after an explicit pause, allowing read_ports() to proceed."""
+
+        freezer.move_to(dummy_utc_datetime)
+        await read_ports()  # prime last-time state
+        pause()
+        resume()
+        spy = mocker.patch("qtoggleserver.core.main.handle_changes")
+        await read_ports()
+        spy.assert_called_once()
+
+    async def test_resume_idempotent(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """Calling resume() multiple times should keep read_ports() running normally."""
+
+        freezer.move_to(dummy_utc_datetime)
+        await read_ports()  # prime last-time state
+        resume()
+        resume()
+        spy = mocker.patch("qtoggleserver.core.main.handle_changes")
+        await read_ports()
+        spy.assert_called_once()
+
+    async def test_pause_idempotent(self, mocker, mock_num_port1):
+        """Calling pause() multiple times should keep read_ports() skipped."""
+
+        spy = mocker.patch("qtoggleserver.core.main.handle_changes")
+        pause()
+        pause()
+        await read_ports()
+        spy.assert_not_called()
+
+    async def test_pause_resume_cycle(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """A full pause -> resume cycle should end with read_ports() executing normally."""
+
+        freezer.move_to(dummy_utc_datetime)
+        await read_ports()  # prime last-time state
+        pause()
+        resume()
+        pause()
+        resume()
+        spy = mocker.patch("qtoggleserver.core.main.handle_changes")
+        await read_ports()
+        spy.assert_called_once()

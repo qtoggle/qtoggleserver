@@ -150,7 +150,7 @@ async def put_slave_devices(request: core_api.APIRequest, params: GenericJSONLis
     core_events.disable()
 
     # Temporarily disable core updating (port polling, expression evaluating and value-change handling)
-    core_main.disable_updating()
+    core_main.pause()
 
     try:
         # Remove all slave devices
@@ -185,7 +185,7 @@ async def put_slave_devices(request: core_api.APIRequest, params: GenericJSONLis
             pass
 
     finally:
-        core_main.enable_updating()
+        core_main.resume()
         core_events.enable()
 
     await core_events.trigger_full_update()
