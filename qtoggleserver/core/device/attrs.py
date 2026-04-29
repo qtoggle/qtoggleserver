@@ -586,6 +586,18 @@ ATTRDEFS = {
         "enabled": system.battery.has_battery_support,
         "getter": system.battery.get_battery_level,
     },
+    "tick_interval": {
+        "display_name": "Tick Interval",  # TODO: i18n
+        "description": "The interval between two consecutive update ticks, in milliseconds.",  # TODO: i18n
+        "type": "number",
+        "min": 1,
+        "integer": True,
+        "modifiable": True,
+        "standard": False,
+        "persisted": True,
+        "getter": lambda: settings.core.tick_interval,
+        "setter": lambda v: setattr(settings.core, "tick_interval", v),
+    },
 }
 
 
