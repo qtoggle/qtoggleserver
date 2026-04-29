@@ -2,10 +2,10 @@ from qtoggleserver import persist, system
 from qtoggleserver.core import history as core_history
 from qtoggleserver.core import ports as core_ports
 
-from .base import DEP_ASAP, DEP_SECOND, EvalContext, EvalResult
-from .exceptions import PortValueUnavailable, RealDateTimeUnavailable, ValueUnavailable
-from .functions import Function, function
-from .ports import PortRef
+from ..base import DEP_ASAP, DEP_SECOND, EvalContext, EvalResult
+from ..exceptions import PortValueUnavailable, RealDateTimeUnavailable, ValueUnavailable
+from ..ports import PortRef
+from . import Function, function
 
 
 @function("AVAILABLE")

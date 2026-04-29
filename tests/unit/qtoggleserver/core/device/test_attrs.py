@@ -484,6 +484,8 @@ class TestGetAttrs:
         """Should call `get_attrdefs`, prepare and return a dictionary of corresponding device attributes by calling the
         getter of each attribute definition."""
 
+        device_attrs.invalidate_attrs()
+
         call_count34 = 0
 
         async def call5():

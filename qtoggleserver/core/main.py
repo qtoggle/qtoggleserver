@@ -14,8 +14,10 @@ from qtoggleserver.core.expressions import (
     DEP_MONTH,
     DEP_SECOND,
     DEP_YEAR,
+    EvalContext,
 )
 from qtoggleserver.core.typing import NullablePortValue
+from qtoggleserver.utils import expressions as expressions_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
 from qtoggleserver.utils import timedset
@@ -31,7 +33,7 @@ loop: asyncio.AbstractEventLoop | None = None
 
 _update_loop_task: asyncio.Task | None = None
 _ready: bool = False
-_updating_enabled: bool = True
+_paused: bool = False
 _start_time: float = time.time()
 _last_time: int = 0
 _last_minute: int = 0
@@ -46,7 +48,7 @@ _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
 _update_lock: asyncio.Lock | None = None
 
 
-async def update() -> None:
+async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> None:
     from . import sessions
 
     global _last_time
@@ -58,7 +60,7 @@ async def update() -> None:
     global _last_year
     global _update_lock
 
-    if not _updating_enabled:
+    if _paused:
         return
 
     if _update_lock is None:
@@ -72,38 +74,43 @@ async def update() -> None:
         now_int = int(now)
         now_ms = int(now * 1000)
 
-        # Determine which time units have changed since last update
+        # Determine which time units have changed since last update. But only do this during regular port reading
+        # update calls, when no specific `ports_to_read` are supplied.
         second_changed = False
-        if now_int != _last_time:
-            _last_time = now_int
-            second_changed = True
-            changed_set.add(DEP_SECOND)
+        if not ports_to_read:
+            if now_int != _last_time:
+                _last_time = now_int
+                second_changed = True
+                changed_set.add(DEP_SECOND)
 
-            now_minute = now_int // 60
-            if now_minute != _last_minute:
-                _last_minute = now_minute
-                changed_set.add(DEP_MINUTE)
+                now_minute = now_int // 60
+                if now_minute != _last_minute:
+                    _last_minute = now_minute
+                    changed_set.add(DEP_MINUTE)
 
-                now_hour = now_minute // 60
-                if now_hour != _last_hour:
-                    _last_hour = now_hour
-                    changed_set.add(DEP_HOUR)
+                    now_hour = now_minute // 60
+                    if now_hour != _last_hour:
+                        _last_hour = now_hour
+                        changed_set.add(DEP_HOUR)
 
-                    now_dt = datetime.fromtimestamp(now)
-                    if now_dt.day != _last_day:
-                        _last_day = now_dt.day
-                        changed_set.add(DEP_DAY)
+                        now_dt = datetime.fromtimestamp(now)
+                        if now_dt.day != _last_day:
+                            _last_day = now_dt.day
+                            changed_set.add(DEP_DAY)
 
-                        if now_dt.month != _last_month:
-                            _last_month = now_dt.month
-                            changed_set.add(DEP_MONTH)
+                            if now_dt.month != _last_month:
+                                _last_month = now_dt.month
+                                changed_set.add(DEP_MONTH)
 
-                            if now_dt.year != _last_year:
-                                _last_year = now_dt.year
-                                changed_set.add(DEP_YEAR)
+                                if now_dt.year != _last_year:
+                                    _last_year = now_dt.year
+                                    changed_set.add(DEP_YEAR)
 
         all_ports = list(core_ports.get_all())
-        for port in all_ports:
+        if not ports_to_read:
+            ports_to_read = all_ports
+
+        for port in ports_to_read:
             if not port.is_enabled():
                 continue
 
@@ -140,7 +147,7 @@ async def update() -> None:
                 changed_set.add(port)
                 value_pairs[port] = old_value, new_value
 
-        await handle_value_changes(all_ports, changed_set, value_pairs, now_ms)
+        await handle_changes(all_ports, changed_set, value_pairs, now_ms)
 
         sessions.update()
 
@@ -150,7 +157,7 @@ async def update_loop() -> None:
         try:
             try:
                 if _ready:
-                    await update()
+                    await read_ports()
             except Exception as e:
                 logger.error("update failed: %s", e, exc_info=True)
             await asyncio.sleep(settings.core.tick_interval / 1000.0)
@@ -159,7 +166,7 @@ async def update_loop() -> None:
             break
 
 
-async def handle_value_changes(
+async def handle_changes(
     all_ports: list[core_ports.BasePort],
     changed_set: set[core_ports.BasePort | str],
     value_pairs: dict[core_ports.BasePort, tuple[NullablePortValue, NullablePortValue]],
@@ -185,11 +192,12 @@ async def handle_value_changes(
     changed_set_str: set[str] = set()
 
     # Trigger value-change events; save persisted ports; build changed_set_str
-    for port in changed_set:
-        if isinstance(port, core_ports.BasePort):
+    for changed in changed_set:
+        if isinstance(changed, core_ports.BasePort):
+            port = changed
             changed_set_str.add(f"${port.get_id()}")
-        else:
-            changed_set_str.add(port)  # `port` is actually a string here
+        else:  # time string
+            changed_set_str.add(changed)
             continue
 
         if not await port.is_internal():
@@ -201,7 +209,9 @@ async def handle_value_changes(
         if await port.is_persisted():
             port.save_asap()
 
-    # Reevaluate all port expressions depending on changed ports
+    eval_context: EvalContext | None = None
+
+    # Reevaluate all port expressions depending on changed set
     for port in all_ports:
         if not port.is_enabled():
             continue
@@ -210,23 +220,23 @@ async def handle_value_changes(
         if not expression:
             continue
 
-        if full_eval or (port in forced_ports):
-            await port.eval_and_push_write(now_ms)
-            continue
+        if not full_eval and (port not in forced_ports):
+            deps: set[str] = expression.get_deps()
 
-        deps: set[str] = expression.get_deps()
-
-        # Evaluate a port's expression only if one of its deps changed
-        changed_deps = deps & changed_set_str
-        if not changed_deps:
-            continue
-
-        if changed_deps == {DEP_ASAP}:
-            # Skip asap evaling if explicitly paused
-            if expression.is_asap_eval_paused(now_ms):
+            # Evaluate a port's expression only if one of its deps changed
+            changed_deps = deps & changed_set_str
+            if not changed_deps:
                 continue
 
-        await port.eval_and_push_write(now_ms)
+            if changed_deps == {DEP_ASAP}:
+                # Skip asap evaling if explicitly paused
+                if expression.is_asap_eval_paused(now_ms):
+                    continue
+
+        if not eval_context:
+            eval_context = await expressions_utils.build_context(now_ms)
+
+        await port.eval_and_push_write(eval_context)
 
 
 def force_eval_expressions(port: core_ports.BasePort | None = None) -> None:
@@ -240,20 +250,20 @@ def force_eval_expressions(port: core_ports.BasePort | None = None) -> None:
         _force_eval_all_expressions = True
 
 
-def enable_updating() -> None:
-    global _updating_enabled
+def resume() -> None:
+    global _paused
 
-    if not _updating_enabled:
-        logger.debug("enabling update mechanism")
-        _updating_enabled = True
+    if _paused:
+        logger.debug("resuming ports reading loop")
+        _paused = False
 
 
-def disable_updating() -> None:
-    global _updating_enabled
+def pause() -> None:
+    global _paused
 
-    if _updating_enabled:
-        logger.debug("disabling update mechanism")
-        _updating_enabled = False
+    if not _paused:
+        logger.debug("pausing ports reading loop")
+        _paused = True
 
 
 def is_ready() -> bool:

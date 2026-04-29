@@ -5,6 +5,7 @@ import time
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import ports as core_ports
+from qtoggleserver.core.expressions import EvalContext
 from qtoggleserver.core.expressions import exceptions as expression_exceptions
 from qtoggleserver.core.expressions.exceptions import ExpressionEvalException
 from qtoggleserver.core.typing import Attribute, Attributes, NullablePortValue
@@ -214,6 +215,22 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
         return value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs
 
+    def _build_eval_context(self) -> EvalContext:
+        device_attrs = self._device_attrs.copy()
+
+        # Add slave device attrs
+        for slave_name, slave_attrs in self._slave_attrs.items():
+            device_attrs.update(
+                {f"{slave_name}.{attr_name}": attr_value for attr_name, attr_value in slave_attrs.items()}
+            )
+
+        return EvalContext(
+            port_values=self._port_values,
+            port_attrs=self._port_attrs,
+            device_attrs=device_attrs,
+            now_ms=int(time.time() * 1000),
+        )
+
     @staticmethod
     def _accepts_attrs(
         attr_names: set[str],
@@ -274,9 +291,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 if new_value not in self._filter_port_value:
                     return False
             elif isinstance(self._filter_port_value, core_expressions.Expression):  # an expression
-                port_values = {p.get_id(): p.get_last_read_value() for p in core_ports.get_all() if p.is_enabled()}
-                # TODO: eval attrs
-                eval_context = core_expressions.EvalContext(port_values=port_values, now_ms=int(time.time() * 1000))
+                eval_context = self._build_eval_context()
                 try:
                     if new_value != await self._filter_port_value.eval(context=eval_context):
                         return False

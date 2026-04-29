@@ -398,7 +398,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._after_set_attr_debounced.call(name, value)
 
     async def _after_set_attr(self, *args) -> None:
-        await main.update()
         await self.trigger_update()
         for name, value in args:
             await self.handle_attr_change(name, value)
@@ -580,7 +579,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.debug('setting expression "%s"', expression)
         self._expression = expression
 
+        # This will force expression evaluation for this port right away
         main.force_eval_expressions(self)
+        await main.read_ports([self])
 
     async def attr_get_transform_read(self) -> str:
         if self._transform_read:
@@ -678,9 +679,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 raise
 
         if self._transform_read:
-            context = EvalContext(port_values={self.get_id(): value})
+            eval_context = EvalContext(port_values={self.get_id(): value})
             try:
-                value = self.adapt_value_type(await self._transform_read.eval(context))
+                value = self.adapt_value_type(await self._transform_read.eval(eval_context))
             except expressions_exceptions.ValueUnavailable:
                 value = None
 
@@ -703,10 +704,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             finally:
                 self._writing_value = None
 
-        # Do an update after every confirmed write
-        await asyncio.sleep(settings.core.tick_interval / 1000.0)
-        await main.update()
-
     def get_pending_value(self) -> NullablePortValue:
         """Return the most recent value that's about to be written to the port but hasn't been, yet."""
 
@@ -718,17 +715,14 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_last_written_value(self) -> NullablePortValue:
         return self._last_written_value[0] if self._last_written_value else None
 
-    async def eval_and_push_write(self, now_ms: int) -> None:
+    async def eval_and_push_write(self, eval_context: EvalContext) -> None:
         """Evaluate the port's expression and push the resulting value to the write queue. Shield any evaluation
         exceptions from caller, but make sure to log them."""
 
-        port_values = {p.get_id(): p.get_last_value() for p in get_all() if p.is_enabled()}
-        # TODO: eval attrs
-        context = EvalContext(port_values, now_ms)
         expression = self.get_expression()
 
         try:
-            value = await expression.eval(context)
+            value = await expression.eval(eval_context)
         except expressions_exceptions.ExpressionEvalException as e:
             self.debug('evaluation did not complete for expression "%s": %s', expression, e)
             return
@@ -773,9 +767,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         value_str = json_utils.dumps(value)
 
         if self._transform_write:
-            context = EvalContext(port_values={self.get_id(): value})
+            eval_context = EvalContext(port_values={self.get_id(): value})
             try:
-                value = self.adapt_value_type(await self._transform_write.eval(context))
+                value = self.adapt_value_type(await self._transform_write.eval(eval_context))
             except expressions_exceptions.ValueUnavailable:
                 value = None
             value_str = f"{value_str} ({json_utils.dumps(value)} after write transform)"
@@ -939,10 +933,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 # Write the just-loaded value to the port
                 value = data["value"]
                 if self._transform_write:
+                    eval_context = EvalContext(port_values={self.get_id(): value})
                     try:
-                        value = self.adapt_value_type(
-                            await self._transform_write.eval(EvalContext(port_values={self.get_id(): value}))
-                        )
+                        value = self.adapt_value_type(await self._transform_write.eval(eval_context))
                     except expressions_exceptions.ValueUnavailable:
                         value = None
 

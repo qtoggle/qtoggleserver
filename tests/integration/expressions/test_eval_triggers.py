@@ -26,7 +26,7 @@ async def test_eval_trigger_value_change(mock_num_port1, mock_num_port2, mocker)
     mock_num_port1.set_next_value(6)
 
     mocker.patch.object(mock_num_port2, "transform_and_write_value")
-    await main.update()
+    await main.read_ports()
     await asyncio.sleep(0.1)
     mock_num_port2.transform_and_write_value.assert_called_once_with(60)
 
@@ -41,7 +41,7 @@ async def test_eval_trigger_value_change_own(mock_num_port1, mock_num_port2, moc
     mock_num_port1.set_next_value(6)
     mocker.patch.object(mock_num_port2, "transform_and_write_value")
 
-    await main.update()
+    await main.read_ports()
     await asyncio.sleep(0.1)
     mock_num_port2.transform_and_write_value.assert_called_once_with(30)
 
@@ -56,7 +56,7 @@ async def test_eval_trigger_ignore_inexistent_port(mock_num_port1, mock_num_port
     mock_num_port1.set_next_value(6)
     mocker.patch.object(mock_num_port2, "transform_and_write_value")
 
-    await main.update()
+    await main.read_ports()
     await asyncio.sleep(0.1)
     mock_num_port2.transform_and_write_value.assert_not_called()
 
@@ -71,11 +71,11 @@ async def test_eval_trigger_port_enabled(mock_num_port1, mocker):
     mocker.patch.object(mock_num_port1, "transform_and_write_value")
 
     await mock_num_port1.disable()
-    await main.update()
+    await main.read_ports()
     await asyncio.sleep(0.1)
     mock_num_port1.transform_and_write_value.assert_not_called()
 
     await mock_num_port1.enable()
-    await main.update()
+    await main.read_ports()
     await asyncio.sleep(0.1)
     mock_num_port1.transform_and_write_value.assert_called_once_with(60)

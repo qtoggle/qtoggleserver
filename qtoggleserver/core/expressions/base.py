@@ -5,7 +5,7 @@ import abc
 from enum import IntEnum
 from typing import TypeAlias
 
-from qtoggleserver.core.typing import NullablePortValue
+from qtoggleserver.core.typing import Attributes, NullablePortValue
 
 from .exceptions import ExpressionEvalException
 
@@ -60,9 +60,6 @@ class Expression(metaclass=abc.ABCMeta):
         return self._cached_deps
 
     def _get_deps(self) -> set[str]:
-        # Special deps:
-        #  * 'second' - used to indicate dependency on system time (seconds)
-        #  * 'asap' - used to indicate that evaluation should be done as soon as possible
         return set()
 
     @staticmethod
@@ -72,8 +69,16 @@ class Expression(metaclass=abc.ABCMeta):
 
 
 class EvalContext:
-    def __init__(self, port_values: dict[str, NullablePortValue], now_ms: int = 0) -> None:
-        self.port_values: dict[str, NullablePortValue] = port_values
+    def __init__(
+        self,
+        port_values: dict[str, NullablePortValue] | None = None,
+        port_attrs: dict[str, Attributes] | None = None,
+        device_attrs: Attributes | None = None,
+        now_ms: int = 0,
+    ) -> None:
+        self.port_values: dict[str, NullablePortValue] = port_values or {}
+        self.port_attrs: dict[str, Attributes] = port_attrs or {}
+        self.device_attrs: Attributes = device_attrs or {}
         self.now_ms: int = now_ms
         self.timestamp: int = now_ms // 1000
 

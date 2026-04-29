@@ -159,7 +159,7 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
     core_events.disable()
 
     # Temporarily disable core updating (port polling, expression evaluating and value-change handling)
-    core_main.disable_updating()
+    core_main.pause()
 
     try:
         # Remove all (local) virtual ports
@@ -219,7 +219,7 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
             await wrap_error_with_port_id(id_, set_port_attrs, port, attrs, ignore_extra_attrs=True)
 
     finally:
-        core_main.enable_updating()
+        core_main.resume()
         core_events.enable()
 
     await core_events.trigger_full_update()
