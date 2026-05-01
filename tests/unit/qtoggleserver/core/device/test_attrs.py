@@ -5,6 +5,7 @@ from unittest import mock
 
 import pytest
 
+from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core.device import attrs as device_attrs
 from qtoggleserver.core.typing import Attribute
@@ -312,6 +313,45 @@ class TestDisplayNameAttr:
         mocker.patch.object(device_attrs, "display_name", "old1")
         device_attrs.attr_set_display_name("new1")
         assert device_attrs.display_name == "new1"
+
+
+class TestTickIntervalAttr:
+    def test_attrdef_properties(self):
+        """Should have the expected attrdef properties."""
+
+        attrdef = device_attrs.ATTRDEFS["tick_interval"]
+        assert attrdef["type"] == "number"
+        assert attrdef["modifiable"] is True
+        assert attrdef["integer"] is True
+        assert attrdef["standard"] is False
+        assert attrdef["persisted"] is True
+        assert attrdef["min"] == 1
+        assert attrdef["display_name"] == "Tick Interval"
+        assert "description" in attrdef
+
+    def test_getter(self, mocker):
+        """Getter should return the current `settings.core.tick_interval` value."""
+
+        mocker.patch("qtoggleserver.conf.settings.core.tick_interval", 123)
+        getter = device_attrs.ATTRDEFS["tick_interval"]["getter"]
+        assert getter() == 123
+
+    def test_setter(self, mocker):
+        """Setter should update `settings.core.tick_interval`."""
+
+        mocker.patch("qtoggleserver.conf.settings.core.tick_interval", 50)
+        setter = device_attrs.ATTRDEFS["tick_interval"]["setter"]
+        setter(200)
+        assert settings.core.tick_interval == 200
+
+    def test_getter_reflects_setter(self, mocker):
+        """Getter should return the value previously set by the setter."""
+
+        mocker.patch("qtoggleserver.conf.settings.core.tick_interval", 50)
+        getter = device_attrs.ATTRDEFS["tick_interval"]["getter"]
+        setter = device_attrs.ATTRDEFS["tick_interval"]["setter"]
+        setter(75)
+        assert getter() == 75
 
 
 class TestAPIVersionAttr:
