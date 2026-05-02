@@ -11,7 +11,7 @@ logging = {
 }
 
 core = {
-    tick_interval = 50          # how often to read ports, in milliseconds
+    tick_interval = 50          # how often to read ports, in milliseconds (default value)
     event_queue_size = 1024     # maximum number of queued events in a session
     max_client_time_skew = 300  # maximum accepted time skew when authenticating clients, in seconds
 

@@ -24,7 +24,7 @@ logging: dict[str, _Any] = {
         '"qtoggleserver.drivers.persist"': {"level": "INFO"},
         '"qtoggleserver.utils.cmd"': {"level": "INFO"},
     },
-    "root": {"level": "DEBUG", "handlers": ["console"]},
+    "root": {"level": "INFO", "handlers": ["console"]},
 }
 
 

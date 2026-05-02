@@ -274,6 +274,11 @@ def attr_set_password(which: str, value: str) -> None:
     setattr(core_device_attrs, f"{which}_password_hash", password_hash)
 
 
+def _set_log_level(value: str) -> None:
+    logging.getLogger().setLevel(value)
+    settings.logging["root"]["level"] = value
+
+
 ATTRDEFS = {
     "name": {
         "type": "string",
@@ -597,6 +602,23 @@ ATTRDEFS = {
         "persisted": True,
         "getter": lambda: settings.core.tick_interval,
         "setter": lambda v: setattr(settings.core, "tick_interval", v),
+    },
+    "log_level": {
+        "display_name": "Log Level",  # TODO: i18n
+        "description": "The logging level.",  # TODO: i18n
+        "type": "string",
+        "modifiable": True,
+        "standard": False,
+        "persisted": True,
+        "choices": [
+            {"display_name": "Debug", "value": "DEBUG"},
+            {"display_name": "Info", "value": "INFO"},
+            {"display_name": "Warning", "value": "WARNING"},
+            {"display_name": "Error", "value": "ERROR"},
+            {"display_name": "Critical", "value": "CRITICAL"},
+        ],
+        "getter": lambda: logging.getLevelName(logging.getLogger().level),
+        "setter": _set_log_level,
     },
 }
 
