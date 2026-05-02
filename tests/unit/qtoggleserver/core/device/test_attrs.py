@@ -1,4 +1,5 @@
 import hashlib
+import logging
 
 from datetime import timedelta
 from unittest import mock
@@ -352,6 +353,55 @@ class TestTickIntervalAttr:
         setter = device_attrs.ATTRDEFS["tick_interval"]["setter"]
         setter(75)
         assert getter() == 75
+
+
+class TestLogLevelAttr:
+    def test_attrdef_properties(self):
+        """Should have the expected attrdef properties."""
+
+        attrdef = device_attrs.ATTRDEFS["log_level"]
+        assert attrdef["type"] == "string"
+        assert attrdef["modifiable"] is True
+        assert attrdef["standard"] is False
+        assert attrdef["persisted"] is True
+        assert attrdef["display_name"] == "Log Level"
+        assert "description" in attrdef
+        assert [c["value"] for c in attrdef["choices"]] == ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+    def test_getter(self, mocker):
+        """Getter should return the current root logger level name."""
+
+        mocker.patch("logging.getLogger").return_value.level = logging.WARNING
+        getter = device_attrs.ATTRDEFS["log_level"]["getter"]
+        assert getter() == "WARNING"
+
+    def test_setter(self, mocker):
+        """Setter should update the root logger level and settings."""
+
+        mock_root_logger = mocker.patch("logging.getLogger").return_value
+        mocker.patch.dict(settings.logging, {"root": {"level": "DEBUG"}})
+        setter = device_attrs.ATTRDEFS["log_level"]["setter"]
+        setter("ERROR")
+        mock_root_logger.setLevel.assert_called_once_with("ERROR")
+        assert settings.logging["root"]["level"] == "ERROR"
+
+    def test_getter_reflects_setter(self, mocker):
+        """Getter should return the value previously set by the setter."""
+
+        mock_root_logger = mocker.MagicMock()
+        mock_root_logger.level = logging.DEBUG
+        mocker.patch("logging.getLogger", return_value=mock_root_logger)
+        mocker.patch.dict(settings.logging, {"root": {"level": "DEBUG"}})
+
+        getter = device_attrs.ATTRDEFS["log_level"]["getter"]
+        setter = device_attrs.ATTRDEFS["log_level"]["setter"]
+
+        def update_level(value):
+            mock_root_logger.level = getattr(logging, value)
+
+        mock_root_logger.setLevel.side_effect = update_level
+        setter("INFO")
+        assert getter() == "INFO"
 
 
 class TestAPIVersionAttr:
