@@ -170,6 +170,8 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return self._enabled and self._online
 
     def set_online(self, online: bool) -> None:
+        self._online = online
+
         if online and not self._online:
             self.debug("is online")
             try:
@@ -182,8 +184,6 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self.handle_offline()
             except Exception:
                 self.error("handle_offline failed", exc_info=True)
-
-        self._online = online
 
     def handle_offline(self) -> None:
         self.trigger_port_update_fire_and_forget()
