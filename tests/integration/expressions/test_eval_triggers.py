@@ -1,5 +1,6 @@
 import asyncio
 
+from qtoggleserver.conf import settings
 from qtoggleserver.core import main
 
 
@@ -12,7 +13,8 @@ async def test_eval_trigger_set_expression(mock_num_port1, mock_num_port2, mocke
     mocker.patch.object(mock_num_port2, "transform_and_write_value")
 
     await mock_num_port2.set_attr("expression", "MUL($nid1, 10)")
-    await asyncio.sleep(0.1)
+    await main.read_ports()
+    await asyncio.sleep(settings.core.tick_interval / 1000)
     mock_num_port2.transform_and_write_value.assert_called_once_with(40)
 
 
@@ -27,7 +29,7 @@ async def test_eval_trigger_value_change(mock_num_port1, mock_num_port2, mocker)
 
     mocker.patch.object(mock_num_port2, "transform_and_write_value")
     await main.read_ports()
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(settings.core.tick_interval / 1000)
     mock_num_port2.transform_and_write_value.assert_called_once_with(60)
 
 
@@ -42,7 +44,7 @@ async def test_eval_trigger_value_change_own(mock_num_port1, mock_num_port2, moc
     mocker.patch.object(mock_num_port2, "transform_and_write_value")
 
     await main.read_ports()
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(settings.core.tick_interval / 1000)
     mock_num_port2.transform_and_write_value.assert_called_once_with(30)
 
 
@@ -57,7 +59,7 @@ async def test_eval_trigger_ignore_inexistent_port(mock_num_port1, mock_num_port
     mocker.patch.object(mock_num_port2, "transform_and_write_value")
 
     await main.read_ports()
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(settings.core.tick_interval / 1000)
     mock_num_port2.transform_and_write_value.assert_not_called()
 
 
@@ -72,10 +74,10 @@ async def test_eval_trigger_port_enabled(mock_num_port1, mocker):
 
     await mock_num_port1.disable()
     await main.read_ports()
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(settings.core.tick_interval / 1000)
     mock_num_port1.transform_and_write_value.assert_not_called()
 
     await mock_num_port1.enable()
     await main.read_ports()
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(settings.core.tick_interval / 1000)
     mock_num_port1.transform_and_write_value.assert_called_once_with(60)

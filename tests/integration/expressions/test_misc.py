@@ -28,6 +28,7 @@ async def test_expression_port_self_value(mock_num_port1):
     mock_num_port1.set_writable(True)
     mock_num_port1.set_last_read_value(15)
     await mock_num_port1.set_attr("expression", "ADD($, 1)")
+    await main.read_ports()
     await asyncio.sleep(settings.core.tick_interval / 1000)
     assert mock_num_port1.get_last_written_value() == 16
 
@@ -38,6 +39,7 @@ async def test_expression_port_own_value(mock_num_port1):
     mock_num_port1.set_writable(True)
     mock_num_port1.set_last_read_value(15)
     await mock_num_port1.set_attr("expression", "ADD($nid1, 1)")
+    await main.read_ports()
     await asyncio.sleep(settings.core.tick_interval / 1000)
     assert mock_num_port1.get_last_written_value() == 16
 
