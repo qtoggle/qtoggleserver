@@ -30,6 +30,7 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
         self._poll_stopped: bool = False
         self._poll_task: asyncio.Task | None = None
         self._poll_interval: int = self.DEFAULT_POLL_INTERVAL
+        self._poll_wakeup: asyncio.Event = asyncio.Event()
         self._poll_error: Exception | None = None
         self._retry_poll_interval: int = (
             retry_poll_interval if retry_poll_interval >= 0 else self.DEFAULT_RETRY_POLL_INTERVAL
@@ -80,16 +81,12 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
                 self._retry_counter = 0
                 self.set_online(True)
 
-                # Granular sleep so it can be adjusted
-                orig_poll_interval = self._poll_interval
-                for i in range(self._poll_interval):
-                    if not self._polling:
-                        break
-
-                    if orig_poll_interval != self._poll_interval:  # poll interval changed
-                        break
-
-                    await asyncio.sleep(1)
+                # Sleep until next poll interval, but wake up immediately if interval changes or polling stops
+                self._poll_wakeup.clear()
+                try:
+                    await asyncio.wait_for(self._poll_wakeup.wait(), timeout=self._poll_interval)
+                except asyncio.TimeoutError:
+                    pass
             except asyncio.CancelledError:
                 self.debug("polling task cancelled")
                 break
@@ -99,6 +96,7 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
 
     def set_poll_interval(self, interval: int) -> None:
         self._poll_interval = interval
+        self._poll_wakeup.set()  # wake up any ongoing sleep so it restarts with the new interval
         self.trigger_port_update_fire_and_forget(save=True)
 
     def get_poll_interval(self) -> int:
@@ -120,6 +118,7 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
     async def handle_disable(self) -> None:
         if self._poll_task:
             self._polling = False  # will stop poll loop
+            self._poll_wakeup.set()  # wake up any ongoing sleep so it exits asap
             self._poll_task.cancel()
             await self._poll_task
 
@@ -131,6 +130,7 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
 
         if self._poll_task and not self._poll_task.done():
             self._polling = False
+            self._poll_wakeup.set()  # wake up any ongoing sleep so it exits asap
             self._poll_task.cancel()
             await self._poll_task
 
