@@ -44,3 +44,6 @@ class LoggableMixin:
             self._logger = logging.getLogger(f"{self._parent_logger.name}.{name}")
         else:
             self._logger = self._parent_logger
+
+    def is_log_enabled(self, level: int) -> bool:
+        return self._logger.isEnabledFor(level)
