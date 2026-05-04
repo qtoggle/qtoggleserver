@@ -93,6 +93,16 @@ class EmptyExpression(ExpressionParseError):
         return {"reason": "empty"}
 
 
+class MissingAttrPrefix(ExpressionParseError):
+    def __init__(self, pos: int) -> None:
+        self.pos: int = pos
+
+        super().__init__("Missing attribute prefix")
+
+    def to_json(self) -> GenericJSONDict:
+        return {"reason": "missing-attr-prefix", "pos": self.pos}
+
+
 class ExpressionEvalException(ExpressionException):
     pass
 
@@ -125,6 +135,26 @@ class UnknownPortId(PortValueUnavailable):
 
 class DisabledPort(PortValueUnavailable):
     MSG = 'Port "%s" is disabled'
+
+
+class PortAttrUnavailable(ValueUnavailable):
+    MSG = 'Port attribute "%s:%s" is unavailable'
+
+    def __init__(self, port_id: str, attr_name: str) -> None:
+        self.port_id = port_id
+        self.attr_name = attr_name
+
+        super().__init__(self.MSG % (port_id, attr_name))
+
+
+class DeviceAttrUnavailable(ValueUnavailable):
+    MSG = 'Device attribute "%s:%s" is unavailable'
+
+    def __init__(self, device_name: str, attr_name: str) -> None:
+        self.device_name = device_name
+        self.attr_name = attr_name
+
+        super().__init__(self.MSG % (device_name, attr_name))
 
 
 class ExpressionArithmeticError(ExpressionEvalException):
