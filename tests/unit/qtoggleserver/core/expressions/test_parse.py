@@ -117,6 +117,13 @@ async def test_parse_unexpected_character():
     assert exc_info.value.c == "*"
     assert exc_info.value.pos == 10
 
+    # invalid character in attr_name part of self-port-attribute expression
+    with pytest.raises(UnexpectedCharacter) as exc_info:
+        parse(None, "$:attr*", role=Role.VALUE)
+
+    assert exc_info.value.c == "*"
+    assert exc_info.value.pos == 7
+
     # invalid character in device_name part of device-attribute expression
     with pytest.raises(UnexpectedCharacter) as exc_info:
         parse(None, "#dev*:attr", role=Role.VALUE)
