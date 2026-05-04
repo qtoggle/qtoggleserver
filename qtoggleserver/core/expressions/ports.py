@@ -43,12 +43,11 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
                 m = re.search(r"[^a-zA-Z0-9_.-]", port_id)
                 if m:
                     p = m.start()
-                    raise UnexpectedCharacter(port_id[p], p + pos + 2)  # TODO: is this the correct position?
+                    raise UnexpectedCharacter(port_id[p], p + pos + 2)
                 m = re.search(r"[^a-zA-Z0-9_-]", attr_name)
                 if m:
                     p = m.start()
-                    # TODO: is this the correct position?
-                    raise UnexpectedCharacter(attr_name[p], p + pos + len(port_id) + 3)
+                    raise UnexpectedCharacter(attr_name[p], p + pos + len(port_id) + 2)
 
                 if prefix == "$":
                     return PortAttr(port_id, prefix, role, attr_name)
@@ -138,3 +137,5 @@ class PortAttr(PortExpression):
         value = context.port_attrs.get(self.port_id, {}).get(self.attr_name)
         if value is None:
             raise PortAttrUnavailable(self.port_id, self.attr_name or "")
+
+        return value

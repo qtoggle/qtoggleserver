@@ -27,14 +27,14 @@ class DeviceExpression(Expression, metaclass=abc.ABCMeta):
         if prefix == "#":
             parts = sub_sexpression.split(":", 1)
             if len(parts) != 2:
-                raise MissingAttrPrefix(pos + len(sub_sexpression))  # TODO unit test
+                raise MissingAttrPrefix(pos + len(sub_sexpression) + 1)
 
             device_name, attr_name = parts
             if device_name:
                 m = re.search(r"[^a-zA-Z0-9_-]", device_name)
                 if m:
                     p = m.start()
-                    raise UnexpectedCharacter(device_name[p], p + pos + 3)  # TODO: is this reported position correct?
+                    raise UnexpectedCharacter(device_name[p], p + pos + 3)
 
                 return SlaveDeviceAttr(device_name, prefix, role, attr_name)
             else:
