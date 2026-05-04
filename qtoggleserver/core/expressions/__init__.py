@@ -13,6 +13,7 @@ from .base import (
     Expression,
     Role,
 )
+from .exceptions import EmptyExpression
 from .literalvalues import LiteralValue
 
 
@@ -54,14 +55,20 @@ def parse(self_port_id: str | None, sexpression: str, role: Role, pos: int = 1) 
     pos += len(sexpression) - len(stripped)
     sexpression = stripped.rstrip()
 
-    if sexpression and sexpression[0] in ("$", "@"):
+    if not sexpression:
+        raise EmptyExpression()
+
+    if sexpression[0] in ("$", "@"):
         return PortExpression.parse(self_port_id, sexpression, role, pos)
+    elif sexpression[0] == "#":
+        return DeviceExpression.parse(self_port_id, sexpression, role, pos)
     elif "(" in sexpression or ")" in sexpression:
         return Function.parse(self_port_id, sexpression, role, pos)
     else:
         return LiteralValue.parse(self_port_id, sexpression, role, pos)
 
 
+from .devices import DeviceExpression  # noqa: E402
 from .functions import (  # noqa: E402
     Function,  # noqa: E402
     aggregation,
