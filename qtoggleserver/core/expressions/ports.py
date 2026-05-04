@@ -7,7 +7,17 @@ from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import NullablePortValue
 
 from .base import EvalContext, EvalResult, Expression, Role
-from .exceptions import DisabledPort, PortAttrUnavailable, PortValueUnavailable, UnexpectedCharacter, UnknownPortId
+from .exceptions import (
+    DisabledPort,
+    PortAttrUnavailable,
+    PortValueUnavailable,
+    TransformNotSupported,
+    UnexpectedCharacter,
+    UnknownPortId,
+)
+
+
+_TRANSFORM_ROLES = (Role.TRANSFORM_READ, Role.TRANSFORM_WRITE)
 
 
 class PortExpression(Expression, metaclass=abc.ABCMeta):
@@ -50,7 +60,12 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
                     raise UnexpectedCharacter(attr_name[p], p + pos + len(port_id) + 2)
 
                 if prefix == "$":
-                    return PortAttr(port_id, prefix, role, attr_name)
+                    if role in _TRANSFORM_ROLES:
+                        raise TransformNotSupported(sexpression, pos)
+                    if port_id:
+                        return PortAttr(port_id, prefix, role, attr_name)
+                    else:
+                        return SelfPortAttr(self_port_id, prefix, role, attr_name)
                 else:
                     raise UnexpectedCharacter(prefix, pos)
             else:
@@ -61,8 +76,12 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
                     raise UnexpectedCharacter(sub_sexpression[p], p + pos + 2)
 
                 if prefix == "$":
+                    if role in _TRANSFORM_ROLES and port_id != self_port_id:
+                        raise TransformNotSupported(sexpression, pos=pos)
                     return PortValue(port_id, prefix, role)
                 elif prefix == "@":
+                    if role in _TRANSFORM_ROLES:
+                        raise TransformNotSupported(sexpression, pos)
                     return PortRef(port_id, prefix, role)
                 else:
                     raise UnexpectedCharacter(prefix, pos)
@@ -70,6 +89,8 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
             if prefix == "$":
                 return SelfPortValue(self_port_id, prefix, role)
             elif prefix == "@":
+                if role in _TRANSFORM_ROLES:
+                    raise TransformNotSupported(sexpression, pos)
                 return SelfPortRef(self_port_id, prefix, role)
             else:
                 raise UnexpectedCharacter(prefix, pos)
@@ -139,3 +160,8 @@ class PortAttr(PortExpression):
             raise PortAttrUnavailable(self.port_id, self.attr_name or "")
 
         return value
+
+
+class SelfPortAttr(PortAttr):
+    def __str__(self) -> str:
+        return f"{self.prefix}:{self.attr_name}"

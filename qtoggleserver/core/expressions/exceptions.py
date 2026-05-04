@@ -63,17 +63,6 @@ class UnexpectedEnd(ExpressionParseError):
         return {"reason": "unexpected-end"}
 
 
-class NonSelfDependency(ExpressionParseError):
-    def __init__(self, port_id: str, pos: int) -> None:
-        self.port_id = port_id
-        self.pos = pos
-
-        super().__init__(f'Non-self dependency on port "{port_id}"')
-
-    def to_json(self) -> GenericJSONDict:
-        return {"reason": "non-self-dependency", "token": self.port_id, "pos": self.pos}
-
-
 class UnexpectedCharacter(ExpressionParseError):
     def __init__(self, c: str, pos: int) -> None:
         self.c = c
@@ -101,6 +90,17 @@ class MissingAttrPrefix(ExpressionParseError):
 
     def to_json(self) -> GenericJSONDict:
         return {"reason": "missing-attr-prefix", "pos": self.pos}
+
+
+class TransformNotSupported(ExpressionParseError):
+    def __init__(self, token: str, pos: int) -> None:
+        self.token: str = token
+        self.pos: int = pos
+
+        super().__init__(f'Expression "{token}" is not supported in transform expressions')
+
+    def to_json(self) -> GenericJSONDict:
+        return {"reason": "transform-not-supported", "token": self.token, "pos": self.pos}
 
 
 class ExpressionEvalException(ExpressionException):

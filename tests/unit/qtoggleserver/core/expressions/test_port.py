@@ -7,7 +7,7 @@ from qtoggleserver.core.expressions.exceptions import (
     PortValueUnavailable,
     UnknownPortId,
 )
-from qtoggleserver.core.expressions.ports import PortAttr, PortRef, PortValue, SelfPortRef, SelfPortValue
+from qtoggleserver.core.expressions.ports import PortAttr, PortRef, PortValue, SelfPortAttr, SelfPortRef, SelfPortValue
 
 
 class TestPortValue:
@@ -162,6 +162,53 @@ class TestPortAttr:
         """Should raise PortAttrUnavailable when the attribute is not present in the context."""
 
         e = PortAttr("nid1", prefix="$", role=Role.VALUE, attr_name="nonexistent_attr")
+        dummy_eval_context.port_attrs["nid1"] = {}
+        with pytest.raises(PortAttrUnavailable) as exc_info:
+            await e._eval(dummy_eval_context)
+        assert exc_info.value.port_id == "nid1"
+        assert exc_info.value.attr_name == "nonexistent_attr"
+
+
+class TestSelfPortAttr:
+    def test_parse(self, mock_num_port1):
+        """Should parse `$:attr_name` into a SelfPortAttr with port_id set to self_port_id."""
+
+        e = parse("nid1", "$:enabled", role=Role.VALUE)
+        assert isinstance(e, SelfPortAttr)
+        assert e.port_id == "nid1"
+        assert e.attr_name == "enabled"
+
+    def test_str(self):
+        """Should render as `$:attr_name`."""
+
+        e = SelfPortAttr("nid1", prefix="$", role=Role.VALUE, attr_name="enabled")
+        assert str(e) == "$:enabled"
+
+    def test_deps(self):
+        """Should return a dep set referencing the self port's attributes."""
+
+        e = SelfPortAttr("nid1", prefix="$", role=Role.VALUE, attr_name="enabled")
+        assert e._get_deps() == {"$nid1:"}
+
+    async def test_eval(self, mock_num_port1, dummy_eval_context):
+        """Should return the attribute value of the self port from the supplied context."""
+
+        e = SelfPortAttr("nid1", prefix="$", role=Role.VALUE, attr_name="enabled")
+        dummy_eval_context.port_attrs["nid1"] = {"enabled": True}
+        assert await e._eval(dummy_eval_context) is True
+
+    async def test_eval_unknown(self, dummy_eval_context):
+        """Should raise UnknownPortId when the self port doesn't exist."""
+
+        e = SelfPortAttr("inexistent", prefix="$", role=Role.VALUE, attr_name="enabled")
+        with pytest.raises(UnknownPortId) as exc_info:
+            await e._eval(dummy_eval_context)
+        assert exc_info.value.port_id == "inexistent"
+
+    async def test_eval_unavailable(self, mock_num_port1, dummy_eval_context):
+        """Should raise PortAttrUnavailable when the attribute is not present in the context."""
+
+        e = SelfPortAttr("nid1", prefix="$", role=Role.VALUE, attr_name="nonexistent_attr")
         dummy_eval_context.port_attrs["nid1"] = {}
         with pytest.raises(PortAttrUnavailable) as exc_info:
             await e._eval(dummy_eval_context)

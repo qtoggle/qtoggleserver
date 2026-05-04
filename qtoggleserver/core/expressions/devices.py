@@ -4,7 +4,10 @@ import abc
 import re
 
 from .base import EvalContext, EvalResult, Expression, Role
-from .exceptions import DeviceAttrUnavailable, MissingAttrPrefix, UnexpectedCharacter
+from .exceptions import DeviceAttrUnavailable, MissingAttrPrefix, TransformNotSupported, UnexpectedCharacter
+
+
+_TRANSFORM_ROLES = (Role.TRANSFORM_READ, Role.TRANSFORM_WRITE)
 
 
 class DeviceExpression(Expression, metaclass=abc.ABCMeta):
@@ -25,6 +28,8 @@ class DeviceExpression(Expression, metaclass=abc.ABCMeta):
         sub_sexpression = sexpression[1:]
 
         if prefix == "#":
+            if role in _TRANSFORM_ROLES:
+                raise TransformNotSupported(sexpression, pos)
             parts = sub_sexpression.split(":", 1)
             if len(parts) != 2:
                 raise MissingAttrPrefix(pos + len(sub_sexpression) + 1)
@@ -51,7 +56,7 @@ class DeviceAttr(DeviceExpression):
         return {f"#{self.device_name or ''}:"}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        key = f"{self.device_name}.{self.attr_name or ''}" if self.device_name else self.attr_name
+        key = f"{self.device_name}:{self.attr_name or ''}" if self.device_name else self.attr_name
         value = context.device_attrs.get(key)
         if value is None:
             raise DeviceAttrUnavailable(self.device_name or "", self.attr_name or "")

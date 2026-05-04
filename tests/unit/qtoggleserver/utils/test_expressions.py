@@ -109,8 +109,8 @@ class TestBuildContext:
 
         assert context.device_attrs == {
             "device_attr": "device_val",
-            "slave1.attr1": "val1",
-            "slave1.attr2": "val2",
+            "slave1:attr1": "val1",
+            "slave1:attr2": "val2",
         }
         assert context.now_ms == 3000
 
@@ -146,8 +146,8 @@ class TestBuildContext:
 
         assert context.device_attrs == {
             "device_attr": "device_val",
-            "slave1.attr1": "val1",
-            "slave2.attr2": "val2",
+            "slave1:attr1": "val1",
+            "slave2:attr2": "val2",
         }
         assert context.now_ms == 4000
 

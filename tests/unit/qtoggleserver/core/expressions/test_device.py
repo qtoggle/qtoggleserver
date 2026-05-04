@@ -62,7 +62,7 @@ class TestSlaveDeviceAttr:
         """Should return the attribute value using a `slave_name.attr_name` key in the context."""
 
         e = SlaveDeviceAttr("slave1", prefix="#", role=Role.VALUE, attr_name="display_name")
-        dummy_eval_context.device_attrs["slave1.display_name"] = "Slave Device"
+        dummy_eval_context.device_attrs["slave1:display_name"] = "Slave Device"
         assert await e._eval(dummy_eval_context) == "Slave Device"
 
     async def test_eval_unavailable(self, dummy_eval_context):
