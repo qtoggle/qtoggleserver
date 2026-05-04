@@ -55,6 +55,18 @@ class Expression(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     def get_deps(self) -> set[str]:
+        """
+        Return a set with all dependencies of this expression.
+        Each dependency is a string and, depending on its format denotes a different type of dependency:
+         - If string starts with `$`, the dep is a port value or port attribute dependency; going further, we have:
+            - `$port_id` - dependency on the corresponding port's value
+            - `$port_id:` - dependency on the corresponding port's attributes
+         - If string starts with `#`, the dep is a device attribute dependency; going further, we have:
+            - `#:` - dependency on (main) device attributes
+            - `#slave_name:` - dependency on the corresponding slave's attributes
+         - One of the `DEP_*` constants (e.g. `DEP_YEAR` or `"year"`) indicates a time dependency
+        """
+
         if self._cached_deps is None:
             self._cached_deps = self._get_deps()
         return self._cached_deps

@@ -261,14 +261,6 @@ export const INVALID_EXPRESSION_REASONS = [
         pretty: gettext('Expression is unterminated.')
     },
     {
-        reason: 'circular-dependency',
-        pretty: gettext('Expression creates a dependency loop.')
-    },
-    {
-        reason: 'external-dependency',
-        pretty: gettext('Expression must not depend on other ports.')
-    },
-    {
         reason: 'unexpected-character',
         pretty: gettext('Unexpected character "%(token)s" at position %(pos)d.')
     },
@@ -279,6 +271,14 @@ export const INVALID_EXPRESSION_REASONS = [
     {
         reason: 'too-long',
         pretty: gettext('Expression is too long.')
+    },
+    {
+        reason: 'missing-attr-prefix',
+        pretty: gettext('Missing attribute prefix at position %(pos)d.')
+    },
+    {
+        reason: 'transform-not-supported',
+        pretty: gettext('Expression "%(token)s" is not supported in transform expressions.')
     }
 ]
 

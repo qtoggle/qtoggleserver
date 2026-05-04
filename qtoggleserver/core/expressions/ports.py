@@ -7,18 +7,30 @@ from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import NullablePortValue
 
 from .base import EvalContext, EvalResult, Expression, Role
-from .exceptions import DisabledPort, PortValueUnavailable, UnexpectedCharacter, UnknownPortId
+from .exceptions import (
+    DisabledPort,
+    PortAttrUnavailable,
+    PortValueUnavailable,
+    TransformNotSupported,
+    UnexpectedCharacter,
+    UnknownPortId,
+)
+
+
+_TRANSFORM_ROLES = (Role.TRANSFORM_READ, Role.TRANSFORM_WRITE)
 
 
 class PortExpression(Expression, metaclass=abc.ABCMeta):
-    def __init__(self, port_id: str, prefix: str, role: Role) -> None:
+    def __init__(self, port_id: str, prefix: str, role: Role, attr_name: str | None = None) -> None:
         super().__init__(role)
 
         self.port_id: str = port_id
+        self.attr_name: str | None = attr_name
         self.prefix: str = prefix
         self._cached_port: core_ports.BasePort | None = None
 
     def get_port(self) -> core_ports.BasePort | None:
+        # TODO: test what happens if a port is removed; do we need this `is_removed` check?
         port = self._cached_port
         if port is None or port.is_removed():
             port = core_ports.get(self.port_id)
@@ -32,23 +44,56 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
         sexpression = stripped.rstrip()
 
         prefix = sexpression[0]
-        port_id = sexpression[1:]
+        sub_sexpression = sexpression[1:]
 
-        if port_id:
-            m = re.search(r"[^a-zA-Z0-9_.-]", port_id)
-            if m:
-                p = m.start()
-                raise UnexpectedCharacter(port_id[p], p + pos + 2)
+        if sub_sexpression:
+            parts = sub_sexpression.split(":", 1)
+            if len(parts) == 2:  # port attribute
+                port_id, attr_name = parts
+                m = re.search(r"[^a-zA-Z0-9_.-]", port_id)
+                if m:
+                    p = m.start()
+                    raise UnexpectedCharacter(port_id[p], p + pos + 2)
+                m = re.search(r"[^a-zA-Z0-9_-]", attr_name)
+                if m:
+                    p = m.start()
+                    raise UnexpectedCharacter(attr_name[p], p + pos + len(port_id) + 2)
 
-            if prefix == "$":
-                return PortValue(port_id, prefix, role)
-            else:  # assuming prefix == '@'
-                return PortRef(port_id, prefix, role)
+                if prefix == "$":
+                    if role in _TRANSFORM_ROLES:
+                        raise TransformNotSupported(sexpression, pos)
+                    if port_id:
+                        return PortAttr(port_id, prefix, role, attr_name)
+                    else:
+                        return SelfPortAttr(self_port_id, prefix, role, attr_name)
+                else:
+                    raise UnexpectedCharacter(prefix, pos)
+            else:
+                port_id = sub_sexpression
+                m = re.search(r"[^a-zA-Z0-9_.-]", port_id)
+                if m:
+                    p = m.start()
+                    raise UnexpectedCharacter(sub_sexpression[p], p + pos + 2)
+
+                if prefix == "$":
+                    if role in _TRANSFORM_ROLES and port_id != self_port_id:
+                        raise TransformNotSupported(sexpression, pos=pos)
+                    return PortValue(port_id, prefix, role)
+                elif prefix == "@":
+                    if role in _TRANSFORM_ROLES:
+                        raise TransformNotSupported(sexpression, pos)
+                    return PortRef(port_id, prefix, role)
+                else:
+                    raise UnexpectedCharacter(prefix, pos)
         else:
             if prefix == "$":
                 return SelfPortValue(self_port_id, prefix, role)
-            else:  # assuming prefix == '@'
+            elif prefix == "@":
+                if role in _TRANSFORM_ROLES:
+                    raise TransformNotSupported(sexpression, pos)
                 return SelfPortRef(self_port_id, prefix, role)
+            else:
+                raise UnexpectedCharacter(prefix, pos)
 
 
 class PortValue(PortExpression):
@@ -96,3 +141,27 @@ class PortRef(PortExpression):
 class SelfPortRef(PortRef):
     def __str__(self) -> str:
         return self.prefix
+
+
+class PortAttr(PortExpression):
+    def __str__(self) -> str:
+        return f"{self.prefix}{self.port_id}:{self.attr_name}"
+
+    def _get_deps(self) -> set[str]:
+        return {f"${self.port_id}:"}
+
+    async def _eval(self, context: EvalContext) -> EvalResult:
+        port = self.get_port()
+        if not port:
+            raise UnknownPortId(self.port_id)
+
+        value = context.port_attrs.get(self.port_id, {}).get(self.attr_name)
+        if value is None:
+            raise PortAttrUnavailable(self.port_id, self.attr_name or "")
+
+        return value
+
+
+class SelfPortAttr(PortAttr):
+    def __str__(self) -> str:
+        return f"{self.prefix}:{self.attr_name}"
