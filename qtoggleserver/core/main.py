@@ -296,4 +296,7 @@ async def init() -> None:
 async def cleanup() -> None:
     if _update_loop_task:
         _update_loop_task.cancel()
-        await _update_loop_task
+        try:
+            await _update_loop_task
+        except asyncio.CancelledError:
+            pass

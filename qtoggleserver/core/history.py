@@ -234,8 +234,14 @@ async def init() -> None:
 async def cleanup() -> None:
     if _sampling_task:
         _sampling_task.cancel()
-        await _sampling_task
+        try:
+            await _sampling_task
+        except asyncio.CancelledError:
+            pass
 
     if _janitor_task:
         _janitor_task.cancel()
-        await _janitor_task
+        try:
+            await _janitor_task
+        except asyncio.CancelledError:
+            pass

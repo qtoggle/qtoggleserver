@@ -433,19 +433,28 @@ class Slave(logging_utils.LoggableMixin):
         # Stop listening
         if self._listen_session_id:
             self._stop_listening()
-            await self._listen_task
+            try:
+                await self._listen_task
+            except asyncio.CancelledError:
+                pass
             self.debug("listening stopped")
 
         # Stop polling
         if self._poll_started:
             self._stop_polling()
-            await self._poll_task
+            try:
+                await self._poll_task
+            except asyncio.CancelledError:
+                pass
             self.debug("polling mechanism stopped")
 
         # Stop fwupdate pool loop
         if self._fwupdate_poll_task and not self._fwupdate_poll_task.done():
             self._fwupdate_poll_task.cancel()
-            await self._fwupdate_poll_task
+            try:
+                await self._fwupdate_poll_task
+            except asyncio.CancelledError:
+                pass
 
         # Stop parallel API caller
         await self._parallel_api_caller.stop()

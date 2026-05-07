@@ -50,5 +50,8 @@ async def cleanup() -> None:
 
     if _custom_dns_cleanup_task:
         _custom_dns_cleanup_task.cancel()
-        await _custom_dns_cleanup_task
+        try:
+            await _custom_dns_cleanup_task
+        except asyncio.CancelledError:
+            pass
         _custom_dns_cleanup_task = None

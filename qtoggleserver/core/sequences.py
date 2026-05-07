@@ -35,7 +35,10 @@ class Sequence:
     async def cancel(self) -> None:
         if self._loop_task:
             self._loop_task.cancel()
-            await self._loop_task
+            try:
+                await self._loop_task
+            except asyncio.CancelledError:
+                pass
 
     async def _loop(self) -> None:
         for i, value in enumerate(self._values):

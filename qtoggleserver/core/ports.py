@@ -1230,7 +1230,10 @@ async def init() -> None:
 async def cleanup() -> None:
     if _save_loop_task:
         _save_loop_task.cancel()
-        await _save_loop_task
+        try:
+            await _save_loop_task
+        except asyncio.CancelledError:
+            pass
 
     tasks = [asyncio.create_task(port.remove(persisted_data=False)) for port in _ports_by_id.values()]
     if tasks:
