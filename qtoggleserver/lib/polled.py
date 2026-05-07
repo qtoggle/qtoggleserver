@@ -120,7 +120,10 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
             self._polling = False  # will stop poll loop
             self._poll_wakeup.set()  # wake up any ongoing sleep so it exits asap
             self._poll_task.cancel()
-            await self._poll_task
+            try:
+                await self._poll_task
+            except asyncio.CancelledError:
+                pass
 
         self._poll_error = None
         self._retry_counter = 0
@@ -132,7 +135,10 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
             self._polling = False
             self._poll_wakeup.set()  # wake up any ongoing sleep so it exits asap
             self._poll_task.cancel()
-            await self._poll_task
+            try:
+                await self._poll_task
+            except asyncio.CancelledError:
+                pass
 
 
 class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):

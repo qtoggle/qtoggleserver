@@ -961,4 +961,7 @@ async def cleanup() -> None:
     logger.debug("stopping attributes watch task")
     if _attrs_watch_task:
         _attrs_watch_task.cancel()
-        await _attrs_watch_task
+        try:
+            await _attrs_watch_task
+        except asyncio.CancelledError:
+            pass

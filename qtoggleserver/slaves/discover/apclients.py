@@ -128,6 +128,8 @@ async def finish() -> None:
         _discover_task.cancel()
         try:
             await _discover_task
+        except asyncio.CancelledError:
+            pass
         except Exception as e:
             logger.error("discover task error: %s", e, exc_info=True)
 

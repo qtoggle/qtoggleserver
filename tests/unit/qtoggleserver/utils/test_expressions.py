@@ -1,5 +1,87 @@
+import pytest
+
+from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.expressions import EvalContext
 from qtoggleserver.utils import expressions
+from tests.unit.qtoggleserver.mock.ports import MockNumberPort
+
+
+class TestGetDepsMap:
+    @pytest.fixture(autouse=True)
+    def reset_cache(self):
+        expressions.invalidate_deps_map()
+        yield
+        expressions.invalidate_deps_map()
+
+    def test_empty_with_no_expression_ports(self, mock_num_port1):
+        """Should return empty map when no ports have expressions."""
+
+        deps_map = expressions.get_deps_map()
+        assert deps_map == {}
+
+    def test_maps_dep_to_port(self, mock_num_port1, mock_num_port2):
+        """Should map each dep string to the ports whose expressions include that dep."""
+
+        mock_num_port1.set_expression("MUL($nid2, 2)")
+        deps_map = expressions.get_deps_map()
+        assert mock_num_port1 in deps_map.get("$nid2", [])
+
+    def test_multiple_ports_same_dep(self, mock_num_port1, mock_num_port2):
+        """Should list all ports depending on the same dep."""
+
+        mock_num_port1.set_expression("MUL($nid2, 2)")
+        mock_num_port2.set_expression("ADD($nid2, 1)")
+        deps_map = expressions.get_deps_map()
+        assert set(deps_map.get("$nid2", [])) == {mock_num_port1, mock_num_port2}
+
+    def test_multiple_deps_per_port(self, mock_num_port1, mock_num_port2):
+        """Should register a port under each of its deps."""
+
+        mock_num_port1.set_expression("ADD($nid1, $nid2)")
+        deps_map = expressions.get_deps_map()
+        assert mock_num_port1 in deps_map.get("$nid1", [])
+        assert mock_num_port1 in deps_map.get("$nid2", [])
+
+    def test_is_cached(self, mock_num_port1):
+        """Should return the same dict object on repeated calls without any changes."""
+
+        mock_num_port1.set_expression("MUL($nid1, 2)")
+        deps_map1 = expressions.get_deps_map()
+        deps_map2 = expressions.get_deps_map()
+        assert deps_map1 is deps_map2
+
+    async def test_port_removed_excluded_from_rebuilt_map(self, mock_num_port2):
+        """Should not include a removed port in the rebuilt map after removal."""
+
+        port = await core_ports.load_one(MockNumberPort, {"port_id": "nid_temp", "value": None})
+        await port.enable()
+        port.set_expression("MUL($nid2, 2)")
+
+        assert port in expressions.get_deps_map().get("$nid2", [])
+
+        await port.remove(persisted_data=False)
+
+        assert port not in expressions.get_deps_map().get("$nid2", [])
+
+    def test_expression_set_included_in_rebuilt_map(self, mock_num_port1, mock_num_port2):
+        """Should include a port's deps in the rebuilt map after an expression is set."""
+
+        assert "$nid2" not in expressions.get_deps_map()
+
+        mock_num_port1.set_expression("MUL($nid2, 2)")
+
+        assert mock_num_port1 in expressions.get_deps_map().get("$nid2", [])
+
+    async def test_expression_cleared_excluded_from_rebuilt_map(self, mock_num_port1):
+        """Should exclude a port's deps from the rebuilt map after its expression is cleared."""
+
+        mock_num_port1.set_expression("MUL($nid1, 2)")
+        assert mock_num_port1 in expressions.get_deps_map().get("$nid1", [])
+
+        mock_num_port1.set_writable(True)
+        await mock_num_port1.attr_set_expression("")
+
+        assert mock_num_port1 not in expressions.get_deps_map().get("$nid1", [])
 
 
 class TestBuildContext:
