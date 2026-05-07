@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from .base import (
     DEP_ASAP,
     DEP_DAY,

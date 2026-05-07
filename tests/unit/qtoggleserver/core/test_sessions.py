@@ -12,7 +12,7 @@ class MockEvent:
 
     REQUIRED_ACCESS = 0
 
-    def __init__(self, name: str, duplicate_of: "MockEvent | list[MockEvent] | None" = None) -> None:
+    def __init__(self, name: str, duplicate_of: MockEvent | list[MockEvent] | None = None) -> None:
         self.name = name
         if duplicate_of is None:
             self._duplicate_of: list[MockEvent] = []
@@ -21,7 +21,7 @@ class MockEvent:
         else:
             self._duplicate_of = [duplicate_of]
 
-    def is_duplicate(self, other: "MockEvent") -> bool:
+    def is_duplicate(self, other: MockEvent) -> bool:
         return other in self._duplicate_of or self in other._duplicate_of
 
     def __repr__(self) -> str:
