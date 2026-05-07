@@ -5,6 +5,36 @@ from qtoggleserver.core.expressions import EvalContext
 from qtoggleserver.slaves import devices as slaves_devices
 
 
+_deps_map_cache: dict[str, list[core_ports.BasePort]] | None = None
+
+
+def get_deps_map() -> dict[str, list[core_ports.BasePort]]:
+    """Return a mapping from dependency string to ports whose expressions depend on it.
+
+    Built lazily and cached; call :func:`invalidate_deps_map` to force a rebuild.
+    Keys are dep strings as returned by ``Expression.get_deps()`` (e.g. ``"$port_id"``,
+    ``"asap"``, ``"second"``…).
+    """
+    global _deps_map_cache
+
+    if _deps_map_cache is None:
+        _deps_map_cache = {}
+        for port in core_ports.get_all():
+            expression = port.get_expression()
+            if not expression:
+                continue
+            for dep in expression.get_deps():
+                _deps_map_cache.setdefault(dep, []).append(port)
+
+    return _deps_map_cache
+
+
+def invalidate_deps_map() -> None:
+    """Invalidate the deps map cache, forcing a full rebuild on next access."""
+    global _deps_map_cache
+    _deps_map_cache = None
+
+
 async def build_context(now_ms: int) -> EvalContext:
     """Build an expression evaluation context for the current system state.
 

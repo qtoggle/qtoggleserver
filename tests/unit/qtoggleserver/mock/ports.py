@@ -1,6 +1,7 @@
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core.ports import TYPE_BOOLEAN, TYPE_NUMBER, Port, SkipRead
 from qtoggleserver.core.typing import NullablePortValue
+from qtoggleserver.utils import expressions as expressions_utils
 
 
 class MockPort(Port):
@@ -32,6 +33,7 @@ class MockPort(Port):
     def set_expression(self, sexpression: str) -> None:
         expression = core_expressions.parse(self.get_id(), sexpression, role=core_expressions.Role.VALUE)
         self._expression = expression
+        expressions_utils.invalidate_deps_map()
 
 
 class MockBooleanPort(MockPort):

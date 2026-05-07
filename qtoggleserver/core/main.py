@@ -212,7 +212,16 @@ async def handle_changes(
     eval_context: EvalContext | None = None
 
     # Reevaluate all port expressions depending on changed set
-    for port in all_ports:
+    if full_eval:
+        ports_to_eval = all_ports
+    else:
+        deps_map = expressions_utils.get_deps_map()
+        ports_to_eval: set[core_ports.BasePort] = set(forced_ports)
+        for dep in changed_set_str:
+            for port in deps_map.get(dep, []):
+                ports_to_eval.add(port)
+
+    for port in ports_to_eval:
         if not port.is_enabled():
             continue
 
@@ -220,18 +229,11 @@ async def handle_changes(
         if not expression:
             continue
 
-        if not full_eval and (port not in forced_ports):
+        if not full_eval and port not in forced_ports:
             deps: set[str] = expression.get_deps()
-
-            # Evaluate a port's expression only if one of its deps changed
             changed_deps = deps & changed_set_str
-            if not changed_deps:
+            if changed_deps == {DEP_ASAP} and expression.is_asap_eval_paused(now_ms):
                 continue
-
-            if changed_deps == {DEP_ASAP}:
-                # Skip asap evaling if explicitly paused
-                if expression.is_asap_eval_paused(now_ms):
-                    continue
 
         if not eval_context:
             eval_context = await expressions_utils.build_context(now_ms)

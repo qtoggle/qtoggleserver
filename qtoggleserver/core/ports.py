@@ -567,6 +567,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         if not sexpression:
             self._expression = None
+            expressions_utils.invalidate_deps_map()
             return
 
         try:
@@ -578,6 +579,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self.debug('setting expression "%s"', expression)
         self._expression = expression
+        expressions_utils.invalidate_deps_map()
 
         # This will force expression evaluation for this port right away
         main.force_eval_expressions(self)
@@ -997,7 +999,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def cleanup(self) -> None:
         if self._write_task:
             self._write_task.cancel()
-            await self._write_task
+            try:
+                await self._write_task
+            except asyncio.CancelledError:
+                pass
             self._write_task = None
 
         await self._after_set_attr_debounced.stop()
@@ -1014,6 +1019,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.debug("removing port")
         self._removed = True
         _ports_by_id.pop(self._id, None)
+        expressions_utils.invalidate_deps_map()
 
         if persisted_data:
             self.debug("removing persisted data")
@@ -1237,3 +1243,4 @@ async def reset() -> None:
 
 
 from qtoggleserver.core import main  # noqa: E402
+from qtoggleserver.utils import expressions as expressions_utils  # noqa: E402
