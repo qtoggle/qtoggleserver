@@ -12,8 +12,8 @@ def get_deps_map() -> dict[str, list[core_ports.BasePort]]:
     """Return a mapping from dependency string to ports whose expressions depend on it.
 
     Built lazily and cached; call :func:`invalidate_deps_map` to force a rebuild.
-    Keys are dep strings as returned by ``Expression.get_deps()`` (e.g. ``"$port_id"``,
-    ``"asap"``, ``"second"``…).
+    Keys are dep strings as returned by `Expression.get_deps()` (e.g. `"$port_id"`,
+    `"asap"`, `"second"`, ...).
     """
     global _deps_map_cache
 

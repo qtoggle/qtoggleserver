@@ -267,6 +267,77 @@ class TestHandleChanges:
         mock_num_port1.eval_and_push_write.assert_not_called()
 
 
+class TestForceEvalExpressions:
+    @pytest.fixture(autouse=True)
+    def reset_force_eval(self):
+        """Ensure force-eval state is clean before and after each test."""
+        core_main._force_eval_all_expressions = False
+        core_main._force_eval_expression_ports.clear()
+        yield
+        core_main._force_eval_all_expressions = False
+        core_main._force_eval_expression_ports.clear()
+
+    async def test_forced_port_evaluated_without_matching_dep(self, mocker, mock_num_port1, mock_num_port2):
+        """Should evaluate a forced port even when changed_set contains no dep that port's expression uses."""
+
+        mock_num_port1.set_expression("MUL($nid2, 2)")
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
+
+        force_eval_expressions(mock_num_port1)
+
+        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=0)
+        mock_num_port1.eval_and_push_write.assert_called_once()
+
+    async def test_force_all_evaluates_all_expression_ports(self, mocker, mock_num_port1, mock_num_port2):
+        """Should evaluate all expression ports when force_eval_expressions() is called with no argument."""
+
+        mock_num_port1.set_expression("MUL($nid2, 2)")
+        mock_num_port2.set_expression("ADD($nid1, 1)")
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
+        mocker.patch.object(mock_num_port2, "eval_and_push_write")
+
+        force_eval_expressions()
+
+        await handle_changes([mock_num_port1, mock_num_port2], changed_set=set(), value_pairs={}, now_ms=0)
+        mock_num_port1.eval_and_push_write.assert_called_once()
+        mock_num_port2.eval_and_push_write.assert_called_once()
+
+    async def test_force_state_consumed_after_handle_changes(self, mocker, mock_num_port1, mock_num_port2):
+        """Should not re-evaluate a forced port on a subsequent handle_changes call without re-forcing."""
+
+        mock_num_port1.set_expression("MUL($nid2, 2)")
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
+
+        force_eval_expressions(mock_num_port1)
+
+        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=0)
+        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=0)
+        mock_num_port1.eval_and_push_write.assert_called_once()
+
+    async def test_forced_port_bypasses_asap_pause(self, mocker, mock_num_port1):
+        """Should evaluate a forced port even when its only dep is ASAP but ASAP eval is paused."""
+
+        mock_num_port1.set_expression("TIMEMS()")
+        e = mock_num_port1.get_expression()
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
+
+        e.pause_asap_eval(1000)
+        force_eval_expressions(mock_num_port1)
+
+        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=999)
+        mock_num_port1.eval_and_push_write.assert_called_once()
+
+    async def test_forced_port_without_expression_not_evaluated(self, mocker, mock_num_port1):
+        """Should not evaluate a forced port that has no expression set."""
+
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
+
+        force_eval_expressions(mock_num_port1)
+
+        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=0)
+        mock_num_port1.eval_and_push_write.assert_not_called()
+
+
 class TestPauseResume:
     @pytest.fixture(autouse=True)
     def reset_paused(self):
