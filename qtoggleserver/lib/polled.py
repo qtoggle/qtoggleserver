@@ -85,7 +85,7 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
                 self._poll_wakeup.clear()
                 try:
                     await asyncio.wait_for(self._poll_wakeup.wait(), timeout=self._poll_interval)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     pass
             except asyncio.CancelledError:
                 self.debug("polling task cancelled")
