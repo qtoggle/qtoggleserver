@@ -1,7 +1,5 @@
 # ruff: noqa: ANN001, ANN002, ANN201, F821
 
-from __future__ import annotations
-
 import abc
 import asyncio
 import functools

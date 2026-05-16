@@ -1,7 +1,8 @@
 import asyncio
 import logging
 
-from typing import Any, Awaitable, Coroutine
+from collections.abc import Awaitable, Coroutine
+from typing import Any
 
 
 logger = logging.getLogger(__name__)
