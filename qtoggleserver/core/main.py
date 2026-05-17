@@ -67,8 +67,8 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
         _update_lock = asyncio.Lock()
 
     async with _update_lock:
-        changed_set: set[core_ports.BasePort | str] = {DEP_ASAP}
-        value_pairs = {}
+        changed_time_deps: set[str] = {DEP_ASAP}
+        port_changed_values: dict[core_ports.BasePort, tuple[NullablePortValue, NullablePortValue]] = {}
 
         now = time.time()
         now_int = int(now)
@@ -81,30 +81,30 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
             if now_int != _last_time:
                 _last_time = now_int
                 second_changed = True
-                changed_set.add(DEP_SECOND)
+                changed_time_deps.add(DEP_SECOND)
 
                 now_minute = now_int // 60
                 if now_minute != _last_minute:
                     _last_minute = now_minute
-                    changed_set.add(DEP_MINUTE)
+                    changed_time_deps.add(DEP_MINUTE)
 
                     now_hour = now_minute // 60
                     if now_hour != _last_hour:
                         _last_hour = now_hour
-                        changed_set.add(DEP_HOUR)
+                        changed_time_deps.add(DEP_HOUR)
 
                         now_dt = datetime.fromtimestamp(now)
                         if now_dt.day != _last_day:
                             _last_day = now_dt.day
-                            changed_set.add(DEP_DAY)
+                            changed_time_deps.add(DEP_DAY)
 
                             if now_dt.month != _last_month:
                                 _last_month = now_dt.month
-                                changed_set.add(DEP_MONTH)
+                                changed_time_deps.add(DEP_MONTH)
 
                                 if now_dt.year != _last_year:
                                     _last_year = now_dt.year
-                                    changed_set.add(DEP_YEAR)
+                                    changed_time_deps.add(DEP_YEAR)
 
         all_ports = list(core_ports.get_all())
         if not ports_to_read:
@@ -143,10 +143,9 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
                 logger.debug("detected %s value change: %s -> %s", port, old_value_str, new_value_str)
 
                 port.set_last_read_value(new_value)
-                changed_set.add(port)
-                value_pairs[port] = old_value, new_value
+                port_changed_values[port] = old_value, new_value
 
-        await handle_changes(all_ports, changed_set, value_pairs, now_ms)
+        await handle_changes(all_ports, changed_time_deps, port_changed_values, now_ms)
 
         sessions.update()
 
@@ -167,15 +166,11 @@ async def update_loop() -> None:
 
 async def handle_changes(
     all_ports: list[core_ports.BasePort],
-    changed_set: set[core_ports.BasePort | str],
-    value_pairs: dict[core_ports.BasePort, tuple[NullablePortValue, NullablePortValue]],
+    changed_time_deps: set[str],
+    port_changed_values: dict[core_ports.BasePort, tuple[NullablePortValue, NullablePortValue]],
     now_ms: int,
 ) -> None:
     global _force_eval_all_expressions
-
-    # changed_set contains:
-    #  * ports
-    #  * time strings
 
     forced_ports = set(_force_eval_expression_ports)
     _force_eval_expression_ports.clear()
@@ -183,23 +178,15 @@ async def handle_changes(
     full_eval = _force_eval_all_expressions
     _force_eval_all_expressions = False
 
-    # Transform `changed_set` into a set of strings so that we can compare it with deps
-    changed_set_str: set[str] = set()
+    # Build a unified string set from time deps and port ids for dep comparison
+    changed_set_str: set[str] = set(changed_time_deps)
 
-    # Trigger value-change events; save persisted ports; build changed_set_str
-    for changed in changed_set:
-        if isinstance(changed, core_ports.BasePort):
-            port = changed
-            changed_set_str.add(f"${port.get_id()}")
-        else:  # time string
-            changed_set_str.add(changed)
-            continue
+    # Trigger value-change events; save persisted ports; add port deps to changed_set_str
+    for port, (old_value, new_value) in port_changed_values.items():
+        changed_set_str.add(f"${port.get_id()}")
 
         if not await port.is_internal():
-            value_pair = value_pairs.get(port)
-            if not value_pair:
-                continue
-            await port.trigger_value_change(*value_pair)
+            await port.trigger_value_change(old_value, new_value)
 
         if await port.is_persisted():
             port.save_asap()

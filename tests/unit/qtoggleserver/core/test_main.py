@@ -155,7 +155,10 @@ class TestHandleChanges:
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         await handle_changes(
-            [mock_num_port1], changed_set={mock_num_port1}, value_pairs={mock_num_port1: (10, 20)}, now_ms=0
+            [mock_num_port1],
+            changed_time_deps=set(),
+            port_changed_values={mock_num_port1: (10, 20)},
+            now_ms=0,
         )
         mock_num_port1.eval_and_push_write.assert_called_once()
 
@@ -167,7 +170,10 @@ class TestHandleChanges:
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         await handle_changes(
-            [mock_num_port1], changed_set={mock_num_port1}, value_pairs={mock_num_port1: (10, 20)}, now_ms=0
+            [mock_num_port1],
+            changed_time_deps=set(),
+            port_changed_values={mock_num_port1: (10, 20)},
+            now_ms=0,
         )
         mock_num_port1.eval_and_push_write.assert_called_once()
 
@@ -181,7 +187,7 @@ class TestHandleChanges:
         (mocker.patch.object(mock_num_port1, "eval_and_push_write"),)
         (mocker.patch.object(mock_num_port1, "is_enabled", return_value=False),)
 
-        await handle_changes([mock_num_port1], changed_set=set(), value_pairs={}, now_ms=0)
+        await handle_changes([mock_num_port1], changed_time_deps=set(), port_changed_values={}, now_ms=0)
         mock_num_port1.eval_and_push_write.assert_not_called()
 
     async def test_asap_trigger_eval(self, mocker, mock_num_port1):
@@ -191,7 +197,7 @@ class TestHandleChanges:
         mock_num_port1.set_expression("TIMEMS()")
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
-        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=0)
+        await handle_changes([mock_num_port1], changed_time_deps={DEP_ASAP}, port_changed_values={}, now_ms=0)
         mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_asap_eval_paused_no_trigger_eval(self, mocker, mock_num_port1):
@@ -203,7 +209,7 @@ class TestHandleChanges:
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         e.pause_asap_eval(1000)
-        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=999)
+        await handle_changes([mock_num_port1], changed_time_deps={DEP_ASAP}, port_changed_values={}, now_ms=999)
         mock_num_port1.eval_and_push_write.assert_not_called()
 
     async def test_asap_eval_not_paused_trigger_eval(self, mocker, mock_num_port1):
@@ -215,7 +221,7 @@ class TestHandleChanges:
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         e.pause_asap_eval(1000)
-        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=1000)
+        await handle_changes([mock_num_port1], changed_time_deps={DEP_ASAP}, port_changed_values={}, now_ms=1000)
         mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_removed_port_not_evaluated(self, mocker, mock_num_port2):
@@ -230,8 +236,8 @@ class TestHandleChanges:
 
         await handle_changes(
             list(core_ports.get_all()),
-            changed_set={mock_num_port2},
-            value_pairs={mock_num_port2: (1, 2)},
+            changed_time_deps=set(),
+            port_changed_values={mock_num_port2: (1, 2)},
             now_ms=0,
         )
         port.eval_and_push_write.assert_not_called()
@@ -244,8 +250,8 @@ class TestHandleChanges:
 
         await handle_changes(
             [mock_num_port1, mock_num_port2],
-            changed_set={mock_num_port1},
-            value_pairs={mock_num_port1: (1, 2)},
+            changed_time_deps=set(),
+            port_changed_values={mock_num_port1: (1, 2)},
             now_ms=0,
         )
         mock_num_port2.eval_and_push_write.assert_called_once()
@@ -260,8 +266,8 @@ class TestHandleChanges:
 
         await handle_changes(
             [mock_num_port1, mock_num_port2],
-            changed_set={mock_num_port2},
-            value_pairs={mock_num_port2: (1, 2)},
+            changed_time_deps=set(),
+            port_changed_values={mock_num_port2: (1, 2)},
             now_ms=0,
         )
         mock_num_port1.eval_and_push_write.assert_not_called()
@@ -278,14 +284,15 @@ class TestForceEvalExpressions:
         core_main._force_eval_expression_ports.clear()
 
     async def test_forced_port_evaluated_without_matching_dep(self, mocker, mock_num_port1, mock_num_port2):
-        """Should evaluate a forced port even when changed_set contains no dep that port's expression uses."""
+        """Should evaluate a forced port even when changed_time_deps and changed_ports contain no dep that port's
+        expression uses."""
 
         mock_num_port1.set_expression("MUL($nid2, 2)")
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         force_eval_expressions(mock_num_port1)
 
-        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=0)
+        await handle_changes([mock_num_port1], changed_time_deps={DEP_ASAP}, port_changed_values={}, now_ms=0)
         mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_force_all_evaluates_all_expression_ports(self, mocker, mock_num_port1, mock_num_port2):
@@ -298,7 +305,9 @@ class TestForceEvalExpressions:
 
         force_eval_expressions()
 
-        await handle_changes([mock_num_port1, mock_num_port2], changed_set=set(), value_pairs={}, now_ms=0)
+        await handle_changes(
+            [mock_num_port1, mock_num_port2], changed_time_deps=set(), port_changed_values={}, now_ms=0
+        )
         mock_num_port1.eval_and_push_write.assert_called_once()
         mock_num_port2.eval_and_push_write.assert_called_once()
 
@@ -310,8 +319,8 @@ class TestForceEvalExpressions:
 
         force_eval_expressions(mock_num_port1)
 
-        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=0)
-        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=0)
+        await handle_changes([mock_num_port1], changed_time_deps={DEP_ASAP}, port_changed_values={}, now_ms=0)
+        await handle_changes([mock_num_port1], changed_time_deps={DEP_ASAP}, port_changed_values={}, now_ms=0)
         mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_forced_port_bypasses_asap_pause(self, mocker, mock_num_port1):
@@ -324,7 +333,7 @@ class TestForceEvalExpressions:
         e.pause_asap_eval(1000)
         force_eval_expressions(mock_num_port1)
 
-        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=999)
+        await handle_changes([mock_num_port1], changed_time_deps={DEP_ASAP}, port_changed_values={}, now_ms=999)
         mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_forced_port_without_expression_not_evaluated(self, mocker, mock_num_port1):
@@ -334,7 +343,7 @@ class TestForceEvalExpressions:
 
         force_eval_expressions(mock_num_port1)
 
-        await handle_changes([mock_num_port1], changed_set={DEP_ASAP}, value_pairs={}, now_ms=0)
+        await handle_changes([mock_num_port1], changed_time_deps={DEP_ASAP}, port_changed_values={}, now_ms=0)
         mock_num_port1.eval_and_push_write.assert_not_called()
 
 
