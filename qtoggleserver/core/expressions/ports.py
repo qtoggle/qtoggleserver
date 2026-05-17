@@ -156,6 +156,8 @@ class PortAttr(PortExpression):
         value = context.port_attrs.get(self.port_id, {}).get(self.attr_name)
         if value is None:
             raise PortAttrUnavailable(self.port_id, self.attr_name or "")
+        if not isinstance(value, (int, float)):  # this includes `bool`
+            value = int(bool(value))
 
         return value
 

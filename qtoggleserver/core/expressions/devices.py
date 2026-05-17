@@ -60,6 +60,8 @@ class DeviceAttr(DeviceExpression):
         value = context.device_attrs.get(key)
         if value is None:
             raise DeviceAttrUnavailable(self.device_name or "", self.attr_name or "")
+        if not isinstance(value, (int, float)):  # this includes `bool`
+            value = int(bool(value))
 
         return value
 

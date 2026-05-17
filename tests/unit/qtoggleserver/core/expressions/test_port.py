@@ -150,6 +150,20 @@ class TestPortAttr:
         dummy_eval_context.port_attrs["nid1"] = {"enabled": True}
         assert await e._eval(dummy_eval_context) is True
 
+    async def test_eval_string_nonempty(self, mock_num_port1, dummy_eval_context):
+        """Should return 1 when the attribute is a non-empty string."""
+
+        e = PortAttr("nid1", prefix="$", role=Role.VALUE, attr_name="tag")
+        dummy_eval_context.port_attrs["nid1"] = {"tag": "sensor"}
+        assert await e._eval(dummy_eval_context) == 1
+
+    async def test_eval_string_empty(self, mock_num_port1, dummy_eval_context):
+        """Should return 0 when the attribute is an empty string."""
+
+        e = PortAttr("nid1", prefix="$", role=Role.VALUE, attr_name="tag")
+        dummy_eval_context.port_attrs["nid1"] = {"tag": ""}
+        assert await e._eval(dummy_eval_context) == 0
+
     async def test_eval_unknown(self, dummy_eval_context):
         """Should raise UnknownPortId when the referenced port doesn't exist."""
 
@@ -196,6 +210,20 @@ class TestSelfPortAttr:
         e = SelfPortAttr("nid1", prefix="$", role=Role.VALUE, attr_name="enabled")
         dummy_eval_context.port_attrs["nid1"] = {"enabled": True}
         assert await e._eval(dummy_eval_context) is True
+
+    async def test_eval_string_nonempty(self, mock_num_port1, dummy_eval_context):
+        """Should return 1 when the attribute is a non-empty string."""
+
+        e = SelfPortAttr("nid1", prefix="$", role=Role.VALUE, attr_name="tag")
+        dummy_eval_context.port_attrs["nid1"] = {"tag": "sensor"}
+        assert await e._eval(dummy_eval_context) == 1
+
+    async def test_eval_string_empty(self, mock_num_port1, dummy_eval_context):
+        """Should return 0 when the attribute is an empty string."""
+
+        e = SelfPortAttr("nid1", prefix="$", role=Role.VALUE, attr_name="tag")
+        dummy_eval_context.port_attrs["nid1"] = {"tag": ""}
+        assert await e._eval(dummy_eval_context) == 0
 
     async def test_eval_unknown(self, dummy_eval_context):
         """Should raise UnknownPortId when the self port doesn't exist."""

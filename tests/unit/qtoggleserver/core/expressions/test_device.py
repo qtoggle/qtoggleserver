@@ -24,8 +24,22 @@ class TestMainDeviceAttr:
         """Should return the attribute value from the supplied context."""
 
         e = MainDeviceAttr(prefix="#", role=Role.VALUE, attr_name="main_test_attr")
+        dummy_eval_context.device_attrs["main_test_attr"] = 42
+        assert await e._eval(dummy_eval_context) == 42
+
+    async def test_eval_string_nonempty(self, dummy_eval_context):
+        """Should return 1 when the attribute is a non-empty string."""
+
+        e = MainDeviceAttr(prefix="#", role=Role.VALUE, attr_name="main_test_attr")
         dummy_eval_context.device_attrs["main_test_attr"] = "My Device"
-        assert await e._eval(dummy_eval_context) == "My Device"
+        assert await e._eval(dummy_eval_context) == 1
+
+    async def test_eval_string_empty(self, dummy_eval_context):
+        """Should return 0 when the attribute is an empty string."""
+
+        e = MainDeviceAttr(prefix="#", role=Role.VALUE, attr_name="main_test_attr")
+        dummy_eval_context.device_attrs["main_test_attr"] = ""
+        assert await e._eval(dummy_eval_context) == 0
 
     async def test_eval_unavailable(self, dummy_eval_context):
         """Should raise DeviceAttrUnavailable when the attribute is not present in the context."""
@@ -62,8 +76,22 @@ class TestSlaveDeviceAttr:
         """Should return the attribute value using a `slave_name.attr_name` key in the context."""
 
         e = SlaveDeviceAttr("slave1", prefix="#", role=Role.VALUE, attr_name="display_name")
+        dummy_eval_context.device_attrs["slave1:display_name"] = 42
+        assert await e._eval(dummy_eval_context) == 42
+
+    async def test_eval_string_nonempty(self, dummy_eval_context):
+        """Should return 1 when the attribute is a non-empty string."""
+
+        e = SlaveDeviceAttr("slave1", prefix="#", role=Role.VALUE, attr_name="display_name")
         dummy_eval_context.device_attrs["slave1:display_name"] = "Slave Device"
-        assert await e._eval(dummy_eval_context) == "Slave Device"
+        assert await e._eval(dummy_eval_context) == 1
+
+    async def test_eval_string_empty(self, dummy_eval_context):
+        """Should return 0 when the attribute is an empty string."""
+
+        e = SlaveDeviceAttr("slave1", prefix="#", role=Role.VALUE, attr_name="display_name")
+        dummy_eval_context.device_attrs["slave1:display_name"] = ""
+        assert await e._eval(dummy_eval_context) == 0
 
     async def test_eval_unavailable(self, dummy_eval_context):
         """Should raise DeviceAttrUnavailable when the attribute is not present in the context."""
