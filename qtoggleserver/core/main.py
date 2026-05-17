@@ -114,7 +114,6 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
             if not port.is_enabled():
                 continue
 
-            port.invalidate_attrs()
             old_value = port.get_last_read_value()
 
             if second_changed:
@@ -176,10 +175,6 @@ async def handle_changes(
 
     # changed_set contains:
     #  * ports
-    #  * time strings
-
-    # deps contain:
-    #  * `$`-prefixed port ids
     #  * time strings
 
     forced_ports = set(_force_eval_expression_ports)
