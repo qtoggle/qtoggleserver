@@ -512,61 +512,54 @@ class TestPauseResume:
 class TestAttrChangeHandler:
     @pytest.fixture(autouse=True)
     def reset_pending(self):
-        """Clear _pending_attr_changes before and after each test."""
-        core_main._pending_attr_changes.clear()
+        """Clear pending attr changes before and after each test."""
+        core_main._attr_change_handler._pending.clear()
         yield
-        core_main._pending_attr_changes.clear()
+        core_main._attr_change_handler._pending.clear()
 
     async def test_port_update_adds_attr_dep(self, mock_num_port1):
         """PortUpdate event should add `$port_id:` to _pending_attr_changes."""
 
-        handler = core_main._AttrChangeHandler()
-        await handler.handle_event(core_events.PortUpdate(mock_num_port1))
-        assert core_main._pending_attr_changes == {"$nid1:"}
+        await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port1))
+        assert core_main._attr_change_handler._pending == {"$nid1:"}
 
     async def test_port_add_adds_attr_dep(self, mock_num_port1):
         """PortAdd event should add `$port_id:` to _pending_attr_changes."""
 
-        handler = core_main._AttrChangeHandler()
-        await handler.handle_event(core_events.PortAdd(mock_num_port1))
-        assert core_main._pending_attr_changes == {"$nid1:"}
+        await core_main._attr_change_handler.handle_event(core_events.PortAdd(mock_num_port1))
+        assert core_main._attr_change_handler._pending == {"$nid1:"}
 
     async def test_port_remove_adds_attr_dep(self, mock_num_port1):
         """PortRemove event should add `$port_id:` to _pending_attr_changes."""
 
-        handler = core_main._AttrChangeHandler()
-        await handler.handle_event(core_events.PortRemove(mock_num_port1))
-        assert core_main._pending_attr_changes == {"$nid1:"}
+        await core_main._attr_change_handler.handle_event(core_events.PortRemove(mock_num_port1))
+        assert core_main._attr_change_handler._pending == {"$nid1:"}
 
     async def test_device_update_adds_device_dep(self):
         """DeviceUpdate event should add `#:` to _pending_attr_changes."""
 
-        handler = core_main._AttrChangeHandler()
-        await handler.handle_event(core_events.DeviceUpdate())
-        assert core_main._pending_attr_changes == {"#:"}
+        await core_main._attr_change_handler.handle_event(core_events.DeviceUpdate())
+        assert core_main._attr_change_handler._pending == {"#:"}
 
     async def test_value_change_ignored(self, mock_num_port1):
         """ValueChange event should not modify _pending_attr_changes."""
 
-        handler = core_main._AttrChangeHandler()
-        await handler.handle_event(core_events.ValueChange(None, 42, mock_num_port1))
-        assert core_main._pending_attr_changes == set()
+        await core_main._attr_change_handler.handle_event(core_events.ValueChange(None, 42, mock_num_port1))
+        assert core_main._attr_change_handler._pending == set()
 
     async def test_multiple_events_accumulate(self, mock_num_port1, mock_num_port2):
         """Multiple port events should accumulate their dep strings."""
 
-        handler = core_main._AttrChangeHandler()
-        await handler.handle_event(core_events.PortUpdate(mock_num_port1))
-        await handler.handle_event(core_events.PortUpdate(mock_num_port2))
-        assert core_main._pending_attr_changes == {"$nid1:", "$nid2:"}
+        await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port1))
+        await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port2))
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid2:"}
 
     async def test_port_and_device_events_accumulate(self, mock_num_port1):
         """Port and device events should both accumulate into _pending_attr_changes."""
 
-        handler = core_main._AttrChangeHandler()
-        await handler.handle_event(core_events.PortUpdate(mock_num_port1))
-        await handler.handle_event(core_events.DeviceUpdate())
-        assert core_main._pending_attr_changes == {"$nid1:", "#:"}
+        await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port1))
+        await core_main._attr_change_handler.handle_event(core_events.DeviceUpdate())
+        assert core_main._attr_change_handler._pending == {"$nid1:", "#:"}
 
     async def test_read_ports_drains_pending_attr_changes(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
         """read_ports() should include pending port-attr deps in the changes set passed to _eval_changed_expressions."""
@@ -574,7 +567,7 @@ class TestAttrChangeHandler:
         freezer.move_to(dummy_utc_datetime)
         await read_ports()  # prime time state
 
-        core_main._pending_attr_changes.add("$nid1:")
+        core_main._attr_change_handler._pending.add("$nid1:")
         spy = mocker.patch("qtoggleserver.core.main._eval_changed_expressions")
         await read_ports()
 
@@ -587,7 +580,7 @@ class TestAttrChangeHandler:
         freezer.move_to(dummy_utc_datetime)
         await read_ports()  # prime time state
 
-        core_main._pending_attr_changes.add("#:")
+        core_main._attr_change_handler._pending.add("#:")
         spy = mocker.patch("qtoggleserver.core.main._eval_changed_expressions")
         await read_ports()
 
@@ -595,16 +588,16 @@ class TestAttrChangeHandler:
         assert "#:" in call_changes
 
     async def test_read_ports_clears_pending_after_drain(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
-        """_pending_attr_changes must be empty after read_ports() drains it."""
+        """_pending must be empty after read_ports() drains it."""
 
         freezer.move_to(dummy_utc_datetime)
         await read_ports()  # prime time state
 
-        core_main._pending_attr_changes.add("$nid1:")
+        core_main._attr_change_handler._pending.add("$nid1:")
         mocker.patch("qtoggleserver.core.main._eval_changed_expressions")
         await read_ports()
 
-        assert core_main._pending_attr_changes == set()
+        assert core_main._attr_change_handler._pending == set()
 
     async def test_port_attr_dep_triggers_expression_eval(self, mocker, mock_num_port1, mock_num_port2):
         """A port whose expression references $nid1: should be evaluated when `$nid1:` is in changes."""
@@ -631,31 +624,27 @@ class TestAttrChangeHandler:
     async def test_slave_device_update_adds_slave_dep(self):
         """SlaveDeviceUpdate event should add `#slave_name:` to _pending_attr_changes."""
 
-        handler = core_main._AttrChangeHandler()
-        await handler.handle_event(slaves_events.SlaveDeviceUpdate(_make_mock_slave("slave1")))
-        assert core_main._pending_attr_changes == {"#slave1:"}
+        await core_main._attr_change_handler.handle_event(slaves_events.SlaveDeviceUpdate(_make_mock_slave("slave1")))
+        assert core_main._attr_change_handler._pending == {"#slave1:"}
 
     async def test_slave_device_add_adds_slave_dep(self):
         """SlaveDeviceAdd event should add `#slave_name:` to _pending_attr_changes."""
 
-        handler = core_main._AttrChangeHandler()
-        await handler.handle_event(slaves_events.SlaveDeviceAdd(_make_mock_slave("slave1")))
-        assert core_main._pending_attr_changes == {"#slave1:"}
+        await core_main._attr_change_handler.handle_event(slaves_events.SlaveDeviceAdd(_make_mock_slave("slave1")))
+        assert core_main._attr_change_handler._pending == {"#slave1:"}
 
     async def test_slave_device_remove_adds_slave_dep(self):
         """SlaveDeviceRemove event should add `#slave_name:` to _pending_attr_changes."""
 
-        handler = core_main._AttrChangeHandler()
-        await handler.handle_event(slaves_events.SlaveDeviceRemove(_make_mock_slave("slave1")))
-        assert core_main._pending_attr_changes == {"#slave1:"}
+        await core_main._attr_change_handler.handle_event(slaves_events.SlaveDeviceRemove(_make_mock_slave("slave1")))
+        assert core_main._attr_change_handler._pending == {"#slave1:"}
 
     async def test_multiple_slave_events_accumulate(self):
         """Multiple slave device events should accumulate distinct dep strings."""
 
-        handler = core_main._AttrChangeHandler()
-        await handler.handle_event(slaves_events.SlaveDeviceUpdate(_make_mock_slave("slave1")))
-        await handler.handle_event(slaves_events.SlaveDeviceUpdate(_make_mock_slave("slave2")))
-        assert core_main._pending_attr_changes == {"#slave1:", "#slave2:"}
+        await core_main._attr_change_handler.handle_event(slaves_events.SlaveDeviceUpdate(_make_mock_slave("slave1")))
+        await core_main._attr_change_handler.handle_event(slaves_events.SlaveDeviceUpdate(_make_mock_slave("slave2")))
+        assert core_main._attr_change_handler._pending == {"#slave1:", "#slave2:"}
 
     async def test_slave_dep_triggers_expression_eval(self, mocker, mock_num_port1):
         """A port whose expression references #slave1:attr should be evaluated when `#slave1:` is in changes."""

@@ -21,6 +21,7 @@ from qtoggleserver.core.typing import NullablePortValue
 from qtoggleserver.utils import expressions as expressions_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
+from qtoggleserver.utils import main as main_utils
 from qtoggleserver.utils import timedset
 
 
@@ -46,28 +47,8 @@ _last_year: int = 0
 _force_eval_expression_ports: set[core_ports.BasePort] = set()
 _force_eval_all_expressions: bool = False
 _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
-_pending_attr_changes: set[str] = set()
 _update_lock: asyncio.Lock | None = None
-
-
-class _AttrChangeHandler(core_events.Handler):
-    """Flags port/device attribute dep changes for re-evaluation on the next read_ports tick."""
-
-    FIRE_AND_FORGET = False
-
-    async def handle_event(self, event: core_events.Event) -> None:
-        if isinstance(event, (core_events.PortAdd, core_events.PortRemove, core_events.PortUpdate)):
-            _pending_attr_changes.add(f"${event.get_port().get_id()}:")
-        elif isinstance(event, core_events.DeviceUpdate):
-            _pending_attr_changes.add("#:")
-        else:
-            from qtoggleserver.slaves import events as slaves_events
-
-            if isinstance(
-                event,
-                (slaves_events.SlaveDeviceAdd, slaves_events.SlaveDeviceRemove, slaves_events.SlaveDeviceUpdate),
-            ):
-                _pending_attr_changes.add(f"#{event.get_slave().get_name()}:")
+_attr_change_handler = main_utils.AttrChangeHandler()
 
 
 def _get_changed_time_deps(now_int: int) -> tuple[bool, set[str]]:
@@ -136,16 +117,16 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
 
         if not ports_to_read:
             second_changed, changes = _get_changed_time_deps(now_int)
+
+            # Get (and clear) any attribute dep changes (port or device) flagged by the event handler since last call
+            pending_attr_changes = _attr_change_handler.pop_pending()
+            if pending_attr_changes:
+                changes.update(pending_attr_changes)
         else:
             # When `ports_to_read` are given, this call is made from outside of the main update loop. Don't touch
             # time-related deps unless called from main update loop.
             second_changed = False
             changes = {DEP_ASAP}
-
-        # Drain any attribute dep changes (port or device) flagged by the event handler since the last tick
-        if _pending_attr_changes:
-            changes.update(_pending_attr_changes)
-            _pending_attr_changes.clear()
 
         all_ports = list(core_ports.get_all())
         if not ports_to_read:
@@ -305,7 +286,7 @@ async def init() -> None:
 
     loop = asyncio.get_running_loop()
 
-    core_events.register_handler(_AttrChangeHandler())
+    core_events.register_handler(_attr_change_handler)
     force_eval_expressions()
     _update_loop_task = loop.create_task(update_loop())
 
