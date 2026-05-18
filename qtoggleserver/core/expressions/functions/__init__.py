@@ -6,8 +6,9 @@ from collections.abc import Callable
 
 from .. import DEP_ASAP, exceptions, parse
 from ..base import EvalContext, EvalResult, Expression, Role
+from ..devices import DeviceAttr
 from ..literalvalues import LiteralValue
-from ..ports import PortValue
+from ..ports import PortAttr, PortValue
 
 
 FUNCTIONS = {}
@@ -73,7 +74,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
             try:
                 kind = cls.ARG_KINDS[i]
             except IndexError:
-                kind = (LiteralValue, PortValue, Function)
+                kind = (LiteralValue, PortValue, Function, PortAttr, DeviceAttr)
 
             if not isinstance(arg, kind):
                 raise exceptions.InvalidArgumentKind(cls.NAME, pos_list[i], i + 1)

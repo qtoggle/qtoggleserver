@@ -153,3 +153,29 @@ async def test_parse_missing_attr_prefix():
 async def test_parse_empty():
     with pytest.raises(EmptyExpression):
         parse(None, "    ", role=Role.VALUE)
+
+
+async def test_parse_port_attr_as_function_arg(mock_num_port1):
+    """A port-attribute expression ($port_id:attr) must be accepted as a function argument."""
+    context = EvalContext(
+        port_values={"nid1": 0},
+        port_attrs={"nid1": {"enabled": True}},
+        now_ms=0,
+    )
+
+    e = parse("nid1", "ADD($nid1:enabled, 2)", role=Role.VALUE)
+    # enabled=True → 1, + 2 = 3
+    assert await e.eval(context) == 3
+
+
+async def test_parse_device_attr_as_function_arg():
+    """A device-attribute expression (#:attr) must be accepted as a function argument."""
+    context = EvalContext(
+        port_values={},
+        device_attrs={"name": "my_device"},  # non-numeric → int(bool(...)) = 1
+        now_ms=0,
+    )
+
+    e = parse(None, "ADD(#:name, 2)", role=Role.VALUE)
+    # "my_device" is truthy → 1, + 2 = 3
+    assert await e.eval(context) == 3
