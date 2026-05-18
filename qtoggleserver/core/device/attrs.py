@@ -912,9 +912,9 @@ async def _attrs_update_loop() -> None:
             try:
                 invalidate_attrs()
                 await device_events.trigger_update()
-                await asyncio.sleep(ATTRS_UPDATE_INTERVAL)
             except Exception:
                 logger.exception("Error updating attributes")
+            finally:
                 await asyncio.sleep(ATTRS_UPDATE_INTERVAL)
     except asyncio.CancelledError:
         logger.debug("attributes update task cancelled")
