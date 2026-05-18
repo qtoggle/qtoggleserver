@@ -1,14 +1,23 @@
 import time
 
 from datetime import datetime, timedelta
+from unittest.mock import MagicMock
 
 import pytest
 
+from qtoggleserver.core import events as core_events
 from qtoggleserver.core import main as core_main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.expressions import DEP_ASAP, DEP_DAY, DEP_HOUR, DEP_MINUTE, DEP_MONTH, DEP_SECOND, DEP_YEAR
 from qtoggleserver.core.main import _eval_changed_expressions, force_eval_expressions, pause, read_ports, resume
+from qtoggleserver.slaves import events as slaves_events
 from tests.unit.qtoggleserver.mock.ports import MockNumberPort
+
+
+def _make_mock_slave(name: str) -> MagicMock:
+    slave = MagicMock()
+    slave.get_name.return_value = name
+    return slave
 
 
 def _ts(dt: datetime) -> int:
@@ -250,7 +259,7 @@ class TestHandleChanges:
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         await _eval_changed_expressions(
-            changed_set_str={"$nid1"},
+            changes={"$nid1"},
             now_ms=0,
         )
         mock_num_port1.eval_and_push_write.assert_called_once()
@@ -263,7 +272,7 @@ class TestHandleChanges:
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         await _eval_changed_expressions(
-            changed_set_str={"$nid1"},
+            changes={"$nid1"},
             now_ms=0,
         )
         mock_num_port1.eval_and_push_write.assert_called_once()
@@ -278,7 +287,7 @@ class TestHandleChanges:
         (mocker.patch.object(mock_num_port1, "eval_and_push_write"),)
         (mocker.patch.object(mock_num_port1, "is_enabled", return_value=False),)
 
-        await _eval_changed_expressions(changed_set_str=set(), now_ms=0)
+        await _eval_changed_expressions(changes=set(), now_ms=0)
         mock_num_port1.eval_and_push_write.assert_not_called()
 
     async def test_asap_trigger_eval(self, mocker, mock_num_port1):
@@ -288,7 +297,7 @@ class TestHandleChanges:
         mock_num_port1.set_expression("TIMEMS()")
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
-        await _eval_changed_expressions(changed_set_str={DEP_ASAP}, now_ms=0)
+        await _eval_changed_expressions(changes={DEP_ASAP}, now_ms=0)
         mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_asap_eval_paused_no_trigger_eval(self, mocker, mock_num_port1):
@@ -300,7 +309,7 @@ class TestHandleChanges:
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         e.pause_asap_eval(1000)
-        await _eval_changed_expressions(changed_set_str={DEP_ASAP}, now_ms=999)
+        await _eval_changed_expressions(changes={DEP_ASAP}, now_ms=999)
         mock_num_port1.eval_and_push_write.assert_not_called()
 
     async def test_asap_eval_not_paused_trigger_eval(self, mocker, mock_num_port1):
@@ -312,7 +321,7 @@ class TestHandleChanges:
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         e.pause_asap_eval(1000)
-        await _eval_changed_expressions(changed_set_str={DEP_ASAP}, now_ms=1000)
+        await _eval_changed_expressions(changes={DEP_ASAP}, now_ms=1000)
         mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_removed_port_not_evaluated(self, mocker, mock_num_port2):
@@ -326,7 +335,7 @@ class TestHandleChanges:
         await port.remove(persisted_data=False)
 
         await _eval_changed_expressions(
-            changed_set_str={"$nid2"},
+            changes={"$nid2"},
             now_ms=0,
         )
         port.eval_and_push_write.assert_not_called()
@@ -338,7 +347,7 @@ class TestHandleChanges:
         mocker.patch.object(mock_num_port2, "eval_and_push_write")
 
         await _eval_changed_expressions(
-            changed_set_str={"$nid1"},
+            changes={"$nid1"},
             now_ms=0,
         )
         mock_num_port2.eval_and_push_write.assert_called_once()
@@ -352,7 +361,7 @@ class TestHandleChanges:
         mocker.patch.object(mock_num_port1, "eval_and_push_write")
 
         await _eval_changed_expressions(
-            changed_set_str={"$nid2"},
+            changes={"$nid2"},
             now_ms=0,
         )
         mock_num_port1.eval_and_push_write.assert_not_called()
@@ -376,7 +385,7 @@ class TestForceEvalExpressions:
 
         force_eval_expressions(mock_num_port1)
 
-        await _eval_changed_expressions(changed_set_str={DEP_ASAP}, now_ms=0)
+        await _eval_changed_expressions(changes={DEP_ASAP}, now_ms=0)
         mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_force_all_evaluates_all_expression_ports(self, mocker, mock_num_port1, mock_num_port2):
@@ -389,7 +398,7 @@ class TestForceEvalExpressions:
 
         force_eval_expressions()
 
-        await _eval_changed_expressions(changed_set_str=set(), now_ms=0)
+        await _eval_changed_expressions(changes=set(), now_ms=0)
         mock_num_port1.eval_and_push_write.assert_called_once()
         mock_num_port2.eval_and_push_write.assert_called_once()
 
@@ -401,8 +410,8 @@ class TestForceEvalExpressions:
 
         force_eval_expressions(mock_num_port1)
 
-        await _eval_changed_expressions(changed_set_str={DEP_ASAP}, now_ms=0)
-        await _eval_changed_expressions(changed_set_str={DEP_ASAP}, now_ms=0)
+        await _eval_changed_expressions(changes={DEP_ASAP}, now_ms=0)
+        await _eval_changed_expressions(changes={DEP_ASAP}, now_ms=0)
         mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_forced_port_bypasses_asap_pause(self, mocker, mock_num_port1):
@@ -415,7 +424,7 @@ class TestForceEvalExpressions:
         e.pause_asap_eval(1000)
         force_eval_expressions(mock_num_port1)
 
-        await _eval_changed_expressions(changed_set_str={DEP_ASAP}, now_ms=999)
+        await _eval_changed_expressions(changes={DEP_ASAP}, now_ms=999)
         mock_num_port1.eval_and_push_write.assert_called_once()
 
     async def test_forced_port_without_expression_not_evaluated(self, mocker, mock_num_port1):
@@ -425,7 +434,7 @@ class TestForceEvalExpressions:
 
         force_eval_expressions(mock_num_port1)
 
-        await _eval_changed_expressions(changed_set_str={DEP_ASAP}, now_ms=0)
+        await _eval_changed_expressions(changes={DEP_ASAP}, now_ms=0)
         mock_num_port1.eval_and_push_write.assert_not_called()
 
 
@@ -498,3 +507,163 @@ class TestPauseResume:
         spy = mocker.patch("qtoggleserver.core.main._eval_changed_expressions")
         await read_ports()
         spy.assert_called_once()
+
+
+class TestAttrChangeHandler:
+    @pytest.fixture(autouse=True)
+    def reset_pending(self):
+        """Clear _pending_attr_changes before and after each test."""
+        core_main._pending_attr_changes.clear()
+        yield
+        core_main._pending_attr_changes.clear()
+
+    async def test_port_update_adds_attr_dep(self, mock_num_port1):
+        """PortUpdate event should add `$port_id:` to _pending_attr_changes."""
+
+        handler = core_main._AttrChangeHandler()
+        await handler.handle_event(core_events.PortUpdate(mock_num_port1))
+        assert core_main._pending_attr_changes == {"$nid1:"}
+
+    async def test_port_add_adds_attr_dep(self, mock_num_port1):
+        """PortAdd event should add `$port_id:` to _pending_attr_changes."""
+
+        handler = core_main._AttrChangeHandler()
+        await handler.handle_event(core_events.PortAdd(mock_num_port1))
+        assert core_main._pending_attr_changes == {"$nid1:"}
+
+    async def test_port_remove_adds_attr_dep(self, mock_num_port1):
+        """PortRemove event should add `$port_id:` to _pending_attr_changes."""
+
+        handler = core_main._AttrChangeHandler()
+        await handler.handle_event(core_events.PortRemove(mock_num_port1))
+        assert core_main._pending_attr_changes == {"$nid1:"}
+
+    async def test_device_update_adds_device_dep(self):
+        """DeviceUpdate event should add `#:` to _pending_attr_changes."""
+
+        handler = core_main._AttrChangeHandler()
+        await handler.handle_event(core_events.DeviceUpdate())
+        assert core_main._pending_attr_changes == {"#:"}
+
+    async def test_value_change_ignored(self, mock_num_port1):
+        """ValueChange event should not modify _pending_attr_changes."""
+
+        handler = core_main._AttrChangeHandler()
+        await handler.handle_event(core_events.ValueChange(None, 42, mock_num_port1))
+        assert core_main._pending_attr_changes == set()
+
+    async def test_multiple_events_accumulate(self, mock_num_port1, mock_num_port2):
+        """Multiple port events should accumulate their dep strings."""
+
+        handler = core_main._AttrChangeHandler()
+        await handler.handle_event(core_events.PortUpdate(mock_num_port1))
+        await handler.handle_event(core_events.PortUpdate(mock_num_port2))
+        assert core_main._pending_attr_changes == {"$nid1:", "$nid2:"}
+
+    async def test_port_and_device_events_accumulate(self, mock_num_port1):
+        """Port and device events should both accumulate into _pending_attr_changes."""
+
+        handler = core_main._AttrChangeHandler()
+        await handler.handle_event(core_events.PortUpdate(mock_num_port1))
+        await handler.handle_event(core_events.DeviceUpdate())
+        assert core_main._pending_attr_changes == {"$nid1:", "#:"}
+
+    async def test_read_ports_drains_pending_attr_changes(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """read_ports() should include pending port-attr deps in the changes set passed to _eval_changed_expressions."""
+
+        freezer.move_to(dummy_utc_datetime)
+        await read_ports()  # prime time state
+
+        core_main._pending_attr_changes.add("$nid1:")
+        spy = mocker.patch("qtoggleserver.core.main._eval_changed_expressions")
+        await read_ports()
+
+        call_changes = spy.call_args[0][0]
+        assert "$nid1:" in call_changes
+
+    async def test_read_ports_drains_device_dep(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """read_ports() should include `#:` in changes when a DeviceUpdate was pending."""
+
+        freezer.move_to(dummy_utc_datetime)
+        await read_ports()  # prime time state
+
+        core_main._pending_attr_changes.add("#:")
+        spy = mocker.patch("qtoggleserver.core.main._eval_changed_expressions")
+        await read_ports()
+
+        call_changes = spy.call_args[0][0]
+        assert "#:" in call_changes
+
+    async def test_read_ports_clears_pending_after_drain(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """_pending_attr_changes must be empty after read_ports() drains it."""
+
+        freezer.move_to(dummy_utc_datetime)
+        await read_ports()  # prime time state
+
+        core_main._pending_attr_changes.add("$nid1:")
+        mocker.patch("qtoggleserver.core.main._eval_changed_expressions")
+        await read_ports()
+
+        assert core_main._pending_attr_changes == set()
+
+    async def test_port_attr_dep_triggers_expression_eval(self, mocker, mock_num_port1, mock_num_port2):
+        """A port whose expression references $nid1: should be evaluated when `$nid1:` is in changes."""
+
+        mock_num_port2.set_writable(True)
+        mock_num_port2.set_expression("$nid1:enabled")
+        mocker.patch.object(mock_num_port2, "eval_and_push_write")
+
+        await _eval_changed_expressions(changes={"$nid1:"}, now_ms=0)
+
+        mock_num_port2.eval_and_push_write.assert_called_once()
+
+    async def test_device_dep_triggers_expression_eval(self, mocker, mock_num_port1):
+        """A port whose expression references #:attr should be evaluated when `#:` is in changes."""
+
+        mock_num_port1.set_writable(True)
+        mock_num_port1.set_expression("#:name")
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
+
+        await _eval_changed_expressions(changes={"#:"}, now_ms=0)
+
+        mock_num_port1.eval_and_push_write.assert_called_once()
+
+    async def test_slave_device_update_adds_slave_dep(self):
+        """SlaveDeviceUpdate event should add `#slave_name:` to _pending_attr_changes."""
+
+        handler = core_main._AttrChangeHandler()
+        await handler.handle_event(slaves_events.SlaveDeviceUpdate(_make_mock_slave("slave1")))
+        assert core_main._pending_attr_changes == {"#slave1:"}
+
+    async def test_slave_device_add_adds_slave_dep(self):
+        """SlaveDeviceAdd event should add `#slave_name:` to _pending_attr_changes."""
+
+        handler = core_main._AttrChangeHandler()
+        await handler.handle_event(slaves_events.SlaveDeviceAdd(_make_mock_slave("slave1")))
+        assert core_main._pending_attr_changes == {"#slave1:"}
+
+    async def test_slave_device_remove_adds_slave_dep(self):
+        """SlaveDeviceRemove event should add `#slave_name:` to _pending_attr_changes."""
+
+        handler = core_main._AttrChangeHandler()
+        await handler.handle_event(slaves_events.SlaveDeviceRemove(_make_mock_slave("slave1")))
+        assert core_main._pending_attr_changes == {"#slave1:"}
+
+    async def test_multiple_slave_events_accumulate(self):
+        """Multiple slave device events should accumulate distinct dep strings."""
+
+        handler = core_main._AttrChangeHandler()
+        await handler.handle_event(slaves_events.SlaveDeviceUpdate(_make_mock_slave("slave1")))
+        await handler.handle_event(slaves_events.SlaveDeviceUpdate(_make_mock_slave("slave2")))
+        assert core_main._pending_attr_changes == {"#slave1:", "#slave2:"}
+
+    async def test_slave_dep_triggers_expression_eval(self, mocker, mock_num_port1):
+        """A port whose expression references #slave1:attr should be evaluated when `#slave1:` is in changes."""
+
+        mock_num_port1.set_writable(True)
+        mock_num_port1.set_expression("#slave1:enabled")
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
+
+        await _eval_changed_expressions(changes={"#slave1:"}, now_ms=0)
+
+        mock_num_port1.eval_and_push_write.assert_called_once()

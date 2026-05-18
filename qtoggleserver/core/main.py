@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 
 from qtoggleserver.conf import settings
+from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.expressions import (
     DEP_ASAP,
@@ -45,7 +46,28 @@ _last_year: int = 0
 _force_eval_expression_ports: set[core_ports.BasePort] = set()
 _force_eval_all_expressions: bool = False
 _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
+_pending_attr_changes: set[str] = set()
 _update_lock: asyncio.Lock | None = None
+
+
+class _AttrChangeHandler(core_events.Handler):
+    """Flags port/device attribute dep changes for re-evaluation on the next read_ports tick."""
+
+    FIRE_AND_FORGET = False
+
+    async def handle_event(self, event: core_events.Event) -> None:
+        if isinstance(event, (core_events.PortAdd, core_events.PortRemove, core_events.PortUpdate)):
+            _pending_attr_changes.add(f"${event.get_port().get_id()}:")
+        elif isinstance(event, core_events.DeviceUpdate):
+            _pending_attr_changes.add("#:")
+        else:
+            from qtoggleserver.slaves import events as slaves_events
+
+            if isinstance(
+                event,
+                (slaves_events.SlaveDeviceAdd, slaves_events.SlaveDeviceRemove, slaves_events.SlaveDeviceUpdate),
+            ):
+                _pending_attr_changes.add(f"#{event.get_slave().get_name()}:")
 
 
 def _get_changed_time_deps(now_int: int) -> tuple[bool, set[str]]:
@@ -120,6 +142,11 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
             second_changed = False
             changes = {DEP_ASAP}
 
+        # Drain any attribute dep changes (port or device) flagged by the event handler since the last tick
+        if _pending_attr_changes:
+            changes.update(_pending_attr_changes)
+            _pending_attr_changes.clear()
+
         all_ports = list(core_ports.get_all())
         if not ports_to_read:
             ports_to_read = all_ports
@@ -174,7 +201,7 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
         sessions.update()
 
 
-async def _eval_changed_expressions(changed_set_str: set[str], now_ms: int) -> None:
+async def _eval_changed_expressions(changes: set[str], now_ms: int) -> None:
     global _force_eval_all_expressions
 
     forced_ports = set(_force_eval_expression_ports)
@@ -191,7 +218,7 @@ async def _eval_changed_expressions(changed_set_str: set[str], now_ms: int) -> N
     else:
         deps_map = expressions_utils.get_deps_map()
         ports_to_eval: set[core_ports.BasePort] = set(forced_ports)
-        for dep in changed_set_str:
+        for dep in changes:
             for port in deps_map.get(dep, []):
                 ports_to_eval.add(port)
 
@@ -205,7 +232,7 @@ async def _eval_changed_expressions(changed_set_str: set[str], now_ms: int) -> N
 
         if not full_eval and port not in forced_ports:
             deps: set[str] = expression.get_deps()
-            changed_deps = deps & changed_set_str
+            changed_deps = deps & changes
             if changed_deps == {DEP_ASAP} and expression.is_asap_eval_paused(now_ms):
                 continue
 
@@ -278,6 +305,7 @@ async def init() -> None:
 
     loop = asyncio.get_running_loop()
 
+    core_events.register_handler(_AttrChangeHandler())
     force_eval_expressions()
     _update_loop_task = loop.create_task(update_loop())
 
