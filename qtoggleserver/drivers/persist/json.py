@@ -124,7 +124,7 @@ class JSONDriver(BaseDriver):
         else:
             try:
                 self._max_ids[collection] = max(self._max_ids.get(collection, 0), int(id_))
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 pass
 
         coll[id_] = record
@@ -233,7 +233,7 @@ class JSONDriver(BaseDriver):
             for id_ in records:
                 try:
                     max_id = max(max_id, int(id_))
-                except (ValueError, TypeError):
+                except ValueError, TypeError:
                     pass
             max_ids[coll] = max_id
         return max_ids

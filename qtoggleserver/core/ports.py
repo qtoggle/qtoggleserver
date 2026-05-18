@@ -599,11 +599,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self.get_id(), stransform_read, role=core_expressions.Role.TRANSFORM_READ
             )
 
-            deps = transform_read.get_deps()
-            for dep in deps:
-                if dep.startswith("$") and len(dep) > 1 and dep[1:] != self._id:
-                    raise expressions_exceptions.NonSelfDependency(port_id=dep[1:], pos=stransform_read.index(dep))
-
             self.debug('setting read transform "%s"', transform_read)
             self._transform_read = transform_read
         except expressions_exceptions.ExpressionParseError as e:
@@ -634,11 +629,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             transform_write = core_expressions.parse(
                 self.get_id(), stransform_write, role=core_expressions.Role.TRANSFORM_WRITE
             )
-
-            deps = transform_write.get_deps()
-            for dep in deps:
-                if dep.startswith("$") and len(dep) > 1 and dep[1:] != self._id:
-                    raise expressions_exceptions.NonSelfDependency(port_id=dep[1:], pos=stransform_write.index(dep))
 
             self.debug('setting write transform "%s"', transform_write)
             self._transform_write = transform_write

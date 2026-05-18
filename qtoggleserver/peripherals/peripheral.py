@@ -168,16 +168,16 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return self._enabled and self._online
 
     def set_online(self, online: bool) -> None:
-        self._online = online
-
         if online and not self._online:
             self.debug("is online")
+            self._online = online
             try:
                 self.handle_online()
             except Exception:
                 self.error("handle_online failed", exc_info=True)
         elif not online and self._online:
             self.debug("is offline")
+            self._online = online
             try:
                 self.handle_offline()
             except Exception:

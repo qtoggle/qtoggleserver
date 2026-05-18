@@ -3,6 +3,7 @@ import pytest
 from qtoggleserver.core.expressions import EvalContext, Role, parse
 from qtoggleserver.core.expressions.exceptions import (
     EmptyExpression,
+    MissingAttrPrefix,
     UnbalancedParentheses,
     UnexpectedCharacter,
     UnexpectedEnd,
@@ -67,9 +68,9 @@ async def test_parse_unexpected_character():
     assert exc_info.value.pos == 1
 
     with pytest.raises(UnexpectedCharacter) as exc_info:
-        parse(None, "ADD#(10, $)", role=Role.VALUE)
+        parse(None, "ADD?(10, $)", role=Role.VALUE)
 
-    assert exc_info.value.c == "#"
+    assert exc_info.value.c == "?"
     assert exc_info.value.pos == 4
 
     with pytest.raises(UnexpectedCharacter) as exc_info:
@@ -91,9 +92,9 @@ async def test_parse_unexpected_character():
     assert exc_info.value.pos == 11
 
     with pytest.raises(UnexpectedCharacter) as exc_info:
-        parse(None, "ADD(#, 10, $)", role=Role.VALUE)
+        parse(None, "ADD(?, 10, $)", role=Role.VALUE)
 
-    assert exc_info.value.c == "#"
+    assert exc_info.value.c == "?"
     assert exc_info.value.pos == 5
 
     with pytest.raises(UnexpectedCharacter) as exc_info:
@@ -102,7 +103,79 @@ async def test_parse_unexpected_character():
     assert exc_info.value.c == "+"
     assert exc_info.value.pos == 2
 
+    # `@` prefix is not valid for port-attribute syntax (`$port_id:attr_name`)
+    with pytest.raises(UnexpectedCharacter) as exc_info:
+        parse(None, "@nid:attr", role=Role.VALUE)
+
+    assert exc_info.value.c == "@"
+    assert exc_info.value.pos == 1
+
+    # invalid character in attr_name part of port-attribute expression
+    with pytest.raises(UnexpectedCharacter) as exc_info:
+        parse(None, "$nid:attr*", role=Role.VALUE)
+
+    assert exc_info.value.c == "*"
+    assert exc_info.value.pos == 10
+
+    # invalid character in attr_name part of self-port-attribute expression
+    with pytest.raises(UnexpectedCharacter) as exc_info:
+        parse(None, "$:attr*", role=Role.VALUE)
+
+    assert exc_info.value.c == "*"
+    assert exc_info.value.pos == 7
+
+    # invalid character in device_name part of device-attribute expression
+    with pytest.raises(UnexpectedCharacter) as exc_info:
+        parse(None, "#dev*:attr", role=Role.VALUE)
+
+    assert exc_info.value.c == "*"
+
+
+async def test_parse_missing_attr_prefix():
+    # device expression without a colon (no attribute name separator)
+    with pytest.raises(MissingAttrPrefix) as exc_info:
+        parse(None, "#device_name", role=Role.VALUE)
+
+    assert exc_info.value.pos == 13
+
+    with pytest.raises(MissingAttrPrefix) as exc_info:
+        parse(None, "#", role=Role.VALUE)
+
+    assert exc_info.value.pos == 2
+
+    # same inside a function argument
+    with pytest.raises(MissingAttrPrefix) as exc_info:
+        parse(None, "ADD(#, 10, $)", role=Role.VALUE)
+
+    assert exc_info.value.pos == 6
+
 
 async def test_parse_empty():
     with pytest.raises(EmptyExpression):
         parse(None, "    ", role=Role.VALUE)
+
+
+async def test_parse_port_attr_as_function_arg(mock_num_port1):
+    """A port-attribute expression ($port_id:attr) must be accepted as a function argument."""
+    context = EvalContext(
+        port_values={"nid1": 0},
+        port_attrs={"nid1": {"enabled": True}},
+        now_ms=0,
+    )
+
+    e = parse("nid1", "ADD($nid1:enabled, 2)", role=Role.VALUE)
+    # enabled=True → 1, + 2 = 3
+    assert await e.eval(context) == 3
+
+
+async def test_parse_device_attr_as_function_arg():
+    """A device-attribute expression (#:attr) must be accepted as a function argument."""
+    context = EvalContext(
+        port_values={},
+        device_attrs={"name": "my_device"},  # non-numeric → int(bool(...)) = 1
+        now_ms=0,
+    )
+
+    e = parse(None, "ADD(#:name, 2)", role=Role.VALUE)
+    # "my_device" is truthy → 1, + 2 = 3
+    assert await e.eval(context) == 3

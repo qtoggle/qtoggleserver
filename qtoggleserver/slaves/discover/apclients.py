@@ -316,7 +316,7 @@ async def _query_client(ap_client: ap.APClient) -> DiscoveredDevice | None:
         try:
             attrs = await ap_client.request("GET", f"{prefix}/device")
             break
-        except (httpclient.HTTPError, json.JSONDecodeError):
+        except httpclient.HTTPError, json.JSONDecodeError:
             continue
     else:
         raise DiscoverException("Could not find device API endpoint")

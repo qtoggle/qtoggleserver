@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 
 from qtoggleserver.conf import settings
+from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.expressions import (
     DEP_ASAP,
@@ -20,6 +21,7 @@ from qtoggleserver.core.typing import NullablePortValue
 from qtoggleserver.utils import expressions as expressions_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
+from qtoggleserver.utils import main as main_utils
 from qtoggleserver.utils import timedset
 
 
@@ -46,10 +48,12 @@ _force_eval_expression_ports: set[core_ports.BasePort] = set()
 _force_eval_all_expressions: bool = False
 _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
 _update_lock: asyncio.Lock | None = None
+_attr_change_handler = main_utils.AttrChangeHandler()
 
 
-async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> None:
-    from . import sessions
+def _get_changed_time_deps(now_int: int) -> tuple[bool, set[str]]:
+    """Determine which time-unit deps have changed since the last call and update the relevant module-level tracking
+    variables. Returns ``(second_changed, changed_time_deps)``."""
 
     global _last_time
     global _last_minute
@@ -58,6 +62,44 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
     global _last_week
     global _last_month
     global _last_year
+
+    changed_time_deps: set[str] = {DEP_ASAP}
+    second_changed = False
+
+    if now_int != _last_time:
+        _last_time = now_int
+        second_changed = True
+        changed_time_deps.add(DEP_SECOND)
+
+        now_minute = now_int // 60
+        if now_minute != _last_minute:
+            _last_minute = now_minute
+            changed_time_deps.add(DEP_MINUTE)
+
+            now_hour = now_minute // 60
+            if now_hour != _last_hour:
+                _last_hour = now_hour
+                changed_time_deps.add(DEP_HOUR)
+
+                now_dt = datetime.fromtimestamp(now_int)
+                if now_dt.day != _last_day:
+                    _last_day = now_dt.day
+                    changed_time_deps.add(DEP_DAY)
+
+                    if now_dt.month != _last_month:
+                        _last_month = now_dt.month
+                        changed_time_deps.add(DEP_MONTH)
+
+                        if now_dt.year != _last_year:
+                            _last_year = now_dt.year
+                            changed_time_deps.add(DEP_YEAR)
+
+    return second_changed, changed_time_deps
+
+
+async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> None:
+    from . import sessions
+
     global _update_lock
 
     if _paused:
@@ -67,44 +109,24 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
         _update_lock = asyncio.Lock()
 
     async with _update_lock:
-        changed_set: set[core_ports.BasePort | str] = {DEP_ASAP}
-        value_pairs = {}
+        port_changed_values: dict[core_ports.BasePort, tuple[NullablePortValue, NullablePortValue]] = {}
 
         now = time.time()
         now_int = int(now)
         now_ms = int(now * 1000)
 
-        # Determine which time units have changed since last update. But only do this during regular port reading
-        # update calls, when no specific `ports_to_read` are supplied.
-        second_changed = False
         if not ports_to_read:
-            if now_int != _last_time:
-                _last_time = now_int
-                second_changed = True
-                changed_set.add(DEP_SECOND)
+            second_changed, changes = _get_changed_time_deps(now_int)
 
-                now_minute = now_int // 60
-                if now_minute != _last_minute:
-                    _last_minute = now_minute
-                    changed_set.add(DEP_MINUTE)
-
-                    now_hour = now_minute // 60
-                    if now_hour != _last_hour:
-                        _last_hour = now_hour
-                        changed_set.add(DEP_HOUR)
-
-                        now_dt = datetime.fromtimestamp(now)
-                        if now_dt.day != _last_day:
-                            _last_day = now_dt.day
-                            changed_set.add(DEP_DAY)
-
-                            if now_dt.month != _last_month:
-                                _last_month = now_dt.month
-                                changed_set.add(DEP_MONTH)
-
-                                if now_dt.year != _last_year:
-                                    _last_year = now_dt.year
-                                    changed_set.add(DEP_YEAR)
+            # Get (and clear) any attribute dep changes (port or device) flagged by the event handler since last call
+            pending_attr_changes = _attr_change_handler.pop_pending()
+            if pending_attr_changes:
+                changes.update(pending_attr_changes)
+        else:
+            # When `ports_to_read` are given, this call is made from outside of the main update loop. Don't touch
+            # time-related deps unless called from main update loop.
+            second_changed = False
+            changes = {DEP_ASAP}
 
         all_ports = list(core_ports.get_all())
         if not ports_to_read:
@@ -114,7 +136,6 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
             if not port.is_enabled():
                 continue
 
-            port.invalidate_attrs()
             old_value = port.get_last_read_value()
 
             if second_changed:
@@ -144,12 +165,63 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
                 logger.debug("detected %s value change: %s -> %s", port, old_value_str, new_value_str)
 
                 port.set_last_read_value(new_value)
-                changed_set.add(port)
-                value_pairs[port] = old_value, new_value
+                port_changed_values[port] = old_value, new_value
 
-        await handle_changes(all_ports, changed_set, value_pairs, now_ms)
+        # Trigger value-change events; save persisted ports; add port deps to changes
+        for port, (old_value, new_value) in port_changed_values.items():
+            changes.add(f"${port.get_id()}")
+
+            if not await port.is_internal():
+                await port.trigger_value_change(old_value, new_value)
+
+            if await port.is_persisted():
+                port.save_asap()
+
+        await _eval_changed_expressions(changes, now_ms)
 
         sessions.update()
+
+
+async def _eval_changed_expressions(changes: set[str], now_ms: int) -> None:
+    global _force_eval_all_expressions
+
+    forced_ports = set(_force_eval_expression_ports)
+    _force_eval_expression_ports.clear()
+
+    full_eval = _force_eval_all_expressions
+    _force_eval_all_expressions = False
+
+    eval_context: EvalContext | None = None
+
+    # Reevaluate all port expressions depending on changed set
+    if full_eval:
+        ports_to_eval = list(core_ports.get_all())
+    else:
+        deps_map = expressions_utils.get_deps_map()
+        ports_to_eval: set[core_ports.BasePort] = set(forced_ports)
+        for dep in changes:
+            for port in deps_map.get(dep, []):
+                ports_to_eval.add(port)
+
+    for port in ports_to_eval:
+        if not port.is_enabled():
+            continue
+
+        expression = port.get_expression()
+        if not expression:
+            continue
+
+        if not full_eval and port not in forced_ports:
+            deps: set[str] = expression.get_deps()
+            changed_deps = deps & changes
+            if changed_deps == {DEP_ASAP} and expression.is_asap_eval_paused(now_ms):
+                continue
+
+        # Build context lazily so we skip it entirely when all ports are filtered out above
+        if not eval_context:
+            eval_context = await expressions_utils.build_context(now_ms)
+
+        await port.eval_and_push_write(eval_context)
 
 
 async def update_loop() -> None:
@@ -164,81 +236,6 @@ async def update_loop() -> None:
         except asyncio.CancelledError:
             logger.debug("update task cancelled")
             break
-
-
-async def handle_changes(
-    all_ports: list[core_ports.BasePort],
-    changed_set: set[core_ports.BasePort | str],
-    value_pairs: dict[core_ports.BasePort, tuple[NullablePortValue, NullablePortValue]],
-    now_ms: int,
-) -> None:
-    global _force_eval_all_expressions
-
-    # changed_set contains:
-    #  * ports
-    #  * time strings
-
-    # deps contain:
-    #  * `$`-prefixed port ids
-    #  * time strings
-
-    forced_ports = set(_force_eval_expression_ports)
-    _force_eval_expression_ports.clear()
-
-    full_eval = _force_eval_all_expressions
-    _force_eval_all_expressions = False
-
-    # Transform `changed_set` into a set of strings so that we can compare it with deps
-    changed_set_str: set[str] = set()
-
-    # Trigger value-change events; save persisted ports; build changed_set_str
-    for changed in changed_set:
-        if isinstance(changed, core_ports.BasePort):
-            port = changed
-            changed_set_str.add(f"${port.get_id()}")
-        else:  # time string
-            changed_set_str.add(changed)
-            continue
-
-        if not await port.is_internal():
-            value_pair = value_pairs.get(port)
-            if not value_pair:
-                continue
-            await port.trigger_value_change(*value_pair)
-
-        if await port.is_persisted():
-            port.save_asap()
-
-    eval_context: EvalContext | None = None
-
-    # Reevaluate all port expressions depending on changed set
-    if full_eval:
-        ports_to_eval = all_ports
-    else:
-        deps_map = expressions_utils.get_deps_map()
-        ports_to_eval: set[core_ports.BasePort] = set(forced_ports)
-        for dep in changed_set_str:
-            for port in deps_map.get(dep, []):
-                ports_to_eval.add(port)
-
-    for port in ports_to_eval:
-        if not port.is_enabled():
-            continue
-
-        expression = port.get_expression()
-        if not expression:
-            continue
-
-        if not full_eval and port not in forced_ports:
-            deps: set[str] = expression.get_deps()
-            changed_deps = deps & changed_set_str
-            if changed_deps == {DEP_ASAP} and expression.is_asap_eval_paused(now_ms):
-                continue
-
-        if not eval_context:
-            eval_context = await expressions_utils.build_context(now_ms)
-
-        await port.eval_and_push_write(eval_context)
 
 
 def force_eval_expressions(port: core_ports.BasePort | None = None) -> None:
@@ -289,6 +286,7 @@ async def init() -> None:
 
     loop = asyncio.get_running_loop()
 
+    core_events.register_handler(_attr_change_handler)
     force_eval_expressions()
     _update_loop_task = loop.create_task(update_loop())
 
