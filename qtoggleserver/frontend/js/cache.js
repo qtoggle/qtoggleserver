@@ -614,8 +614,6 @@ export function updateFromEvent(event) {
             break
         }
 
-
-
     }
 }
 

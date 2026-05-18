@@ -128,15 +128,6 @@ class DeviceForm extends mix(PageForm).with(
         this.updateUI(/* fieldChangeWarnings = */ false)
     }
 
-    onBecomeCurrent() {
-        if (this._deviceRemoved) {
-            return
-        }
-    }
-
-    onLeaveCurrent() {
-    }
-
     /**
      * Update the entire form (fields & values) from the corresponding device.
      */
