@@ -57,14 +57,6 @@ class SettingsSection extends Section {
 
                 break
             }
-
-            case 'device-polling-update': {
-                if (this.settingsForm && !this.settingsForm.isRebooting()) {
-                    this.settingsForm.updateUI(/* fieldChangeWarnings = */ false)
-                }
-
-                break
-            }
         }
     }
 

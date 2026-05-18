@@ -87,14 +87,6 @@ class SettingsForm extends mix(PageForm).with(
         })
     }
 
-    onBecomeCurrent() {
-        Cache.setPolledDeviceName('')
-    }
-
-    onLeaveCurrent() {
-        Cache.setPolledDeviceName(null)
-    }
-
     /**
      * Updates the entire form (fields & values) from cached device attributes.
      */
