@@ -67,12 +67,6 @@ const RebootDeviceMixin = Mixin((superclass = Object) => {
             this.setProgress()
             this._rebooting = true
 
-            /* Disable polling while rebooting */
-            let polledDeviceName = Cache.getPolledDeviceName()
-            if (polledDeviceName === deviceName) {
-                Cache.setPolledDeviceName(null)
-            }
-
             if (!Cache.isMainDevice(deviceName)) {
                 BaseAPI.setSlaveName(deviceName)
             }
@@ -106,11 +100,6 @@ const RebootDeviceMixin = Mixin((superclass = Object) => {
 
                 this.clearProgress()
                 this._rebooting = false
-
-                /* Restore polling */
-                if (polledDeviceName === deviceName) {
-                    Cache.setPolledDeviceName(deviceName)
-                }
 
             }.bind(this))
         }

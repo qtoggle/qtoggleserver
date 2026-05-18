@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 EMPTY_PASSWORD_HASH = hashlib.sha256(b"").hexdigest()
-NETWORK_ATTRS_WATCH_INTERVAL = 5
+ATTRS_UPDATE_INTERVAL = 5
 ATTRDEF_CALLABLE_FIELDS = {"modifiable", "min", "max", "enabled"}
 
 
@@ -47,7 +47,7 @@ viewonly_password_hash: str | None = None
 _schema: GenericJSONDict | None = None
 _attrdefs_cache: AttributeDefinitions | None = None
 _to_json_attrdefs_cache: AttributeDefinitions | None = None
-_attrs_watch_task: asyncio.Task | None = None
+_attrs_update_task: asyncio.Task | None = None
 _attrs_cache: Attributes | None = None
 
 
@@ -906,62 +906,32 @@ async def to_json() -> GenericJSONDict:
     return result
 
 
-def _check_net_data_changed(data: dict) -> bool:
-    changed = False
-
-    if system.net.has_wifi_support():
-        wifi_config = system.net.get_wifi_config()
-        old_wifi_config = data.get("wifi_config")
-        if old_wifi_config != wifi_config:
-            data["wifi_config"] = wifi_config
-            changed = True
-
-    if system.net.has_ip_support():
-        ip_config = system.net.get_ip_config()
-        old_ip_config = data.get("ip_config")
-        if old_ip_config != ip_config:
-            data["ip_config"] = ip_config
-            changed = True
-
-    return changed
-
-
-async def _attrs_watch_loop() -> None:
-    # TODO: also watch dynamic attributes
-
-    last_net_data = {}
-
+async def _attrs_update_loop() -> None:
     try:
         while True:
-            changed = False
             try:
-                if _check_net_data_changed(last_net_data):
-                    logger.debug("network attributes data changed")
-                    changed = True
-            except Exception as e:
-                logger.error("network attributes data check failed: %s", e, exc_info=True)
-
-            if changed:
                 invalidate_attrs()
                 await device_events.trigger_update()
-
-            await asyncio.sleep(NETWORK_ATTRS_WATCH_INTERVAL)
+            except Exception:
+                logger.exception("Error updating attributes")
+            finally:
+                await asyncio.sleep(ATTRS_UPDATE_INTERVAL)
     except asyncio.CancelledError:
-        logger.debug("attributes watch task cancelled")
+        logger.debug("attributes update task cancelled")
 
 
 async def init() -> None:
-    global _attrs_watch_task
+    global _attrs_update_task
 
-    logger.debug("starting attributes watch task")
-    _attrs_watch_task = asyncio.create_task(_attrs_watch_loop())
+    logger.debug("starting attributes update task")
+    _attrs_update_task = asyncio.create_task(_attrs_update_loop())
 
 
 async def cleanup() -> None:
-    logger.debug("stopping attributes watch task")
-    if _attrs_watch_task:
-        _attrs_watch_task.cancel()
+    logger.debug("stopping attributes update task")
+    if _attrs_update_task:
+        _attrs_update_task.cancel()
         try:
-            await _attrs_watch_task
+            await _attrs_update_task
         except asyncio.CancelledError:
             pass

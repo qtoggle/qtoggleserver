@@ -128,18 +128,6 @@ class DeviceForm extends mix(PageForm).with(
         this.updateUI(/* fieldChangeWarnings = */ false)
     }
 
-    onBecomeCurrent() {
-        if (this._deviceRemoved) {
-            return
-        }
-
-        Cache.setPolledDeviceName(this.getDeviceName())
-    }
-
-    onLeaveCurrent() {
-        Cache.setPolledDeviceName(null)
-    }
-
     /**
      * Update the entire form (fields & values) from the corresponding device.
      */
@@ -402,9 +390,6 @@ class DeviceForm extends mix(PageForm).with(
                     /* Device renamed, remember new name for reopening */
                     logger.debug(`device "${deviceName}" renamed to "${value}"`)
                     Devices.setRenamedDeviceName(value)
-
-                    /* Disable polling since it would soon poll an inexistent device name */
-                    Cache.setPolledDeviceName(null)
                 }
 
                 if (this._fullAttrdefs[name].reconnect) {

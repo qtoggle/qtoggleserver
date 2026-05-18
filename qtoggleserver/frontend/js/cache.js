@@ -10,14 +10,11 @@ import {gettext}         from '$qui/base/i18n.js'
 import Config            from '$qui/config.js'
 import * as Toast        from '$qui/messages/toast.js'
 import Debouncer         from '$qui/utils/debouncer.js'
-import {asap}            from '$qui/utils/misc.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
 import * as PromiseUtils from '$qui/utils/promise.js'
-import * as Window       from '$qui/window.js'
 
 import * as AuthAPI               from '$app/api/auth.js'
 import * as APIConstants          from '$app/api/constants.js'
-import * as BaseAPI               from '$app/api/base.js'
 import * as DevicesAPI            from '$app/api/devices.js'
 import * as PortsAPI              from '$app/api/ports.js'
 import * as PrefsAPI              from '$app/api/prefs.js'
@@ -26,20 +23,6 @@ import * as MasterSlaveAPI        from '$app/api/master-slave.js'
 import * as NotificationsAPI      from '$app/api/notifications.js'
 import {getGlobalProgressMessage} from '$app/common/common.js'
 
-
-const DEVICE_POLL_INTERVAL = 5 /* Seconds */
-
-/* When actively polling a device, only update some selected attributes */
-const DEVICE_POLLED_ATTRIBUTES = [
-    'date',
-    'uptime',
-    'wifi_signal_strength',
-    'temperature',
-    'cpu_usage',
-    'mem_usage',
-    'storage_usage',
-    'battery_level'
-]
 
 const STORAGE_KEY_PREFIX = 'cache'
 const STORAGE_SET_DEBOUNCE_DELAY = 5000
@@ -69,9 +52,6 @@ const savePrefsDebouncer = new Debouncer(() => {
 
 /* Indicates that cache needs a reload asap */
 let reloadNeeded = false
-
-/* The name of a device to be continuously polled */
-let polledDeviceName = null
 
 /* Debouncers for cache setters */
 const slaveDevicesSetLocalStorageCacheDebouncer = new Debouncer((slaveDevices) => {
@@ -546,18 +526,6 @@ export function updateFromEvent(event) {
             break
         }
 
-        case 'slave-device-polling-update': {
-            if (event.params.name in slaveDevices) {
-                Object.assign(slaveDevices[event.params.name].attrs, event.params.attrs)
-                slaveDevicesSetLocalStorageCacheDebouncer.call(slaveDevices)
-            }
-            else {
-                logger.warn(`received slave-device-polling-update event for unknown device "${event.params.name}"`)
-            }
-
-            break
-        }
-
         case 'slave-device-add': {
             if (event.params.name in slaveDevices) {
                 logger.debug(`received slave-device-add event for already existing device "${event.params.name}"`)
@@ -577,10 +545,6 @@ export function updateFromEvent(event) {
             }
             else {
                 logger.warn(`received slave-device-remove event for unknown device "${event.params.name}"`)
-            }
-
-            if (polledDeviceName === event.params.name) {
-                polledDeviceName = null
             }
 
             break
@@ -649,14 +613,6 @@ export function updateFromEvent(event) {
 
             break
         }
-
-        case 'device-polling-update': {
-            Object.assign(mainDevice, event.params)
-            mainDeviceSetLocalStorageCacheDebouncer.call(mainDevice)
-
-            break
-        }
-
     }
 }
 
@@ -901,96 +857,6 @@ export function reload(now = false) {
 }
 
 /**
- * Return the name of the polled device.
- * @alias qtoggle.cache.getPolledDeviceName
- * @returns {?String}
- */
-export function getPolledDeviceName() {
-    return polledDeviceName
-}
-
-/**
- * Set the name of the polled device. Passing `null` disables polling.
- * @alias qtoggle.cache.setPolledDeviceName
- * @param {?String} [deviceName]
- */
-export function setPolledDeviceName(deviceName) {
-    if (deviceName == null) {
-        logger.debug('disabling device polling')
-    }
-    else {
-        logger.debug(`setting polled device name to "${deviceName}"`)
-    }
-
-    polledDeviceName = deviceName
-}
-
-function pollDevice() {
-    /* Choose between polling main device or a slave device */
-    let device = null
-    if (polledDeviceName) {
-        logger.debug(`polling device "${polledDeviceName}"`)
-        device = slaveDevices[polledDeviceName]
-        if (!device) {
-            logger.debug('skipping polling for unknown device')
-            return
-        }
-
-        if (!device.enabled) {
-            logger.debug('skipping polling for disabled device')
-            return
-        }
-
-        BaseAPI.setSlaveName(polledDeviceName)
-    }
-    else {
-        logger.debug('polling main device')
-    }
-
-    DevicesAPI.getDevice().then(function (attrs) {
-
-        asap(function () {
-            if (device && polledDeviceName === device.name) {
-                if (!ObjectUtils.deepEquals(device.attrs, attrs)) {
-                    let partialDevice = {name: device.name, attrs: {}}
-                    DEVICE_POLLED_ATTRIBUTES.forEach(function (name) {
-                        if (name in attrs) {
-                            partialDevice.attrs[name] = attrs[name]
-                        }
-                    })
-                    NotificationsAPI.fakeServerEvent('slave-device-polling-update', partialDevice)
-                }
-            }
-            else if (polledDeviceName === '') {
-                if (!ObjectUtils.deepEquals(mainDevice, attrs)) {
-                    let partialAttrs = {}
-                    DEVICE_POLLED_ATTRIBUTES.forEach(function (name) {
-                        if (name in attrs) {
-                            partialAttrs[name] = attrs[name]
-                        }
-                    })
-                    NotificationsAPI.fakeServerEvent('device-polling-update', partialAttrs)
-                }
-            }
-        })
-
-    }).catch(function (e) {
-
-        if (polledDeviceName == null) {
-            logger.debug('ignoring polling error after polling disabled')
-            return
-        }
-        if ((e instanceof BaseAPI.APIError) && (e.code === 'no such device')) {
-            logger.debug('ignoring error while polling removed device')
-            return
-        }
-
-        logger.errorStack('polling failed', e)
-
-    })
-}
-
-/**
  * Initialize the cache subsystem.
  * @alias qtoggle.cache.init
  */
@@ -1006,26 +872,4 @@ export function init() {
         }
 
     })
-
-    /* Start a polling timer */
-    setInterval(function () {
-
-        /* Don't poll unless cache is ready */
-        if (!whenCacheReady.isFulfilled()) {
-            return
-        }
-
-        /* Don't poll unless window currently active */
-        if (!Window.isActive()) {
-            return
-        }
-
-        /* Don't poll if polling device disabled */
-        if (polledDeviceName == null) {
-            return
-        }
-
-        pollDevice()
-
-    }, DEVICE_POLL_INTERVAL * 1000)
 }
