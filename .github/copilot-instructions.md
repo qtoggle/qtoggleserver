@@ -1,5 +1,9 @@
 # qToggleServer – Copilot Instructions
 
+## Environment
+
+The Python virtualenv lives at `.venv` in the repo root. Activate it with `source .venv/bin/activate` before running any Python commands. If the virtualenv exists, do not attempt to install `uv`, `pip`, or other tools globally — they are already available inside `.venv`.
+
 ## Commands
 
 ```bash
@@ -12,9 +16,16 @@ ruff format qtoggleserver    # format
 
 Pre-commit hooks run `ruff check` and `ruff format` automatically.
 
+Frontend (run from `qtoggleserver/frontend/`):
+```bash
+npx webpack --mode production   # build — output goes to dist/
+npx eslint js/                  # lint JS
+QUI_PATH=/path/to/qui npx webpack --mode development  # dev build with local QUI checkout
+```
+
 ## Architecture
 
-qToggleServer is a [qToggle protocol](https://github.com/qtoggle/docs) server. The main concepts:
+qToggleServer is a [qToggle protocol](https://github.com/qtoggle/docs) server. The HTTP API implementation derives largely from the [qToggle API 1.3 spec](https://github.com/qtoggle/docs/wiki/The-qToggle-API-1.3). The main concepts:
 
 - **Ports** (`qtoggleserver/core/ports.py`) — the central abstraction. A port has a boolean or number value and a set of attributes. `BasePort` is the base class; hardware drivers subclass it.
 - **Peripherals** (`qtoggleserver/peripherals/`) — hardware devices that own one or more ports. Subclass `Peripheral` and implement `make_port_args()` to declare ports. Peripherals may run blocking I/O in a `ThreadedRunner`.
@@ -143,3 +154,28 @@ async def get_something(request: core_api.APIRequest) -> dict:
 **Access levels:** `ACCESS_LEVEL_NONE=0`, `ACCESS_LEVEL_VIEWONLY=10`, `ACCESS_LEVEL_NORMAL=20`, `ACCESS_LEVEL_ADMIN=30`.
 
 **Input validation** — use `core_api_schema.validate(data, json_schema, ...)` (wraps `jsonschema`). Pass `unexpected_field_code` to customise the error code for unrecognised fields.
+
+## Frontend
+
+The frontend lives at `qtoggleserver/frontend/` and is a single-page application built with vanilla ES2018 modules, webpack 4, and LESS.
+
+**UI framework** — [`@qtoggle/qui`](https://github.com/qtoggle/qui) (QUI). Imported via the `$qui/` path alias. The webpack config delegates to `qui/webpack/webpack-common.js`; set `QUI_PATH` env var to use a local checkout instead of the npm package.
+
+**Path aliases:**
+- `$qui/` → QUI framework (`node_modules/@qtoggle/qui/js/`)
+- `$app/` → the app's own `js/` directory
+- `$node/` → `node_modules/`
+
+**Directory layout (`js/`):**
+- `api/` — thin wrappers around every HTTP endpoint (`ports.js`, `devices.js`, `notifications.js`, etc.). `base.js` handles request signing, time-skew, and error normalisation into `APIError`.
+- `cache.js` — loads and caches device attributes and port list; exposes `Cache.load()`, `Cache.reload()`, `Cache.getMainDevice()`, etc.
+- `events.js` — subscribes to the server notifications (listen) stream and dispatches events to registered listeners.
+- `auth.js` — manages the current access level; exposes `Auth.init()` and access-level-change signals.
+- `dashboard/`, `ports/`, `devices/`, `peripherals/`, `settings/`, `login/` — one QUI *section* per area of the UI.
+- `common/` — shared form mixins and page components (backup/restore, firmware update, reboot, etc.).
+- `widgets/` — reusable QUI widgets specific to this app.
+
+**Key conventions:**
+- 4-space indent, single quotes, no semicolons, 120-char line limit (enforced by ESLint via `eslint.config.mjs`).
+- Sections are registered with `Sections.register(SectionClass)` in `index.js`; each section class lives in its own subdirectory and is a QUI `Section` subclass.
+- Server-side frontend events (`DashboardUpdateEvent`, etc.) are defined in `qtoggleserver/frontend/events.py` and extend `core_events.Event`; the frontend's `events.js` handles them via the notifications API.
