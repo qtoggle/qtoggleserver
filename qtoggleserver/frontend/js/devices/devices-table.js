@@ -173,6 +173,7 @@ class DevicesTable extends PageTable {
             device, /* First element is the row data */
             {
                 label: device.attrs.display_name || device.name,
+                subLabel: device.name,
                 icon: Devices.makeDeviceIcon(device)
             },
             device.attrs['ip_address_current'],
