@@ -98,7 +98,7 @@ class SessionsEventHandler(core_events.Handler):
     def __init__(self, sessions_by_id: dict[str, Session]) -> None:
         self._sessions_by_id: dict[str, Session] = sessions_by_id
 
-        super().__init__()
+        super().__init__(name="sessions")
 
     async def handle_event(self, event: core_events.Event) -> None:
         for session in self._sessions_by_id.values():

@@ -220,7 +220,7 @@ async def init() -> None:
     global _sampling_task
     global _janitor_task
 
-    _history_event_handler = HistoryEventHandler()
+    _history_event_handler = HistoryEventHandler(name="history")
     core_events.register_handler(_history_event_handler)
 
     _sampling_task = asyncio.create_task(sampling_task())

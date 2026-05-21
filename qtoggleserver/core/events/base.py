@@ -68,7 +68,7 @@ class Handler(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._name: str | None = name
 
     def __str__(self) -> str:
-        return f"event handler {self._name}"
+        return f"{self.get_id()} event handler"
 
     def get_id(self) -> str:
         return self._name or f"{self.__class__.__name__}({hex(id(self))})"

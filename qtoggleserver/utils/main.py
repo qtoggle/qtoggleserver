@@ -18,7 +18,7 @@ class AttrChangeHandler(core_events.Handler):
     FIRE_AND_FORGET = False
 
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__(name="attribute-changes")
         self._pending: set[str] = set()
 
     def pop_pending(self) -> set[str]:
