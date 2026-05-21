@@ -56,7 +56,7 @@ function initConfig() {
 function handleAccessLevelChange(oldLevel, newLevel) {
     /* Whenever access level changes, reload all required data */
     if (newLevel > AuthAPI.ACCESS_LEVEL_NONE) {
-        Cache.load(newLevel, /* showModalProgress = */ true, /* useCache = */ true)
+        Cache.load(newLevel, /* showModalProgress = */ true, /* useLocalStorage = */ true)
         /* There's no need for load().catch() since it retries indefinitely until success */
     }
 

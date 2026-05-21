@@ -148,9 +148,9 @@ export function setLocalStorageCache(key, value) {
 /**
  * @alias qtoggle.cache.loadDevice
  * @returns {Promise}
- * @param {Boolean} useCache
+ * @param {Boolean} useLocalStorage
  */
-export function loadDevice(useCache) {
+export function loadDevice(useLocalStorage) {
     logger.debug('loading main device')
 
     let loadPromise = DevicesAPI.getDevice().then(function (attrs) {
@@ -173,7 +173,7 @@ export function loadDevice(useCache) {
 
     })
 
-    if (useCache && mainDevice == null) {
+    if (useLocalStorage && mainDevice == null) {
         let cachedAttrs = getLocalStorageCache('main-device')
         if (cachedAttrs != null) {
             mainDevice = cachedAttrs
@@ -190,9 +190,9 @@ export function loadDevice(useCache) {
 /**
  * @alias qtoggle.cache.loadPorts
  * @returns {Promise}
- * @param {Boolean} useCache
+ * @param {Boolean} useLocalStorage
  */
-export function loadPorts(useCache) {
+export function loadPorts(useLocalStorage) {
     logger.debug('loading ports')
 
     let loadPromise = PortsAPI.getPorts().then(function (ports) {
@@ -263,7 +263,7 @@ export function loadPorts(useCache) {
 
     })
 
-    if (useCache && allPorts == null) {
+    if (useLocalStorage && allPorts == null) {
         let cachedPorts = getLocalStorageCache('all-ports')
         if (cachedPorts != null) {
             allPorts = cachedPorts
@@ -280,9 +280,9 @@ export function loadPorts(useCache) {
 /**
  * @alias qtoggle.cache.loadSlaveDevices
  * @returns {Promise}
- * @param {Boolean} useCache
+ * @param {Boolean} useLocalStorage
  */
-export function loadSlaveDevices(useCache) {
+export function loadSlaveDevices(useLocalStorage) {
     logger.debug('loading slave devices')
 
     let loadPromise = MasterSlaveAPI.getSlaveDevices().then(function (devices) {
@@ -331,7 +331,7 @@ export function loadSlaveDevices(useCache) {
 
     })
 
-    if (useCache && slaveDevices == null) {
+    if (useLocalStorage && slaveDevices == null) {
         let cachedSlaveDevices = getLocalStorageCache('slave-devices')
         if (cachedSlaveDevices != null) {
             slaveDevices = cachedSlaveDevices
@@ -348,9 +348,9 @@ export function loadSlaveDevices(useCache) {
 /**
  * @alias qtoggle.cache.loadPrefs
  * @returns {Promise}
- * @param {Boolean} useCache
+ * @param {Boolean} useLocalStorage
  */
-export function loadPrefs(useCache) {
+export function loadPrefs(useLocalStorage) {
     logger.debug('loading prefs')
 
     let loadPromise = PrefsAPI.getPrefs().then(function (p) {
@@ -370,7 +370,7 @@ export function loadPrefs(useCache) {
 
     })
 
-    if (useCache && prefs == null) {
+    if (useLocalStorage && prefs == null) {
         let cachedPrefs = getLocalStorageCache('prefs')
         if (cachedPrefs != null) {
             prefs = cachedPrefs
@@ -387,9 +387,9 @@ export function loadPrefs(useCache) {
 /**
  * @alias qtoggle.cache.loadProvisioningConfigs
  * @returns {Promise}
- * @param {Boolean} useCache
+ * @param {Boolean} useLocalStorage
  */
-export function loadProvisioningConfigs(useCache) {
+export function loadProvisioningConfigs(useLocalStorage) {
     logger.debug('loading provisioning configs')
 
     let loadPromise = ProvisioningAPI.getProvisioningConfigs().catch(function (error) {
@@ -411,7 +411,7 @@ export function loadProvisioningConfigs(useCache) {
 
     })
 
-    if (useCache && provisioningConfigs == null) {
+    if (useLocalStorage && provisioningConfigs == null) {
         let cachedProvisioningConfigs = getLocalStorageCache('provisioning-configs')
         if (cachedProvisioningConfigs != null) {
             provisioningConfigs = cachedProvisioningConfigs
@@ -429,10 +429,10 @@ export function loadProvisioningConfigs(useCache) {
  * @alias qtoggle.cache.load
  * @param {Number} accessLevel
  * @param {Boolean} showModalProgress
- * @param {Boolean} useCache
+ * @param {Boolean} useLocalStorage
  * @returns {Promise}
  */
-export function load(accessLevel, showModalProgress, useCache) {
+export function load(accessLevel, showModalProgress, useLocalStorage) {
     let loadPromises = []
     let progressMessage = null
     if (showModalProgress) {
@@ -440,23 +440,23 @@ export function load(accessLevel, showModalProgress, useCache) {
     }
 
     if (accessLevel >= AuthAPI.ACCESS_LEVEL_ADMIN) {
-        loadPromises.push(loadDevice(useCache))
+        loadPromises.push(loadDevice(useLocalStorage))
     }
 
     if (accessLevel >= AuthAPI.ACCESS_LEVEL_VIEWONLY) {
-        loadPromises.push(loadPorts(useCache))
+        loadPromises.push(loadPorts(useLocalStorage))
     }
 
     if (accessLevel >= AuthAPI.ACCESS_LEVEL_ADMIN && Config.slavesEnabled) {
-        loadPromises.push(loadSlaveDevices(useCache))
+        loadPromises.push(loadSlaveDevices(useLocalStorage))
     }
 
     if (accessLevel >= AuthAPI.ACCESS_LEVEL_VIEWONLY) {
-        loadPromises.push(loadPrefs(useCache))
+        loadPromises.push(loadPrefs(useLocalStorage))
     }
 
     if (accessLevel >= AuthAPI.ACCESS_LEVEL_ADMIN) {
-        loadPromises.push(loadProvisioningConfigs(useCache))
+        loadPromises.push(loadProvisioningConfigs(useLocalStorage))
     }
 
     let loadPromise = Promise.all(loadPromises)
@@ -481,7 +481,7 @@ export function load(accessLevel, showModalProgress, useCache) {
         }
 
         return promise.then(function () {
-            return load(accessLevel, showModalProgress, useCache)
+            return load(accessLevel, showModalProgress, useLocalStorage)
         })
 
     })
@@ -867,7 +867,7 @@ export function init() {
         if (!error) { /* Successful listen response */
             if (reloadNeeded) {
                 reloadNeeded = false
-                load(AuthAPI.getCurrentAccessLevel(), /* showModalProgress = */ false, /* useCache = */ false)
+                load(AuthAPI.getCurrentAccessLevel(), /* showModalProgress = */ false, /* useLocalStorage = */ false)
             }
         }
 
