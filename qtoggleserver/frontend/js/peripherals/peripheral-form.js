@@ -55,7 +55,8 @@ class PeripheralForm extends PageForm {
                     required: false,
                     readonly: true,
                     rows: 30,
-                    resize: 'vertical'
+                    resize: 'vertical',
+                    cssClass: 'params-text-area'
                 })
             ],
 
