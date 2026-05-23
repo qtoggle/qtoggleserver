@@ -149,7 +149,7 @@ async def cleanup_loop() -> None:
         logger.debug(f"canceling {task.get_coro()}")
         task.cancel()
 
-    await asyncio.gather(*tasks)
+    await asyncio.gather(*tasks, return_exceptions=True)
 
     await asyncio.get_running_loop().shutdown_asyncgens()
 
