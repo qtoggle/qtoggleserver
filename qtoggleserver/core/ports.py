@@ -422,10 +422,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def attr_get_default_display_name(self) -> str:
         return ""
 
-    async def get_display_name(self) -> str:
+    async def get_pretty_name(self) -> str:
         return await self.get_attr("display_name") or self._id
 
-    async def get_display_value(self, value: NullablePortValue = None) -> str:
+    async def get_pretty_value(self, value: NullablePortValue = None) -> str:
         choices = await self.get_attr("choices")
         unit = await self.get_attr("unit")
         if value is None:
