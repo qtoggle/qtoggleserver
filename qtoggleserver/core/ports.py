@@ -155,7 +155,7 @@ def skip_write_unavailable(func: Callable) -> Callable:
 class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     PERSIST_COLLECTION = "ports"
 
-    DISPLAY_NAME = ""
+    DISPLAY_NAME = None
     TYPE = TYPE_BOOLEAN
     WRITABLE = False
     UNIT = ""
