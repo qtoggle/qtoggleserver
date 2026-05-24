@@ -419,6 +419,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def attr_set_value(self, name: str, value: Attribute) -> None:
         return None
 
+    def attr_get_default_display_name(self) -> str:
+        return ""
+
     async def get_display_name(self) -> str:
         return await self.get_attr("display_name") or self._id
 
