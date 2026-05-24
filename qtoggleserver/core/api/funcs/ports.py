@@ -122,7 +122,7 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
             raise core_api.APIError(500, "unexpected-error", message=str(error)) from error
 
     # If value is supplied among attrs, use it to update port value, but in background and ignoring any errors
-    if value is not _none and port.is_enabled():
+    if value is not _none and port.is_enabled() and await port.is_writable():
         asyncio_utils.fire_and_forget(port.transform_and_write_value(cast(NullablePortValue, value)))
 
     await port.save()
