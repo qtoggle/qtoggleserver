@@ -59,6 +59,44 @@ async def delete_peripheral(request: core_api.APIRequest, peripheral_id: str) ->
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
+async def patch_peripheral(
+    request: core_api.APIRequest, peripheral_id: str, params: GenericJSONDict
+) -> GenericJSONDict:
+    core_api_schema.validate(params, peripherals_api_schema.PATCH_PERIPHERAL)
+
+    p = peripherals.get(peripheral_id)
+    if not p:
+        raise core_api.APIError(404, "no-such-peripheral")
+    if p.is_static():
+        raise core_api.APIError(400, "peripheral-not-removable")
+
+    await p.cleanup_ports(persisted_data=False)
+    await peripherals.remove(peripheral_id, persisted_data=False)
+
+    try:
+        new_p = await peripherals.add(params)
+    except peripherals.NoSuchDriver:
+        raise core_api.APIError(404, "no-such-driver")
+    except peripherals.DuplicatePeripheral:
+        raise core_api.APIError(400, "duplicate-peripheral")
+    except TypeError as e:
+        if "arguments" in str(e):
+            raise core_api.APIError(400, "invalid-field", field="params")
+        else:
+            raise core_api.APIError(400, "invalid-request", details=str(e))
+    except Exception as e:
+        raise core_api.APIError(400, "invalid-request", details=str(e))
+
+    try:
+        await new_p.init_ports()
+    except Exception as e:
+        await peripherals.remove(new_p.get_id())
+        raise core_api.APIError(400, "invalid-request", details=str(e))
+
+    return new_p.to_json()
+
+
+@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def put_peripherals(request: core_api.APIRequest, params: GenericJSONList) -> None:
     core_api_schema.validate(params, peripherals_api_schema.PUT_PERIPHERALS)
 

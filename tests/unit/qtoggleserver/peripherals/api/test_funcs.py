@@ -219,6 +219,136 @@ class TestDeletePeripheral:
         assert e.value.status == 401
 
 
+class TestPatchPeripheral:
+    async def test_ok(self, mock_api_request_maker, mock_peripheral1, mocker):
+        mock_peripheral2 = MockPeripheral(
+            name=MOCK_PERIPHERAL2_DATA["name"],
+            dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"],
+        )
+        payload = MOCK_PERIPHERAL2_DATA.copy()
+        payload.pop("static")
+
+        request = mock_api_request_maker(
+            "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_ADMIN
+        )
+        spy_cleanup_ports = mocker.patch.object(mock_peripheral1, "cleanup_ports")
+        spy_remove = mocker.patch("qtoggleserver.peripherals.remove")
+        spy_add = mocker.patch("qtoggleserver.peripherals.add", return_value=mock_peripheral2)
+        spy_init_ports = mocker.patch.object(mock_peripheral2, "init_ports")
+
+        result = await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
+
+        spy_cleanup_ports.assert_called_once_with(persisted_data=False)
+        spy_remove.assert_called_once_with(mock_peripheral1.get_id(), persisted_data=False)
+        spy_add.assert_called_once_with(payload)
+        spy_init_ports.assert_called_once_with()
+        assert result == MOCK_PERIPHERAL2_DATA
+
+    async def test_preserves_persisted_data(self, mock_api_request_maker, mock_peripheral1, mocker):
+        # cleanup_ports and remove must both be called with persisted_data=False
+        payload = MOCK_PERIPHERAL1_DATA.copy()
+        payload.pop("static")
+
+        request = mock_api_request_maker(
+            "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_ADMIN
+        )
+        spy_cleanup_ports = mocker.patch.object(mock_peripheral1, "cleanup_ports")
+        spy_remove = mocker.patch("qtoggleserver.peripherals.remove")
+        mocker.patch("qtoggleserver.peripherals.add", return_value=mock_peripheral1)
+        mocker.patch.object(mock_peripheral1, "init_ports")
+
+        await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
+
+        spy_cleanup_ports.assert_called_once_with(persisted_data=False)
+        spy_remove.assert_called_once_with(mock_peripheral1.get_id(), persisted_data=False)
+
+    async def test_no_such_peripheral(self, mock_api_request_maker, mock_peripheral1):
+        payload = MOCK_PERIPHERAL2_DATA.copy()
+        payload.pop("static")
+        request = mock_api_request_maker(
+            "PATCH", "/api/peripherals/nonexistent", access_level=core_api.ACCESS_LEVEL_ADMIN
+        )
+        with pytest.raises(core_api.APIError, match="no-such-peripheral") as e:
+            await peripherals_api_funcs.patch_peripheral(request, "nonexistent", payload)
+        assert e.value.status == 404
+
+    async def test_static_peripheral_not_removable(self, mock_api_request_maker, mock_peripheral1, mocker):
+        mocker.patch.object(mock_peripheral1, "is_static", return_value=True)
+        payload = MOCK_PERIPHERAL1_DATA.copy()
+        payload.pop("static")
+        request = mock_api_request_maker(
+            "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_ADMIN
+        )
+        with pytest.raises(core_api.APIError, match="peripheral-not-removable") as e:
+            await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
+        assert e.value.status == 400
+
+    async def test_no_such_driver(self, mock_api_request_maker, mock_peripheral1, mocker):
+        payload = MOCK_PERIPHERAL2_DATA.copy()
+        payload.pop("static")
+        payload["driver"] = "does.not.exist"
+        request = mock_api_request_maker(
+            "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_ADMIN
+        )
+        mocker.patch.object(mock_peripheral1, "cleanup_ports")
+        mocker.patch("qtoggleserver.peripherals.remove")
+        with pytest.raises(core_api.APIError, match="no-such-driver") as e:
+            await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
+        assert e.value.status == 404
+
+    async def test_init_ports_failure_removes_new_peripheral(self, mock_api_request_maker, mock_peripheral1, mocker):
+        mock_peripheral2 = MockPeripheral(
+            name=MOCK_PERIPHERAL2_DATA["name"],
+            dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"],
+        )
+        payload = MOCK_PERIPHERAL2_DATA.copy()
+        payload.pop("static")
+
+        request = mock_api_request_maker(
+            "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_ADMIN
+        )
+        mocker.patch.object(mock_peripheral1, "cleanup_ports")
+        mocker.patch("qtoggleserver.peripherals.remove")
+        mocker.patch("qtoggleserver.peripherals.add", return_value=mock_peripheral2)
+        mocker.patch.object(mock_peripheral2, "init_ports", side_effect=Exception("init failed"))
+        spy_remove = mocker.patch("qtoggleserver.peripherals.remove")
+
+        with pytest.raises(core_api.APIError, match="invalid-request") as e:
+            await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
+        assert e.value.status == 400
+        spy_remove.assert_called_with(mock_peripheral2.get_id())
+
+    async def test_normal_user_permissions(self, mock_api_request_maker, mock_peripheral1):
+        payload = MOCK_PERIPHERAL2_DATA.copy()
+        payload.pop("static")
+        request = mock_api_request_maker(
+            "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_NORMAL
+        )
+        with pytest.raises(core_api.APIError, match="forbidden") as e:
+            await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
+        assert e.value.status == 403
+
+    async def test_viewonly_user_permissions(self, mock_api_request_maker, mock_peripheral1):
+        payload = MOCK_PERIPHERAL2_DATA.copy()
+        payload.pop("static")
+        request = mock_api_request_maker(
+            "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_VIEWONLY
+        )
+        with pytest.raises(core_api.APIError, match="forbidden") as e:
+            await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
+        assert e.value.status == 403
+
+    async def test_anonymous_user_permissions(self, mock_api_request_maker, mock_peripheral1):
+        payload = MOCK_PERIPHERAL2_DATA.copy()
+        payload.pop("static")
+        request = mock_api_request_maker(
+            "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_NONE
+        )
+        with pytest.raises(core_api.APIError, match="authentication-required") as e:
+            await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
+        assert e.value.status == 401
+
+
 class TestPutPeripherals:
     async def test_ok(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(

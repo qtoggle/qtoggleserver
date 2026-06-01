@@ -12,6 +12,8 @@ from freezegun import freeze_time
 from qtoggleserver import peripherals, persist
 from qtoggleserver.conf import settings
 from qtoggleserver.core import ports as core_ports
+from qtoggleserver.core import vports as core_vports
+from qtoggleserver.core.api.funcs import ports as ports_api_funcs
 from tests.unit.qtoggleserver.mock.api import MockAPIRequest
 from tests.unit.qtoggleserver.mock.peripherals import MockPeripheral
 from tests.unit.qtoggleserver.mock.persist import MockPersistDriver
@@ -106,6 +108,28 @@ async def mock_bool_port2(mocker) -> MockBooleanPort:
 
     yield port
     await port.remove(persisted_data=False)
+
+
+@pytest.fixture
+async def mock_vport1(mock_persist_driver, mocker) -> core_vports.VirtualPort:
+    mocker.patch("asyncio.Lock")
+    port = await ports_api_funcs.add_virtual_port({"id": "vport1", "type": "boolean"})
+    yield port
+    current = core_ports.get("vport1")
+    if current is not None:
+        await current.remove(persisted_data=False)
+    await core_vports.remove("vport1")
+
+
+@pytest.fixture
+async def mock_vport2(mock_persist_driver, mocker) -> core_vports.VirtualPort:
+    mocker.patch("asyncio.Lock")
+    port = await ports_api_funcs.add_virtual_port({"id": "vport2", "type": "boolean"})
+    yield port
+    current = core_ports.get("vport2")
+    if current is not None:
+        await current.remove(persisted_data=False)
+    await core_vports.remove("vport2")
 
 
 @pytest.fixture
