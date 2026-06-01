@@ -41,6 +41,17 @@ export function putPeripherals(peripherals) {
 }
 
 /**
+ * PATCH /peripherals/{id} API function call.
+ * @alias qtoggle.api.peripherals.patchPeripheral
+ * @param {String} id the peripheral identifier
+ * @param {Object} data the new peripheral configuration
+ * @returns {Promise}
+ */
+export function patchPeripheral(id, data) {
+    return BaseAPI.apiCall({method: 'PATCH', path: `/peripherals/${id}`, data: data})
+}
+
+/**
  * DELETE /peripherals/{id} API function call.
  * @alias qtoggle.api.peripherals.deletePeripherals
  * @param {String} id the peripheral identifier

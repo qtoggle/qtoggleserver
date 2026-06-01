@@ -3,6 +3,7 @@ import {TextAreaField}      from '$qui/forms/common-fields/common-fields.js'
 import {TextField}          from '$qui/forms/common-fields/common-fields.js'
 import {PageForm}           from '$qui/forms/common-forms/common-forms.js'
 import FormButton           from '$qui/forms/form-button.js'
+import {ValidationError}    from '$qui/forms/forms.js'
 import {ConfirmMessageForm} from '$qui/messages/common-message-forms/common-message-forms.js'
 import * as Messages        from '$qui/messages/messages.js'
 import * as ObjectUtils     from '$qui/utils/object.js'
@@ -56,16 +57,29 @@ class PeripheralForm extends PageForm {
                     readonly: true,
                     rows: 30,
                     resize: 'vertical',
-                    cssClass: 'params-text-area'
+                    cssClass: 'params-text-area',
+
+                    validate(params) {
+                        if (!params) {
+                            return
+                        }
+                        try {
+                            JSON.parse(params)
+                        }
+                        catch {
+                            throw new ValidationError(gettext('Enter a valid JSON'))
+                        }
+                    }
                 })
             ],
 
             buttons: [
-                new FormButton({id: 'close', caption: gettext('Close'), cancel: true})
+                new FormButton({id: 'cancel', caption: gettext('Cancel'), cancel: true})
             ]
         })
 
         this._peripheralId = peripheralId
+        this._peripheralName = null
     }
 
     load() {
@@ -77,6 +91,7 @@ class PeripheralForm extends PageForm {
                 let name = ObjectUtils.pop(data, 'name')
                 let driver = ObjectUtils.pop(data, 'driver')
                 let isStatic = ObjectUtils.pop(data, 'static')
+                this._peripheralName = name
                 this.setData({
                     name: name,
                     driver: driver,
@@ -84,13 +99,40 @@ class PeripheralForm extends PageForm {
                 })
                 this.setTitle(peripheral.id)
                 if (!isStatic) {
-                    this.addButton(0, new FormButton({id: 'remove', caption: gettext('Remove'), style: 'danger'}))
+                    this.getField('driver').setReadonly(false)
+                    this.getField('params').setReadonly(false)
+                    this.addButton(-1, new FormButton({id: 'remove', caption: gettext('Remove'), style: 'danger'}))
+                    this.addButton(-1, new FormButton({id: 'apply', caption: gettext('Apply'), def: true}))
                 }
             }
             else {
                 throw new Error(gettext(`Peripheral ${this._peripheralId} could not be found`))
             }
         }.bind(this))
+    }
+
+    applyData(data) {
+        let params = data.params ? JSON.parse(data.params) : {}
+        let payload = ObjectUtils.combine(params, {
+            driver: data.driver,
+            name: this._peripheralName
+        })
+
+        logger.debug(`updating peripheral "${this._peripheralId}"`)
+
+        return PeripheralsAPI.patchPeripheral(this._peripheralId, payload).then(function (peripheral) {
+
+            logger.debug(`peripheral "${this._peripheralId}" successfully updated`)
+            this._peripheralId = peripheral.id
+            let peripheralsSection = this.getSection()
+            peripheralsSection.updatePeripheralsList()
+
+        }.bind(this)).catch(function (error) {
+
+            logger.errorStack(`failed to update peripheral "${this._peripheralId}"`, error)
+            throw error
+
+        })
     }
 
     onButtonPress(button) {

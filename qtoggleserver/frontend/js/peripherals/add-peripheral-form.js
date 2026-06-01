@@ -58,6 +58,7 @@ class AddPeripheralForm extends PageForm {
                     required: false,
                     rows: 30,
                     resize: 'vertical',
+                    cssClass: 'params-text-area',
 
                     validate(params) {
                         try {
