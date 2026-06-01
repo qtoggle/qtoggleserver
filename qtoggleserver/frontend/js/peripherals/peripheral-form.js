@@ -79,7 +79,6 @@ class PeripheralForm extends PageForm {
         })
 
         this._peripheralId = peripheralId
-        this._peripheralName = null
     }
 
     load() {
@@ -91,7 +90,6 @@ class PeripheralForm extends PageForm {
                 let name = ObjectUtils.pop(data, 'name')
                 let driver = ObjectUtils.pop(data, 'driver')
                 let isStatic = ObjectUtils.pop(data, 'static')
-                this._peripheralName = name
                 this.setData({
                     name: name,
                     driver: driver,
@@ -99,6 +97,7 @@ class PeripheralForm extends PageForm {
                 })
                 this.setTitle(peripheral.id)
                 if (!isStatic) {
+                    this.getField('name').setReadonly(false)
                     this.getField('driver').setReadonly(false)
                     this.getField('params').setReadonly(false)
                     this.addButton(-1, new FormButton({id: 'remove', caption: gettext('Remove'), style: 'danger'}))
@@ -115,7 +114,7 @@ class PeripheralForm extends PageForm {
         let params = data.params ? JSON.parse(data.params) : {}
         let payload = ObjectUtils.combine(params, {
             driver: data.driver,
-            name: this._peripheralName
+            name: data.name || null
         })
 
         logger.debug(`updating peripheral "${this._peripheralId}"`)

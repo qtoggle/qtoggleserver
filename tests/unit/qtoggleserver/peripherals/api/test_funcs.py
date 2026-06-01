@@ -1,6 +1,8 @@
 import pytest
 
+from qtoggleserver import persist
 from qtoggleserver.core import api as core_api
+from qtoggleserver.core.ports import BasePort
 from qtoggleserver.peripherals.api import funcs as peripherals_api_funcs
 from tests.unit.qtoggleserver.mock.peripherals import MockPeripheral
 
@@ -347,6 +349,97 @@ class TestPatchPeripheral:
         with pytest.raises(core_api.APIError, match="authentication-required") as e:
             await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
         assert e.value.status == 401
+
+    async def test_rename_migrates_port_data(self, mock_peripheral1, mock_persist_driver, mocker):
+        from qtoggleserver.peripherals.api.funcs import _migrate_peripheral_rename
+
+        await persist.replace(BasePort.PERSIST_COLLECTION, "peripheral1.id1", {"id": "peripheral1.id1", "tag": "t1"})
+        await persist.replace(BasePort.PERSIST_COLLECTION, "peripheral1.id2", {"id": "peripheral1.id2", "tag": "t2"})
+
+        mock_port1 = mocker.MagicMock()
+        mock_port1.get_id.return_value = "peripheral1.id1"
+        mock_port1.get_initial_id.return_value = "id1"
+        mock_port2 = mocker.MagicMock()
+        mock_port2.get_id.return_value = "peripheral1.id2"
+        mock_port2.get_initial_id.return_value = "id2"
+        mocker.patch.object(mock_peripheral1, "get_ports", return_value=[mock_port1, mock_port2])
+
+        await _migrate_peripheral_rename(mock_peripheral1, "peripheral2")
+
+        assert await persist.get(BasePort.PERSIST_COLLECTION, "peripheral2.id1") == {
+            "id": "peripheral2.id1",
+            "tag": "t1",
+        }
+        assert await persist.get(BasePort.PERSIST_COLLECTION, "peripheral2.id2") == {
+            "id": "peripheral2.id2",
+            "tag": "t2",
+        }
+        assert await persist.get(BasePort.PERSIST_COLLECTION, "peripheral1.id1") is None
+        assert await persist.get(BasePort.PERSIST_COLLECTION, "peripheral1.id2") is None
+
+    async def test_rename_removes_old_peripheral_entry(self, mock_peripheral1, mock_persist_driver, mocker):
+        from qtoggleserver.peripherals.api.funcs import _migrate_peripheral_rename
+
+        mocker.patch.object(mock_peripheral1, "get_ports", return_value=[])
+        await persist.replace("peripherals", mock_peripheral1.get_id(), {"id": mock_peripheral1.get_id()})
+        assert await persist.get("peripherals", mock_peripheral1.get_id()) is not None
+
+        await _migrate_peripheral_rename(mock_peripheral1, "peripheral2")
+
+        assert await persist.get("peripherals", mock_peripheral1.get_id()) is None
+
+    async def test_rename_same_name_noop(self, mock_peripheral1, mock_persist_driver, mocker):
+        from qtoggleserver.peripherals.api.funcs import _migrate_peripheral_rename
+
+        await persist.replace(BasePort.PERSIST_COLLECTION, "peripheral1.id1", {"id": "peripheral1.id1", "tag": "t1"})
+        mock_port = mocker.MagicMock()
+        mock_port.get_id.return_value = "peripheral1.id1"
+        mock_port.get_initial_id.return_value = "id1"
+        mocker.patch.object(mock_peripheral1, "get_ports", return_value=[mock_port])
+
+        await _migrate_peripheral_rename(mock_peripheral1, "peripheral1")
+
+        # Port data should be untouched when old and new IDs are the same
+        assert await persist.get(BasePort.PERSIST_COLLECTION, "peripheral1.id1") == {
+            "id": "peripheral1.id1",
+            "tag": "t1",
+        }
+
+    async def test_rename_not_called_when_name_unchanged(self, mock_api_request_maker, mock_peripheral1, mocker):
+        spy_migrate = mocker.patch("qtoggleserver.peripherals.api.funcs._migrate_peripheral_rename")
+        payload = MOCK_PERIPHERAL1_DATA.copy()
+        payload.pop("static")
+        request = mock_api_request_maker(
+            "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_ADMIN
+        )
+        mocker.patch.object(mock_peripheral1, "cleanup_ports")
+        mocker.patch("qtoggleserver.peripherals.remove")
+        mocker.patch("qtoggleserver.peripherals.add", return_value=mock_peripheral1)
+        mocker.patch.object(mock_peripheral1, "init_ports")
+
+        await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
+
+        spy_migrate.assert_not_called()
+
+    async def test_rename_called_when_name_changes(self, mock_api_request_maker, mock_peripheral1, mocker):
+        spy_migrate = mocker.patch("qtoggleserver.peripherals.api.funcs._migrate_peripheral_rename")
+        mock_peripheral2 = MockPeripheral(
+            name=MOCK_PERIPHERAL2_DATA["name"],
+            dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"],
+        )
+        payload = MOCK_PERIPHERAL2_DATA.copy()
+        payload.pop("static")
+        request = mock_api_request_maker(
+            "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_ADMIN
+        )
+        mocker.patch.object(mock_peripheral1, "cleanup_ports")
+        mocker.patch("qtoggleserver.peripherals.remove")
+        mocker.patch("qtoggleserver.peripherals.add", return_value=mock_peripheral2)
+        mocker.patch.object(mock_peripheral2, "init_ports")
+
+        await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
+
+        spy_migrate.assert_called_once_with(mock_peripheral1, "peripheral2")
 
 
 class TestPutPeripherals:
