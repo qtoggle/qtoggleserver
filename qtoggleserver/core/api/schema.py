@@ -25,6 +25,8 @@ PATCH_FIRMWARE = {
 
 PUT_PORTS = {"type": "array", "items": {"type": "object"}, "additionalProperties": True}
 
+PATCH_PORTS = {"type": "array", "items": {"type": "object"}, "additionalProperties": True}
+
 POST_PORTS = {
     "type": "object",
     "properties": {
