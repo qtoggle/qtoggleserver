@@ -123,8 +123,6 @@ class PeripheralForm extends PageForm {
 
             logger.debug(`peripheral "${this._peripheralId}" successfully updated`)
             this._peripheralId = peripheral.id
-            let peripheralsSection = this.getSection()
-            peripheralsSection.updatePeripheralsList()
 
         }.bind(this)).catch(function (error) {
 
@@ -167,9 +165,6 @@ class PeripheralForm extends PageForm {
                 PeripheralsAPI.deletePeripheral(this._peripheralId).then(function () {
 
                     logger.debug(`peripheral "${this._peripheralId}" successfully removed`)
-                    let peripheralsSection = this.getSection()
-                    peripheralsSection.updatePeripheralsList()
-
                     this.close(/* force = */ true)
 
                 }.bind(this)).catch(function (error) {
@@ -182,6 +177,13 @@ class PeripheralForm extends PageForm {
             }.bind(this),
             pathId: 'remove'
         })
+    }
+
+    /**
+     * @returns {String}
+     */
+    getPeripheralId() {
+        return this._peripheralId
     }
 
 }
