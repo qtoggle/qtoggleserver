@@ -38,6 +38,9 @@ async def post_peripherals(request: core_api.APIRequest, params: GenericJSONDict
     except Exception as e:
         raise core_api.APIError(400, "invalid-request", details=str(e))
 
+    # Always trigger add event before initializing ports
+    await peripheral.trigger_add()
+
     try:
         await peripheral.init_ports()
     except Exception as e:
@@ -57,6 +60,7 @@ async def delete_peripheral(request: core_api.APIRequest, peripheral_id: str) ->
 
     await p.cleanup_ports(persisted_data=True)
     await peripherals.remove(peripheral_id, persisted_data=True)
+    await p.trigger_remove()
 
 
 async def _migrate_peripheral_rename(p: peripherals.Peripheral, new_name: str | None) -> None:
@@ -120,6 +124,7 @@ async def patch_peripheral(
         await peripherals.remove(new_p.get_id())
         raise core_api.APIError(400, "invalid-request", details=str(e))
 
+    await new_p.trigger_update()
     return new_p.to_json()
 
 
@@ -134,6 +139,7 @@ async def put_peripherals(request: core_api.APIRequest, params: GenericJSONList)
             continue
         await p.cleanup_ports(persisted_data=True)
         await peripherals.remove(p.get_id(), persisted_data=True)
+        await p.trigger_remove()
 
     peripheral_list = []
     for par in params:
@@ -141,6 +147,11 @@ async def put_peripherals(request: core_api.APIRequest, params: GenericJSONList)
             continue
         p = await peripherals.add(par)
         peripheral_list.append(p)
+
+    # First trigger add event, then init ports
+
+    for p in peripheral_list:
+        await p.trigger_add()
 
     for p in peripheral_list:
         await p.init_ports()

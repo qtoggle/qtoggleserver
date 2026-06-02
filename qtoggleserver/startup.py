@@ -295,6 +295,9 @@ async def init_peripherals() -> None:
     logger.info("initializing peripherals")
     await peripherals.init()
 
+    for peripheral in peripherals.get_all():
+        await peripheral.trigger_add()
+
 
 async def cleanup_peripherals() -> None:
     logger.info("cleaning up peripherals")

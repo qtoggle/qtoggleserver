@@ -7,6 +7,7 @@ import logging
 from collections.abc import Callable
 from typing import Any, cast
 
+from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.utils import logging as logging_utils
@@ -233,6 +234,21 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         runner.schedule_func(functools.partial(func, *args, **kwargs), callback)
 
         return await future
+
+    async def trigger_add(self) -> None:
+        from .events import PeripheralAdd
+
+        await core_events.trigger(PeripheralAdd(self))
+
+    async def trigger_remove(self) -> None:
+        from .events import PeripheralRemove
+
+        await core_events.trigger(PeripheralRemove(self))
+
+    async def trigger_update(self) -> None:
+        from .events import PeripheralUpdate
+
+        await core_events.trigger(PeripheralUpdate(self))
 
     async def handle_enable(self) -> None:
         pass
