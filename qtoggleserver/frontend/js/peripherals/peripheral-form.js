@@ -1,4 +1,5 @@
 import {gettext}            from '$qui/base/i18n.js'
+import {ChoiceButtonsField} from '$qui/forms/common-fields/common-fields.js'
 import {TextAreaField}      from '$qui/forms/common-fields/common-fields.js'
 import {TextField}          from '$qui/forms/common-fields/common-fields.js'
 import {PageForm}           from '$qui/forms/common-forms/common-forms.js'
@@ -70,6 +71,17 @@ class PeripheralForm extends PageForm {
                             throw new ValidationError(gettext('Enter a valid JSON'))
                         }
                     }
+                }),
+                new ChoiceButtonsField({
+                    name: 'force_enabled',
+                    label: gettext('Force Enabled'),
+                    required: false,
+                    readonly: true,
+                    choices: [
+                        {value: false, label: gettext('Disabled')},
+                        {value: null, label: gettext('Auto')},
+                        {value: true, label: gettext('Enabled')}
+                    ]
                 })
             ],
 
@@ -90,16 +102,19 @@ class PeripheralForm extends PageForm {
                 let name = ObjectUtils.pop(data, 'name')
                 let driver = ObjectUtils.pop(data, 'driver')
                 let isStatic = ObjectUtils.pop(data, 'static')
+                let forceEnabled = ObjectUtils.pop(data, 'force_enabled')
                 this.setData({
                     name: name,
                     driver: driver,
-                    params: JSON.stringify(data, null, 4)
+                    params: JSON.stringify(data, null, 4),
+                    force_enabled: forceEnabled
                 })
                 this.setTitle(peripheral.id)
                 if (!isStatic) {
                     this.getField('name').setReadonly(false)
                     this.getField('driver').setReadonly(false)
                     this.getField('params').setReadonly(false)
+                    this.getField('force_enabled').setReadonly(false)
                     this.addButton(-1, new FormButton({id: 'remove', caption: gettext('Remove'), style: 'danger'}))
                     this.addButton(-1, new FormButton({id: 'apply', caption: gettext('Apply'), def: true}))
                 }
@@ -114,7 +129,8 @@ class PeripheralForm extends PageForm {
         let params = data.params ? JSON.parse(data.params) : {}
         let payload = ObjectUtils.combine(params, {
             driver: data.driver,
-            name: data.name || null
+            name: data.name || null,
+            force_enabled: data.force_enabled
         })
 
         logger.debug(`updating peripheral "${this._peripheralId}"`)

@@ -65,10 +65,13 @@ class TestSetOnline:
 
     def test_to_json_includes_online_flag(self, mocker):
         p = self.make_peripheral(mocker)
+        assert p.to_json()["enabled"] is False
         assert p.to_json()["online"] is False
+        assert p.to_json()["force_enabled"] is None
 
         p._enabled = True
         p._online = True
+        assert p.to_json()["enabled"] is True
         assert p.to_json()["online"] is True
 
     def test_online_state_updated_when_going_offline(self, mocker):
@@ -113,3 +116,63 @@ class TestTriggerEvents:
         event = spy_trigger.call_args.args[0]
         assert isinstance(event, peripherals_events.PeripheralUpdate)
         assert event.get_peripheral() is p
+
+
+class TestForceEnabled:
+    def test_defaults_to_none(self):
+        p = MockPeripheral(name="test", dummy_param="v")
+
+        assert p.get_force_enabled() is None
+        assert p.to_json()["force_enabled"] is None
+
+    async def test_false_prevents_enable(self):
+        p = MockPeripheral(name="test", dummy_param="v", force_enabled=False)
+
+        await p.enable()
+
+        assert p.is_enabled() is False
+        assert p.to_json()["force_enabled"] is False
+
+    async def test_true_prevents_disable(self):
+        p = MockPeripheral(name="test", dummy_param="v", force_enabled=True)
+        p._enabled = True
+
+        await p.disable()
+
+        assert p.is_enabled() is True
+        assert p.to_json()["force_enabled"] is True
+
+    def test_set_force_enabled_updates_value(self):
+        p = MockPeripheral(name="test", dummy_param="v")
+
+        p.set_force_enabled(False)
+        assert p.get_force_enabled() is False
+
+        p.set_force_enabled(True)
+        assert p.get_force_enabled() is True
+
+        p.set_force_enabled(None)
+        assert p.get_force_enabled() is None
+
+    async def test_true_forces_enable_after_port_initialization(self, mocker):
+        p = MockPeripheral(name="test", dummy_param="v", force_enabled=True)
+        mocker.patch.object(p, "handle_enable")
+        fake_port = mocker.MagicMock()
+        fake_port.get_initial_id.return_value = "id1"
+        mocker.patch("qtoggleserver.core.ports.load", return_value=[fake_port])
+
+        await p.init_ports()
+
+        assert p.is_enabled() is True
+
+    async def test_false_skips_port_initialization(self, mocker):
+        p = MockPeripheral(name="test", dummy_param="v", force_enabled=False)
+        p._enabled = True
+        mocker.patch.object(p, "handle_disable")
+        spy_load = mocker.patch("qtoggleserver.core.ports.load")
+
+        await p.init_ports()
+
+        spy_load.assert_not_called()
+        assert p.get_ports() == []
+        assert p.is_enabled() is False

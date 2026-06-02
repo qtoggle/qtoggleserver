@@ -32,6 +32,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         params: dict[str, Any],
         name: str | None = None,
         id: str | None = None,
+        force_enabled: bool | None = None,
         static: bool = False,
         **kwargs,
     ) -> None:
@@ -42,6 +43,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._params: dict[str, Any] = params
         self._name: str | None = name
         self._id: str = name or id or auto_id  # name will always be used as id, if supplied
+        self._force_enabled: bool | None = force_enabled
         self._static: bool = static
 
         self._ports_by_id: dict[str, PeripheralPort] = {}
@@ -74,9 +76,21 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def is_static(self) -> bool:
         return self._static
 
+    def get_force_enabled(self) -> bool | None:
+        return self._force_enabled
+
+    def set_force_enabled(self, force_enabled: bool | None) -> None:
+        self._force_enabled = force_enabled
+
     def to_json(self) -> GenericJSONDict:
         return dict(
-            self._params, id=self.get_id(), static=self.is_static(), name=self.get_name(), online=self.is_online()
+            self._params,
+            id=self.get_id(),
+            static=self.is_static(),
+            name=self.get_name(),
+            enabled=self.is_enabled(),
+            force_enabled=self.get_force_enabled(),
+            online=self.is_online(),
         )
 
     async def get_port_args(self) -> list[dict[str, Any]]:
@@ -98,6 +112,11 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     async def init_ports(self) -> None:
+        if self._force_enabled is False:
+            self.debug("peripheral is explicitly disabled, skipping port initialization")
+            await self.disable()
+            return
+
         port_args = await self.get_port_args()
         loaded_ports = await core_ports.load(port_args)
         self._ports_by_id = {cast(PeripheralPort, p).get_initial_id(): p for p in loaded_ports}
@@ -106,6 +125,8 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         # enable it manually, here.
         if not loaded_ports:
             await self.enable()
+
+        await self._apply_force_enabled()
 
     async def cleanup_ports(self, persisted_data: bool) -> None:
         tasks = [asyncio.create_task(port.remove(persisted_data=persisted_data)) for port in self._ports_by_id.values()]
@@ -144,6 +165,8 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def enable(self) -> None:
         if self._enabled:
             return
+        if self._force_enabled is False:
+            return
 
         self._enabled = True
         await self.handle_enable()
@@ -151,6 +174,8 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def disable(self) -> None:
         if not self._enabled:
+            return
+        if self._force_enabled is True:
             return
 
         self._enabled = False
@@ -160,12 +185,20 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def check_disabled(self, exclude_port: PeripheralPort | None = None) -> None:
         if not self._enabled:
             return
+        if self._force_enabled is True:
+            return
 
         for port in self._ports_by_id.values():
             if port.is_enabled() and port != exclude_port:
                 break
         else:
             self.debug("all ports are disabled, disabling peripheral")
+            await self.disable()
+
+    async def _apply_force_enabled(self) -> None:
+        if self._force_enabled is True:
+            await self.enable()
+        elif self._force_enabled is False:
             await self.disable()
 
     def is_online(self) -> bool:

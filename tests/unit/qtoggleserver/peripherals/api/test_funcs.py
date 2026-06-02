@@ -13,6 +13,8 @@ MOCK_PERIPHERAL1_DATA = {
     "name": "peripheral1",
     "id": "peripheral1",
     "static": False,
+    "enabled": False,
+    "force_enabled": None,
     "online": False,
 }
 
@@ -22,6 +24,8 @@ MOCK_PERIPHERAL2_DATA = {
     "name": "peripheral2",
     "id": "peripheral2",
     "static": False,
+    "enabled": False,
+    "force_enabled": None,
     "online": False,
 }
 
@@ -31,6 +35,8 @@ MOCK_PERIPHERAL3_DATA = {
     "name": "peripheral3",
     "id": "peripheral3",
     "static": False,
+    "enabled": False,
+    "force_enabled": None,
     "online": False,
 }
 
@@ -120,7 +126,7 @@ class TestPostPeripherals:
         spy_add.assert_called_once_with(payload)
         spy_init_ports.assert_called_once_with()
 
-        assert result == dict(payload, name=None, static=False, online=False)
+        assert result == dict(payload, name=None, static=False, enabled=False, force_enabled=None, online=False)
 
     async def test_ok_no_name_no_id(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"])
@@ -139,7 +145,7 @@ class TestPostPeripherals:
         spy_init_ports.assert_called_once_with()
 
         assert result.pop("id")
-        assert result == dict(payload, name=None, static=False, online=False)
+        assert result == dict(payload, name=None, static=False, enabled=False, force_enabled=None, online=False)
 
     async def test_no_such_driver(self, mock_api_request_maker, mock_peripheral1):
         payload = MOCK_PERIPHERAL2_DATA.copy()

@@ -28,11 +28,13 @@ export const logger = Logger.get('qtoggle.peripherals')
  */
 export function makePeripheralIcon(peripheral) {
     let decoration = null
-    if (peripheral.online) {
-        decoration = Theme.getVar('green-color')
-    }
-    else {
-        decoration = Theme.getVar('disabled-color')
+    if (peripheral.enabled) {
+        if (peripheral.online !== false /* null or undefined also mean online */) {
+            decoration = Theme.getVar('green-color')
+        }
+        else {
+            decoration = Theme.getVar('disabled-color')
+        }
     }
 
     return PERIPHERAL_ICON.alter({decoration: decoration})
