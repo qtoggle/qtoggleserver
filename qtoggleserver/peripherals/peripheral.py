@@ -10,6 +10,7 @@ from typing import Any, cast
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import GenericJSONDict
+from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import logging as logging_utils
 from qtoggleserver.utils import runner as runner_utils
 
@@ -74,7 +75,9 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return self._static
 
     def to_json(self) -> GenericJSONDict:
-        return dict(self._params, id=self.get_id(), static=self.is_static(), name=self.get_name())
+        return dict(
+            self._params, id=self.get_id(), static=self.is_static(), name=self.get_name(), online=self.is_online()
+        )
 
     async def get_port_args(self) -> list[dict[str, Any]]:
         port_args = await self.make_port_args()
@@ -176,6 +179,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self.handle_online()
             except Exception:
                 self.error("handle_online failed", exc_info=True)
+            self.trigger_update_fire_and_forget()
         elif not online and self._online:
             self.debug("is offline")
             self._online = online
@@ -183,6 +187,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self.handle_offline()
             except Exception:
                 self.error("handle_offline failed", exc_info=True)
+            self.trigger_update_fire_and_forget()
 
     def handle_offline(self) -> None:
         self.trigger_port_update_fire_and_forget()
@@ -204,6 +209,9 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             return  # already scheduled
 
         self._port_update_task = asyncio.create_task(self.trigger_port_update(save))
+
+    def trigger_update_fire_and_forget(self) -> None:
+        asyncio_utils.fire_and_forget(self.trigger_update())
 
     def get_runner(self) -> runner_utils.ThreadedRunner:
         if self._runner is None:

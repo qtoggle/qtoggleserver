@@ -7,6 +7,7 @@ class TestSetOnline:
         p = MockPeripheral(name="test", dummy_param="v")
         mocker.patch.object(p, "handle_online")
         mocker.patch.object(p, "handle_offline")
+        mocker.patch.object(p, "trigger_update_fire_and_forget")
         return p
 
     def test_handle_online_called_when_transitioning_to_online(self, mocker):
@@ -19,6 +20,7 @@ class TestSetOnline:
 
         p.handle_online.assert_called_once()
         p.handle_offline.assert_not_called()
+        p.trigger_update_fire_and_forget.assert_called_once_with()
 
     def test_handle_offline_called_when_transitioning_to_offline(self, mocker):
         """Should call handle_offline() exactly once when transitioning from online to offline."""
@@ -30,6 +32,7 @@ class TestSetOnline:
 
         p.handle_offline.assert_called_once()
         p.handle_online.assert_not_called()
+        p.trigger_update_fire_and_forget.assert_called_once_with()
 
     def test_handle_online_not_called_when_already_online(self, mocker):
         """Should not call handle_online() when the peripheral is already online."""
@@ -40,6 +43,7 @@ class TestSetOnline:
         p.set_online(True)
 
         p.handle_online.assert_not_called()
+        p.trigger_update_fire_and_forget.assert_not_called()
 
     def test_handle_offline_not_called_when_already_offline(self, mocker):
         """Should not call handle_offline() when the peripheral is already offline."""
@@ -50,6 +54,7 @@ class TestSetOnline:
         p.set_online(False)
 
         p.handle_offline.assert_not_called()
+        p.trigger_update_fire_and_forget.assert_not_called()
 
     def test_online_state_updated_when_going_online(self, mocker):
         """Should update _online to True after set_online(True)."""
@@ -57,6 +62,14 @@ class TestSetOnline:
         p = self.make_peripheral(mocker)
         p.set_online(True)
         assert p._online is True
+
+    def test_to_json_includes_online_flag(self, mocker):
+        p = self.make_peripheral(mocker)
+        assert p.to_json()["online"] is False
+
+        p._enabled = True
+        p._online = True
+        assert p.to_json()["online"] is True
 
     def test_online_state_updated_when_going_offline(self, mocker):
         """Should update _online to False after set_online(False)."""
