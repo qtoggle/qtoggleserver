@@ -64,7 +64,7 @@ class PeripheralsSection extends Section {
                     }
 
                     if (peripheralForm && (peripheralForm.getPeripheralId() === peripheralId)) {
-                        peripheralForm.setWarning(gettext('This peripheral has been changed.'))
+                        peripheralForm.setIcon(Peripherals.makePeripheralIcon(event.params))
                     }
                 }
                 else {

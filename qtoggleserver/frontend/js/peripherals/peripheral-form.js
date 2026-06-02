@@ -34,6 +34,7 @@ class PeripheralForm extends PageForm {
         super({
             pathId: pathId,
             keepPrevVisible: true,
+            closeOnApply: false,
             title: '', /* Set dynamically, later */
             icon: Peripherals.PERIPHERAL_ICON,
 
@@ -74,6 +75,9 @@ class PeripheralForm extends PageForm {
                 new ChoiceButtonsField({
                     name: 'force_enabled',
                     label: gettext('Force Enabled'),
+                    description: gettext(
+                        'Override automatic enabled state. Auto follows ports; Disabled/Enabled force it.'
+                    ),
                     required: false,
                     readonly: true,
                     choices: [
@@ -96,6 +100,7 @@ class PeripheralForm extends PageForm {
         return PeripheralsAPI.getPeripherals().then(function (peripherals) {
             let peripheral = peripherals.find(p => p.id === this._peripheralId)
             if (peripheral) {
+                this.setIcon(Peripherals.makePeripheralIcon(peripheral))
                 this.setData({
                     name: peripheral.name,
                     driver: peripheral.driver,
