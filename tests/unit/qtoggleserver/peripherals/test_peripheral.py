@@ -195,6 +195,61 @@ class TestAutoDisable:
         spy_disable.assert_called_once_with()
         spy_trigger_update.assert_called_once_with()
 
+    async def test_check_disabled_does_not_disable_when_other_port_enabled(self, mocker):
+        """Peripheral should stay enabled if at least one other port is enabled."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        p._enabled = True
+
+        port1 = mocker.MagicMock()
+        port1.is_enabled.return_value = False
+        p._ports_by_id["port1"] = port1
+
+        port2 = mocker.MagicMock()
+        port2.is_enabled.return_value = True
+        p._ports_by_id["port2"] = port2
+
+        spy_disable = mocker.patch.object(p, "disable")
+
+        await p.check_disabled(port1)
+
+        spy_disable.assert_not_called()
+
+    async def test_check_disabled_disables_when_all_ports_disabled(self, mocker):
+        """Peripheral should disable when all ports are disabled."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        p._enabled = True
+
+        port1 = mocker.MagicMock()
+        port1.is_enabled.return_value = False
+        p._ports_by_id["port1"] = port1
+
+        port2 = mocker.MagicMock()
+        port2.is_enabled.return_value = False
+        p._ports_by_id["port2"] = port2
+
+        spy_disable = mocker.patch.object(p, "disable")
+        spy_trigger_update = mocker.patch.object(p, "trigger_update")
+
+        await p.check_disabled(port1)
+
+        spy_disable.assert_called_once_with()
+        spy_trigger_update.assert_called_once_with()
+
+    async def test_check_disabled_does_nothing_when_already_disabled(self, mocker):
+        """check_disabled should not disable an already disabled peripheral."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        assert p.is_enabled() is False
+
+        port = mocker.MagicMock()
+        port.is_enabled.return_value = False
+        p._ports_by_id["port1"] = port
+
+        spy_disable = mocker.patch.object(p, "disable")
+
+        await p.check_disabled(port)
+
+        spy_disable.assert_not_called()
+
 
 class TestAutoEnable:
     async def test_handle_enable_triggers_update_when_it_enables_peripheral(self, mocker):
@@ -208,3 +263,47 @@ class TestAutoEnable:
 
         spy_enable.assert_called_once_with()
         spy_trigger_update.assert_called_once_with()
+
+    async def test_handle_enable_does_not_trigger_update_when_already_enabled(self, mocker):
+        """handle_enable should not trigger update if peripheral was already enabled."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        p._enabled = True
+        port = MockPeripheralPort(p, "id1")
+        spy_trigger_update = mocker.patch.object(p, "trigger_update")
+
+        await port.handle_enable()
+
+        spy_trigger_update.assert_not_called()
+
+    async def test_handle_enable_from_disabled_to_enabled(self, mocker):
+        """Peripheral should transition from disabled to enabled when a port is enabled."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        assert p.is_enabled() is False
+
+        port = MockPeripheralPort(p, "id1")
+        spy_trigger_update = mocker.patch.object(p, "trigger_update")
+
+        await port.handle_enable()
+
+        assert p.is_enabled() is True
+        spy_trigger_update.assert_called_once_with()
+
+    async def test_multiple_ports_only_first_enables_peripheral(self, mocker):
+        """Only the first enabled port should trigger peripheral enable."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        assert p.is_enabled() is False
+
+        port1 = MockPeripheralPort(p, "id1")
+        port2 = MockPeripheralPort(p, "id2")
+
+        spy_trigger_update = mocker.patch.object(p, "trigger_update")
+
+        # Enable first port - should enable peripheral
+        await port1.handle_enable()
+        assert p.is_enabled() is True
+        assert spy_trigger_update.call_count == 1
+
+        # Enable second port - peripheral already enabled, no update trigger
+        await port2.handle_enable()
+        assert p.is_enabled() is True
+        assert spy_trigger_update.call_count == 1  # Still 1, not incremented
