@@ -5,7 +5,9 @@ POST_PERIPHERALS = {
             "type": "string",
         },
         "name": {"oneOf": [{"type": "string", "pattern": "^[a-zA-Z_][a-zA-Z0-9_.-]{0,63}$"}, {"type": "null"}]},
+        "id": {"oneOf": [{"type": "string", "pattern": "^[a-zA-Z_][a-zA-Z0-9_.-]{0,63}$"}, {"type": "null"}]},
         "force_enabled": {"oneOf": [{"type": "boolean"}, {"type": "null"}]},
+        "params": {"type": "object"},
     },
     "additionalProperties": True,
     "required": [
@@ -21,6 +23,7 @@ PATCH_PERIPHERAL = {
         },
         "name": {"oneOf": [{"type": "string", "pattern": "^[a-zA-Z_][a-zA-Z0-9_.-]{0,63}$"}, {"type": "null"}]},
         "force_enabled": {"oneOf": [{"type": "boolean"}, {"type": "null"}]},
+        "params": {"type": "object"},
     },
     "additionalProperties": True,
     "required": [
@@ -38,7 +41,9 @@ PUT_PERIPHERALS = {
             },
             "name": {"oneOf": [{"type": "string", "pattern": "^[a-zA-Z_][a-zA-Z0-9_.-]{0,63}$"}, {"type": "null"}]},
             "id": {"oneOf": [{"type": "string", "pattern": "^[a-zA-Z_][a-zA-Z0-9_.-]{0,63}$"}, {"type": "null"}]},
+            "params": {"type": "object"},
             "force_enabled": {"oneOf": [{"type": "boolean"}, {"type": "null"}]},
+            "static": {"type": "boolean"},
         },
         "additionalProperties": True,
         "required": [

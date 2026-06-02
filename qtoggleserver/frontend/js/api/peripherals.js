@@ -2,8 +2,6 @@
  * @namespace qtoggle.api.peripherals
  */
 
-import * as ObjectUtils from '$qui/utils/object.js'
-
 import * as BaseAPI from './base.js'
 
 
@@ -25,7 +23,7 @@ export function getPeripherals() {
  * @returns {Promise}
  */
 export function postPeripherals(driver, params, name = null) {
-    let data = ObjectUtils.combine(params, {driver, name})
+    let data = {driver, name, params}
 
     return BaseAPI.apiCall({method: 'POST', path: '/peripherals', data: data})
 }

@@ -7,7 +7,6 @@ import FormButton           from '$qui/forms/form-button.js'
 import {ValidationError}    from '$qui/forms/forms.js'
 import {ConfirmMessageForm} from '$qui/messages/common-message-forms/common-message-forms.js'
 import * as Messages        from '$qui/messages/messages.js'
-import * as ObjectUtils     from '$qui/utils/object.js'
 import * as StringUtils     from '$qui/utils/string.js'
 
 import * as PeripheralsAPI from '$app/api/peripherals.js'
@@ -97,20 +96,14 @@ class PeripheralForm extends PageForm {
         return PeripheralsAPI.getPeripherals().then(function (peripherals) {
             let peripheral = peripherals.find(p => p.id === this._peripheralId)
             if (peripheral) {
-                let data = ObjectUtils.copy(peripheral)
-                ObjectUtils.pop(data, 'id')
-                let name = ObjectUtils.pop(data, 'name')
-                let driver = ObjectUtils.pop(data, 'driver')
-                let isStatic = ObjectUtils.pop(data, 'static')
-                let forceEnabled = ObjectUtils.pop(data, 'force_enabled')
                 this.setData({
-                    name: name,
-                    driver: driver,
-                    params: JSON.stringify(data, null, 4),
-                    force_enabled: forceEnabled
+                    name: peripheral.name,
+                    driver: peripheral.driver,
+                    params: JSON.stringify(peripheral.params || {}, null, 4),
+                    force_enabled: peripheral.force_enabled
                 })
                 this.setTitle(peripheral.id)
-                if (!isStatic) {
+                if (!peripheral.static) {
                     this.getField('name').setReadonly(false)
                     this.getField('driver').setReadonly(false)
                     this.getField('params').setReadonly(false)
@@ -127,11 +120,12 @@ class PeripheralForm extends PageForm {
 
     applyData(data) {
         let params = data.params ? JSON.parse(data.params) : {}
-        let payload = ObjectUtils.combine(params, {
+        let payload = {
             driver: data.driver,
             name: data.name || null,
-            force_enabled: data.force_enabled
-        })
+            force_enabled: data.force_enabled,
+            params: params
+        }
 
         logger.debug(`updating peripheral "${this._peripheralId}"`)
 

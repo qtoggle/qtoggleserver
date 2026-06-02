@@ -30,6 +30,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self,
         *,
         params: dict[str, Any],
+        driver: str | None = None,
         name: str | None = None,
         id: str | None = None,
         force_enabled: bool | None = None,
@@ -41,6 +42,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         auto_id = f"peripheral_{hashlib.sha256(auto_id_to_hash.encode()).hexdigest()[:8]}"
 
         self._params: dict[str, Any] = params
+        self._driver: str = driver or f"{self.__class__.__module__}.{self.__class__.__name__}"
         self._name: str | None = name
         self._id: str = name or id or auto_id  # name will always be used as id, if supplied
         self._force_enabled: bool | None = force_enabled
@@ -70,6 +72,9 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_name(self) -> str | None:
         return self._name
 
+    def get_driver(self) -> str:
+        return self._driver
+
     def get_params(self) -> dict[str, Any]:
         return self._params
 
@@ -84,12 +89,13 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def to_json(self) -> GenericJSONDict:
         return dict(
-            self._params,
+            driver=self.get_driver(),
             id=self.get_id(),
             static=self.is_static(),
             name=self.get_name(),
             enabled=self.is_enabled(),
             force_enabled=self.get_force_enabled(),
+            params=self.get_params(),
             online=self.is_online(),
         )
 

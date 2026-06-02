@@ -9,7 +9,7 @@ from tests.unit.qtoggleserver.mock.peripherals import MockPeripheral
 
 MOCK_PERIPHERAL1_DATA = {
     "driver": "tests.unit.qtoggleserver.mock.peripherals.MockPeripheral",
-    "dummy_param": "dummy_value1",
+    "params": {"dummy_param": "dummy_value1"},
     "name": "peripheral1",
     "id": "peripheral1",
     "static": False,
@@ -20,7 +20,7 @@ MOCK_PERIPHERAL1_DATA = {
 
 MOCK_PERIPHERAL2_DATA = {
     "driver": "tests.unit.qtoggleserver.mock.peripherals.MockPeripheral",
-    "dummy_param": "dummy_value2",
+    "params": {"dummy_param": "dummy_value2"},
     "name": "peripheral2",
     "id": "peripheral2",
     "static": False,
@@ -31,7 +31,7 @@ MOCK_PERIPHERAL2_DATA = {
 
 MOCK_PERIPHERAL3_DATA = {
     "driver": "tests.unit.qtoggleserver.mock.peripherals.MockPeripheral",
-    "dummy_param": "dummy_value3",
+    "params": {"dummy_param": "dummy_value3"},
     "name": "peripheral3",
     "id": "peripheral3",
     "static": False,
@@ -70,7 +70,7 @@ class TestPostPeripherals:
     async def test_ok_with_name_and_id(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
             name=MOCK_PERIPHERAL2_DATA["name"],
-            dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"],
+            dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"],
         )
 
         payload = MOCK_PERIPHERAL2_DATA.copy()
@@ -91,7 +91,7 @@ class TestPostPeripherals:
     async def test_ok_with_name(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
             name=MOCK_PERIPHERAL2_DATA["name"],
-            dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"],
+            dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"],
         )
 
         payload = MOCK_PERIPHERAL2_DATA.copy()
@@ -111,7 +111,7 @@ class TestPostPeripherals:
     async def test_ok_with_id(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
             id=MOCK_PERIPHERAL2_DATA["id"],
-            dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"],
+            dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"],
         )
 
         payload = MOCK_PERIPHERAL2_DATA.copy()
@@ -129,7 +129,7 @@ class TestPostPeripherals:
         assert result == dict(payload, name=None, static=False, enabled=False, force_enabled=None, online=False)
 
     async def test_ok_no_name_no_id(self, mock_api_request_maker, mock_peripheral1, mocker):
-        mock_peripheral2 = MockPeripheral(dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"])
+        mock_peripheral2 = MockPeripheral(dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"])
 
         payload = MOCK_PERIPHERAL2_DATA.copy()
         payload.pop("static")
@@ -238,7 +238,7 @@ class TestPatchPeripheral:
     async def test_ok(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
             name=MOCK_PERIPHERAL2_DATA["name"],
-            dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"],
+            dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"],
         )
         payload = MOCK_PERIPHERAL2_DATA.copy()
         payload.pop("static")
@@ -316,7 +316,7 @@ class TestPatchPeripheral:
     async def test_init_ports_failure_removes_new_peripheral(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
             name=MOCK_PERIPHERAL2_DATA["name"],
-            dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"],
+            dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"],
         )
         payload = MOCK_PERIPHERAL2_DATA.copy()
         payload.pop("static")
@@ -440,7 +440,7 @@ class TestPatchPeripheral:
         spy_migrate = mocker.patch("qtoggleserver.peripherals.api.funcs._migrate_peripheral_rename")
         mock_peripheral2 = MockPeripheral(
             name=MOCK_PERIPHERAL2_DATA["name"],
-            dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"],
+            dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"],
         )
         payload = MOCK_PERIPHERAL2_DATA.copy()
         payload.pop("static")
@@ -461,11 +461,11 @@ class TestPutPeripherals:
     async def test_ok(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
             name=MOCK_PERIPHERAL2_DATA["name"],
-            dummy_param=MOCK_PERIPHERAL2_DATA["dummy_param"],
+            dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"],
         )
         mock_peripheral3 = MockPeripheral(
             name=MOCK_PERIPHERAL3_DATA["name"],
-            dummy_param=MOCK_PERIPHERAL3_DATA["dummy_param"],
+            dummy_param=MOCK_PERIPHERAL3_DATA["params"]["dummy_param"],
         )
         payload2 = MOCK_PERIPHERAL2_DATA.copy()
         payload3 = MOCK_PERIPHERAL3_DATA.copy()
