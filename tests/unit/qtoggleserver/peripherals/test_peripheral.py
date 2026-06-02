@@ -1,3 +1,4 @@
+from qtoggleserver.peripherals import events as peripherals_events
 from tests.unit.qtoggleserver.mock.peripherals import MockPeripheral
 
 
@@ -64,3 +65,38 @@ class TestSetOnline:
         p._online = True
         p.set_online(False)
         assert p._online is False
+
+
+class TestTriggerEvents:
+    async def test_trigger_add(self, mocker):
+        p = MockPeripheral(name="test", dummy_param="v")
+        spy_trigger = mocker.patch("qtoggleserver.core.events.trigger")
+
+        await p.trigger_add()
+
+        spy_trigger.assert_called_once()
+        event = spy_trigger.call_args.args[0]
+        assert isinstance(event, peripherals_events.PeripheralAdd)
+        assert event.get_peripheral() is p
+
+    async def test_trigger_remove(self, mocker):
+        p = MockPeripheral(name="test", dummy_param="v")
+        spy_trigger = mocker.patch("qtoggleserver.core.events.trigger")
+
+        await p.trigger_remove()
+
+        spy_trigger.assert_called_once()
+        event = spy_trigger.call_args.args[0]
+        assert isinstance(event, peripherals_events.PeripheralRemove)
+        assert event.get_peripheral() is p
+
+    async def test_trigger_update(self, mocker):
+        p = MockPeripheral(name="test", dummy_param="v")
+        spy_trigger = mocker.patch("qtoggleserver.core.events.trigger")
+
+        await p.trigger_update()
+
+        spy_trigger.assert_called_once()
+        event = spy_trigger.call_args.args[0]
+        assert isinstance(event, peripherals_events.PeripheralUpdate)
+        assert event.get_peripheral() is p

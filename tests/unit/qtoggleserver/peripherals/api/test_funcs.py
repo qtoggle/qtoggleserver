@@ -70,10 +70,12 @@ class TestPostPeripherals:
 
         spy_add = mocker.patch("qtoggleserver.peripherals.add", return_value=mock_peripheral2)
         spy_init_ports = mocker.patch.object(mock_peripheral2, "init_ports")
+        spy_trigger_add = mocker.patch.object(mock_peripheral2, "trigger_add")
         result = await peripherals_api_funcs.post_peripherals(request, payload)
 
         spy_add.assert_called_once_with(payload)
         spy_init_ports.assert_called_once_with()
+        spy_trigger_add.assert_called_once_with()
 
         assert result == MOCK_PERIPHERAL2_DATA
 
@@ -190,10 +192,12 @@ class TestDeletePeripheral:
         )
         spy_cleanup_ports = mocker.patch.object(mock_peripheral1, "cleanup_ports")
         spy_remove = mocker.patch("qtoggleserver.peripherals.remove")
+        spy_trigger_remove = mocker.patch.object(mock_peripheral1, "trigger_remove")
         result = await peripherals_api_funcs.delete_peripheral(request, mock_peripheral1.get_id())
 
         spy_cleanup_ports.assert_called_once_with(persisted_data=True)
         spy_remove.assert_called_once_with(mock_peripheral1.get_id(), persisted_data=True)
+        spy_trigger_remove.assert_called_once_with()
         assert result is None
 
     async def test_normal_user_permissions(self, mock_api_request_maker, mock_peripheral1):
@@ -237,6 +241,7 @@ class TestPatchPeripheral:
         spy_remove = mocker.patch("qtoggleserver.peripherals.remove")
         spy_add = mocker.patch("qtoggleserver.peripherals.add", return_value=mock_peripheral2)
         spy_init_ports = mocker.patch.object(mock_peripheral2, "init_ports")
+        spy_trigger_update = mocker.patch.object(mock_peripheral2, "trigger_update")
 
         result = await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
 
@@ -244,6 +249,7 @@ class TestPatchPeripheral:
         spy_remove.assert_called_once_with(mock_peripheral1.get_id(), persisted_data=False)
         spy_add.assert_called_once_with(payload)
         spy_init_ports.assert_called_once_with()
+        spy_trigger_update.assert_called_once_with()
         assert result == MOCK_PERIPHERAL2_DATA
 
     async def test_preserves_persisted_data(self, mock_api_request_maker, mock_peripheral1, mocker):
@@ -463,6 +469,9 @@ class TestPutPeripherals:
         spy_add = mocker.patch("qtoggleserver.peripherals.add", side_effect=[mock_peripheral2, mock_peripheral3])
         spy_init_ports2 = mocker.patch.object(mock_peripheral2, "init_ports")
         spy_init_ports3 = mocker.patch.object(mock_peripheral3, "init_ports")
+        spy_trigger_remove = mocker.patch.object(mock_peripheral1, "trigger_remove")
+        spy_trigger_add2 = mocker.patch.object(mock_peripheral2, "trigger_add")
+        spy_trigger_add3 = mocker.patch.object(mock_peripheral3, "trigger_add")
 
         result = await peripherals_api_funcs.put_peripherals(request, [payload2, payload3])
 
@@ -471,6 +480,9 @@ class TestPutPeripherals:
         spy_add.assert_has_calls([mocker.call(payload2), mocker.call(payload3)])
         spy_init_ports2.assert_called_once_with()
         spy_init_ports3.assert_called_once_with()
+        spy_trigger_remove.assert_called_once_with()
+        spy_trigger_add2.assert_called_once_with()
+        spy_trigger_add3.assert_called_once_with()
 
         assert result is None
 
