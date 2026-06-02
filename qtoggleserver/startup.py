@@ -268,7 +268,12 @@ async def init_ports() -> None:
 
     # Peripheral ports
     for peripheral in peripherals.get_all():
-        await peripheral.init_ports()
+        try:
+            await peripheral.init_ports()
+        except Exception:
+            logger.exception("failed to initialize ports for %s", peripheral)
+            peripheral.set_force_enabled(False)
+            await peripheral.disable()
 
     # Load virtual ports
     await vports.init()
