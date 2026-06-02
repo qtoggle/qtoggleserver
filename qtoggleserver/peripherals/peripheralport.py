@@ -31,6 +31,8 @@ class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
         # Ensure our peripheral is also enabled when enabling the port.
         if not self._peripheral.is_enabled():
             await self._peripheral.enable()
+            if self._peripheral.is_enabled():
+                await self._peripheral.trigger_update()
 
     async def handle_disable(self) -> None:
         # If this is the last port of this peripheral that has just been disabled, also disable the peripheral.

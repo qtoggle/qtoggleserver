@@ -200,6 +200,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         else:
             self.debug("all ports are disabled, disabling peripheral")
             await self.disable()
+            await self.trigger_update()
 
     async def _apply_force_enabled(self) -> None:
         if self._force_enabled is True:

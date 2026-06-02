@@ -1,5 +1,5 @@
 from qtoggleserver.peripherals import events as peripherals_events
-from tests.unit.qtoggleserver.mock.peripherals import MockPeripheral
+from tests.unit.qtoggleserver.mock.peripherals import MockPeripheral, MockPeripheralPort
 
 
 class TestSetOnline:
@@ -176,3 +176,35 @@ class TestForceEnabled:
         spy_load.assert_not_called()
         assert p.get_ports() == []
         assert p.is_enabled() is False
+
+
+class TestAutoDisable:
+    async def test_check_disabled_triggers_update_when_last_port_disabled(self, mocker):
+        p = MockPeripheral(name="test", dummy_param="v")
+        p._enabled = True
+
+        port = mocker.MagicMock()
+        port.is_enabled.return_value = True
+        p._ports_by_id["port1"] = port
+
+        spy_disable = mocker.patch.object(p, "disable")
+        spy_trigger_update = mocker.patch.object(p, "trigger_update")
+
+        await p.check_disabled(port)
+
+        spy_disable.assert_called_once_with()
+        spy_trigger_update.assert_called_once_with()
+
+
+class TestAutoEnable:
+    async def test_handle_enable_triggers_update_when_it_enables_peripheral(self, mocker):
+        p = MockPeripheral(name="test", dummy_param="v")
+        port = MockPeripheralPort(p, "id1")
+        spy_enable = mocker.patch.object(p, "enable")
+        spy_trigger_update = mocker.patch.object(p, "trigger_update")
+        mocker.patch.object(p, "is_enabled", side_effect=[False, True])
+
+        await port.handle_enable()
+
+        spy_enable.assert_called_once_with()
+        spy_trigger_update.assert_called_once_with()
