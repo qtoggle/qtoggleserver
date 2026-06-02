@@ -1,16 +1,12 @@
-from typing import TYPE_CHECKING
-
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core.typing import GenericJSONDict
 
-
-if TYPE_CHECKING:
-    from .peripheral import Peripheral
+from .peripheral import Peripheral
 
 
 class PeripheralEvent(core_events.Event):
-    def __init__(self, peripheral: "Peripheral", timestamp: float | None = None) -> None:
+    def __init__(self, peripheral: Peripheral, timestamp: float | None = None) -> None:
         self._peripheral = peripheral
 
         super().__init__(timestamp)
@@ -18,7 +14,7 @@ class PeripheralEvent(core_events.Event):
     def __str__(self) -> str:
         return f"{self._type}({self._peripheral.get_id()}) event"
 
-    def get_peripheral(self) -> "Peripheral":
+    def get_peripheral(self) -> Peripheral:
         return self._peripheral
 
 
