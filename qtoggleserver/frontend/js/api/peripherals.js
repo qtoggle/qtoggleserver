@@ -20,10 +20,11 @@ export function getPeripherals() {
  * @param {String} driver the driver to use
  * @param {Object} params peripheral parameters
  * @param {String} [name] an optional peripheral name
+ * @param {String} [displayName] an optional peripheral display name
  * @returns {Promise}
  */
-export function postPeripherals(driver, params, name = null) {
-    let data = {driver, name, params}
+export function postPeripherals(driver, params, name = null, displayName = '') {
+    let data = {driver, name, display_name: displayName, params}
 
     return BaseAPI.apiCall({method: 'POST', path: '/peripherals', data: data})
 }

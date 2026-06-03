@@ -68,6 +68,7 @@ class TestSetOnline:
         assert p.to_json()["enabled"] is False
         assert p.to_json()["online"] is False
         assert p.to_json()["force_enabled"] is None
+        assert p.to_json()["display_name"] == ""
 
         p._enabled = True
         p._online = True
@@ -116,6 +117,25 @@ class TestTriggerEvents:
         event = spy_trigger.call_args.args[0]
         assert isinstance(event, peripherals_events.PeripheralUpdate)
         assert event.get_peripheral() is p
+
+
+class TestDisplayName:
+    def test_defaults_to_empty_string(self):
+        p = MockPeripheral(name="test", dummy_param="v")
+
+        assert p.get_display_name() == ""
+        assert p.to_json()["display_name"] == ""
+
+    def test_set_display_name_updates_value(self):
+        p = MockPeripheral(name="test", dummy_param="v")
+
+        p.set_display_name("Test Peripheral")
+        assert p.get_display_name() == "Test Peripheral"
+        assert p.to_json()["display_name"] == "Test Peripheral"
+
+        p.set_display_name("")
+        assert p.get_display_name() == ""
+        assert p.to_json()["display_name"] == ""
 
 
 class TestForceEnabled:

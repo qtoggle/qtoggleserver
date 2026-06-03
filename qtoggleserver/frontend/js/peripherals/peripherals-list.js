@@ -84,9 +84,12 @@ class PeripheralsList extends PageList {
      * @returns {qui.lists.ListItem}
      */
     peripheralToItem(peripheral) {
+        let label = peripheral.display_name || peripheral.id
+        let subLabel = peripheral.driver.split('.').slice(-1)[0]
+
         return new IconLabelListItem({
-            label: peripheral.id,
-            subLabel: peripheral.driver.split('.').slice(-1)[0],
+            label: label,
+            subLabel: subLabel,
             icon: Peripherals.makePeripheralIcon(peripheral),
             data: peripheral.id
         })

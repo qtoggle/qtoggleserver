@@ -33,6 +33,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         driver: str | None = None,
         name: str | None = None,
         id: str | None = None,
+        display_name: str = "",
         force_enabled: bool | None = None,
         static: bool = False,
         **kwargs,
@@ -45,6 +46,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._driver: str = driver or f"{self.__class__.__module__}.{self.__class__.__name__}"
         self._name: str | None = name
         self._id: str = name or id or auto_id  # name will always be used as id, if supplied
+        self._display_name: str = display_name or ""
         self._force_enabled: bool | None = force_enabled
         self._static: bool = static
 
@@ -75,6 +77,12 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_driver(self) -> str:
         return self._driver
 
+    def get_display_name(self) -> str:
+        return self._display_name
+
+    def set_display_name(self, display_name: str) -> None:
+        self._display_name = display_name
+
     def get_params(self) -> dict[str, Any]:
         return self._params
 
@@ -93,6 +101,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             id=self.get_id(),
             static=self.is_static(),
             name=self.get_name(),
+            display_name=self.get_display_name(),
             enabled=self.is_enabled(),
             force_enabled=self.get_force_enabled(),
             params=self.get_params(),

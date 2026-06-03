@@ -39,7 +39,7 @@ async def add(peripheral_params: dict[str, Any], static: bool = False) -> Periph
     params = input_params.pop("params", None)
     if params is None:
         # Backward compatibility with older persisted payloads where params were flattened.
-        params = {k: v for k, v in input_params.items() if k not in {"name", "id", "force_enabled"}}
+        params = {k: v for k, v in input_params.items() if k not in {"name", "id", "display_name", "force_enabled"}}
     elif not isinstance(params, dict):
         raise TypeError("params must be a dictionary")
 
@@ -65,6 +65,7 @@ async def add(peripheral_params: dict[str, Any], static: bool = False) -> Periph
             "driver": p.get_driver(),
             "name": p.get_name(),
             "id": p.get_id(),
+            "display_name": p.get_display_name(),
             "force_enabled": p.get_force_enabled(),
             "params": p.get_params(),
         }
