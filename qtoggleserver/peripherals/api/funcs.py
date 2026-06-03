@@ -47,6 +47,7 @@ async def post_peripherals(request: core_api.APIRequest, params: GenericJSONDict
         await peripheral.init_ports()
     except Exception as e:
         await peripherals.remove(peripheral.get_id())
+        await peripheral.trigger_remove()
         raise core_api.APIError(400, "invalid-request", details=str(e))
 
     return peripheral.to_json()

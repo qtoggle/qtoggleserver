@@ -267,7 +267,7 @@ async def init_ports() -> None:
     await ports.load(settings.ports)
 
     # Peripheral ports
-    for peripheral in peripherals.get_all():
+    for peripheral in list(peripherals.get_all()):
         try:
             await peripheral.init_ports()
         except Exception:
@@ -300,7 +300,7 @@ async def init_peripherals() -> None:
     logger.info("initializing peripherals")
     await peripherals.init()
 
-    for peripheral in peripherals.get_all():
+    for peripheral in list(peripherals.get_all()):
         await peripheral.trigger_add()
 
 

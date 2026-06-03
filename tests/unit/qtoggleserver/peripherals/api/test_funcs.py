@@ -166,6 +166,31 @@ class TestPostPeripherals:
             await peripherals_api_funcs.post_peripherals(request, payload)
         assert e.value.status == 400
 
+    async def test_init_ports_failure_removes_peripheral_and_triggers_remove_event(
+        self, mock_api_request_maker, mock_peripheral1, mocker
+    ):
+        mock_peripheral2 = MockPeripheral(
+            name=MOCK_PERIPHERAL2_DATA["name"],
+            dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"],
+        )
+        payload = MOCK_PERIPHERAL2_DATA.copy()
+        payload.pop("static")
+        request = mock_api_request_maker("POST", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_ADMIN)
+
+        mocker.patch("qtoggleserver.peripherals.add", return_value=mock_peripheral2)
+        mocker.patch.object(mock_peripheral2, "init_ports", side_effect=Exception("init failed"))
+        spy_remove = mocker.patch("qtoggleserver.peripherals.remove")
+        spy_trigger_add = mocker.patch.object(mock_peripheral2, "trigger_add")
+        spy_trigger_remove = mocker.patch.object(mock_peripheral2, "trigger_remove")
+
+        with pytest.raises(core_api.APIError, match="invalid-request") as e:
+            await peripherals_api_funcs.post_peripherals(request, payload)
+
+        assert e.value.status == 400
+        spy_trigger_add.assert_called_once_with()
+        spy_remove.assert_called_once_with(mock_peripheral2.get_id())
+        spy_trigger_remove.assert_called_once_with()
+
     async def test_normal_user_permissions(self, mock_api_request_maker, mock_peripheral1):
         payload = MOCK_PERIPHERAL2_DATA.copy()
         payload.pop("static")
