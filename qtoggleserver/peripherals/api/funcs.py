@@ -102,6 +102,7 @@ async def patch_peripheral(
         "driver": p.get_driver(),
         "name": p.get_name(),
         "id": p.get_id(),
+        "display_name": p.get_display_name(),
         "force_enabled": p.get_force_enabled(),
         "params": p.get_params().copy(),
     }

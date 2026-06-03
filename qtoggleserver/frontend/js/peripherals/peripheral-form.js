@@ -46,6 +46,13 @@ class PeripheralForm extends PageForm {
                     readonly: true
                 }),
                 new TextField({
+                    name: 'display_name',
+                    label: gettext('Display Name'),
+                    required: false,
+                    readonly: true,
+                    maxLength: 64
+                }),
+                new TextField({
                     name: 'driver',
                     label: gettext('Driver'),
                     required: true,
@@ -103,13 +110,15 @@ class PeripheralForm extends PageForm {
                 this.setIcon(Peripherals.makePeripheralIcon(peripheral))
                 this.setData({
                     name: peripheral.name,
+                    display_name: peripheral.display_name || '',
                     driver: peripheral.driver,
                     params: JSON.stringify(peripheral.params || {}, null, 4),
                     force_enabled: peripheral.force_enabled
                 })
-                this.setTitle(peripheral.id)
+                this.setTitle(peripheral.display_name || peripheral.id)
                 if (!peripheral.static) {
                     this.getField('name').setReadonly(false)
+                    this.getField('display_name').setReadonly(false)
                     this.getField('driver').setReadonly(false)
                     this.getField('params').setReadonly(false)
                     this.getField('force_enabled').setReadonly(false)
@@ -128,6 +137,7 @@ class PeripheralForm extends PageForm {
         let payload = {
             driver: data.driver,
             name: data.name || null,
+            display_name: data.display_name || '',
             force_enabled: data.force_enabled,
             params: params
         }
@@ -138,6 +148,7 @@ class PeripheralForm extends PageForm {
 
             logger.debug(`peripheral "${this._peripheralId}" successfully updated`)
             this._peripheralId = peripheral.id
+            this.setTitle(peripheral.display_name || peripheral.id)
 
         }.bind(this)).catch(function (error) {
 

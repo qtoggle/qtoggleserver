@@ -11,6 +11,7 @@ MOCK_PERIPHERAL1_DATA = {
     "driver": "tests.unit.qtoggleserver.mock.peripherals.MockPeripheral",
     "params": {"dummy_param": "dummy_value1"},
     "name": "peripheral1",
+    "display_name": "",
     "id": "peripheral1",
     "static": False,
     "enabled": False,
@@ -22,6 +23,7 @@ MOCK_PERIPHERAL2_DATA = {
     "driver": "tests.unit.qtoggleserver.mock.peripherals.MockPeripheral",
     "params": {"dummy_param": "dummy_value2"},
     "name": "peripheral2",
+    "display_name": "",
     "id": "peripheral2",
     "static": False,
     "enabled": False,
@@ -33,6 +35,7 @@ MOCK_PERIPHERAL3_DATA = {
     "driver": "tests.unit.qtoggleserver.mock.peripherals.MockPeripheral",
     "params": {"dummy_param": "dummy_value3"},
     "name": "peripheral3",
+    "display_name": "",
     "id": "peripheral3",
     "static": False,
     "enabled": False,
@@ -166,6 +169,16 @@ class TestPostPeripherals:
             await peripherals_api_funcs.post_peripherals(request, payload)
         assert e.value.status == 400
 
+    async def test_display_name_must_be_string(self, mock_api_request_maker, mock_peripheral1):
+        payload = MOCK_PERIPHERAL2_DATA.copy()
+        payload.pop("static")
+        payload["display_name"] = None
+        request = mock_api_request_maker("POST", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_ADMIN)
+
+        with pytest.raises(core_api.APIError, match="invalid-field") as e:
+            await peripherals_api_funcs.post_peripherals(request, payload)
+        assert e.value.status == 400
+
     async def test_init_ports_failure_removes_peripheral_and_triggers_remove_event(
         self, mock_api_request_maker, mock_peripheral1, mocker
     ):
@@ -190,6 +203,27 @@ class TestPostPeripherals:
         spy_trigger_add.assert_called_once_with()
         spy_remove.assert_called_once_with(mock_peripheral2.get_id())
         spy_trigger_remove.assert_called_once_with()
+
+    async def test_ok_with_display_name(self, mock_api_request_maker, mock_peripheral1, mocker):
+        mock_peripheral2 = MockPeripheral(
+            name=MOCK_PERIPHERAL2_DATA["name"],
+            display_name="Peripheral Two",
+            dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"],
+        )
+        payload = {
+            **MOCK_PERIPHERAL2_DATA,
+            "display_name": "Peripheral Two",
+        }
+        payload.pop("static")
+        request = mock_api_request_maker("POST", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_ADMIN)
+
+        spy_add = mocker.patch("qtoggleserver.peripherals.add", return_value=mock_peripheral2)
+        spy_init_ports = mocker.patch.object(mock_peripheral2, "init_ports")
+        result = await peripherals_api_funcs.post_peripherals(request, payload)
+
+        spy_add.assert_called_once_with(payload)
+        spy_init_ports.assert_called_once_with()
+        assert result["display_name"] == "Peripheral Two"
 
     async def test_normal_user_permissions(self, mock_api_request_maker, mock_peripheral1):
         payload = MOCK_PERIPHERAL2_DATA.copy()
