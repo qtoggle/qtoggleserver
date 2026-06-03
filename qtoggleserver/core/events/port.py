@@ -1,8 +1,13 @@
+from typing import TYPE_CHECKING
+
 from qtoggleserver.core import api as core_api
-from qtoggleserver.core.ports import BasePort
 from qtoggleserver.core.typing import GenericJSONDict, NullablePortValue
 
 from .base import Event
+
+
+if TYPE_CHECKING:
+    from qtoggleserver.core.ports import BasePort
 
 
 class PortEvent(Event):
