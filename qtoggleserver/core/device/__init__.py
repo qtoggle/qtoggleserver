@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 _PASSWORD_HASH_ATTRS = ("admin_password_hash", "normal_password_hash", "viewonly_password_hash")
 
 
-def get_display_name() -> str:
+def get_pretty_name() -> str:
     # Used by template notifications
     return device_attrs.display_name or device_attrs.name
 

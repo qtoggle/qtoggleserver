@@ -232,7 +232,8 @@ class Slave(logging_utils.LoggableMixin):
     def get_name(self) -> str:
         return self._name
 
-    def get_display_name(self) -> str:  # TODO: is this used anywhere?
+    def get_pretty_name(self) -> str:
+        # This one is used in templates
         return self._cached_attrs.get("display_name") or self._name
 
     def get_scheme(self) -> str:
