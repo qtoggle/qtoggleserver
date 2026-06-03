@@ -338,7 +338,7 @@ class TestPatchPeripheral:
             await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
         assert e.value.status == 404
 
-    async def test_init_ports_failure_removes_new_peripheral(self, mock_api_request_maker, mock_peripheral1, mocker):
+    async def test_init_ports_failure_disables_new_peripheral(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
             name=MOCK_PERIPHERAL2_DATA["name"],
             dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"],
@@ -350,15 +350,18 @@ class TestPatchPeripheral:
             "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_ADMIN
         )
         mocker.patch.object(mock_peripheral1, "cleanup_ports")
-        mocker.patch("qtoggleserver.peripherals.remove")
+        spy_remove = mocker.patch("qtoggleserver.peripherals.remove")
         mocker.patch("qtoggleserver.peripherals.add", return_value=mock_peripheral2)
         mocker.patch.object(mock_peripheral2, "init_ports", side_effect=Exception("init failed"))
-        spy_remove = mocker.patch("qtoggleserver.peripherals.remove")
+        spy_set_force_enabled = mocker.patch.object(mock_peripheral2, "set_force_enabled")
+        spy_disable = mocker.patch.object(mock_peripheral2, "disable")
 
         with pytest.raises(core_api.APIError, match="invalid-request") as e:
             await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
         assert e.value.status == 400
-        spy_remove.assert_called_with(mock_peripheral2.get_id())
+        spy_remove.assert_called_once_with(mock_peripheral1.get_id(), persisted_data=False)
+        spy_set_force_enabled.assert_called_once_with(False)
+        spy_disable.assert_called_once_with()
 
     async def test_normal_user_permissions(self, mock_api_request_maker, mock_peripheral1):
         payload = MOCK_PERIPHERAL2_DATA.copy()
@@ -518,6 +521,38 @@ class TestPutPeripherals:
         spy_trigger_add2.assert_called_once_with()
         spy_trigger_add3.assert_called_once_with()
 
+        assert result is None
+
+    async def test_init_ports_failure_disables_failing_peripheral(
+        self, mock_api_request_maker, mock_peripheral1, mocker
+    ):
+        failing_peripheral = MockPeripheral(
+            name=MOCK_PERIPHERAL2_DATA["name"],
+            dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"],
+        )
+        healthy_peripheral = MockPeripheral(
+            name=MOCK_PERIPHERAL3_DATA["name"],
+            dummy_param=MOCK_PERIPHERAL3_DATA["params"]["dummy_param"],
+        )
+        payload2 = MOCK_PERIPHERAL2_DATA.copy()
+        payload3 = MOCK_PERIPHERAL3_DATA.copy()
+        payload2.pop("static")
+        payload3.pop("static")
+
+        request = mock_api_request_maker("PUT", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_ADMIN)
+        mocker.patch.object(mock_peripheral1, "cleanup_ports")
+        mocker.patch("qtoggleserver.peripherals.remove")
+        mocker.patch("qtoggleserver.peripherals.add", side_effect=[failing_peripheral, healthy_peripheral])
+        mocker.patch.object(failing_peripheral, "init_ports", side_effect=Exception("init failed"))
+        spy_init_ports_healthy = mocker.patch.object(healthy_peripheral, "init_ports")
+        spy_set_force_enabled = mocker.patch.object(failing_peripheral, "set_force_enabled")
+        spy_disable = mocker.patch.object(failing_peripheral, "disable")
+
+        result = await peripherals_api_funcs.put_peripherals(request, [payload2, payload3])
+
+        spy_set_force_enabled.assert_called_once_with(False)
+        spy_disable.assert_called_once_with()
+        spy_init_ports_healthy.assert_called_once_with()
         assert result is None
 
     async def test_normal_user_permissions(self, mock_api_request_maker, mock_peripheral1):

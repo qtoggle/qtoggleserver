@@ -134,7 +134,9 @@ async def patch_peripheral(
     try:
         await new_p.init_ports()
     except Exception as e:
-        await peripherals.remove(new_p.get_id())
+        logger.exception("failed to initialize ports for %s", new_p)
+        new_p.set_force_enabled(False)
+        await new_p.disable()
         raise core_api.APIError(400, "invalid-request", details=str(e))
 
     await new_p.trigger_update()
@@ -169,4 +171,9 @@ async def put_peripherals(request: core_api.APIRequest, params: GenericJSONList)
         await p.trigger_add()
 
     for p in peripheral_list:
-        await p.init_ports()
+        try:
+            await p.init_ports()
+        except Exception:
+            logger.exception("failed to initialize ports for %s", p)
+            p.set_force_enabled(False)
+            await p.disable()
