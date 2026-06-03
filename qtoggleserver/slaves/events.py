@@ -1,16 +1,16 @@
-from typing import Any
+from typing import TYPE_CHECKING
 
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core.typing import GenericJSONDict
 
 
-# We can't use proper type annotations for slaves in this module because that would create unsolvable circular imports.
-# Therefore, we use "Any" type annotation for Slave instances.
+if TYPE_CHECKING:
+    from .devices import Slave
 
 
 class SlaveDeviceEvent(core_events.Event):
-    def __init__(self, slave: Any, timestamp: float | None = None) -> None:
+    def __init__(self, slave: Slave, timestamp: float | None = None) -> None:
         self._slave = slave
 
         super().__init__(timestamp)
@@ -18,7 +18,7 @@ class SlaveDeviceEvent(core_events.Event):
     def __str__(self) -> str:
         return f"{self._type}({self._slave.get_name()}) event"
 
-    def get_slave(self) -> Any:
+    def get_slave(self) -> Slave:
         return self._slave
 
 

@@ -200,6 +200,9 @@ class PeripheralsHandler(APIHandler):
 
 
 class PeripheralHandler(APIHandler):
+    async def patch(self, peripheral_id: str) -> None:
+        await self.call_api_func(peripherals_api_funcs.patch_peripheral, peripheral_id=peripheral_id)
+
     async def delete(self, peripheral_id: str) -> None:
         await self.call_api_func(
             peripherals_api_funcs.delete_peripheral, peripheral_id=peripheral_id, default_status=204

@@ -30,9 +30,21 @@ def get(peripheral_id: str) -> Peripheral | None:
 
 
 async def add(peripheral_params: dict[str, Any], static: bool = False) -> Peripheral:
-    params = peripheral_params.copy()
-    class_path = params.pop("driver")
-    params.pop("static", None)
+    input_params = peripheral_params.copy()
+    class_path = input_params.pop("driver")
+    input_params.pop("static", None)
+    input_params.pop("enabled", None)  # computed at runtime
+    input_params.pop("online", None)  # computed at runtime
+
+    params = input_params.pop("params", None)
+    if params is None:
+        # Backward compatibility with older persisted payloads where params were flattened.
+        params = {k: v for k, v in input_params.items() if k not in {"name", "id", "force_enabled"}}
+    elif not isinstance(params, dict):
+        raise TypeError("params must be a dictionary")
+
+    ctor_kwargs = input_params.copy()
+    ctor_kwargs.update(params)
 
     logger.debug('creating peripheral with driver "%s"', class_path)
     try:
@@ -40,7 +52,7 @@ async def add(peripheral_params: dict[str, Any], static: bool = False) -> Periph
     except Exception:
         raise NoSuchDriver(class_path)
 
-    p = peripheral_class(params=peripheral_params, static=static, **params)
+    p = peripheral_class(params=params, driver=class_path, static=static, **ctor_kwargs)
     if p.get_id() in _registered_peripherals:
         raise DuplicatePeripheral(f"Peripheral {p.get_id()} already exists")
 
@@ -49,9 +61,14 @@ async def add(peripheral_params: dict[str, Any], static: bool = False) -> Periph
     _registered_peripherals[p.get_id()] = p
 
     if not static:
-        peripheral_params = peripheral_params.copy()
-        peripheral_params.pop("static", None)
-        await persist.replace("peripherals", p.get_id(), peripheral_params)
+        persist_data = {
+            "driver": p.get_driver(),
+            "name": p.get_name(),
+            "id": p.get_id(),
+            "force_enabled": p.get_force_enabled(),
+            "params": p.get_params(),
+        }
+        await persist.replace("peripherals", p.get_id(), persist_data)
 
     return p
 

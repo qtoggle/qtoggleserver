@@ -1,9 +1,11 @@
 
 import {gettext}           from '$qui/base/i18n.js'
+import Debouncer           from '$qui/utils/debouncer.js'
 import {IconLabelListItem} from '$qui/lists/common-items/common-items.js'
 import {PageList}          from '$qui/lists/common-lists/common-lists.js'
 import * as ArrayUtils     from '$qui/utils/array.js'
 
+import * as Constants      from '$app/constants.js'
 import * as PeripheralsAPI from '$app/api/peripherals.js'
 import * as Utils          from '$app/utils.js'
 
@@ -31,6 +33,7 @@ class PeripheralsList extends PageList {
         })
 
         this.peripheralForm = null
+        this._updateUIDebouncer = new Debouncer(() => this.updateUI(), Constants.COMMON_DEBOUNCE_DELAY)
     }
 
     load() {
@@ -39,6 +42,13 @@ class PeripheralsList extends PageList {
 
     onBecomeCurrent() {
         this.updateUI()
+    }
+
+    /**
+     * Call updateUI asap, deduplicating calls.
+     */
+    updateUIASAP() {
+        this._updateUIDebouncer.call()
     }
 
     /**
@@ -77,7 +87,7 @@ class PeripheralsList extends PageList {
         return new IconLabelListItem({
             label: peripheral.id,
             subLabel: peripheral.driver.split('.').slice(-1)[0],
-            icon: Peripherals.PERIPHERAL_ICON,
+            icon: Peripherals.makePeripheralIcon(peripheral),
             data: peripheral.id
         })
     }

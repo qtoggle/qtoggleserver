@@ -4,7 +4,7 @@ import re
 import time
 
 from collections import deque
-from typing import Any
+from typing import TYPE_CHECKING
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import ports as core_ports
@@ -21,6 +21,10 @@ from qtoggleserver.core.typing import (
 from . import exceptions
 
 
+if TYPE_CHECKING:
+    from .devices import Slave
+
+
 _DEVICE_EXPRESSION_RE = re.compile(r"^(device_)+expression$")
 _DEVICE_HISTORY_RE = re.compile(r"^(device_)+history_[a-z0-9_]+$")
 
@@ -34,10 +38,6 @@ MASTER_ATTRS = {
     "last_sync",  # always kept on master, ignored on slave
     "expires",  # always kept on master, ignored on slave
 }
-
-
-# We can't use proper type annotations for slaves in this module because that would create unsolvable circular imports.
-# Therefore, we use "Any" type annotation for Slave instances.
 
 
 class SlavePort(core_ports.BasePort):
@@ -67,9 +67,7 @@ class SlavePort(core_ports.BasePort):
 
     _PROVISIONING_ATTRDEF = {"type": ["string"], "modifiable": False}
 
-    def __init__(self, slave: Any, attrs: Attributes) -> None:
-        from .devices import Slave  # we need this import here just for Slave type annotation
-
+    def __init__(self, slave: Slave, attrs: Attributes) -> None:
         self._slave: Slave = slave
 
         self._remote_id: str = attrs["id"]

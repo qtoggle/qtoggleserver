@@ -58,6 +58,7 @@ class AddPeripheralForm extends PageForm {
                     required: false,
                     rows: 30,
                     resize: 'vertical',
+                    cssClass: 'params-text-area',
 
                     validate(params) {
                         try {
@@ -81,12 +82,10 @@ class AddPeripheralForm extends PageForm {
         logger.debug(`adding peripheral of driver "${data.driver}"`)
 
         return PeripheralsAPI.postPeripherals(
-            data.driver, JSON.parse(data.params), data.name || null
+            data.driver, JSON.parse(data.params || '{}'), data.name || null
         ).then(function (peripheral) {
             logger.debug(`peripheral "${peripheral.id}" successfully added`)
-            let peripheralsSection = this.getSection()
-            peripheralsSection.updatePeripheralsList()
-        }.bind(this)).catch(function (error) {
+        }).catch(function (error) {
             logger.errorStack(`failed to add peripheral of driver "${data.driver}"`, error)
             throw error
         })

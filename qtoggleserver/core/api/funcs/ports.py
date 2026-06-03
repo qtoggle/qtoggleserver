@@ -122,7 +122,7 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
             raise core_api.APIError(500, "unexpected-error", message=str(error)) from error
 
     # If value is supplied among attrs, use it to update port value, but in background and ignoring any errors
-    if value is not _none and port.is_enabled():
+    if value is not _none and port.is_enabled() and await port.is_writable():
         asyncio_utils.fire_and_forget(port.transform_and_write_value(cast(NullablePortValue, value)))
 
     await port.save()
@@ -193,6 +193,81 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
             virtual = attrs.get("virtual")
             if port is not None:  # port already exists so it probably belongs to a slave
                 virtual = False
+            for slave in slaves_devices.get_all():
+                if id_.startswith(f"{slave.get_name()}."):  # id indicates that port belongs to a slave
+                    virtual = False
+                    break
+            if "provisioning" in attrs:  # a clear indication that port belongs to a slave
+                virtual = False
+
+            if virtual:
+                await wrap_error_with_port_id(id_, core_api_schema.validate, attrs, add_port_schema)
+                port = await wrap_error_with_port_id(id_, add_virtual_port, attrs)
+
+            if port is None:
+                core_api.logger.warning('ignoring unknown port id "%s"', id_)
+                continue
+
+            if isinstance(port, slaves_ports.SlavePort):
+                core_api.logger.debug('restoring slave port "%s"', id_)
+
+                # For slave ports, ignore any attributes that are not kept on master
+                attrs = {n: v for n, v in attrs.items() if n in ("tag", "expression", "expires")}
+            else:
+                core_api.logger.debug('restoring local port "%s"', id_)
+
+            await wrap_error_with_port_id(id_, set_port_attrs, port, attrs, ignore_extra_attrs=True)
+
+    finally:
+        core_main.resume()
+        core_events.enable()
+
+    await core_events.trigger_full_update()
+
+    core_api.logger.debug("ports restore done")
+
+
+@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
+async def patch_ports(request: core_api.APIRequest, params: GenericJSONList) -> None:
+    if not settings.core.backup_support:
+        raise core_api.APIError(404, "no-such-function")
+
+    core_api_schema.validate(params, core_api_schema.PATCH_PORTS)
+
+    core_api.logger.debug("patching ports")
+
+    # Disable event handling during the processing of this request, as we're going to trigger a full-update at the end
+    core_events.disable()
+
+    # Temporarily disable core updating (port polling, expression evaluating and value-change handling)
+    core_main.pause()
+
+    try:
+        # Remove all (local) virtual ports, but preserve persisted data
+        for port in list(core_ports.get_all()):
+            if not isinstance(port, core_vports.VirtualPort):
+                continue
+
+            await port.remove(persisted_data=False)
+            await core_vports.remove(port.get_id())
+
+        add_port_schema: GenericJSONDict = core_api_schema.POST_PORTS.copy()
+        add_port_schema["additionalProperties"] = True
+
+        # Restore supplied attributes
+        for attrs in params:
+            id_ = attrs.get("id")
+            if id_ is None:
+                core_api.logger.warning("ignoring entry without id")
+                continue
+
+            port = core_ports.get(id_)
+
+            # Virtual ports must be added first (unless they belong to a slave)
+            virtual = attrs.get("virtual")
+            if port is not None:  # port already exists so it probably belongs to a slave
+                virtual = False
+
             for slave in slaves_devices.get_all():
                 if id_.startswith(f"{slave.get_name()}."):  # id indicates that port belongs to a slave
                     virtual = False

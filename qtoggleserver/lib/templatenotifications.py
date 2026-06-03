@@ -21,32 +21,32 @@ logger = logging.getLogger(__name__)
 class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
     DEFAULT_TEMPLATES = {  # TODO: i18n
         "value-change": {
-            "title": "{{port.get_display_name()}} is {{port.get_display_value()}}",
+            "title": "{{port.get_pretty_name()}} is {{port.get_pretty_value()}}",
             "body": (
-                "Port {{port.get_display_name()}} was {{port.get_display_value(old_value)}} "
-                "and is now {{port.get_display_value(new_value)}}."
+                "Port {{port.get_pretty_name()}} was {{port.get_pretty_value(old_value)}} "
+                "and is now {{port.get_pretty_value(new_value)}}."
             ),
         },
         "port-update": {
-            "title": "{{port.get_display_name()}} has been updated",
-            "body": "Port {{port.get_display_name()}} attributes have been updated.",
+            "title": "{{port.get_pretty_name()}} has been updated",
+            "body": "Port {{port.get_pretty_name()}} attributes have been updated.",
         },
-        "port-add": {"title": "{{port.get_display_name()}} has been added", "body": None},
-        "port-remove": {"title": "{{port.get_display_name()}} has been removed", "body": None},
+        "port-add": {"title": "{{port.get_pretty_name()}} has been added", "body": None},
+        "port-remove": {"title": "{{port.get_pretty_name()}} has been removed", "body": None},
         "device-update": {
-            "title": "{{device.get_display_name()}} has been updated",
-            "body": "Device {{device.get_display_name()}} attributes have been updated.",
+            "title": "{{device.get_pretty_name()}} has been updated",
+            "body": "Device {{device.get_pretty_name()}} attributes have been updated.",
         },
         "full-update": {
-            "title": "{{device.get_display_name()}} has been updated",
-            "body": "Device {{device.get_display_name()}} has been fully updated.",
+            "title": "{{device.get_pretty_name()}} has been updated",
+            "body": "Device {{device.get_pretty_name()}} has been fully updated.",
         },
         "slave-device-update": {
-            "title": "{{slave.get_display_name()}} has been updated",
-            "body": "Device {{slave.get_display_name()}} attributes have been updated.",
+            "title": "{{slave.get_pretty_name()}} has been updated",
+            "body": "Device {{slave.get_pretty_name()}} attributes have been updated.",
         },
-        "slave-device-add": {"title": "{{slave.get_display_name()}} has been added", "body": None},
-        "slave-device-remove": {"title": "{{slave.get_display_name()}} has been removed", "body": None},
+        "slave-device-add": {"title": "{{slave.get_pretty_name()}} has been added", "body": None},
+        "slave-device-remove": {"title": "{{slave.get_pretty_name()}} has been removed", "body": None},
     }
 
     logger = logger
@@ -104,7 +104,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
             "type": event.get_type(),
             "timestamp": timestamp,
             "moment": moment,
-            "display_moment": moment.strftime("%c") if moment else "",
+            "pretty_moment": moment.strftime("%c") if moment else "",
             "public_url": settings.public_url,
             "device_attrs": self.get_device_attrs(),
             "port_values": self.get_port_values(),

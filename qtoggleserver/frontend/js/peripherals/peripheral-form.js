@@ -1,11 +1,12 @@
 import {gettext}            from '$qui/base/i18n.js'
+import {ChoiceButtonsField} from '$qui/forms/common-fields/common-fields.js'
 import {TextAreaField}      from '$qui/forms/common-fields/common-fields.js'
 import {TextField}          from '$qui/forms/common-fields/common-fields.js'
 import {PageForm}           from '$qui/forms/common-forms/common-forms.js'
 import FormButton           from '$qui/forms/form-button.js'
+import {ValidationError}    from '$qui/forms/forms.js'
 import {ConfirmMessageForm} from '$qui/messages/common-message-forms/common-message-forms.js'
 import * as Messages        from '$qui/messages/messages.js'
-import * as ObjectUtils     from '$qui/utils/object.js'
 import * as StringUtils     from '$qui/utils/string.js'
 
 import * as PeripheralsAPI from '$app/api/peripherals.js'
@@ -33,6 +34,7 @@ class PeripheralForm extends PageForm {
         super({
             pathId: pathId,
             keepPrevVisible: true,
+            closeOnApply: false,
             title: '', /* Set dynamically, later */
             icon: Peripherals.PERIPHERAL_ICON,
 
@@ -55,12 +57,39 @@ class PeripheralForm extends PageForm {
                     required: false,
                     readonly: true,
                     rows: 30,
-                    resize: 'vertical'
+                    resize: 'vertical',
+                    cssClass: 'params-text-area',
+
+                    validate(params) {
+                        if (!params) {
+                            return
+                        }
+                        try {
+                            JSON.parse(params)
+                        }
+                        catch {
+                            throw new ValidationError(gettext('Enter a valid JSON'))
+                        }
+                    }
+                }),
+                new ChoiceButtonsField({
+                    name: 'force_enabled',
+                    label: gettext('Force Enabled'),
+                    description: gettext(
+                        'Override automatic enabled state. Auto follows ports; Disabled/Enabled force it.'
+                    ),
+                    required: false,
+                    readonly: true,
+                    choices: [
+                        {value: false, label: gettext('Disabled')},
+                        {value: null, label: gettext('Auto')},
+                        {value: true, label: gettext('Enabled')}
+                    ]
                 })
             ],
 
             buttons: [
-                new FormButton({id: 'close', caption: gettext('Close'), cancel: true})
+                new FormButton({id: 'cancel', caption: gettext('Cancel'), cancel: true})
             ]
         })
 
@@ -71,25 +100,51 @@ class PeripheralForm extends PageForm {
         return PeripheralsAPI.getPeripherals().then(function (peripherals) {
             let peripheral = peripherals.find(p => p.id === this._peripheralId)
             if (peripheral) {
-                let data = ObjectUtils.copy(peripheral)
-                ObjectUtils.pop(data, 'id')
-                let name = ObjectUtils.pop(data, 'name')
-                let driver = ObjectUtils.pop(data, 'driver')
-                let isStatic = ObjectUtils.pop(data, 'static')
+                this.setIcon(Peripherals.makePeripheralIcon(peripheral))
                 this.setData({
-                    name: name,
-                    driver: driver,
-                    params: JSON.stringify(data, null, 4)
+                    name: peripheral.name,
+                    driver: peripheral.driver,
+                    params: JSON.stringify(peripheral.params || {}, null, 4),
+                    force_enabled: peripheral.force_enabled
                 })
                 this.setTitle(peripheral.id)
-                if (!isStatic) {
-                    this.addButton(0, new FormButton({id: 'remove', caption: gettext('Remove'), style: 'danger'}))
+                if (!peripheral.static) {
+                    this.getField('name').setReadonly(false)
+                    this.getField('driver').setReadonly(false)
+                    this.getField('params').setReadonly(false)
+                    this.getField('force_enabled').setReadonly(false)
+                    this.addButton(-1, new FormButton({id: 'remove', caption: gettext('Remove'), style: 'danger'}))
+                    this.addButton(-1, new FormButton({id: 'apply', caption: gettext('Apply'), def: true}))
                 }
             }
             else {
                 throw new Error(gettext(`Peripheral ${this._peripheralId} could not be found`))
             }
         }.bind(this))
+    }
+
+    applyData(data) {
+        let params = data.params ? JSON.parse(data.params) : {}
+        let payload = {
+            driver: data.driver,
+            name: data.name || null,
+            force_enabled: data.force_enabled,
+            params: params
+        }
+
+        logger.debug(`updating peripheral "${this._peripheralId}"`)
+
+        return PeripheralsAPI.patchPeripheral(this._peripheralId, payload).then(function (peripheral) {
+
+            logger.debug(`peripheral "${this._peripheralId}" successfully updated`)
+            this._peripheralId = peripheral.id
+
+        }.bind(this)).catch(function (error) {
+
+            logger.errorStack(`failed to update peripheral "${this._peripheralId}"`, error)
+            throw error
+
+        })
     }
 
     onButtonPress(button) {
@@ -125,9 +180,6 @@ class PeripheralForm extends PageForm {
                 PeripheralsAPI.deletePeripheral(this._peripheralId).then(function () {
 
                     logger.debug(`peripheral "${this._peripheralId}" successfully removed`)
-                    let peripheralsSection = this.getSection()
-                    peripheralsSection.updatePeripheralsList()
-
                     this.close(/* force = */ true)
 
                 }.bind(this)).catch(function (error) {
@@ -140,6 +192,13 @@ class PeripheralForm extends PageForm {
             }.bind(this),
             pathId: 'remove'
         })
+    }
+
+    /**
+     * @returns {String}
+     */
+    getPeripheralId() {
+        return this._peripheralId
     }
 
 }

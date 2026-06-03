@@ -149,7 +149,7 @@ async def cleanup_loop() -> None:
         logger.debug(f"canceling {task.get_coro()}")
         task.cancel()
 
-    await asyncio.gather(*tasks)
+    await asyncio.gather(*tasks, return_exceptions=True)
 
     await asyncio.get_running_loop().shutdown_asyncgens()
 
@@ -267,8 +267,13 @@ async def init_ports() -> None:
     await ports.load(settings.ports)
 
     # Peripheral ports
-    for peripheral in peripherals.get_all():
-        await peripheral.init_ports()
+    for peripheral in list(peripherals.get_all()):
+        try:
+            await peripheral.init_ports()
+        except Exception:
+            logger.exception("failed to initialize ports for %s", peripheral)
+            peripheral.set_force_enabled(False)
+            await peripheral.disable()
 
     # Load virtual ports
     await vports.init()
@@ -294,6 +299,9 @@ async def cleanup_slaves() -> None:
 async def init_peripherals() -> None:
     logger.info("initializing peripherals")
     await peripherals.init()
+
+    for peripheral in list(peripherals.get_all()):
+        await peripheral.trigger_add()
 
 
 async def cleanup_peripherals() -> None:

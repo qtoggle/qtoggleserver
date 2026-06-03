@@ -1,5 +1,7 @@
 
 import {gettext} from '$qui/base/i18n.js'
+import * as Toast from '$qui/messages/toast.js'
+import * as StringUtils from '$qui/utils/string.js'
 
 import * as AuthAPI from '$app/api/auth.js'
 import {Section}    from '$app/sections.js'
@@ -38,8 +40,64 @@ class PeripheralsSection extends Section {
         return (this.peripheralsList = new PeripheralsList())
     }
 
-    updatePeripheralsList() {
-        this.peripheralsList.updateUI()
+    onServerEvent(event) {
+        if (!this.peripheralsList) {
+            return
+        }
+
+        let peripheralForm = this.peripheralsList.peripheralForm
+        let peripheralId = event.params && event.params.id
+
+        switch (event.type) {
+            case 'peripheral-update':
+            case 'peripheral-remove': {
+                this.peripheralsList.updateUIASAP()
+
+                if (event.type === 'peripheral-update') {
+                    if (peripheralId) {
+                        Toast.info(StringUtils.formatPercent(gettext('Peripheral %(id)s has been updated.'), {
+                            id: peripheralId
+                        }))
+                    }
+                    else {
+                        Toast.info(gettext('Peripheral has been updated.'))
+                    }
+
+                    if (peripheralForm && (peripheralForm.getPeripheralId() === peripheralId)) {
+                        peripheralForm.setIcon(Peripherals.makePeripheralIcon(event.params))
+                    }
+                }
+                else {
+                    if (peripheralId) {
+                        Toast.info(StringUtils.formatPercent(gettext('Peripheral %(id)s has been removed.'), {
+                            id: peripheralId
+                        }))
+                    }
+                    else {
+                        Toast.info(gettext('Peripheral has been removed.'))
+                    }
+
+                    if (peripheralForm && (peripheralForm.getPeripheralId() === peripheralId)) {
+                        peripheralForm.close(/* force = */ true)
+                    }
+                }
+
+                break
+            }
+
+            case 'peripheral-add': {
+                this.peripheralsList.updateUIASAP()
+                if (peripheralId) {
+                    Toast.info(StringUtils.formatPercent(gettext('Peripheral %(id)s has been added.'), {
+                        id: peripheralId
+                    }))
+                }
+                else {
+                    Toast.info(gettext('Peripheral has been added.'))
+                }
+                break
+            }
+        }
     }
 
     makeMainPage() {

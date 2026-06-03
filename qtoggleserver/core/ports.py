@@ -155,7 +155,7 @@ def skip_write_unavailable(func: Callable) -> Callable:
 class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     PERSIST_COLLECTION = "ports"
 
-    DISPLAY_NAME = ""
+    DISPLAY_NAME = None
     TYPE = TYPE_BOOLEAN
     WRITABLE = False
     UNIT = ""
@@ -419,10 +419,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def attr_set_value(self, name: str, value: Attribute) -> None:
         return None
 
-    async def get_display_name(self) -> str:
+    def attr_get_default_display_name(self) -> str:
+        return ""
+
+    async def get_pretty_name(self) -> str:
         return await self.get_attr("display_name") or self._id
 
-    async def get_display_value(self, value: NullablePortValue = None) -> str:
+    async def get_pretty_value(self, value: NullablePortValue = None) -> str:
         choices = await self.get_attr("choices")
         unit = await self.get_attr("unit")
         if value is None:

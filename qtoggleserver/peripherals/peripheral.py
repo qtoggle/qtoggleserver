@@ -7,8 +7,10 @@ import logging
 from collections.abc import Callable
 from typing import Any, cast
 
+from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import GenericJSONDict
+from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import logging as logging_utils
 from qtoggleserver.utils import runner as runner_utils
 
@@ -28,8 +30,10 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self,
         *,
         params: dict[str, Any],
+        driver: str | None = None,
         name: str | None = None,
         id: str | None = None,
+        force_enabled: bool | None = None,
         static: bool = False,
         **kwargs,
     ) -> None:
@@ -38,8 +42,10 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         auto_id = f"peripheral_{hashlib.sha256(auto_id_to_hash.encode()).hexdigest()[:8]}"
 
         self._params: dict[str, Any] = params
+        self._driver: str = driver or f"{self.__class__.__module__}.{self.__class__.__name__}"
         self._name: str | None = name
         self._id: str = name or id or auto_id  # name will always be used as id, if supplied
+        self._force_enabled: bool | None = force_enabled
         self._static: bool = static
 
         self._ports_by_id: dict[str, PeripheralPort] = {}
@@ -66,14 +72,32 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_name(self) -> str | None:
         return self._name
 
+    def get_driver(self) -> str:
+        return self._driver
+
     def get_params(self) -> dict[str, Any]:
         return self._params
 
     def is_static(self) -> bool:
         return self._static
 
+    def get_force_enabled(self) -> bool | None:
+        return self._force_enabled
+
+    def set_force_enabled(self, force_enabled: bool | None) -> None:
+        self._force_enabled = force_enabled
+
     def to_json(self) -> GenericJSONDict:
-        return dict(self._params, id=self.get_id(), static=self.is_static(), name=self.get_name())
+        return dict(
+            driver=self.get_driver(),
+            id=self.get_id(),
+            static=self.is_static(),
+            name=self.get_name(),
+            enabled=self.is_enabled(),
+            force_enabled=self.get_force_enabled(),
+            params=self.get_params(),
+            online=self.is_online(),
+        )
 
     async def get_port_args(self) -> list[dict[str, Any]]:
         port_args = await self.make_port_args()
@@ -94,6 +118,11 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     async def init_ports(self) -> None:
+        if self._force_enabled is False:
+            self.debug("peripheral is explicitly disabled, skipping port initialization")
+            await self.disable()
+            return
+
         port_args = await self.get_port_args()
         loaded_ports = await core_ports.load(port_args)
         self._ports_by_id = {cast(PeripheralPort, p).get_initial_id(): p for p in loaded_ports}
@@ -102,6 +131,8 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         # enable it manually, here.
         if not loaded_ports:
             await self.enable()
+
+        await self._apply_force_enabled()
 
     async def cleanup_ports(self, persisted_data: bool) -> None:
         tasks = [asyncio.create_task(port.remove(persisted_data=persisted_data)) for port in self._ports_by_id.values()]
@@ -140,6 +171,8 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def enable(self) -> None:
         if self._enabled:
             return
+        if self._force_enabled is False:
+            return
 
         self._enabled = True
         await self.handle_enable()
@@ -147,6 +180,8 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def disable(self) -> None:
         if not self._enabled:
+            return
+        if self._force_enabled is True:
             return
 
         self._enabled = False
@@ -156,12 +191,21 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def check_disabled(self, exclude_port: PeripheralPort | None = None) -> None:
         if not self._enabled:
             return
+        if self._force_enabled is True:
+            return
 
         for port in self._ports_by_id.values():
             if port.is_enabled() and port != exclude_port:
                 break
         else:
             self.debug("all ports are disabled, disabling peripheral")
+            await self.disable()
+            await self.trigger_update()
+
+    async def _apply_force_enabled(self) -> None:
+        if self._force_enabled is True:
+            await self.enable()
+        elif self._force_enabled is False:
             await self.disable()
 
     def is_online(self) -> bool:
@@ -175,6 +219,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self.handle_online()
             except Exception:
                 self.error("handle_online failed", exc_info=True)
+            self.trigger_update_fire_and_forget()
         elif not online and self._online:
             self.debug("is offline")
             self._online = online
@@ -182,6 +227,7 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 self.handle_offline()
             except Exception:
                 self.error("handle_offline failed", exc_info=True)
+            self.trigger_update_fire_and_forget()
 
     def handle_offline(self) -> None:
         self.trigger_port_update_fire_and_forget()
@@ -203,6 +249,9 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             return  # already scheduled
 
         self._port_update_task = asyncio.create_task(self.trigger_port_update(save))
+
+    def trigger_update_fire_and_forget(self) -> None:
+        asyncio_utils.fire_and_forget(self.trigger_update())
 
     def get_runner(self) -> runner_utils.ThreadedRunner:
         if self._runner is None:
@@ -233,6 +282,21 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         runner.schedule_func(functools.partial(func, *args, **kwargs), callback)
 
         return await future
+
+    async def trigger_add(self) -> None:
+        from .events import PeripheralAdd
+
+        await core_events.trigger(PeripheralAdd(self))
+
+    async def trigger_remove(self) -> None:
+        from .events import PeripheralRemove
+
+        await core_events.trigger(PeripheralRemove(self))
+
+    async def trigger_update(self) -> None:
+        from .events import PeripheralUpdate
+
+        await core_events.trigger(PeripheralUpdate(self))
 
     async def handle_enable(self) -> None:
         pass

@@ -2,8 +2,6 @@
  * @namespace qtoggle.api.peripherals
  */
 
-import * as ObjectUtils from '$qui/utils/object.js'
-
 import * as BaseAPI from './base.js'
 
 
@@ -25,7 +23,7 @@ export function getPeripherals() {
  * @returns {Promise}
  */
 export function postPeripherals(driver, params, name = null) {
-    let data = ObjectUtils.combine(params, {driver, name})
+    let data = {driver, name, params}
 
     return BaseAPI.apiCall({method: 'POST', path: '/peripherals', data: data})
 }
@@ -38,6 +36,17 @@ export function postPeripherals(driver, params, name = null) {
  */
 export function putPeripherals(peripherals) {
     return BaseAPI.apiCall({method: 'PUT', path: '/peripherals', data: peripherals})
+}
+
+/**
+ * PATCH /peripherals/{id} API function call.
+ * @alias qtoggle.api.peripherals.patchPeripheral
+ * @param {String} id the peripheral identifier
+ * @param {Object} data the new peripheral configuration
+ * @returns {Promise}
+ */
+export function patchPeripheral(id, data) {
+    return BaseAPI.apiCall({method: 'PATCH', path: `/peripherals/${id}`, data: data})
 }
 
 /**

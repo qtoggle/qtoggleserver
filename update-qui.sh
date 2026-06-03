@@ -11,4 +11,5 @@ cd "$(dirname $0)/qtoggleserver/frontend"
 npm cache clean --force
 npm install @qtoggle/qui@$1
 git checkout package.json
+sed -i 's/"jquery": "\*"/"jquery": "^3"/' package-lock.json
 git commit -am "frontend: Update qui to $1"
