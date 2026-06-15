@@ -32,20 +32,19 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         params: dict[str, Any],
         driver: str | None = None,
         name: str | None = None,
-        id: str | None = None,
         display_name: str = "",
         force_enabled: bool | None = None,
         static: bool = False,
         **kwargs,
     ) -> None:
-        sorted_params = self._sorted_tuples_dict(params)
-        auto_id_to_hash = f"{self.__class__.__module__}.{self.__class__.__name__}:{name}:{sorted_params}"
-        auto_id = f"peripheral_{hashlib.sha256(auto_id_to_hash.encode()).hexdigest()[:8]}"
-
         self._params: dict[str, Any] = params
         self._driver: str = driver or f"{self.__class__.__module__}.{self.__class__.__name__}"
         self._name: str | None = name
-        self._id: str = name or id or auto_id  # name will always be used as id, if supplied
+        self._id: str = name or ""  # name will always be used as id, if supplied
+        if not self._id:
+            sorted_params = self._sorted_tuples_dict(params)
+            auto_id_to_hash = f"{self.__class__.__module__}.{self.__class__.__name__}:{name}:{sorted_params}"
+            self._id = f"peripheral_{hashlib.sha256(auto_id_to_hash.encode()).hexdigest()[:8]}"
         self._display_name: str = display_name or ""
         self._force_enabled: bool | None = force_enabled
         self._static: bool = static
