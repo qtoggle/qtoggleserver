@@ -87,6 +87,13 @@ event_handlers = [
 #    }
 ]
 
+peripherals = [
+#    {
+#        driver = "qtoggleserver.my.peripheral.Driver"
+#        param1 = "my_peripheral"
+#    }
+]
+
 ports = [
 #    {
 #        driver = "qtoggleserver.my.port.Driver"

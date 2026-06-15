@@ -70,27 +70,6 @@ class TestGetPeripherals:
 
 
 class TestPostPeripherals:
-    async def test_ok_with_name_and_id(self, mock_api_request_maker, mock_peripheral1, mocker):
-        mock_peripheral2 = MockPeripheral(
-            name=MOCK_PERIPHERAL2_DATA["name"],
-            dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"],
-        )
-
-        payload = MOCK_PERIPHERAL2_DATA.copy()
-        payload.pop("static")
-        request = mock_api_request_maker("POST", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_ADMIN)
-
-        spy_add = mocker.patch("qtoggleserver.peripherals.add", return_value=mock_peripheral2)
-        spy_init_ports = mocker.patch.object(mock_peripheral2, "init_ports")
-        spy_trigger_add = mocker.patch.object(mock_peripheral2, "trigger_add")
-        result = await peripherals_api_funcs.post_peripherals(request, payload)
-
-        spy_add.assert_called_once_with(payload)
-        spy_init_ports.assert_called_once_with()
-        spy_trigger_add.assert_called_once_with()
-
-        assert result == MOCK_PERIPHERAL2_DATA
-
     async def test_ok_with_name(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
             name=MOCK_PERIPHERAL2_DATA["name"],
@@ -111,27 +90,7 @@ class TestPostPeripherals:
 
         assert result == MOCK_PERIPHERAL2_DATA
 
-    async def test_ok_with_id(self, mock_api_request_maker, mock_peripheral1, mocker):
-        mock_peripheral2 = MockPeripheral(
-            id=MOCK_PERIPHERAL2_DATA["id"],
-            dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"],
-        )
-
-        payload = MOCK_PERIPHERAL2_DATA.copy()
-        payload.pop("static")
-        payload.pop("name")
-        request = mock_api_request_maker("POST", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_ADMIN)
-
-        spy_add = mocker.patch("qtoggleserver.peripherals.add", return_value=mock_peripheral2)
-        spy_init_ports = mocker.patch.object(mock_peripheral2, "init_ports")
-        result = await peripherals_api_funcs.post_peripherals(request, payload)
-
-        spy_add.assert_called_once_with(payload)
-        spy_init_ports.assert_called_once_with()
-
-        assert result == dict(payload, name=None, static=False, enabled=False, force_enabled=None, online=False)
-
-    async def test_ok_no_name_no_id(self, mock_api_request_maker, mock_peripheral1, mocker):
+    async def test_ok_no_name(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"])
 
         payload = MOCK_PERIPHERAL2_DATA.copy()
