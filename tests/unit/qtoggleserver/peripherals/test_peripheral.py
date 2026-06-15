@@ -1,5 +1,130 @@
+from typing import Any
+
 from qtoggleserver.peripherals import events as peripherals_events
 from tests.unit.qtoggleserver.mock.peripherals import MockPeripheral, MockPeripheralPort
+
+
+class _CustomParamsMockPeripheral(MockPeripheral):
+    """Mock peripheral that accepts custom params dict for testing."""
+
+    def __init__(self, *, params: dict[str, Any], **kwargs: Any) -> None:
+        kwargs.setdefault("params", params)
+        super().__init__(**kwargs)
+
+
+class TestPeripheralID:
+    """Tests for Peripheral _id field generation."""
+
+    def test_id_uses_name_when_provided(self):
+        """When name is provided, _id should be set to that name."""
+        p = MockPeripheral(name="my_device", dummy_param="v")
+
+        assert p.get_id() == "my_device"
+        assert p.get_name() == "my_device"
+        assert p.to_json()["id"] == "my_device"
+
+    def test_id_generated_from_params_when_no_name(self):
+        """When no name is provided, _id should be auto-generated from params hash."""
+        p = MockPeripheral(dummy_param="value1")
+
+        assert p.get_id().startswith("peripheral_")
+        assert len(p.get_id()) == len("peripheral_") + 8
+        assert p.get_name() is None
+
+    def test_same_params_generate_same_id(self):
+        """Two peripherals with same params (no name) should have same auto-generated ID."""
+        p1 = MockPeripheral(dummy_param="value1")
+        p2 = MockPeripheral(dummy_param="value1")
+
+        assert p1.get_id() == p2.get_id()
+
+    def test_different_params_generate_different_ids(self):
+        """Two peripherals with different params (no name) should have different auto-generated IDs."""
+        p1 = MockPeripheral(dummy_param="value1")
+        p2 = MockPeripheral(dummy_param="value2")
+
+        assert p1.get_id() != p2.get_id()
+
+    def test_name_takes_precedence_over_params(self):
+        """Name should be used as ID even if params differ."""
+        p1 = MockPeripheral(name="device", dummy_param="value1")
+        p2 = MockPeripheral(name="device", dummy_param="value2")
+
+        assert p1.get_id() == p2.get_id()
+        assert p1.get_id() == "device"
+
+    def test_different_names_generate_different_ids(self):
+        """Two peripherals with different names should have different IDs."""
+        p1 = MockPeripheral(name="device1", dummy_param="value")
+        p2 = MockPeripheral(name="device2", dummy_param="value")
+
+        assert p1.get_id() != p2.get_id()
+        assert p1.get_id() == "device1"
+        assert p2.get_id() == "device2"
+
+    def test_sorted_params_generate_consistent_id(self):
+        """Peripherals with params in different order should have same auto-generated ID."""
+        params_order1 = {"z": 3, "a": 1, "m": 2}
+        params_order2 = {"a": 1, "m": 2, "z": 3}
+
+        p1 = _CustomParamsMockPeripheral(params=params_order1, dummy_param="v")
+        p2 = _CustomParamsMockPeripheral(params=params_order2, dummy_param="v")
+
+        assert p1.get_id() == p2.get_id()
+
+    def test_nested_dict_params_sorted_consistently(self):
+        """Nested dicts in params should be sorted consistently."""
+        nested1 = {"config": {"z": 3, "a": 1}, "name": "test"}
+        nested2 = {"name": "test", "config": {"a": 1, "z": 3}}
+
+        p1 = _CustomParamsMockPeripheral(params=nested1, dummy_param="v")
+        p2 = _CustomParamsMockPeripheral(params=nested2, dummy_param="v")
+
+        assert p1.get_id() == p2.get_id()
+
+    def test_auto_generated_id_includes_class_info(self):
+        """Auto-generated ID should be based on class module and name."""
+        p1 = MockPeripheral(dummy_param="value")
+        p2 = MockPeripheral(dummy_param="value")
+
+        assert p1.get_id() == p2.get_id()
+        assert p1.get_id().startswith("peripheral_")
+
+    def test_id_in_json_representation(self):
+        """ID should be included in to_json() output."""
+        p_with_name = MockPeripheral(name="device", dummy_param="v")
+        p_auto_id = MockPeripheral(dummy_param="v")
+
+        assert p_with_name.to_json()["id"] == "device"
+        assert p_auto_id.to_json()["id"].startswith("peripheral_")
+
+    def test_empty_name_triggers_auto_id(self):
+        """Empty string name should trigger auto-ID generation."""
+        p_empty = MockPeripheral(name="", dummy_param="value")
+        p_no_name = MockPeripheral(dummy_param="value")
+
+        # Both should use auto-generated IDs (not empty string)
+        assert p_empty.get_id().startswith("peripheral_")
+        assert p_no_name.get_id().startswith("peripheral_")
+        # They will be different because the hash includes the name parameter itself
+        assert p_empty.get_id() != p_no_name.get_id()
+        assert p_empty.get_name() == ""
+        assert p_no_name.get_name() is None
+
+    def test_complex_params_hash_consistency(self):
+        """Complex params structures should produce consistent hashes."""
+        complex_params = {
+            "host": "192.168.1.1",
+            "port": 8080,
+            "config": {"nested": {"value": 42}, "enabled": True},
+            "list_like": [1, 2, 3],
+        }
+
+        p = _CustomParamsMockPeripheral(params=complex_params, dummy_param="v")
+
+        # Creating the same peripheral should produce the same ID
+        p_again = _CustomParamsMockPeripheral(params=complex_params, dummy_param="v")
+        assert p.get_id() == p_again.get_id()
 
 
 class TestSetOnline:
