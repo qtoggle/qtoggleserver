@@ -19,15 +19,15 @@ async def get_peripherals(request: core_api.APIRequest) -> GenericJSONList:
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def post_peripherals(request: core_api.APIRequest, params: GenericJSONDict) -> GenericJSONDict:
     core_api_schema.validate(params, peripherals_api_schema.POST_PERIPHERALS)
-    params = params.copy()
-    params.setdefault("params", {})
+    args = params.copy()
+    args.setdefault("params", {})
 
-    name = params.get("name")
+    name = args.get("name")
     if name and peripherals.get(name):
         raise core_api.APIError(400, "duplicate-peripheral")
 
     try:
-        peripheral = await peripherals.add(params)
+        peripheral = await peripherals.add(args)
     except peripherals.NoSuchDriver:
         raise core_api.APIError(404, "no-such-driver")
     except peripherals.DuplicatePeripheral:
@@ -98,7 +98,7 @@ async def patch_peripheral(
     if p.is_static():
         raise core_api.APIError(400, "peripheral-not-removable")
 
-    merged_params: GenericJSONDict = {
+    args: GenericJSONDict = {
         "driver": p.get_driver(),
         "name": p.get_name(),
         "id": p.get_id(),
@@ -106,11 +106,11 @@ async def patch_peripheral(
         "force_enabled": p.get_force_enabled(),
         "params": p.get_params().copy(),
     }
-    merged_params.update(params)
-    merged_params.setdefault("params", {})
+    args.update(params)
+    args.setdefault("params", {})
 
     old_name = p.get_name()
-    new_name = merged_params.get("name")
+    new_name = args.get("name")
     if old_name != new_name:
         logger.info('renaming peripheral "%s" to "%s"', old_name, new_name)
         await _migrate_peripheral_rename(p, new_name)
@@ -119,7 +119,7 @@ async def patch_peripheral(
     await peripherals.remove(peripheral_id, persisted_data=False)
 
     try:
-        new_p = await peripherals.add(merged_params)
+        new_p = await peripherals.add(args)
     except peripherals.NoSuchDriver:
         raise core_api.APIError(404, "no-such-driver")
     except peripherals.DuplicatePeripheral:
@@ -158,12 +158,12 @@ async def put_peripherals(request: core_api.APIRequest, params: GenericJSONList)
         await p.trigger_remove()
 
     peripheral_list = []
-    for par in params:
-        par = par.copy()
-        if par.pop("static", None):
+    for args in params:
+        args = args.copy()
+        if args.pop("static", None):
             continue
-        par.setdefault("params", {})
-        p = await peripherals.add(par)
+        args.setdefault("params", {})
+        p = await peripherals.add(args)
         peripheral_list.append(p)
 
     # First trigger add event, then init ports
