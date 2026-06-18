@@ -66,6 +66,17 @@ async def delete_peripheral(request: core_api.APIRequest, peripheral_id: str) ->
     await p.trigger_remove()
 
 
+async def _restore_peripheral(old_args: GenericJSONDict) -> None:
+    """Attempt to restore a peripheral from its saved args after a failed update."""
+    peripheral_id = old_args.get("name") or old_args.get("id")
+    logger.warning('restoring old peripheral "%s" after failed update', peripheral_id)
+    try:
+        old_p = await peripherals.add(old_args)
+        await old_p.init_ports()
+    except Exception:
+        logger.critical('failed to restore old peripheral "%s"', peripheral_id, exc_info=True)
+
+
 async def _migrate_peripheral_rename(p: peripherals.Peripheral, new_name: str | None) -> None:
     """Migrate port persisted data and remove the orphaned peripheral persist entry when a peripheral is renamed."""
     for port in p.get_ports():
@@ -125,14 +136,17 @@ async def patch_peripheral(
         return p.to_json()
 
     # For structural changes, perform full removal/re-add
-    args: GenericJSONDict = {
+
+    # Save old args for potential rollback if the new add fails
+    old_args: GenericJSONDict = {
         "driver": p.get_driver(),
         "name": p.get_name(),
-        "id": p.get_id(),
         "display_name": p.get_display_name(),
         "force_enabled": p.get_force_enabled(),
         "params": p.get_params().copy(),
     }
+
+    args: GenericJSONDict = old_args.copy()
     args.update(params)
     args.setdefault("params", {})
 
@@ -145,16 +159,14 @@ async def patch_peripheral(
 
     try:
         new_p = await peripherals.add(args)
-    except peripherals.NoSuchDriver:
-        raise core_api.APIError(404, "no-such-driver")
-    except peripherals.DuplicatePeripheral:
-        raise core_api.APIError(400, "duplicate-peripheral")
-    except TypeError as e:
-        if "arguments" in str(e):
-            raise core_api.APIError(400, "invalid-field", field="params")
-        else:
-            raise core_api.APIError(400, "invalid-request", details=str(e))
     except Exception as e:
+        await _restore_peripheral(old_args)
+        if isinstance(e, peripherals.NoSuchDriver):
+            raise core_api.APIError(404, "no-such-driver")
+        if isinstance(e, peripherals.DuplicatePeripheral):
+            raise core_api.APIError(400, "duplicate-peripheral")
+        if isinstance(e, TypeError) and "arguments" in str(e):
+            raise core_api.APIError(400, "invalid-field", field="params")
         raise core_api.APIError(400, "invalid-request", details=str(e))
 
     try:

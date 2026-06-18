@@ -155,7 +155,7 @@ class PeripheralForm extends PageForm {
             logger.errorStack(`failed to update peripheral "${this._peripheralId}"`, error)
             throw error
 
-        })
+        }.bind(this))
     }
 
     onButtonPress(button) {

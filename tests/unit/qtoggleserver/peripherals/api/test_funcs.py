@@ -1,6 +1,6 @@
 import pytest
 
-from qtoggleserver import persist
+from qtoggleserver import peripherals, persist
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core.ports import BasePort
 from qtoggleserver.peripherals.api import funcs as peripherals_api_funcs
@@ -394,9 +394,42 @@ class TestPatchPeripheral:
         )
         mocker.patch.object(mock_peripheral1, "cleanup_ports")
         mocker.patch("qtoggleserver.peripherals.remove")
+        mocker.patch("qtoggleserver.peripherals.add", side_effect=peripherals.NoSuchDriver("does.not.exist"))
         with pytest.raises(core_api.APIError, match="no-such-driver") as e:
             await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
         assert e.value.status == 404
+
+    async def test_add_failure_restores_old_peripheral(self, mock_api_request_maker, mock_peripheral1, mocker):
+        # When peripherals.add() fails, the old peripheral should be re-added
+        payload = MOCK_PERIPHERAL2_DATA.copy()
+        payload.pop("static")
+        mocker.patch.object(mock_peripheral1, "cleanup_ports")
+        mocker.patch("qtoggleserver.peripherals.remove")
+
+        restored_peripheral = MockPeripheral(
+            name=MOCK_PERIPHERAL1_DATA["name"],
+            dummy_param=MOCK_PERIPHERAL1_DATA["params"]["dummy_param"],
+        )
+        # First call raises, second call (restore) succeeds
+        mock_add = mocker.patch(
+            "qtoggleserver.peripherals.add",
+            side_effect=[peripherals.NoSuchDriver("bad.driver"), restored_peripheral],
+        )
+        spy_init_ports = mocker.patch.object(restored_peripheral, "init_ports")
+
+        request = mock_api_request_maker(
+            "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_ADMIN
+        )
+        with pytest.raises(core_api.APIError, match="no-such-driver"):
+            await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
+
+        # add() called twice: once with new args, once to restore old args
+        assert mock_add.call_count == 2
+        restore_call_args = mock_add.call_args_list[1][0][0]
+        assert restore_call_args["driver"] == mock_peripheral1.get_driver()
+        assert restore_call_args["name"] == mock_peripheral1.get_name()
+        assert restore_call_args["params"] == mock_peripheral1.get_params()
+        spy_init_ports.assert_called_once()
 
     async def test_init_ports_failure_disables_new_peripheral(self, mock_api_request_maker, mock_peripheral1, mocker):
         mock_peripheral2 = MockPeripheral(
