@@ -98,6 +98,33 @@ async def patch_peripheral(
     if p.is_static():
         raise core_api.APIError(400, "peripheral-not-removable")
 
+    # Check if any structural changes (driver, name, params, or force_enabled)
+    old_driver = p.get_driver()
+    old_name = p.get_name()
+    old_params = p.get_params()
+    old_force_enabled = p.get_force_enabled()
+    new_driver = params.get("driver", old_driver)
+    new_name = params.get("name", old_name)
+    new_params = params.get("params", old_params)
+    new_force_enabled = params.get("force_enabled", old_force_enabled)
+
+    structural_change = (
+        old_driver != new_driver
+        or old_name != new_name
+        or old_params != new_params
+        or old_force_enabled != new_force_enabled
+    )
+
+    # Apply non-structural changes immediately
+    if "display_name" in params:
+        p.set_display_name(params["display_name"])
+
+    # If only non-structural changes, return early
+    if not structural_change:
+        await p.trigger_update()
+        return p.to_json()
+
+    # For structural changes, perform full removal/re-add
     args: GenericJSONDict = {
         "driver": p.get_driver(),
         "name": p.get_name(),
@@ -109,8 +136,6 @@ async def patch_peripheral(
     args.update(params)
     args.setdefault("params", {})
 
-    old_name = p.get_name()
-    new_name = args.get("name")
     if old_name != new_name:
         logger.info('renaming peripheral "%s" to "%s"', old_name, new_name)
         await _migrate_peripheral_rename(p, new_name)

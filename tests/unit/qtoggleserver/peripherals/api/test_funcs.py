@@ -280,9 +280,11 @@ class TestPatchPeripheral:
         assert result == MOCK_PERIPHERAL2_DATA
 
     async def test_preserves_persisted_data(self, mock_api_request_maker, mock_peripheral1, mocker):
-        # cleanup_ports and remove must both be called with persisted_data=False
+        # cleanup_ports and remove must both be called with persisted_data=False when params change
         payload = MOCK_PERIPHERAL1_DATA.copy()
         payload.pop("static")
+        # Change params to trigger structural change path
+        payload["params"] = {"dummy_param": "new_value"}
 
         request = mock_api_request_maker(
             "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_ADMIN
@@ -294,6 +296,71 @@ class TestPatchPeripheral:
 
         await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
 
+        spy_cleanup_ports.assert_called_once_with(persisted_data=False)
+        spy_remove.assert_called_once_with(mock_peripheral1.get_id(), persisted_data=False)
+
+    async def test_display_name_change_no_removal(self, mock_api_request_maker, mock_peripheral1, mocker):
+        # Changing display_name should not trigger removal/re-add
+        payload = {
+            "driver": mock_peripheral1.get_driver(),
+            "display_name": "New Display Name",
+        }
+
+        request = mock_api_request_maker(
+            "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_ADMIN
+        )
+        spy_cleanup_ports = mocker.patch.object(mock_peripheral1, "cleanup_ports")
+        spy_remove = mocker.patch("qtoggleserver.peripherals.remove")
+        spy_trigger_update = mocker.patch.object(mock_peripheral1, "trigger_update")
+
+        result = await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
+
+        # cleanup_ports and remove should NOT be called
+        spy_cleanup_ports.assert_not_called()
+        spy_remove.assert_not_called()
+        # But trigger_update should be called
+        spy_trigger_update.assert_called_once()
+        # And display_name should be updated
+        assert result["display_name"] == "New Display Name"
+
+    async def test_force_enabled_change_triggers_removal(self, mock_api_request_maker, mock_peripheral1, mocker):
+        # Changing force_enabled should trigger removal/re-add (structural change)
+        payload = {
+            "driver": mock_peripheral1.get_driver(),
+            "force_enabled": True,
+        }
+
+        request = mock_api_request_maker(
+            "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_ADMIN
+        )
+        spy_cleanup_ports = mocker.patch.object(mock_peripheral1, "cleanup_ports")
+        spy_remove = mocker.patch("qtoggleserver.peripherals.remove")
+        mocker.patch("qtoggleserver.peripherals.add", return_value=mock_peripheral1)
+        mocker.patch.object(mock_peripheral1, "init_ports")
+
+        await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
+
+        # cleanup_ports and remove MUST be called because force_enabled is structural
+        spy_cleanup_ports.assert_called_once_with(persisted_data=False)
+        spy_remove.assert_called_once_with(mock_peripheral1.get_id(), persisted_data=False)
+
+    async def test_driver_change_triggers_removal(self, mock_api_request_maker, mock_peripheral1, mocker):
+        # Changing driver should trigger removal/re-add (structural change)
+        payload = {
+            "driver": "different.driver.class",
+        }
+
+        request = mock_api_request_maker(
+            "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_ADMIN
+        )
+        spy_cleanup_ports = mocker.patch.object(mock_peripheral1, "cleanup_ports")
+        spy_remove = mocker.patch("qtoggleserver.peripherals.remove")
+        mocker.patch("qtoggleserver.peripherals.add", return_value=mock_peripheral1)
+        mocker.patch.object(mock_peripheral1, "init_ports")
+
+        await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
+
+        # cleanup_ports and remove MUST be called because driver is structural
         spy_cleanup_ports.assert_called_once_with(persisted_data=False)
         spy_remove.assert_called_once_with(mock_peripheral1.get_id(), persisted_data=False)
 
