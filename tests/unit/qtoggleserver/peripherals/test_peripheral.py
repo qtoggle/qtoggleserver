@@ -106,8 +106,10 @@ class TestPeripheralID:
         # Both should use auto-generated IDs (not empty string)
         assert p_empty.get_id().startswith("peripheral_")
         assert p_no_name.get_id().startswith("peripheral_")
-        # They will be different because the hash includes the name parameter itself
-        assert p_empty.get_id() != p_no_name.get_id()
+        # Auto-generated IDs should be deterministic and reproducible
+        assert p_empty.get_id() == MockPeripheral(name="", dummy_param="value").get_id()
+        assert p_no_name.get_id() == MockPeripheral(dummy_param="value").get_id()
+        # Name field should be preserved as provided
         assert p_empty.get_name() == ""
         assert p_no_name.get_name() is None
 
@@ -139,25 +141,30 @@ class TestSetOnline:
         """Should call handle_online() exactly once when transitioning from offline to online."""
 
         p = self.make_peripheral(mocker)
-        assert not p._online
+        assert not p.is_online()
 
         p.set_online(True)
 
         p.handle_online.assert_called_once()
         p.handle_offline.assert_not_called()
         p.trigger_update_fire_and_forget.assert_called_once_with()
+        assert p._online is True
 
     def test_handle_offline_called_when_transitioning_to_offline(self, mocker):
         """Should call handle_offline() exactly once when transitioning from online to offline."""
 
         p = self.make_peripheral(mocker)
         p._online = True
+        p._enabled = True
+        assert p.is_online()
 
         p.set_online(False)
 
         p.handle_offline.assert_called_once()
         p.handle_online.assert_not_called()
         p.trigger_update_fire_and_forget.assert_called_once_with()
+        assert p._online is False
+        assert not p.is_online()
 
     def test_handle_online_not_called_when_already_online(self, mocker):
         """Should not call handle_online() when the peripheral is already online."""
@@ -182,11 +189,16 @@ class TestSetOnline:
         p.trigger_update_fire_and_forget.assert_not_called()
 
     def test_online_state_updated_when_going_online(self, mocker):
-        """Should update _online to True after set_online(True)."""
+        """Should update _online and is_online() to True after set_online(True)."""
 
         p = self.make_peripheral(mocker)
+        p._enabled = True
+        assert not p.is_online()
+
         p.set_online(True)
+
         assert p._online is True
+        assert p.is_online()
 
     def test_to_json_includes_online_flag(self, mocker):
         p = self.make_peripheral(mocker)
@@ -200,13 +212,58 @@ class TestSetOnline:
         assert p.to_json()["enabled"] is True
         assert p.to_json()["online"] is True
 
+    def test_is_online_requires_both_enabled_and_online(self, mocker):
+        """is_online() should return True only when both enabled and online."""
+        p = self.make_peripheral(mocker)
+
+        # Neither enabled nor online
+        assert not p.is_enabled()
+        assert not p.is_online()
+
+        # Online but not enabled
+        p._online = True
+        assert not p.is_online()
+
+        # Both enabled and online
+        p._enabled = True
+        assert p.is_online()
+
+        # Enabled but not online
+        p._online = False
+        assert not p.is_online()
+
     def test_online_state_updated_when_going_offline(self, mocker):
-        """Should update _online to False after set_online(False)."""
+        """Should update _online and is_online() to False after set_online(False)."""
 
         p = self.make_peripheral(mocker)
         p._online = True
+        p._enabled = True
+        assert p.is_online()
+
         p.set_online(False)
+
         assert p._online is False
+        assert not p.is_online()
+
+    def test_handle_online_default_triggers_port_update(self, mocker):
+        """Default handle_online() implementation should trigger port update."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        mocker.patch.object(p, "trigger_port_update_fire_and_forget")
+
+        # Call the actual handle_online method (not mocked)
+        p.handle_online()
+
+        p.trigger_port_update_fire_and_forget.assert_called_once()
+
+    def test_handle_offline_default_triggers_port_update(self, mocker):
+        """Default handle_offline() implementation should trigger port update."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        mocker.patch.object(p, "trigger_port_update_fire_and_forget")
+
+        # Call the actual handle_offline method (not mocked)
+        p.handle_offline()
+
+        p.trigger_port_update_fire_and_forget.assert_called_once()
 
 
 class TestTriggerEvents:
