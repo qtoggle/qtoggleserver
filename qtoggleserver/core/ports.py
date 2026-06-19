@@ -840,7 +840,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         attrs: GenericJSONDict = await self.get_attrs()
 
         if self._enabled:
-            attrs["value"] = self._last_read_value[0] if self._last_read_value else None
+            attrs["value"] = self.get_last_read_value()
             attrs["pending_value"] = self.get_pending_value()
         else:
             attrs["value"] = None
