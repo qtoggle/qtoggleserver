@@ -1,6 +1,9 @@
+import asyncio
+
 from typing import Any
 
 from qtoggleserver.peripherals import events as peripherals_events
+from qtoggleserver.peripherals.exceptions import NotOurPort
 from tests.unit.qtoggleserver.mock.peripherals import MockPeripheral, MockPeripheralPort
 
 
@@ -451,6 +454,410 @@ class TestAutoDisable:
         await p.check_disabled(port)
 
         spy_disable.assert_not_called()
+
+
+class TestPortManagement:
+    """Tests for port management methods (Priority 1)."""
+
+    async def test_init_ports_loads_and_stores_ports(self, mocker):
+        """init_ports should call make_port_args, load ports, and store them."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_port1 = mocker.MagicMock()
+        fake_port1.get_initial_id.return_value = "id1"
+        fake_port2 = mocker.MagicMock()
+        fake_port2.get_initial_id.return_value = "id2"
+
+        spy_load = mocker.patch("qtoggleserver.core.ports.load", return_value=[fake_port1, fake_port2])
+
+        await p.init_ports()
+
+        spy_load.assert_called_once()
+        assert len(p._ports_by_id) == 2
+        assert p._ports_by_id["id1"] is fake_port1
+        assert p._ports_by_id["id2"] is fake_port2
+
+    async def test_init_ports_auto_enables_when_no_ports_loaded(self, mocker):
+        """Peripheral should auto-enable when no ports are loaded."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        mocker.patch("qtoggleserver.core.ports.load", return_value=[])
+        spy_enable = mocker.patch.object(p, "enable")
+
+        await p.init_ports()
+
+        spy_enable.assert_called_once()
+        assert len(p._ports_by_id) == 0
+
+    async def test_cleanup_ports_removes_all_ports(self, mocker):
+        """cleanup_ports should remove all ports with correct persisted_data flag."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_port1 = mocker.MagicMock()
+        fake_port1.get_initial_id.return_value = "id1"
+        fake_port1.remove = mocker.AsyncMock()
+        fake_port2 = mocker.MagicMock()
+        fake_port2.get_initial_id.return_value = "id2"
+        fake_port2.remove = mocker.AsyncMock()
+
+        p._ports_by_id = {"id1": fake_port1, "id2": fake_port2}
+
+        await p.cleanup_ports(persisted_data=True)
+
+        fake_port1.remove.assert_called_once_with(persisted_data=True)
+        fake_port2.remove.assert_called_once_with(persisted_data=True)
+
+    async def test_cleanup_ports_with_empty_ports(self, mocker):
+        """cleanup_ports should handle empty port list gracefully."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        p._ports_by_id = {}
+
+        await p.cleanup_ports(persisted_data=False)
+
+        # Should complete without error
+
+    async def test_add_port_loads_and_stores_port(self, mocker):
+        """add_port should load a single port and add to _ports_by_id."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_port = mocker.MagicMock()
+        fake_port.get_initial_id.return_value = "new_port"
+
+        spy_load = mocker.patch("qtoggleserver.core.ports.load", return_value=[fake_port])
+
+        port_args = {"driver": MockPeripheralPort, "id": "new_port"}
+        result = await p.add_port(port_args)
+
+        spy_load.assert_called_once()
+        assert result is fake_port
+        assert p._ports_by_id["new_port"] is fake_port
+
+    async def test_add_port_supplies_peripheral_arg(self, mocker):
+        """add_port should inject peripheral reference into port_args."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_port = mocker.MagicMock()
+        fake_port.get_initial_id.return_value = "new_port"
+
+        spy_load = mocker.patch("qtoggleserver.core.ports.load", return_value=[fake_port])
+
+        port_args = {"driver": MockPeripheralPort, "id": "new_port"}
+        await p.add_port(port_args)
+
+        call_args = spy_load.call_args[0][0]
+        assert len(call_args) == 1
+        assert call_args[0]["peripheral"] is p
+        assert call_args[0]["driver"] is MockPeripheralPort
+        # Original dict should not be modified
+        assert "peripheral" not in port_args
+
+    async def test_remove_port_removes_and_cleans_up(self, mocker):
+        """remove_port should remove from dict and call port.remove()."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_port = mocker.MagicMock()
+        fake_port.remove = mocker.AsyncMock()
+        p._ports_by_id["port1"] = fake_port
+
+        await p.remove_port("port1", persisted_data=True)
+
+        assert "port1" not in p._ports_by_id
+        fake_port.remove.assert_called_once_with(persisted_data=True)
+
+    async def test_remove_port_strips_peripheral_name_prefix(self, mocker):
+        """remove_port should handle port_id with peripheral name prefix."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_port = mocker.MagicMock()
+        fake_port.remove = mocker.AsyncMock()
+        p._ports_by_id["port1"] = fake_port
+
+        # Try to remove with prefixed name
+        await p.remove_port("test.port1", persisted_data=False)
+
+        assert "port1" not in p._ports_by_id
+        fake_port.remove.assert_called_once_with(persisted_data=False)
+
+    async def test_remove_port_raises_not_our_port(self, mocker):
+        """remove_port should raise NotOurPort for unknown port_id."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_port = mocker.MagicMock()
+        p._ports_by_id["port1"] = fake_port
+
+        try:
+            await p.remove_port("unknown_port")
+            assert False, "Should have raised NotOurPort"
+        except NotOurPort as e:
+            assert "unknown_port" in str(e)
+            assert "port1" in p._ports_by_id  # Port1 should still be there
+
+    def test_get_ports_returns_list_of_all_ports(self, mocker):
+        """get_ports should return list of all ports."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_port1 = mocker.MagicMock()
+        fake_port2 = mocker.MagicMock()
+        p._ports_by_id = {"id1": fake_port1, "id2": fake_port2}
+
+        ports = p.get_ports()
+
+        assert isinstance(ports, list)
+        assert len(ports) == 2
+        assert fake_port1 in ports
+        assert fake_port2 in ports
+
+    def test_get_port_returns_port_by_id(self, mocker):
+        """get_port should return port by id or None."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_port = mocker.MagicMock()
+        p._ports_by_id = {"port1": fake_port}
+
+        assert p.get_port("port1") is fake_port
+        assert p.get_port("nonexistent") is None
+
+    async def test_get_port_args_transforms_classes_to_dicts(self, mocker):
+        """get_port_args should convert port classes to dicts with driver field."""
+        p = MockPeripheral(name="test", dummy_param="v")
+
+        # MockPeripheral.make_port_args returns dicts, so let's create a test peripheral that returns classes
+        class ClassReturningPeripheral(MockPeripheral):
+            async def make_port_args(self):
+                return [MockPeripheralPort, {"driver": MockPeripheralPort, "id": "port2"}]
+
+        p = ClassReturningPeripheral(name="test", dummy_param="v")
+        port_args = await p.get_port_args()
+
+        assert len(port_args) == 2
+        # First arg should be transformed from class to dict
+        assert isinstance(port_args[0], dict)
+        assert port_args[0]["driver"] is MockPeripheralPort
+        assert port_args[0]["peripheral"] is p
+        # Second arg should already be dict
+        assert isinstance(port_args[1], dict)
+        assert port_args[1]["driver"] is MockPeripheralPort
+        assert port_args[1]["peripheral"] is p
+
+
+class TestThreadedRunner:
+    """Tests for threaded runner functionality (Priority 2)."""
+
+    async def test_get_runner_creates_and_caches_runner(self, mocker):
+        """get_runner should create runner on first call and cache it."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        spy_make_runner = mocker.patch.object(p, "make_runner")
+        fake_runner = mocker.MagicMock()
+        spy_make_runner.return_value = fake_runner
+
+        runner1 = p.get_runner()
+        runner2 = p.get_runner()
+
+        assert runner1 is fake_runner
+        assert runner2 is fake_runner
+        spy_make_runner.assert_called_once()
+
+    async def test_make_runner_starts_threaded_runner(self, mocker):
+        """make_runner should instantiate and start a ThreadedRunner."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_runner = mocker.MagicMock()
+        mock_runner_class = mocker.patch.object(p, "RUNNER_CLASS", return_value=fake_runner)
+
+        runner = p.make_runner()
+
+        mock_runner_class.assert_called_once_with(queue_size=p.RUNNER_QUEUE_SIZE)
+        fake_runner.start.assert_called_once()
+        assert runner is fake_runner
+
+    async def test_run_threaded_executes_func_in_runner(self, mocker):
+        """run_threaded should schedule function and await result."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_runner = mocker.MagicMock()
+        p._runner = fake_runner
+
+        def test_func(x, y):
+            return x + y
+
+        # Simulate successful execution
+        def schedule_func(func_partial, callback):
+            result = func_partial()
+            callback(result, None)
+
+        fake_runner.schedule_func = schedule_func
+
+        result = await p.run_threaded(test_func, 5, 10)
+
+        assert result == 15
+
+    async def test_run_threaded_propagates_exceptions(self, mocker):
+        """run_threaded should raise exceptions from the threaded function."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_runner = mocker.MagicMock()
+        p._runner = fake_runner
+
+        def failing_func():
+            raise ValueError("Test error")
+
+        # Simulate exception in execution
+        def schedule_func(func_partial, callback):
+            try:
+                func_partial()
+            except Exception as e:
+                callback(None, e)
+
+        fake_runner.schedule_func = schedule_func
+
+        try:
+            await p.run_threaded(failing_func)
+            assert False, "Should have raised ValueError"
+        except ValueError as e:
+            assert str(e) == "Test error"
+
+    async def test_run_threaded_handles_cancelled_future(self, mocker):
+        """run_threaded should handle cancelled futures gracefully."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_runner = mocker.MagicMock()
+        p._runner = fake_runner
+
+        # Store the callback for later invocation
+        stored_callback = None
+
+        def schedule_func(func_partial, callback):
+            nonlocal stored_callback
+            stored_callback = callback
+
+        fake_runner.schedule_func = schedule_func
+
+        # Start the run_threaded call
+        task = asyncio.create_task(p.run_threaded(lambda: 42))
+
+        # Give it a moment to set up
+        await asyncio.sleep(0.01)
+
+        # Cancel the task
+        task.cancel()
+
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+        # Now try to invoke the callback - should not raise
+        if stored_callback:
+            stored_callback(42, None)
+
+    async def test_run_threaded_passes_args_and_kwargs(self, mocker):
+        """run_threaded should pass through args and kwargs correctly."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_runner = mocker.MagicMock()
+        p._runner = fake_runner
+
+        def test_func(a, b, c=None, d=None):
+            return f"{a}-{b}-{c}-{d}"
+
+        # Simulate successful execution
+        def schedule_func(func_partial, callback):
+            result = func_partial()
+            callback(result, None)
+
+        fake_runner.schedule_func = schedule_func
+
+        result = await p.run_threaded(test_func, "x", "y", c="z", d="w")
+
+        assert result == "x-y-z-w"
+
+
+class TestPortUpdate:
+    """Tests for port update mechanisms (Priority 3)."""
+
+    async def test_trigger_port_update_invalidates_and_updates_ports(self, mocker):
+        """trigger_port_update should invalidate attrs and trigger updates."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_port1 = mocker.MagicMock()
+        fake_port1.is_enabled.return_value = True
+        fake_port1.invalidate_attrs = mocker.MagicMock()
+        fake_port1.trigger_update = mocker.AsyncMock()
+        fake_port1.save_asap = mocker.MagicMock()
+
+        fake_port2 = mocker.MagicMock()
+        fake_port2.is_enabled.return_value = False
+        fake_port2.invalidate_attrs = mocker.MagicMock()
+        fake_port2.trigger_update = mocker.AsyncMock()
+
+        p._ports_by_id = {"port1": fake_port1, "port2": fake_port2}
+
+        await p.trigger_port_update(save=False)
+
+        # Both ports should have attrs invalidated
+        fake_port1.invalidate_attrs.assert_called_once()
+        fake_port2.invalidate_attrs.assert_called_once()
+
+        # Only enabled port should be updated
+        fake_port1.trigger_update.assert_called_once()
+        fake_port2.trigger_update.assert_not_called()
+
+        # save_asap should not be called when save=False
+        fake_port1.save_asap.assert_not_called()
+
+    async def test_trigger_port_update_saves_when_requested(self, mocker):
+        """trigger_port_update with save=True should call save_asap on ports."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_port = mocker.MagicMock()
+        fake_port.is_enabled.return_value = True
+        fake_port.invalidate_attrs = mocker.MagicMock()
+        fake_port.trigger_update = mocker.AsyncMock()
+        fake_port.save_asap = mocker.MagicMock()
+
+        p._ports_by_id = {"port1": fake_port}
+
+        await p.trigger_port_update(save=True)
+
+        fake_port.invalidate_attrs.assert_called_once()
+        fake_port.trigger_update.assert_called_once()
+        fake_port.save_asap.assert_called_once()
+
+    def test_trigger_port_update_fire_and_forget_schedules_task(self, mocker):
+        """trigger_port_update_fire_and_forget should schedule async task."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        spy_create_task = mocker.patch("asyncio.create_task")
+        fake_task = mocker.MagicMock()
+        spy_create_task.return_value = fake_task
+
+        p.trigger_port_update_fire_and_forget(save=True)
+
+        spy_create_task.assert_called_once()
+        assert p._port_update_task is fake_task
+
+    def test_trigger_port_update_fire_and_forget_skips_if_already_scheduled(self, mocker):
+        """Should not schedule duplicate port update tasks."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        spy_create_task = mocker.patch("asyncio.create_task")
+        fake_task = mocker.MagicMock()
+        p._port_update_task = fake_task
+
+        p.trigger_port_update_fire_and_forget(save=False)
+
+        spy_create_task.assert_not_called()
+        assert p._port_update_task is fake_task
+
+    async def test_trigger_port_update_clears_task_reference(self, mocker):
+        """trigger_port_update should clear _port_update_task when called."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        fake_task = mocker.MagicMock()
+        p._port_update_task = fake_task
+        p._ports_by_id = {}
+
+        await p.trigger_port_update(save=False)
+
+        assert p._port_update_task is None
+
+    def test_handle_online_triggers_port_update(self, mocker):
+        """Default handle_online should trigger port update."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        spy_trigger = mocker.patch.object(p, "trigger_port_update_fire_and_forget")
+
+        p.handle_online()
+
+        spy_trigger.assert_called_once()
+
+    def test_handle_offline_triggers_port_update(self, mocker):
+        """Default handle_offline should trigger port update."""
+        p = MockPeripheral(name="test", dummy_param="v")
+        spy_trigger = mocker.patch.object(p, "trigger_port_update_fire_and_forget")
+
+        p.handle_offline()
+
+        spy_trigger.assert_called_once()
 
 
 class TestAutoEnable:
