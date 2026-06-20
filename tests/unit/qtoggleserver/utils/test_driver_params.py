@@ -114,4 +114,4 @@ class TestDriverParamsMixinInit:
         # The 'driver' kwarg should ideally be filtered out from _params
         # (since it's a special kwarg for the mixin itself, not a driver param)
         # But current implementation includes it - this documents the behavior
-        assert "driver" in driver.get_params() or "driver" not in driver.get_params()
+        assert "driver" not in driver.get_params()

@@ -51,7 +51,7 @@ class DriverParamsMixin:
     _params: dict[str, Any]
     _driver: str
 
-    def __new__(cls: type, *args: Any, **kwargs: Any) -> DriverParamsMixin:
+    def __new__(cls: type[DriverParamsMixin], *args: Any, **kwargs: Any) -> DriverParamsMixin:
         instance = super().__new__(cls)
 
         # Find the direct parent class that is not DriverParamsMixin
