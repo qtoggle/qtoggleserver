@@ -13,6 +13,7 @@ from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import logging as logging_utils
 from qtoggleserver.utils import runner as runner_utils
+from qtoggleserver.utils.driver_params import DriverParamsMixin
 
 from .exceptions import NotOurPort
 
@@ -20,7 +21,7 @@ from .exceptions import NotOurPort
 logger = logging.getLogger(__package__)
 
 
-class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
+class Peripheral(DriverParamsMixin, logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     RUNNER_CLASS = runner_utils.ThreadedRunner
     RUNNER_QUEUE_SIZE = 64
 
@@ -29,20 +30,16 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def __init__(
         self,
         *,
-        params: dict[str, Any],
-        driver: str | None = None,
         name: str | None = None,
         display_name: str = "",
         force_enabled: bool | None = None,
         static: bool = False,
         **kwargs,
     ) -> None:
-        self._params: dict[str, Any] = params
-        self._driver: str = driver or f"{self.__class__.__module__}.{self.__class__.__name__}"
         self._name: str | None = name
         self._id: str = name or ""  # name will always be used as id, if supplied
         if not self._id:
-            sorted_params = self._sorted_tuples_dict(params)
+            sorted_params = self._sorted_tuples_dict(self.get_params())
             auto_id_to_hash = f"{self.__class__.__module__}.{self.__class__.__name__}:{name}:{sorted_params}"
             self._id = f"peripheral_{hashlib.sha256(auto_id_to_hash.encode()).hexdigest()[:8]}"
         self._display_name: str = display_name or ""
@@ -73,17 +70,11 @@ class Peripheral(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_name(self) -> str | None:
         return self._name
 
-    def get_driver(self) -> str:
-        return self._driver
-
     def get_display_name(self) -> str:
         return self._display_name
 
     def set_display_name(self, display_name: str) -> None:
         self._display_name = display_name
-
-    def get_params(self) -> dict[str, Any]:
-        return self._params
 
     def is_static(self) -> bool:
         return self._static

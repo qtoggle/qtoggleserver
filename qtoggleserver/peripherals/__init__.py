@@ -31,17 +31,11 @@ def get(peripheral_id: str) -> Peripheral | None:
 
 async def add(peripheral_args: dict[str, Any], static: bool = False) -> Peripheral:
     peripheral_args = peripheral_args.copy()
-    class_path = peripheral_args.pop("driver")
-    peripheral_args.pop("static", None)
-    peripheral_args.pop("enabled", None)  # computed at runtime
-    peripheral_args.pop("online", None)  # computed at runtime
+    class_path = peripheral_args["driver"]
 
-    params = peripheral_args.pop("params", None)
-    if params is None:
-        # Backward compatibility with older persisted payloads where params were flattened.
-        params = {k: v for k, v in peripheral_args.items() if k not in {"name", "id", "display_name", "force_enabled"}}
-    elif not isinstance(params, dict):
-        raise TypeError("params must be a dictionary")
+    # Merge params into peripheral args
+    params = peripheral_args.pop("params", {})
+    peripheral_args.update(params)
 
     logger.debug('creating peripheral with driver "%s"', class_path)
     try:
@@ -49,11 +43,7 @@ async def add(peripheral_args: dict[str, Any], static: bool = False) -> Peripher
     except Exception:
         raise NoSuchDriver(class_path)
 
-    # Supply actual peripheral params both via constructor kwargs (to pass to concrete class) and as dedicated `params`
-    # arg (to be able to retrieve params using `get_params()`).
-    peripheral_args.update(params)
-
-    p: Peripheral = peripheral_class(params=params, driver=class_path, static=static, **peripheral_args)
+    p: Peripheral = peripheral_class(static=static, **peripheral_args)
     if p.get_id() in _registered_peripherals:
         raise DuplicatePeripheral(f"Peripheral {p.get_id()} already exists")
 
