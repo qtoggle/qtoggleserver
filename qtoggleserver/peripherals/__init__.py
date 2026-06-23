@@ -77,6 +77,21 @@ async def remove(peripheral_id: str, persisted_data: bool = True) -> None:
         await persist.remove("peripherals", filt={"id": peripheral_id})
 
 
+async def update(p: Peripheral) -> None:
+    """Update the persisted state of an existing peripheral (non-static)."""
+    if p.is_static():
+        return
+
+    persist_data = {
+        "driver": p.get_driver(),
+        "name": p.get_name(),
+        "display_name": p.get_display_name(),
+        "force_enabled": p.get_force_enabled(),
+        "params": p.get_params(),
+    }
+    await persist.replace("peripherals", p.get_id(), persist_data)
+
+
 async def init() -> None:
     logger.debug("loading static peripherals")
     for peripheral_args in settings.peripherals:

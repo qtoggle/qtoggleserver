@@ -300,7 +300,7 @@ class TestPatchPeripheral:
         spy_remove.assert_called_once_with(mock_peripheral1.get_id(), persisted_data=False)
 
     async def test_display_name_change_no_removal(self, mock_api_request_maker, mock_peripheral1, mocker):
-        # Changing display_name should not trigger removal/re-add
+        # Changing display_name should not trigger removal/re-add but should persist changes
         payload = {
             "driver": mock_peripheral1.get_driver(),
             "display_name": "New Display Name",
@@ -311,6 +311,7 @@ class TestPatchPeripheral:
         )
         spy_cleanup_ports = mocker.patch.object(mock_peripheral1, "cleanup_ports")
         spy_remove = mocker.patch("qtoggleserver.peripherals.remove")
+        spy_update = mocker.patch("qtoggleserver.peripherals.update")
         spy_trigger_update = mocker.patch.object(mock_peripheral1, "trigger_update")
 
         result = await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
@@ -318,7 +319,9 @@ class TestPatchPeripheral:
         # cleanup_ports and remove should NOT be called
         spy_cleanup_ports.assert_not_called()
         spy_remove.assert_not_called()
-        # But trigger_update should be called
+        # But update should be called to persist changes
+        spy_update.assert_called_once_with(mock_peripheral1)
+        # And trigger_update should be called
         spy_trigger_update.assert_called_once()
         # And display_name should be updated
         assert result["display_name"] == "New Display Name"

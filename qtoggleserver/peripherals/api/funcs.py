@@ -132,6 +132,7 @@ async def patch_peripheral(
 
     # If only non-structural changes, return early
     if not structural_change:
+        await peripherals.update(p)
         await p.trigger_update()
         return p.to_json()
 
