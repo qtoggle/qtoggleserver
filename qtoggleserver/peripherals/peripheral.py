@@ -161,6 +161,9 @@ class Peripheral(DriverParamsMixin, logging_utils.LoggableMixin, metaclass=abc.A
     def get_ports(self) -> list[PeripheralPort]:
         return list(self._ports_by_id.values())
 
+    def get_ports_by_id(self) -> dict[str, PeripheralPort]:
+        return self._ports_by_id.copy()
+
     def get_port(self, port_id: str) -> PeripheralPort | None:
         return self._ports_by_id.get(port_id)
 
