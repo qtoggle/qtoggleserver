@@ -225,6 +225,7 @@ class Peripheral(DriverParamsMixin, logging_utils.LoggableMixin, metaclass=abc.A
             except Exception:
                 self.error("handle_online failed", exc_info=True)
             self.trigger_update_fire_and_forget()
+            self.trigger_port_update_fire_and_forget()
         elif not online and self._online:
             self.debug("is offline")
             self._online = online
@@ -233,12 +234,13 @@ class Peripheral(DriverParamsMixin, logging_utils.LoggableMixin, metaclass=abc.A
             except Exception:
                 self.error("handle_offline failed", exc_info=True)
             self.trigger_update_fire_and_forget()
+            self.trigger_port_update_fire_and_forget()
 
     def handle_offline(self) -> None:
-        self.trigger_port_update_fire_and_forget()
+        pass
 
     def handle_online(self) -> None:
-        self.trigger_port_update_fire_and_forget()
+        pass
 
     async def trigger_port_update(self, save: bool = False) -> None:
         self._port_update_task = None

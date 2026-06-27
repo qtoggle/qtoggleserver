@@ -138,6 +138,7 @@ class TestSetOnline:
         mocker.patch.object(p, "handle_online")
         mocker.patch.object(p, "handle_offline")
         mocker.patch.object(p, "trigger_update_fire_and_forget")
+        mocker.patch.object(p, "trigger_port_update_fire_and_forget")
         return p
 
     def test_handle_online_called_when_transitioning_to_online(self, mocker):
@@ -151,6 +152,7 @@ class TestSetOnline:
         p.handle_online.assert_called_once()
         p.handle_offline.assert_not_called()
         p.trigger_update_fire_and_forget.assert_called_once_with()
+        p.trigger_port_update_fire_and_forget.assert_called_once_with()
         assert p._online is True
 
     def test_handle_offline_called_when_transitioning_to_offline(self, mocker):
@@ -166,6 +168,7 @@ class TestSetOnline:
         p.handle_offline.assert_called_once()
         p.handle_online.assert_not_called()
         p.trigger_update_fire_and_forget.assert_called_once_with()
+        p.trigger_port_update_fire_and_forget.assert_called_once_with()
         assert p._online is False
         assert not p.is_online()
 
@@ -248,25 +251,26 @@ class TestSetOnline:
         assert p._online is False
         assert not p.is_online()
 
-    def test_handle_online_default_triggers_port_update(self, mocker):
-        """Default handle_online() implementation should trigger port update."""
+    def test_set_online_triggers_port_update_when_going_online(self, mocker):
+        """set_online(True) should trigger port update."""
         p = MockPeripheral(name="test", dummy_param="v")
-        mocker.patch.object(p, "trigger_port_update_fire_and_forget")
+        mocker.patch.object(p, "trigger_update_fire_and_forget")
+        spy_trigger = mocker.patch.object(p, "trigger_port_update_fire_and_forget")
 
-        # Call the actual handle_online method (not mocked)
-        p.handle_online()
+        p.set_online(True)
 
-        p.trigger_port_update_fire_and_forget.assert_called_once()
+        spy_trigger.assert_called_once()
 
-    def test_handle_offline_default_triggers_port_update(self, mocker):
-        """Default handle_offline() implementation should trigger port update."""
+    def test_set_online_triggers_port_update_when_going_offline(self, mocker):
+        """set_online(False) should trigger port update."""
         p = MockPeripheral(name="test", dummy_param="v")
-        mocker.patch.object(p, "trigger_port_update_fire_and_forget")
+        p._online = True
+        mocker.patch.object(p, "trigger_update_fire_and_forget")
+        spy_trigger = mocker.patch.object(p, "trigger_port_update_fire_and_forget")
 
-        # Call the actual handle_offline method (not mocked)
-        p.handle_offline()
+        p.set_online(False)
 
-        p.trigger_port_update_fire_and_forget.assert_called_once()
+        spy_trigger.assert_called_once()
 
 
 class TestTriggerEvents:
@@ -849,24 +853,6 @@ class TestPortUpdate:
         await p.trigger_port_update(save=False)
 
         assert p._port_update_task is None
-
-    def test_handle_online_triggers_port_update(self, mocker):
-        """Default handle_online should trigger port update."""
-        p = MockPeripheral(name="test", dummy_param="v")
-        spy_trigger = mocker.patch.object(p, "trigger_port_update_fire_and_forget")
-
-        p.handle_online()
-
-        spy_trigger.assert_called_once()
-
-    def test_handle_offline_triggers_port_update(self, mocker):
-        """Default handle_offline should trigger port update."""
-        p = MockPeripheral(name="test", dummy_param="v")
-        spy_trigger = mocker.patch.object(p, "trigger_port_update_fire_and_forget")
-
-        p.handle_offline()
-
-        spy_trigger.assert_called_once()
 
 
 class TestAutoEnable:
