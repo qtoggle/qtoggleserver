@@ -467,11 +467,15 @@ class TestPortManagement:
         fake_port2 = mocker.MagicMock()
         fake_port2.get_initial_id.return_value = "id2"
 
-        spy_load = mocker.patch("qtoggleserver.core.ports.load", return_value=[fake_port1, fake_port2])
+        async def fake_load_iter(port_args, trigger_add=True):
+            yield fake_port1
+            yield fake_port2
+
+        spy_load_iter = mocker.patch("qtoggleserver.core.ports.load_iter", side_effect=fake_load_iter)
 
         await p.init_ports()
 
-        spy_load.assert_called_once()
+        spy_load_iter.assert_called_once()
         assert len(p._ports_by_id) == 2
         assert p._ports_by_id["id1"] is fake_port1
         assert p._ports_by_id["id2"] is fake_port2
@@ -479,7 +483,12 @@ class TestPortManagement:
     async def test_init_ports_auto_enables_when_no_ports_loaded(self, mocker):
         """Peripheral should auto-enable when no ports are loaded."""
         p = MockPeripheral(name="test", dummy_param="v")
-        mocker.patch("qtoggleserver.core.ports.load", return_value=[])
+
+        async def fake_load_iter_empty(port_args, trigger_add=True):
+            return
+            yield  # Make it a generator
+
+        mocker.patch("qtoggleserver.core.ports.load_iter", side_effect=fake_load_iter_empty)
         spy_enable = mocker.patch.object(p, "enable")
 
         await p.init_ports()
