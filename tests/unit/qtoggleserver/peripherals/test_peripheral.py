@@ -911,3 +911,103 @@ class TestAutoEnable:
         await port2.handle_enable()
         assert p.is_enabled() is True
         assert spy_trigger_update.call_count == 1  # Still 1, not incremented
+
+
+class TestPeripheralToPersisted:
+    def test_includes_driver(self):
+        """to_persisted should include driver."""
+        p = MockPeripheral(name="test", dummy_param="value1")
+
+        result = p.to_persisted()
+
+        assert result["driver"] == "tests.unit.qtoggleserver.mock.peripherals.MockPeripheral"
+
+    def test_includes_name(self):
+        """to_persisted should include name."""
+        p = MockPeripheral(name="my_peripheral", dummy_param="value1")
+
+        result = p.to_persisted()
+
+        assert result["name"] == "my_peripheral"
+
+    def test_includes_display_name(self):
+        """to_persisted should include display_name."""
+        p = MockPeripheral(name="test", dummy_param="value1", display_name="My Test Peripheral")
+
+        result = p.to_persisted()
+
+        assert result["display_name"] == "My Test Peripheral"
+
+    def test_includes_force_enabled(self):
+        """to_persisted should include force_enabled."""
+        p = MockPeripheral(name="test", dummy_param="value1", force_enabled=True)
+
+        result = p.to_persisted()
+
+        assert result["force_enabled"] is True
+
+    def test_includes_params(self):
+        """to_persisted should include params."""
+        p = MockPeripheral(name="test", dummy_param="special_value")
+
+        result = p.to_persisted()
+
+        assert result["params"]["dummy_param"] == "special_value"
+
+    def test_excludes_transient_fields(self):
+        """to_persisted should not include transient fields like enabled, online, id, static."""
+        p = MockPeripheral(name="test", dummy_param="value1", static=True)
+        p._enabled = True
+        p._online = True
+
+        result = p.to_persisted()
+
+        # These should NOT be in persisted data
+        assert "enabled" not in result
+        assert "online" not in result
+        assert "id" not in result
+        assert "static" not in result
+
+    def test_with_none_name(self):
+        """to_persisted should handle None name correctly."""
+        p = MockPeripheral(dummy_param="value1")  # No name provided
+
+        result = p.to_persisted()
+
+        assert result["name"] is None
+
+    def test_with_none_force_enabled(self):
+        """to_persisted should handle None force_enabled correctly."""
+        p = MockPeripheral(name="test", dummy_param="value1")  # force_enabled defaults to None
+
+        result = p.to_persisted()
+
+        assert result["force_enabled"] is None
+
+    def test_different_from_to_json(self):
+        """to_persisted should include different fields than to_json."""
+        p = MockPeripheral(name="test", dummy_param="value1", static=True, force_enabled=True)
+        p._enabled = True
+        p._online = True
+
+        persisted = p.to_persisted()
+        json_data = p.to_json()
+
+        # to_json includes these
+        assert "enabled" in json_data
+        assert "online" in json_data
+        assert "id" in json_data
+        assert "static" in json_data
+
+        # to_persisted does NOT include these
+        assert "enabled" not in persisted
+        assert "online" not in persisted
+        assert "id" not in persisted
+        assert "static" not in persisted
+
+        # Both include these
+        assert "driver" in persisted and "driver" in json_data
+        assert "name" in persisted and "name" in json_data
+        assert "display_name" in persisted and "display_name" in json_data
+        assert "force_enabled" in persisted and "force_enabled" in json_data
+        assert "params" in persisted and "params" in json_data

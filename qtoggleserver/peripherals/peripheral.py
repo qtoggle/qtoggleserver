@@ -98,6 +98,15 @@ class Peripheral(DriverParamsMixin, logging_utils.LoggableMixin, metaclass=abc.A
             online=self.is_online(),
         )
 
+    def to_persisted(self) -> GenericJSONDict:
+        return dict(
+            driver=self.get_driver(),
+            name=self.get_name(),
+            display_name=self.get_display_name(),
+            force_enabled=self.get_force_enabled(),
+            params=self.get_params(),
+        )
+
     async def get_port_args(self) -> list[dict[str, Any]]:
         port_args = await self.make_port_args()
 

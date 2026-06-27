@@ -52,13 +52,7 @@ async def add(peripheral_args: dict[str, Any], static: bool = False) -> Peripher
     _registered_peripherals[p.get_id()] = p
 
     if not static:
-        persist_data = {
-            "driver": p.get_driver(),
-            "name": p.get_name(),
-            "display_name": p.get_display_name(),
-            "force_enabled": p.get_force_enabled(),
-            "params": p.get_params(),
-        }
+        persist_data = p.to_persisted()
         await persist.replace("peripherals", p.get_id(), persist_data)
 
     return p
@@ -82,13 +76,7 @@ async def update(p: Peripheral) -> None:
     if p.is_static():
         return
 
-    persist_data = {
-        "driver": p.get_driver(),
-        "name": p.get_name(),
-        "display_name": p.get_display_name(),
-        "force_enabled": p.get_force_enabled(),
-        "params": p.get_params(),
-    }
+    persist_data = p.to_persisted()
     await persist.replace("peripherals", p.get_id(), persist_data)
 
 
