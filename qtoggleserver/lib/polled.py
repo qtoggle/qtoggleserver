@@ -23,6 +23,7 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
     DEFAULT_RETRY_COUNT = 0
     DEFAULT_RETRY_POLL_INTERVAL = 60
     POLL_AFTER_WRITE = False
+    TRIGGER_UPDATE_AFTER_POLL = False
 
     logger = logging.getLogger(__name__)
 
@@ -81,6 +82,9 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
                 self._poll_error = None
                 self._retry_counter = 0
                 self.set_online(True)
+
+                if self.TRIGGER_UPDATE_AFTER_POLL:
+                    self.trigger_port_update_fire_and_forget()
 
                 # Sleep until next poll interval, but wake up immediately if interval changes or polling stops
                 self._poll_wakeup.clear()
@@ -153,10 +157,8 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-        # Add read interval attrdef
-
     async def get_additional_attrdefs(self) -> AttributeDefinitions:
-        attrdefs: AttributeDefinitions = {}
+        attrdefs: AttributeDefinitions = self.ADDITIONAL_ATTRDEFS.copy()
         if self.READ_INTERVAL_MIN is not None:
             attrdef: AttributeDefinition = READ_INTERVAL_ATTRDEF.copy()
 
@@ -198,3 +200,5 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
         peripheral = self.get_peripheral()
         if peripheral.POLL_AFTER_WRITE:
             await peripheral.poll()
+            if peripheral.TRIGGER_UPDATE_AFTER_POLL:
+                peripheral.trigger_port_update_fire_and_forget()
