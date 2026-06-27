@@ -953,12 +953,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.debug("persisting data")
 
         async with self._save_lock:
-            d = await self.prepare_for_save()
+            d = await self.to_persisted()
             await persist.replace(self.PERSIST_COLLECTION, self._id, d)
 
         self._pending_save = False
 
-    async def prepare_for_save(self) -> GenericJSONDict:
+    async def to_persisted(self) -> GenericJSONDict:
         # value
         d: GenericJSONDict = {
             "id": self.get_id(),

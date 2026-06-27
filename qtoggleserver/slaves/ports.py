@@ -386,7 +386,7 @@ class SlavePort(core_ports.BasePort):
         # Enable if enabled remotely
         await self.update_enabled()
 
-    async def prepare_for_save(self) -> GenericJSONDict:
+    async def to_persisted(self) -> GenericJSONDict:
         return {
             "id": self.get_id(),
             "tag": self._tag,

@@ -556,3 +556,84 @@ class TestLoad:
         # Clean up
         for port in ports:
             await port.remove(persisted_data=False)
+
+
+class TestPortToPersisted:
+    async def test_includes_id_and_history_timestamp(self, mock_num_port1):
+        """to_persisted should always include id and history_last_timestamp."""
+        mock_num_port1._history_last_timestamp = 123456
+
+        result = await mock_num_port1.to_persisted()
+
+        assert result["id"] == "nid1"
+        assert result["history_last_timestamp"] == 123456
+
+    async def test_includes_value_when_persisted(self, mock_num_port1, mocker):
+        """to_persisted should include value when port is persisted."""
+        mocker.patch.object(mock_num_port1, "is_persisted", return_value=True)
+        mock_num_port1._last_read_value = (42, 1234567890)
+
+        result = await mock_num_port1.to_persisted()
+
+        assert result["value"] == 42
+
+    async def test_value_none_when_not_persisted(self, mock_num_port1, mocker):
+        """to_persisted should set value to None when port is not persisted."""
+        mocker.patch.object(mock_num_port1, "is_persisted", return_value=False)
+        mock_num_port1._last_read_value = (42, 1234567890)
+
+        result = await mock_num_port1.to_persisted()
+
+        assert result["value"] is None
+
+    async def test_value_none_when_no_last_read_value(self, mock_num_port1, mocker):
+        """to_persisted should set value to None when no last_read_value."""
+        mocker.patch.object(mock_num_port1, "is_persisted", return_value=True)
+        mock_num_port1._last_read_value = None
+
+        result = await mock_num_port1.to_persisted()
+
+        assert result["value"] is None
+
+    async def test_includes_modifiable_attrs(self, mock_num_port1, mocker):
+        """to_persisted should include all modifiable attributes."""
+        mocker.patch.object(mock_num_port1, "is_persisted", return_value=False)
+        mocker.patch.object(mock_num_port1, "get_modifiable_attrs", return_value=["display_name", "unit", "enabled"])
+
+        # Mock get_attr to return test values
+        async def mock_get_attr(name):
+            if name == "display_name":
+                return "Test Port"
+            elif name == "unit":
+                return "V"
+            elif name == "enabled":
+                return True
+            return None
+
+        mocker.patch.object(mock_num_port1, "get_attr", side_effect=mock_get_attr)
+
+        result = await mock_num_port1.to_persisted()
+
+        assert result["display_name"] == "Test Port"
+        assert result["unit"] == "V"
+        assert result["enabled"] is True
+
+    async def test_skips_none_attrs(self, mock_num_port1, mocker):
+        """to_persisted should skip attributes that are None."""
+        mocker.patch.object(mock_num_port1, "is_persisted", return_value=False)
+        mocker.patch.object(mock_num_port1, "get_modifiable_attrs", return_value=["display_name", "unit"])
+
+        # Mock get_attr to return None for 'unit'
+        async def mock_get_attr(name):
+            if name == "display_name":
+                return "Test Port"
+            elif name == "unit":
+                return None
+            return None
+
+        mocker.patch.object(mock_num_port1, "get_attr", side_effect=mock_get_attr)
+
+        result = await mock_num_port1.to_persisted()
+
+        assert result["display_name"] == "Test Port"
+        assert "unit" not in result
