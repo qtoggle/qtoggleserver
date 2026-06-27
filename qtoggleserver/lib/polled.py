@@ -5,7 +5,7 @@ import logging
 from typing import cast
 
 from qtoggleserver.core import main
-from qtoggleserver.core.typing import AttributeDefinition, AttributeDefinitions
+from qtoggleserver.core.typing import AttributeDefinition, AttributeDefinitions, NullablePortValue
 from qtoggleserver.peripherals import Peripheral, PeripheralPort
 
 
@@ -22,6 +22,7 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
     DEFAULT_POLL_INTERVAL = 1800
     DEFAULT_RETRY_COUNT = 0
     DEFAULT_RETRY_POLL_INTERVAL = 60
+    POLL_AFTER_WRITE = False
 
     logger = logging.getLogger(__name__)
 
@@ -186,3 +187,14 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
     async def attr_get_read_interval(self) -> int:
         peripheral = cast(PolledPeripheral, self.get_peripheral())
         return peripheral.get_poll_interval() // self.READ_INTERVAL_MULTIPLIER
+
+    def get_peripheral(self) -> PolledPeripheral:
+        return cast(PolledPeripheral, super().get_peripheral())
+
+    async def _write_value_safe(self, value: NullablePortValue) -> None:
+        await super()._write_value_safe(value)
+
+        # Poll values immediately after writing, if peripheral requires it
+        peripheral = self.get_peripheral()
+        if peripheral.POLL_AFTER_WRITE:
+            await peripheral.poll()
