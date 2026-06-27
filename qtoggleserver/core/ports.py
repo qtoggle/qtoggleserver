@@ -7,7 +7,7 @@ import logging
 import time
 
 from collections import deque
-from collections.abc import Callable, ValuesView
+from collections.abc import AsyncIterator, Callable, ValuesView
 from typing import Any
 
 from qtoggleserver import persist
@@ -1101,7 +1101,8 @@ class Port(BasePort, metaclass=abc.ABCMeta):
     pass
 
 
-async def load(port_args: list[dict[str, Any]], trigger_add: bool = True) -> list[BasePort]:
+async def load_iter(port_args: list[dict[str, Any]], trigger_add: bool = True) -> AsyncIterator[BasePort]:
+    """Load ports from port arguments, yielding each port as it's loaded."""
     port_driver_classes = {}
     ports = []
 
@@ -1165,7 +1166,7 @@ async def load(port_args: list[dict[str, Any]], trigger_add: bool = True) -> lis
         _ports_by_id.pop(old_id)
         _ports_by_id[port.get_id()] = port
 
-    # Load created ports
+    # Load created ports and yield each one
     for port in ports:
         try:
             await port.load()
@@ -1174,6 +1175,15 @@ async def load(port_args: list[dict[str, Any]], trigger_add: bool = True) -> lis
 
         if trigger_add:
             await port.trigger_add()
+
+        yield port
+
+
+async def load(port_args: list[dict[str, Any]], trigger_add: bool = True) -> list[BasePort]:
+    """Load ports from port arguments. Returns a list of all loaded ports after completion."""
+    ports = []
+    async for port in load_iter(port_args, trigger_add=trigger_add):
+        ports.append(port)
 
     return ports
 

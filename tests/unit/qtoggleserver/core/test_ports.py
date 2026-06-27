@@ -385,3 +385,174 @@ class TestPortToJSON:
         assert result1["definitions"]["extra_attr"]["type"] == "string"
         assert result2["definitions"]["extra_attr"]["type"] == "number"
         assert result1["definitions"] is not result2["definitions"]
+
+
+class TestLoadIter:
+    async def test_yields_each_port_after_load(self, mocker):
+        """Should yield each port after it's loaded (after port.load() is called)."""
+        from qtoggleserver.core import ports as core_ports
+        from tests.unit.qtoggleserver.mock.ports import MockBooleanPort, MockNumberPort
+
+        mocker.patch("asyncio.Lock")
+
+        port_args = [
+            {"driver": MockBooleanPort, "port_id": "test_bool1", "value": True},
+            {"driver": MockNumberPort, "port_id": "test_num1", "value": 42},
+            {"driver": MockBooleanPort, "port_id": "test_bool2", "value": False},
+        ]
+
+        # Track when ports are loaded and yielded
+        loaded_ports = []
+        load_calls = []
+
+        original_load = MockBooleanPort.load
+
+        async def mock_load(self):
+            load_calls.append(self.get_id())
+            return await original_load(self)
+
+        mocker.patch.object(MockBooleanPort, "load", side_effect=mock_load, autospec=True)
+        mocker.patch.object(MockNumberPort, "load", side_effect=mock_load, autospec=True)
+
+        async for port in core_ports.load_iter(port_args, trigger_add=False):
+            loaded_ports.append(port.get_id())
+            # At this point, port.load() should have been called for this port
+            assert port.get_id() in load_calls
+
+        # Verify all ports were yielded in order
+        assert loaded_ports == ["test_bool1", "test_num1", "test_bool2"]
+
+        # Clean up
+        for port_id in ["test_bool1", "test_num1", "test_bool2"]:
+            port = core_ports.get(port_id)
+            if port:
+                await port.remove(persisted_data=False)
+
+    async def test_handles_port_mapping(self, mocker):
+        """Should properly handle port ID mapping and yield with mapped IDs."""
+        from qtoggleserver.conf import settings
+        from qtoggleserver.core import ports as core_ports
+        from tests.unit.qtoggleserver.mock.ports import MockNumberPort
+
+        mocker.patch("asyncio.Lock")
+
+        # Set up port mapping
+        original_mappings = settings.port_mappings.copy()
+        settings.port_mappings["test_map1"] = "mapped1"
+
+        port_args = [
+            {"driver": MockNumberPort, "port_id": "test_map1", "value": 100},
+        ]
+
+        yielded_ports = []
+        async for port in core_ports.load_iter(port_args, trigger_add=False):
+            yielded_ports.append(port)
+
+        # Should yield with mapped ID
+        assert len(yielded_ports) == 1
+        assert yielded_ports[0].get_id() == "mapped1"
+
+        # Clean up
+        settings.port_mappings = original_mappings
+        port = core_ports.get("mapped1")
+        if port:
+            await port.remove(persisted_data=False)
+
+    async def test_trigger_add_called_when_enabled(self, mocker):
+        """Should call trigger_add on each port when trigger_add=True."""
+        from qtoggleserver.core import ports as core_ports
+        from tests.unit.qtoggleserver.mock.ports import MockBooleanPort
+
+        mocker.patch("asyncio.Lock")
+
+        port_args = [
+            {"driver": MockBooleanPort, "port_id": "test_trigger1", "value": True},
+            {"driver": MockBooleanPort, "port_id": "test_trigger2", "value": False},
+        ]
+
+        trigger_add_calls = []
+
+        async def mock_trigger_add(self):
+            trigger_add_calls.append(self.get_id())
+
+        mocker.patch.object(MockBooleanPort, "trigger_add", side_effect=mock_trigger_add, autospec=True)
+
+        async for port in core_ports.load_iter(port_args, trigger_add=True):
+            pass
+
+        # trigger_add should be called for both ports
+        assert trigger_add_calls == ["test_trigger1", "test_trigger2"]
+
+        # Clean up
+        for port_id in ["test_trigger1", "test_trigger2"]:
+            port = core_ports.get(port_id)
+            if port:
+                await port.remove(persisted_data=False)
+
+    async def test_trigger_add_not_called_when_disabled(self, mocker):
+        """Should not call trigger_add on each port when trigger_add=False."""
+        from qtoggleserver.core import ports as core_ports
+        from tests.unit.qtoggleserver.mock.ports import MockBooleanPort
+
+        mocker.patch("asyncio.Lock")
+
+        port_args = [
+            {"driver": MockBooleanPort, "port_id": "test_notrigger1", "value": True},
+        ]
+
+        trigger_add_mock = mocker.patch.object(MockBooleanPort, "trigger_add", autospec=True)
+
+        async for port in core_ports.load_iter(port_args, trigger_add=False):
+            pass
+
+        # trigger_add should NOT be called
+        trigger_add_mock.assert_not_called()
+
+        # Clean up
+        port = core_ports.get("test_notrigger1")
+        if port:
+            await port.remove(persisted_data=False)
+
+
+class TestLoad:
+    async def test_basic_call(self, mocker):
+        """Should load given port."""
+        from qtoggleserver.core import ports as core_ports
+        from tests.unit.qtoggleserver.mock.ports import MockBooleanPort
+
+        mocker.patch("asyncio.Lock")
+
+        # This is how existing code uses load()
+        port_args = [{"driver": MockBooleanPort, "port_id": "test_compat1", "value": False}]
+        ports = await core_ports.load(port_args, trigger_add=False)
+
+        assert isinstance(ports, list)
+        assert len(ports) == 1
+        assert ports[0].get_id() == "test_compat1"
+
+        # Clean up
+        for port in ports:
+            await port.remove(persisted_data=False)
+
+    async def test_returns_all_ports_after_completion(self, mocker):
+        """Should return all loaded ports in a list after completion."""
+        from qtoggleserver.core import ports as core_ports
+        from tests.unit.qtoggleserver.mock.ports import MockBooleanPort, MockNumberPort
+
+        mocker.patch("asyncio.Lock")
+
+        port_args = [
+            {"driver": MockBooleanPort, "port_id": "test_load1", "value": True},
+            {"driver": MockNumberPort, "port_id": "test_load2", "value": 99},
+        ]
+
+        ports = await core_ports.load(port_args, trigger_add=False)
+
+        # Should return a list with all ports
+        assert len(ports) == 2
+        assert ports[0].get_id() == "test_load1"
+        assert ports[1].get_id() == "test_load2"
+
+        # Clean up
+        for port in ports:
+            await port.remove(persisted_data=False)

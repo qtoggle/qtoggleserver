@@ -123,12 +123,15 @@ class Peripheral(DriverParamsMixin, logging_utils.LoggableMixin, metaclass=abc.A
             return
 
         port_args = await self.get_port_args()
-        loaded_ports = await core_ports.load(port_args)
-        self._ports_by_id = {cast(PeripheralPort, p).get_initial_id(): p for p in loaded_ports}
+        self._ports_by_id = {}
+        async for port in core_ports.load_iter(port_args):
+            port = cast(PeripheralPort, port)
+            port_id = port.get_initial_id()
+            self._ports_by_id[port_id] = port
 
         # If no port has been loaded, there's no way for the user to enable the peripheral (via ports) so we have to
         # enable it manually, here.
-        if not loaded_ports:
+        if not self._ports_by_id:  # TODO: is this welcomed?
             await self.enable()
 
         await self._apply_force_enabled()
