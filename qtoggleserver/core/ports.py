@@ -31,6 +31,7 @@ from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
 from qtoggleserver.utils.debounced import Debounced
+from qtoggleserver.utils.misc import append_traceback, stack_to_traceback
 
 
 TYPE_BOOLEAN = "boolean"
@@ -116,6 +117,14 @@ class PortError(Exception):
 
 class PortLoadError(PortError):
     pass
+
+
+class PortLoadErrors(Exception):
+    """An exception class to wrap errors for multiple ports at once coming from a list of port arguments. Each key in
+    the `errors` dict represents the position in the list of port arguments."""
+
+    def __init__(self, errors: dict[int, Exception]) -> None:
+        self.errors: dict[int, Exception] = errors
 
 
 class PortReadError(PortError):
@@ -1104,22 +1113,25 @@ class Port(BasePort, metaclass=abc.ABCMeta):
 async def load_iter(port_args: list[dict[str, Any]], trigger_add: bool = True) -> AsyncIterator[BasePort]:
     """Load ports from port arguments, yielding each port as it's loaded."""
     port_driver_classes = {}
-    ports = []
+    new_ports: dict[int, BasePort] = {}  # maps position in `port_args` to the new port instance
+    errors: dict[int, Exception] = {}
 
     # Create ports
-    for ps in port_args:
+    for i, ps in enumerate(port_args):
         ps = ps.copy()
         driver = ps.pop("driver", None)
         if not driver:
-            raise PortLoadError("Missing port driver")
+            errors[i] = PortLoadError("Missing port driver").with_traceback(stack_to_traceback())
+            continue
 
         if isinstance(driver, str):
             if driver not in port_driver_classes:
                 try:
                     logger.debug("loading port driver %s", driver)
                     port_driver_classes[driver] = dynload_utils.load_attr(driver)
-                except Exception as e:
-                    raise PortLoadError(f"Failed to load port driver {driver}") from e
+                except Exception:
+                    errors[i] = append_traceback()
+                    continue
 
             port_class = port_driver_classes[driver]
         else:
@@ -1129,20 +1141,23 @@ async def load_iter(port_args: list[dict[str, Any]], trigger_add: bool = True) -
 
         try:
             port = port_class(**ps)
-            port_id = port.get_id()
-
-            if port_id in _ports_by_id:
-                raise PortLoadError(f"A port with id {port_id} already exists")
-
-            _ports_by_id[port.get_id()] = port
-            ports.append(port)
-
-            logger.debug("initialized %s (driver %s)", port, port_class_desc)
         except Exception as e:
-            raise PortLoadError(f"Failed to initialize port from driver {port_class_desc}") from e
+            errors[i] = e
+            continue
+
+        port_id = port.get_id()
+        if port_id in _ports_by_id:
+            errors[i] = PortLoadError(f"A port with id {port_id} already exists").with_traceback(stack_to_traceback())
+            continue
+
+        _ports_by_id[port.get_id()] = port
+        new_ports[i] = port
+
+        logger.debug("initialized %s (driver %s)", port, port_class_desc)
 
     # Map IDs
-    for port in ports:
+    for port in new_ports.values():
+        # Don't map virtual port IDs
         if await port.get_attr("virtual"):
             continue
 
@@ -1152,31 +1167,37 @@ async def load_iter(port_args: list[dict[str, Any]], trigger_add: bool = True) -
             continue
 
         if new_id in _ports_by_id:
-            raise PortLoadError(f"Cannot map port {old_id} to {new_id}: new id already exists")
-
-        port = _ports_by_id.get(old_id)
-        if not port:
-            raise PortLoadError(f"Cannot map port {old_id} to {new_id}: no such port")
+            logger.error("cannot map port %s to %s: new id already exists", old_id, new_id)
+            continue
 
         try:
             port.map_id(new_id)
         except Exception as e:
-            raise PortLoadError(f"Cannot map port {old_id} to {new_id}") from e
+            logger.error("cannot map port %s to %s: %s", old_id, new_id, e)
+            continue
 
         _ports_by_id.pop(old_id)
         _ports_by_id[port.get_id()] = port
 
     # Load created ports and yield each one
-    for port in ports:
+    for i, port in new_ports.items():
         try:
             await port.load()
         except Exception as e:
-            raise PortLoadError(f"Failed to load {port}") from e
+            port._removed = True
+            _ports_by_id.pop(port.get_id())
+            errors[i] = e
 
         if trigger_add:
-            await port.trigger_add()
+            try:
+                await port.trigger_add()
+            except Exception as e:
+                errors[i] = e
 
         yield port
+
+    if errors:
+        raise PortLoadErrors(errors)
 
 
 async def load(port_args: list[dict[str, Any]], trigger_add: bool = True) -> list[BasePort]:
@@ -1190,7 +1211,10 @@ async def load(port_args: list[dict[str, Any]], trigger_add: bool = True) -> lis
 
 async def load_one(cls: str | type, args: dict[str, Any], trigger_add: bool = True) -> BasePort:
     port_args = [dict(driver=cls, **args)]
-    ports = await load(port_args, trigger_add=trigger_add)
+    try:
+        ports = await load(port_args, trigger_add=trigger_add)
+    except PortLoadErrors as ple:
+        raise ple.errors[0]
 
     return ports[0]
 
