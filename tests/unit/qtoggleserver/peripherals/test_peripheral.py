@@ -500,6 +500,31 @@ class TestPortManagement:
         spy_enable.assert_called_once()
         assert len(p._ports_by_id) == 0
 
+    async def test_init_ports_keeps_loaded_ports_when_some_fail(self, mocker):
+        """init_ports should retain successfully loaded ports even if others fail."""
+        from qtoggleserver.core import ports as core_ports
+
+        p = MockPeripheral(name="test", dummy_param="v")
+        mocker.patch.object(
+            p,
+            "get_port_args",
+            return_value=[{"driver": "driver.One", "id": "id1"}, {"driver": "driver.Two", "id": "id2"}],
+        )
+        fake_port = mocker.MagicMock()
+        fake_port.get_initial_id.return_value = "ok_id"
+
+        async def fake_load_iter(port_args, trigger_add=True):
+            yield fake_port
+            raise core_ports.PortLoadErrors({1: RuntimeError("bad port")})
+
+        mocker.patch("qtoggleserver.core.ports.load_iter", side_effect=fake_load_iter)
+        spy_error = mocker.patch.object(p, "error")
+
+        await p.init_ports()
+
+        assert p._ports_by_id == {"ok_id": fake_port}
+        spy_error.assert_called_once()
+
     async def test_cleanup_ports_removes_all_ports(self, mocker):
         """cleanup_ports should remove all ports with correct persisted_data flag."""
         p = MockPeripheral(name="test", dummy_param="v")

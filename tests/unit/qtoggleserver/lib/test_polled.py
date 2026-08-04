@@ -20,9 +20,11 @@ class MockPolledPort(PolledPort):
 
 
 class MockPolledPeripheral(PolledPeripheral):
-    def __init__(self, poll_after_write=False, **kwargs) -> None:
+    def __init__(self, poll_after_write=False, trigger_update_after_poll=False, **kwargs) -> None:
         if poll_after_write:
             self.POLL_AFTER_WRITE = True
+        if trigger_update_after_poll:
+            self.TRIGGER_UPDATE_AFTER_POLL = True
         self._poll_count = 0
         super().__init__(**kwargs)
 
@@ -238,3 +240,243 @@ class TestPolledPeripheralPollAfterWriteFlag:
 
         spy_poll1.assert_called_once()
         spy_poll2.assert_not_called()
+
+
+class TestTriggerUpdateAfterPoll:
+    async def test_trigger_update_called_after_poll_in_poll_loop_when_enabled(self, mocker):
+        """Should call trigger_port_update_fire_and_forget() after successful poll when TRIGGER_UPDATE_AFTER_POLL is
+        True.
+        """
+
+        peripheral = MockPolledPeripheral(name="test", trigger_update_after_poll=True, dummy_param="value")
+
+        # Mock set_online to prevent it from calling trigger_port_update_fire_and_forget
+        mocker.patch.object(peripheral, "set_online")
+        spy_trigger = mocker.patch.object(peripheral, "trigger_port_update_fire_and_forget")
+        mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
+        mocker.patch("qtoggleserver.core.main.loop", True)  # Mock main loop initialized
+
+        # Start polling task and let it run one iteration
+        peripheral._poll_task = asyncio.create_task(peripheral._poll_loop())
+        await asyncio.sleep(0.05)
+
+        # Stop polling
+        peripheral._polling = False
+        peripheral._poll_wakeup.set()
+        try:
+            await asyncio.wait_for(peripheral._poll_task, timeout=1.0)
+        except asyncio.TimeoutError:
+            peripheral._poll_task.cancel()
+
+        # trigger_port_update_fire_and_forget should be called because TRIGGER_UPDATE_AFTER_POLL is True
+        spy_trigger.assert_called()
+
+    async def test_trigger_update_not_called_after_poll_in_poll_loop_when_disabled(self, mocker):
+        """Should NOT call trigger_port_update_fire_and_forget() from TRIGGER_UPDATE_AFTER_POLL when flag is False."""
+        peripheral = MockPolledPeripheral(name="test", trigger_update_after_poll=False, dummy_param="value")
+
+        # Mock set_online to prevent it from calling trigger_port_update_fire_and_forget
+        mocker.patch.object(peripheral, "set_online")
+        spy_trigger = mocker.patch.object(peripheral, "trigger_port_update_fire_and_forget")
+        mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
+        mocker.patch("qtoggleserver.core.main.loop", True)  # Mock main loop initialized
+
+        # Start polling task and let it run one iteration
+        peripheral._poll_task = asyncio.create_task(peripheral._poll_loop())
+        await asyncio.sleep(0.05)
+
+        # Stop polling
+        peripheral._polling = False
+        peripheral._poll_wakeup.set()
+        try:
+            await asyncio.wait_for(peripheral._poll_task, timeout=1.0)
+        except asyncio.TimeoutError:
+            peripheral._poll_task.cancel()
+
+        # trigger_port_update_fire_and_forget should not be called because TRIGGER_UPDATE_AFTER_POLL is False
+        spy_trigger.assert_not_called()
+
+    async def test_trigger_update_called_after_write_when_both_flags_enabled(self, mocker):
+        """Should call trigger_port_update_fire_and_forget() after poll-after-write when both flags are True."""
+        peripheral = MockPolledPeripheral(
+            name="test", poll_after_write=True, trigger_update_after_poll=True, dummy_param="value"
+        )
+        port = MockPolledPort(peripheral, "port1")
+
+        spy_trigger = mocker.patch.object(peripheral, "trigger_port_update_fire_and_forget")
+        mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
+
+        await port._write_value_safe(True)
+
+        spy_trigger.assert_called_once()
+
+    async def test_trigger_update_not_called_after_write_when_only_poll_after_write_enabled(self, mocker):
+        """Should NOT call trigger_port_update_fire_and_forget() when only POLL_AFTER_WRITE is True."""
+        peripheral = MockPolledPeripheral(
+            name="test", poll_after_write=True, trigger_update_after_poll=False, dummy_param="value"
+        )
+        port = MockPolledPort(peripheral, "port1")
+
+        spy_trigger = mocker.patch.object(peripheral, "trigger_port_update_fire_and_forget")
+        mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
+
+        await port._write_value_safe(True)
+
+        spy_trigger.assert_not_called()
+
+    async def test_trigger_update_not_called_after_write_when_only_trigger_update_enabled(self, mocker):
+        """Should NOT call trigger_port_update_fire_and_forget() after write when POLL_AFTER_WRITE is False."""
+        peripheral = MockPolledPeripheral(
+            name="test", poll_after_write=False, trigger_update_after_poll=True, dummy_param="value"
+        )
+        port = MockPolledPort(peripheral, "port1")
+
+        spy_trigger = mocker.patch.object(peripheral, "trigger_port_update_fire_and_forget")
+        spy_poll = mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
+
+        await port._write_value_safe(True)
+
+        # Neither poll nor trigger should be called (no poll-after-write)
+        spy_poll.assert_not_called()
+        spy_trigger.assert_not_called()
+
+    async def test_trigger_update_happens_after_poll_completes(self, mocker):
+        """trigger_port_update_fire_and_forget() should be called after poll() completes."""
+        peripheral = MockPolledPeripheral(
+            name="test", poll_after_write=True, trigger_update_after_poll=True, dummy_param="value"
+        )
+        port = MockPolledPort(peripheral, "port1")
+
+        poll_completed = False
+        trigger_called_after_poll = False
+
+        original_poll = peripheral.poll
+
+        async def mock_poll():
+            nonlocal poll_completed
+            await original_poll()
+            poll_completed = True
+
+        def mock_trigger():
+            nonlocal trigger_called_after_poll
+            trigger_called_after_poll = poll_completed
+
+        mocker.patch.object(peripheral, "poll", side_effect=mock_poll)
+        mocker.patch.object(peripheral, "trigger_port_update_fire_and_forget", side_effect=mock_trigger)
+
+        await port._write_value_safe(True)
+
+        assert poll_completed
+        assert trigger_called_after_poll
+
+    async def test_trigger_update_not_called_when_poll_fails(self, mocker):
+        """Should NOT call trigger_port_update_fire_and_forget() when poll() raises exception."""
+        peripheral = MockPolledPeripheral(
+            name="test", poll_after_write=True, trigger_update_after_poll=True, dummy_param="value"
+        )
+        port = MockPolledPort(peripheral, "port1")
+
+        spy_trigger = mocker.patch.object(peripheral, "trigger_port_update_fire_and_forget")
+        mocker.patch.object(peripheral, "poll", side_effect=RuntimeError("Poll failed"))
+
+        with pytest.raises(RuntimeError, match="Poll failed"):
+            await port._write_value_safe(True)
+
+        spy_trigger.assert_not_called()
+
+    async def test_multiple_writes_trigger_multiple_updates(self, mocker):
+        """Multiple writes should trigger multiple port updates when both flags are enabled."""
+        peripheral = MockPolledPeripheral(
+            name="test", poll_after_write=True, trigger_update_after_poll=True, dummy_param="value"
+        )
+        port = MockPolledPort(peripheral, "port1")
+
+        spy_trigger = mocker.patch.object(peripheral, "trigger_port_update_fire_and_forget")
+        mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
+
+        await port._write_value_safe(True)
+        await port._write_value_safe(False)
+        await port._write_value_safe(True)
+
+        assert spy_trigger.call_count == 3
+
+
+class TestTriggerUpdateAfterPollFlag:
+    def test_default_trigger_update_after_poll_is_false(self):
+        """TRIGGER_UPDATE_AFTER_POLL should default to False."""
+        peripheral = MockPolledPeripheral(name="test", dummy_param="value")
+
+        assert peripheral.TRIGGER_UPDATE_AFTER_POLL is False
+
+    def test_can_override_trigger_update_after_poll_in_subclass(self):
+        """Subclasses should be able to override TRIGGER_UPDATE_AFTER_POLL."""
+
+        class CustomPolledPeripheral(MockPolledPeripheral):
+            TRIGGER_UPDATE_AFTER_POLL = True
+
+        peripheral = CustomPolledPeripheral(name="test", dummy_param="value")
+
+        assert peripheral.TRIGGER_UPDATE_AFTER_POLL is True
+
+    async def test_trigger_update_after_poll_respected_per_peripheral_class(self, mocker):
+        """Different peripheral classes can have different TRIGGER_UPDATE_AFTER_POLL settings."""
+
+        class PeripheralWithTrigger(MockPolledPeripheral):
+            POLL_AFTER_WRITE = True
+            TRIGGER_UPDATE_AFTER_POLL = True
+
+        class PeripheralWithoutTrigger(MockPolledPeripheral):
+            POLL_AFTER_WRITE = True
+            TRIGGER_UPDATE_AFTER_POLL = False
+
+        p1 = PeripheralWithTrigger(name="test1", dummy_param="value1")
+        p2 = PeripheralWithoutTrigger(name="test2", dummy_param="value2")
+
+        port1 = MockPolledPort(p1, "port1")
+        port2 = MockPolledPort(p2, "port2")
+
+        spy_trigger1 = mocker.patch.object(p1, "trigger_port_update_fire_and_forget")
+        spy_trigger2 = mocker.patch.object(p2, "trigger_port_update_fire_and_forget")
+        mocker.patch.object(p1, "poll", new_callable=mocker.AsyncMock)
+        mocker.patch.object(p2, "poll", new_callable=mocker.AsyncMock)
+
+        await port1._write_value_safe(True)
+        await port2._write_value_safe(True)
+
+        spy_trigger1.assert_called_once()
+        spy_trigger2.assert_not_called()
+
+    async def test_both_flags_independent(self, mocker):
+        """POLL_AFTER_WRITE and TRIGGER_UPDATE_AFTER_POLL should work independently."""
+
+        # Test all four combinations
+        combinations = [
+            (False, False, 0, 0),  # Neither enabled: no poll, no trigger
+            (True, False, 1, 0),  # Only poll: poll but no trigger
+            (False, True, 0, 0),  # Only trigger: no poll (so no trigger either)
+            (True, True, 1, 1),  # Both: poll and trigger
+        ]
+
+        for poll_after_write, trigger_update, expected_polls, expected_triggers in combinations:
+            peripheral = MockPolledPeripheral(
+                name="test",
+                poll_after_write=poll_after_write,
+                trigger_update_after_poll=trigger_update,
+                dummy_param="value",
+            )
+            port = MockPolledPort(peripheral, "port1")
+
+            spy_poll = mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
+            spy_trigger = mocker.patch.object(peripheral, "trigger_port_update_fire_and_forget")
+
+            await port._write_value_safe(True)
+
+            assert spy_poll.call_count == expected_polls, (
+                f"Failed for poll_after_write={poll_after_write}, trigger_update={trigger_update}"
+            )
+            assert spy_trigger.call_count == expected_triggers, (
+                f"Failed for poll_after_write={poll_after_write}, trigger_update={trigger_update}"
+            )
+
+            spy_poll.reset_mock()
+            spy_trigger.reset_mock()

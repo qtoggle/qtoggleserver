@@ -29,6 +29,8 @@ pip-log.txt
 *.map
 *.css
 .venv
+.env
+.env.*
 /doc/jsdoc
 /work
 launcher-icon*.png
