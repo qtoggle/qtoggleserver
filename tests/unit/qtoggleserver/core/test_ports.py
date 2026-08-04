@@ -513,6 +513,80 @@ class TestLoadIter:
         if port:
             await port.remove(persisted_data=False)
 
+    async def test_load_failure_not_yielded_and_removed(self, mocker):
+        """A port that fails `load()` should not be yielded, added, or trigger add events."""
+        from qtoggleserver.core import ports as core_ports
+        from tests.unit.qtoggleserver.mock.ports import MockBooleanPort
+
+        mocker.patch("asyncio.Lock")
+
+        port_args = [
+            {"driver": MockBooleanPort, "port_id": "test_load_ok", "value": True},
+            {"driver": MockBooleanPort, "port_id": "test_load_fail", "value": False},
+        ]
+
+        original_load = MockBooleanPort.load
+        trigger_add_calls: list[str] = []
+
+        async def mock_load(self):
+            if self.get_id() == "test_load_fail":
+                raise RuntimeError("load failed")
+            return await original_load(self)
+
+        async def mock_trigger_add(self):
+            trigger_add_calls.append(self.get_id())
+
+        mocker.patch.object(MockBooleanPort, "load", side_effect=mock_load, autospec=True)
+        mocker.patch.object(MockBooleanPort, "trigger_add", side_effect=mock_trigger_add, autospec=True)
+
+        yielded_ids = []
+        error = None
+        try:
+            async for port in core_ports.load_iter(port_args, trigger_add=True):
+                yielded_ids.append(port.get_id())
+        except core_ports.PortLoadErrors as ple:
+            error = ple
+
+        assert error is not None
+        assert isinstance(error.errors[1], RuntimeError)
+        assert yielded_ids == ["test_load_ok"]
+        assert core_ports.get("test_load_fail") is None
+        assert "test_load_fail" not in trigger_add_calls
+        assert trigger_add_calls == ["test_load_ok"]
+
+        port = core_ports.get("test_load_ok")
+        if port:
+            await port.remove(persisted_data=False)
+
+    async def test_mixed_errors_still_loads_valid_ports(self, mocker):
+        """Missing driver errors should be reported while valid ports still load."""
+        from qtoggleserver.core import ports as core_ports
+        from tests.unit.qtoggleserver.mock.ports import MockBooleanPort
+
+        mocker.patch("asyncio.Lock")
+
+        port_args = [
+            {"port_id": "test_missing_driver", "value": True},
+            {"driver": MockBooleanPort, "port_id": "test_after_error", "value": False},
+        ]
+
+        yielded_ids = []
+        error = None
+        try:
+            async for port in core_ports.load_iter(port_args, trigger_add=False):
+                yielded_ids.append(port.get_id())
+        except core_ports.PortLoadErrors as ple:
+            error = ple
+
+        assert error is not None
+        assert isinstance(error.errors[0], core_ports.PortLoadError)
+        assert str(error.errors[0]) == "Missing port driver"
+        assert yielded_ids == ["test_after_error"]
+
+        port = core_ports.get("test_after_error")
+        if port:
+            await port.remove(persisted_data=False)
+
 
 class TestLoad:
     async def test_basic_call(self, mocker):
@@ -556,6 +630,21 @@ class TestLoad:
         # Clean up
         for port in ports:
             await port.remove(persisted_data=False)
+
+
+class TestLoadOne:
+    async def test_re_raises_single_wrapped_error(self, mocker):
+        """load_one should re-raise the error at index 0 from PortLoadErrors."""
+        from qtoggleserver.core import ports as core_ports
+
+        expected_error = RuntimeError("boom")
+        mocker.patch("qtoggleserver.core.ports.load", side_effect=core_ports.PortLoadErrors({0: expected_error}))
+
+        try:
+            await core_ports.load_one("dummy.Class", {"port_id": "p1"})
+            assert False, "Expected load_one to raise"
+        except Exception as e:
+            assert e is expected_error
 
 
 class TestPortToPersisted:

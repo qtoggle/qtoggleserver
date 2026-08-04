@@ -55,6 +55,30 @@ class TestInitPorts:
         peripheral2.disable.assert_not_called()
         spy_vports_init.assert_called_once_with()
 
+    async def test_continues_when_static_port_load_has_partial_errors(self, mocker):
+        peripheral = mocker.MagicMock()
+        peripheral.init_ports = mocker.AsyncMock()
+
+        static_ports = [{"driver": "driver.One", "id": "p1"}, {"driver": "driver.Two", "id": "p2"}]
+        mocker.patch.object(startup.settings, "ports", static_ports)
+
+        errors = {0: RuntimeError("first failed"), 1: RuntimeError("second failed")}
+        spy_ports_init = mocker.patch("qtoggleserver.startup.ports.init")
+        spy_ports_load = mocker.patch(
+            "qtoggleserver.startup.ports.load", side_effect=startup.ports.PortLoadErrors(errors)
+        )
+        spy_vports_init = mocker.patch("qtoggleserver.startup.vports.init")
+        spy_logger = mocker.patch("qtoggleserver.startup.logger")
+        mocker.patch("qtoggleserver.startup.peripherals.get_all", return_value=[peripheral])
+
+        await startup.init_ports()
+
+        spy_ports_init.assert_called_once_with()
+        spy_ports_load.assert_called_once_with(static_ports)
+        peripheral.init_ports.assert_called_once_with()
+        spy_vports_init.assert_called_once_with()
+        assert spy_logger.error.call_count == 2
+
 
 class TestInitPeripherals:
     async def test_triggers_peripheral_add_events(self, mocker):

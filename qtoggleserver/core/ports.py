@@ -1187,6 +1187,7 @@ async def load_iter(port_args: list[dict[str, Any]], trigger_add: bool = True) -
             port._removed = True
             _ports_by_id.pop(port.get_id())
             errors[i] = e
+            continue
 
         if trigger_add:
             try:
