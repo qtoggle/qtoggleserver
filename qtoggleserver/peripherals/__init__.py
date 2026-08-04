@@ -41,7 +41,7 @@ async def add(peripheral_args: dict[str, Any], static: bool = False) -> Peripher
     try:
         peripheral_class = dynload_utils.load_attr(class_path)
     except Exception:
-        raise NoSuchDriver(class_path)
+        raise NoSuchDriver(class_path) from None
 
     p: Peripheral = peripheral_class(static=static, **peripheral_args)
     if p.get_id() in _registered_peripherals:
@@ -52,6 +52,7 @@ async def add(peripheral_args: dict[str, Any], static: bool = False) -> Peripher
     _registered_peripherals[p.get_id()] = p
 
     if not static:
+        # TODO: add an argument to `add` function to conditionally persist data - not all `add` calls require persisting
         persist_data = p.to_persisted()
         await persist.replace("peripherals", p.get_id(), persist_data)
 

@@ -11,6 +11,7 @@ from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.utils import asyncio as asyncio_utils
+from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
 from qtoggleserver.utils import runner as runner_utils
 from qtoggleserver.utils.driver_params import DriverParamsMixin
@@ -131,16 +132,25 @@ class Peripheral(DriverParamsMixin, logging_utils.LoggableMixin, metaclass=abc.A
             await self.disable()
             return
 
-        port_args = await self.get_port_args()
         self._ports_by_id = {}
-        async for port in core_ports.load_iter(port_args):
-            port = cast(PeripheralPort, port)
-            port_id = port.get_initial_id()
-            self._ports_by_id[port_id] = port
+        port_args = await self.get_port_args()
+        try:
+            async for port in core_ports.load_iter(port_args):
+                port = cast(PeripheralPort, port)
+                port_id = port.get_initial_id()
+                self._ports_by_id[port_id] = port
+        except core_ports.PortLoadErrors as ple:
+            for i, error in ple.errors.items():
+                args = port_args[i]
+                self.error(
+                    "failed to load port from arguments: %s",
+                    json_utils.dumps(args, extra_types=json_utils.EXTRA_TYPES_EXTENDED),
+                    exc_info=error,
+                )
 
         # If no port has been loaded, there's no way for the user to enable the peripheral (via ports) so we have to
         # enable it manually, here.
-        if not self._ports_by_id:  # TODO: is this welcomed?
+        if not self._ports_by_id:
             await self.enable()
 
         await self._apply_force_enabled()
@@ -155,7 +165,10 @@ class Peripheral(DriverParamsMixin, logging_utils.LoggableMixin, metaclass=abc.A
         port_args = port_args.copy()
         port_args.setdefault("peripheral", self)
 
-        port = cast(PeripheralPort, (await core_ports.load([port_args]))[0])
+        try:
+            port = cast(PeripheralPort, (await core_ports.load([port_args]))[0])
+        except core_ports.PortLoadErrors as ple:
+            raise ple.errors[0]
         self._ports_by_id[port.get_initial_id()] = port
         return port
 
