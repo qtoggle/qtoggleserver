@@ -15,6 +15,7 @@ from qtoggleserver.conf import metadata, settings
 from qtoggleserver.core import device, events, history, main, ports, reverse, sessions, vports, webhooks
 from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.utils import conf as conf_utils
+from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
 
 
@@ -264,7 +265,16 @@ async def init_ports() -> None:
     await ports.init()
 
     # Load ports statically configured in settings
-    await ports.load(settings.ports)
+    try:
+        await ports.load(settings.ports)
+    except ports.PortLoadErrors as ple:
+        for i, error in ple.errors.items():
+            args = settings.ports[i]
+            logger.error(
+                "failed to load port from arguments: %s",
+                json_utils.dumps(args, extra_types=json_utils.EXTRA_TYPES_EXTENDED),
+                exc_info=error,
+            )
 
     # Peripheral ports
     for peripheral in list(peripherals.get_all()):
