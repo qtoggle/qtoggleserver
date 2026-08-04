@@ -83,9 +83,6 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
                 self._retry_counter = 0
                 self.set_online(True)
 
-                if self.TRIGGER_UPDATE_AFTER_POLL:
-                    self.trigger_port_update_fire_and_forget()
-
                 # Sleep until next poll interval, but wake up immediately if interval changes or polling stops
                 self._poll_wakeup.clear()
                 try:

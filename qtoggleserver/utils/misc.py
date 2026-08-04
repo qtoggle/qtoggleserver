@@ -52,9 +52,10 @@ def append_traceback(exc: Exception | None = None, tb: types.TracebackType | Non
     """Use inside an `except` block to return the current exception (or `exc`) with `tb` traceback appended to its own
     traceback."""
 
-    if not exc:
+    if exc is None:
         exc = sys.exc_info()[1]
-        assert exc, "Use this function inside an `except` block"
+        if exc is None:
+            raise AssertionError("Use this function inside an `except` block")
     if not tb:
         tb = stack_to_traceback(skip=3)
 
