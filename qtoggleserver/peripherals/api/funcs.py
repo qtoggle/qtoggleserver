@@ -201,7 +201,11 @@ async def put_peripherals(request: core_api.APIRequest, params: GenericJSONList)
         if args.pop("static", None):
             continue
         args.setdefault("params", {})
-        p = await peripherals.add(args)
+        try:
+            p = await peripherals.add(args)
+        except Exception:
+            logger.exception('failed to restore peripheral from args "%s"', args)
+            continue
         peripheral_list.append(p)
 
     # First trigger add event, then init ports

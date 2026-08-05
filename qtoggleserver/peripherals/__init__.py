@@ -29,7 +29,7 @@ def get(peripheral_id: str) -> Peripheral | None:
     return _registered_peripherals.get(peripheral_id)
 
 
-async def add(peripheral_args: dict[str, Any], static: bool = False) -> Peripheral:
+async def add(peripheral_args: dict[str, Any], static: bool = False, persisted_data: bool = True) -> Peripheral:
     peripheral_args = peripheral_args.copy()
     class_path = peripheral_args["driver"]
 
@@ -51,8 +51,7 @@ async def add(peripheral_args: dict[str, Any], static: bool = False) -> Peripher
     await p.handle_init()
     _registered_peripherals[p.get_id()] = p
 
-    if not static:
-        # TODO: add an argument to `add` function to conditionally persist data - not all `add` calls require persisting
+    if not static and persisted_data:
         persist_data = p.to_persisted()
         await persist.replace("peripherals", p.get_id(), persist_data)
 
@@ -85,14 +84,14 @@ async def init() -> None:
     logger.debug("loading static peripherals")
     for peripheral_args in settings.peripherals:
         try:
-            await add(peripheral_args, static=True)
+            await add(peripheral_args, static=True, persisted_data=False)
         except Exception:
             logger.error("failed to load peripheral %s", peripheral_args.get("driver"), exc_info=True)
 
     logger.debug("loading dynamic peripherals")
     for peripheral_args in await persist.query("peripherals"):
         try:
-            await add(peripheral_args)
+            await add(peripheral_args, persisted_data=False)
         except Exception:
             logger.error("failed to load peripheral %s", peripheral_args.get("driver"), exc_info=True)
 

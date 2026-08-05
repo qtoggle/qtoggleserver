@@ -19,6 +19,21 @@ class TestAdd:
         finally:
             await peripherals.remove(peripheral.get_id(), persisted_data=True)
 
+    async def test_does_not_persist_when_persisted_data_is_false(self, mock_persist_driver):
+        peripheral = await peripherals.add(
+            {
+                "driver": "tests.unit.qtoggleserver.mock.peripherals.MockPeripheral",
+                "dummy_param": "dummy_value",
+                "name": "peripheral_without_persisted_data",
+            },
+            persisted_data=False,
+        )
+
+        try:
+            assert await persist.get("peripherals", peripheral.get_id()) is None
+        finally:
+            await peripherals.remove(peripheral.get_id(), persisted_data=False)
+
     async def test_defaults_display_name_to_empty_string(self, mock_persist_driver):
         peripheral = await peripherals.add(
             {
