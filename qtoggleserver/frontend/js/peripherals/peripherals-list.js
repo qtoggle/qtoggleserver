@@ -62,12 +62,13 @@ class PeripheralsList extends PageList {
             /* Preserve selected item */
             let oldSelectedItems = this.getSelectedItems()
             let oldSelectedId = oldSelectedItems.length && oldSelectedItems[0].getData()
+            let selectedPeripheralId = this.peripheralForm ? this.peripheralForm.getPeripheralId() : oldSelectedId
 
             let items = peripherals.map(this.peripheralToItem, this)
             this.setItems(items)
 
-            if (oldSelectedId) {
-                let item = items.find(i => i.getData() === oldSelectedId)
+            if (selectedPeripheralId) {
+                let item = items.find(i => i.getData() === selectedPeripheralId)
                 if (item) {
                     this.setSelectedItems([item])
                 }

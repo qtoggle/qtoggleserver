@@ -40,6 +40,12 @@ class PeripheralForm extends PageForm {
 
             fields: [
                 new TextField({
+                    name: 'id',
+                    label: gettext('ID'),
+                    required: true,
+                    readonly: true
+                }),
+                new TextField({
                     name: 'name',
                     label: gettext('Name'),
                     required: false,
@@ -107,15 +113,7 @@ class PeripheralForm extends PageForm {
         return PeripheralsAPI.getPeripherals().then(function (peripherals) {
             let peripheral = peripherals.find(p => p.id === this._peripheralId)
             if (peripheral) {
-                this.setIcon(Peripherals.makePeripheralIcon(peripheral))
-                this.setData({
-                    name: peripheral.name,
-                    display_name: peripheral.display_name || '',
-                    driver: peripheral.driver,
-                    params: JSON.stringify(peripheral.params || {}, null, 4),
-                    force_enabled: peripheral.force_enabled
-                })
-                this.setTitle(peripheral.display_name || peripheral.id)
+                this.fromPeripheral(peripheral)
                 if (!peripheral.static) {
                     this.getField('name').setReadonly(false)
                     this.getField('display_name').setReadonly(false)
@@ -148,6 +146,7 @@ class PeripheralForm extends PageForm {
 
             logger.debug(`peripheral "${this._peripheralId}" successfully updated`)
             this._peripheralId = peripheral.id
+            this.setPathId(`~${peripheral.id}`)
             this.setTitle(peripheral.display_name || peripheral.id)
 
         }.bind(this)).catch(function (error) {
@@ -156,6 +155,20 @@ class PeripheralForm extends PageForm {
             throw error
 
         }.bind(this))
+    }
+
+    fromPeripheral(peripheral) {
+        this.setIcon(Peripherals.makePeripheralIcon(peripheral))
+        this.setPathId(`~${peripheral.id}`)
+        this.setData({
+            id: peripheral.id,
+            name: peripheral.name,
+            display_name: peripheral.display_name || '',
+            driver: peripheral.driver,
+            params: JSON.stringify(peripheral.params || {}, null, 4),
+            force_enabled: peripheral.force_enabled
+        })
+        this.setTitle(peripheral.display_name || peripheral.id)
     }
 
     onButtonPress(button) {

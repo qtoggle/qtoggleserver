@@ -49,37 +49,38 @@ class PeripheralsSection extends Section {
         let peripheralId = event.params && event.params.id
 
         switch (event.type) {
-            case 'peripheral-update':
+            case 'peripheral-update': {
+                this.peripheralsList.updateUIASAP()
+                if (peripheralId) {
+                    Toast.info(StringUtils.formatPercent(gettext('Peripheral %(id)s has been updated.'), {
+                        id: peripheralId
+                    }))
+                }
+                else {
+                    Toast.info(gettext('Peripheral has been updated.'))
+                }
+
+                if (peripheralForm && (peripheralForm.getPeripheralId() === peripheralId)) {
+                    peripheralForm.fromPeripheral(event.params)
+                }
+
+                break
+            }
+
             case 'peripheral-remove': {
                 this.peripheralsList.updateUIASAP()
 
-                if (event.type === 'peripheral-update') {
-                    if (peripheralId) {
-                        Toast.info(StringUtils.formatPercent(gettext('Peripheral %(id)s has been updated.'), {
-                            id: peripheralId
-                        }))
-                    }
-                    else {
-                        Toast.info(gettext('Peripheral has been updated.'))
-                    }
-
-                    if (peripheralForm && (peripheralForm.getPeripheralId() === peripheralId)) {
-                        peripheralForm.setIcon(Peripherals.makePeripheralIcon(event.params))
-                    }
+                if (peripheralId) {
+                    Toast.info(StringUtils.formatPercent(gettext('Peripheral %(id)s has been removed.'), {
+                        id: peripheralId
+                    }))
                 }
                 else {
-                    if (peripheralId) {
-                        Toast.info(StringUtils.formatPercent(gettext('Peripheral %(id)s has been removed.'), {
-                            id: peripheralId
-                        }))
-                    }
-                    else {
-                        Toast.info(gettext('Peripheral has been removed.'))
-                    }
+                    Toast.info(gettext('Peripheral has been removed.'))
+                }
 
-                    if (peripheralForm && (peripheralForm.getPeripheralId() === peripheralId)) {
-                        peripheralForm.close(/* force = */ true)
-                    }
+                if (peripheralForm && (peripheralForm.getPeripheralId() === peripheralId)) {
+                    peripheralForm.close(/* force = */ true)
                 }
 
                 break
