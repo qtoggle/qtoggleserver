@@ -216,18 +216,10 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         return value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs
 
     def _build_eval_context(self) -> EvalContext:
-        device_attrs = self._device_attrs.copy()
-
-        # Add slave device attrs
-        for slave_name, slave_attrs in self._slave_attrs.items():
-            device_attrs.update(
-                {f"{slave_name}.{attr_name}": attr_value for attr_name, attr_value in slave_attrs.items()}
-            )
-
         return EvalContext(
             port_values=self._port_values,
             port_attrs=self._port_attrs,
-            device_attrs=device_attrs,
+            device_attrs=self.get_device_attrs(),
             now_ms=int(time.time() * 1000),
         )
 
@@ -371,16 +363,21 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         return True
 
     def get_device_attrs(self) -> Attributes:
-        return self._device_attrs
+        device_attrs = self._device_attrs.copy()
+
+        # Add slave device attrs using the same "<slave_name>:<attr_name>" convention as expressions.build_context().
+        for slave_name, slave_attrs in self._slave_attrs.items():
+            device_attrs.update(
+                {f"{slave_name}:{attr_name}": attr_value for attr_name, attr_value in slave_attrs.items()}
+            )
+
+        return device_attrs
 
     def get_port_values(self) -> dict[str, NullablePortValue]:
         return self._port_values
 
     def get_port_attrs(self) -> dict[str, Attributes]:
         return self._port_attrs
-
-    def get_slave_attrs(self) -> dict[str, Attributes]:
-        return self._slave_attrs
 
     async def handle_event(self, event: core_events.Event) -> None:
         (value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs) = await self._update_from_event(

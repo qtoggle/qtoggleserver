@@ -423,11 +423,18 @@ class TestFilterEventHandlerGetters(FilterEventHandlerTestBase):
         handler = ConcreteFilterEventHandler()
         assert handler.get_port_attrs() == {}
 
-    def test_get_slave_attrs_initially_empty(self):
-        """Should return an empty dict before any slave event is handled."""
+    def test_get_device_attrs_includes_flattened_slave_attrs(self):
+        """Should include slave attributes in device attrs using "<slave_name>:<attr_name>" keys."""
 
         handler = ConcreteFilterEventHandler()
-        assert handler.get_slave_attrs() == {}
+        handler._device_attrs = {"name": "mydevice"}
+        handler._slave_attrs = {"slave1": {"name": "slave-device", "enabled": True}}
+
+        assert handler.get_device_attrs() == {
+            "name": "mydevice",
+            "slave1:name": "slave-device",
+            "slave1:enabled": True,
+        }
 
     async def test_get_port_values_after_value_change(self, mock_num_port1, mocker):
         """Should reflect the updated port value after a ValueChange event is handled."""

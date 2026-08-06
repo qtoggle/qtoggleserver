@@ -109,7 +109,6 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
             "device_attrs": self.get_device_attrs(),
             "port_values": self.get_port_values(),
             "port_attrs": self.get_port_attrs(),
-            "slave_attrs": self.get_slave_attrs(),
             "metadata": metadata.get_all(),
         }
 
