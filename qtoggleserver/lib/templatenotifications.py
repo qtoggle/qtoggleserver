@@ -12,7 +12,7 @@ from qtoggleserver.core.typing import Attribute, Attributes, NullablePortValue
 from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.utils import template as template_utils
 
-from .filtereventhandler import FilterEventHandler
+from .filter_event_handler import FilterEventHandler
 
 
 logger = logging.getLogger(__name__)

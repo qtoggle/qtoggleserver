@@ -2,7 +2,7 @@ import pytest
 
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core.expressions import exceptions as expression_exceptions
-from qtoggleserver.lib.filtereventhandler import ANY_VALUE, FilterEventHandler
+from qtoggleserver.lib.filter_event_handler import ANY_VALUE, FilterEventHandler
 
 
 class ConcreteFilterEventHandler(FilterEventHandler):

@@ -3,14 +3,14 @@ import logging
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import Attribute, Attributes, NullablePortValue
-from qtoggleserver.lib import filtereventhandler
+from qtoggleserver.lib import filter_event_handler
 from qtoggleserver.slaves import devices as slaves_devices
 
 
 logger = logging.getLogger(__name__)
 
 
-class DummyEventHandler(filtereventhandler.FilterEventHandler):
+class DummyEventHandler(filter_event_handler.FilterEventHandler):
     async def on_event(self, event: core_events.Event) -> None:
         logger.debug("handling %s", event)
 
