@@ -503,7 +503,12 @@ class TestPatchPeripheral:
         mock_port2.get_initial_id.return_value = "id2"
         mocker.patch.object(mock_peripheral1, "get_ports", return_value=[mock_port1, mock_port2])
 
-        await peripherals.migrate_on_change(mock_peripheral1, "peripheral2", mock_peripheral1.get_params())
+        await peripherals.migrate_on_change(
+            mock_peripheral1,
+            mock_peripheral1.get_driver(),
+            "peripheral2",
+            mock_peripheral1.get_params(),
+        )
 
         assert await persist.get(BasePort.PERSIST_COLLECTION, "peripheral2.id1") == {
             "id": "peripheral2.id1",
@@ -523,7 +528,12 @@ class TestPatchPeripheral:
         await persist.replace("peripherals", mock_peripheral1.get_id(), {"id": mock_peripheral1.get_id()})
         assert await persist.get("peripherals", mock_peripheral1.get_id()) is not None
 
-        await peripherals.migrate_on_change(mock_peripheral1, "peripheral2", mock_peripheral1.get_params())
+        await peripherals.migrate_on_change(
+            mock_peripheral1,
+            mock_peripheral1.get_driver(),
+            "peripheral2",
+            mock_peripheral1.get_params(),
+        )
 
         assert await persist.get("peripherals", mock_peripheral1.get_id()) is None
 
@@ -536,13 +546,136 @@ class TestPatchPeripheral:
         mock_port.get_initial_id.return_value = "id1"
         mocker.patch.object(mock_peripheral1, "get_ports", return_value=[mock_port])
 
-        await peripherals.migrate_on_change(mock_peripheral1, "peripheral1", mock_peripheral1.get_params())
+        await peripherals.migrate_on_change(
+            mock_peripheral1,
+            mock_peripheral1.get_driver(),
+            "peripheral1",
+            mock_peripheral1.get_params(),
+        )
 
         # Port data should be untouched when old and new IDs are the same
         assert await persist.get(BasePort.PERSIST_COLLECTION, "peripheral1.id1") == {
             "id": "peripheral1.id1",
             "tag": "t1",
         }
+
+    async def test_unnamed_peripheral_params_change_migrates_data(self, mock_persist_driver, mocker):
+        """Test that changing params on an unnamed peripheral migrates persisted data."""
+        from qtoggleserver import peripherals
+
+        # Create an unnamed peripheral (will have auto-generated ID based on params hash)
+        unnamed_peripheral = MockPeripheral(name=None, dummy_param="value1")
+        await peripherals.add({"driver": unnamed_peripheral.get_driver(), "params": {"dummy_param": "value1"}})
+        old_id = unnamed_peripheral.get_id()
+        assert old_id.startswith("peripheral_")  # Auto-generated ID
+
+        # Store some persisted data for the peripheral and its ports
+        await persist.replace("peripherals", old_id, {"id": old_id, "data": "test"})
+        await persist.replace(BasePort.PERSIST_COLLECTION, f"{old_id}.id1", {"id": f"{old_id}.id1", "tag": "t1"})
+
+        mock_port = mocker.MagicMock()
+        mock_port.get_id.return_value = f"{old_id}.id1"
+        mock_port.get_initial_id.return_value = "id1"
+        mocker.patch.object(unnamed_peripheral, "get_ports", return_value=[mock_port])
+
+        # Migrate when params change
+        await peripherals.migrate_on_change(
+            unnamed_peripheral, unnamed_peripheral.get_driver(), None, {"dummy_param": "value2"}
+        )
+
+        # Old peripheral entry should be removed
+        assert await persist.get("peripherals", old_id) is None
+
+        # Port data should be migrated (unnamed peripheral ports don't have peripheral prefix)
+        assert await persist.get(BasePort.PERSIST_COLLECTION, f"{old_id}.id1") is None
+        assert await persist.get(BasePort.PERSIST_COLLECTION, "id1") == {"id": "id1", "tag": "t1"}
+
+        await peripherals.remove(old_id, persisted_data=False)
+
+    async def test_unnamed_peripheral_driver_change_migrates_data(self, mock_persist_driver, mocker):
+        """Test that changing driver on an unnamed peripheral migrates persisted data."""
+        from qtoggleserver import peripherals
+
+        # Create an unnamed peripheral
+        unnamed_peripheral = MockPeripheral(name=None, dummy_param="value1")
+        await peripherals.add({"driver": unnamed_peripheral.get_driver(), "params": {"dummy_param": "value1"}})
+        old_id = unnamed_peripheral.get_id()
+
+        # Store persisted data
+        await persist.replace("peripherals", old_id, {"id": old_id, "data": "test"})
+
+        mocker.patch.object(unnamed_peripheral, "get_ports", return_value=[])
+
+        # Migrate when driver changes (different driver class = different hash)
+        new_driver = "some.other.Driver"
+        await peripherals.migrate_on_change(unnamed_peripheral, new_driver, None, {"dummy_param": "value1"})
+
+        # Old peripheral entry should be removed
+        assert await persist.get("peripherals", old_id) is None
+
+        await peripherals.remove(old_id, persisted_data=False)
+
+    async def test_unnamed_to_named_migrates_data(self, mock_persist_driver, mocker):
+        """Test that adding a name to an unnamed peripheral migrates persisted data."""
+        from qtoggleserver import peripherals
+
+        # Create an unnamed peripheral
+        unnamed_peripheral = MockPeripheral(name=None, dummy_param="value1")
+        await peripherals.add({"driver": unnamed_peripheral.get_driver(), "params": {"dummy_param": "value1"}})
+        old_id = unnamed_peripheral.get_id()
+        assert old_id.startswith("peripheral_")
+
+        # Store persisted data
+        await persist.replace("peripherals", old_id, {"id": old_id, "data": "test"})
+        await persist.replace(BasePort.PERSIST_COLLECTION, "id1", {"id": "id1", "tag": "t1"})
+
+        mock_port = mocker.MagicMock()
+        mock_port.get_id.return_value = "id1"
+        mock_port.get_initial_id.return_value = "id1"
+        mocker.patch.object(unnamed_peripheral, "get_ports", return_value=[mock_port])
+
+        # Migrate when name is added (unnamed → named)
+        await peripherals.migrate_on_change(
+            unnamed_peripheral, unnamed_peripheral.get_driver(), "my_device", {"dummy_param": "value1"}
+        )
+
+        # Old peripheral entry should be removed
+        assert await persist.get("peripherals", old_id) is None
+
+        # Port data should be migrated to include peripheral name prefix
+        assert await persist.get(BasePort.PERSIST_COLLECTION, "id1") is None
+        assert await persist.get(BasePort.PERSIST_COLLECTION, "my_device.id1") == {"id": "my_device.id1", "tag": "t1"}
+
+        await peripherals.remove(old_id, persisted_data=False)
+
+    async def test_named_to_unnamed_migrates_data(self, mock_peripheral1, mock_persist_driver, mocker):
+        """Test that removing a name from a named peripheral migrates persisted data."""
+        from qtoggleserver import peripherals
+
+        # mock_peripheral1 has name="peripheral1"
+        old_id = mock_peripheral1.get_id()
+        assert old_id == "peripheral1"
+
+        # Store persisted data
+        await persist.replace("peripherals", old_id, {"id": old_id, "data": "test"})
+        await persist.replace(BasePort.PERSIST_COLLECTION, "peripheral1.id1", {"id": "peripheral1.id1", "tag": "t1"})
+
+        mock_port = mocker.MagicMock()
+        mock_port.get_id.return_value = "peripheral1.id1"
+        mock_port.get_initial_id.return_value = "id1"
+        mocker.patch.object(mock_peripheral1, "get_ports", return_value=[mock_port])
+
+        # Migrate when name is removed (named → unnamed)
+        await peripherals.migrate_on_change(
+            mock_peripheral1, mock_peripheral1.get_driver(), None, mock_peripheral1.get_params()
+        )
+
+        # Old peripheral entry should be removed
+        assert await persist.get("peripherals", old_id) is None
+
+        # Port data should be migrated to remove peripheral name prefix
+        assert await persist.get(BasePort.PERSIST_COLLECTION, "peripheral1.id1") is None
+        assert await persist.get(BasePort.PERSIST_COLLECTION, "id1") == {"id": "id1", "tag": "t1"}
 
     async def test_rename_not_called_when_name_unchanged(self, mock_api_request_maker, mock_peripheral1, mocker):
         spy_migrate = mocker.patch("qtoggleserver.peripherals.migrate_on_change")
@@ -578,7 +711,7 @@ class TestPatchPeripheral:
 
         await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
 
-        spy_migrate.assert_called_once_with(mock_peripheral1, "peripheral2", payload["params"])
+        spy_migrate.assert_called_once_with(mock_peripheral1, payload["driver"], payload["name"], payload["params"])
 
 
 class TestPutPeripherals:

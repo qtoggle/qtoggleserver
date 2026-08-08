@@ -134,8 +134,8 @@ async def patch_peripheral(
         logger.info('renaming peripheral "%s" to "%s"', old_name, new_name)
 
     # Migrate persisted data and clean up old peripheral entry if ID will change
-    # (due to name change OR params change for unnamed peripherals)
-    await peripherals.migrate_on_change(p, new_name, new_params)
+    # (due to name change, driver change, or params change for unnamed peripherals)
+    await peripherals.migrate_on_change(p, new_driver, new_name, new_params)
 
     await p.cleanup_ports(persisted_data=False)
     await peripherals.remove(peripheral_id, persisted_data=False)

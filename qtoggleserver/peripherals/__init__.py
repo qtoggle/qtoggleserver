@@ -80,27 +80,43 @@ async def update(p: Peripheral) -> None:
     await persist.replace("peripherals", p.get_id(), persist_data)
 
 
-async def migrate_on_change(p: Peripheral, new_name: str | None, new_params: dict[str, Any]) -> None:
+async def migrate_on_change(p: Peripheral, new_driver: str, new_name: str | None, new_params: dict[str, Any]) -> None:
     """Migrate persisted data when a peripheral undergoes a structural change that causes ID change.
 
-    This handles:
-    - Name changes for named peripherals (ID is the name)
-    - Param changes for unnamed peripherals (ID is derived from params hash)
+    This handles all cases where peripheral ID changes:
+    - Named peripheral renamed
+    - Unnamed peripheral → named (name added)
+    - Named peripheral → unnamed (name removed)
+    - Unnamed peripheral with driver change (ID hash includes driver class)
+    - Unnamed peripheral with params change (ID hash includes params)
 
     Migrates port persisted data to new IDs and removes orphaned peripheral persist entry.
     """
     # Import here to avoid circular dependency
+    import hashlib
+
     from qtoggleserver.core.ports import BasePort
 
-    # Determine if the peripheral ID will change
-    will_id_change = False
-    if p.get_name() is not None:
-        # Named peripheral - ID changes only if name changes
-        will_id_change = p.get_name() != new_name
+    # Compute what the new peripheral ID will be using the same logic as Peripheral.__init__
+    new_id: str = new_name or ""
+    if not new_id:
+        # Load the new driver class to get its module and class name
+        try:
+            peripheral_class = dynload_utils.load_attr(new_driver)
+        except Exception:
+            # If we can't load the driver, we can't compute the ID, so assume it will change
+            logger.warning("cannot load driver %s to compute new ID, assuming ID will change", new_driver)
+            will_id_change = True
+            new_id = None  # Signal that we don't know the new ID
+        else:
+            # Replicate the ID generation logic from Peripheral.__init__
+            sorted_params = Peripheral._sorted_tuples_dict(new_params)
+            auto_id_to_hash = f"{peripheral_class.__module__}.{peripheral_class.__name__}:{new_name}:{sorted_params}"
+            new_id = f"peripheral_{hashlib.sha256(auto_id_to_hash.encode()).hexdigest()[:8]}"
+            will_id_change = p.get_id() != new_id
     else:
-        # Unnamed peripheral - ID is based on params hash, check if params changed
-        old_params = p.get_params()
-        will_id_change = old_params != new_params
+        # Named peripheral
+        will_id_change = p.get_id() != new_id
 
     # Migrate port persisted data if peripheral will have a new ID
     if will_id_change:
