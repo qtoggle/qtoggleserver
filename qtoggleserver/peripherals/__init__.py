@@ -80,19 +80,17 @@ async def update(p: Peripheral) -> None:
     await persist.replace("peripherals", p.get_id(), persist_data)
 
 
-async def migrate_on_change(p: Peripheral, new_driver: str, new_name: str | None, new_params: dict[str, Any]) -> None:
-    """Migrate persisted data when a peripheral undergoes a structural change that causes ID change.
+async def prepare_migration(
+    p: Peripheral, new_driver: str, new_name: str | None, new_params: dict[str, Any]
+) -> tuple[bool, str | None]:
+    """Prepare migration by copying persisted data to new IDs if peripheral ID will change.
 
-    This handles all cases where peripheral ID changes:
-    - Named peripheral renamed
-    - Unnamed peripheral → named (name added)
-    - Named peripheral → unnamed (name removed)
-    - Unnamed peripheral with driver change (ID hash includes driver class)
-    - Unnamed peripheral with params change (ID hash includes params)
+    Returns (will_id_change, new_id) tuple. Call cleanup_migration() after successful update.
 
-    Migrates port persisted data to new IDs and removes orphaned peripheral persist entry.
+    This is phase 1 of a two-phase migration to prevent data loss on failed updates:
+    - Phase 1 (prepare): Copy data to new IDs, keep old data intact
+    - Phase 2 (cleanup): Delete old data only after successful update
     """
-    # Import here to avoid circular dependency
     import hashlib
 
     from qtoggleserver.core.ports import BasePort
@@ -118,7 +116,8 @@ async def migrate_on_change(p: Peripheral, new_driver: str, new_name: str | None
         # Named peripheral
         will_id_change = p.get_id() != new_id
 
-    # Migrate port persisted data if peripheral will have a new ID
+    # Copy port persisted data to new IDs if peripheral will have a new ID
+    # DO NOT delete old data yet - that happens in cleanup_migration()
     if will_id_change:
         for port in p.get_ports():
             old_port_id = port.get_id()
@@ -128,14 +127,48 @@ async def migrate_on_change(p: Peripheral, new_driver: str, new_name: str | None
             if old_port_id == new_port_id:
                 continue
 
-            logger.debug('migrating port persisted data from "%s" to "%s"', old_port_id, new_port_id)
+            logger.debug('copying port persisted data from "%s" to "%s"', old_port_id, new_port_id)
             data = await persist.get(BasePort.PERSIST_COLLECTION, old_port_id)
             if data:
                 await persist.replace(BasePort.PERSIST_COLLECTION, new_port_id, dict(data, id=new_port_id))
-            await persist.remove(BasePort.PERSIST_COLLECTION, filt={"id": old_port_id})
 
-        logger.debug('removing orphaned peripheral persist entry "%s"', p.get_id())
-        await persist.remove("peripherals", filt={"id": p.get_id()})
+    return will_id_change, new_id
+
+
+async def cleanup_migration(p: Peripheral, new_name: str | None) -> None:
+    """Clean up old persisted data after successful migration (phase 2).
+
+    Deletes old port persist data and old peripheral persist entry.
+    Only call this after the new peripheral has been successfully created and initialized.
+    """
+    from qtoggleserver.core.ports import BasePort
+
+    old_id = p.get_id()
+
+    for port in p.get_ports():
+        old_port_id = port.get_id()
+        initial_id = port.get_initial_id()
+        new_port_id = f"{new_name}.{initial_id}" if new_name else initial_id
+
+        if old_port_id == new_port_id:
+            continue
+
+        logger.debug('removing old port persisted data "%s"', old_port_id)
+        await persist.remove(BasePort.PERSIST_COLLECTION, filt={"id": old_port_id})
+
+    logger.debug('removing orphaned peripheral persist entry "%s"', old_id)
+    await persist.remove("peripherals", filt={"id": old_id})
+
+
+async def migrate_on_change(p: Peripheral, new_driver: str, new_name: str | None, new_params: dict[str, Any]) -> None:
+    """Migrate persisted data when a peripheral undergoes a structural change (backwards-compatible wrapper).
+
+    This is a convenience wrapper that calls prepare_migration() + cleanup_migration().
+    For better control over error handling, use the two-phase approach directly.
+    """
+    will_id_change, _new_id = await prepare_migration(p, new_driver, new_name, new_params)
+    if will_id_change:
+        await cleanup_migration(p, new_name)
 
 
 async def init() -> None:

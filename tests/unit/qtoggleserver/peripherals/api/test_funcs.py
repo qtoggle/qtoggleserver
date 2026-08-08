@@ -503,12 +503,16 @@ class TestPatchPeripheral:
         mock_port2.get_initial_id.return_value = "id2"
         mocker.patch.object(mock_peripheral1, "get_ports", return_value=[mock_port1, mock_port2])
 
-        await peripherals.migrate_on_change(
+        # Two-phase migration
+        will_id_change, _new_id = await peripherals.prepare_migration(
             mock_peripheral1,
             mock_peripheral1.get_driver(),
             "peripheral2",
             mock_peripheral1.get_params(),
         )
+        assert will_id_change is True
+        if will_id_change:
+            await peripherals.cleanup_migration(mock_peripheral1, "peripheral2")
 
         assert await persist.get(BasePort.PERSIST_COLLECTION, "peripheral2.id1") == {
             "id": "peripheral2.id1",
@@ -678,7 +682,8 @@ class TestPatchPeripheral:
         assert await persist.get(BasePort.PERSIST_COLLECTION, "id1") == {"id": "id1", "tag": "t1"}
 
     async def test_rename_not_called_when_name_unchanged(self, mock_api_request_maker, mock_peripheral1, mocker):
-        spy_migrate = mocker.patch("qtoggleserver.peripherals.migrate_on_change")
+        spy_prepare = mocker.patch("qtoggleserver.peripherals.prepare_migration", return_value=(False, None))
+        spy_cleanup = mocker.patch("qtoggleserver.peripherals.cleanup_migration")
         payload = MOCK_PERIPHERAL1_DATA.copy()
         payload.pop("static")
         request = mock_api_request_maker(
@@ -691,10 +696,13 @@ class TestPatchPeripheral:
 
         await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
 
-        spy_migrate.assert_not_called()
+        # No structural change, so migration should not be called at all
+        spy_prepare.assert_not_called()
+        spy_cleanup.assert_not_called()
 
     async def test_rename_called_when_name_changes(self, mock_api_request_maker, mock_peripheral1, mocker):
-        spy_migrate = mocker.patch("qtoggleserver.peripherals.migrate_on_change")
+        spy_prepare = mocker.patch("qtoggleserver.peripherals.prepare_migration", return_value=(True, "peripheral2"))
+        spy_cleanup = mocker.patch("qtoggleserver.peripherals.cleanup_migration")
         mock_peripheral2 = MockPeripheral(
             name=MOCK_PERIPHERAL2_DATA["name"],
             dummy_param=MOCK_PERIPHERAL2_DATA["params"]["dummy_param"],
@@ -711,7 +719,8 @@ class TestPatchPeripheral:
 
         await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
 
-        spy_migrate.assert_called_once_with(mock_peripheral1, payload["driver"], payload["name"], payload["params"])
+        spy_prepare.assert_called_once_with(mock_peripheral1, payload["driver"], payload["name"], payload["params"])
+        spy_cleanup.assert_called_once_with(mock_peripheral1, payload["name"])
 
 
 class TestPutPeripherals:

@@ -133,9 +133,8 @@ async def patch_peripheral(
     if old_name != new_name:
         logger.info('renaming peripheral "%s" to "%s"', old_name, new_name)
 
-    # Migrate persisted data and clean up old peripheral entry if ID will change
-    # (due to name change, driver change, or params change for unnamed peripherals)
-    await peripherals.migrate_on_change(p, new_driver, new_name, new_params)
+    # Phase 1: Prepare migration by copying persisted data (keeps old data intact for rollback)
+    will_id_change, _new_id = await peripherals.prepare_migration(p, new_driver, new_name, new_params)
 
     await p.cleanup_ports(persisted_data=False)
     await peripherals.remove(peripheral_id, persisted_data=False)
@@ -159,6 +158,10 @@ async def patch_peripheral(
         new_p.set_force_enabled(False)
         await new_p.disable()
         raise core_api.APIError(400, "invalid-request", details=str(e))
+
+    # Phase 2: Clean up old persisted data only after successful migration
+    if will_id_change:
+        await peripherals.cleanup_migration(p, new_name)
 
     await new_p.trigger_update()
     return new_p.to_json()
