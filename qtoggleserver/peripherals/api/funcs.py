@@ -1,9 +1,8 @@
 import logging
 
-from qtoggleserver import peripherals, persist
+from qtoggleserver import peripherals
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core.api import schema as core_api_schema
-from qtoggleserver.core.ports import BasePort
 from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList
 from qtoggleserver.peripherals.api import schema as peripherals_api_schema
 
@@ -77,26 +76,6 @@ async def _restore_peripheral(old_args: GenericJSONDict) -> None:
         logger.critical('failed to restore old peripheral "%s"', peripheral_id, exc_info=True)
 
 
-async def _migrate_peripheral_rename(p: peripherals.Peripheral, new_name: str | None) -> None:
-    """Migrate port persisted data and remove the orphaned peripheral persist entry when a peripheral is renamed."""
-    for port in p.get_ports():
-        old_port_id = port.get_id()
-        initial_id = port.get_initial_id()
-        new_port_id = f"{new_name}.{initial_id}" if new_name else initial_id
-
-        if old_port_id == new_port_id:
-            continue
-
-        logger.debug('migrating port persisted data from "%s" to "%s"', old_port_id, new_port_id)
-        data = await persist.get(BasePort.PERSIST_COLLECTION, old_port_id)
-        if data:
-            await persist.replace(BasePort.PERSIST_COLLECTION, new_port_id, dict(data, id=new_port_id))
-        await persist.remove(BasePort.PERSIST_COLLECTION, filt={"id": old_port_id})
-
-    logger.debug('removing orphaned peripheral persist entry "%s"', p.get_id())
-    await persist.remove("peripherals", filt={"id": p.get_id()})
-
-
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def patch_peripheral(
     request: core_api.APIRequest, peripheral_id: str, params: GenericJSONDict
@@ -153,7 +132,10 @@ async def patch_peripheral(
 
     if old_name != new_name:
         logger.info('renaming peripheral "%s" to "%s"', old_name, new_name)
-        await _migrate_peripheral_rename(p, new_name)
+
+    # Migrate persisted data and clean up old peripheral entry if ID will change
+    # (due to name change OR params change for unnamed peripherals)
+    await peripherals.migrate_on_change(p, new_name, new_params)
 
     await p.cleanup_ports(persisted_data=False)
     await peripherals.remove(peripheral_id, persisted_data=False)

@@ -80,6 +80,48 @@ async def update(p: Peripheral) -> None:
     await persist.replace("peripherals", p.get_id(), persist_data)
 
 
+async def migrate_on_change(p: Peripheral, new_name: str | None, new_params: dict[str, Any]) -> None:
+    """Migrate persisted data when a peripheral undergoes a structural change that causes ID change.
+
+    This handles:
+    - Name changes for named peripherals (ID is the name)
+    - Param changes for unnamed peripherals (ID is derived from params hash)
+
+    Migrates port persisted data to new IDs and removes orphaned peripheral persist entry.
+    """
+    # Import here to avoid circular dependency
+    from qtoggleserver.core.ports import BasePort
+
+    # Determine if the peripheral ID will change
+    will_id_change = False
+    if p.get_name() is not None:
+        # Named peripheral - ID changes only if name changes
+        will_id_change = p.get_name() != new_name
+    else:
+        # Unnamed peripheral - ID is based on params hash, check if params changed
+        old_params = p.get_params()
+        will_id_change = old_params != new_params
+
+    # Migrate port persisted data if peripheral will have a new ID
+    if will_id_change:
+        for port in p.get_ports():
+            old_port_id = port.get_id()
+            initial_id = port.get_initial_id()
+            new_port_id = f"{new_name}.{initial_id}" if new_name else initial_id
+
+            if old_port_id == new_port_id:
+                continue
+
+            logger.debug('migrating port persisted data from "%s" to "%s"', old_port_id, new_port_id)
+            data = await persist.get(BasePort.PERSIST_COLLECTION, old_port_id)
+            if data:
+                await persist.replace(BasePort.PERSIST_COLLECTION, new_port_id, dict(data, id=new_port_id))
+            await persist.remove(BasePort.PERSIST_COLLECTION, filt={"id": old_port_id})
+
+        logger.debug('removing orphaned peripheral persist entry "%s"', p.get_id())
+        await persist.remove("peripherals", filt={"id": p.get_id()})
+
+
 async def init() -> None:
     logger.debug("loading static peripherals")
     for peripheral_args in settings.peripherals:
