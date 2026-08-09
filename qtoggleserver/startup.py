@@ -272,7 +272,7 @@ async def init_ports() -> None:
             args = settings.ports[i]
             logger.error(
                 "failed to load port from arguments: %s",
-                json_utils.dumps(args, extra_types=json_utils.EXTRA_TYPES_EXTENDED),
+                json_utils.dumps(args, extra_types=json_utils.ExtraTypes.STR),
                 exc_info=error,
             )
 

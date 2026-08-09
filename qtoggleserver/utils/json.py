@@ -2,6 +2,7 @@ import json
 import math
 
 from datetime import date, datetime
+from enum import StrEnum
 from typing import Any, cast
 
 import jsonpointer
@@ -18,12 +19,26 @@ DATETIME_TYPE = "__dt"
 
 DATETIME_FORMAT_ISO = "%Y-%m-%dT%H:%M:%SZ"
 DATE_FORMAT_ISO = "%Y-%m-%d"
-DATETIME_FORMAT_ISO_LEN = len(DATETIME_FORMAT_ISO)
-DATE_FORMAT_ISO_LEN = len(DATE_FORMAT_ISO)
+# These are the lengths of the actual formatted output strings, not the format templates
+DATETIME_FORMAT_ISO_LEN = 20  # "2024-01-15T14:30:45Z"
+DATE_FORMAT_ISO_LEN = 10  # "2024-01-15"
 
-EXTRA_TYPES_NONE = ""
-EXTRA_TYPES_ISO = "iso"
-EXTRA_TYPES_EXTENDED = "extended"
+
+class ExtraTypes(StrEnum):
+    """Serialization modes for handling non-standard JSON types in dumps()/loads().
+
+    Attributes:
+        NONE: Standard JSON only; date/datetime objects raise TypeError, NaN/Inf replaced with null.
+        ISO: Serialize date/datetime as ISO strings; deserialize back. No NaN/Inf allowed.
+        EXTENDED: Serialize date/datetime as {__t, __v} objects for roundtrip fidelity. Allow NaN/Inf.
+        STR: Fallback serializer that converts any unserializable object to string via str(). Use for
+             logging or debugging; not suitable for deserialization.
+    """
+
+    NONE = ""
+    ISO = "iso"
+    EXTENDED = "extended"
+    STR = "str"
 
 
 def _replace_nan_inf_rec(obj: Any, replace_value: Any) -> Any:
@@ -65,6 +80,7 @@ def _resolve_refs_rec(obj: Any, root_obj: Any) -> Any:
 
 
 def encode_default_json_iso(obj: Any) -> Any:
+    """JSON encoder for ISO mode: date/datetime → ISO strings, set/tuple → list."""
     if isinstance(obj, datetime):
         return obj.strftime(DATETIME_FORMAT_ISO)
     elif isinstance(obj, date):
@@ -76,6 +92,7 @@ def encode_default_json_iso(obj: Any) -> Any:
 
 
 def encode_default_json_extended(obj: Any) -> Any:
+    """JSON encoder for EXTENDED mode: date/datetime → {__t, __v} objects, set/tuple → list."""
     if isinstance(obj, datetime):
         return {TYPE_FIELD: DATETIME_TYPE, VALUE_FIELD: obj.strftime(DATETIME_FORMAT)}
     elif isinstance(obj, date):
@@ -84,6 +101,16 @@ def encode_default_json_extended(obj: Any) -> Any:
         return list(obj)
     else:
         raise TypeError()
+
+
+def encode_default_json_str(obj: Any) -> Any:
+    """JSON encoder for STR mode: fallback that serializes any object to string.
+
+    This is a last-resort encoder for logging/debugging. It converts any object
+    that can't be serialized by the standard JSON encoder to a string representation.
+    Objects serialized this way cannot be deserialized back to their original type.
+    """
+    return str(obj)
 
 
 def decode_json_hook_iso(obj: dict) -> Any:
@@ -121,37 +148,86 @@ def decode_json_hook_extended(obj: dict[Any, Any]) -> Any:
     return obj
 
 
-def dumps(obj: Any, extra_types: str = EXTRA_TYPES_NONE, **kwargs) -> str:
+def dumps(obj: Any, extra_types: str | ExtraTypes = ExtraTypes.NONE, **kwargs) -> str:
+    """Serialize Python object to JSON string.
+
+    Fast-path optimization for primitive types (str, bool, int, float, None).
+    For complex objects, delegates to json.dumps() with appropriate encoder.
+
+    Args:
+        obj: Object to serialize.
+        extra_types: Serialization mode for non-standard JSON types (date/datetime/etc).
+            - NONE (default): Standard JSON only; NaN/Inf → null, date/datetime raise TypeError.
+            - ISO: date/datetime → ISO strings; no NaN/Inf allowed.
+            - EXTENDED: date/datetime → {__t, __v} objects for roundtrip; allow NaN/Inf.
+            - STR: Convert any unserializable object to str() (for logging, not deserialization).
+        **kwargs: Additional arguments passed to json.dumps().
+
+    Returns:
+        JSON string representation.
+
+    Examples:
+        >>> dumps({"date": datetime(2024, 1, 1)}, extra_types=ExtraTypes.ISO)
+        '{"date": "2024-01-01T00:00:00Z"}'
+        >>> dumps({"obj": MyClass()}, extra_types=ExtraTypes.STR)
+        '{"obj": "<MyClass instance>"}'
+    """
     # Treat primitive types separately to gain just a bit of performance
     if isinstance(obj, str):
         return '"' + obj + '"'
     elif isinstance(obj, bool):
         return ["false", "true"][obj]
     elif isinstance(obj, (int, float)):
+        # Handle NaN/Inf based on mode
         if math.isinf(obj) or math.isnan(obj):
-            return "null"
-
-        return str(obj)
-    elif obj is None:
-        return "null"
-    else:
-        if extra_types == EXTRA_TYPES_EXTENDED:
-            return json.dumps(obj, default=encode_default_json_extended, allow_nan=True, **kwargs)
-        elif extra_types == EXTRA_TYPES_ISO:
-            return json.dumps(obj, default=encode_default_json_iso, allow_nan=False, **kwargs)
+            # ISO and NONE modes: convert to null
+            # EXTENDED and STR modes: let json.dumps handle it (will produce NaN/Infinity literals)
+            if extra_types in (ExtraTypes.ISO, ExtraTypes.NONE, ""):
+                return "null"
+            else:
+                # Fall through to json.dumps for EXTENDED/STR modes
+                pass
         else:
-            try:
-                return json.dumps(obj, allow_nan=False, **kwargs)
-            except ValueError:
-                # Retry again by replacing Infinity and NaN values with None
-                obj = _replace_nan_inf_rec(obj, replace_value=None)
-                return json.dumps(obj, allow_nan=False, **kwargs)
+            return str(obj)
+
+    if obj is None:
+        return "null"
+
+    # Complex types: delegate to json.dumps with appropriate encoder
+    if extra_types == ExtraTypes.EXTENDED:
+        return json.dumps(obj, default=encode_default_json_extended, allow_nan=True, **kwargs)
+    elif extra_types == ExtraTypes.ISO:
+        return json.dumps(obj, default=encode_default_json_iso, allow_nan=False, **kwargs)
+    elif extra_types == ExtraTypes.STR:
+        return json.dumps(obj, default=encode_default_json_str, allow_nan=True, **kwargs)
+    else:
+        try:
+            return json.dumps(obj, allow_nan=False, **kwargs)
+        except ValueError:
+            # Retry again by replacing Infinity and NaN values with None
+            obj = _replace_nan_inf_rec(obj, replace_value=None)
+            return json.dumps(obj, allow_nan=False, **kwargs)
 
 
-def loads(s: str | bytes, resolve_refs: bool = False, extra_types: str = EXTRA_TYPES_NONE, **kwargs) -> Any:
-    if extra_types == EXTRA_TYPES_EXTENDED:
+def loads(s: str | bytes, resolve_refs: bool = False, extra_types: str | ExtraTypes = ExtraTypes.NONE, **kwargs) -> Any:
+    """Deserialize JSON string to Python object.
+
+    Args:
+        s: JSON string or bytes to deserialize.
+        resolve_refs: If True, resolve JSON references ($ref pointers) in the result.
+        extra_types: Deserialization mode for non-standard JSON types.
+            - NONE (default): Standard JSON only.
+            - ISO: Parse ISO date/datetime strings back to date/datetime objects.
+            - EXTENDED: Parse {__t, __v} objects back to date/datetime objects.
+            - STR: Not applicable (objects serialized with STR cannot be deserialized).
+        **kwargs: Additional arguments passed to json.loads().
+
+    Returns:
+        Deserialized Python object.
+    """
+    if extra_types == ExtraTypes.EXTENDED:
         object_hook = decode_json_hook_extended
-    elif extra_types == EXTRA_TYPES_ISO:
+    elif extra_types == ExtraTypes.ISO:
         object_hook = decode_json_hook_iso
     else:
         object_hook = None
