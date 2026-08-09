@@ -32,19 +32,48 @@ class TestDumps:
         assert json_utils.dumps(3.14) == "3.14"
         assert json_utils.dumps(None) == "null"
 
-    def test_nan_inf_primitives(self) -> None:
-        """Test that NaN and Infinity primitives are converted to null."""
+    def test_nan_inf_primitives_none_mode(self) -> None:
+        """Test that NaN and Infinity primitives are converted to null in NONE mode."""
         assert json_utils.dumps(math.nan) == "null"
         assert json_utils.dumps(math.inf) == "null"
         assert json_utils.dumps(-math.inf) == "null"
+        assert json_utils.dumps(math.nan, extra_types=json_utils.ExtraTypes.NONE) == "null"
 
-    def test_nan_inf_in_collections(self) -> None:
-        """Test that NaN and Infinity in collections are replaced with null."""
+    def test_nan_inf_primitives_extended_mode(self) -> None:
+        """Test that NaN and Infinity primitives are preserved in EXTENDED mode."""
+        assert json_utils.dumps(math.nan, extra_types=json_utils.ExtraTypes.EXTENDED) == "NaN"
+        assert json_utils.dumps(math.inf, extra_types=json_utils.ExtraTypes.EXTENDED) == "Infinity"
+        assert json_utils.dumps(-math.inf, extra_types=json_utils.ExtraTypes.EXTENDED) == "-Infinity"
+
+    def test_nan_inf_primitives_str_mode(self) -> None:
+        """Test that NaN and Infinity primitives are preserved in STR mode."""
+        assert json_utils.dumps(math.nan, extra_types=json_utils.ExtraTypes.STR) == "NaN"
+        assert json_utils.dumps(math.inf, extra_types=json_utils.ExtraTypes.STR) == "Infinity"
+        assert json_utils.dumps(-math.inf, extra_types=json_utils.ExtraTypes.STR) == "-Infinity"
+
+    def test_nan_inf_in_collections_none_mode(self) -> None:
+        """Test that NaN and Infinity in collections are replaced with null in NONE mode."""
         result = json_utils.dumps({"value": math.nan})
         assert result == '{"value": null}'
 
         result = json_utils.dumps([1, math.inf, 3])
         assert result == "[1, null, 3]"
+
+    def test_nan_inf_in_collections_extended_mode(self) -> None:
+        """Test that NaN and Infinity in collections are preserved in EXTENDED mode."""
+        result = json_utils.dumps({"value": math.nan}, extra_types=json_utils.ExtraTypes.EXTENDED)
+        assert result == '{"value": NaN}'
+
+        result = json_utils.dumps([1, math.inf, 3], extra_types=json_utils.ExtraTypes.EXTENDED)
+        assert result == "[1, Infinity, 3]"
+
+    def test_nan_inf_in_collections_str_mode(self) -> None:
+        """Test that NaN and Infinity in collections are preserved in STR mode."""
+        result = json_utils.dumps({"value": math.nan}, extra_types=json_utils.ExtraTypes.STR)
+        assert result == '{"value": NaN}'
+
+        result = json_utils.dumps([1, -math.inf, 3], extra_types=json_utils.ExtraTypes.STR)
+        assert result == "[1, -Infinity, 3]"
 
     def test_standard_json(self) -> None:
         """Test standard JSON serialization (no extra types)."""
@@ -159,13 +188,21 @@ class TestLoads:
 class TestEdgeCases:
     """Test edge cases and error handling."""
 
-    def test_nested_nan_inf_replacement(self) -> None:
-        """Test that deeply nested NaN/Inf values are replaced."""
+    def test_nested_nan_inf_replacement_none_mode(self) -> None:
+        """Test that deeply nested NaN/Inf values are replaced in NONE mode."""
         data = {"level1": {"level2": {"value": math.nan, "list": [1, math.inf, 3]}}}
         result = json_utils.dumps(data)
         assert "null" in result
         assert "NaN" not in result
         assert "Infinity" not in result
+
+    def test_nested_nan_inf_preserved_extended_mode(self) -> None:
+        """Test that deeply nested NaN/Inf values are preserved in EXTENDED mode."""
+        data = {"level1": {"level2": {"value": math.nan, "list": [1, math.inf, 3]}}}
+        result = json_utils.dumps(data, extra_types=json_utils.ExtraTypes.EXTENDED)
+        assert "NaN" in result
+        assert "Infinity" in result
+        assert "null" not in result or '"null"' in result  # Allow literal null strings in keys/values
 
     def test_complex_unserializable_object(self) -> None:
         """Test serialization of complex nested structures with unserializable objects."""

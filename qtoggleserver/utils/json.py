@@ -185,26 +185,35 @@ def dumps(obj: Any, extra_types: str | ExtraTypes = ExtraTypes.NONE, **kwargs) -
     elif isinstance(obj, bool):
         return ["false", "true"][obj]
     elif isinstance(obj, (int, float)):
+        # Handle NaN/Inf based on mode
         if math.isinf(obj) or math.isnan(obj):
-            return "null"
-
-        return str(obj)
-    elif obj is None:
-        return "null"
-    else:
-        if extra_types == ExtraTypes.EXTENDED:
-            return json.dumps(obj, default=encode_default_json_extended, allow_nan=True, **kwargs)
-        elif extra_types == ExtraTypes.ISO:
-            return json.dumps(obj, default=encode_default_json_iso, allow_nan=False, **kwargs)
-        elif extra_types == ExtraTypes.STR:
-            return json.dumps(obj, default=encode_default_json_str, allow_nan=True, **kwargs)
+            # ISO and NONE modes: convert to null
+            # EXTENDED and STR modes: let json.dumps handle it (will produce NaN/Infinity literals)
+            if extra_types in (ExtraTypes.ISO, ExtraTypes.NONE, ""):
+                return "null"
+            else:
+                # Fall through to json.dumps for EXTENDED/STR modes
+                pass
         else:
-            try:
-                return json.dumps(obj, allow_nan=False, **kwargs)
-            except ValueError:
-                # Retry again by replacing Infinity and NaN values with None
-                obj = _replace_nan_inf_rec(obj, replace_value=None)
-                return json.dumps(obj, allow_nan=False, **kwargs)
+            return str(obj)
+
+    if obj is None:
+        return "null"
+
+    # Complex types: delegate to json.dumps with appropriate encoder
+    if extra_types == ExtraTypes.EXTENDED:
+        return json.dumps(obj, default=encode_default_json_extended, allow_nan=True, **kwargs)
+    elif extra_types == ExtraTypes.ISO:
+        return json.dumps(obj, default=encode_default_json_iso, allow_nan=False, **kwargs)
+    elif extra_types == ExtraTypes.STR:
+        return json.dumps(obj, default=encode_default_json_str, allow_nan=True, **kwargs)
+    else:
+        try:
+            return json.dumps(obj, allow_nan=False, **kwargs)
+        except ValueError:
+            # Retry again by replacing Infinity and NaN values with None
+            obj = _replace_nan_inf_rec(obj, replace_value=None)
+            return json.dumps(obj, allow_nan=False, **kwargs)
 
 
 def loads(s: str | bytes, resolve_refs: bool = False, extra_types: str | ExtraTypes = ExtraTypes.NONE, **kwargs) -> Any:
