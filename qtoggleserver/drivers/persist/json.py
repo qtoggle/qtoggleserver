@@ -263,7 +263,7 @@ class JSONDriver(BaseDriver):
         try:
             with open(self._file_path, "rb") as f:
                 data = f.read()
-                return json_utils.loads(data, extra_types=json_utils.EXTRA_TYPES_EXTENDED)
+                return json_utils.loads(data, extra_types=json_utils.ExtraTypes.EXTENDED)
         except Exception as e:
             if not self._use_backup:
                 raise
@@ -276,7 +276,7 @@ class JSONDriver(BaseDriver):
                 logger.warning("loading from backup %s", backup_file_path)
 
                 with open(backup_file_path, "rb") as f:
-                    return json_utils.loads(f.read(), extra_types=json_utils.EXTRA_TYPES_EXTENDED)
+                    return json_utils.loads(f.read(), extra_types=json_utils.ExtraTypes.EXTENDED)
 
         return {}
 
@@ -295,7 +295,7 @@ class JSONDriver(BaseDriver):
 
         with open(self._file_path, "wb") as f:
             data = json_utils.dumps(
-                data, extra_types=json_utils.EXTRA_TYPES_EXTENDED, indent=4 if self._pretty_format else None
+                data, extra_types=json_utils.ExtraTypes.EXTENDED, indent=4 if self._pretty_format else None
             )
             f.write(data.encode())
 

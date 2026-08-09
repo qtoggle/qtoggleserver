@@ -60,7 +60,7 @@ async def query(
             "querying %s (%s) where %s (sort=%s, limit=%s)",
             collection,
             json_utils.dumps(fields) if fields else "all fields",
-            json_utils.dumps(filt, extra_types=json_utils.EXTRA_TYPES_EXTENDED),
+            json_utils.dumps(filt, extra_types=json_utils.ExtraTypes.EXTENDED),
             json_utils.dumps(sort),
             json_utils.dumps(limit),
         )
@@ -121,7 +121,7 @@ async def set_value(name: str, value: Any) -> None:
     considering the fist (and only) record."""
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
-        logger.debug("setting %s to %s", name, json_utils.dumps(value, extra_types=json_utils.EXTRA_TYPES_EXTENDED))
+        logger.debug("setting %s to %s", name, json_utils.dumps(value, extra_types=json_utils.ExtraTypes.EXTENDED))
 
     driver = await _get_driver()
     record = {"value": value}
@@ -151,7 +151,7 @@ async def insert(collection: str, record: Record) -> Id:
 
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug(
-            "inserting %s into %s", json_utils.dumps(record, extra_types=json_utils.EXTRA_TYPES_EXTENDED), collection
+            "inserting %s into %s", json_utils.dumps(record, extra_types=json_utils.ExtraTypes.EXTENDED), collection
         )
 
     driver = await _get_driver()
@@ -170,8 +170,8 @@ async def update(collection: str, record_part: Record, filt: dict[str, Any] | No
         logger.debug(
             "updating %s where %s with %s",
             collection,
-            json_utils.dumps(filt or {}, extra_types=json_utils.EXTRA_TYPES_EXTENDED),
-            json_utils.dumps(record_part, extra_types=json_utils.EXTRA_TYPES_EXTENDED),
+            json_utils.dumps(filt or {}, extra_types=json_utils.ExtraTypes.EXTENDED),
+            json_utils.dumps(record_part, extra_types=json_utils.ExtraTypes.EXTENDED),
         )
 
     driver = await _get_driver()
@@ -191,7 +191,7 @@ async def replace(collection: str, id_: Id, record: Record) -> bool:
         logger.debug(
             "replacing record with id %s with %s in %s",
             id_,
-            json_utils.dumps(record, extra_types=json_utils.EXTRA_TYPES_EXTENDED),
+            json_utils.dumps(record, extra_types=json_utils.ExtraTypes.EXTENDED),
             collection,
         )
 
@@ -222,7 +222,7 @@ async def remove(collection: str, filt: dict[str, Any] | None = None) -> int:
         logger.debug(
             "removing from %s where %s",
             collection,
-            json_utils.dumps(filt or {}, extra_types=json_utils.EXTRA_TYPES_EXTENDED),
+            json_utils.dumps(filt or {}, extra_types=json_utils.ExtraTypes.EXTENDED),
         )
 
     driver = await _get_driver()

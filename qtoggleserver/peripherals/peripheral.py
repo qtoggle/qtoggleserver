@@ -144,7 +144,7 @@ class Peripheral(DriverParamsMixin, logging_utils.LoggableMixin, metaclass=abc.A
                 args = port_args[i]
                 self.error(
                     "failed to load port from arguments: %s",
-                    json_utils.dumps(args, extra_types=json_utils.EXTRA_TYPES_EXTENDED),
+                    json_utils.dumps(args, extra_types=json_utils.ExtraTypes.STR),
                     exc_info=error,
                 )
 
