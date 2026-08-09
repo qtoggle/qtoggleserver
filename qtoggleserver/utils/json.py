@@ -41,13 +41,6 @@ class ExtraTypes(StrEnum):
     STR = "str"
 
 
-# Backwards compatibility aliases (deprecated, use ExtraTypes enum instead)
-EXTRA_TYPES_NONE = ExtraTypes.NONE
-EXTRA_TYPES_ISO = ExtraTypes.ISO
-EXTRA_TYPES_EXTENDED = ExtraTypes.EXTENDED
-EXTRA_TYPES_STR = ExtraTypes.STR
-
-
 def _replace_nan_inf_rec(obj: Any, replace_value: Any) -> Any:
     new_obj: Any
     if isinstance(obj, dict):

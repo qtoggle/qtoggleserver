@@ -131,17 +131,6 @@ class TestDumps:
         with pytest.raises(TypeError):
             json_utils.dumps({"obj": obj})
 
-    def test_backwards_compat_constants(self) -> None:
-        """Test that old EXTRA_TYPES_* constants still work."""
-        # ISO mode with old constant
-        result = json_utils.dumps({"date": date(2024, 1, 1)}, extra_types=json_utils.EXTRA_TYPES_ISO)
-        assert "2024-01-01" in result
-
-        # STR mode with old constant
-        obj = UnserializableClass("test")
-        result = json_utils.dumps({"obj": obj}, extra_types=json_utils.EXTRA_TYPES_STR)
-        assert "UnserializableClass(test)" in result
-
 
 class TestLoads:
     """Test json_utils.loads() with various extra_types modes."""
