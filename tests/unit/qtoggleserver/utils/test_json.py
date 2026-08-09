@@ -110,10 +110,14 @@ class TestDumps:
 
     def test_set_tuple_conversion(self) -> None:
         """Test that sets and tuples are converted to lists."""
-        result = json_utils.dumps({"set": {1, 2, 3}, "tuple": (4, 5, 6)}, extra_types=json_utils.ExtraTypes.ISO)
-        # Sets are unordered, so just check it's a list
-        assert "[1, 2, 3]" in result or "[2, 1, 3]" in result or "[3, 2, 1]" in result
-        assert "[4, 5, 6]" in result
+        result = json_utils.dumps(
+            {"set": {1, 2, 3}, "tuple": (4, 5, 6)},
+            extra_types=json_utils.ExtraTypes.ISO,
+        )
+        # Parse back and compare as sets since set order is not guaranteed
+        parsed = json_utils.loads(result)
+        assert set(parsed["set"]) == {1, 2, 3}
+        assert parsed["tuple"] == [4, 5, 6]  # Tuples preserve order
 
     def test_unserializable_str_mode(self) -> None:
         """Test that unserializable objects are converted to strings in STR mode."""
