@@ -667,13 +667,13 @@ class TestPortToPersisted:
         assert result["value"] == 42
 
     async def test_value_none_when_not_persisted(self, mock_num_port1, mocker):
-        """to_persisted should set value to None when port is not persisted."""
+        """to_persisted should include value even when port is not persisted."""
         mocker.patch.object(mock_num_port1, "is_persisted", return_value=False)
         mock_num_port1._last_read_value = (42, 1234567890)
 
         result = await mock_num_port1.to_persisted()
 
-        assert result["value"] is None
+        assert result["value"] == 42
 
     async def test_value_none_when_no_last_read_value(self, mock_num_port1, mocker):
         """to_persisted should set value to None when no last_read_value."""
@@ -726,3 +726,46 @@ class TestPortToPersisted:
 
         assert result["display_name"] == "Test Port"
         assert "unit" not in result
+
+    async def test_includes_state_fields(self, mock_num_port1, mocker):
+        """to_persisted should include value and state fields."""
+        mocker.patch.object(mock_num_port1, "is_persisted", return_value=False)
+        mocker.patch.object(mock_num_port1, "get_modifiable_attrs", return_value=[])
+        mock_num_port1._last_read_value = (42, 1111)
+        mock_num_port1._last_written_value = (43, 2222)
+        mock_num_port1._write_queue.clear()
+        mock_num_port1._write_queue.append(44)
+        mock_num_port1._write_queue.append(45)
+
+        result = await mock_num_port1.to_persisted()
+
+        assert result["value"] == 42
+        assert result["last_read_value"] == 42
+        assert result["last_read_timestamp"] == 1111
+        assert result["last_written_value"] == 43
+        assert result["last_written_timestamp"] == 2222
+        assert result["pending_value"] == 45
+        assert result["pending_queue"] == [44, 45]
+
+
+class TestPortLoadFromData:
+    async def test_loads_state_fields(self, mock_num_port1, mocker):
+        """load_from_data should restore state fields."""
+        mocker.patch.object(mock_num_port1, "is_persisted", return_value=False)
+        mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
+
+        data = {
+            "last_read_value": 12,
+            "last_read_timestamp": 1001,
+            "last_written_value": 34,
+            "last_written_timestamp": 1002,
+            "pending_queue": [56, 78],
+        }
+
+        await mock_num_port1.load_from_data(data)
+
+        assert mock_num_port1._last_read_value == (12, 1001)
+        assert mock_num_port1._last_written_value == (34, 1002)
+        assert list(mock_num_port1._write_queue) == [56, 78]
+        assert mock_num_port1.get_pending_value() == 78
+        mock_num_port1.write_value.assert_not_called()

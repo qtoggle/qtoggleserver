@@ -167,15 +167,14 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
                 port.set_last_read_value(new_value)
                 port_changed_values[port] = old_value, new_value
 
-        # Trigger value-change events; save persisted ports; add port deps to changes
+        # Trigger value-change events; save ports; add port deps to changes
         for port, (old_value, new_value) in port_changed_values.items():
             changes.add(f"${port.get_id()}")
 
             if not await port.is_internal():
                 await port.trigger_value_change(old_value, new_value)
 
-            if await port.is_persisted():
-                port.save_asap()
+            port.save_asap()
 
         await _eval_changed_expressions(changes, now_ms)
 

@@ -670,6 +670,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def set_last_read_value(self, value: NullablePortValue) -> None:
         self._last_read_value = value, int(time.time() * 1000)
+        self.save_asap()
 
     async def read_transformed_value(self) -> NullablePortValue:
         value = None
@@ -700,10 +701,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         async with self._write_value_lock:
             try:
                 self._writing_value = value
+                self.save_asap()
                 await self.write_value(value)
                 self._last_written_value = value, int(time.time() * 1000)
+                self.save_asap()
             finally:
                 self._writing_value = None
+                self.save_asap()
 
     def get_pending_value(self) -> NullablePortValue:
         """Return the most recent value that's about to be written to the port but hasn't been, yet."""
@@ -744,12 +748,14 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         # Only write value to port if it differs from the last value
         if self.get_last_value() != adapted_value:
             self._write_queue.append(adapted_value)
+            self.save_asap()
 
     async def _write_loop(self) -> None:
         try:
             while True:
                 try:
                     value = self._write_queue.pop()
+                    self.save_asap()
                 except IndexError:
                     await asyncio.sleep(settings.core.tick_interval / 1000.0)
                     continue
@@ -839,8 +845,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.debug("sequence finished")
 
         self._sequence = None
-        if await self.is_persisted():
-            self.save_asap()
+        self.save_asap()
 
     def heart_beat_second(self) -> None:
         pass
@@ -910,7 +915,16 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         attrdefs = await self.get_attrdefs()
 
         for name, value in attr_items:
-            if name in ("id", "value", "pending_value"):
+            if name in (
+                "id",
+                "value",
+                "pending_value",
+                "pending_queue",
+                "last_read_value",
+                "last_read_timestamp",
+                "last_written_value",
+                "last_written_timestamp",
+            ):
                 continue  # value is also among the persisted fields
 
             attrdef = attrdefs.get(name)
@@ -925,10 +939,34 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             except Exception as e:
                 self.error("failed to set attribute %s = %s: %s", name, json_utils.dumps(value), e)
 
-        # value
-        if await self.is_persisted() and data.get("value") is not None:
-            self._last_read_value = data["value"], int(time.time() * 1000)
-            self.debug("loaded value = %s", json_utils.dumps(data["value"]))
+        # state values
+        now_ms = int(time.time() * 1000)
+        loaded_last_read = False
+
+        if data.get("last_read_value") is not None:
+            self._last_read_value = data["last_read_value"], data.get("last_read_timestamp", now_ms)
+            loaded_last_read = True
+            self.debug("loaded last_read_value = %s", json_utils.dumps(data["last_read_value"]))
+
+        if data.get("last_written_value") is not None:
+            self._last_written_value = data["last_written_value"], data.get("last_written_timestamp", now_ms)
+            self.debug("loaded last_written_value = %s", json_utils.dumps(data["last_written_value"]))
+
+        pending_queue = data.get("pending_queue")
+        if isinstance(pending_queue, list):
+            self._write_queue.clear()
+            for pending_value in pending_queue:
+                if pending_value is not None:
+                    self._write_queue.append(pending_value)
+
+        if data.get("pending_value") is not None and not isinstance(pending_queue, list):
+            self._write_queue.append(data["pending_value"])
+
+        # TODO: remove `value` field from persisted data
+        if data.get("value") is not None:
+            if not loaded_last_read:
+                self._last_read_value = data["value"], now_ms
+                self.debug("loaded value = %s", json_utils.dumps(data["value"]))
 
             if await self.is_writable():
                 # Write the just-loaded value to the port
@@ -941,7 +979,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                         value = None
 
                 await self.write_value(value)
-        elif self.is_enabled():
+        elif not loaded_last_read and self.is_enabled():
             try:
                 value = await self.read_transformed_value()
             except SkipRead:
@@ -974,10 +1012,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             "history_last_timestamp": self._history_last_timestamp,
         }
 
-        if await self.is_persisted():
-            d["value"] = self._last_read_value[0] if self._last_read_value else None
-        else:
-            d["value"] = None
+        d["value"] = self._last_read_value[0] if self._last_read_value else None
+        d["last_read_value"] = self._last_read_value[0] if self._last_read_value else None
+        d["last_read_timestamp"] = self._last_read_value[1] if self._last_read_value else None
+        d["last_written_value"] = self._last_written_value[0] if self._last_written_value else None
+        d["last_written_timestamp"] = self._last_written_value[1] if self._last_written_value else None
+        d["pending_value"] = self.get_pending_value()
+        d["pending_queue"] = list(self._write_queue)
 
         # attributes
         for name in await self.get_modifiable_attrs():
