@@ -952,8 +952,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.debug("loaded last_written_value = %s", json_utils.dumps(data["last_written_value"]))
 
         pending_queue = data.get("pending_queue")
-        self._write_queue.clear()
         if isinstance(pending_queue, list):
+            self._write_queue.clear()
             for pending_value in pending_queue:
                 if pending_value is not None:
                     self._write_queue.append(pending_value)
@@ -961,7 +961,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if data.get("pending_value") is not None and not isinstance(pending_queue, list):
             self._write_queue.append(data["pending_value"])
 
-        # TODO: remove `value` field from persisted data
+        # Handle legacy `value` field for backward compatibility with old persisted data
         if data.get("value") is not None:
             if not loaded_last_read:
                 self._last_read_value = data["value"], now_ms
@@ -1005,13 +1005,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._pending_save = False
 
     async def to_persisted(self) -> GenericJSONDict:
-        # value
         d: GenericJSONDict = {
             "id": self.get_id(),
             "history_last_timestamp": self._history_last_timestamp,
         }
 
-        d["value"] = self._last_read_value[0] if self._last_read_value else None
         d["last_read_value"] = self._last_read_value[0] if self._last_read_value else None
         d["last_read_timestamp"] = self._last_read_value[1] if self._last_read_value else None
         d["last_written_value"] = self._last_written_value[0] if self._last_written_value else None
