@@ -871,17 +871,17 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.debug("loading persisted data")
 
         data = await persist.get(self.PERSIST_COLLECTION, self.get_id()) or {}
-        await self.load_from_data(data)
+        await self.from_persisted(data)
 
         self._loaded = True
         self.initialize()
 
     async def reset(self) -> None:
         self.debug("resetting persisted data")
-        await self.load_from_data(data={})
+        await self.from_persisted(data={})
         self.invalidate_attrdefs()
 
-    async def load_from_data(self, data: GenericJSONDict) -> None:
+    async def from_persisted(self, data: GenericJSONDict) -> None:
         attrs_start = ["enabled"]  # these will be loaded first, in this order
         attrs_end = ["expression"]  # these will be loaded last, in this order
 
@@ -910,7 +910,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         for name, value in attr_items:
             if name in (
                 "id",
-                "value",
                 "pending_value",
                 "pending_queue",
                 "last_read_value",

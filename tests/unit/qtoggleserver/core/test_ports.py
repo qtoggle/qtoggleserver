@@ -734,9 +734,9 @@ class TestPortToPersisted:
         assert result["pending_queue"] == [44, 45]
 
 
-class TestPortLoadFromData:
+class TestPortFromPersisted:
     async def test_loads_state_fields(self, mock_num_port1, mocker):
-        """load_from_data should restore state fields."""
+        """from_persisted should restore state fields."""
         mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
 
         data = {
@@ -747,7 +747,7 @@ class TestPortLoadFromData:
             "pending_queue": [56, 78],
         }
 
-        await mock_num_port1.load_from_data(data)
+        await mock_num_port1.from_persisted(data)
 
         assert mock_num_port1._last_read_value == (12, 1001)
         assert mock_num_port1._last_written_value == (34, 1002)

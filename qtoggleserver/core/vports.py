@@ -50,6 +50,16 @@ class VirtualPort(core_ports.Port):
     async def write_value(self, value: NullablePortValue) -> None:
         self._virtual_value = value
 
+    async def to_persisted(self) -> GenericJSONDict:
+        data = await super().to_persisted()
+        data["virtual_value"] = self._virtual_value
+
+        return data
+
+    async def from_persisted(self, data: GenericJSONDict) -> None:
+        self._virtual_value = data.get("virtual_value")
+        await super().from_persisted(data)
+
 
 async def add(
     id_: str,

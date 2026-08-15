@@ -1041,7 +1041,7 @@ export const STD_PORT_ATTRDEFS = {
         standard: true,
         order: 180
     },
-    persisted: {
+    persisted: { /* legacy pre-1.3 API attribute */
         display_name: gettext('Persist Value'),
         description: gettext('Controls whether the port value is preserved and restored when device is restarted.'),
         type: 'boolean',

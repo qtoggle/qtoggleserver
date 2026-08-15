@@ -357,7 +357,7 @@ class SlavePort(core_ports.BasePort):
             if not self._trigger_update_task:
                 self._trigger_update_task = asyncio.create_task(self.trigger_update())
 
-    async def load_from_data(self, data: GenericJSONDict) -> None:
+    async def from_persisted(self, data: GenericJSONDict) -> None:
         # Only consider locally persisted attributes for permanently offline devices. For online devices, we always use
         # fresh attributes received from device.
         attrs = data.get("attrs")

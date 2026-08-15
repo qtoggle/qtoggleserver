@@ -1,6 +1,7 @@
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core.ports import TYPE_BOOLEAN, TYPE_NUMBER, Port, SkipRead
 from qtoggleserver.core.typing import NullablePortValue
+from qtoggleserver.core.vports import VirtualPort
 from qtoggleserver.utils import expressions as expressions_utils
 
 
@@ -42,3 +43,16 @@ class MockBooleanPort(MockPort):
 
 class MockNumberPort(MockPort):
     TYPE = TYPE_NUMBER
+
+
+class MockVirtualPort(VirtualPort):
+    def __init__(self, port_id: str, type_: str = TYPE_NUMBER) -> None:
+        super().__init__(
+            id_=port_id,
+            type_=type_,
+            min_=None,
+            max_=None,
+            integer=None,
+            step=None,
+            choices=None,
+        )
