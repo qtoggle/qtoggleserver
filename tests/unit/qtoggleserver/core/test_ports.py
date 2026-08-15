@@ -657,36 +657,25 @@ class TestPortToPersisted:
         assert result["id"] == "nid1"
         assert result["history_last_timestamp"] == 123456
 
-    async def test_includes_value_when_persisted(self, mock_num_port1, mocker):
-        """to_persisted should include value when port is persisted."""
-        mocker.patch.object(mock_num_port1, "is_persisted", return_value=True)
+    async def test_includes_last_read_value(self, mock_num_port1):
+        """to_persisted should include last_read_value."""
         mock_num_port1._last_read_value = (42, 1234567890)
 
         result = await mock_num_port1.to_persisted()
 
-        assert result["value"] == 42
+        assert result["last_read_value"] == 42
+        assert "value" not in result
 
-    async def test_value_none_when_not_persisted(self, mock_num_port1, mocker):
-        """to_persisted should set value to None when port is not persisted."""
-        mocker.patch.object(mock_num_port1, "is_persisted", return_value=False)
-        mock_num_port1._last_read_value = (42, 1234567890)
-
-        result = await mock_num_port1.to_persisted()
-
-        assert result["value"] is None
-
-    async def test_value_none_when_no_last_read_value(self, mock_num_port1, mocker):
-        """to_persisted should set value to None when no last_read_value."""
-        mocker.patch.object(mock_num_port1, "is_persisted", return_value=True)
+    async def test_last_read_value_none_when_no_last_read_value(self, mock_num_port1):
+        """to_persisted should set last_read_value to None when no last_read_value."""
         mock_num_port1._last_read_value = None
 
         result = await mock_num_port1.to_persisted()
 
-        assert result["value"] is None
+        assert result["last_read_value"] is None
 
     async def test_includes_modifiable_attrs(self, mock_num_port1, mocker):
         """to_persisted should include all modifiable attributes."""
-        mocker.patch.object(mock_num_port1, "is_persisted", return_value=False)
         mocker.patch.object(mock_num_port1, "get_modifiable_attrs", return_value=["display_name", "unit", "enabled"])
 
         # Mock get_attr to return test values
@@ -709,7 +698,6 @@ class TestPortToPersisted:
 
     async def test_skips_none_attrs(self, mock_num_port1, mocker):
         """to_persisted should skip attributes that are None."""
-        mocker.patch.object(mock_num_port1, "is_persisted", return_value=False)
         mocker.patch.object(mock_num_port1, "get_modifiable_attrs", return_value=["display_name", "unit"])
 
         # Mock get_attr to return None for 'unit'
@@ -726,3 +714,43 @@ class TestPortToPersisted:
 
         assert result["display_name"] == "Test Port"
         assert "unit" not in result
+
+    async def test_includes_state_fields(self, mock_num_port1, mocker):
+        """to_persisted should include state fields."""
+        mocker.patch.object(mock_num_port1, "get_modifiable_attrs", return_value=[])
+        mock_num_port1._last_read_value = (42, 1111)
+        mock_num_port1._last_written_value = (43, 2222)
+        mock_num_port1._write_queue.clear()
+        mock_num_port1._write_queue.append(44)
+        mock_num_port1._write_queue.append(45)
+
+        result = await mock_num_port1.to_persisted()
+
+        assert result["last_read_value"] == 42
+        assert result["last_read_timestamp"] == 1111
+        assert result["last_written_value"] == 43
+        assert result["last_written_timestamp"] == 2222
+        assert result["pending_value"] == 45
+        assert result["pending_queue"] == [44, 45]
+
+
+class TestPortLoadFromData:
+    async def test_loads_state_fields(self, mock_num_port1, mocker):
+        """load_from_data should restore state fields."""
+        mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
+
+        data = {
+            "last_read_value": 12,
+            "last_read_timestamp": 1001,
+            "last_written_value": 34,
+            "last_written_timestamp": 1002,
+            "pending_queue": [56, 78],
+        }
+
+        await mock_num_port1.load_from_data(data)
+
+        assert mock_num_port1._last_read_value == (12, 1001)
+        assert mock_num_port1._last_written_value == (34, 1002)
+        assert list(mock_num_port1._write_queue) == [56, 78]
+        assert mock_num_port1.get_pending_value() == 78
+        mock_num_port1.write_value.assert_not_called()

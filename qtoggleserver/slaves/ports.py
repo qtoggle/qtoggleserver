@@ -248,14 +248,6 @@ class SlavePort(core_ports.BasePort):
 
             raise
 
-    async def is_persisted(self) -> bool:
-        # Ports belonging to permanently offline devices should always behave as persisted on master
-
-        if self._slave.is_permanently_offline():
-            return True
-
-        return await core_ports.BasePort.is_persisted(self)
-
     async def attr_is_online(self) -> bool:
         if not self._enabled:
             return False
