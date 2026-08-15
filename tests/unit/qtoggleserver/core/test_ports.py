@@ -657,7 +657,7 @@ class TestPortToPersisted:
         assert result["id"] == "nid1"
         assert result["history_last_timestamp"] == 123456
 
-    async def test_includes_last_read_value(self, mock_num_port1, mocker):
+    async def test_includes_last_read_value(self, mock_num_port1):
         """to_persisted should include last_read_value."""
         mock_num_port1._last_read_value = (42, 1234567890)
 
@@ -666,7 +666,7 @@ class TestPortToPersisted:
         assert result["last_read_value"] == 42
         assert "value" not in result
 
-    async def test_last_read_value_none_when_no_last_read_value(self, mock_num_port1, mocker):
+    async def test_last_read_value_none_when_no_last_read_value(self, mock_num_port1):
         """to_persisted should set last_read_value to None when no last_read_value."""
         mock_num_port1._last_read_value = None
 
