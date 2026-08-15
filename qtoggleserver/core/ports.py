@@ -86,7 +86,6 @@ STANDARD_ATTRDEFS = {
         "modifiable": True,
         "max": 10240,
     },
-    "persisted": {"type": "boolean", "optional": True, "modifiable": True},
     "internal": {"type": "boolean", "optional": True, "modifiable": True},
     "virtual": {"type": "boolean", "optional": True},
     "online": {"type": "boolean", "optional": True},
@@ -174,7 +173,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     MAX = None
     INTEGER = False
     STEP = None
-    PERSISTED = False
     INTERNAL = False
 
     WRITE_QUEUE_SIZE = 16
@@ -218,7 +216,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._max: int | float | None = self.MAX
         self._integer: bool = self.INTEGER
         self._step: int | float | None = self.STEP
-        self._persisted: bool = self.PERSISTED
         self._internal: bool = self.INTERNAL
 
         self._sequence: core_sequences.Sequence | None = None
@@ -472,9 +469,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def is_writable(self) -> bool:
         return await self.get_attr("writable")
-
-    async def is_persisted(self) -> bool:
-        return await self.get_attr("persisted")
 
     async def is_internal(self) -> bool:
         return await self.get_attr("internal")

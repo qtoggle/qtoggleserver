@@ -659,7 +659,6 @@ class TestPortToPersisted:
 
     async def test_includes_last_read_value(self, mock_num_port1, mocker):
         """to_persisted should include last_read_value."""
-        mocker.patch.object(mock_num_port1, "is_persisted", return_value=True)
         mock_num_port1._last_read_value = (42, 1234567890)
 
         result = await mock_num_port1.to_persisted()
@@ -669,7 +668,6 @@ class TestPortToPersisted:
 
     async def test_last_read_value_none_when_no_last_read_value(self, mock_num_port1, mocker):
         """to_persisted should set last_read_value to None when no last_read_value."""
-        mocker.patch.object(mock_num_port1, "is_persisted", return_value=True)
         mock_num_port1._last_read_value = None
 
         result = await mock_num_port1.to_persisted()
@@ -678,7 +676,6 @@ class TestPortToPersisted:
 
     async def test_includes_modifiable_attrs(self, mock_num_port1, mocker):
         """to_persisted should include all modifiable attributes."""
-        mocker.patch.object(mock_num_port1, "is_persisted", return_value=False)
         mocker.patch.object(mock_num_port1, "get_modifiable_attrs", return_value=["display_name", "unit", "enabled"])
 
         # Mock get_attr to return test values
@@ -701,7 +698,6 @@ class TestPortToPersisted:
 
     async def test_skips_none_attrs(self, mock_num_port1, mocker):
         """to_persisted should skip attributes that are None."""
-        mocker.patch.object(mock_num_port1, "is_persisted", return_value=False)
         mocker.patch.object(mock_num_port1, "get_modifiable_attrs", return_value=["display_name", "unit"])
 
         # Mock get_attr to return None for 'unit'
@@ -721,7 +717,6 @@ class TestPortToPersisted:
 
     async def test_includes_state_fields(self, mock_num_port1, mocker):
         """to_persisted should include state fields."""
-        mocker.patch.object(mock_num_port1, "is_persisted", return_value=False)
         mocker.patch.object(mock_num_port1, "get_modifiable_attrs", return_value=[])
         mock_num_port1._last_read_value = (42, 1111)
         mock_num_port1._last_written_value = (43, 2222)
@@ -742,7 +737,6 @@ class TestPortToPersisted:
 class TestPortLoadFromData:
     async def test_loads_state_fields(self, mock_num_port1, mocker):
         """load_from_data should restore state fields."""
-        mocker.patch.object(mock_num_port1, "is_persisted", return_value=False)
         mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
 
         data = {
