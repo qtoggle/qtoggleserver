@@ -670,7 +670,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def set_last_read_value(self, value: NullablePortValue) -> None:
         self._last_read_value = value, int(time.time() * 1000)
-        self.save_asap()
 
     async def read_transformed_value(self) -> NullablePortValue:
         value = None
@@ -953,8 +952,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.debug("loaded last_written_value = %s", json_utils.dumps(data["last_written_value"]))
 
         pending_queue = data.get("pending_queue")
+        self._write_queue.clear()
         if isinstance(pending_queue, list):
-            self._write_queue.clear()
             for pending_value in pending_queue:
                 if pending_value is not None:
                     self._write_queue.append(pending_value)

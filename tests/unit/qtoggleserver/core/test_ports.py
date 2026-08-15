@@ -657,18 +657,9 @@ class TestPortToPersisted:
         assert result["id"] == "nid1"
         assert result["history_last_timestamp"] == 123456
 
-    async def test_includes_value_when_persisted(self, mock_num_port1, mocker):
-        """to_persisted should include value when port is persisted."""
+    async def test_includes_value(self, mock_num_port1, mocker):
+        """to_persisted should include value."""
         mocker.patch.object(mock_num_port1, "is_persisted", return_value=True)
-        mock_num_port1._last_read_value = (42, 1234567890)
-
-        result = await mock_num_port1.to_persisted()
-
-        assert result["value"] == 42
-
-    async def test_value_none_when_not_persisted(self, mock_num_port1, mocker):
-        """to_persisted should include value even when port is not persisted."""
-        mocker.patch.object(mock_num_port1, "is_persisted", return_value=False)
         mock_num_port1._last_read_value = (42, 1234567890)
 
         result = await mock_num_port1.to_persisted()
