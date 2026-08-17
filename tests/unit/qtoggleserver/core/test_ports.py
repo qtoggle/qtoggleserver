@@ -39,6 +39,43 @@ class TestPortGetLastValue:
         assert mock_num_port1.get_last_value() == 300
 
 
+class TestPortGetTargetValue:
+    def test_pending(self, mock_num_port1, mocker):
+        """Should return the pending value, since it's not None."""
+
+        mocker.patch.object(mock_num_port1, "get_pending_value", return_value=100)
+        mock_num_port1._last_written_value = None
+        assert mock_num_port1.get_target_value() == 100
+
+        mock_num_port1._last_written_value = (200, 2000)
+        assert mock_num_port1.get_target_value() == 100
+
+    def test_last_written(self, mock_num_port1, mocker):
+        """Should return the last written value, since there's no pending value."""
+
+        mocker.patch.object(mock_num_port1, "get_pending_value", return_value=None)
+        mock_num_port1._last_written_value = (200, 2000)
+        assert mock_num_port1.get_target_value() == 200
+
+    def test_unavailable(self, mock_num_port1, mocker):
+        """Should return `None`, since neither pending nor last written values are available."""
+
+        mocker.patch.object(mock_num_port1, "get_pending_value", return_value=None)
+        mock_num_port1._last_written_value = None
+        assert mock_num_port1.get_target_value() is None
+
+    def test_last_read_ignored(self, mock_num_port1, mocker):
+        """Should ignore the last read value, however recent it may be."""
+
+        mocker.patch.object(mock_num_port1, "get_pending_value", return_value=None)
+        mock_num_port1._last_written_value = None
+        mock_num_port1._last_read_value = (300, 3000)
+        assert mock_num_port1.get_target_value() is None
+
+        mock_num_port1._last_written_value = (200, 1000)  # older timestamp
+        assert mock_num_port1.get_target_value() == 200
+
+
 class TestPortEvalAndPushWrite:
     async def test(self, mock_num_port1, mock_num_port2, mocker):
         """Should evaluate the expression with the provided eval context and push the result to the write queue."""
@@ -49,7 +86,7 @@ class TestPortEvalAndPushWrite:
         mocker.patch.object(mock_num_port1, "get_expression", return_value=mock_expression)
 
         mocker.patch.object(mock_num_port1, "adapt_value_type", return_value=100)
-        mocker.patch.object(mock_num_port1, "get_last_value", return_value=None)
+        mocker.patch.object(mock_num_port1, "get_target_value", return_value=None)
         mock_num_port1._write_queue = mocker.Mock()
 
         await mock_num_port1.eval_and_push_write(mock_eval_context)
@@ -57,6 +94,39 @@ class TestPortEvalAndPushWrite:
         mock_expression.eval.assert_called_once_with(mock_eval_context)
         mock_num_port1.adapt_value_type.assert_called_once_with(mock_expression.eval.return_value)
         mock_num_port1._write_queue.append.assert_called_once_with(100)
+
+    async def test_same_as_target_value_not_written(self, mock_num_port1, mocker):
+        """Should not push anything to the write queue if the evaluated value equals the target value."""
+
+        mock_eval_context = mocker.Mock()
+        mock_expression = mocker.Mock()
+        mock_expression.eval = mocker.AsyncMock(return_value=99)
+        mocker.patch.object(mock_num_port1, "get_expression", return_value=mock_expression)
+
+        mocker.patch.object(mock_num_port1, "adapt_value_type", return_value=100)
+        mocker.patch.object(mock_num_port1, "get_target_value", return_value=100)
+        mock_num_port1._write_queue = mocker.Mock()
+
+        await mock_num_port1.eval_and_push_write(mock_eval_context)
+        mock_num_port1._write_queue.append.assert_not_called()
+
+    async def test_differing_from_last_read_value_written(self, mock_num_port1, mocker):
+        """Should push the evaluated value to the write queue when it only matches the (more recent) last read value,
+        as the last read value plays no part in the target value."""
+
+        mock_eval_context = mocker.Mock()
+        mock_expression = mocker.Mock()
+        mock_expression.eval = mocker.AsyncMock(return_value=99)
+        mocker.patch.object(mock_num_port1, "get_expression", return_value=mock_expression)
+
+        mocker.patch.object(mock_num_port1, "adapt_value_type", return_value=100)
+        mock_num_port1._writing_value = None
+        mock_num_port1._write_queue.clear()
+        mock_num_port1._last_written_value = (200, 1000)
+        mock_num_port1._last_read_value = (100, 2000)
+
+        await mock_num_port1.eval_and_push_write(mock_eval_context)
+        assert list(mock_num_port1._write_queue) == [100]
 
     async def test_unavailable_not_written(self, mock_num_port1, mocker):
         """Should not push anything to the write queue if the expression evaluation raises due to value being
