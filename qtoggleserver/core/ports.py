@@ -691,10 +691,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         async with self._write_value_lock:
             try:
                 self._writing_value = value
-                self.save_asap()
                 await self.write_value(value)
                 self._last_written_value = value, int(time.time() * 1000)
-                self.save_asap()
             finally:
                 self._writing_value = None
                 self.save_asap()
@@ -906,8 +904,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         for name, value in attr_items:
             if name in (
                 "id",
-                "pending_value",
-                "pending_queue",
+                "write_queue",
                 "last_read_value",
                 "last_read_timestamp",
                 "last_written_value",
@@ -940,15 +937,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._last_written_value = data["last_written_value"], data.get("last_written_timestamp", now_ms)
             self.debug("loaded last_written_value = %s", json_utils.dumps(data["last_written_value"]))
 
-        pending_queue = data.get("pending_queue")
-        if isinstance(pending_queue, list):
+        write_queue = data.get("write_queue")
+        if isinstance(write_queue, list):
             self._write_queue.clear()
-            for pending_value in pending_queue:
-                if pending_value is not None:
-                    self._write_queue.append(pending_value)
-
-        if data.get("pending_value") is not None and not isinstance(pending_queue, list):
-            self._write_queue.append(data["pending_value"])
+            for value in write_queue:
+                if value is not None:
+                    self._write_queue.append(value)
 
         # Handle legacy `value` field for backward compatibility with old persisted data
         if data.get("value") is not None:
@@ -1003,8 +997,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         d["last_read_timestamp"] = self._last_read_value[1] if self._last_read_value else None
         d["last_written_value"] = self._last_written_value[0] if self._last_written_value else None
         d["last_written_timestamp"] = self._last_written_value[1] if self._last_written_value else None
-        d["pending_value"] = self.get_pending_value()
-        d["pending_queue"] = list(self._write_queue)
+        d["write_queue"] = list(self._write_queue)
 
         # attributes
         for name in await self.get_modifiable_attrs():

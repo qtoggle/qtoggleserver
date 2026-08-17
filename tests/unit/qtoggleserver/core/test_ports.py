@@ -730,8 +730,7 @@ class TestPortToPersisted:
         assert result["last_read_timestamp"] == 1111
         assert result["last_written_value"] == 43
         assert result["last_written_timestamp"] == 2222
-        assert result["pending_value"] == 45
-        assert result["pending_queue"] == [44, 45]
+        assert result["write_queue"] == [44, 45]
 
 
 class TestPortFromPersisted:
@@ -744,7 +743,7 @@ class TestPortFromPersisted:
             "last_read_timestamp": 1001,
             "last_written_value": 34,
             "last_written_timestamp": 1002,
-            "pending_queue": [56, 78],
+            "write_queue": [56, 78],
         }
 
         await mock_num_port1.from_persisted(data)
