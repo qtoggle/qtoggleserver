@@ -668,10 +668,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def read_transformed_value(self) -> NullablePortValue:
         value = None
         async with self._read_value_lock:
-            try:
-                value = await self.read_value()
-            except Exception:
-                raise
+            value = await self.read_value()
 
         if self._transform_read:
             eval_context = EvalContext(port_values={self.get_id(): value})
@@ -793,9 +790,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             return pending_value
 
         if self._last_written_value:
-            if self._last_read_value:
-                if self._last_read_value[1] > self._last_written_value[1]:
-                    return self._last_read_value[0]
+            if self._last_read_value and self._last_read_value[1] > self._last_written_value[1]:
+                return self._last_read_value[0]
 
             return self._last_written_value[0]
 
