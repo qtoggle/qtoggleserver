@@ -1,4 +1,4 @@
-# qToggleServer – Copilot Instructions
+# qToggleServer – Development Guide
 
 ## Environment
 
@@ -37,6 +37,17 @@ qToggleServer is a [qToggle protocol](https://github.com/qtoggle/docs) server. T
 - **Web layer** (`qtoggleserver/web/`) — Tornado HTTP server. API handlers live in `qtoggleserver/core/api/funcs/`.
 - **Config** (`qtoggleserver/conf/`) — HOCON format (pyhocon). Settings accessed as `settings.<section>.<key>`.
 
+## Addon Packages (Multi-Repo)
+
+Most peripheral drivers, lib handlers (MQTT, webhooks templates, etc.) and protocol integrations are **not** in this repo. Each lives in its own sibling repo alongside this one, named `qtoggleserver-<addon>` (e.g. `../qtoggleserver-mqtt`, `../qtoggleserver-modbus`, `../qtoggleserver-zigbee2mqtt`), plus `../actions-common`. Each addon:
+- Is an independently versioned pip package with its own `pyproject.toml`, `.venv`, and pre-commit config.
+- Extends the `qtoggleserver` namespace package (e.g. `qtoggleserver/mqtt/`, `qtoggleserver/modbus/`) rather than nesting under a separate top-level package name.
+- Is referenced only by dotted Python path from HOCON config (e.g. `driver = "qtoggleserver.drivers.persist.JSONDriver"`, or a peripheral/handler class path) and loaded at runtime via `dynload_utils.load_attr()` — this repo has no static import dependency on any addon.
+
+If asked about a specific driver/integration (MQTT, Modbus, EQ3BT, Zigbee2MQTT, Pushover, etc.) and it's not found under `qtoggleserver/`, check the matching sibling `../qtoggleserver-<name>` repo before concluding it doesn't exist. Changes to an addon should be made and committed in that addon's own repo, not here.
+
+The frontend (`qui-server` dependency) similarly has its framework source in a sibling `../qui` repo; see `QUI_PATH` below for developing against a local checkout.
+
 ## Key Conventions
 
 ### Attribute resolution on ports
@@ -69,6 +80,15 @@ All production code requires type annotations (ruff `ANN` rules). `*args`, `**kw
 - Use `MockPersistDriver`, `MockBooleanPort`/`MockNumberPort`, and `MockPeripheral` from `tests/unit/qtoggleserver/mock/` in fixtures.
 - Mock `asyncio.Lock` with `mocker.patch("asyncio.Lock")` when creating ports outside the running event loop.
 - `tests/conftest.py` provides common fixtures (`mock_persist_driver`, `mock_num_port1`, etc.).
+
+### Commit messages
+Follow the existing history's convention: `<area/path>: <Imperative, capitalized summary>`, no trailing period. The area is usually a module path relative to `qtoggleserver/` (`core/ports`, `peripherals`, `lib/polled`, `utils/misc`), omitted only for changes that aren't scoped to one area. Examples from `git log`:
+```
+core/ports: Simplify from_persisted legacy value restore code
+peripherals: Avoid unnecessary persistence at startup
+lib/polled: Add POLL_AFTER_WRITE
+utils/misc: Add to_underscore_case
+```
 
 ## Expression Language
 
