@@ -1001,15 +1001,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             if await self.is_writable():
                 # Write the just-loaded value to the port
-                value = data["value"]
-                if self._transform_write:
-                    eval_context = EvalContext(port_values={self.get_id(): value})
-                    try:
-                        value = self.adapt_value_type(await self._transform_write.eval(eval_context))
-                    except expressions_exceptions.ValueUnavailable:
-                        value = None
-
-                await self.write_value(value)
+                await self.transform_and_write_value(data["value"])
         elif not loaded_last_read and self.is_enabled():
             try:
                 value = await self.read_transformed_value()
