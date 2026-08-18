@@ -15,7 +15,6 @@ from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import history as core_history
-from qtoggleserver.core import sequences as core_sequences
 from qtoggleserver.core.expressions import EvalContext
 from qtoggleserver.core.expressions import exceptions as expressions_exceptions
 from qtoggleserver.core.typing import (
@@ -30,6 +29,7 @@ from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
+from qtoggleserver.utils import sequence as sequence_utils
 from qtoggleserver.utils.debounced import Debounced
 from qtoggleserver.utils.misc import append_traceback, stack_to_traceback
 
@@ -226,7 +226,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._step: int | float | None = self.STEP
         self._internal: bool = self.INTERNAL
 
-        self._sequence: core_sequences.Sequence | None = None
+        self._sequence: sequence_utils.Sequence | None = None
         self._expression: core_expressions.Expression | None = None
         self._transform_read: core_expressions.Expression | None = None
         self._transform_write: core_expressions.Expression | None = None
@@ -873,7 +873,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._sequence = None
 
         if values:
-            self._sequence = core_sequences.Sequence(
+            self._sequence = sequence_utils.Sequence(
                 values, delays, repeat, self.transform_and_write_value_fire_and_forget, self._on_sequence_finish
             )
 
