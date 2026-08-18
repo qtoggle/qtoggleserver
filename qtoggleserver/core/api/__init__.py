@@ -46,11 +46,6 @@ class APIError(Exception):
         return dict(error=self.code, **self.params)
 
 
-class APIAccepted(Exception):
-    def __init__(self, response: Any = None) -> None:
-        self.response: Any = response
-
-
 class APIRequest:
     def __init__(self, handler: APIHandler) -> None:
         self.handler: APIHandler = handler
