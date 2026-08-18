@@ -108,8 +108,6 @@ class TestPatchPortValue:
         wait for it to actually complete."""
 
         mock_num_port1.set_writable(True)
-        # Read value already matches the target, so the write is reported as immediately successful (no 202)
-        mock_num_port1.set_last_read_value(100)
         spy = mocker.spy(mock_num_port1, "push_write_and_wait")
 
         request = mock_api_request_maker("PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL)
@@ -152,18 +150,18 @@ class TestPatchPortValue:
             await ports_api_funcs.patch_port_value(request, "nid1", 100)
         assert exc_info.value.status == 500
 
-    async def test_unchanged_read_value_returns_202(
-        self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
+    async def test_succeeds_even_if_read_value_not_updated(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver
     ) -> None:
-        """Should raise APIAccepted (202) if, right after the write completes, the port's read value still doesn't
-        reflect the newly written target (e.g. not yet propagated back from hardware)."""
+        """Should return normally once the write completes, even if the port's read value doesn't (yet) reflect the
+        newly written target (e.g. not yet propagated back from hardware)."""
 
         mock_num_port1.set_writable(True)
         mock_num_port1.set_last_read_value(100)
 
         request = mock_api_request_maker("PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL)
-        with pytest.raises(core_api.APIAccepted):
-            await ports_api_funcs.patch_port_value(request, "nid1", 200)
+        result = await ports_api_funcs.patch_port_value(request, "nid1", 200)
+        assert result is None
 
     async def test_disabled_port(self, mock_api_request_maker, mock_num_port1, mock_persist_driver) -> None:
         mock_num_port1.set_writable(True)

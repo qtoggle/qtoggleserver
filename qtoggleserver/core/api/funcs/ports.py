@@ -375,8 +375,7 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
     if not await port.is_writable():
         raise core_api.APIError(400, "read-only-port")
 
-    old_value = port.get_last_read_value()
-
+    # TODO: shoudln't we queue the sequence write call as well?
     try:
         await port.push_write_and_wait(value)
     except core_ports.PortTimeout as e:
@@ -388,12 +387,6 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
     except Exception as e:
         # Transform any unhandled exception into APIError(500)
         raise core_api.APIError(500, "unexpected-error", message=str(e)) from e
-
-    # If port value hasn't really changed, use 202 Accepted to inform the consumer
-    current_value = port.get_last_read_value()
-    if (old_value == current_value) and (old_value != value):
-        port.debug("API supplied value hasn't been applied right away")
-        raise core_api.APIAccepted()
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NORMAL)
