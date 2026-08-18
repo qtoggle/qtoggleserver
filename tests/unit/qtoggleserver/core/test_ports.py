@@ -180,6 +180,57 @@ class TestPortPushWriteAndWait:
         assert future_b.cancelled()
 
 
+class TestPortSetSequence:
+    async def test_pushes_each_value_via_push_write(self, mock_num_port1, mocker):
+        """Should install a sequence that pushes each value to the write queue via push_write."""
+
+        spy = mocker.spy(mock_num_port1, "push_write")
+
+        await mock_num_port1.set_sequence([1, 2, 3], [1, 1, 1], 1)
+        loop_task = mock_num_port1._sequence._loop_task
+        await loop_task
+
+        assert spy.call_args_list == [mocker.call(1), mocker.call(2), mocker.call(3)]
+
+    async def test_clears_sequence_and_saves_when_finished(self, mock_num_port1, mocker):
+        """Should clear the sequence and mark the port for saving once the sequence finishes."""
+
+        mocker.patch.object(mock_num_port1, "save_asap")
+
+        await mock_num_port1.set_sequence([1], [1], 1)
+        loop_task = mock_num_port1._sequence._loop_task
+        await loop_task
+
+        assert mock_num_port1._sequence is None
+        mock_num_port1.save_asap.assert_called()
+
+    async def test_cancels_previous_sequence(self, mock_num_port1, mocker):
+        """Should cancel any currently running sequence before installing a new one."""
+
+        await mock_num_port1.set_sequence([1, 2], [1000, 1000], 1)
+        old_sequence = mock_num_port1._sequence
+        spy_cancel = mocker.spy(old_sequence, "cancel")
+
+        await mock_num_port1.set_sequence([3], [1], 1)
+
+        spy_cancel.assert_called_once()
+        assert mock_num_port1._sequence is not old_sequence
+
+        await mock_num_port1._sequence.cancel()
+
+    async def test_empty_values_only_cancels(self, mock_num_port1, mocker):
+        """Should cancel any existing sequence and not install a new one when values is empty."""
+
+        await mock_num_port1.set_sequence([1, 2], [1000, 1000], 1)
+        old_sequence = mock_num_port1._sequence
+        spy_cancel = mocker.spy(old_sequence, "cancel")
+
+        await mock_num_port1.set_sequence([], [], 1)
+
+        spy_cancel.assert_called_once()
+        assert mock_num_port1._sequence is None
+
+
 class TestPortEvalAndPushWrite:
     async def test(self, mock_num_port1, mock_num_port2, mocker):
         """Should evaluate the expression with the provided eval context and push the result to the write queue."""
