@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from qtoggleserver.conf import settings
@@ -179,3 +181,130 @@ class TestPatchPortValue:
         with pytest.raises(core_api.APIError, match="read-only-port") as exc_info:
             await ports_api_funcs.patch_port_value(request, "nid1", 100)
         assert exc_info.value.status == 400
+
+
+class TestPatchPortValueTimeout:
+    @pytest.fixture(autouse=True)
+    def mock_slaves(self, mocker) -> None:
+        mocker.patch("qtoggleserver.slaves.devices.get_all", return_value=[])
+
+    async def test_non_integer_timeout_raises_invalid_field(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver
+    ) -> None:
+        mock_num_port1.set_writable(True)
+
+        request = mock_api_request_maker(
+            "PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL, query={"timeout": "abc"}
+        )
+        with pytest.raises(core_api.APIError, match="invalid-field") as exc_info:
+            await ports_api_funcs.patch_port_value(request, "nid1", 100)
+        assert exc_info.value.status == 400
+        assert exc_info.value.params["field"] == "timeout"
+
+    async def test_negative_timeout_raises_invalid_field(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver
+    ) -> None:
+        mock_num_port1.set_writable(True)
+
+        request = mock_api_request_maker(
+            "PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL, query={"timeout": "-1"}
+        )
+        with pytest.raises(core_api.APIError, match="invalid-field") as exc_info:
+            await ports_api_funcs.patch_port_value(request, "nid1", 100)
+        assert exc_info.value.status == 400
+        assert exc_info.value.params["field"] == "timeout"
+
+    async def test_too_large_timeout_raises_invalid_field(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver
+    ) -> None:
+        mock_num_port1.set_writable(True)
+
+        request = mock_api_request_maker(
+            "PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL, query={"timeout": "3601"}
+        )
+        with pytest.raises(core_api.APIError, match="invalid-field") as exc_info:
+            await ports_api_funcs.patch_port_value(request, "nid1", 100)
+        assert exc_info.value.status == 400
+        assert exc_info.value.params["field"] == "timeout"
+
+    async def test_no_timeout_does_not_wait_for_confirmation(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
+    ) -> None:
+        """Without a `timeout` query argument, the request must be responded as soon as the write completes,
+        without waiting for the read value to catch up."""
+
+        mock_num_port1.set_writable(True)
+        spy = mocker.spy(mock_num_port1, "wait_for_read_value")
+
+        request = mock_api_request_maker("PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL)
+        result = await ports_api_funcs.patch_port_value(request, "nid1", 100)
+
+        assert result is None
+        spy.assert_not_called()
+
+    async def test_returns_immediately_if_value_already_matches(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
+    ) -> None:
+        mock_num_port1.set_writable(True)
+        mock_num_port1.set_last_read_value(100)
+        spy = mocker.spy(mock_num_port1, "wait_for_read_value")
+
+        request = mock_api_request_maker(
+            "PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL, query={"timeout": "5"}
+        )
+        result = await ports_api_funcs.patch_port_value(request, "nid1", 100)
+
+        assert result is None
+        spy.assert_called_once()
+
+    async def test_waits_and_succeeds_once_matching_value_is_read(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver
+    ) -> None:
+        mock_num_port1.set_writable(True)
+        mock_num_port1.set_last_read_value(0)
+
+        async def delayed_read() -> None:
+            await asyncio.sleep(0.01)
+            mock_num_port1.set_last_read_value(100)
+
+        task = asyncio.create_task(delayed_read())
+
+        request = mock_api_request_maker(
+            "PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL, query={"timeout": "5"}
+        )
+        try:
+            result = await ports_api_funcs.patch_port_value(request, "nid1", 100)
+        finally:
+            await task
+
+        assert result is None
+
+    async def test_raises_value_timeout_if_value_never_matches(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver
+    ) -> None:
+        mock_num_port1.set_writable(True)
+        mock_num_port1.set_last_read_value(0)
+
+        request = mock_api_request_maker(
+            "PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL, query={"timeout": "0.02"}
+        )
+        with pytest.raises(core_api.APIError, match="value-timeout") as exc_info:
+            await ports_api_funcs.patch_port_value(request, "nid1", 100)
+        assert exc_info.value.status == 504
+
+    async def test_erroneous_write_skips_confirmation(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
+    ) -> None:
+        """An erroneous write must be responded as usual, without waiting for any confirmation."""
+
+        mock_num_port1.set_writable(True)
+        mocker.patch.object(mock_num_port1, "push_write_and_wait", side_effect=core_ports.PortTimeout())
+        spy = mocker.spy(mock_num_port1, "wait_for_read_value")
+
+        request = mock_api_request_maker(
+            "PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL, query={"timeout": "5"}
+        )
+        with pytest.raises(core_api.APIError, match="port-timeout") as exc_info:
+            await ports_api_funcs.patch_port_value(request, "nid1", 100)
+        assert exc_info.value.status == 504
+        spy.assert_not_called()

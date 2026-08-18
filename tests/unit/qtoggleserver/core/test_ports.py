@@ -180,6 +180,69 @@ class TestPortPushWriteAndWait:
         assert future_b.cancelled()
 
 
+class TestPortWaitForReadValue:
+    async def test_returns_true_immediately_if_already_matching(self, mock_num_port1):
+        mock_num_port1.set_last_read_value(100)
+        assert await mock_num_port1.wait_for_read_value(100, timeout=1) is True
+
+    async def test_returns_false_immediately_for_nonpositive_timeout_without_match(self, mock_num_port1):
+        mock_num_port1.set_last_read_value(0)
+        assert await mock_num_port1.wait_for_read_value(100, timeout=0) is False
+
+    async def test_resolves_when_matching_value_is_later_read(self, mock_num_port1):
+        mock_num_port1.set_last_read_value(0)
+
+        async def delayed_read():
+            await asyncio.sleep(0.01)
+            mock_num_port1.set_last_read_value(100)
+
+        task = asyncio.create_task(delayed_read())
+        try:
+            assert await mock_num_port1.wait_for_read_value(100, timeout=1) is True
+        finally:
+            await task
+
+    async def test_ignores_non_matching_values(self, mock_num_port1):
+        """A read value that doesn't match the target shouldn't resolve the wait."""
+
+        mock_num_port1.set_last_read_value(0)
+
+        async def delayed_reads():
+            await asyncio.sleep(0.01)
+            mock_num_port1.set_last_read_value(50)
+            await asyncio.sleep(0.01)
+            mock_num_port1.set_last_read_value(100)
+
+        task = asyncio.create_task(delayed_reads())
+        try:
+            assert await mock_num_port1.wait_for_read_value(100, timeout=1) is True
+        finally:
+            await task
+
+    async def test_times_out_without_match(self, mock_num_port1):
+        mock_num_port1.set_last_read_value(0)
+        assert await mock_num_port1.wait_for_read_value(100, timeout=0.02) is False
+
+    async def test_cleans_up_waiter_after_resolving(self, mock_num_port1):
+        mock_num_port1.set_last_read_value(0)
+
+        async def delayed_read():
+            await asyncio.sleep(0.01)
+            mock_num_port1.set_last_read_value(100)
+
+        task = asyncio.create_task(delayed_read())
+        try:
+            await mock_num_port1.wait_for_read_value(100, timeout=1)
+        finally:
+            await task
+        assert mock_num_port1._value_match_waiters == []
+
+    async def test_cleans_up_waiter_after_timeout(self, mock_num_port1):
+        mock_num_port1.set_last_read_value(0)
+        await mock_num_port1.wait_for_read_value(100, timeout=0.02)
+        assert mock_num_port1._value_match_waiters == []
+
+
 class TestPortSetSequence:
     async def test_pushes_each_value_via_push_write(self, mock_num_port1, mocker):
         """Should install a sequence that pushes each value to the write queue via push_write."""

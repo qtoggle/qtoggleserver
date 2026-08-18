@@ -120,11 +120,12 @@ export function getPortValue(id) {
  * @alias qtoggle.api.ports.patchPortValue
  * @param {String} id the port identifier
  * @param {Boolean|Number} value the new port value
+ * @param {?Number} [confirmTimeout] optional confirmation timeout, in seconds
  * @param {Number} [expectEventTimeout] optional timeout within which a corresponding event will be expected, in
  * milliseconds
  * @returns {Promise}
  */
-export function patchPortValue(id, value, expectEventTimeout = null) {
+export function patchPortValue(id, value, confirmTimeout = null, expectEventTimeout = null) {
     let port = Cache.getPort(id)
     let handle = null
 
@@ -142,12 +143,22 @@ export function patchPortValue(id, value, expectEventTimeout = null) {
         }, expectEventTimeout)
     }
 
+    let query = null
+    let timeout = APIConstants.LONG_SERVER_TIMEOUT
+    if (confirmTimeout != null) {
+        query = {timeout: confirmTimeout}
+
+        /* Make sure the client waits at least as long as the device is expected to, plus some margin */
+        timeout = Math.max(timeout, confirmTimeout + APIConstants.DEFAULT_SERVER_TIMEOUT)
+    }
+
     return BaseAPI.apiCall({
         method: 'PATCH',
         path: `/ports/${id}/value`,
         data: value,
+        query: query,
         expectedHandle: handle,
-        timeout: APIConstants.LONG_SERVER_TIMEOUT
+        timeout: timeout
     })
 }
 

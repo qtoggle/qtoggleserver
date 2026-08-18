@@ -28,6 +28,9 @@ from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import json as json_utils
 
 
+MAX_VALUE_TIMEOUT = 3600  # seconds
+
+
 async def add_virtual_port(attrs: GenericJSONDict) -> core_ports.BasePort:
     id_ = attrs["id"]
     type_ = attrs["type"]
@@ -351,9 +354,22 @@ async def get_port_value(request: core_api.APIRequest, port_id: str) -> Nullable
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NORMAL)
 async def patch_port_value(request: core_api.APIRequest, port_id: str, params: PortValue) -> None:
+    request_time = time.time()
+
     port = core_ports.get(port_id)
     if port is None:
         raise core_api.APIError(404, "no-such-port")
+
+    timeout_str = request.query.get("timeout")
+    timeout = 0
+    if timeout_str is not None:
+        try:
+            timeout = float(timeout_str)
+        except ValueError:
+            raise core_api.APIError(400, "invalid-field", field="timeout") from None
+
+        if timeout < 0 or timeout > MAX_VALUE_TIMEOUT:
+            raise core_api.APIError(400, "invalid-field", field="timeout")
 
     try:
         core_api_schema.validate(params, await port.get_value_schema())
@@ -386,6 +402,11 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
     except Exception as e:
         # Transform any unhandled exception into APIError(500)
         raise core_api.APIError(500, "unexpected-error", message=str(e)) from e
+
+    if timeout:
+        remaining = timeout - (time.time() - request_time)
+        if not await port.wait_for_read_value(value, timeout=remaining):
+            raise core_api.APIError(504, "value-timeout")
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NORMAL)
