@@ -15,7 +15,14 @@ class SequenceError(Exception):
 
 class Sequence:
     def __init__(
-        self, values: list[PortValue], delays: list[int], repeat: int, callback: Callable, finish_callback: Callable
+        self,
+        values: list[PortValue],
+        delays: list[int],
+        repeat: int,
+        callback: Callable,
+        finish_callback: Callable,
+        callback_args: tuple = (),
+        callback_kwargs: dict | None = None,
     ) -> None:
         self._values: list[PortValue] = values
         self._delays: list[int] = delays
@@ -23,6 +30,8 @@ class Sequence:
 
         self._callback: Callable = callback
         self._finish_callback: Callable = finish_callback
+        self._callback_args: tuple = callback_args
+        self._callback_kwargs: dict = callback_kwargs or {}
         self._counter: int = 0
         self._loop_task: asyncio.Task | None = None
 
@@ -44,7 +53,7 @@ class Sequence:
         for i, value in enumerate(self._values):
             try:
                 try:
-                    self._callback(value)
+                    self._callback(value, *self._callback_args, **self._callback_kwargs)
                 except Exception as e:
                     logger.error("sequence callback failed: %s", e, exc_info=True)
 

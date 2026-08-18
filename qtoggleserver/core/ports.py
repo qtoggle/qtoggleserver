@@ -8,14 +8,13 @@ import time
 
 from collections import deque
 from collections.abc import AsyncIterator, Callable, ValuesView
-from typing import Any
+from typing import Any, NamedTuple
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core import history as core_history
-from qtoggleserver.core import sequences as core_sequences
 from qtoggleserver.core.expressions import EvalContext
 from qtoggleserver.core.expressions import exceptions as expressions_exceptions
 from qtoggleserver.core.typing import (
@@ -26,10 +25,10 @@ from qtoggleserver.core.typing import (
     NullablePortValue,
     PortValue,
 )
-from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
+from qtoggleserver.utils import sequence as sequence_utils
 from qtoggleserver.utils.debounced import Debounced
 from qtoggleserver.utils.misc import append_traceback, stack_to_traceback
 
@@ -150,6 +149,14 @@ class PortTimeout(PortError):
     pass
 
 
+class WriteRequest(NamedTuple):
+    """An entry in a port's write queue, optionally carrying a future to be resolved with the result of
+    (or exception raised by) the corresponding `transform_and_write_value()` call."""
+
+    value: PortValue
+    future: asyncio.Future | None = None
+
+
 def skip_write_unavailable(func: Callable) -> Callable:
     @functools.wraps(func)
     async def wrapper(self: BasePort, value: NullablePortValue) -> None:
@@ -218,7 +225,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._step: int | float | None = self.STEP
         self._internal: bool = self.INTERNAL
 
-        self._sequence: core_sequences.Sequence | None = None
+        self._sequence: sequence_utils.Sequence | None = None
         self._expression: core_expressions.Expression | None = None
         self._transform_read: core_expressions.Expression | None = None
         self._transform_write: core_expressions.Expression | None = None
@@ -248,7 +255,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._last_written_value: tuple[NullablePortValue, int] | None = None
         self._write_value_lock = asyncio.Lock()
 
-        self._write_queue: deque[PortValue] = deque(maxlen=self.WRITE_QUEUE_SIZE)
+        self._write_queue: deque[WriteRequest] = deque(maxlen=self.WRITE_QUEUE_SIZE)
         self._write_task: asyncio.Task | None = None
         try:
             asyncio.get_running_loop()
@@ -668,10 +675,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def read_transformed_value(self) -> NullablePortValue:
         value = None
         async with self._read_value_lock:
-            try:
-                value = await self.read_value()
-            except Exception:
-                raise
+            value = await self.read_value()
 
         if self._transform_read:
             eval_context = EvalContext(port_values={self.get_id(): value})
@@ -694,10 +698,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         async with self._write_value_lock:
             try:
                 self._writing_value = value
-                self.save_asap()
                 await self.write_value(value)
                 self._last_written_value = value, int(time.time() * 1000)
-                self.save_asap()
             finally:
                 self._writing_value = None
                 self.save_asap()
@@ -706,12 +708,45 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         """Return the most recent value that's about to be written to the port but hasn't been, yet."""
 
         try:
-            return self._write_queue[-1]
+            return self._write_queue[-1].value
         except IndexError:
             return self._writing_value
 
     def get_last_written_value(self) -> NullablePortValue:
         return self._last_written_value[0] if self._last_written_value else None
+
+    def get_target_value(self) -> NullablePortValue:
+        """Return the value the port is expected to end up with, as a result of the writing process: the pending value,
+        if available, falling back to the last written value.
+        """
+
+        pending_value = self.get_pending_value()
+        if pending_value is not None:
+            return pending_value
+
+        return self.get_last_written_value()
+
+    def push_write(self, value: NullablePortValue, future: asyncio.Future | None = None) -> None:
+        """Push a value to the writing process queue. If `future` is given, it will be resolved with the result of
+        (`None`) or exception raised by the eventual `transform_and_write_value()` call for this value. It will be
+        cancelled instead if evicted from a full queue before ever being written, or if the port's write loop is
+        cancelled first."""
+
+        if len(self._write_queue) >= self._write_queue.maxlen:
+            evicted = self._write_queue[0]
+            if evicted.future and not evicted.future.done():
+                evicted.future.cancel()
+
+        self._write_queue.append(WriteRequest(value, future))
+        self.save_asap()
+
+    async def push_write_and_wait(self, value: NullablePortValue) -> None:
+        """Push a value to the writing process queue and wait for it to actually be written, propagating any
+        exception raised in the process."""
+
+        future = asyncio.get_running_loop().create_future()
+        self.push_write(value, future=future)
+        await future
 
     async def eval_and_push_write(self, eval_context: EvalContext) -> None:
         """Evaluate the port's expression and push the resulting value to the write queue. Shield any evaluation
@@ -738,28 +773,42 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             json_utils.dumps(adapted_value),
         )
 
-        # Only write value to port if it differs from the last value
-        if self.get_last_value() != adapted_value:
-            self._write_queue.append(adapted_value)
-            self.save_asap()
+        # Only write value to port if it differs from the target value
+        if self.get_target_value() != adapted_value:
+            self.push_write(adapted_value)
 
     async def _write_loop(self) -> None:
+        request: WriteRequest | None = None
         try:
             while True:
                 try:
-                    value = self._write_queue.pop()
-                    self.save_asap()
+                    request = self._write_queue.pop()
+                    # No need to call `save_asap()` as it will be called indirectly by `transform_and_write_value()`
                 except IndexError:
+                    request = None
                     await asyncio.sleep(settings.core.tick_interval / 1000.0)
                     continue
 
                 try:
-                    await self.transform_and_write_value(value)
-                except Exception:
+                    await self.transform_and_write_value(request.value)
+                except Exception as e:
                     self.error("eval failed", exc_info=True)
+                    if request.future and not request.future.done():
+                        request.future.set_exception(e)
                     await asyncio.sleep(settings.core.tick_interval / 1000.0)
+                else:
+                    if request.future and not request.future.done():
+                        request.future.set_result(None)
         except asyncio.CancelledError:
             self.debug("eval task cancelled")
+
+            # Don't leave any awaiter hanging: cancel the future of the request that was being processed, as well
+            # as those of any requests still sitting in the queue
+            if request and request.future and not request.future.done():
+                request.future.cancel()
+            for pending_request in self._write_queue:
+                if pending_request.future and not pending_request.future.done():
+                    pending_request.future.cancel()
 
     async def transform_and_write_value(self, value: NullablePortValue) -> None:
         """Apply write transform (if any) and write the value to the port."""
@@ -793,9 +842,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             return pending_value
 
         if self._last_written_value:
-            if self._last_read_value:
-                if self._last_read_value[1] > self._last_written_value[1]:
-                    return self._last_read_value[0]
+            if self._last_read_value and self._last_read_value[1] > self._last_written_value[1]:
+                return self._last_read_value[0]
 
             return self._last_written_value[0]
 
@@ -824,15 +872,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._sequence = None
 
         if values:
-            self._sequence = core_sequences.Sequence(
-                values, delays, repeat, self.transform_and_write_value_fire_and_forget, self._on_sequence_finish
-            )
+            self._sequence = sequence_utils.Sequence(values, delays, repeat, self.push_write, self._on_sequence_finish)
 
             self.debug("installing sequence")
             self._sequence.start()
-
-    def transform_and_write_value_fire_and_forget(self, value: NullablePortValue) -> None:
-        asyncio_utils.fire_and_forget(self.transform_and_write_value(value))
 
     async def _on_sequence_finish(self) -> None:
         self.debug("sequence finished")
@@ -910,8 +953,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         for name, value in attr_items:
             if name in (
                 "id",
-                "pending_value",
-                "pending_queue",
+                "write_queue",
                 "last_read_value",
                 "last_read_timestamp",
                 "last_written_value",
@@ -944,15 +986,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._last_written_value = data["last_written_value"], data.get("last_written_timestamp", now_ms)
             self.debug("loaded last_written_value = %s", json_utils.dumps(data["last_written_value"]))
 
-        pending_queue = data.get("pending_queue")
-        if isinstance(pending_queue, list):
+        write_queue = data.get("write_queue")
+        if isinstance(write_queue, list):
             self._write_queue.clear()
-            for pending_value in pending_queue:
-                if pending_value is not None:
-                    self._write_queue.append(pending_value)
-
-        if data.get("pending_value") is not None and not isinstance(pending_queue, list):
-            self._write_queue.append(data["pending_value"])
+            for value in write_queue:
+                if value is not None:
+                    self._write_queue.append(WriteRequest(value))
 
         # Handle legacy `value` field for backward compatibility with old persisted data
         if data.get("value") is not None:
@@ -962,15 +1001,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             if await self.is_writable():
                 # Write the just-loaded value to the port
-                value = data["value"]
-                if self._transform_write:
-                    eval_context = EvalContext(port_values={self.get_id(): value})
-                    try:
-                        value = self.adapt_value_type(await self._transform_write.eval(eval_context))
-                    except expressions_exceptions.ValueUnavailable:
-                        value = None
-
-                await self.write_value(value)
+                await self.transform_and_write_value(data["value"])
         elif not loaded_last_read and self.is_enabled():
             try:
                 value = await self.read_transformed_value()
@@ -1007,8 +1038,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         d["last_read_timestamp"] = self._last_read_value[1] if self._last_read_value else None
         d["last_written_value"] = self._last_written_value[0] if self._last_written_value else None
         d["last_written_timestamp"] = self._last_written_value[1] if self._last_written_value else None
-        d["pending_value"] = self.get_pending_value()
-        d["pending_queue"] = list(self._write_queue)
+        d["write_queue"] = [request.value for request in self._write_queue]
 
         # attributes
         for name in await self.get_modifiable_attrs():
