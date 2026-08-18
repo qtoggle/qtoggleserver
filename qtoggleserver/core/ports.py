@@ -249,6 +249,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._last_read_value: tuple[NullablePortValue, int] | None = None
         self._read_value_lock = asyncio.Lock()
+        self._value_match_waiters: list[tuple[NullablePortValue, asyncio.Future]] = []
 
         # Value that's currently being written
         self._writing_value: NullablePortValue = None
@@ -671,6 +672,32 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def set_last_read_value(self, value: NullablePortValue) -> None:
         self._last_read_value = value, int(time.time() * 1000)
+
+        for target_value, future in self._value_match_waiters:
+            if not future.done() and value == target_value:
+                future.set_result(None)
+
+    async def wait_for_read_value(self, value: NullablePortValue, timeout: float) -> bool:
+        """Wait until the port's last read value becomes equal to `value`, but no longer than `timeout` seconds.
+        Returns `True` as soon as a matching value is read (right away if it already matches), or `False` if
+        `timeout` seconds elapse without a match."""
+
+        if self.get_last_read_value() == value:
+            return True
+
+        if timeout <= 0:
+            return False
+
+        future = asyncio.get_running_loop().create_future()
+        waiter = (value, future)
+        self._value_match_waiters.append(waiter)
+        try:
+            await asyncio.wait_for(future, timeout=timeout)
+            return True
+        except TimeoutError:
+            return False
+        finally:
+            self._value_match_waiters.remove(waiter)
 
     async def read_transformed_value(self) -> NullablePortValue:
         value = None

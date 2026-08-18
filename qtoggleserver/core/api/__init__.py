@@ -95,7 +95,7 @@ def api_call(access_level: int = ACCESS_LEVEL_NONE) -> Callable:
                 else:
                     raise APIError(403, "forbidden", required_level=ACCESS_LEVEL_MAPPING.get(access_level))
 
-            request = APIRequest(request_handler)
+            request = request_handler if isinstance(request_handler, APIRequest) else APIRequest(request_handler)
 
             return func(request, *args, **kwargs)
 

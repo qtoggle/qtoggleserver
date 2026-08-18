@@ -30,6 +30,7 @@ class MockAPIRequest(APIRequest):
                 method=method,
                 path=path,
                 query=query,
+                query_arguments={k: [v.encode()] for k, v in query.items()},
                 body=body,
             ),
         )
