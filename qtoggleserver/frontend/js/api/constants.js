@@ -218,6 +218,11 @@ export const KNOWN_ERRORS = [
         code: 'device-timeout',
         pretty: gettext('Timeout waiting for a response from the device.')
     },
+    {
+        status: 504,
+        code: 'value-timeout',
+        pretty: gettext('Timeout waiting for value to take effect.')
+    },
 
     /* Other errors */
     {
