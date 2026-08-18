@@ -719,6 +719,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return self.get_last_written_value()
 
+    def push_write(self, value: NullablePortValue) -> None:
+        """Push a value to the writing process queue."""
+
+        self._write_queue.append(value)
+        self.save_asap()
+
     async def eval_and_push_write(self, eval_context: EvalContext) -> None:
         """Evaluate the port's expression and push the resulting value to the write queue. Shield any evaluation
         exceptions from caller, but make sure to log them."""
@@ -746,15 +752,14 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         # Only write value to port if it differs from the target value
         if self.get_target_value() != adapted_value:
-            self._write_queue.append(adapted_value)
-            self.save_asap()
+            self.push_write(adapted_value)
 
     async def _write_loop(self) -> None:
         try:
             while True:
                 try:
                     value = self._write_queue.pop()
-                    self.save_asap()
+                    # No need to call `save_asap()` as it will be called indirectly by `transform_and_write_value()`
                 except IndexError:
                     await asyncio.sleep(settings.core.tick_interval / 1000.0)
                     continue

@@ -76,6 +76,31 @@ class TestPortGetTargetValue:
         assert mock_num_port1.get_target_value() == 200
 
 
+class TestPortPushWrite:
+    def test(self, mock_num_port1, mocker):
+        """Should append the value to the write queue and mark the port for saving."""
+
+        mocker.patch.object(mock_num_port1, "save_asap")
+        mock_num_port1._write_queue = mocker.Mock()
+
+        mock_num_port1.push_write(100)
+
+        mock_num_port1._write_queue.append.assert_called_once_with(100)
+        mock_num_port1.save_asap.assert_called_once()
+
+    def test_multiple(self, mock_num_port1, mocker):
+        """Should append every pushed value to the write queue, in order."""
+
+        mocker.patch.object(mock_num_port1, "save_asap")
+        mock_num_port1._write_queue.clear()
+
+        mock_num_port1.push_write(100)
+        mock_num_port1.push_write(200)
+
+        assert list(mock_num_port1._write_queue) == [100, 200]
+        assert mock_num_port1.save_asap.call_count == 2
+
+
 class TestPortEvalAndPushWrite:
     async def test(self, mock_num_port1, mock_num_port2, mocker):
         """Should evaluate the expression with the provided eval context and push the result to the write queue."""
@@ -87,13 +112,13 @@ class TestPortEvalAndPushWrite:
 
         mocker.patch.object(mock_num_port1, "adapt_value_type", return_value=100)
         mocker.patch.object(mock_num_port1, "get_target_value", return_value=None)
-        mock_num_port1._write_queue = mocker.Mock()
+        mocker.patch.object(mock_num_port1, "push_write")
 
         await mock_num_port1.eval_and_push_write(mock_eval_context)
 
         mock_expression.eval.assert_called_once_with(mock_eval_context)
         mock_num_port1.adapt_value_type.assert_called_once_with(mock_expression.eval.return_value)
-        mock_num_port1._write_queue.append.assert_called_once_with(100)
+        mock_num_port1.push_write.assert_called_once_with(100)
 
     async def test_same_as_target_value_not_written(self, mock_num_port1, mocker):
         """Should not push anything to the write queue if the evaluated value equals the target value."""
@@ -105,10 +130,10 @@ class TestPortEvalAndPushWrite:
 
         mocker.patch.object(mock_num_port1, "adapt_value_type", return_value=100)
         mocker.patch.object(mock_num_port1, "get_target_value", return_value=100)
-        mock_num_port1._write_queue = mocker.Mock()
+        mocker.patch.object(mock_num_port1, "push_write")
 
         await mock_num_port1.eval_and_push_write(mock_eval_context)
-        mock_num_port1._write_queue.append.assert_not_called()
+        mock_num_port1.push_write.assert_not_called()
 
     async def test_differing_from_last_read_value_written(self, mock_num_port1, mocker):
         """Should push the evaluated value to the write queue when it only matches the (more recent) last read value,
