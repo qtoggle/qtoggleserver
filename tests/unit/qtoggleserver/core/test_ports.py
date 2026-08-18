@@ -1,6 +1,7 @@
 import asyncio
 
 from qtoggleserver.core.expressions.exceptions import ValueUnavailable
+from qtoggleserver.core.ports import WriteRequest
 
 
 class TestPortGetLastValue:
@@ -81,11 +82,11 @@ class TestPortPushWrite:
         """Should append the value to the write queue and mark the port for saving."""
 
         mocker.patch.object(mock_num_port1, "save_asap")
-        mock_num_port1._write_queue = mocker.Mock()
+        mock_num_port1._write_queue.clear()
 
         mock_num_port1.push_write(100)
 
-        mock_num_port1._write_queue.append.assert_called_once_with(100)
+        assert list(mock_num_port1._write_queue) == [WriteRequest(100)]
         mock_num_port1.save_asap.assert_called_once()
 
     def test_multiple(self, mock_num_port1, mocker):
@@ -97,8 +98,86 @@ class TestPortPushWrite:
         mock_num_port1.push_write(100)
         mock_num_port1.push_write(200)
 
-        assert list(mock_num_port1._write_queue) == [100, 200]
+        assert list(mock_num_port1._write_queue) == [WriteRequest(100), WriteRequest(200)]
         assert mock_num_port1.save_asap.call_count == 2
+
+    def test_with_future(self, mock_num_port1, mocker):
+        """Should attach the given future to the queued write request."""
+
+        mocker.patch.object(mock_num_port1, "save_asap")
+        mock_num_port1._write_queue.clear()
+        future = asyncio.get_event_loop().create_future()
+
+        mock_num_port1.push_write(100, future=future)
+
+        assert list(mock_num_port1._write_queue) == [WriteRequest(100, future)]
+
+    def test_evicts_oldest_when_full(self, mock_num_port1, mocker):
+        """Should cancel the future of the oldest request when it gets evicted because the queue is full."""
+
+        mocker.patch.object(mock_num_port1, "save_asap")
+        mock_num_port1._write_queue.clear()
+        evicted_future = asyncio.get_event_loop().create_future()
+        mock_num_port1.push_write(1, future=evicted_future)
+        for value in range(2, mock_num_port1._write_queue.maxlen + 1):
+            mock_num_port1.push_write(value)
+
+        mock_num_port1.push_write(999)
+
+        assert evicted_future.cancelled()
+        assert list(mock_num_port1._write_queue)[0].value == 2
+        assert list(mock_num_port1._write_queue)[-1].value == 999
+
+
+class TestPortPushWriteAndWait:
+    async def test_resolves_on_success(self, mock_num_port1, mocker):
+        """Should return once the pushed value has actually been written, without raising."""
+
+        mock_num_port1._write_queue.clear()
+        mocker.patch.object(mock_num_port1, "transform_and_write_value", new=mocker.AsyncMock())
+
+        await mock_num_port1.push_write_and_wait(100)
+
+        mock_num_port1.transform_and_write_value.assert_called_once_with(100)
+
+    async def test_raises_on_failure(self, mock_num_port1, mocker):
+        """Should propagate any exception raised while writing the value."""
+
+        mock_num_port1._write_queue.clear()
+        mocker.patch.object(
+            mock_num_port1, "transform_and_write_value", new=mocker.AsyncMock(side_effect=ValueError("nope"))
+        )
+
+        try:
+            await mock_num_port1.push_write_and_wait(100)
+            assert False, "expected ValueError to be raised"
+        except ValueError as e:
+            assert str(e) == "nope"
+
+    async def test_cleanup_cancels_pending_futures(self, mock_num_port1, mocker):
+        """Should cancel the future of the request currently being written, as well as those of any requests still
+        sitting in the queue, when the write loop is cancelled (e.g. on port removal)."""
+
+        mock_num_port1._write_queue.clear()
+        started = asyncio.Event()
+        release = asyncio.Event()
+
+        async def blocking_transform(value):
+            started.set()
+            await release.wait()
+
+        mocker.patch.object(mock_num_port1, "transform_and_write_value", new=blocking_transform)
+
+        future_a = asyncio.get_event_loop().create_future()
+        future_b = asyncio.get_event_loop().create_future()
+        mock_num_port1.push_write(1, future=future_a)
+        mock_num_port1.push_write(2, future=future_b)
+
+        await started.wait()  # one of the two requests is now being (indefinitely) written
+        await mock_num_port1.cleanup()
+
+        assert future_a.cancelled()
+        assert future_b.cancelled()
 
 
 class TestPortEvalAndPushWrite:
@@ -151,7 +230,7 @@ class TestPortEvalAndPushWrite:
         mock_num_port1._last_read_value = (100, 2000)
 
         await mock_num_port1.eval_and_push_write(mock_eval_context)
-        assert list(mock_num_port1._write_queue) == [100]
+        assert list(mock_num_port1._write_queue) == [WriteRequest(100)]
 
     async def test_unavailable_not_written(self, mock_num_port1, mocker):
         """Should not push anything to the write queue if the expression evaluation raises due to value being
@@ -160,10 +239,10 @@ class TestPortEvalAndPushWrite:
         mock_eval_context = mocker.Mock()
         mock_num_port1._expression = mocker.Mock()
         mock_num_port1._expression.eval = mocker.AsyncMock(side_effect=ValueUnavailable)
-        mock_num_port1._write_queue = mocker.Mock()
+        mocker.patch.object(mock_num_port1, "push_write")
 
         await mock_num_port1.eval_and_push_write(mock_eval_context)
-        mock_num_port1._write_queue.append.assert_not_called()
+        mock_num_port1.push_write.assert_not_called()
 
 
 class TestPortGetPendingValue:
@@ -177,9 +256,9 @@ class TestPortGetPendingValue:
         """Should return the most recent value from writing queue."""
 
         mock_num_port1._writing_value = 1
-        mock_num_port1._write_queue.append(2)
-        mock_num_port1._write_queue.append(3)
-        mock_num_port1._write_queue.append(4)
+        mock_num_port1._write_queue.append(WriteRequest(2))
+        mock_num_port1._write_queue.append(WriteRequest(3))
+        mock_num_port1._write_queue.append(WriteRequest(4))
         assert mock_num_port1.get_pending_value() == 4
 
     def test_empty_queue(self, mock_num_port1):
@@ -816,8 +895,8 @@ class TestPortToPersisted:
         mock_num_port1._last_read_value = (42, 1111)
         mock_num_port1._last_written_value = (43, 2222)
         mock_num_port1._write_queue.clear()
-        mock_num_port1._write_queue.append(44)
-        mock_num_port1._write_queue.append(45)
+        mock_num_port1._write_queue.append(WriteRequest(44))
+        mock_num_port1._write_queue.append(WriteRequest(45))
 
         result = await mock_num_port1.to_persisted()
 
@@ -845,6 +924,6 @@ class TestPortFromPersisted:
 
         assert mock_num_port1._last_read_value == (12, 1001)
         assert mock_num_port1._last_written_value == (34, 1002)
-        assert list(mock_num_port1._write_queue) == [56, 78]
+        assert list(mock_num_port1._write_queue) == [WriteRequest(56), WriteRequest(78)]
         assert mock_num_port1.get_pending_value() == 78
         mock_num_port1.write_value.assert_not_called()
