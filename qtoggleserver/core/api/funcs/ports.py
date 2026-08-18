@@ -375,7 +375,6 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
     if not await port.is_writable():
         raise core_api.APIError(400, "read-only-port")
 
-    # TODO: shoudln't we queue the sequence write call as well?
     try:
         await port.push_write_and_wait(value)
     except core_ports.PortTimeout as e:
