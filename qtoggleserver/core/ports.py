@@ -731,17 +731,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_last_written_value(self) -> NullablePortValue:
         return self._last_written_value[0] if self._last_written_value else None
 
-    def get_target_value(self) -> NullablePortValue:
-        """Return the value the port is expected to end up with, as a result of the writing process: the pending value,
-        if available, falling back to the last written value.
-        """
-
-        pending_value = self.get_pending_value()
-        if pending_value is not None:
-            return pending_value
-
-        return self.get_last_written_value()
-
     def push_write(self, value: PortValue, future: asyncio.Future | None = None) -> None:
         """Push a value to the writing process queue. If `future` is given, it will be resolved with the result of
         (`None`) or exception raised by the eventual `transform_and_write_value()` call for this value. It will be
@@ -790,8 +779,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             json_utils.dumps(adapted_value),
         )
 
-        # Only write value to port if it differs from the target value
-        if self.get_target_value() != adapted_value:
+        # Only write value to port if it differs from the last known value
+        if self.get_last_value() != adapted_value:
             self.push_write(adapted_value)
 
     async def _write_loop(self) -> None:
