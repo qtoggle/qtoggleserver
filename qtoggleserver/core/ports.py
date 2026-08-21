@@ -1,13 +1,12 @@
 import abc
 import asyncio
 import copy
-import functools
 import inspect
 import logging
 import time
 
 from collections import deque
-from collections.abc import AsyncIterator, Callable, ValuesView
+from collections.abc import AsyncIterator, ValuesView
 from typing import Any, NamedTuple
 
 from qtoggleserver import persist
@@ -155,16 +154,6 @@ class WriteRequest(NamedTuple):
 
     value: PortValue
     future: asyncio.Future | None = None
-
-
-def skip_write_unavailable(func: Callable) -> Callable:
-    @functools.wraps(func)
-    async def wrapper(self: BasePort, value: NullablePortValue) -> None:
-        if value is None:
-            return
-        await func(self, value)
-
-    return wrapper
 
 
 class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
