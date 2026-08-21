@@ -716,10 +716,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def is_reading(self) -> bool:
         return self._read_value_lock.locked()
 
-    async def write_value(self, value: NullablePortValue) -> None:
+    async def write_value(self, value: PortValue) -> None:
         pass
 
-    async def _write_value_safe(self, value: NullablePortValue) -> None:
+    async def _write_value_safe(self, value: PortValue) -> None:
         """Write a value to the port, ensuring only one write at a time and updating the last written value."""
 
         async with self._write_value_lock:
@@ -838,7 +838,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if pending_request.future and not pending_request.future.done():
                     pending_request.future.cancel()
 
-    async def transform_and_write_value(self, value: NullablePortValue) -> None:
+    async def transform_and_write_value(self, value: PortValue) -> None:
         """Apply write transform (if any) and write the value to the port."""
 
         value_str = json_utils.dumps(value)
@@ -848,7 +848,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             try:
                 value = self.adapt_value_type(await self._transform_write.eval(eval_context))
             except expressions_exceptions.ValueUnavailable:
-                value = None
+                self.debug("value %s unavailable after write transform", value_str)
+                return
+
             value_str = f"{value_str} ({json_utils.dumps(value)} after write transform)"
 
         try:
