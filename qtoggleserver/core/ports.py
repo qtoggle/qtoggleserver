@@ -753,7 +753,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return self.get_last_written_value()
 
-    def push_write(self, value: NullablePortValue, future: asyncio.Future | None = None) -> None:
+    def push_write(self, value: PortValue, future: asyncio.Future | None = None) -> None:
         """Push a value to the writing process queue. If `future` is given, it will be resolved with the result of
         (`None`) or exception raised by the eventual `transform_and_write_value()` call for this value. It will be
         cancelled instead if evicted from a full queue before ever being written, or if the port's write loop is
@@ -767,7 +767,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._write_queue.append(WriteRequest(value, future))
         self.save_asap()
 
-    async def push_write_and_wait(self, value: NullablePortValue) -> None:
+    async def push_write_and_wait(self, value: PortValue) -> None:
         """Push a value to the writing process queue and wait for it to actually be written, propagating any
         exception raised in the process."""
 
