@@ -1,4 +1,5 @@
 from qtoggleserver.core import ports
+from qtoggleserver.core.typing import NullablePortValue, PortValue
 from qtoggleserver.utils import json as json_utils
 
 
@@ -29,10 +30,10 @@ class DummyGPIO(ports.Port):
         if self._def_output is not None:
             await self.attr_set_output(self._def_output)
 
-    async def read_value(self) -> bool | None:
+    async def read_value(self) -> NullablePortValue:
         return self._dummy_value
 
-    async def write_value(self, value: bool | None) -> None:
+    async def write_value(self, value: PortValue) -> None:
         self.debug('writing "%s"', json_utils.dumps(value))
         self._dummy_value = value
 

@@ -7,6 +7,7 @@ from functools import wraps
 from typing import TextIO
 
 from qtoggleserver.core import ports
+from qtoggleserver.core.typing import NullablePortValue, PortValue
 from qtoggleserver.utils import json as json_utils
 
 
@@ -59,15 +60,12 @@ class GPIO(ports.Port):
             await self.attr_set_output(self._def_output)
 
     @_retry_after_configure
-    async def read_value(self) -> bool:
+    async def read_value(self) -> NullablePortValue:
         self._val_file.seek(0)
         return self._val_file.read(1) == "1"
 
     @_retry_after_configure
-    async def write_value(self, value: bool | None) -> None:
-        if value is None:
-            return
-
+    async def write_value(self, value: PortValue) -> None:
         self._val_file.seek(0)
         if value:
             value = "1"

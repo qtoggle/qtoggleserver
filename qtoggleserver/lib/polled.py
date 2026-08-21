@@ -5,7 +5,7 @@ import logging
 from typing import cast
 
 from qtoggleserver.core import main
-from qtoggleserver.core.typing import AttributeDefinition, AttributeDefinitions, NullablePortValue
+from qtoggleserver.core.typing import AttributeDefinition, AttributeDefinitions, PortValue
 from qtoggleserver.peripherals import Peripheral, PeripheralPort
 
 
@@ -193,7 +193,7 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
     def get_peripheral(self) -> PolledPeripheral:
         return cast(PolledPeripheral, super().get_peripheral())
 
-    async def _write_value_safe(self, value: NullablePortValue) -> None:
+    async def _write_value_safe(self, value: PortValue) -> None:
         await super()._write_value_safe(value)
 
         # Poll values immediately after writing, if peripheral requires it

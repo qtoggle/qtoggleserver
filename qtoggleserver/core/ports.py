@@ -1,13 +1,12 @@
 import abc
 import asyncio
 import copy
-import functools
 import inspect
 import logging
 import time
 
 from collections import deque
-from collections.abc import AsyncIterator, Callable, ValuesView
+from collections.abc import AsyncIterator, ValuesView
 from typing import Any, NamedTuple
 
 from qtoggleserver import persist
@@ -155,16 +154,6 @@ class WriteRequest(NamedTuple):
 
     value: PortValue
     future: asyncio.Future | None = None
-
-
-def skip_write_unavailable(func: Callable) -> Callable:
-    @functools.wraps(func)
-    async def wrapper(self: BasePort, value: NullablePortValue) -> None:
-        if value is None:
-            return
-        await func(self, value)
-
-    return wrapper
 
 
 class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
@@ -716,10 +705,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def is_reading(self) -> bool:
         return self._read_value_lock.locked()
 
-    async def write_value(self, value: NullablePortValue) -> None:
+    async def write_value(self, value: PortValue) -> None:
         pass
 
-    async def _write_value_safe(self, value: NullablePortValue) -> None:
+    async def _write_value_safe(self, value: PortValue) -> None:
         """Write a value to the port, ensuring only one write at a time and updating the last written value."""
 
         async with self._write_value_lock:
@@ -742,18 +731,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_last_written_value(self) -> NullablePortValue:
         return self._last_written_value[0] if self._last_written_value else None
 
-    def get_target_value(self) -> NullablePortValue:
-        """Return the value the port is expected to end up with, as a result of the writing process: the pending value,
-        if available, falling back to the last written value.
-        """
-
-        pending_value = self.get_pending_value()
-        if pending_value is not None:
-            return pending_value
-
-        return self.get_last_written_value()
-
-    def push_write(self, value: NullablePortValue, future: asyncio.Future | None = None) -> None:
+    def push_write(self, value: PortValue, future: asyncio.Future | None = None) -> None:
         """Push a value to the writing process queue. If `future` is given, it will be resolved with the result of
         (`None`) or exception raised by the eventual `transform_and_write_value()` call for this value. It will be
         cancelled instead if evicted from a full queue before ever being written, or if the port's write loop is
@@ -764,10 +742,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             if evicted.future and not evicted.future.done():
                 evicted.future.cancel()
 
+        self.debug("pushing value %s to write queue", value)
         self._write_queue.append(WriteRequest(value, future))
         self.save_asap()
 
-    async def push_write_and_wait(self, value: NullablePortValue) -> None:
+    async def push_write_and_wait(self, value: PortValue) -> None:
         """Push a value to the writing process queue and wait for it to actually be written, propagating any
         exception raised in the process."""
 
@@ -800,8 +779,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             json_utils.dumps(adapted_value),
         )
 
-        # Only write value to port if it differs from the target value
-        if self.get_target_value() != adapted_value:
+        # Only write value to port if it differs from the last known value
+        if self.get_last_value() != adapted_value:
             self.push_write(adapted_value)
 
     async def _write_loop(self) -> None:
@@ -837,7 +816,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if pending_request.future and not pending_request.future.done():
                     pending_request.future.cancel()
 
-    async def transform_and_write_value(self, value: NullablePortValue) -> None:
+    async def transform_and_write_value(self, value: PortValue) -> None:
         """Apply write transform (if any) and write the value to the port."""
 
         value_str = json_utils.dumps(value)
@@ -847,7 +826,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             try:
                 value = self.adapt_value_type(await self._transform_write.eval(eval_context))
             except expressions_exceptions.ValueUnavailable:
-                value = None
+                self.debug("value %s unavailable after write transform", value_str)
+                return
+
             value_str = f"{value_str} ({json_utils.dumps(value)} after write transform)"
 
         try:
@@ -1021,24 +1002,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     self._write_queue.append(WriteRequest(value))
 
         # Handle legacy `value` field for backward compatibility with old persisted data
-        if data.get("value") is not None:
-            if not loaded_last_read:
-                self._last_read_value = data["value"], now_ms
-                self.debug("loaded value = %s", json_utils.dumps(data["value"]))
-
-            if await self.is_writable():
-                # Write the just-loaded value to the port
-                await self.transform_and_write_value(data["value"])
-        elif not loaded_last_read and self.is_enabled():
-            try:
-                value = await self.read_transformed_value()
-            except SkipRead:
-                pass
-            except Exception as e:
-                self.error("failed to read value: %s", e, exc_info=True)
-            else:
-                self._last_read_value = value, int(time.time() * 1000)
-                self.debug("read value = %s", json_utils.dumps(value))
+        if data.get("value") is not None and not loaded_last_read:
+            self._last_read_value = data["value"], now_ms
+            self.debug("loaded value = %s", json_utils.dumps(data["value"]))
 
         # various
         self._history_last_timestamp = data.get("history_last_timestamp", 0)

@@ -2,7 +2,7 @@ import logging
 
 from qtoggleserver import persist
 from qtoggleserver.core import ports as core_ports
-from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList, NullablePortValue, PortValueChoices
+from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList, NullablePortValue, PortValue, PortValueChoices
 
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class VirtualPort(core_ports.Port):
     async def read_value(self) -> NullablePortValue:
         return self._virtual_value
 
-    async def write_value(self, value: NullablePortValue) -> None:
+    async def write_value(self, value: PortValue) -> None:
         self._virtual_value = value
 
     async def to_persisted(self) -> GenericJSONDict:
