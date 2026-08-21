@@ -297,7 +297,7 @@ class SlavePort(core_ports.BasePort):
         except IndexError:
             raise core_ports.SkipRead()
 
-    async def write_value(self, value: NullablePortValue) -> None:
+    async def write_value(self, value: PortValue) -> None:
         if self._slave.is_online():
             try:
                 await self._slave.api_call(

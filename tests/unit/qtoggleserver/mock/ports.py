@@ -1,6 +1,6 @@
 from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core.ports import TYPE_BOOLEAN, TYPE_NUMBER, Port, SkipRead
-from qtoggleserver.core.typing import NullablePortValue
+from qtoggleserver.core.typing import NullablePortValue, PortValue
 from qtoggleserver.core.vports import VirtualPort
 from qtoggleserver.utils import expressions as expressions_utils
 
@@ -21,7 +21,7 @@ class MockPort(Port):
         self._next_value = None
         return value
 
-    async def write_value(self, value: NullablePortValue) -> None:
+    async def write_value(self, value: PortValue) -> None:
         pass
 
     def set_next_value(self, value: NullablePortValue) -> None:
