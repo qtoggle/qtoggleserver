@@ -764,6 +764,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             if evicted.future and not evicted.future.done():
                 evicted.future.cancel()
 
+        self.debug("pushing value %s to write queue", value)
         self._write_queue.append(WriteRequest(value, future))
         self.save_asap()
 
@@ -1021,24 +1022,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     self._write_queue.append(WriteRequest(value))
 
         # Handle legacy `value` field for backward compatibility with old persisted data
-        if data.get("value") is not None:
-            if not loaded_last_read:
-                self._last_read_value = data["value"], now_ms
-                self.debug("loaded value = %s", json_utils.dumps(data["value"]))
-
-            if await self.is_writable():
-                # Write the just-loaded value to the port
-                await self.transform_and_write_value(data["value"])
-        elif not loaded_last_read and self.is_enabled():
-            try:
-                value = await self.read_transformed_value()
-            except SkipRead:
-                pass
-            except Exception as e:
-                self.error("failed to read value: %s", e, exc_info=True)
-            else:
-                self._last_read_value = value, int(time.time() * 1000)
-                self.debug("read value = %s", json_utils.dumps(value))
+        if data.get("value") is not None and not loaded_last_read:
+            self._last_read_value = data["value"], now_ms
+            self.debug("loaded value = %s", json_utils.dumps(data["value"]))
 
         # various
         self._history_last_timestamp = data.get("history_last_timestamp", 0)
