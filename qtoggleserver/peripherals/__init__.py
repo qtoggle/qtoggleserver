@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import logging
 
 from collections.abc import ValuesView
@@ -6,6 +7,7 @@ from typing import Any
 
 from qtoggleserver import persist
 from qtoggleserver.conf import settings
+from qtoggleserver.core.ports import BasePort
 from qtoggleserver.utils import dynload as dynload_utils
 
 from .exceptions import DuplicatePeripheral, NoSuchDriver
@@ -91,9 +93,6 @@ async def prepare_migration(
     - Phase 1 (prepare): Copy data to new IDs, keep old data intact
     - Phase 2 (cleanup): Delete old data only after successful update
     """
-    import hashlib
-
-    from qtoggleserver.core.ports import BasePort
 
     # Compute what the new peripheral ID will be using the same logic as Peripheral.__init__
     new_id: str = new_name or ""
@@ -141,7 +140,6 @@ async def cleanup_migration(p: Peripheral, new_name: str | None) -> None:
     Deletes old port persist data and old peripheral persist entry.
     Only call this after the new peripheral has been successfully created and initialized.
     """
-    from qtoggleserver.core.ports import BasePort
 
     old_id = p.get_id()
 
