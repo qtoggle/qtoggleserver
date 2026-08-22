@@ -354,9 +354,8 @@ class PostgresDriver(BaseDriver):
         return {r[0] for r in results}
 
     async def _execute_query(self, query: str, params: Iterable[Any] | None = None) -> Iterable[tuple]:
-        async with await self._acquire_connection() as conn:
-            async with conn.transaction():
-                return [row async for row in conn.cursor(query, *(params or []))]
+        async with await self._acquire_connection() as conn, conn.transaction():
+            return [row async for row in conn.cursor(query, *(params or []))]
 
     async def _execute_statement(
         self, statement: str, params: Iterable[Any] | None = None, has_result_rows: bool = False

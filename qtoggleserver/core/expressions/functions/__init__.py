@@ -61,8 +61,7 @@ class Function(Expression, metaclass=abc.ABCMeta):
         result = self._asap_eval_paused_until_ms if DEP_ASAP in self.DEPS else int(1e13)
         for arg in self._function_args:
             child = arg._get_min_asap_eval_paused_until_ms()
-            if child < result:
-                result = child
+            result = min(result, child)
         return result
 
     async def eval_args(self, context: EvalContext) -> list[EvalResult]:

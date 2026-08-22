@@ -186,6 +186,6 @@ async def init() -> None:
 
 
 async def cleanup() -> None:
-    tasks = [asyncio.create_task(remove(p_id, persisted_data=False)) for p_id in _registered_peripherals.keys()]
+    tasks = [asyncio.create_task(remove(p_id, persisted_data=False)) for p_id in _registered_peripherals]
     if tasks:
         await asyncio.wait(tasks)

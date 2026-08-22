@@ -1,4 +1,6 @@
-# ruff: noqa: ANN001, ANN002, ANN201, F821
+# The quoted annotations below are D-Bus type strings consumed by dbus_next's parse_annotation(); they are not forward
+# references and must stay quoted, hence the UP037 exemption.
+# ruff: noqa: ANN201, F821, UP037
 
 import abc
 import asyncio

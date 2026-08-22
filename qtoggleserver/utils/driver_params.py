@@ -82,7 +82,6 @@ class DriverParamsMixin:
 
     def __init__(self, **kwargs: Any) -> None:
         """Consume kwargs to prevent them from reaching object.__init__()."""
-        pass
 
     def get_driver(self) -> str:
         return self._driver

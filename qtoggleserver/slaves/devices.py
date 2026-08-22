@@ -415,7 +415,7 @@ class Slave(logging_utils.LoggableMixin):
             "attrs": self._cached_attrs.copy(),
             "webhooks": self._cached_webhooks.copy(),
             "reverse": self._cached_reverse.copy(),
-            "provisioning_attrs": list(sorted(self._provisioning_attrs)),
+            "provisioning_attrs": sorted(self._provisioning_attrs),
             "provisioning_webhooks": self._provisioning_webhooks,
             "provisioning_reverse": self._provisioning_reverse,
         }
@@ -1441,8 +1441,7 @@ class Slave(logging_utils.LoggableMixin):
         return False, None
 
     async def intercept_response(self, method: str, path: str, request_body: Any, response_body: Any) -> None:
-        if path.endswith("/"):
-            path = path[:-1]
+        path = path.removesuffix("/")
 
         if path == "/device":
             if method == "PATCH":

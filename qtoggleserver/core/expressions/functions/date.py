@@ -1,7 +1,7 @@
 import abc
 import calendar
 
-from datetime import datetime, time, timedelta, timezone
+from datetime import UTC, datetime, time, timedelta
 
 from qtoggleserver import system
 
@@ -161,7 +161,7 @@ class BOYFunction(Function):
             n = int(await self.args[0].eval(context))
 
         dt = datetime(now.year + n, 1, 1, 0, 0, 0)
-        dt = dt.astimezone(tz=timezone.utc)
+        dt = dt.astimezone(tz=UTC)
 
         return dt.timestamp()
 
@@ -199,7 +199,7 @@ class BOMFunction(Function):
                     month = 12
 
         dt = datetime(year, month, 1, 0, 0, 0)
-        dt = dt.astimezone(tz=timezone.utc)
+        dt = dt.astimezone(tz=UTC)
 
         return dt.timestamp()
 
@@ -257,7 +257,7 @@ class BOWFunction(Function):
                     day = last_day - 7 + day
 
         dt = datetime(year, month, day)
-        dt = dt.astimezone(tz=timezone.utc)
+        dt = dt.astimezone(tz=UTC)
 
         return dt.timestamp()
 
@@ -279,7 +279,7 @@ class BODFunction(Function):
             n = int(await self.args[0].eval(context))
         dt = now + timedelta(days=n)
         dt = dt.replace(hour=0, minute=0, second=0, microsecond=0)
-        dt = dt.astimezone(tz=timezone.utc)
+        dt = dt.astimezone(tz=UTC)
 
         return dt.timestamp()
 

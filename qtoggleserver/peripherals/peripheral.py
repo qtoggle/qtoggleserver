@@ -347,4 +347,4 @@ class Peripheral(DriverParamsMixin, logging_utils.LoggableMixin, metaclass=abc.A
 
 
 # This needs to be imported here to avoid circular import issues
-from .peripheralport import PeripheralPort  # noqa: E402
+from .peripheralport import PeripheralPort

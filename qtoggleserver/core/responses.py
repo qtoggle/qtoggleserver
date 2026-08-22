@@ -160,4 +160,4 @@ def parse(response: HTTPResponse, decode_json: bool = True, resolve_refs: bool =
 
         raise OtherError(str(response.error))
 
-    raise OtherError(f"Unknown HTTP error ({response.code}: {str(response.error)})")
+    raise OtherError(f"Unknown HTTP error ({response.code}: {response.error!s})")
