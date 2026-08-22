@@ -30,5 +30,5 @@ class DashboardUpdateEvent(FrontendEvent):
 
         super().__init__(**kwargs)
 
-    async def get_params(self) -> GenericJSONDict:
+    async def make_params(self) -> GenericJSONDict:
         return {"panels": self.panels}

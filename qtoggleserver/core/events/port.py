@@ -27,7 +27,7 @@ class PortAdd(PortEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_VIEWONLY
     TYPE = "port-add"
 
-    async def get_params(self) -> GenericJSONDict:
+    async def make_params(self) -> GenericJSONDict:
         return await self.get_port().to_json()
 
 
@@ -35,7 +35,7 @@ class PortRemove(PortEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_VIEWONLY
     TYPE = "port-remove"
 
-    async def get_params(self) -> GenericJSONDict:
+    async def make_params(self) -> GenericJSONDict:
         return {"id": self.get_port().get_id()}
 
 
@@ -43,7 +43,7 @@ class PortUpdate(PortEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_VIEWONLY
     TYPE = "port-update"
 
-    async def get_params(self) -> GenericJSONDict:
+    async def make_params(self) -> GenericJSONDict:
         return await self.get_port().to_json()
 
     def is_duplicate(self, event: Event) -> bool:
@@ -60,5 +60,5 @@ class ValueChange(PortEvent):
 
         super().__init__(*args, **kwargs)
 
-    async def get_params(self) -> GenericJSONDict:
+    async def make_params(self) -> GenericJSONDict:
         return {"id": self.get_port().get_id(), "value": self.new_value, "old_value": self.old_value}

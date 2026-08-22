@@ -355,6 +355,7 @@ class SlavePort(core_ports.BasePort):
                 self.debug("value expired")
 
             if not self._trigger_update_task:
+                self.invalidate_attrs()
                 self._trigger_update_task = asyncio.create_task(self.trigger_update())
 
     async def from_persisted(self, data: GenericJSONDict) -> None:

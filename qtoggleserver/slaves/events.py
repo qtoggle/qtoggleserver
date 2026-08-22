@@ -26,7 +26,7 @@ class SlaveDeviceAdd(SlaveDeviceEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
     TYPE = "slave-device-add"
 
-    async def get_params(self) -> GenericJSONDict:
+    async def make_params(self) -> GenericJSONDict:
         return self.get_slave().to_json()
 
 
@@ -34,7 +34,7 @@ class SlaveDeviceRemove(SlaveDeviceEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
     TYPE = "slave-device-remove"
 
-    async def get_params(self) -> GenericJSONDict:
+    async def make_params(self) -> GenericJSONDict:
         return {"name": self.get_slave().get_name()}
 
 
@@ -42,7 +42,7 @@ class SlaveDeviceUpdate(SlaveDeviceEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
     TYPE = "slave-device-update"
 
-    async def get_params(self) -> GenericJSONDict:
+    async def make_params(self) -> GenericJSONDict:
         return self.get_slave().to_json()
 
     def is_duplicate(self, event: core_events.Event) -> bool:

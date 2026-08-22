@@ -38,9 +38,10 @@ def invalidate_deps_map() -> None:
 async def build_context(now_ms: int) -> EvalContext:
     """Build an expression evaluation context for the current system state.
 
-    Gathers port values and attributes for all enabled ports, collects device-level attributes,
-    and includes slave device attributes if slaves are enabled. Returns a complete EvalContext
-    ready for expression evaluation.
+    Gathers port values and attributes for all ports (including disabled ones; disabled ports are
+    only special-cased for port *value* expressions, not attribute expressions), collects
+    device-level attributes, and includes slave device attributes if slaves are enabled. Returns a
+    complete EvalContext ready for expression evaluation.
 
     Args:
         now_ms: Current time in milliseconds since epoch.
@@ -51,9 +52,6 @@ async def build_context(now_ms: int) -> EvalContext:
     port_values = {}
     port_attrs = {}
     for port in core_ports.get_all():
-        if not port.is_enabled():
-            continue
-
         port_id = port.get_id()
         port_values[port_id] = port.get_last_value()
         port_attrs[port_id] = await port.get_attrs()

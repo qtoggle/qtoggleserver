@@ -1199,6 +1199,7 @@ class Slave(logging_utils.LoggableMixin):
         # Trigger a port-update so that online attribute is pushed to consumers
         for port in self._get_local_ports():
             if port.is_enabled():
+                port.invalidate_attrs()
                 await port.trigger_update()
 
     async def _handle_online(self) -> None:
@@ -1232,6 +1233,7 @@ class Slave(logging_utils.LoggableMixin):
         # Trigger a port-update so that online attribute is pushed to consumers
         for port in self._get_local_ports():
             if port.is_enabled():
+                port.invalidate_attrs()
                 await port.trigger_update()
 
         if not self._ready:
