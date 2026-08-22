@@ -74,7 +74,17 @@ package = true
 [tool.ruff]
 line-length = 120
 lint.extend-select = ["I", "RUF022", "ANN", "E501"]
-lint.extend-ignore = ["ANN002", "ANN003", "ANN401", "BLE001", "RUF012"]
+lint.extend-ignore = [
+    "ANN002",
+    "ANN003",
+    "ANN401",
+    "BLE001",
+    "RUF012",
+    # Timestamps are converted to device-local naive datetimes on purpose: the timezone is set at OS level via
+    # system.date.set_timezone() and inherited by the process, so expression date functions (HOUR, BOD, BOW, ...) and
+    # day-rollover detection must read local wall-clock time. Forcing tz-aware UTC here would change their semantics.
+    "DTZ006",
+]
 lint.isort.lines-after-imports = 2
 lint.isort.lines-between-types = 1
 lint.isort.force-wrap-aliases = true

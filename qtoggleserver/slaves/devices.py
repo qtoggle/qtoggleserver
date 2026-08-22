@@ -1401,7 +1401,7 @@ class Slave(logging_utils.LoggableMixin):
                 elif path == "/webhooks":
                     if self._cached_webhooks:
                         return True, self._cached_webhooks
-                elif path == "/reverse":
+                elif path == "/reverse":  # noqa: SIM102
                     if self._cached_reverse:
                         return True, self._cached_reverse
             elif method == "PATCH":
@@ -1432,7 +1432,7 @@ class Slave(logging_utils.LoggableMixin):
 
                     return True, None
         else:  # device is online
-            if method == "POST":
+            if method == "POST":  # noqa: SIM102
                 if path == "/reset":
                     self.debug("device is resetting")
                     self._resetting = None
@@ -1477,7 +1477,7 @@ class Slave(logging_utils.LoggableMixin):
                     self.debug("firmware update process ended")
                     await self.enable()
                     self._stop_fwupdate_polling()
-        elif path == "/reset":
+        elif path == "/reset":  # noqa: SIM102
             if method == "POST" and request_body.get("factory"):
                 # When performing factory reset, disable device
 
@@ -1486,7 +1486,7 @@ class Slave(logging_utils.LoggableMixin):
                 await self.trigger_update()
 
     def intercept_error(self, error: Exception) -> Exception:
-        if isinstance(error, core_responses.HTTPError):
+        if isinstance(error, core_responses.HTTPError):  # noqa: SIM102
             # Slave expression attribute is known as "device_expression" on Master; we must adapt the corresponding
             # error here by prepending a(nother) "device_"; the sample applies to history_* attributes.
 

@@ -137,9 +137,8 @@ class APIHandler(BaseHandler):
 
         # Validate session id
         session_id = self.request.headers.get("Session-Id")
-        if session_id:
-            if not SESSION_ID_RE.match(session_id):
-                raise core_api.APIError(400, "invalid-header", header="Session-Id")
+        if session_id and not SESSION_ID_RE.match(session_id):
+            raise core_api.APIError(400, "invalid-header", header="Session-Id")
 
     async def call_api_func(self, func: Callable, default_status: int = 200, **kwargs) -> None:
         try:
