@@ -1,7 +1,7 @@
-from typing import Any, TypeAlias
+from typing import Any
 
 
-Id: TypeAlias = str
-Record: TypeAlias = dict[str, Any]
-SampleValue: TypeAlias = float
-Sample: TypeAlias = tuple[int, SampleValue]
+type Id = str
+type Record = dict[str, Any]
+type SampleValue = float
+type Sample = tuple[int, SampleValue]

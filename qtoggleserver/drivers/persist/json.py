@@ -73,7 +73,7 @@ class JSONDriver(BaseDriver):
         coll = self._data.get(collection, {})
         records = []
 
-        if isinstance(filt.get("id"), Id):  # look for specific record id
+        if isinstance(filt.get("id"), str):  # look for specific record id
             filt = filt.copy()
             id_ = filt.pop("id")
             record = coll.get(id_)
@@ -137,7 +137,7 @@ class JSONDriver(BaseDriver):
         coll = self._data.setdefault(collection, {})
         modified_count = 0
 
-        if isinstance(filt.get("id"), Id):
+        if isinstance(filt.get("id"), str):
             filt = filt.copy()
             id_ = filt.pop("id")
 
@@ -179,7 +179,7 @@ class JSONDriver(BaseDriver):
         coll = self._data.setdefault(collection, {})
         removed_count = 0
 
-        if isinstance(filt.get("id"), Id):
+        if isinstance(filt.get("id"), str):
             filt = filt.copy()
             id_ = filt.pop("id")
 
