@@ -13,9 +13,7 @@ class AttrChangeHandler(core_events.Handler):
     - ``$port_id:`` — for "port-add", "port-remove", "port-update"
     - ``$port_id``  — additionally, for "port-add"/"port-remove"/"port-update", whenever a port's availability
       (`enabled`/`online`) transitions, in either direction, relative to its last known state — so that value
-      expressions and functions like `AVAILABLE()`/`DEFAULT()` pick up the new state. A never-seen port_id starts
-      from an implicit `False` baseline, same as a nonexistent port; "port-remove" checks against that baseline and
-      then clears it, so a later re-add is treated as a fresh transition.
+      expressions and functions like `AVAILABLE()`/`DEFAULT()` pick up the new state
     - ``#:``        — for "device-update"
     - ``#name:``    — for "slave-device-add", "slave-device-remove", "slave-device-update"
     """

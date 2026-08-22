@@ -27,6 +27,3 @@ class FullUpdate(DeviceEvent):
 
     def is_duplicate(self, event: Event) -> bool:
         return isinstance(event, self.__class__)
-
-    async def make_params(self) -> GenericJSONDict:
-        return {}
