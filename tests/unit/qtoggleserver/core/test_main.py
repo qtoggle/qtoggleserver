@@ -537,6 +537,33 @@ class TestAttrChangeHandler:
         await core_main._attr_change_handler.handle_event(event)
         assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}
 
+    async def test_port_add_while_disabled_does_not_add_value_dep(self, mocker, mock_num_port1):
+        """PortAdd should not add `$port_id` when the port is added while already disabled — a newly added disabled
+        port is not a real availability transition, since a nonexistent port was already unavailable."""
+
+        mocker.patch.object(mock_num_port1, "to_json", new_callable=mocker.AsyncMock, return_value={"enabled": False})
+        event = core_events.PortAdd(mock_num_port1)
+        await event.init_params()
+        await core_main._attr_change_handler.handle_event(event)
+        assert core_main._attr_change_handler._pending == {"$nid1:"}
+
+    async def test_port_add_seeds_availability_so_later_update_does_not_repeat(self, mock_num_port1):
+        """After a PortAdd for an already-enabled port seeds `_last_availability`, a later unrelated PortUpdate (with
+        `enabled` still `true`) should not add `$port_id` again — this is what makes registering the handler before
+        ports are loaded at startup (see startup.py) actually pay off, instead of every port's first post-startup
+        event looking like a spurious availability transition."""
+
+        add_event = core_events.PortAdd(mock_num_port1)
+        await add_event.init_params()
+        await core_main._attr_change_handler.handle_event(add_event)
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}
+        core_main._attr_change_handler._pending.clear()
+
+        update_event = core_events.PortUpdate(mock_num_port1)
+        await update_event.init_params()
+        await core_main._attr_change_handler.handle_event(update_event)
+        assert core_main._attr_change_handler._pending == {"$nid1:"}
+
     async def test_port_remove_adds_attr_dep(self, mock_num_port1):
         """PortRemove event should add `$port_id:` to _pending_attr_changes."""
 
@@ -834,6 +861,30 @@ class TestAttrChangeHandler:
 
         mock_num_port1.to_json.return_value = {"enabled": False}
         event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+        await core_main._attr_change_handler.handle_event(event)
+        changes = core_main._attr_change_handler.pop_pending()
+        assert "$nid1" in changes
+
+        await _eval_changed_expressions(changes=changes, now_ms=0)
+
+        mock_num_port2.eval_and_push_write.assert_called_once()
+
+    async def test_port_remove_triggers_dependent_default_eval(self, mocker, mock_num_port1, mock_num_port2):
+        """A port whose expression references DEFAULT($nid1, ...) should be evaluated once nid1 is removed while
+        available, so that it picks up the port becoming unavailable, end to end."""
+
+        mock_num_port2.set_writable(True)
+        mock_num_port2.set_expression("DEFAULT($nid1, 0)")
+        mocker.patch.object(mock_num_port2, "eval_and_push_write")
+        mocker.patch.object(mock_num_port1, "to_json", new_callable=mocker.AsyncMock, return_value={"enabled": True})
+
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+        await core_main._attr_change_handler.handle_event(event)
+        core_main._attr_change_handler.pop_pending()  # discard the initial rising-edge dep
+
+        event = core_events.PortRemove(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
         changes = core_main._attr_change_handler.pop_pending()

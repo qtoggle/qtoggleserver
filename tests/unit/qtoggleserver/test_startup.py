@@ -80,6 +80,77 @@ class TestInitPorts:
         assert spy_logger.error.call_count == 2
 
 
+class TestInit:
+    _INIT_STEPS = [
+        "init_metadata",
+        "init_system",
+        "init_persist",
+        "init_peripherals",
+        "init_events",
+        "init_sessions",
+        "init_history",
+        "init_device",
+        "init_webhooks",
+        "init_reverse",
+        "init_main",
+        "init_ports",
+        "init_slaves",
+        "init_web",
+    ]
+
+    def _patch_steps(self, mocker, call_order=None):
+        for name in self._INIT_STEPS:
+            side_effect = (lambda n=name: call_order.append(n)) if call_order is not None else None
+            mocker.patch(f"qtoggleserver.startup.{name}", side_effect=side_effect)
+
+        mocker.patch("qtoggleserver.startup.parse_args")
+        mocker.patch("qtoggleserver.startup.init_settings")
+        mocker.patch("qtoggleserver.startup.init_logging")
+        mocker.patch("qtoggleserver.startup.init_signals")
+        mocker.patch("qtoggleserver.startup.init_tornado")
+        mocker.patch("qtoggleserver.startup.logger", mocker.MagicMock())
+        mocker.patch.object(startup.settings.slaves, "enabled", False)
+        mocker.patch("asyncio.sleep", new_callable=mocker.AsyncMock)
+
+    async def test_init_main_runs_before_ports_and_slaves(self, mocker):
+        """init_main() (which registers core.main's attr-change event handler) must run before init_ports() and
+        init_slaves(), so that PortAdd events fired while loading pre-existing ports are actually observed by the
+        handler instead of being fired into an empty handler list."""
+
+        call_order = []
+        self._patch_steps(mocker, call_order)
+        mocker.patch("qtoggleserver.startup.main.set_ready")
+
+        await startup.init()
+
+        assert call_order.index("init_main") < call_order.index("init_ports")
+        assert call_order.index("init_main") < call_order.index("init_slaves")
+
+    async def test_marks_main_ready_after_full_init(self, mocker):
+        """init() should call main.set_ready() once initialization (including ports/slaves) has completed."""
+
+        self._patch_steps(mocker)
+        spy_set_ready = mocker.patch("qtoggleserver.startup.main.set_ready")
+
+        await startup.init()
+
+        spy_set_ready.assert_called_once_with()
+
+    async def test_waits_for_slaves_ready_before_marking_main_ready(self, mocker):
+        """init() should poll slaves_devices.ready() until true, when slaves are enabled, before calling
+        main.set_ready()."""
+
+        self._patch_steps(mocker)
+        mocker.patch.object(startup.settings.slaves, "enabled", True)
+        spy_set_ready = mocker.patch("qtoggleserver.startup.main.set_ready")
+        spy_ready = mocker.patch("qtoggleserver.startup.slaves_devices.ready", side_effect=[False, True])
+
+        await startup.init()
+
+        assert spy_ready.call_count == 2
+        spy_set_ready.assert_called_once_with()
+
+
 class TestInitPeripherals:
     async def test_triggers_peripheral_add_events(self, mocker):
         peripheral1 = mocker.MagicMock()

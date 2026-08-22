@@ -323,19 +323,6 @@ async def init_main() -> None:
     logger.info("initializing main")
     await main.init()
 
-    # Wait until slaves are also ready before actually considering main loop ready
-    if settings.slaves.enabled:
-        logger.debug("waiting for slaves to become ready")
-        while not slaves_devices.ready():
-            await asyncio.sleep(1)
-
-        logger.debug("slaves are ready")
-
-    # Mark main as ready after all slaves with their ports have been initialized and hopefully brought online. Allow an
-    # extra second for pending loop tasks.
-    await asyncio.sleep(1)
-    main.set_ready()
-
 
 async def cleanup_main() -> None:
     logger.info("cleaning up main")
@@ -370,10 +357,23 @@ async def init() -> None:
     await init_device()
     await init_webhooks()
     await init_reverse()
+    await init_main()
     await init_ports()
     await init_slaves()
-    await init_main()
     await init_web()
+
+    # Wait until slaves are also ready before actually considering main loop ready
+    if settings.slaves.enabled:
+        logger.debug("waiting for slaves to become ready")
+        while not slaves_devices.ready():
+            await asyncio.sleep(1)
+
+        logger.debug("slaves are ready")
+
+    # Mark main as ready after all slaves with their ports have been initialized and hopefully brought online. Allow an
+    # extra second for pending loop tasks.
+    await asyncio.sleep(1)
+    main.set_ready()
 
 
 async def cleanup() -> None:
