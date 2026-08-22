@@ -11,18 +11,20 @@ class AttrChangeHandler(core_events.Handler):
 
     Dep strings produced:
     - ``$port_id:`` — for "port-add", "port-remove", "port-update"
-    - ``$port_id``  — additionally, for "port-add"/"port-update", when a port's availability attribute (as reported in
-      the event's params snapshot) is observed transitioning to `true` — a disabled or offline port's value is
-      unavailable, so becoming enabled/online must also be treated as a *port value* dependency change, even when the
-      raw value itself is unchanged
+    - ``$port_id``  — additionally, for "port-add"/"port-remove"/"port-update", whenever a port's availability
+      (`enabled`/`online`) transitions, in either direction, relative to its last known state — so that value
+      expressions and functions like `AVAILABLE()`/`DEFAULT()` pick up the new state. A never-seen port_id starts
+      from an implicit `False` baseline, same as a nonexistent port; "port-remove" checks against that baseline and
+      then clears it, so a later re-add is treated as a fresh transition.
     - ``#:``        — for "device-update"
     - ``#name:``    — for "slave-device-add", "slave-device-remove", "slave-device-update"
     """
 
     FIRE_AND_FORGET = False
 
-    # Attribute names whose transition to `true` makes a port's *value* newly available, and therefore must also be
-    # treated as a change of the port's value dependency (`$port_id`), not just its attribute dependency (`$port_id:`).
+    # Attribute names whose transition (in either direction) changes whether a port's *value* is available, and
+    # therefore must also be treated as a change of the port's value dependency (`$port_id`), not just its attribute
+    # dependency (`$port_id:`).
     AVAILABILITY_ATTRS = ("enabled", "online")
 
     def __init__(self) -> None:
@@ -43,14 +45,19 @@ class AttrChangeHandler(core_events.Handler):
 
             if isinstance(event, core_events.PortRemove):
                 for attr_name in self.AVAILABILITY_ATTRS:
-                    self._last_availability.pop((port_id, attr_name), None)
+                    # Whenever one of the availability attributes changes, induce a `value-change`-like event so that
+                    # expressions depending on this port's value are re-evaluated.
+                    was_available = self._last_availability.pop((port_id, attr_name), False)
+                    if was_available:
+                        self._pending.add(f"${port_id}")
             else:
+                # Also covers "port-add" — see class docstring.
                 params = event.get_params()
                 for attr_name in self.AVAILABILITY_ATTRS:
-                    # Whenever one of the availability attributes becomes true, induce a `value-change`-like event so
-                    # that expressions depending on this port's value are re-evaluated.
+                    # Whenever one of the availability attributes changes, induce a `value-change`-like event so that
+                    # expressions depending on this port's value are re-evaluated.
                     available = bool(params.get(attr_name))
-                    if available and not self._last_availability.get((port_id, attr_name), False):
+                    if available != self._last_availability.get((port_id, attr_name), False):
                         self._pending.add(f"${port_id}")
                     self._last_availability[(port_id, attr_name)] = available
         elif isinstance(event, core_events.DeviceUpdate):

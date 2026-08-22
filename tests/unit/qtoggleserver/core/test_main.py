@@ -546,24 +546,46 @@ class TestAttrChangeHandler:
         assert core_main._attr_change_handler._pending == {"$nid1:"}
 
     async def test_enabled_transition_adds_value_dep(self, mocker, mock_num_port1):
-        """`$port_id` should only be added once `enabled` is observed transitioning to `true`."""
+        """`$port_id` should be added whenever `enabled` is observed transitioning, in either direction."""
 
         mocker.patch.object(mock_num_port1, "to_json", new_callable=mocker.AsyncMock, return_value={"enabled": False})
         event = core_events.PortUpdate(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
         assert core_main._attr_change_handler._pending == {"$nid1:"}
+        core_main._attr_change_handler._pending.clear()
 
         mock_num_port1.to_json.return_value = {"enabled": True}
         event = core_events.PortUpdate(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
-        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}  # rising edge
+        core_main._attr_change_handler._pending.clear()
+
+        mock_num_port1.to_json.return_value = {"enabled": False}
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+        await core_main._attr_change_handler.handle_event(event)
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}  # falling edge
 
     async def test_enabled_steady_state_does_not_repeat(self, mocker, mock_num_port1):
         """`$port_id` should only be added once while `enabled` stays `true` across events."""
 
         mocker.patch.object(mock_num_port1, "to_json", new_callable=mocker.AsyncMock, return_value={"enabled": True})
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+        await core_main._attr_change_handler.handle_event(event)
+        core_main._attr_change_handler._pending.clear()
+
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+        await core_main._attr_change_handler.handle_event(event)
+        assert core_main._attr_change_handler._pending == {"$nid1:"}
+
+    async def test_disabled_steady_state_does_not_repeat(self, mocker, mock_num_port1):
+        """`$port_id` should not be added again while `enabled` stays `false` across events."""
+
+        mocker.patch.object(mock_num_port1, "to_json", new_callable=mocker.AsyncMock, return_value={"enabled": False})
         event = core_events.PortUpdate(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
@@ -594,6 +616,13 @@ class TestAttrChangeHandler:
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
         assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}  # from the `online` transition
+        core_main._attr_change_handler._pending.clear()
+
+        mock_num_port1.to_json.return_value = {"enabled": True, "online": False}
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+        await core_main._attr_change_handler.handle_event(event)
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}  # from the `online` falling edge
 
     async def test_enabled_and_online_same_event_adds_dep_once(self, mocker, mock_num_port1):
         """`$port_id` should be added only once even if both `enabled` and `online` newly become `true`."""
@@ -608,6 +637,55 @@ class TestAttrChangeHandler:
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
         assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}
+
+    async def test_enabled_and_online_same_event_removes_dep_once(self, mocker, mock_num_port1):
+        """`$port_id` should be added only once even if both `enabled` and `online` newly become `false`."""
+
+        mocker.patch.object(
+            mock_num_port1,
+            "to_json",
+            new_callable=mocker.AsyncMock,
+            return_value={"enabled": True, "online": True},
+        )
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+        await core_main._attr_change_handler.handle_event(event)
+        core_main._attr_change_handler._pending.clear()
+
+        mock_num_port1.to_json.return_value = {"enabled": False, "online": False}
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+        await core_main._attr_change_handler.handle_event(event)
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}
+
+    async def test_port_remove_while_available_adds_value_dep(self, mocker, mock_num_port1):
+        """PortRemove should add `$port_id` too when the port was available right before being removed, since
+        removal makes its value unavailable — this is what makes `AVAILABLE()`/`DEFAULT()` pick up the removal."""
+
+        mocker.patch.object(mock_num_port1, "to_json", new_callable=mocker.AsyncMock, return_value={"enabled": True})
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+        await core_main._attr_change_handler.handle_event(event)
+        core_main._attr_change_handler._pending.clear()
+
+        event = core_events.PortRemove(mock_num_port1)
+        await event.init_params()
+        await core_main._attr_change_handler.handle_event(event)
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}
+
+    async def test_port_remove_while_unavailable_does_not_add_value_dep(self, mocker, mock_num_port1):
+        """PortRemove should not add `$port_id` when the port was already unavailable before being removed."""
+
+        mocker.patch.object(mock_num_port1, "to_json", new_callable=mocker.AsyncMock, return_value={"enabled": False})
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+        await core_main._attr_change_handler.handle_event(event)
+        core_main._attr_change_handler._pending.clear()
+
+        event = core_events.PortRemove(mock_num_port1)
+        await event.init_params()
+        await core_main._attr_change_handler.handle_event(event)
+        assert core_main._attr_change_handler._pending == {"$nid1:"}
 
     async def test_port_remove_clears_availability_tracking(self, mocker, mock_num_port1):
         """PortRemove should clear tracked availability so a later re-add is treated as a fresh transition."""
@@ -728,6 +806,33 @@ class TestAttrChangeHandler:
         mocker.patch.object(mock_num_port2, "eval_and_push_write")
         mocker.patch.object(mock_num_port1, "to_json", new_callable=mocker.AsyncMock, return_value={"enabled": True})
 
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+        await core_main._attr_change_handler.handle_event(event)
+        changes = core_main._attr_change_handler.pop_pending()
+        assert "$nid1" in changes
+
+        await _eval_changed_expressions(changes=changes, now_ms=0)
+
+        mock_num_port2.eval_and_push_write.assert_called_once()
+
+    async def test_port_disabled_transition_triggers_dependent_availability_eval(
+        self, mocker, mock_num_port1, mock_num_port2
+    ):
+        """A port whose expression references AVAILABLE($nid1) should be evaluated once nid1's `enabled` transitions
+        to `false`, so that it picks up the port becoming unavailable, end to end."""
+
+        mock_num_port2.set_writable(True)
+        mock_num_port2.set_expression("AVAILABLE($nid1)")
+        mocker.patch.object(mock_num_port2, "eval_and_push_write")
+        mocker.patch.object(mock_num_port1, "to_json", new_callable=mocker.AsyncMock, return_value={"enabled": True})
+
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+        await core_main._attr_change_handler.handle_event(event)
+        core_main._attr_change_handler.pop_pending()  # discard the initial rising-edge dep
+
+        mock_num_port1.to_json.return_value = {"enabled": False}
         event = core_events.PortUpdate(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
