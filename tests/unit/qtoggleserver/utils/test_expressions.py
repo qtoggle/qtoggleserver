@@ -86,14 +86,12 @@ class TestGetDepsMap:
 
 class TestBuildContext:
     async def test_basic_context(self, mock_num_port1, mock_num_port2, mocker):
-        """Should gather port values and attributes from all enabled ports and create EvalContext."""
+        """Should gather port values and attributes from all ports and create EvalContext."""
 
         mocker.patch(
             "qtoggleserver.utils.expressions.core_ports.get_all",
             return_value=[mock_num_port1, mock_num_port2],
         )
-        mocker.patch.object(mock_num_port1, "is_enabled", return_value=True)
-        mocker.patch.object(mock_num_port2, "is_enabled", return_value=True)
         mocker.patch.object(mock_num_port1, "get_id", return_value="nid1")
         mocker.patch.object(mock_num_port2, "get_id", return_value="nid2")
         mocker.patch.object(mock_num_port1, "get_last_value", return_value=42)
@@ -116,8 +114,14 @@ class TestBuildContext:
         assert context.now_ms == 1000
         assert context.timestamp == 1
 
-    async def test_disabled_port_excluded(self, mock_num_port1, mock_num_port2, mocker):
-        """Should exclude disabled ports from the context."""
+    async def test_disabled_port_included(self, mock_num_port1, mock_num_port2, mocker):
+        """Should still include a disabled port's value and attrs in the context.
+
+        Per spec, only *value* expressions special-case disabled ports (evaluating to
+        unavailable); attribute expressions on a disabled port must still resolve normally. That
+        distinction is enforced by `PortValue`/`PortAttr` eval logic, not by `build_context`, so
+        the context must contain data for disabled ports too.
+        """
 
         mocker.patch(
             "qtoggleserver.utils.expressions.core_ports.get_all",
@@ -126,8 +130,11 @@ class TestBuildContext:
         mocker.patch.object(mock_num_port1, "is_enabled", return_value=True)
         mocker.patch.object(mock_num_port2, "is_enabled", return_value=False)
         mocker.patch.object(mock_num_port1, "get_id", return_value="nid1")
+        mocker.patch.object(mock_num_port2, "get_id", return_value="nid2")
         mocker.patch.object(mock_num_port1, "get_last_value", return_value=42)
+        mocker.patch.object(mock_num_port2, "get_last_value", return_value=84)
         mocker.patch.object(mock_num_port1, "get_attrs", new_callable=mocker.AsyncMock, return_value={})
+        mocker.patch.object(mock_num_port2, "get_attrs", new_callable=mocker.AsyncMock, return_value={"enabled": False})
         mocker.patch(
             "qtoggleserver.utils.expressions.core_device_attrs.get_attrs",
             new_callable=mocker.AsyncMock,
@@ -137,8 +144,8 @@ class TestBuildContext:
 
         context = await expressions.build_context(2000)
 
-        assert context.port_values == {"nid1": 42}
-        assert context.port_attrs == {"nid1": {}}
+        assert context.port_values == {"nid1": 42, "nid2": 84}
+        assert context.port_attrs == {"nid1": {}, "nid2": {"enabled": False}}
         assert context.now_ms == 2000
 
     async def test_no_ports(self, mocker):
@@ -170,7 +177,6 @@ class TestBuildContext:
             "qtoggleserver.utils.expressions.core_ports.get_all",
             return_value=[mock_num_port1],
         )
-        mocker.patch.object(mock_num_port1, "is_enabled", return_value=True)
         mocker.patch.object(mock_num_port1, "get_id", return_value="nid1")
         mocker.patch.object(mock_num_port1, "get_last_value", return_value=42)
         mocker.patch.object(mock_num_port1, "get_attrs", new_callable=mocker.AsyncMock, return_value={})
@@ -205,7 +211,6 @@ class TestBuildContext:
             "qtoggleserver.utils.expressions.core_ports.get_all",
             return_value=[mock_num_port1],
         )
-        mocker.patch.object(mock_num_port1, "is_enabled", return_value=True)
         mocker.patch.object(mock_num_port1, "get_id", return_value="nid1")
         mocker.patch.object(mock_num_port1, "get_last_value", return_value=42)
         mocker.patch.object(mock_num_port1, "get_attrs", new_callable=mocker.AsyncMock, return_value={})
@@ -240,7 +245,6 @@ class TestBuildContext:
             "qtoggleserver.utils.expressions.core_ports.get_all",
             return_value=[mock_num_port1],
         )
-        mocker.patch.object(mock_num_port1, "is_enabled", return_value=True)
         mocker.patch.object(mock_num_port1, "get_id", return_value="nid1")
         mocker.patch.object(mock_num_port1, "get_last_value", return_value=0)
         mocker.patch.object(mock_num_port1, "get_attrs", new_callable=mocker.AsyncMock, return_value={})
