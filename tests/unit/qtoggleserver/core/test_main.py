@@ -512,28 +512,95 @@ class TestPauseResume:
 class TestAttrChangeHandler:
     @pytest.fixture(autouse=True)
     def reset_pending(self):
-        """Clear pending attr changes before and after each test."""
+        """Clear pending attr changes and availability-tracking state before and after each test."""
         core_main._attr_change_handler._pending.clear()
+        core_main._attr_change_handler._last_availability.clear()
         yield
         core_main._attr_change_handler._pending.clear()
+        core_main._attr_change_handler._last_availability.clear()
 
     async def test_port_update_adds_attr_dep(self, mock_num_port1):
-        """PortUpdate event should add `$port_id:` to _pending_attr_changes."""
+        """PortUpdate event should add `$port_id:` (and `$port_id`, since the mock port is already enabled) to
+        _pending_attr_changes."""
 
         await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port1))
-        assert core_main._attr_change_handler._pending == {"$nid1:"}
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}
 
     async def test_port_add_adds_attr_dep(self, mock_num_port1):
-        """PortAdd event should add `$port_id:` to _pending_attr_changes."""
+        """PortAdd event should add `$port_id:` (and `$port_id`, since the mock port is already enabled) to
+        _pending_attr_changes."""
 
         await core_main._attr_change_handler.handle_event(core_events.PortAdd(mock_num_port1))
-        assert core_main._attr_change_handler._pending == {"$nid1:"}
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}
 
     async def test_port_remove_adds_attr_dep(self, mock_num_port1):
         """PortRemove event should add `$port_id:` to _pending_attr_changes."""
 
         await core_main._attr_change_handler.handle_event(core_events.PortRemove(mock_num_port1))
         assert core_main._attr_change_handler._pending == {"$nid1:"}
+
+    async def test_enabled_transition_adds_value_dep(self, mocker, mock_num_port1):
+        """`$port_id` should only be added once `enabled` is observed transitioning to `true`."""
+
+        mocker.patch.object(mock_num_port1, "to_json", new_callable=mocker.AsyncMock, return_value={"enabled": False})
+        await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port1))
+        assert core_main._attr_change_handler._pending == {"$nid1:"}
+
+        mock_num_port1.to_json.return_value = {"enabled": True}
+        await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port1))
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}
+
+    async def test_enabled_steady_state_does_not_repeat(self, mocker, mock_num_port1):
+        """`$port_id` should only be added once while `enabled` stays `true` across events."""
+
+        mocker.patch.object(mock_num_port1, "to_json", new_callable=mocker.AsyncMock, return_value={"enabled": True})
+        await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port1))
+        core_main._attr_change_handler._pending.clear()
+
+        await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port1))
+        assert core_main._attr_change_handler._pending == {"$nid1:"}
+
+    async def test_online_transition_adds_value_dep(self, mocker, mock_num_port1):
+        """`$port_id` should be added when `online` (independently of `enabled`) transitions to `true`."""
+
+        mocker.patch.object(
+            mock_num_port1,
+            "to_json",
+            new_callable=mocker.AsyncMock,
+            return_value={"enabled": True, "online": False},
+        )
+        await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port1))
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}  # from the `enabled` transition
+        core_main._attr_change_handler._pending.clear()
+
+        mock_num_port1.to_json.return_value = {"enabled": True, "online": True}
+        await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port1))
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}  # from the `online` transition
+
+    async def test_enabled_and_online_same_event_adds_dep_once(self, mocker, mock_num_port1):
+        """`$port_id` should be added only once even if both `enabled` and `online` newly become `true`."""
+
+        mocker.patch.object(
+            mock_num_port1,
+            "to_json",
+            new_callable=mocker.AsyncMock,
+            return_value={"enabled": True, "online": True},
+        )
+        await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port1))
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}
+
+    async def test_port_remove_clears_availability_tracking(self, mocker, mock_num_port1):
+        """PortRemove should clear tracked availability so a later re-add is treated as a fresh transition."""
+
+        mocker.patch.object(mock_num_port1, "to_json", new_callable=mocker.AsyncMock, return_value={"enabled": True})
+        await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port1))
+        core_main._attr_change_handler._pending.clear()
+
+        await core_main._attr_change_handler.handle_event(core_events.PortRemove(mock_num_port1))
+        core_main._attr_change_handler._pending.clear()
+
+        await core_main._attr_change_handler.handle_event(core_events.PortAdd(mock_num_port1))
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1"}
 
     async def test_device_update_adds_device_dep(self):
         """DeviceUpdate event should add `#:` to _pending_attr_changes."""
@@ -552,14 +619,14 @@ class TestAttrChangeHandler:
 
         await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port1))
         await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port2))
-        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid2:"}
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1", "$nid2:", "$nid2"}
 
     async def test_port_and_device_events_accumulate(self, mock_num_port1):
         """Port and device events should both accumulate into _pending_attr_changes."""
 
         await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port1))
         await core_main._attr_change_handler.handle_event(core_events.DeviceUpdate())
-        assert core_main._attr_change_handler._pending == {"$nid1:", "#:"}
+        assert core_main._attr_change_handler._pending == {"$nid1:", "$nid1", "#:"}
 
     async def test_read_ports_drains_pending_attr_changes(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
         """read_ports() should include pending port-attr deps in the changes set passed to _eval_changed_expressions."""
@@ -607,6 +674,23 @@ class TestAttrChangeHandler:
         mocker.patch.object(mock_num_port2, "eval_and_push_write")
 
         await _eval_changed_expressions(changes={"$nid1:"}, now_ms=0)
+
+        mock_num_port2.eval_and_push_write.assert_called_once()
+
+    async def test_port_enabled_transition_triggers_dependent_value_eval(self, mocker, mock_num_port1, mock_num_port2):
+        """A port whose expression references $nid1 (value dep) should be evaluated once nid1's `enabled` transition
+        is observed via a PortUpdate event and drained into the deps map lookup, end to end."""
+
+        mock_num_port2.set_writable(True)
+        mock_num_port2.set_expression("$nid1")
+        mocker.patch.object(mock_num_port2, "eval_and_push_write")
+        mocker.patch.object(mock_num_port1, "to_json", new_callable=mocker.AsyncMock, return_value={"enabled": True})
+
+        await core_main._attr_change_handler.handle_event(core_events.PortUpdate(mock_num_port1))
+        changes = core_main._attr_change_handler.pop_pending()
+        assert "$nid1" in changes
+
+        await _eval_changed_expressions(changes=changes, now_ms=0)
 
         mock_num_port2.eval_and_push_write.assert_called_once()
 
