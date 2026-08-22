@@ -646,7 +646,7 @@ def load_dynamic_attrdefs() -> AttributeDefinitions:
         try:
             attrdef = load_dynamic_attrdef(name, params)
         except Exception as e:
-            logger.error('failed to load dynamic attribute "%s": %s', name, e, exc_info=True)
+            logger.exception('failed to load dynamic attribute "%s": %s', name, e)
             continue
 
         attrdefs[name] = attrdef

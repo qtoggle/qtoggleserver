@@ -142,7 +142,7 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
                 try:
                     port.heart_beat_second()
                 except Exception as e:
-                    logger.error("port heart beat second exception: %s", e, exc_info=True)
+                    logger.exception("port heart beat second exception: %s", e)
 
             # Skip ports with read errors for a while
             if port in _ports_with_read_error:
@@ -153,7 +153,7 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
             except core_ports.SkipRead:
                 continue  # read explicitly skipped
             except Exception as e:
-                logger.error("failed to read value from %s: %s", port, e, exc_info=True)
+                logger.exception("failed to read value from %s: %s", port, e)
                 _ports_with_read_error.add(port)
 
                 continue
@@ -230,7 +230,7 @@ async def update_loop() -> None:
                 if _ready:
                     await read_ports()
             except Exception as e:
-                logger.error("update failed: %s", e, exc_info=True)
+                logger.exception("update failed: %s", e)
             await asyncio.sleep(settings.core.tick_interval / 1000.0)
         except asyncio.CancelledError:
             logger.debug("update task cancelled")

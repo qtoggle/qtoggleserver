@@ -60,4 +60,4 @@ async def init() -> None:
         try:
             await load_metadata(params)
         except Exception:
-            logger.error('failed to load metadata from params "%s"', params, exc_info=True)
+            logger.exception('failed to load metadata from params "%s"', params)

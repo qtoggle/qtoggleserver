@@ -269,7 +269,7 @@ class JSONDriver(BaseDriver):
                 raise
 
             # Upon failure, if using a backup, simply log the error and attempt to load from backup file
-            logger.error("failed to load from %s: %s", self._file_path, e, exc_info=True)
+            logger.exception("failed to load from %s: %s", self._file_path, e)
 
             backup_file_path = self._get_backup_file_path()
             if backup_file_path:

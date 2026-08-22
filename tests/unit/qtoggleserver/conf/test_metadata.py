@@ -169,8 +169,8 @@ class TestInit:
 
         await metadata.init()
 
-        spy_logger.error.assert_called_once()
-        assert "failed to load metadata from params" in spy_logger.error.call_args[0][0]
+        spy_logger.exception.assert_called_once()
+        assert "failed to load metadata from params" in spy_logger.exception.call_args[0][0]
 
     async def test_all_fail_continues(self, mocker):
         """Should continue processing even if all metadata entries fail to load."""
@@ -186,4 +186,4 @@ class TestInit:
 
         await metadata.init()
 
-        assert spy_logger.error.call_count == 2
+        assert spy_logger.exception.call_count == 2

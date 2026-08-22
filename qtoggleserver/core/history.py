@@ -77,7 +77,7 @@ async def sampling_task() -> None:
             logger.debug("sampling task cancelled")
             break
         except Exception as e:
-            logger.error("sampling task error: %s", e, exc_info=True)
+            logger.exception("sampling task error: %s", e)
 
 
 async def janitor_task() -> None:
@@ -125,7 +125,7 @@ async def janitor_task() -> None:
             logger.debug("janitor task cancelled")
             break
         except Exception as e:
-            logger.error("janitor task error: %s", e, exc_info=True)
+            logger.exception("janitor task error: %s", e)
 
 
 def is_enabled() -> bool:

@@ -142,9 +142,7 @@ class Reverse:
 
                 continue
             except Exception as e:
-                logger.error(
-                    "wait failed: %s, retrying in %s seconds", e, settings.reverse.retry_interval, exc_info=True
-                )
+                logger.exception("wait failed: %s, retrying in %s seconds", e, settings.reverse.retry_interval)
                 sleep_interval = settings.reverse.retry_interval
                 continue
 
@@ -155,7 +153,7 @@ class Reverse:
             try:
                 api_response_dict = await self._process_api_request(api_request_dict)
             except Exception as e:
-                logger.error("reverse API call failed: %s", e, exc_info=True)
+                logger.exception("reverse API call failed: %s", e)
                 sleep_interval = settings.reverse.retry_interval
                 api_response_dict = None
                 continue

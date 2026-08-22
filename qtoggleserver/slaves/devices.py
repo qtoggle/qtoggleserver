@@ -227,7 +227,7 @@ class Slave(logging_utils.LoggableMixin):
         try:
             await self._rename_ports_persisted_data(new_name)
         except Exception as e:
-            logger.error("renaming ports persisted data failed: %s", e, exc_info=True)
+            logger.exception("renaming ports persisted data failed: %s", e)
 
     def get_name(self) -> str:
         return self._name
@@ -1662,7 +1662,7 @@ async def load() -> None:
         try:
             slave = Slave(**entry)
         except Exception as e:
-            logger.error("failed to load slave %s: %s", entry["name"], e, exc_info=True)
+            logger.exception("failed to load slave %s: %s", entry["name"], e)
             continue
 
         _slaves_by_name[slave.get_name()] = slave

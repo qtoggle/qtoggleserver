@@ -30,7 +30,7 @@ async def _get_driver() -> BaseDriver:
             await driver.init()
             _thread_local.driver = driver
         except Exception as e:
-            logger.error("failed to load persistence driver %s: %s", driver_class_path, e, exc_info=True)
+            logger.exception("failed to load persistence driver %s: %s", driver_class_path, e)
 
             raise
 
