@@ -168,8 +168,8 @@ async def init_persist() -> None:
     logger.info("initializing persistence")
     try:
         await persist.init()
-    except Exception as e:
-        logger.exception("failed to initialize persistence: %s", e)
+    except Exception:
+        logger.exception("failed to initialize persistence")
         sys.exit(-1)
 
 

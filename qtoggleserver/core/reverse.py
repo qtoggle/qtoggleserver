@@ -141,8 +141,8 @@ class Reverse:
                 api_response_dict = {"status": 401, "body": json_utils.dumps({"error": "authentication-required"})}
 
                 continue
-            except Exception as e:
-                logger.exception("wait failed: %s, retrying in %s seconds", e, settings.reverse.retry_interval)
+            except Exception:
+                logger.exception("wait failed, retrying in %s seconds", settings.reverse.retry_interval)
                 sleep_interval = settings.reverse.retry_interval
                 continue
 
@@ -152,8 +152,8 @@ class Reverse:
 
             try:
                 api_response_dict = await self._process_api_request(api_request_dict)
-            except Exception as e:
-                logger.exception("reverse API call failed: %s", e)
+            except Exception:
+                logger.exception("reverse API call failed")
                 sleep_interval = settings.reverse.retry_interval
                 api_response_dict = None
                 continue

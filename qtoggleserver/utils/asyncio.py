@@ -20,8 +20,8 @@ def fire_and_forget(coro: Coroutine[Any, Any, Any]) -> None:
     def _on_done(t: asyncio.Task) -> None:
         try:
             t.result()
-        except Exception as e:
-            logger.exception("Error while handling task: %s", e)
+        except Exception:
+            logger.exception("Error while handling task")
         except asyncio.CancelledError:
             # Task was cancelled while we were handling it - nothing to do.
             pass

@@ -76,8 +76,8 @@ async def sampling_task() -> None:
         except asyncio.CancelledError:
             logger.debug("sampling task cancelled")
             break
-        except Exception as e:
-            logger.exception("sampling task error: %s", e)
+        except Exception:
+            logger.exception("sampling task error")
 
 
 async def janitor_task() -> None:
@@ -124,8 +124,8 @@ async def janitor_task() -> None:
         except asyncio.CancelledError:
             logger.debug("janitor task cancelled")
             break
-        except Exception as e:
-            logger.exception("janitor task error: %s", e)
+        except Exception:
+            logger.exception("janitor task error")
 
 
 def is_enabled() -> bool:

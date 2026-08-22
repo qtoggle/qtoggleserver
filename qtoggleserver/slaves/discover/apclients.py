@@ -128,8 +128,8 @@ async def finish() -> None:
             await _discover_task
         except asyncio.CancelledError:
             pass
-        except Exception as e:
-            logger.exception("discover task error: %s", e)
+        except Exception:
+            logger.exception("discover task error")
 
         _discover_task = None
 
@@ -295,8 +295,8 @@ async def _discover(timeout: int) -> list[DiscoveredDevice]:
     for client in clients:
         try:
             discovered_devices.append(await _query_client(client))
-        except Exception as e:
-            logger.exception("client query failed: %s", e)
+        except Exception:
+            logger.exception("client query failed")
 
     return discovered_devices
 

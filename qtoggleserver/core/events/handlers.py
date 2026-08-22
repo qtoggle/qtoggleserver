@@ -49,8 +49,8 @@ async def trigger(event: Event) -> None:
             # Synchronously call non-fire-and-forget handlers, shielding the loop from any exception
             try:
                 await handler.handle_event(event)
-            except Exception as e:
-                logger.exception("event handling failed: %s", e)
+            except Exception:
+                logger.exception("event handling failed")
 
 
 async def init() -> None:
@@ -61,8 +61,8 @@ async def init() -> None:
             logger.debug("loading event handler %s", handler_class_path)
             handler_class = dynload_utils.load_attr(handler_class_path)
             handler = handler_class(**handler_args)
-        except Exception as e:
-            logger.exception("failed to load event handler %s: %s", handler_class_path, e)
+        except Exception:
+            logger.exception("failed to load event handler %s", handler_class_path)
         else:
             _registered_handlers.append(handler)
 

@@ -264,12 +264,12 @@ class JSONDriver(BaseDriver):
             with open(self._file_path, "rb") as f:
                 data = f.read()
                 return json_utils.loads(data, extra_types=json_utils.ExtraTypes.EXTENDED)
-        except Exception as e:
+        except Exception:
             if not self._use_backup:
                 raise
 
             # Upon failure, if using a backup, simply log the error and attempt to load from backup file
-            logger.exception("failed to load from %s: %s", self._file_path, e)
+            logger.exception("failed to load from %s", self._file_path)
 
             backup_file_path = self._get_backup_file_path()
             if backup_file_path:
