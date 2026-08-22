@@ -14,7 +14,6 @@ logger = logging.getLogger(__package__)
 class Event(metaclass=abc.ABCMeta):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_NONE
     TYPE = "base-event"
-    _UNINITIALIZED: dict = {}
 
     def __init__(self, timestamp: float | None = None) -> None:
         self._type: str = self.TYPE
@@ -25,27 +24,28 @@ class Event(metaclass=abc.ABCMeta):
                 timestamp = 0
 
         self._timestamp: float = timestamp
-        self._params: GenericJSONDict | None = self._UNINITIALIZED
+        self._params: GenericJSONDict | None = None
 
     def __str__(self) -> str:
         return f"{self._type} event"
 
     async def to_json(self) -> GenericJSONDict:
-        if self._params is self._UNINITIALIZED:
-            raise Exception("Parameters are uninitialized")
-
-        result: GenericJSONDict = {"type": self._type}
-
-        if self._params:
-            result["params"] = self._params
-
-        return result
+        return {
+            "type": self._type,
+            "params": self.get_params(),
+        }
 
     async def init_params(self) -> None:
-        self._params = await self.get_params()
+        self._params = await self.make_params()
 
-    async def get_params(self) -> GenericJSONDict:
+    async def make_params(self) -> GenericJSONDict:
         return {}
+
+    def get_params(self) -> GenericJSONDict:
+        if self._params is None:
+            raise RuntimeError("Parameters are uninitialized")
+
+        return self._params
 
     def get_type(self) -> str:
         return self._type

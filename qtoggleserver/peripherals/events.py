@@ -22,7 +22,7 @@ class PeripheralAdd(PeripheralEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
     TYPE = "peripheral-add"
 
-    async def get_params(self) -> GenericJSONDict:
+    async def make_params(self) -> GenericJSONDict:
         return self.get_peripheral().to_json()
 
 
@@ -30,7 +30,7 @@ class PeripheralRemove(PeripheralEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
     TYPE = "peripheral-remove"
 
-    async def get_params(self) -> GenericJSONDict:
+    async def make_params(self) -> GenericJSONDict:
         return {"id": self.get_peripheral().get_id()}
 
 
@@ -38,7 +38,7 @@ class PeripheralUpdate(PeripheralEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
     TYPE = "peripheral-update"
 
-    async def get_params(self) -> GenericJSONDict:
+    async def make_params(self) -> GenericJSONDict:
         return self.get_peripheral().to_json()
 
     def is_duplicate(self, event: core_events.Event) -> bool:

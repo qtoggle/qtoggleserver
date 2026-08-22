@@ -14,7 +14,7 @@ class DeviceUpdate(DeviceEvent):
     REQUIRED_ACCESS = core_api.ACCESS_LEVEL_ADMIN
     TYPE = "device-update"
 
-    async def get_params(self) -> GenericJSONDict:
+    async def make_params(self) -> GenericJSONDict:
         return await self.get_attrs()
 
     def is_duplicate(self, event: Event) -> bool:

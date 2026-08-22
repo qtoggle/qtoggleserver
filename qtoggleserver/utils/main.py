@@ -45,7 +45,7 @@ class AttrChangeHandler(core_events.Handler):
                 for attr_name in self.AVAILABILITY_ATTRS:
                     self._last_availability.pop((port_id, attr_name), None)
             else:
-                params = await event.get_params()
+                params = event.get_params()
                 for attr_name in self.AVAILABILITY_ATTRS:
                     # Whenever one of the availability attributes becomes true, induce a `value-change`-like event so
                     # that expressions depending on this port's value are re-evaluated.
