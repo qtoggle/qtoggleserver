@@ -81,6 +81,10 @@ lint.isort.force-wrap-aliases = true
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["ANN001", "ANN201", "ANN202"]
+# The conf/log/leases files are opened in start(), handed to the dnsmasq/hostapd subprocess and closed in stop(), so
+# they must outlive the call that opens them and cannot be held by a context manager.
+"qtoggleserver/system/ap/dnsmasq.py" = ["SIM115"]
+"qtoggleserver/system/ap/hostapd.py" = ["SIM115"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests/qtoggleserver"]
