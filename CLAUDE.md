@@ -115,12 +115,13 @@ Expressions are strings assigned to port `expression`, `transform_read`, or `tra
 from qtoggleserver.core.expressions.functions import Function, function
 from qtoggleserver.core.expressions.base import EvalContext, EvalResult, Role
 
+
 @function("MY_FUNC")
 class MyFunc(Function):
     MIN_ARGS = 2
     MAX_ARGS = 2
-    DEPS = set()           # add DEP_* constants if time-sensitive
-    TRANSFORM_OK = True    # set False to disallow in transform expressions
+    DEPS = set()  # add DEP_* constants if time-sensitive
+    TRANSFORM_OK = True  # set False to disallow in transform expressions
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         args = await self.eval_args(context)
@@ -157,7 +158,8 @@ The web layer is Tornado. Handlers live in `qtoggleserver/web/handlers.py`; busi
 ```python
 from qtoggleserver.core import api as core_api
 
-@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)   # or NORMAL / VIEWONLY / NONE
+
+@core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)  # or NORMAL / VIEWONLY / NONE
 async def get_something(request: core_api.APIRequest) -> dict:
     ...
     return {"key": "value"}

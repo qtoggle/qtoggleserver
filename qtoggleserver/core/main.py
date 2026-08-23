@@ -41,7 +41,6 @@ _last_time: int = 0
 _last_minute: int = 0
 _last_hour: int = 0
 _last_day: int = 0
-_last_week: int = 0
 _last_month: int = 0
 _last_year: int = 0
 _force_eval_expression_ports: set[core_ports.BasePort] = set()
@@ -59,7 +58,6 @@ def _get_changed_time_deps(now_int: int) -> tuple[bool, set[str]]:
     global _last_minute
     global _last_hour
     global _last_day
-    global _last_week
     global _last_month
     global _last_year
 

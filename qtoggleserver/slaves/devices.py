@@ -562,8 +562,7 @@ class Slave(logging_utils.LoggableMixin):
 
             self.update_last_sync()
             await self.intercept_response(method, path, body, e.response)
-
-            raise e
+            raise
         except core_responses.Error as e:
             e = self.intercept_error(e)
 
@@ -583,7 +582,7 @@ class Slave(logging_utils.LoggableMixin):
                 return await self.api_call(method, path, body, timeout, retry_counter + 1)
             else:
                 self.error(msg)
-                raise e
+                raise
         else:
             self.debug("api call %s %s succeeded", method, path)
 
@@ -828,9 +827,7 @@ class Slave(logging_utils.LoggableMixin):
                             self.debug("ignoring device renamed exception")
                             break
                         except Exception:
-                            # Ignoring any error from handling an event is the best thing that we can do here, to ensure
-                            # that we keep handling remaining events
-                            pass
+                            self.error("handling event failed", exc_info=True)
 
                     # _handle_event() indirectly stopped listening or removed this slave; this happens when the slave
                     # device is renamed
@@ -1062,7 +1059,7 @@ class Slave(logging_utils.LoggableMixin):
                 # Requesting GET /firmware will call the intercept_request() method and will cancel the loop when done
                 try:
                     await self.api_call("GET", "/firmware")
-                except Exception:
+                except Exception:  # noqa: S110
                     pass
 
                 counter -= 1

@@ -32,7 +32,7 @@ class ParallelCaller:
 
         # If an exception was raised, re-raise it
         assert result["exc_info"]
-        typ, val, tb = result["exc_info"]
+        typ, val, _tb = result["exc_info"]
         if typ:
             raise val
 

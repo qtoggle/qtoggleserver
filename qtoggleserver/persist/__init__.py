@@ -324,7 +324,7 @@ async def remove_samples(
 
     driver = await _get_driver()
     count = await driver.remove_samples(collection, obj_ids, from_timestamp, to_timestamp)
-    logger.debug("removed %s samples", count, collection)
+    logger.debug("removed %s samples from %s", count, collection)
 
     return count
 

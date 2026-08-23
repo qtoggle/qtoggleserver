@@ -347,7 +347,7 @@ class BLEPeripheral(polled.PolledPeripheral, metaclass=abc.ABCMeta):
 
     @staticmethod
     def pretty_data(data: bytes) -> str:
-        return " ".join(map(lambda c: f"{c:02X}", data))
+        return " ".join(f"{c:02X}" for c in data)
 
 
 class BLEPort(polled.PolledPort, metaclass=abc.ABCMeta):

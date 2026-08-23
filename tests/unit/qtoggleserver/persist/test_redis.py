@@ -14,8 +14,8 @@ async def driver(monkeypatch) -> BaseDriver:
     driver = redis.RedisDriver()
     await driver.init()
     # Make sure we're starting with a clean database
-    assert isinstance(driver._client, fakeredis.FakeStrictRedis)  # noqa
-    driver._client.flushall()  # noqa
+    assert isinstance(driver._client, fakeredis.FakeStrictRedis)
+    driver._client.flushall()
     return driver
 
 

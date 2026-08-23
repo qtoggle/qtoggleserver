@@ -64,7 +64,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
 
         # "template" has the highest precedence; then comes "templates" and then comes "DEFAULT_TEMPLATES"
         if template is not None:
-            templates = {k: template for k in self.DEFAULT_TEMPLATES.keys()}
+            templates = {k: template for k in self.DEFAULT_TEMPLATES}
         if templates is None:
             templates = self.DEFAULT_TEMPLATES
 

@@ -50,7 +50,7 @@ class DottedDict(dict):
         except KeyError:
             return default
 
-    def update(self, other: dict = None, **kwargs) -> None:
+    def update(self, other: dict | None = None, **kwargs) -> None:
         if other is None:
             other = {}
 
