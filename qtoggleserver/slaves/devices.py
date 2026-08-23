@@ -582,7 +582,7 @@ class Slave(logging_utils.LoggableMixin):
                 return await self.api_call(method, path, body, timeout, retry_counter + 1)
             else:
                 self.error(msg)
-                raise
+                raise e  # noqa: TRY201
         else:
             self.debug("api call %s %s succeeded", method, path)
 

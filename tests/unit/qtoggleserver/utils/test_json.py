@@ -2,6 +2,7 @@ import math
 
 from datetime import date, datetime
 
+import jsonpointer
 import pytest
 
 from qtoggleserver.utils import json as json_utils
@@ -221,3 +222,62 @@ class TestEdgeCases:
         # The deserialized value is a string, not the original object
         assert isinstance(deserialized["obj"], str)
         assert deserialized["obj"] == "UnserializableClass(test)"
+
+
+class TestResolveRefs:
+    """Test json_utils.loads() with resolve_refs enabled."""
+
+    def test_refs_not_resolved_by_default(self) -> None:
+        """Test that $ref objects are left untouched unless resolve_refs is set."""
+        data = '{"a": {"x": 1}, "b": {"$ref": "#/a"}}'
+        result = json_utils.loads(data)
+        assert result == {"a": {"x": 1}, "b": {"$ref": "#/a"}}
+
+    def test_simple_ref(self) -> None:
+        """Test that a $ref object is replaced by the referenced value."""
+        data = '{"a": {"x": 1}, "b": {"$ref": "#/a"}}'
+        result = json_utils.loads(data, resolve_refs=True)
+        assert result == {"a": {"x": 1}, "b": {"x": 1}}
+
+    def test_ref_to_list_element(self) -> None:
+        """Test that a $ref pointing into a list is resolved."""
+        data = '{"a": [{"x": 1}, {"x": 2}], "b": {"$ref": "#/a/1"}}'
+        result = json_utils.loads(data, resolve_refs=True)
+        assert result["b"] == {"x": 2}
+
+    def test_ref_to_scalar(self) -> None:
+        """Test that a $ref pointing to a scalar value is resolved."""
+        data = '{"a": 42, "b": {"$ref": "#/a"}}'
+        result = json_utils.loads(data, resolve_refs=True)
+        assert result["b"] == 42
+
+    def test_refs_inside_lists(self) -> None:
+        """Test that $ref objects nested in lists are resolved."""
+        data = '{"defs": {"choices": [1, 2, 3]}, "ports": [{"choices": {"$ref": "#/defs/choices"}}]}'
+        result = json_utils.loads(data, resolve_refs=True)
+        assert result["ports"][0]["choices"] == [1, 2, 3]
+
+    def test_deeply_nested_refs(self) -> None:
+        """Test that $ref objects at arbitrary depth are resolved."""
+        data = '{"a": {"x": 1}, "b": {"c": {"d": {"$ref": "#/a"}}}}'
+        result = json_utils.loads(data, resolve_refs=True)
+        assert result["b"]["c"]["d"] == {"x": 1}
+
+    def test_multiple_refs_to_same_target(self) -> None:
+        """Test that several $ref objects pointing to the same target are all resolved."""
+        data = '{"a": {"x": 1}, "b": {"$ref": "#/a"}, "c": {"$ref": "#/a"}}'
+        result = json_utils.loads(data, resolve_refs=True)
+        assert result["b"] == {"x": 1}
+        assert result["c"] == {"x": 1}
+
+    def test_ref_with_extra_keys_not_resolved(self) -> None:
+        """Test that an object holding $ref alongside other keys is not treated as a reference."""
+        data = '{"a": {"x": 1}, "b": {"$ref": "#/a", "other": 2}}'
+        result = json_utils.loads(data, resolve_refs=True)
+        assert result["b"] == {"$ref": "#/a", "other": 2}
+
+    def test_unresolvable_ref(self) -> None:
+        """Test that a $ref pointing to a missing location raises."""
+        data = '{"a": {"x": 1}, "b": {"$ref": "#/missing"}}'
+        with pytest.raises(jsonpointer.JsonPointerException):
+            json_utils.loads(data, resolve_refs=True)
