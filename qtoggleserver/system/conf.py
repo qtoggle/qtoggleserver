@@ -11,6 +11,10 @@ from qtoggleserver.utils import conf as conf_utils
 logger = logging.getLogger(__name__)
 
 
+class ConfException(Exception):
+    pass
+
+
 def can_write_conf_file() -> bool:
     if not settings.source:
         return False
@@ -20,7 +24,7 @@ def can_write_conf_file() -> bool:
 
 def conf_file_to_dict() -> dict[str, Any]:
     if not can_write_conf_file():
-        raise Exception("Configuration file not available")
+        raise ConfException("Configuration file not available")
 
     assert settings.source
 
@@ -29,7 +33,7 @@ def conf_file_to_dict() -> dict[str, Any]:
 
 def conf_file_from_dict(d: dict[str, Any]) -> None:
     if not can_write_conf_file():
-        raise Exception("Configuration file not available")
+        raise ConfException("Configuration file not available")
 
     logger.debug("updating configuration file %s", settings.source)
 
