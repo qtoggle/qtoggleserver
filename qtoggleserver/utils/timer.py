@@ -21,13 +21,13 @@ class Timer:
 
     def cancel(self) -> None:
         if self._task is None:
-            raise Exception("Task is not running")
+            raise RuntimeError("Task is not running")
 
         self._task.cancel()
 
     async def wait(self) -> None:
         if self._task is None:
-            raise Exception("Task is not running")
+            raise RuntimeError("Task is not running")
 
         await self._task
 

@@ -49,7 +49,7 @@ class RedisDriver(BaseDriver):
     ) -> Iterable[Record]:
         db_records = []
 
-        if isinstance(filt.get("id"), Id):  # look for specific record id
+        if isinstance(filt.get("id"), str):  # look for specific record id
             filt = filt.copy()
             id_ = filt.pop("id")
             db_record = self._client.hgetall(self._make_record_key(collection, id_))
@@ -119,7 +119,7 @@ class RedisDriver(BaseDriver):
 
         modified_count = 0
 
-        if isinstance(filt.get("id"), Id):
+        if isinstance(filt.get("id"), str):
             filt = filt.copy()
             id_ = filt.pop("id")
             key = self._make_record_key(collection, id_)
@@ -180,7 +180,7 @@ class RedisDriver(BaseDriver):
     async def remove(self, collection: str, filt: dict[str, Any]) -> int:
         removed_count = 0
 
-        if isinstance(filt.get("id"), Id):
+        if isinstance(filt.get("id"), str):
             filt = filt.copy()
             id_ = filt.pop("id")
             key = self._make_record_key(collection, id_)

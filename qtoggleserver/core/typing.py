@@ -1,15 +1,15 @@
-from typing import Any, TypeAlias
+from typing import Any
 
 
-PortValue: TypeAlias = int | float | bool
-NullablePortValue: TypeAlias = int | float | bool | None
-PortValueChoices: TypeAlias = list[dict[str, str | int | float]]
+type PortValue = int | float | bool
+type NullablePortValue = int | float | bool | None
+type PortValueChoices = list[dict[str, str | int | float]]
 
-Attribute: TypeAlias = int | float | bool | str | list[dict] | None
-Attributes: TypeAlias = dict[str, Attribute]
+type Attribute = int | float | bool | str | list[dict] | None
+type Attributes = dict[str, Attribute]
 
-AttributeDefinition: TypeAlias = dict[str, Any]
-AttributeDefinitions: TypeAlias = dict[str, AttributeDefinition]
+type AttributeDefinition = dict[str, Any]
+type AttributeDefinitions = dict[str, AttributeDefinition]
 
-GenericJSONDict: TypeAlias = dict[str, Any]
-GenericJSONList: TypeAlias = list[dict[str, Any]]
+type GenericJSONDict = dict[str, Any]
+type GenericJSONList = list[dict[str, Any]]

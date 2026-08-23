@@ -11,8 +11,7 @@ class MinFunction(Function):
 
         m = eval_args[0]
         for e in eval_args[1:]:
-            if e < m:
-                m = e
+            m = min(m, e)
 
         return m
 
@@ -26,8 +25,7 @@ class MaxFunction(Function):
 
         m = eval_args[0]
         for e in eval_args[1:]:
-            if e > m:
-                m = e
+            m = max(m, e)
 
         return m
 

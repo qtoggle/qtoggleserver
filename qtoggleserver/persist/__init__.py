@@ -29,8 +29,8 @@ async def _get_driver() -> BaseDriver:
             driver = driver_class(**driver_args)
             await driver.init()
             _thread_local.driver = driver
-        except Exception as e:
-            logger.error("failed to load persistence driver %s: %s", driver_class_path, e, exc_info=True)
+        except Exception:
+            logger.exception("failed to load persistence driver %s", driver_class_path)
 
             raise
 
@@ -324,7 +324,7 @@ async def remove_samples(
 
     driver = await _get_driver()
     count = await driver.remove_samples(collection, obj_ids, from_timestamp, to_timestamp)
-    logger.debug("removed %s samples", count, collection)
+    logger.debug("removed %s samples from %s", count, collection)
 
     return count
 

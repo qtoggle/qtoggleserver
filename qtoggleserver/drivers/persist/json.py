@@ -73,7 +73,7 @@ class JSONDriver(BaseDriver):
         coll = self._data.get(collection, {})
         records = []
 
-        if isinstance(filt.get("id"), Id):  # look for specific record id
+        if isinstance(filt.get("id"), str):  # look for specific record id
             filt = filt.copy()
             id_ = filt.pop("id")
             record = coll.get(id_)
@@ -137,7 +137,7 @@ class JSONDriver(BaseDriver):
         coll = self._data.setdefault(collection, {})
         modified_count = 0
 
-        if isinstance(filt.get("id"), Id):
+        if isinstance(filt.get("id"), str):
             filt = filt.copy()
             id_ = filt.pop("id")
 
@@ -179,7 +179,7 @@ class JSONDriver(BaseDriver):
         coll = self._data.setdefault(collection, {})
         removed_count = 0
 
-        if isinstance(filt.get("id"), Id):
+        if isinstance(filt.get("id"), str):
             filt = filt.copy()
             id_ = filt.pop("id")
 
@@ -264,12 +264,12 @@ class JSONDriver(BaseDriver):
             with open(self._file_path, "rb") as f:
                 data = f.read()
                 return json_utils.loads(data, extra_types=json_utils.ExtraTypes.EXTENDED)
-        except Exception as e:
+        except Exception:
             if not self._use_backup:
                 raise
 
             # Upon failure, if using a backup, simply log the error and attempt to load from backup file
-            logger.error("failed to load from %s: %s", self._file_path, e, exc_info=True)
+            logger.exception("failed to load from %s", self._file_path)
 
             backup_file_path = self._get_backup_file_path()
             if backup_file_path:

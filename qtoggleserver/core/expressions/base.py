@@ -1,7 +1,6 @@
 import abc
 
 from enum import IntEnum
-from typing import TypeAlias
 
 from qtoggleserver.core.typing import Attributes, NullablePortValue
 
@@ -93,4 +92,4 @@ class EvalContext:
         self.timestamp: int = now_ms // 1000
 
 
-EvalResult: TypeAlias = int | float | str
+type EvalResult = int | float | str

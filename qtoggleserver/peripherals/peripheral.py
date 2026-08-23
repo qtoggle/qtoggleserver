@@ -87,26 +87,26 @@ class Peripheral(DriverParamsMixin, logging_utils.LoggableMixin, metaclass=abc.A
         self._force_enabled = force_enabled
 
     def to_json(self) -> GenericJSONDict:
-        return dict(
-            driver=self.get_driver(),
-            id=self.get_id(),
-            static=self.is_static(),
-            name=self.get_name(),
-            display_name=self.get_display_name(),
-            enabled=self.is_enabled(),
-            force_enabled=self.get_force_enabled(),
-            params=self.get_params(),
-            online=self.is_online(),
-        )
+        return {
+            "driver": self.get_driver(),
+            "id": self.get_id(),
+            "static": self.is_static(),
+            "name": self.get_name(),
+            "display_name": self.get_display_name(),
+            "enabled": self.is_enabled(),
+            "force_enabled": self.get_force_enabled(),
+            "params": self.get_params(),
+            "online": self.is_online(),
+        }
 
     def to_persisted(self) -> GenericJSONDict:
-        return dict(
-            driver=self.get_driver(),
-            name=self.get_name(),
-            display_name=self.get_display_name(),
-            force_enabled=self.get_force_enabled(),
-            params=self.get_params(),
-        )
+        return {
+            "driver": self.get_driver(),
+            "name": self.get_name(),
+            "display_name": self.get_display_name(),
+            "force_enabled": self.get_force_enabled(),
+            "params": self.get_params(),
+        }
 
     async def get_port_args(self) -> list[dict[str, Any]]:
         port_args = await self.make_port_args()
@@ -347,4 +347,4 @@ class Peripheral(DriverParamsMixin, logging_utils.LoggableMixin, metaclass=abc.A
 
 
 # This needs to be imported here to avoid circular import issues
-from .peripheralport import PeripheralPort  # noqa: E402
+from .peripheralport import PeripheralPort

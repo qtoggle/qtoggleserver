@@ -1,6 +1,6 @@
 import logging
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .client import APClient
 from .dnsmasq import DNSMasq
@@ -126,7 +126,7 @@ def get_clients() -> list[APClient]:
             mac_address=lease["mac_address"].upper(),
             ip_address=lease["ip_address"],
             hostname=lease["hostname"],
-            moment=datetime.fromtimestamp(lease["timestamp"], tz=timezone.utc),
+            moment=datetime.fromtimestamp(lease["timestamp"], tz=UTC),
         )
         for lease in leases
     ]

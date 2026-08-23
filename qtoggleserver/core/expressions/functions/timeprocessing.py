@@ -261,10 +261,9 @@ class FMAvgFunction(Function):
         value, width, sampling_interval = await self.eval_args(context)
         width = max(1, min(int(width), self.MAX_QUEUE_SIZE))
 
-        if self._last_time_ms > 0:
-            if context.now_ms - self._last_time_ms < sampling_interval:
-                self.pause_asap_eval(self._last_time_ms + sampling_interval)
-                return self._last_result
+        if self._last_time_ms > 0 and context.now_ms - self._last_time_ms < sampling_interval:
+            self.pause_asap_eval(self._last_time_ms + sampling_interval)
+            return self._last_result
 
         # Make room for the new element
         while len(self._queue) >= width:
@@ -297,10 +296,9 @@ class FMedianFunction(Function):
         value, width, sampling_interval = await self.eval_args(context)
         width = max(1, min(int(width), self.MAX_QUEUE_SIZE))
 
-        if self._last_time_ms > 0:
-            if context.now_ms - self._last_time_ms < sampling_interval:
-                self.pause_asap_eval(self._last_time_ms + sampling_interval)
-                return self._last_result
+        if self._last_time_ms > 0 and context.now_ms - self._last_time_ms < sampling_interval:
+            self.pause_asap_eval(self._last_time_ms + sampling_interval)
+            return self._last_result
 
         # Make room for the new element
         while len(self._queue) >= width:

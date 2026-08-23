@@ -33,8 +33,7 @@ def run_get_cmd(
 
         key, value = parts
         key = key.lower()[3:]  # strip leading "QS_"
-        if value.startswith('"'):
-            value = value[1:]
+        value = value.removeprefix('"')
         if value.endswith('"') and not value.endswith('\\"'):
             value = value[:-1]
 

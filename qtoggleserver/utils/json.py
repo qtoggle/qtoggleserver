@@ -65,8 +65,8 @@ def _replace_nan_inf_rec(obj: Any, replace_value: Any) -> Any:
 
 def _resolve_refs_rec(obj: Any, root_obj: Any) -> Any:
     if isinstance(obj, dict):
-        if len(obj.keys()) == 1 and list(obj.keys())[0] == "$ref":
-            ref = list(obj.values())[0]
+        if len(obj.keys()) == 1 and next(iter(obj.keys())) == "$ref":
+            ref = next(iter(obj.values()))
             ref = ref[1:]  # skip starting hash
             return jsonpointer.resolve_pointer(root_obj, ref)
 

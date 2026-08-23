@@ -41,7 +41,6 @@ _last_time: int = 0
 _last_minute: int = 0
 _last_hour: int = 0
 _last_day: int = 0
-_last_week: int = 0
 _last_month: int = 0
 _last_year: int = 0
 _force_eval_expression_ports: set[core_ports.BasePort] = set()
@@ -59,7 +58,6 @@ def _get_changed_time_deps(now_int: int) -> tuple[bool, set[str]]:
     global _last_minute
     global _last_hour
     global _last_day
-    global _last_week
     global _last_month
     global _last_year
 
@@ -141,8 +139,8 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
             if second_changed:
                 try:
                     port.heart_beat_second()
-                except Exception as e:
-                    logger.error("port heart beat second exception: %s", e, exc_info=True)
+                except Exception:
+                    logger.exception("port heart beat second exception")
 
             # Skip ports with read errors for a while
             if port in _ports_with_read_error:
@@ -152,8 +150,8 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
                 new_value = await port.read_transformed_value()
             except core_ports.SkipRead:
                 continue  # read explicitly skipped
-            except Exception as e:
-                logger.error("failed to read value from %s: %s", port, e, exc_info=True)
+            except Exception:
+                logger.exception("failed to read value from %s", port)
                 _ports_with_read_error.add(port)
 
                 continue
@@ -229,8 +227,8 @@ async def update_loop() -> None:
             try:
                 if _ready:
                     await read_ports()
-            except Exception as e:
-                logger.error("update failed: %s", e, exc_info=True)
+            except Exception:
+                logger.exception("update failed")
             await asyncio.sleep(settings.core.tick_interval / 1000.0)
         except asyncio.CancelledError:
             logger.debug("update task cancelled")

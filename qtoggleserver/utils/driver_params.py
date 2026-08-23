@@ -1,6 +1,6 @@
 import inspect
 
-from typing import Any
+from typing import Any, Self
 
 
 class DriverParamsMixin:
@@ -51,7 +51,7 @@ class DriverParamsMixin:
     _params: dict[str, Any]
     _driver: str
 
-    def __new__(cls: type[DriverParamsMixin], *args: Any, **kwargs: Any) -> DriverParamsMixin:
+    def __new__(cls, *args: Any, **kwargs: Any) -> Self:
         instance = super().__new__(cls)
 
         # Find the direct parent class that is not DriverParamsMixin
@@ -67,7 +67,7 @@ class DriverParamsMixin:
         for parent in parents:
             try:
                 sig = inspect.signature(parent.__init__)
-                driver_param_names.update({p for p in sig.parameters.keys() if p != "self"})
+                driver_param_names.update({p for p in sig.parameters if p != "self"})
             except ValueError, TypeError:
                 pass
 
@@ -82,7 +82,6 @@ class DriverParamsMixin:
 
     def __init__(self, **kwargs: Any) -> None:
         """Consume kwargs to prevent them from reaching object.__init__()."""
-        pass
 
     def get_driver(self) -> str:
         return self._driver

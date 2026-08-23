@@ -75,16 +75,14 @@ class BaseHandler(RequestHandler):
 
     head = post = delete = patch = put = options = get
 
-    def _handle_request_exception(self, exception: Exception) -> None:
+    def _handle_request_exception(self, e: BaseException) -> None:
         try:
-            if isinstance(exception, HTTPError):
-                logger.error("%s %s: %s", self.request.method, self.request.uri, exception)
-                self.set_status(exception.status_code)
-                self.finish_json(
-                    {"error": (exception.log_message or getattr(exception, "reason", None) or str(exception))}
-                )
+            if isinstance(e, HTTPError):
+                logger.error("%s %s: %s", self.request.method, self.request.uri, e)
+                self.set_status(e.status_code)
+                self.finish_json({"error": (e.log_message or getattr(e, "reason", None) or str(e))})
             else:
-                logger.error(str(exception), exc_info=True)
+                logger.exception("request %s %s error", self.request.method, self.request.uri)
                 self.set_status(500)
                 self.finish_json({"error": "internal server error"})
         except RuntimeError:
@@ -137,9 +135,8 @@ class APIHandler(BaseHandler):
 
         # Validate session id
         session_id = self.request.headers.get("Session-Id")
-        if session_id:
-            if not SESSION_ID_RE.match(session_id):
-                raise core_api.APIError(400, "invalid-header", header="Session-Id")
+        if session_id and not SESSION_ID_RE.match(session_id):
+            raise core_api.APIError(400, "invalid-header", header="Session-Id")
 
     async def call_api_func(self, func: Callable, default_status: int = 200, **kwargs) -> None:
         try:
@@ -180,7 +177,7 @@ class APIHandler(BaseHandler):
         if isinstance(error, StreamClosedError) and func.__name__ == "get_listen":
             logger.debug("api call get_listen could not complete: stream closed")
         else:
-            logger.error("api call %s failed: %s (args=%s, body=%s)", func.__name__, error, args, body, exc_info=True)
+            logger.exception("api call %s failed (args=%s, body=%s)", func.__name__, args, body)
 
             self.set_status(500)
             if not self._finished:  # avoid finishing an already finished request

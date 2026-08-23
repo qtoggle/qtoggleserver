@@ -265,7 +265,7 @@ class TestTriggerUpdateAfterPoll:
         peripheral._poll_wakeup.set()
         try:
             await asyncio.wait_for(peripheral._poll_task, timeout=1.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             peripheral._poll_task.cancel()
 
         # trigger_port_update_fire_and_forget should be called because TRIGGER_UPDATE_AFTER_POLL is True
@@ -290,7 +290,7 @@ class TestTriggerUpdateAfterPoll:
         peripheral._poll_wakeup.set()
         try:
             await asyncio.wait_for(peripheral._poll_task, timeout=1.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             peripheral._poll_task.cancel()
 
         # trigger_port_update_fire_and_forget should not be called because TRIGGER_UPDATE_AFTER_POLL is False

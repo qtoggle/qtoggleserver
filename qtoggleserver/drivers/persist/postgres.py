@@ -3,8 +3,9 @@ import logging
 import re
 
 from collections.abc import Iterable
+from contextlib import AbstractAsyncContextManager
 from datetime import date, datetime
-from typing import Any, AsyncContextManager
+from typing import Any
 
 import asyncpg.pool
 
@@ -299,7 +300,7 @@ class PostgresDriver(BaseDriver):
     def is_samples_supported(self) -> bool:
         return True
 
-    async def _acquire_connection(self) -> AsyncContextManager[asyncpg.Connection]:
+    async def _acquire_connection(self) -> AbstractAsyncContextManager[asyncpg.Connection]:
         if self._conn_pool is None:
             logger.debug("creating connection pool")
             self._conn_pool = await asyncpg.create_pool(
@@ -354,9 +355,8 @@ class PostgresDriver(BaseDriver):
         return {r[0] for r in results}
 
     async def _execute_query(self, query: str, params: Iterable[Any] | None = None) -> Iterable[tuple]:
-        async with await self._acquire_connection() as conn:
-            async with conn.transaction():
-                return [row async for row in conn.cursor(query, *(params or []))]
+        async with await self._acquire_connection() as conn, conn.transaction():
+            return [row async for row in conn.cursor(query, *(params or []))]
 
     async def _execute_statement(
         self, statement: str, params: Iterable[Any] | None = None, has_result_rows: bool = False

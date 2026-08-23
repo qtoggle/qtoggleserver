@@ -74,13 +74,17 @@ package = true
 [tool.ruff]
 line-length = 120
 lint.extend-select = ["I", "RUF022", "ANN", "E501"]
-lint.extend-ignore = ["ANN002", "ANN003", "ANN401"]
+lint.extend-ignore = ["ANN002", "ANN003", "ANN401", "BLE001", "RUF012", "DTZ001", "DTZ002", "DTZ006", "DTZ007"]
 lint.isort.lines-after-imports = 2
 lint.isort.lines-between-types = 1
 lint.isort.force-wrap-aliases = true
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["ANN001", "ANN201", "ANN202"]
+# The conf/log/leases files are opened in start(), handed to the dnsmasq/hostapd subprocess and closed in stop(), so
+# they must outlive the call that opens them and cannot be held by a context manager.
+"qtoggleserver/system/ap/dnsmasq.py" = ["SIM115"]
+"qtoggleserver/system/ap/hostapd.py" = ["SIM115"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests/qtoggleserver"]

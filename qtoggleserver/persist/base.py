@@ -11,12 +11,8 @@ class BaseDriver(metaclass=abc.ABCMeta):
     async def init(self) -> None:
         """Perform any initialization necessary to use this driver."""
 
-        pass
-
     async def cleanup(self) -> None:
         """Perform any cleanups necessary to decommission this driver."""
-
-        pass
 
     @abc.abstractmethod
     async def query(
@@ -192,5 +188,3 @@ class BaseDriver(metaclass=abc.ABCMeta):
 
         If `index` is `None`, the collection is assumed to be a collection of samples where the index is considered to
         be ascending on the timestamp field."""
-
-        pass

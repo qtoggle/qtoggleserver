@@ -226,8 +226,8 @@ class Slave(logging_utils.LoggableMixin):
         # Rename associated ports persisted data
         try:
             await self._rename_ports_persisted_data(new_name)
-        except Exception as e:
-            logger.error("renaming ports persisted data failed: %s", e, exc_info=True)
+        except Exception:
+            logger.exception("renaming ports persisted data failed")
 
     def get_name(self) -> str:
         return self._name
@@ -415,7 +415,7 @@ class Slave(logging_utils.LoggableMixin):
             "attrs": self._cached_attrs.copy(),
             "webhooks": self._cached_webhooks.copy(),
             "reverse": self._cached_reverse.copy(),
-            "provisioning_attrs": list(sorted(self._provisioning_attrs)),
+            "provisioning_attrs": sorted(self._provisioning_attrs),
             "provisioning_webhooks": self._provisioning_webhooks,
             "provisioning_reverse": self._provisioning_reverse,
         }
@@ -562,8 +562,7 @@ class Slave(logging_utils.LoggableMixin):
 
             self.update_last_sync()
             await self.intercept_response(method, path, body, e.response)
-
-            raise e
+            raise
         except core_responses.Error as e:
             e = self.intercept_error(e)
 
@@ -583,7 +582,7 @@ class Slave(logging_utils.LoggableMixin):
                 return await self.api_call(method, path, body, timeout, retry_counter + 1)
             else:
                 self.error(msg)
-                raise e
+                raise e  # noqa: TRY201
         else:
             self.debug("api call %s %s succeeded", method, path)
 
@@ -828,9 +827,7 @@ class Slave(logging_utils.LoggableMixin):
                             self.debug("ignoring device renamed exception")
                             break
                         except Exception:
-                            # Ignoring any error from handling an event is the best thing that we can do here, to ensure
-                            # that we keep handling remaining events
-                            pass
+                            self.error("handling event failed", exc_info=True)
 
                     # _handle_event() indirectly stopped listening or removed this slave; this happens when the slave
                     # device is renamed
@@ -1062,7 +1059,7 @@ class Slave(logging_utils.LoggableMixin):
                 # Requesting GET /firmware will call the intercept_request() method and will cancel the loop when done
                 try:
                     await self.api_call("GET", "/firmware")
-                except Exception:
+                except Exception:  # noqa: S110
                     pass
 
                 counter -= 1
@@ -1401,7 +1398,7 @@ class Slave(logging_utils.LoggableMixin):
                 elif path == "/webhooks":
                     if self._cached_webhooks:
                         return True, self._cached_webhooks
-                elif path == "/reverse":
+                elif path == "/reverse":  # noqa: SIM102
                     if self._cached_reverse:
                         return True, self._cached_reverse
             elif method == "PATCH":
@@ -1432,7 +1429,7 @@ class Slave(logging_utils.LoggableMixin):
 
                     return True, None
         else:  # device is online
-            if method == "POST":
+            if method == "POST":  # noqa: SIM102
                 if path == "/reset":
                     self.debug("device is resetting")
                     self._resetting = None
@@ -1441,8 +1438,7 @@ class Slave(logging_utils.LoggableMixin):
         return False, None
 
     async def intercept_response(self, method: str, path: str, request_body: Any, response_body: Any) -> None:
-        if path.endswith("/"):
-            path = path[:-1]
+        path = path.removesuffix("/")
 
         if path == "/device":
             if method == "PATCH":
@@ -1478,7 +1474,7 @@ class Slave(logging_utils.LoggableMixin):
                     self.debug("firmware update process ended")
                     await self.enable()
                     self._stop_fwupdate_polling()
-        elif path == "/reset":
+        elif path == "/reset":  # noqa: SIM102
             if method == "POST" and request_body.get("factory"):
                 # When performing factory reset, disable device
 
@@ -1487,7 +1483,7 @@ class Slave(logging_utils.LoggableMixin):
                 await self.trigger_update()
 
     def intercept_error(self, error: Exception) -> Exception:
-        if isinstance(error, core_responses.HTTPError):
+        if isinstance(error, core_responses.HTTPError):  # noqa: SIM102
             # Slave expression attribute is known as "device_expression" on Master; we must adapt the corresponding
             # error here by prepending a(nother) "device_"; the sample applies to history_* attributes.
 
@@ -1662,8 +1658,8 @@ async def load() -> None:
 
         try:
             slave = Slave(**entry)
-        except Exception as e:
-            logger.error("failed to load slave %s: %s", entry["name"], e, exc_info=True)
+        except Exception:
+            logger.exception("failed to load slave %s", entry["name"])
             continue
 
         _slaves_by_name[slave.get_name()] = slave

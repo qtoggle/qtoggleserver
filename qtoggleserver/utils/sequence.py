@@ -54,8 +54,8 @@ class Sequence:
             try:
                 try:
                     self._callback(value, *self._callback_args, **self._callback_kwargs)
-                except Exception as e:
-                    logger.error("sequence callback failed: %s", e, exc_info=True)
+                except Exception:
+                    logger.exception("sequence callback failed")
 
                 if i < len(self._values) - 1:
                     await asyncio.sleep(self._delays[i] / 1000.0)

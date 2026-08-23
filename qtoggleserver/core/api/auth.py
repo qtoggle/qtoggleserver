@@ -72,9 +72,8 @@ def parse_auth_header(auth: str, origin: str, password_hash_func: Callable, requ
             raise AuthError("JWT too old or too much in the future")
 
     usr = payload.get("usr")
-    if require_usr:
-        if not usr or not isinstance(usr, str):
-            raise AuthError("Missing or invalid usr claim in JWT")
+    if require_usr and (not usr or not isinstance(usr, str)):
+        raise AuthError("Missing or invalid usr claim in JWT")
 
     # Validate username & signature
     password_hash = password_hash_func(usr)

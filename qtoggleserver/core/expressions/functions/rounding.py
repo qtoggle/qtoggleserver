@@ -11,7 +11,7 @@ class FloorFunction(Function):
     async def _eval(self, context: EvalContext) -> EvalResult:
         eval_args = await self.eval_args(context)
 
-        return int(math.floor(eval_args[0]))
+        return math.floor(eval_args[0])
 
 
 @function("CEIL")
@@ -21,7 +21,7 @@ class CeilFunction(Function):
     async def _eval(self, context: EvalContext) -> EvalResult:
         eval_args = await self.eval_args(context)
 
-        return int(math.ceil(eval_args[0]))
+        return math.ceil(eval_args[0])
 
 
 @function("ROUND")

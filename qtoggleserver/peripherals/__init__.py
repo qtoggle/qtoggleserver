@@ -175,17 +175,17 @@ async def init() -> None:
         try:
             await add(peripheral_args, static=True, persisted_data=False)
         except Exception:
-            logger.error("failed to load peripheral %s", peripheral_args.get("driver"), exc_info=True)
+            logger.exception("failed to load peripheral %s", peripheral_args.get("driver"))
 
     logger.debug("loading dynamic peripherals")
     for peripheral_args in await persist.query("peripherals"):
         try:
             await add(peripheral_args, persisted_data=False)
         except Exception:
-            logger.error("failed to load peripheral %s", peripheral_args.get("driver"), exc_info=True)
+            logger.exception("failed to load peripheral %s", peripheral_args.get("driver"))
 
 
 async def cleanup() -> None:
-    tasks = [asyncio.create_task(remove(p_id, persisted_data=False)) for p_id in _registered_peripherals.keys()]
+    tasks = [asyncio.create_task(remove(p_id, persisted_data=False)) for p_id in _registered_peripherals]
     if tasks:
         await asyncio.wait(tasks)

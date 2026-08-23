@@ -64,7 +64,7 @@ class Debounced:
             else:
                 self._func(*args, **kwargs)
         except Exception:
-            logger.error("error while executing debounced function: %s", self._func, exc_info=True)
+            logger.exception("error while executing debounced function: %s", self._func)
 
         self._queue.clear()
         self._task = None

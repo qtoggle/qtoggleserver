@@ -88,7 +88,7 @@ class TestPortPushWrite:
         mock_num_port1.push_write(999)
 
         assert evicted_future.cancelled()
-        assert list(mock_num_port1._write_queue)[0].value == 2
+        assert list(mock_num_port1._write_queue)[0].value == 2  # noqa: RUF015
         assert list(mock_num_port1._write_queue)[-1].value == 999
 
 

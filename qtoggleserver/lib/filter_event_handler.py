@@ -338,15 +338,16 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         if self._filter_event_types and event.get_type() not in self._filter_event_types:
             return False
 
-        if isinstance(event, core_events.DeviceEvent) and not await self.accepts_device(event, old_attrs, new_attrs):
-            return False
-        elif isinstance(event, core_events.PortEvent) and not await self.accepts_port(
-            event, value_pair, old_attrs, new_attrs
-        ):
-            return False
-        elif isinstance(event, slaves_events.SlaveDeviceEvent) and not await self.accepts_slave(
-            event, old_attrs, new_attrs
-        ):
+        if isinstance(event, core_events.DeviceEvent):
+            accepted = await self.accepts_device(event, old_attrs, new_attrs)
+        elif isinstance(event, core_events.PortEvent):
+            accepted = await self.accepts_port(event, value_pair, old_attrs, new_attrs)
+        elif isinstance(event, slaves_events.SlaveDeviceEvent):
+            accepted = await self.accepts_slave(event, old_attrs, new_attrs)
+        else:
+            accepted = True
+
+        if not accepted:
             return False
 
         if self._filter_expression:
