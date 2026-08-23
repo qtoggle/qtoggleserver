@@ -10,7 +10,7 @@ from qtoggleserver.conf import settings
 from qtoggleserver.core.ports import BasePort
 from qtoggleserver.utils import dynload as dynload_utils
 
-from .exceptions import DuplicatePeripheral, NoSuchDriver
+from .exceptions import DriverLoadError, DuplicatePeripheral
 from .peripheral import Peripheral
 from .peripheralport import PeripheralPort
 
@@ -42,8 +42,8 @@ async def add(peripheral_args: dict[str, Any], static: bool = False, persisted_d
     logger.debug('creating peripheral with driver "%s"', class_path)
     try:
         peripheral_class = dynload_utils.load_attr(class_path)
-    except Exception:
-        raise NoSuchDriver(class_path) from None
+    except dynload_utils.DynloadError as e:
+        raise DriverLoadError(str(e)) from e
 
     p: Peripheral = peripheral_class(static=static, **peripheral_args)
     if p.get_id() in _registered_peripherals:

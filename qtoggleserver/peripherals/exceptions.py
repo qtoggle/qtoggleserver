@@ -2,7 +2,7 @@ class PeripheralException(Exception):
     pass
 
 
-class NoSuchDriver(PeripheralException):
+class DriverLoadError(PeripheralException):
     pass
 
 

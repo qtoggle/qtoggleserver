@@ -397,7 +397,7 @@ class TestPatchPeripheral:
         )
         mocker.patch.object(mock_peripheral1, "cleanup_ports")
         mocker.patch("qtoggleserver.peripherals.remove")
-        mocker.patch("qtoggleserver.peripherals.add", side_effect=peripherals.NoSuchDriver("does.not.exist"))
+        mocker.patch("qtoggleserver.peripherals.add", side_effect=peripherals.DriverLoadError("does.not.exist"))
         with pytest.raises(core_api.APIError, match="no-such-driver") as e:
             await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
         assert e.value.status == 404
@@ -416,7 +416,7 @@ class TestPatchPeripheral:
         # First call raises, second call (restore) succeeds
         mock_add = mocker.patch(
             "qtoggleserver.peripherals.add",
-            side_effect=[peripherals.NoSuchDriver("bad.driver"), restored_peripheral],
+            side_effect=[peripherals.DriverLoadError("bad.driver"), restored_peripheral],
         )
         spy_init_ports = mocker.patch.object(restored_peripheral, "init_ports")
 

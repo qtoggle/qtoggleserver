@@ -1,7 +1,24 @@
+import pytest
+
 from qtoggleserver import peripherals, persist
 
 
 class TestAdd:
+    async def test_no_such_module_raises_driver_load_error(self, mock_persist_driver):
+        with pytest.raises(peripherals.DriverLoadError):
+            await peripherals.add({"driver": "tests.unit.qtoggleserver.mock.no_such_module.SomeClass"})
+
+    async def test_no_such_attr_raises_driver_load_error(self, mock_persist_driver):
+        with pytest.raises(peripherals.DriverLoadError):
+            await peripherals.add({"driver": "tests.unit.qtoggleserver.mock.peripherals.NoSuchClass"})
+
+    async def test_non_dynload_error_is_not_masked_as_driver_load_error(self, mock_persist_driver):
+        # A bug unrelated to module/attribute lookup (here: a malformed driver path with no dot,
+        # which makes load_attr's `m, attr = attr_path.rsplit(".", 1)` raise ValueError) must
+        # propagate as-is instead of being reported as a misleading "no such driver" error.
+        with pytest.raises(ValueError):
+            await peripherals.add({"driver": "no_dot_in_this_path"})
+
     async def test_persists_display_name(self, mock_persist_driver):
         peripheral = await peripherals.add(
             {

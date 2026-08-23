@@ -27,7 +27,7 @@ async def post_peripherals(request: core_api.APIRequest, params: GenericJSONDict
 
     try:
         peripheral = await peripherals.add(args)
-    except peripherals.NoSuchDriver:
+    except peripherals.DriverLoadError:
         raise core_api.APIError(404, "no-such-driver")
     except peripherals.DuplicatePeripheral:
         raise core_api.APIError(400, "duplicate-peripheral")
@@ -143,7 +143,7 @@ async def patch_peripheral(
         new_p = await peripherals.add(args)
     except Exception as e:
         await _restore_peripheral(old_args)
-        if isinstance(e, peripherals.NoSuchDriver):
+        if isinstance(e, peripherals.DriverLoadError):
             raise core_api.APIError(404, "no-such-driver")
         if isinstance(e, peripherals.DuplicatePeripheral):
             raise core_api.APIError(400, "duplicate-peripheral")
