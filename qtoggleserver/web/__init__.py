@@ -29,12 +29,12 @@ async def init() -> None:
             version=version.VERSION,
             debug=settings.frontend.debug,
             static_url=settings.frontend.static_url,
-            extra_context=dict(
-                slaves_enabled=settings.slaves.enabled,
-                discover_enabled=is_discover_enabled(),
-                history_enabled=history.is_enabled(),
-                setup_mode=system.is_setup_mode(),
-            ),
+            extra_context={
+                "slaves_enabled": settings.slaves.enabled,
+                "discover_enabled": is_discover_enabled(),
+                "history_enabled": history.is_enabled(),
+                "setup_mode": system.is_setup_mode(),
+            },
         )
 
 
