@@ -303,7 +303,6 @@ class SlavePort(core_ports.BasePort):
                 await self._slave.api_call(
                     "PATCH", f"/ports/{self._remote_id}/value", value, timeout=settings.slaves.long_timeout
                 )
-                self.push_remote_value(value)
             except core_responses.HTTPError as e:
                 # Slaves may still be running an older qToggle API version that used distinct 502/504 status codes
                 # instead of 500 for these errors, so both are accepted here
