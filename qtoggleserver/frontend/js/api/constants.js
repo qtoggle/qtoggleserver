@@ -173,7 +173,54 @@ export const KNOWN_ERRORS = [
         pretty: gettext('Requested device is disabled.')
     },
 
-    /* HTTP 502 */
+    /* HTTP 500 */
+    {
+        status: 500,
+        code: 'port-error',
+        pretty: gettext('Port communication error: %(message)s.')
+    },
+    {
+        status: 500,
+        code: 'invalid-device',
+        pretty: gettext('The device is not a qToggle device.')
+    },
+    {
+        status: 500,
+        code: 'connection-refused',
+        pretty: gettext('Device refuses the connection.')
+    },
+    {
+        status: 500,
+        code: 'unreachable',
+        pretty: gettext('Device is unreachable.')
+    },
+    {
+        status: 500,
+        code: 'busy',
+        pretty: gettext('Device is busy.')
+    },
+    {
+        status: 500,
+        code: 'device-offline',
+        pretty: gettext('Device is offline.')
+    },
+    {
+        status: 500,
+        code: 'port-timeout',
+        pretty: gettext('Timeout while communicating with the port.')
+    },
+    {
+        status: 500,
+        code: 'device-timeout',
+        pretty: gettext('Timeout waiting for a response from the device.')
+    },
+    {
+        status: 500,
+        code: 'value-timeout',
+        pretty: gettext('Timeout waiting for value to take effect.')
+    },
+
+    /* HTTP 502/503/504 (legacy devices predating the switch to 500 for these errors) */
     {
         status: 502,
         code: 'port-error',
@@ -194,8 +241,6 @@ export const KNOWN_ERRORS = [
         code: 'unreachable',
         pretty: gettext('Device is unreachable.')
     },
-
-    /* HTTP 503 */
     {
         status: 503,
         code: 'busy',
@@ -206,8 +251,6 @@ export const KNOWN_ERRORS = [
         code: 'device-offline',
         pretty: gettext('Device is offline.')
     },
-
-    /* HTTP 504 */
     {
         status: 504,
         code: 'port-timeout',
