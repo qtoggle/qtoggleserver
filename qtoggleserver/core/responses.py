@@ -134,11 +134,8 @@ def parse(response: HTTPResponse, decode_json: bool = True, resolve_refs: bool =
         else:
             body = response.body
 
-        if response.code == 200:
+        if response.code in (200, 202):
             return body  # happy case with content
-
-        if response.code == 202:
-            raise Accepted(body)
 
         if response.code == 301:
             raise MovedPermanently(response.headers.get("Location", ""))

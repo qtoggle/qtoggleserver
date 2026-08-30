@@ -304,10 +304,6 @@ class SlavePort(core_ports.BasePort):
                     "PATCH", f"/ports/{self._remote_id}/value", value, timeout=settings.slaves.long_timeout
                 )
                 self.push_remote_value(value)
-            except core_responses.Accepted:
-                # The value has been successfully sent to the slave, but it hasn't been applied right away. We should
-                # update the cached value later, as soon as we receive a corresponding value-change event.
-                pass
             except core_responses.HTTPError as e:
                 # Slaves may still be running an older qToggle API version that used distinct 502/504 status codes
                 # instead of 500 for these errors, so both are accepted here
