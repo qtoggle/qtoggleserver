@@ -105,7 +105,7 @@ export class APIError extends Error {
                     break
             }
         }
-        if (status === 500 && data && data.message) {
+        if (status === 500 && !pretty && data && data.message) {
             /* Internal server error */
             pretty = data.message
         }
