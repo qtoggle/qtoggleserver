@@ -117,9 +117,9 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
         elif isinstance(error, core_ports.InvalidAttributeValue):
             raise core_api.APIError(400, "invalid-field", field=name, details=error.details)
         elif isinstance(error, core_ports.PortTimeout):
-            raise core_api.APIError(504, "port-timeout")
+            raise core_api.APIError(500, "port-timeout")
         elif isinstance(error, core_ports.PortError):
-            raise core_api.APIError(502, "port-error", code=str(error))
+            raise core_api.APIError(500, "port-error", code=str(error))
         else:
             # Transform any unhandled exception into APIError(500)
             raise core_api.APIError(500, "unexpected-error", message=str(error)) from error
@@ -389,9 +389,9 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
     try:
         await port.push_write_and_wait(value)
     except core_ports.PortTimeout as e:
-        raise core_api.APIError(504, "port-timeout") from e
+        raise core_api.APIError(500, "port-timeout") from e
     except core_ports.PortError as e:
-        raise core_api.APIError(502, "port-error", message=str(e)) from e
+        raise core_api.APIError(500, "port-error", message=str(e)) from e
     except core_api.APIError:
         raise
     except Exception as e:
@@ -401,7 +401,7 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
     if timeout:
         remaining = timeout - (time.time() - request_time)
         if not await port.wait_for_read_value(value, timeout=remaining):
-            raise core_api.APIError(504, "value-timeout")
+            raise core_api.APIError(500, "value-timeout")
 
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NORMAL)

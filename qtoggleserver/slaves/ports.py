@@ -303,20 +303,17 @@ class SlavePort(core_ports.BasePort):
                 await self._slave.api_call(
                     "PATCH", f"/ports/{self._remote_id}/value", value, timeout=settings.slaves.long_timeout
                 )
-                self.push_remote_value(value)
-            except core_responses.Accepted:
-                # The value has been successfully sent to the slave, but it hasn't been applied right away. We should
-                # update the cached value later, as soon as we receive a corresponding value-change event.
-                pass
             except core_responses.HTTPError as e:
-                if e.code == 502 and e.code == "port-error":
+                # Slaves may still be running an older qToggle API version that used distinct 502/504 status codes
+                # instead of 500 for these errors, so both are accepted here
+                if e.code == "port-error" and e.status in (500, 502):
                     message = e.params.get("message")
                     if message:
                         raise core_ports.PortError(message)
                     else:
                         raise core_ports.PortError()
 
-                if e.code == 504 and e.code == "port-timeout":
+                if e.code == "port-timeout" and e.status in (500, 504):
                     raise core_ports.PortTimeout()
 
                 raise exceptions.adapt_api_error(e) from e

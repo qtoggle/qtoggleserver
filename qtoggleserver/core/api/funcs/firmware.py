@@ -39,7 +39,7 @@ async def patch_firmware(request: core_api.APIRequest, params: GenericJSONDict) 
 
     status = await fwupdate.get_status()
     if status not in (fwupdate.STATUS_IDLE, fwupdate.STATUS_ERROR):
-        raise core_api.APIError(503, "busy")
+        raise core_api.APIError(500, "busy")
 
     if params.get("url"):
         await fwupdate.update_to_url(params["url"])

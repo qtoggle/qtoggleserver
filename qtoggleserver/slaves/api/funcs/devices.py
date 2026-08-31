@@ -76,15 +76,15 @@ async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
         core_responses.NetworkUnreachable,
         core_responses.UnresolvableHostname,
     ) as e:
-        raise core_api.APIError(502, "unreachable") from e
+        raise core_api.APIError(500, "unreachable") from e
     except core_responses.ConnectionRefused as e:
-        raise core_api.APIError(502, "connection-refused") from e
+        raise core_api.APIError(500, "connection-refused") from e
     except core_responses.InvalidJson as e:
-        raise core_api.APIError(502, "invalid-device") from e
+        raise core_api.APIError(500, "invalid-device") from e
     except core_responses.Timeout as e:
-        raise core_api.APIError(504, "device-timeout") from e
+        raise core_api.APIError(500, "device-timeout") from e
     except slaves_exceptions.InvalidDevice as e:
-        raise core_api.APIError(502, "invalid-device") from e
+        raise core_api.APIError(500, "invalid-device") from e
     except slaves_exceptions.NoListenSupport as e:
         raise core_api.APIError(400, "no-listen-support") from e
     except slaves_exceptions.DeviceAlreadyExists as e:
@@ -94,7 +94,7 @@ async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
 
     except core_responses.HTTPError as e:
         # We need to treat the 401/403 slave responses as a 400
-        if e.code in (401, 403):
+        if e.status in (401, 403):
             raise core_api.APIError(400, "forbidden") from e
 
         raise core_api.APIError.from_http_error(e) from e
@@ -123,7 +123,7 @@ async def wrap_error_with_index(index: int, func: Callable, *args, **kwargs) -> 
     except core_api.APIError as e:
         raise core_api.APIError(status=e.status, code=e.code, index=index, **e.params)
     except TimeoutError:
-        raise core_api.APIError(status=504, code="device-timeout", index=index)
+        raise core_api.APIError(status=500, code="device-timeout", index=index)
     except Exception as e:
         raise core_api.APIError(status=500, code="unexpected-error", message=str(e), index=index)
 
@@ -269,7 +269,7 @@ async def slave_device_forward(
 
     override_offline = request.query.get("override_offline")
     if (not slave.is_online() or not slave.is_ready()) and (override_offline != "true"):
-        raise core_api.APIError(503, "device-offline")
+        raise core_api.APIError(500, "device-offline")
 
     timeout = request.query.get("timeout")
     if timeout is not None:
