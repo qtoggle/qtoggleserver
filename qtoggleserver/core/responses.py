@@ -44,16 +44,6 @@ class Timeout(Error):
     MESSAGE = "timeout"
 
 
-class Accepted(Error):
-    # HTTP 202
-    MESSAGE = "accepted but not processed"
-
-    def __init__(self, response: Any) -> None:
-        self.response: Any = response
-
-        super().__init__()
-
-
 class MovedPermanently(Error):
     # HTTP 301
     MESSAGE = 'moved permanently to "{location}"'

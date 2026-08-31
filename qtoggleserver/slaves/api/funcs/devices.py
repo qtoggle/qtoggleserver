@@ -94,7 +94,7 @@ async def add_slave_device(properties: GenericJSONDict) -> slaves_devices.Slave:
 
     except core_responses.HTTPError as e:
         # We need to treat the 401/403 slave responses as a 400
-        if e.code in (401, 403):
+        if e.status in (401, 403):
             raise core_api.APIError(400, "forbidden") from e
 
         raise core_api.APIError.from_http_error(e) from e
