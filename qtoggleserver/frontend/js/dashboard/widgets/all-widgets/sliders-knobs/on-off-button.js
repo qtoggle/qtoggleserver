@@ -103,6 +103,7 @@ class OnOffButton extends Widget {
     static ConfigForm = ConfigForm
     static hResizable = true
     static vResizable = true
+    static hasRequestTimeout = true
 
 
     /**

@@ -55,6 +55,7 @@ class Widget extends mix().with(ViewMixin) {
     static vResizable = false
     static hResizable = false
     static hasFrame = false
+    static hasRequestTimeout = false /* Expose the request timeout option, for widgets that set port values */
 
 
     /**
@@ -90,6 +91,7 @@ class Widget extends mix().with(ViewMixin) {
 
         this._id = null
         this._label = ''
+        this._requestTimeout = APIConstants.DEFAULT_SERVER_TIMEOUT
         this._left = 0
         this._top = 0
         this._width = 1
@@ -692,6 +694,24 @@ class Widget extends mix().with(ViewMixin) {
         this._bodyDiv.toggleClass('has-label', Boolean(label))
     }
 
+    /**
+     * Return the timeout used by default when setting port values. Only relevant for widgets having
+     * `hasRequestTimeout` enabled.
+     * @returns {Number} seconds
+     */
+    getRequestTimeout() {
+        return this._requestTimeout
+    }
+
+    /**
+     * Set the timeout used by default when setting port values. Only relevant for widgets having
+     * `hasRequestTimeout` enabled.
+     * @param {Number} timeout seconds
+     */
+    setRequestTimeout(timeout) {
+        this._requestTimeout = timeout
+    }
+
 
     /* Size, layout & more */
 
@@ -1066,6 +1086,9 @@ class Widget extends mix().with(ViewMixin) {
         if (this.constructor.vResizable) {
             json.height = this._height
         }
+        if (this.constructor.hasRequestTimeout) {
+            json.requestTimeout = this._requestTimeout
+        }
 
         return json
     }
@@ -1095,6 +1118,11 @@ class Widget extends mix().with(ViewMixin) {
         if (this.constructor.vResizable) {
             if (json.height != null) {
                 this._height = json.height
+            }
+        }
+        if (this.constructor.hasRequestTimeout) {
+            if (json.requestTimeout != null) {
+                this._requestTimeout = json.requestTimeout
             }
         }
         if (json.config) {
@@ -1153,11 +1181,11 @@ class Widget extends mix().with(ViewMixin) {
      *
      * @param {String} portId the id of the port whose value will be set
      * @param {Number|Boolean} value the new port value
-     * @param {Number} [timeout] how long to wait for new port value to take effect (seconds, defaults to
-     * {@link qtoggle.api.constants.DEFAULT_SERVER_TIMEOUT}); pass `0` to not wait for confirmation at all
+     * @param {Number} [timeout] how long to wait for new port value to take effect (seconds, defaults to the widget's
+     * configured request timeout); pass `0` to not wait for confirmation at all
      * @returns {Promise}
      */
-    setPortValue(portId, value, timeout = APIConstants.DEFAULT_SERVER_TIMEOUT) {
+    setPortValue(portId, value, timeout = this._requestTimeout) {
         this.setProgress()
 
         return PortsAPI.patchPortValue(portId, value, timeout).then(function () {
