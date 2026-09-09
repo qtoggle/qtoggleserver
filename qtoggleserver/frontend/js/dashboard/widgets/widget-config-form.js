@@ -236,10 +236,10 @@ class WidgetConfigForm extends PageForm {
      */
     toWidget(data, widget) {
         widget.setLabel(data.label)
-        if (widget.constructor.hasRequestTimeout) {
-            widget.setRequestTimeout(data.requestTimeout)
+        if (widget.constructor.hasRequestTimeout && data.requestTimeout != null) {
+            widget.setRequestTimeout(Math.min(Math.max(data.requestTimeout, 0), MAX_REQUEST_TIMEOUT))
+            widget.configFromJSON(data)
         }
-        widget.configFromJSON(data)
     }
 
     /**
