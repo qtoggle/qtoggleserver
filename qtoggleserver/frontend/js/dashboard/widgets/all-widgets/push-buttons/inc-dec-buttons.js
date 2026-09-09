@@ -83,6 +83,7 @@ class IncDecButtons extends Widget {
     static ConfigForm = ConfigForm
     static vResizable = true
     static hResizable = true
+    static hasRequestTimeout = true
 
 
     /**

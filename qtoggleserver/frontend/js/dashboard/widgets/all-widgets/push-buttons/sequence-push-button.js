@@ -273,6 +273,7 @@ class SequencePushButton extends PushButton {
     static ConfigForm = ConfigForm
     static hResizable = true
     static vResizable = true
+    static hasRequestTimeout = false /* Unlike PushButton, this one sets sequences, not values */
 
 
     /**

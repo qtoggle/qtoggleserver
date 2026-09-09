@@ -235,6 +235,7 @@ class RadioButtons extends Widget {
     static ConfigForm = ConfigForm
     static hResizable = false
     static vResizable = false
+    static hasRequestTimeout = true
 
 
     /**

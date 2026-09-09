@@ -30,6 +30,7 @@ class MultiValueSlider extends AnalogWidget {
     static ConfigForm = ConfigForm
     static hResizable = true
     static vResizable = true
+    static hasRequestTimeout = true
 
 
     /**

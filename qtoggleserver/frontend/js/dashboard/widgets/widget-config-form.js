@@ -3,6 +3,7 @@ import {gettext}         from '$qui/base/i18n.js'
 import {CompositeField}  from '$qui/forms/common-fields/common-fields.js'
 import {PushButtonField} from '$qui/forms/common-fields/common-fields.js'
 import {TextField}       from '$qui/forms/common-fields/common-fields.js'
+import {UpDownField}     from '$qui/forms/common-fields/common-fields.js'
 import {PageForm}        from '$qui/forms/common-forms/common-forms.js'
 import FormButton        from '$qui/forms/form-button.js'
 import * as ObjectUtils  from '$qui/utils/object.js'
@@ -12,6 +13,9 @@ import * as Cache from '$app/cache.js'
 
 import PortPickerField from './port-picker-field.js'
 import * as Widgets    from './widgets.js'
+
+
+const MAX_REQUEST_TIMEOUT = 3600 /* Seconds; matches the API limit for the port value confirmation timeout */
 
 
 /**
@@ -36,7 +40,23 @@ class WidgetConfigForm extends PageForm {
             })
         ]
 
-        let defaultEndFields = [
+        let defaultEndFields = []
+
+        /* Only widgets that actually set port values expose a configurable request timeout */
+        if (widget.constructor.hasRequestTimeout) {
+            defaultEndFields.push(new UpDownField({
+                name: 'requestTimeout',
+                label: gettext('Request Timeout'),
+                separator: true,
+                unit: 's',
+                min: 0,
+                max: MAX_REQUEST_TIMEOUT,
+                description: gettext('How long to wait for the new port value to take effect, when setting it. ' +
+                                     'Value 0 disables waiting for confirmation altogether.')
+            }))
+        }
+
+        defaultEndFields.push(
             new CompositeField({
                 name: 'actionButtons',
                 label: gettext('Actions'),
@@ -69,7 +89,7 @@ class WidgetConfigForm extends PageForm {
                     // })
                 ]
             })
-        ]
+        )
 
         args.fields = [...defaultStartFields, ...(args.fields || []), ...defaultEndFields]
 
@@ -202,6 +222,9 @@ class WidgetConfigForm extends PageForm {
     fromWidget(widget) {
         let data = widget.configToJSON()
         data.label = widget.getLabel()
+        if (widget.constructor.hasRequestTimeout) {
+            data.requestTimeout = widget.getRequestTimeout()
+        }
 
         return data
     }
@@ -213,7 +236,10 @@ class WidgetConfigForm extends PageForm {
      */
     toWidget(data, widget) {
         widget.setLabel(data.label)
-        widget.configFromJSON(data)
+        if (widget.constructor.hasRequestTimeout && data.requestTimeout != null) {
+            widget.setRequestTimeout(Math.min(Math.max(data.requestTimeout, 0), MAX_REQUEST_TIMEOUT))
+            widget.configFromJSON(data)
+        }
     }
 
     /**

@@ -26,6 +26,7 @@ class Slider extends AnalogWidget {
     static vResizable = true
     static hResizable = true
     static width = 2
+    static hasRequestTimeout = true
 
 }
 
