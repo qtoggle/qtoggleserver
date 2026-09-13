@@ -627,15 +627,15 @@ dev = [
 
 [[package]]
 name = "qui-server"
-version = "1.20.0a2"
+version = "1.20.0a3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinja2" },
     { name = "tornado" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/78/18/235a158c266271ec21bde092c7e1f1bb4e3ab0e93fe461eb79b9fe75799e/qui_server-1.20.0a2.tar.gz", hash = "sha256:617ae10027ff0f3809f98c99ec2ee3ee01e4b175951833b676fdcbc9a4266a30", size = 13005, upload-time = "2026-09-13T16:37:04.527Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/78/69/4f7d94edebd6bca9521c6e3799ebd26ae3e3a294a837a401ef45dbc45072/qui_server-1.20.0a3.tar.gz", hash = "sha256:09d1b699f3c840fbfaf10cc917284f4e4080544dd37d0e2ecff3edb33c7fa099", size = 13938, upload-time = "2026-09-13T17:08:31.741Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/99/51/b93932021381ae4c7a0af3678453757b1d0a4bbefed17523c63daf06bd95/qui_server-1.20.0a2-py3-none-any.whl", hash = "sha256:9d69560ded2465ce12f29193d4bd664490b099b881e9521d56765e6562c366e0", size = 14642, upload-time = "2026-09-13T16:37:03.606Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/eb/a36df4c7fe8fe3627c882b15ce4bb3b9c32d76b0ca2464b72d4bf456bd6f/qui_server-1.20.0a3-py3-none-any.whl", hash = "sha256:5a9888d0fabb510f9b61556088c11a7859562aac7548724f4709f9b09133e31e", size = 15679, upload-time = "2026-09-13T17:08:30.771Z" },
 ]
 
 [[package]]
