@@ -12,7 +12,7 @@
         "hammerjs": "*",
         "jquery": "*",
         "jquery-mousewheel": "*",
-        "jquery-ui-dist": "*",
+        "jquery-ui": "^1",
         "js-logger": "*",
         "pepjs": "*"
     },
