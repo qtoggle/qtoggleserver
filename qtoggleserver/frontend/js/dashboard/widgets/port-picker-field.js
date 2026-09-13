@@ -60,6 +60,7 @@ class PortPickerField extends ComboField {
         let choices = ports.map(function (port) {
             return {
                 label: this.makeLabel(port),
+                matchPhrase: this.makeMatchPhrase(port),
                 value: port.id,
                 port: port
             }
@@ -71,19 +72,47 @@ class PortPickerField extends ComboField {
         return choices
     }
 
-    filterFunc(choice, searchText) {
-        let port = choice.port
+    /**
+     * Build the text a search filter is matched against. The parts of the port id appear in the order in which they
+     * are displayed, each one as it is displayed and, when that is a display name, followed by the corresponding id
+     * part, so that a filter can span them and either name can be searched for.
+     * @param {Object} port
+     * @returns {String}
+     */
+    makeMatchPhrase(port) {
         let device = Cache.findPortSlaveDevice(port.id)
-        let phrase = port.id.split('.')
+        let mainDevice = Cache.getMainDevice()
 
-        if (port.display_name) {
-            phrase.push(port.display_name)
-        }
-        if (device && device.attrs['display_name']) {
-            phrase.push(device.attrs['display_name'])
+        let parts = port.id.split('.')
+        if (parts.length === 1 && Config.slavesEnabled) {
+            parts.splice(0, 0, mainDevice.display_name || mainDevice.name)
         }
 
-        return phrase.some(p => StringUtils.intelliSearch(p, searchText) != null)
+        let phraseParts = []
+        parts.forEach(function (part, i) {
+
+            let displayName = null
+            if (i === 0 && device && device.attrs['display_name']) {
+                displayName = device.attrs['display_name']
+            }
+            else if (i === parts.length - 1 && port.display_name) {
+                displayName = port.display_name
+            }
+
+            if (displayName) {
+                phraseParts.push(displayName)
+            }
+            if (displayName !== part) {
+                phraseParts.push(part)
+            }
+
+        })
+
+        return phraseParts.join(' ').toLowerCase()
+    }
+
+    filterFunc(choice, searchText) {
+        return StringUtils.intelliSearch(choice.matchPhrase, searchText) != null
     }
 
     makeLabelHTML() {
