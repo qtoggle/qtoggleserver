@@ -6,6 +6,7 @@
     "author": "Calin Crisan <ccrisan@gmail.com>",
     "license": "Apache-2.0",
     "dependencies": {
+        "@babel/runtime": "^7.29.7",
         "@qtoggle/qui": "*",
         "chart.js": "^3.0.0-rc",
         "chartjs-adapter-date-fns": "*",
@@ -18,9 +19,10 @@
     },
     "devDependencies": {
         "@babel/core": "*",
-        "@babel/plugin-proposal-class-properties": "*",
-        "@babel/preset-env": "*",
         "@babel/eslint-parser": "*",
+        "@babel/plugin-proposal-class-properties": "*",
+        "@babel/plugin-transform-runtime": "^7.29.7",
+        "@babel/preset-env": "*",
         "babel-loader": "^8",
         "css-loader": "^3",
         "eslint": "^9",
