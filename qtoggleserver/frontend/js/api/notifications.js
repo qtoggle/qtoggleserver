@@ -15,6 +15,9 @@ import * as APIConstants from './constants.js'
 
 const DEFAULT_EXPECT_TIMEOUT = 60000 /* Milliseconds */
 const FAST_RECONNECT_LISTEN_ERRORS = 2
+/* Matches the delay of $qui/utils/misc.js:asap(), which this replaced -- long enough to let the current promise chain
+ * settle before the next listen request goes out. */
+const ASAP_DELAY = 20
 
 /**
  * In the absence of an event coming from the server, this is the interval for server keepalive responses.
@@ -79,6 +82,7 @@ let expectedEventSpecs = {}
 let expectedEventLastHandle = 0
 let listeningTime = null
 let listenErrorCount = 0
+let waitHandle = null
 
 /* Flag used during firmware update */
 let ignoreListenErrors = false
@@ -268,6 +272,36 @@ function callEventListeners(event) {
     })
 }
 
+/* Schedules the next wait() call, replacing any continuation that is already pending.
+ *
+ * The session must be re-checked when the timer fires, not only when the response arrives. stopListening() cannot
+ * settle a request that is already in flight, so a chain can still be asleep here when listening is stopped and then
+ * started again -- and wait() reads listeningTime afresh, so the resurrected chain would look perfectly current and
+ * run forever alongside the new one. Two chains sharing one session id is not merely wasteful: the server responds to
+ * a pending listen as soon as another arrives for the same session, so each chain completes the other's request the
+ * moment it is made, and they spin as fast as the network allows. */
+function scheduleWait(delay, firstQuick = false) {
+    let scheduledListeningTime = listeningTime
+
+    cancelWait()
+    waitHandle = setTimeout(function () {
+        waitHandle = null
+        if (listeningTime !== scheduledListeningTime) {
+            logger.debug('dropping scheduled listen request from older session')
+            return
+        }
+
+        wait(firstQuick)
+    }, delay)
+}
+
+function cancelWait() {
+    if (waitHandle != null) {
+        clearTimeout(waitHandle)
+        waitHandle = null
+    }
+}
+
 function wait(firstQuick = false) {
     /* Used to detect responses to listening requests that were replaced by new ones */
     let requestListeningTime = listeningTime
@@ -286,7 +320,7 @@ function wait(firstQuick = false) {
             return
         }
 
-        asap(wait) /* Schedule the next wait call right away */
+        scheduleWait(ASAP_DELAY) /* Schedule the next wait call right away */
         syncListenError = null
         listenErrorCount = 0
 
@@ -332,7 +366,7 @@ function wait(firstQuick = false) {
             syncListenCallbacks.forEach(c => PromiseUtils.asap().then(() => c(syncListenError, reconnectSeconds)))
         }
 
-        setTimeout(wait, reconnectSeconds * 1000) /* Schedule the next wait call later */
+        scheduleWait(reconnectSeconds * 1000) /* Schedule the next wait call later */
 
     })
 }
@@ -427,6 +461,7 @@ export function stopListening() {
     logger.debug('stopping listening mechanism')
 
     listeningTime = null
+    cancelWait()
 }
 
 /**

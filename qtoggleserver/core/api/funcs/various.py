@@ -49,6 +49,8 @@ async def get_listen(request: core_api.APIRequest) -> GenericJSONList:
         session.debug("waiting cancelled")
         session.cancel()
         return []
+    except core_sessions.DuplicateListenError:
+        raise core_api.APIError(409, "duplicate-listen") from None
 
     return [await e.to_json() for e in events]
 
