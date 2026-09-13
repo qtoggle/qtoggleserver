@@ -4,7 +4,7 @@ from collections import deque
 
 import pytest
 
-from qtoggleserver.core.sessions import Session
+from qtoggleserver.core.sessions import DuplicateListenError, Session
 
 
 class MockEvent:
@@ -91,12 +91,35 @@ class TestSessionResetAndWait:
         assert session.access_level == 3
         future.cancel()
 
-    async def test_existing_future_is_resolved(self, session):
-        """Should resolve the existing future when reset_and_wait is called again."""
+    async def test_existing_future_is_superseded(self, session):
+        """Should fail the existing future when reset_and_wait is called again."""
 
         future1 = session.reset_and_wait(timeout=30, access_level=0)
         future2 = session.reset_and_wait(timeout=30, access_level=0)
         assert future1.done()
+        assert isinstance(future1.exception(), DuplicateListenError)
+        assert not future2.done()
+        future2.cancel()
+
+    async def test_supersede_keeps_queued_events_for_the_new_request(self, session):
+        """Should leave queued events for the request taking over, rather than handing them to the one it replaces."""
+
+        future1 = session.reset_and_wait(timeout=30, access_level=0)
+        session.push(MockEvent("e1"))
+        future2 = session.reset_and_wait(timeout=30, access_level=0)
+
+        assert isinstance(future1.exception(), DuplicateListenError)
+        assert future2.done()
+        assert [e.name for e in future2.result()] == ["e1"]
+
+    async def test_supersede_ignores_an_already_cancelled_future(self, session):
+        """Should not fail a future the client has already abandoned."""
+
+        future1 = session.reset_and_wait(timeout=30, access_level=0)
+        future1.cancel()
+        future2 = session.reset_and_wait(timeout=30, access_level=0)
+
+        assert future1.cancelled()
         assert not future2.done()
         future2.cancel()
 

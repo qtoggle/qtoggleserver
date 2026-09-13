@@ -13,6 +13,11 @@ SESSION_EXPIRY_FACTOR = 10
 
 logger = logging.getLogger(__name__)
 
+
+class DuplicateListenError(Exception):
+    """A listening request that another request for the same session has taken the place of."""
+
+
 _sessions_by_id: dict[str, Session] = {}
 _sessions_event_handler: SessionsEventHandler | None = None
 
@@ -32,8 +37,7 @@ class Session(logging_utils.LoggableMixin):
         self.debug("resetting (timeout=%s, access_level=%s)", timeout, access_level)
 
         if self.future:
-            self.debug("already has a listening connection, responding")
-            self.respond()
+            self.supersede()
 
         future = asyncio.get_running_loop().create_future()
 
@@ -62,6 +66,26 @@ class Session(logging_utils.LoggableMixin):
 
         self.debug("serving %d events", len(events))
         self.future.set_result(reversed(events))
+        self.future = None
+
+    def supersede(self) -> None:
+        # Release a pending listening connection because another request for this session has taken its place.
+        #
+        # Deliberately an error rather than an empty event list: an empty list is indistinguishable from a keep-alive,
+        # and a client reads that as "ask again now". Two request chains sharing one session id would then complete
+        # each other's requests as fast as the network allows, which is exactly how a single duplicated chain in the
+        # browser turns into tens of requests per second. An error makes such a client fall back on its reconnect
+        # delay, and makes the condition visible in the logs rather than silent.
+        #
+        # Queued events are deliberately left alone. They belong to the request being set up next, not to this one,
+        # whose client has almost certainly stopped waiting for it.
+        if not self.future:
+            return
+
+        self.debug("superseded by a new listening connection")
+        if not self.future.done():
+            self.future.set_exception(DuplicateListenError())
+
         self.future = None
 
     def cancel(self) -> None:
