@@ -138,7 +138,9 @@ class PortsList extends PageList {
         }
 
         this._deviceName = deviceName
-        this._updateUIDebouncer = new Debouncer(() => this.updateUI(), Constants.COMMON_DEBOUNCE_DELAY, Constants.COMMON_DEBOUNCE_MAX_WAIT)
+        this._updateUIDebouncer = new Debouncer(
+            () => this.updateUI(), Constants.COMMON_DEBOUNCE_DELAY, Constants.COMMON_DEBOUNCE_MAX_WAIT
+        )
         this.portForm = null
 
         this.setTitle(title)
