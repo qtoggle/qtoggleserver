@@ -97,7 +97,7 @@ class DevicesTable extends PageTable {
         })
 
         this.deviceForm = null
-        this._updateUIDebouncer = new Debouncer(() => this.updateUI(this), Constants.COMMON_DEBOUNCE_DELAY)
+        this._updateUIDebouncer = new Debouncer(() => this.updateUI(this), Constants.COMMON_DEBOUNCE_DELAY, Constants.COMMON_DEBOUNCE_MAX_WAIT)
     }
 
     init() {

@@ -33,7 +33,7 @@ class PeripheralsList extends PageList {
         })
 
         this.peripheralForm = null
-        this._updateUIDebouncer = new Debouncer(() => this.updateUI(), Constants.COMMON_DEBOUNCE_DELAY)
+        this._updateUIDebouncer = new Debouncer(() => this.updateUI(), Constants.COMMON_DEBOUNCE_DELAY, Constants.COMMON_DEBOUNCE_MAX_WAIT)
     }
 
     load() {
