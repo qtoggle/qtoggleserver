@@ -8,7 +8,6 @@ import {gettext}        from '$qui/base/i18n.js'
 import * as Status      from '$qui/main-ui/status.js'
 import * as Messages    from '$qui/messages/messages.js'
 import * as Toast       from '$qui/messages/toast.js'
-import * as ArrayUtils  from '$qui/utils/array.js'
 import Debouncer        from '$qui/utils/debouncer.js'
 import {asap}           from '$qui/utils/misc.js'
 import * as ObjectUtils from '$qui/utils/object.js'
@@ -77,6 +76,67 @@ function processEventsBulk() {
     eventsBulk = []
 }
 
+/* Ports that changed together in this bulk, bucketed by the device owning them, so that the branches below can read
+ * off a count instead of filtering the whole bulk again. That filter ran once per qualifying event, with a device
+ * lookup inside it and an O(n^2) de-duplication after it, which made a burst of a few hundred events quadratic. */
+function groupPortEvents(events) {
+    let groups = {online: new Map(), offline: new Map(), added: new Map(), removed: new Map()}
+
+    function add(group, device, portId) {
+        let portIds = group.get(device)
+        if (!portIds) {
+            portIds = new Set()
+            group.set(device, portIds)
+        }
+
+        /* A set, because the filter this replaces was followed by a de-duplication on port id */
+        portIds.add(portId)
+    }
+
+    events.forEach(function (event) {
+        switch (event.type) {
+            case 'port-update': {
+                let port = Cache.getPort(event.params.id)
+                if (!port) {
+                    return
+                }
+
+                let device = Cache.findPortSlaveDevice(port.id)
+                if (!port.online && event.params.online) {
+                    add(groups.online, device, event.params.id)
+                }
+                else if (port.online && !event.params.online) {
+                    add(groups.offline, device, event.params.id)
+                }
+
+                break
+            }
+
+            case 'port-add': {
+                add(groups.added, Cache.findPortSlaveDevice(event.params.id), event.params.id)
+
+                break
+            }
+
+            case 'port-remove': {
+                add(groups.removed, Cache.findPortSlaveDevice(event.params.id), event.params.id)
+
+                break
+            }
+        }
+    })
+
+    return groups
+}
+
+/* The device is used as the key exactly as the removed filters used it, so that a Map tells null, undefined and each
+ * device object apart the way their `!==` comparison did. */
+function groupCount(group, device) {
+    let portIds = group.get(device)
+
+    return portIds ? portIds.size : 0
+}
+
 function showMessageFromEvents(events) {
     let message = null
     let messageType = null
@@ -87,10 +147,12 @@ function showMessageFromEvents(events) {
                   e.type === 'slave-device-update') && e.expected)
     })
 
+    let portGroups = groupPortEvents(messagesEvents)
+
     messagesEvents.forEach(function (event) {
         let device, port
         let deviceLabel, portLabel
-        let groupedEvents
+        let groupedCount
 
         switch (event.type) {
             case 'slave-device-update': {
@@ -221,31 +283,10 @@ function showMessageFromEvents(events) {
                 else if (!port.online && event.params.online) { /* Came online */
                     /* If more than one port of a device came online,
                      * avoid showing a message for each of its ports */
-                    groupedEvents = messagesEvents.filter(function (e) {
-                        if (e.type !== 'port-update') {
-                            return false
-                        }
-
-                        let p = Cache.getPort(e.params.id)
-                        if (!p) {
-                            return false
-                        }
-
-                        let d = Cache.findPortSlaveDevice(p.id)
-                        if (d !== device) {
-                            return
-                        }
-
-                        return !p.online && e.params.online
-                    })
-
-                    /* Eliminate port duplicates */
-                    groupedEvents = ArrayUtils.distinct(groupedEvents, function (e1, e2) {
-                        return e1.params.id === e2.params.id
-                    })
+                    groupedCount = groupCount(portGroups.online, device)
 
                     messageType = 'info'
-                    if (groupedEvents.length === 1) {
+                    if (groupedCount === 1) {
                         message = StringUtils.formatPercent(
                             gettext('Port %(port)s is now online.'),
                             {port: portLabel}
@@ -254,38 +295,17 @@ function showMessageFromEvents(events) {
                     else {
                         message = StringUtils.formatPercent(
                             gettext('%(count)d ports are now online.'),
-                            {count: groupedEvents.length}
+                            {count: groupedCount}
                         )
                     }
                 }
                 else if (port.online && !event.params.online) { /* Went offline */
                     /* If more than one port of a device went offline,
                      * avoid showing a message for each of its ports */
-                    groupedEvents = messagesEvents.filter(function (e) {
-                        if (e.type !== 'port-update') {
-                            return false
-                        }
-
-                        let p = Cache.getPort(e.params.id)
-                        if (!p) {
-                            return false
-                        }
-
-                        let d = Cache.findPortSlaveDevice(p.id)
-                        if (d !== device) {
-                            return
-                        }
-
-                        return p.online && !e.params.online
-                    })
-
-                    /* Eliminate port duplicates */
-                    groupedEvents = ArrayUtils.distinct(groupedEvents, function (e1, e2) {
-                        return e1.params.id === e2.params.id
-                    })
+                    groupedCount = groupCount(portGroups.offline, device)
 
                     messageType = 'warning'
-                    if (groupedEvents.length === 1) {
+                    if (groupedCount === 1) {
                         message = StringUtils.formatPercent(
                             gettext('Port %(port)s is offline.'),
                             {port: portLabel}
@@ -294,7 +314,7 @@ function showMessageFromEvents(events) {
                     else {
                         message = StringUtils.formatPercent(
                             gettext('%(count)d ports are offline.'),
-                            {count: groupedEvents.length}
+                            {count: groupedCount}
                         )
                     }
                 }
@@ -308,26 +328,10 @@ function showMessageFromEvents(events) {
 
                 /* If more than one port of a device have been added,
                  * avoid showing a message for each of the ports */
-                groupedEvents = messagesEvents.filter(function (e) {
-                    if (e.type !== 'port-add') {
-                        return false
-                    }
-
-                    let d = Cache.findPortSlaveDevice(e.params.id)
-                    if (d !== device) {
-                        return
-                    }
-
-                    return true
-                })
-
-                /* Eliminate port duplicates */
-                groupedEvents = ArrayUtils.distinct(groupedEvents, function (e1, e2) {
-                    return e1.params.id === e2.params.id
-                })
+                groupedCount = groupCount(portGroups.added, device)
 
                 messageType = 'info'
-                if (groupedEvents.length === 1) {
+                if (groupedCount === 1) {
                     message = StringUtils.formatPercent(
                         gettext('Port %(port)s has been added.'),
                         {port: portLabel}
@@ -336,7 +340,7 @@ function showMessageFromEvents(events) {
                 else {
                     message = StringUtils.formatPercent(
                         gettext('%(count)d ports have been added.'),
-                        {count: groupedEvents.length}
+                        {count: groupedCount}
                     )
                 }
 
@@ -354,26 +358,10 @@ function showMessageFromEvents(events) {
 
                 /* If more than one port of a device have been removed,
                  * avoid showing a message for each of the ports */
-                groupedEvents = messagesEvents.filter(function (e) {
-                    if (e.type !== 'port-remove') {
-                        return false
-                    }
-
-                    let d = Cache.findPortSlaveDevice(e.params.id)
-                    if (d !== device) {
-                        return
-                    }
-
-                    return true
-                })
-
-                /* Eliminate port duplicates */
-                groupedEvents = ArrayUtils.distinct(groupedEvents, function (e1, e2) {
-                    return e1.params.id === e2.params.id
-                })
+                groupedCount = groupCount(portGroups.removed, device)
 
                 messageType = 'info'
-                if (groupedEvents.length === 1) {
+                if (groupedCount === 1) {
                     message = StringUtils.formatPercent(
                         gettext('Port %(port)s has been removed.'),
                         {port: portLabel}
@@ -382,7 +370,7 @@ function showMessageFromEvents(events) {
                 else {
                     message = StringUtils.formatPercent(
                         gettext('%(count)d ports have been removed.'),
-                        {count: groupedEvents.length}
+                        {count: groupedCount}
                     )
                 }
 

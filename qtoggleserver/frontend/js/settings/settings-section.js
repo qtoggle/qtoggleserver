@@ -48,7 +48,8 @@ class SettingsSection extends Section {
     onServerEvent(event) {
         switch (event.type) {
             case 'device-update': {
-                if (this.settingsForm && !this.settingsForm.isRebooting()) {
+                /* The section closes its form when hidden but keeps the reference; the next show builds a new one */
+                if (this.settingsForm && !this.settingsForm.isClosed() && !this.settingsForm.isRebooting()) {
                     /* Don't show field changed warnings for events that are consequences of changes applied from this
                      * client (when the event is expected) */
                     let fieldChangeWarnings = !event.expected && !Settings.recentSettingsUpdateTimer.isRunning()

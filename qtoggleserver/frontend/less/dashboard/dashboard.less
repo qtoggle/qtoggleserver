@@ -96,6 +96,11 @@ div.dashboard-widget-picker-body {
 /* Widget container */
 
 div.dashboard-widget-container {
+    /* Deliberately no paint containment: the body's box-shadow, the remove/configure/duplicate buttons and the four
+     * resize handles are all drawn outside the container box on purpose, and would be clipped. Layout and style
+     * containment are enough to keep a widget's own updates from invalidating the layout of the whole panel. */
+    contain: layout style;
+
     display: grid;
     position: absolute;
     z-index: 10000;
