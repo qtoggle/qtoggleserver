@@ -8,6 +8,9 @@ import * as ObjectUtils from '$qui/utils/object.js'
 import * as NotificationsAPI from '$app/api/notifications.js'
 
 
+/* Shared rather than built per call. It has no `g` flag, so exec() always starts at 0 and never touches lastIndex. */
+const DIGITS_RE = /\d+/
+
 /**
  * Help sorting items alphabetically and numerically at the same time, by adding zero padding to each number within the
  * given string.
@@ -16,10 +19,9 @@ import * as NotificationsAPI from '$app/api/notifications.js'
  * @returns {String} the sort key
  */
 export function alphaNumSortKey(input) {
-    let re = new RegExp('\\d+')
     let l, m, s = input
     let n, key = ''
-    while ((m = re.exec(s))) {
+    while ((m = DIGITS_RE.exec(s))) {
         l = m[0].length
         key += s.substring(0, m.index)
         s = s.substring(m.index + l)
