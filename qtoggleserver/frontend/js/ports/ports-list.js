@@ -95,6 +95,32 @@ class PortIconLabelListItem extends IconLabelListItem {
         return container
     }
 
+    updateFrom(other) {
+        if (!super.updateFrom(other)) {
+            return false
+        }
+
+        /* The parent class knows nothing about the flags, so without this a row kept in place goes on showing the
+         * badges it was built with. Only `active` ever differs in practice; a different set of flags means a
+         * different row, which the list rebuilds instead. */
+        let sameFlags = other._flags.length === this._flags.length && other._flags.every(
+            (f, i) => f.text === this._flags[i].text && f.color === this._flags[i].color
+        )
+        if (!sameFlags) {
+            return false
+        }
+
+        let flagElements = this._flagsElement ? this._flagsElement.children() : null
+        other._flags.forEach(function ({active}, i) {
+            if (flagElements && active !== this._flags[i].active) {
+                flagElements.eq(i).css('visibility', active ? 'visible' : 'hidden')
+            }
+        }, this)
+        this._flags = other._flags
+
+        return true
+    }
+
 }
 
 
