@@ -269,7 +269,7 @@ class Widget extends mix().with(ViewMixin) {
 
         function handleMove(elemX, elemY) {
             /* Make the new offsets relative to the panel body */
-            let panelBodyOffset = widget._getPanelBody().offset()
+            let panelBodyOffset = widget._getPanelBodyOffset()
             let newOffsetLeft = elemX - panelBodyOffset.left
             let newOffsetTop = elemY - panelBodyOffset.top
 
@@ -381,7 +381,7 @@ class Widget extends mix().with(ViewMixin) {
             let newOffsetTop = pageY
 
             /* Make the new offset relative to the panel body */
-            let panelBodyOffset = widget._getPanelBody().offset()
+            let panelBodyOffset = widget._getPanelBodyOffset()
             newOffsetTop -= panelBodyOffset.top
 
             /* Compute the new offset in em units */
@@ -430,7 +430,7 @@ class Widget extends mix().with(ViewMixin) {
             let newOffsetRight = pageX
 
             /* Make the new offset relative to the panel body */
-            let panelBodyOffset = widget._getPanelBody().offset()
+            let panelBodyOffset = widget._getPanelBodyOffset()
             newOffsetRight -= panelBodyOffset.left
 
             /* Compute the new offset in em units */
@@ -483,7 +483,7 @@ class Widget extends mix().with(ViewMixin) {
             let newOffsetBottom = pageY
 
             /* Make the new offset relative to the panel body */
-            let panelBodyOffset = widget._getPanelBody().offset()
+            let panelBodyOffset = widget._getPanelBodyOffset()
             newOffsetBottom -= panelBodyOffset.top
 
             /* Compute the new offset in em units */
@@ -536,7 +536,7 @@ class Widget extends mix().with(ViewMixin) {
             let newOffsetLeft = pageX
 
             /* Make the new offset relative to the panel body */
-            let panelBodyOffset = widget._getPanelBody().offset()
+            let panelBodyOffset = widget._getPanelBodyOffset()
             newOffsetLeft -= panelBodyOffset.left
 
             /* Compute the new offset in em units */
@@ -579,6 +579,13 @@ class Widget extends mix().with(ViewMixin) {
 
     _getPanelBody() {
         return this._panel.getBody()
+    }
+
+    /* Panel body offset, in CSS pixels, so that it can be compared with dragging coordinates and cell widths */
+    _getPanelBodyOffset() {
+        let offset = this._getPanelBody().offset()
+
+        return {left: CSS.unscalePx(offset.left), top: CSS.unscalePx(offset.top)}
     }
 
     /**
@@ -1008,8 +1015,8 @@ class Widget extends mix().with(ViewMixin) {
                 let elemPosition = this._dragElem.position()
 
                 this._px2em = CSS.px2em(1, this._bodyDiv)
-                this._clickDragElemX = elemPosition.left
-                this._clickDragElemY = elemPosition.top
+                this._clickDragElemX = CSS.unscalePx(elemPosition.left)
+                this._clickDragElemY = CSS.unscalePx(elemPosition.top)
 
                 this.onDragBegin()
 
