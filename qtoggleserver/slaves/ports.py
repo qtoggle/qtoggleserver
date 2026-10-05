@@ -258,7 +258,9 @@ class SlavePort(core_ports.BasePort):
         if not self._expires and not self._slave.is_online():
             return False
 
-        return self._cached_attrs.get("online", True)
+        # A device may send the attribute with a null value; treat that as online, just like a missing attribute
+        online = self._cached_attrs.get("online")
+        return True if online is None else online
 
     async def attr_get_provisioning(self) -> list[str]:
         return list(self._provisioning)
