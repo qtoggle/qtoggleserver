@@ -6,7 +6,6 @@ import {gettext}           from '$qui/base/i18n.js'
 import Config              from '$qui/config.js'
 import {CheckField}        from '$qui/forms/common-fields/common-fields.js'
 import {OptionsForm}       from '$qui/forms/common-forms/common-forms.js'
-import $                   from '$qui/lib/jquery.module.js'
 import {IconLabelListItem} from '$qui/lists/common-items/common-items.js'
 import {PageList}          from '$qui/lists/common-lists/common-lists.js'
 import * as Theme          from '$qui/theme.js'
@@ -83,16 +82,47 @@ class PortIconLabelListItem extends IconLabelListItem {
     makeIconLabelContainer() {
         let container = super.makeIconLabelContainer()
 
-        this._flagsElement = $('<div></div>', {class: 'port-flags'})
+        /* Raw DOM rather than jQuery: this runs 448 times on the hub's port list, where jQuery's element, style and
+         * append helpers came to about 470 ms of the 4.6 s the list takes to build. */
+        this._flagsElement = document.createElement('div')
+        this._flagsElement.className = 'port-flags'
         this._flags.forEach(({text, color, active}) => {
-            let flagElement = $(`<div></div>`, {class: 'flag', text})
-            flagElement.css('background', color)
-            flagElement.css('visibility', active ? 'visible' : 'hidden')
-            this._flagsElement.append(flagElement)
+            let flagElement = document.createElement('div')
+            flagElement.className = 'flag'
+            flagElement.textContent = text
+            flagElement.style.background = color
+            flagElement.style.visibility = active ? 'visible' : 'hidden'
+            this._flagsElement.appendChild(flagElement)
         })
-        container.append(this._flagsElement)
+        container[0].appendChild(this._flagsElement)
 
         return container
+    }
+
+    updateFrom(other) {
+        if (!super.updateFrom(other)) {
+            return false
+        }
+
+        /* The parent class knows nothing about the flags, so without this a row kept in place goes on showing the
+         * badges it was built with. Only `active` ever differs in practice; a different set of flags means a
+         * different row, which the list rebuilds instead. */
+        let sameFlags = other._flags.length === this._flags.length && other._flags.every(
+            (f, i) => f.text === this._flags[i].text && f.color === this._flags[i].color
+        )
+        if (!sameFlags) {
+            return false
+        }
+
+        let flagElements = this._flagsElement ? this._flagsElement.children : null
+        other._flags.forEach(function ({active}, i) {
+            if (flagElements && active !== this._flags[i].active) {
+                flagElements[i].style.visibility = active ? 'visible' : 'hidden'
+            }
+        }, this)
+        this._flags = other._flags
+
+        return true
     }
 
 }
@@ -138,7 +168,9 @@ class PortsList extends PageList {
         }
 
         this._deviceName = deviceName
-        this._updateUIDebouncer = new Debouncer(() => this.updateUI(), Constants.COMMON_DEBOUNCE_DELAY)
+        this._updateUIDebouncer = new Debouncer(
+            () => this.updateUI(), Constants.COMMON_DEBOUNCE_DELAY, Constants.COMMON_DEBOUNCE_MAX_WAIT
+        )
         this.portForm = null
 
         this.setTitle(title)

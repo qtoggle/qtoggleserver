@@ -1,3 +1,4 @@
+# Build with:
 #     docker build -f docker/Dockerfile -t qtoggle/qtoggleserver .
 #
 # Run with:

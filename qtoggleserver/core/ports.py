@@ -484,7 +484,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self.debug("enabling")
         self._enabled = True
-        self.invalidate_attr("enabled")
+        # Invalidate all attributes, not just `enabled`: others may be derived from it, e.g. `online`
+        self.invalidate_attrs()
 
         # Reset port expression
         if self._expression:
@@ -499,6 +500,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         except Exception:
             self.error("failed to enable")
             self._enabled = False
+            self.invalidate_attrs()
 
             raise
 
@@ -514,13 +516,14 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self.debug("disabling")
         self._enabled = False
-        self.invalidate_attr("enabled")
+        self.invalidate_attrs()
 
         try:
             await self.handle_disable()
         except Exception:
             self.error("failed to disable")
             self._enabled = True
+            self.invalidate_attrs()
 
             raise
 

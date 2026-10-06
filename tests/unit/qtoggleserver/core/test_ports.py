@@ -327,6 +327,28 @@ class TestPortGetPendingValue:
         assert mock_num_port1.get_pending_value() == 1
 
 
+class TestPortEnableDisable:
+    async def test_enable_invalidates_attrs(self, mock_num_port1):
+        """Should invalidate the whole attributes cache, since other attributes may be derived from `enabled`."""
+
+        await mock_num_port1.disable()
+        mock_num_port1._attrs_cache["display_name"] = "stale"
+
+        await mock_num_port1.enable()
+
+        assert "display_name" not in mock_num_port1._attrs_cache
+
+    async def test_disable_invalidates_attrs(self, mock_num_port1):
+        """Should invalidate the whole attributes cache, since other attributes may be derived from `enabled`."""
+
+        await mock_num_port1.enable()
+        mock_num_port1._attrs_cache["display_name"] = "stale"
+
+        await mock_num_port1.disable()
+
+        assert "display_name" not in mock_num_port1._attrs_cache
+
+
 class TestPortGetAttr:
     async def test_unknown_attribute(self, mock_num_port1):
         """Should return `None` for an unsupported/unknown attribute."""
