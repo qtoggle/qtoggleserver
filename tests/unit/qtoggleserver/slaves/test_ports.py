@@ -86,7 +86,7 @@ class TestOnlineAttr:
 
         assert await slave_port.get_attr("online") is False
 
-    async def test_offline_reported_by_slave(self, slave, slave_port) -> None:
+    async def test_offline_reported_by_slave(self, slave_port) -> None:
         await slave_port.enable()
         slave_port.update_cached_attrs({"id": "port1", "type": "boolean", "enabled": True, "online": False})
 
