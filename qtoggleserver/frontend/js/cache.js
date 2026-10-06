@@ -711,8 +711,8 @@ export function findPortSlaveDevice(portId) {
      * instead was proportional to their number, and this is called from inside a per-event rescan of the whole event
      * bulk: with 20 devices, the 40000 lookups a 200-event bulk needs took 123ms, against 2.4ms this way.
      *
-     * Prefixes are tried shortest first, so where two device names could both match -- "a" and "a.b", for a port
-     * "a.b.c" -- the shorter one wins, rather than whichever happened to come first in key order. */
+     * A device name can never contain a dot (see the `name` pattern in api/attrdefs.js), so only the prefix before the
+     * first dot can ever match; the loop then just falls through for a local port id that contains dots. */
     let dot = portId.indexOf('.')
     while (dot >= 0) {
         let device = slaveDevices[portId.substring(0, dot)]
@@ -723,7 +723,7 @@ export function findPortSlaveDevice(portId) {
         dot = portId.indexOf('.', dot + 1)
     }
 
-    return undefined
+    return null
 }
 
 /**
