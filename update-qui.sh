@@ -3,8 +3,8 @@
 # Updates both halves of QUI to the same release: the @qtoggle/qui npm package used by the frontend
 # and the qui-server PyPI package used by the backend. The two are versioned together.
 #
-# Pass the version as npm spells it, e.g. 1.19.11 or 1.20.0-alpha.2. PyPI normalizes the prerelease
-# spelling itself (1.20.0-alpha.2 becomes 1.20.0a2), so one argument covers both.
+# Pass the version as npm spells it, e.g. 1.19.11 or 1.20.0-alpha.2. uv normalizes the prerelease
+# spelling per PEP 440 (1.20.0-alpha.2 becomes 1.20.0a2), so one argument covers both.
 
 set -e
 
