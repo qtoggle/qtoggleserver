@@ -132,6 +132,10 @@ class PortWriteError(PortError):
     pass
 
 
+class PortDisabled(PortWriteError):
+    pass
+
+
 class SkipRead(PortReadError):
     pass
 
@@ -740,21 +744,23 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def push_write(self, value: PortValue, future: asyncio.Future | None = None) -> None:
         """Push a value to the writing process queue. If `future` is given, it will be resolved with the result of
-        (`None`) or exception raised by the eventual `transform_and_write_value()` call for this value. It will be
-        cancelled instead if evicted from a full queue before ever being written, or if the port's write loop is
-        cancelled first."""
+        (`None`) or exception raised by the eventual `transform_and_write_value()` call for this value. It will fail
+        with a `PortWriteError` instead if evicted from a full queue before ever being written, and be cancelled if
+        the port's write loop is cancelled first."""
 
         if len(self._write_queue) >= self._write_queue.maxlen:
             evicted = self._write_queue[0]
             if evicted.future and not evicted.future.done():
-                evicted.future.cancel()
+                evicted.future.set_exception(PortWriteError("evicted from a full write queue"))
 
         self.debug("pushing value %s to write queue", value)
         self._write_queue.append(WriteRequest(value, future))
         self.save_asap()
 
     def drop_write_queue(self) -> None:
-        """Drop any queued writes, cancelling their futures so that no caller is left hanging."""
+        """Drop any queued writes, failing their futures so that no caller is left hanging. They are failed rather
+        than cancelled because `CancelledError` is a `BaseException` and would slip through the `except Exception`
+        handlers on the API path, leaving the request unanswered."""
 
         if not self._write_queue:
             return
@@ -762,7 +768,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.debug("dropping %d queued write(s)", len(self._write_queue))
         for request in self._write_queue:
             if request.future and not request.future.done():
-                request.future.cancel()
+                request.future.set_exception(PortDisabled())
 
         self._write_queue.clear()
         self.save_asap()
@@ -1024,9 +1030,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         write_queue = data.get("write_queue")
         if isinstance(write_queue, list):
             self._write_queue.clear()
-            for value in write_queue:
-                if value is not None:
-                    self._write_queue.append(WriteRequest(value))
+            # A disabled port has nothing pending, so skip a queue that could only be written once enabled - long
+            # after the values were queued
+            if self._enabled:
+                for value in write_queue:
+                    if value is not None:
+                        self._write_queue.append(WriteRequest(value))
 
         # Handle legacy `value` field for backward compatibility with old persisted data
         if data.get("value") is not None and not loaded_last_read:

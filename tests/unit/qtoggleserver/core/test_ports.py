@@ -2,7 +2,7 @@ import asyncio
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core.expressions.exceptions import ValueUnavailable
-from qtoggleserver.core.ports import WriteRequest
+from qtoggleserver.core.ports import PortDisabled, PortWriteError, WriteRequest
 
 
 class TestPortGetLastValue:
@@ -77,7 +77,7 @@ class TestPortPushWrite:
         assert list(mock_num_port1._write_queue) == [WriteRequest(100, future)]
 
     def test_evicts_oldest_when_full(self, mock_num_port1, mocker):
-        """Should cancel the future of the oldest request when it gets evicted because the queue is full."""
+        """Should fail the future of the oldest request when it gets evicted because the queue is full."""
 
         mocker.patch.object(mock_num_port1, "save_asap")
         mock_num_port1._write_queue.clear()
@@ -88,7 +88,7 @@ class TestPortPushWrite:
 
         mock_num_port1.push_write(999)
 
-        assert evicted_future.cancelled()
+        assert isinstance(evicted_future.exception(), PortWriteError)
         assert list(mock_num_port1._write_queue)[0].value == 2  # noqa: RUF015
         assert list(mock_num_port1._write_queue)[-1].value == 999
 
@@ -158,8 +158,8 @@ class TestPortDisabledWrites:
         await asyncio.sleep(settings.core.tick_interval / 1000)
         mock_num_port1.transform_and_write_value.assert_not_called()
 
-    async def test_disable_cancels_dropped_futures(self, mock_num_port1, mocker):
-        """Should cancel the futures of the dropped writes, so that no caller is left hanging."""
+    async def test_disable_fails_dropped_futures(self, mock_num_port1, mocker):
+        """Should fail the futures of the dropped writes, so that no caller is left hanging."""
 
         mocker.patch.object(mock_num_port1, "transform_and_write_value", new=mocker.AsyncMock())
         mock_num_port1._write_queue.clear()
@@ -168,7 +168,39 @@ class TestPortDisabledWrites:
 
         await mock_num_port1.disable()
 
-        assert future.cancelled()
+        assert isinstance(future.exception(), PortDisabled)
+
+    async def test_disable_raises_catchable_error_for_awaiter(self, mock_num_port1, mocker):
+        """Should raise PortDisabled, not CancelledError, in a caller awaiting a dropped write. CancelledError is a
+        BaseException and would slip through the `except Exception` handlers on the API path."""
+
+        started = asyncio.Event()
+        release = asyncio.Event()
+
+        async def blocking_transform(value):
+            started.set()
+            await release.wait()
+
+        mocker.patch.object(mock_num_port1, "transform_and_write_value", new=blocking_transform)
+        mock_num_port1._write_queue.clear()
+        mock_num_port1.push_write(1)  # keeps the write loop busy
+        await started.wait()
+
+        async def awaiter():
+            try:
+                await mock_num_port1.push_write_and_wait(100)
+            except Exception as e:
+                return e
+
+            return None
+
+        task = asyncio.ensure_future(awaiter())
+        await asyncio.sleep(0)
+        await mock_num_port1.disable()
+
+        # The timeout keeps a regression here a quick failure rather than a hung test run
+        assert isinstance(await asyncio.wait_for(asyncio.shield(task), timeout=1), PortDisabled)
+        assert not task.cancelled()
 
     async def test_failed_disable_keeps_queued_writes(self, mock_num_port1, mocker):
         """Should keep the queued writes when disabling fails, since the port stays enabled."""
@@ -1050,6 +1082,16 @@ class TestPortToPersisted:
 
 
 class TestPortFromPersisted:
+    async def test_skips_write_queue_when_disabled(self, mock_num_port1, mocker):
+        """from_persisted should not restore a write queue for a disabled port, since it has nothing pending."""
+        mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
+        await mock_num_port1.disable()
+
+        await mock_num_port1.from_persisted({"enabled": False, "write_queue": [56, 78]})
+
+        assert len(mock_num_port1._write_queue) == 0
+        assert mock_num_port1.get_pending_value() is None
+
     async def test_loads_state_fields(self, mock_num_port1, mocker):
         """from_persisted should restore state fields."""
         mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
