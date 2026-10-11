@@ -240,6 +240,43 @@ class TestPortDisabledWrites:
         await asyncio.sleep(2 * settings.core.tick_interval / 1000)
         mock_num_port1.transform_and_write_value.assert_not_called()
 
+    async def test_nothing_written_while_disabling(self, mock_num_port1, mocker):
+        """Should neither write nor drop a queued value while `handle_disable()` is suspended. This is the invariant
+        the whole change rests on: the port already reports itself as disabled there, so the write loop must leave
+        the queue alone and let `disable()` decide what happens to it."""
+
+        written = []
+
+        async def record(value):
+            written.append(value)
+
+        mocker.patch.object(mock_num_port1, "write_value", new=record)
+        mock_num_port1._write_queue.clear()
+
+        suspended = asyncio.Event()
+        release = asyncio.Event()
+
+        async def slow_handle_disable():
+            suspended.set()
+            await release.wait()
+
+        mocker.patch.object(mock_num_port1, "handle_disable", new=slow_handle_disable)
+        mock_num_port1.push_write(100)
+
+        task = asyncio.ensure_future(mock_num_port1.disable())
+        await suspended.wait()
+        await asyncio.sleep(4 * settings.core.tick_interval / 1000)  # several turns for the write loop
+
+        assert not mock_num_port1.is_enabled()
+        assert written == []  # held, not written
+        assert len(mock_num_port1._write_queue) == 1  # and not dropped behind `disable()`'s back
+
+        release.set()
+        await task
+
+        assert written == []
+        assert len(mock_num_port1._write_queue) == 0  # dropped by `disable()`, now that it is done
+
     async def test_disable_rollback_keeps_queued_write(self, mock_num_port1, mocker):
         """Should keep the queued writes when a suspending `handle_disable()` then fails. The write loop gets a turn
         while the port already reports itself as disabled, and must not drop the queue in that window."""
