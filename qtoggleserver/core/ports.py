@@ -532,8 +532,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             raise
 
         # A disabled port can't be written to, so drop whatever was queued. Done only after `handle_disable()`
-        # succeeded, so that the rollback above doesn't throw the queued writes away.
-        self.drop_write_queue()
+        # succeeded, so that the rollback above doesn't throw the queued writes away, and skipped if the port got
+        # enabled again while `handle_disable()` was suspended.
+        if not self._enabled:
+            self.drop_write_queue()
 
     async def handle_enable(self) -> None:
         pass
@@ -744,9 +746,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def push_write(self, value: PortValue, future: asyncio.Future | None = None) -> None:
         """Push a value to the writing process queue. If `future` is given, it will be resolved with the result of
-        (`None`) or exception raised by the eventual `transform_and_write_value()` call for this value. It will fail
-        with a `PortWriteError` instead if evicted from a full queue before ever being written, and be cancelled if
-        the port's write loop is cancelled first."""
+        (`None`) or exception raised by the eventual `transform_and_write_value()` call for this value. Instead, it
+        will fail with a `PortDisabled` if the port gets disabled before the value is written, with a
+        `PortWriteError` if evicted from a full queue, and be cancelled if the port's write loop is cancelled
+        first."""
 
         if len(self._write_queue) >= self._write_queue.maxlen:
             evicted = self._write_queue[0]
@@ -814,9 +817,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         request: WriteRequest | None = None
         try:
             while True:
-                # Hold the queue while the port is disabled, instead of dropping it: a queue restored from persisted
-                # data must survive until the port gets enabled.
+                # A disabled port can't be written to. This catches whatever `disable()` can't: a value pushed
+                # while `handle_disable()` was suspended, or one left behind by an `enable()` that rolled back.
                 if not self._enabled:
+                    self.drop_write_queue()
                     await asyncio.sleep(settings.core.tick_interval / 1000.0)
                     continue
 
