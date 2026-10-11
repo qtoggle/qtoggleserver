@@ -1,25 +1,93 @@
-import * as Cache          from '$app/cache.js'
-import * as Constants      from '$app/constants.js'
-import * as Utils          from '$app/utils.js'
-import {AssertionError}    from '$qui/base/errors.js'
-import {gettext}           from '$qui/base/i18n.js'
-import Config              from '$qui/config.js'
-import {CheckField}        from '$qui/forms/common-fields/common-fields.js'
-import {OptionsForm}       from '$qui/forms/common-forms/common-forms.js'
-import {IconLabelListItem} from '$qui/lists/common-items/common-items.js'
-import {PageList}          from '$qui/lists/common-lists/common-lists.js'
-import * as Theme          from '$qui/theme.js'
-import * as ArrayUtils     from '$qui/utils/array.js'
-import Debouncer           from '$qui/utils/debouncer.js'
-import {asap}              from '$qui/utils/misc.js'
+import * as Cache           from '$app/cache.js'
+import * as Constants       from '$app/constants.js'
+import * as Utils           from '$app/utils.js'
+import {AssertionError}     from '$qui/base/errors.js'
+import {gettext}            from '$qui/base/i18n.js'
+import Config               from '$qui/config.js'
+import {ChoiceButtonsField} from '$qui/forms/common-fields/common-fields.js'
+import {OptionsForm}        from '$qui/forms/common-forms/common-forms.js'
+import {IconLabelListItem}  from '$qui/lists/common-items/common-items.js'
+import {PageList}           from '$qui/lists/common-lists/common-lists.js'
+import * as Theme           from '$qui/theme.js'
+import * as ArrayUtils      from '$qui/utils/array.js'
+import Debouncer            from '$qui/utils/debouncer.js'
+import {asap}               from '$qui/utils/misc.js'
+import * as ObjectUtils     from '$qui/utils/object.js'
 
 import AddPortForm from './add-port-form.js'
 import PortForm    from './port-form.js'
 import * as Ports  from './ports.js'
 
 
-const DEFAULT_SHOW_OFFLINE_PORTS = true
-const DEFAULT_SHOW_DISABLED_PORTS = true
+const DEFAULT_FILTER = 'all'
+
+/* One choice buttons field per filter. The choice named by `DEFAULT_FILTER` matches everything and so has no `test`.
+ *
+ * Only virtual ports report `virtual`, so `!port.virtual` is what "real" means. Only an enabled port has a meaningful
+ * online state: a disabled peripheral or slave port reports `online: false` while a disabled virtual port omits
+ * `online` entirely, so both online choices require `enabled` and a disabled port shows up under "All" alone. That
+ * matches the icon, which decorates a disabled port neither green nor grey. */
+const PORT_FILTERS = [
+    {
+        name: 'online',
+        label: gettext('Online Status'),
+        choices: [
+            {value: 'offline', label: gettext('Offline'), test: port => port.enabled && port.online === false},
+            {value: 'online', label: gettext('Online'), test: port => port.enabled && port.online !== false},
+            {value: DEFAULT_FILTER, label: gettext('All')}
+        ]
+    },
+    {
+        name: 'enabled',
+        label: gettext('Enabled Status'),
+        choices: [
+            {value: 'disabled', label: gettext('Disabled'), test: port => !port.enabled},
+            {value: 'enabled', label: gettext('Enabled'), test: port => port.enabled},
+            {value: DEFAULT_FILTER, label: gettext('All')}
+        ]
+    },
+    {
+        name: 'type',
+        label: gettext('Type'),
+        choices: [
+            {value: 'boolean', label: gettext('Boolean'), test: port => port.type === 'boolean'},
+            {value: 'number', label: gettext('Number'), test: port => port.type === 'number'},
+            {value: DEFAULT_FILTER, label: gettext('All')}
+        ]
+    },
+    {
+        name: 'writable',
+        label: gettext('Writable'),
+        choices: [
+            {value: 'read-only', label: gettext('Read-only'), test: port => !port.writable},
+            {value: 'writable', label: gettext('Writable'), test: port => port.writable},
+            {value: DEFAULT_FILTER, label: gettext('All')}
+        ]
+    },
+    {
+        name: 'virtual',
+        label: gettext('Virtual'),
+        choices: [
+            {value: 'virtual', label: gettext('Virtual'), test: port => port.virtual},
+            {value: 'real', label: gettext('Real'), test: port => !port.virtual},
+            {value: DEFAULT_FILTER, label: gettext('All')}
+        ]
+    }
+]
+
+
+function getPortFilterValue(filter) {
+    return Cache.getPrefs(`ports.filter_${filter.name}`, DEFAULT_FILTER)
+}
+
+function filterPorts(ports) {
+    return PORT_FILTERS.reduce(function (ports, filter) {
+        let value = getPortFilterValue(filter)
+        let choice = filter.choices.find(choice => choice.value === value)
+
+        return choice && choice.test ? ports.filter(choice.test) : ports
+    }, ports)
+}
 
 
 class PortsListOptionsForm extends OptionsForm {
@@ -27,40 +95,19 @@ class PortsListOptionsForm extends OptionsForm {
     constructor(portsList) {
         super({
             page: portsList,
-            fields: [
-                new CheckField({
-                    name: 'show_offline_ports',
-                    label: gettext('Offline Ports')
-                }),
-                new CheckField({
-                    name: 'show_disabled_ports',
-                    label: gettext('Disabled Ports')
-                })
-            ],
-            initialData: {
-                show_offline_ports: Cache.getPrefs('ports.show_offline_ports', DEFAULT_SHOW_OFFLINE_PORTS),
-                show_disabled_ports: Cache.getPrefs('ports.show_disabled_ports', DEFAULT_SHOW_DISABLED_PORTS)
-            }
+            fields: PORT_FILTERS.map(filter => new ChoiceButtonsField({
+                name: filter.name,
+                label: filter.label,
+                choices: filter.choices.map(({value, label}) => ({value: value, label: label}))
+            })),
+            initialData: ObjectUtils.fromEntries(
+                PORT_FILTERS.map(filter => [filter.name, getPortFilterValue(filter)])
+            )
         })
     }
 
-    init() {
-        this._updateFieldsVisibility()
-    }
-
     onChange(data, fieldName) {
-        Cache.setPrefs(`ports.${fieldName}`, data[fieldName])
-        this._updateFieldsVisibility()
-    }
-
-    _updateFieldsVisibility() {
-        let showDisabledField = this.getField('show_disabled_ports')
-        if (this.getUnvalidatedFieldValue('show_offline_ports')) {
-            showDisabledField.show()
-        }
-        else {
-            showDisabledField.hide()
-        }
+        Cache.setPrefs(`ports.filter_${fieldName}`, data[fieldName])
     }
 
 }
@@ -225,13 +272,7 @@ class PortsList extends PageList {
             }
         }
 
-        if (!Cache.getPrefs('ports.show_offline_ports', DEFAULT_SHOW_OFFLINE_PORTS)) {
-            ports = ports.filter(p => p.online !== false) /* null or undefined also mean online */
-        }
-
-        if (!Cache.getPrefs('ports.show_disabled_ports', DEFAULT_SHOW_DISABLED_PORTS)) {
-            ports = ports.filter(p => p.enabled)
-        }
+        ports = filterPorts(ports)
 
         ArrayUtils.sortKey(ports, port => Utils.alphaNumSortKey(port.display_name || port.id))
 
