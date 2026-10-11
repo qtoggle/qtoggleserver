@@ -141,6 +141,18 @@ class TestPatchPortValue:
             await ports_api_funcs.patch_port_value(request, "nid1", 100)
         assert exc_info.value.status == 500
 
+    async def test_port_disabled_raises_400(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
+    ) -> None:
+        """Should map a write dropped by a concurrent disable to 400 port-disabled, as the spec requires."""
+        mock_num_port1.set_writable(True)
+        mocker.patch.object(mock_num_port1, "push_write_and_wait", side_effect=core_ports.PortDisabled())
+
+        request = mock_api_request_maker("PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL)
+        with pytest.raises(core_api.APIError, match="port-disabled") as exc_info:
+            await ports_api_funcs.patch_port_value(request, "nid1", 100)
+        assert exc_info.value.status == 400
+
     async def test_unexpected_error_raises_500(
         self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
     ) -> None:

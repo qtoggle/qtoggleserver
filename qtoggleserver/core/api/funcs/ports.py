@@ -390,6 +390,8 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
         await port.push_write_and_wait(value)
     except core_ports.PortTimeout as e:
         raise core_api.APIError(500, "port-timeout") from e
+    except core_ports.PortDisabled as e:
+        raise core_api.APIError(400, "port-disabled") from e
     except core_ports.PortError as e:
         raise core_api.APIError(500, "port-error", message=str(e)) from e
     except core_api.APIError:
