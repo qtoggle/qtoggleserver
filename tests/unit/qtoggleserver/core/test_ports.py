@@ -118,9 +118,10 @@ class TestPortPushWriteAndWait:
         except ValueError as e:
             assert str(e) == "nope"
 
-    async def test_cleanup_cancels_pending_futures(self, mock_num_port1, mocker):
-        """Should cancel the future of the request currently being written, as well as those of any requests still
-        sitting in the queue, when the write loop is cancelled (e.g. on port removal)."""
+    async def test_cleanup_fails_pending_futures(self, mock_num_port1, mocker):
+        """Should fail the future of the request currently being written, as well as those of any requests still
+        sitting in the queue, when the write loop is cancelled (e.g. on port removal). Failed rather than cancelled,
+        so that the awaiting API handler can actually catch it."""
 
         mock_num_port1._write_queue.clear()
         started = asyncio.Event()
@@ -140,8 +141,10 @@ class TestPortPushWriteAndWait:
         await started.wait()  # one of the two requests is now being (indefinitely) written
         await mock_num_port1.cleanup()
 
-        assert future_a.cancelled()
-        assert future_b.cancelled()
+        assert isinstance(future_a.exception(), PortWriteError)
+        assert isinstance(future_b.exception(), PortWriteError)
+        assert not future_a.cancelled()
+        assert not future_b.cancelled()
 
 
 class TestPortDisabledWrites:
@@ -218,21 +221,80 @@ class TestPortDisabledWrites:
         assert mock_num_port1.is_enabled()
         assert len(mock_num_port1._write_queue) == 1
 
-    async def test_write_loop_drops_queue_while_disabled(self, mock_num_port1, mocker):
-        """Should drop whatever sits in the queue while the port is disabled, rather than write it once the port
-        gets enabled again, long after it was queued."""
+    async def test_push_write_refused_while_disabled(self, mock_num_port1, mocker):
+        """Should refuse to queue a value for a disabled port, instead of holding it until the port gets enabled."""
 
         mocker.patch.object(mock_num_port1, "transform_and_write_value", new=mocker.AsyncMock())
         mock_num_port1._write_queue.clear()
         await mock_num_port1.disable()
 
-        mock_num_port1.push_write(100)
-        await asyncio.sleep(2 * settings.core.tick_interval / 1000)
+        future = asyncio.get_event_loop().create_future()
+        mock_num_port1.push_write(100, future=future)
+
         assert len(mock_num_port1._write_queue) == 0
+        assert isinstance(future.exception(), PortDisabled)
 
         await mock_num_port1.enable()
         await asyncio.sleep(2 * settings.core.tick_interval / 1000)
         mock_num_port1.transform_and_write_value.assert_not_called()
+
+    async def test_disable_rollback_keeps_queued_write(self, mock_num_port1, mocker):
+        """Should keep the queued writes when a suspending `handle_disable()` then fails. The write loop gets a turn
+        while the port already reports itself as disabled, and must not drop the queue in that window."""
+
+        written = []
+
+        async def record(value):
+            written.append(value)
+
+        mocker.patch.object(mock_num_port1, "transform_and_write_value", new=record)
+        mock_num_port1._write_queue.clear()
+
+        async def slow_failing_handle_disable():
+            await asyncio.sleep(4 * settings.core.tick_interval / 1000)  # as for a polled or peripheral port
+            raise ValueError("nope")
+
+        mocker.patch.object(mock_num_port1, "handle_disable", new=slow_failing_handle_disable)
+        future = asyncio.get_event_loop().create_future()
+        mock_num_port1.push_write(100, future=future)
+
+        try:
+            await mock_num_port1.disable()
+            assert False, "expected ValueError to be raised"
+        except ValueError:
+            pass
+
+        assert mock_num_port1.is_enabled()
+        await asyncio.sleep(2 * settings.core.tick_interval / 1000)
+        assert written == [100]
+        assert future.done() and future.exception() is None
+
+    async def test_disable_keeps_queue_when_re_enabled_meanwhile(self, mock_num_port1, mocker):
+        """Should keep the queued writes when the port gets enabled again while `handle_disable()` is suspended,
+        instead of failing a live port's writes with PortDisabled."""
+
+        written = []
+
+        async def record(value):
+            written.append(value)
+
+        mocker.patch.object(mock_num_port1, "transform_and_write_value", new=record)
+        mock_num_port1._write_queue.clear()
+
+        async def slow_reenabling_handle_disable():
+            await asyncio.sleep(4 * settings.core.tick_interval / 1000)
+            await mock_num_port1.enable()
+
+        mocker.patch.object(mock_num_port1, "handle_disable", new=slow_reenabling_handle_disable)
+        future = asyncio.get_event_loop().create_future()
+        mock_num_port1.push_write(100, future=future)
+
+        await mock_num_port1.disable()
+
+        assert mock_num_port1.is_enabled()
+        await asyncio.sleep(2 * settings.core.tick_interval / 1000)
+        assert written == [100]
+        assert future.done() and future.exception() is None
 
     async def test_failed_enable_does_not_strand_queued_write(self, mock_num_port1, mocker):
         """Should not strand a write queued while `enable()` was running, when that enable then rolls back. The port
@@ -259,35 +321,6 @@ class TestPortDisabledWrites:
         await asyncio.sleep(2 * settings.core.tick_interval / 1000)
         assert isinstance(future.exception(), PortDisabled)
         mock_num_port1.transform_and_write_value.assert_not_called()
-
-    async def test_disable_keeps_queue_when_re_enabled_meanwhile(self, mock_num_port1, mocker):
-        """Should keep the queue when the port got enabled again while `handle_disable()` was suspended, instead of
-        failing a live port's writes with PortDisabled."""
-
-        started = asyncio.Event()
-        release = asyncio.Event()
-
-        async def blocking_transform(value):
-            started.set()
-            await release.wait()
-
-        mocker.patch.object(mock_num_port1, "transform_and_write_value", new=blocking_transform)
-        mock_num_port1._write_queue.clear()
-        mock_num_port1.push_write(1)  # keeps the write loop busy, so nothing drains below
-        await started.wait()
-
-        async def re_enabling_handle_disable():
-            await mock_num_port1.enable()  # as if a concurrent request had re-enabled the port
-
-        mocker.patch.object(mock_num_port1, "handle_disable", new=re_enabling_handle_disable)
-        future = asyncio.get_event_loop().create_future()
-        mock_num_port1.push_write(100, future=future)
-
-        await mock_num_port1.disable()
-
-        assert mock_num_port1.is_enabled()
-        assert not future.done()
-        assert len(mock_num_port1._write_queue) == 1
 
 
 class TestPortWaitForReadValue:

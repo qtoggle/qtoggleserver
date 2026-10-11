@@ -505,6 +505,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.error("failed to enable")
             self._enabled = False
             self.invalidate_attrs()
+            # The port reported itself as enabled until now, so writes may have been queued meanwhile
+            self.drop_write_queue()
 
             raise
 
@@ -533,7 +535,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         # A disabled port can't be written to, so drop whatever was queued. Done only after `handle_disable()`
         # succeeded, so that the rollback above doesn't throw the queued writes away, and skipped if the port got
-        # enabled again while `handle_disable()` was suspended.
+        # enabled again while `handle_disable()` was suspended. The write loop only holds the queue in the meantime,
+        # so it can't drop it behind our back.
         if not self._enabled:
             self.drop_write_queue()
 
@@ -751,6 +754,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         `PortWriteError` if evicted from a full queue, and be cancelled if the port's write loop is cancelled
         first."""
 
+        if not self._enabled:
+            self.debug("refusing to queue value %s: port is disabled", json_utils.dumps(value))
+            if future and not future.done():
+                future.set_exception(PortDisabled())
+
+            return
+
         if len(self._write_queue) >= self._write_queue.maxlen:
             evicted = self._write_queue[0]
             if evicted.future and not evicted.future.done():
@@ -817,10 +827,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         request: WriteRequest | None = None
         try:
             while True:
-                # A disabled port can't be written to. This catches whatever `disable()` can't: a value pushed
-                # while `handle_disable()` was suspended, or one left behind by an `enable()` that rolled back.
+                # Hold the queue while the port is disabled: `enable()` and `disable()` each drop what they have
+                # to, and dropping here would race with a `disable()` that is still awaiting `handle_disable()`
                 if not self._enabled:
-                    self.drop_write_queue()
                     await asyncio.sleep(settings.core.tick_interval / 1000.0)
                     continue
 
@@ -845,13 +854,15 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         except asyncio.CancelledError:
             self.debug("eval task cancelled")
 
-            # Don't leave any awaiter hanging: cancel the future of the request that was being processed, as well
-            # as those of any requests still sitting in the queue
+            # Don't leave any awaiter hanging: fail the future of the request that was being processed, as well as
+            # those of any requests still sitting in the queue. Failed rather than cancelled for the same reason as
+            # in `drop_write_queue()`.
+            error = PortWriteError("port write loop stopped")
             if request and request.future and not request.future.done():
-                request.future.cancel()
+                request.future.set_exception(error)
             for pending_request in self._write_queue:
                 if pending_request.future and not pending_request.future.done():
-                    pending_request.future.cancel()
+                    pending_request.future.set_exception(error)
 
     async def transform_and_write_value(self, value: PortValue) -> None:
         """Apply write transform (if any) and write the value to the port."""
