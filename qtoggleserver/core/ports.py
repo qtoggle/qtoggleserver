@@ -833,7 +833,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     continue
 
                 try:
-                    request = self._write_queue.pop()
+                    request = self._write_queue.popleft()
                     # No need to call `save_asap()` as it will be called indirectly by `transform_and_write_value()`
                 except IndexError:
                     request = None
