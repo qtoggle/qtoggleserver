@@ -95,12 +95,19 @@ class EvalContext:
         self.now_ms: int = now_ms
         self.timestamp: int = now_ms // 1000
 
-    def is_port_value_available(self, port_id: str) -> bool:
-        """Tell if a port's value counts as available, based on the availability attributes in this context. A missing
-        attribute means the port has no such state, so it counts as available."""
+    def get_value_unavailable_attr(self, port_id: str) -> str | None:
+        """Return the availability attribute that makes a port's value unavailable, or `None` if it is available. A
+        missing attribute means the port has no such state, so it counts as available."""
 
         attrs = self.port_attrs.get(port_id, {})
-        return all(attrs.get(attr_name, True) is not False for attr_name in VALUE_AVAILABILITY_ATTRS)
+        for attr_name in VALUE_AVAILABILITY_ATTRS:
+            if attrs.get(attr_name, True) is False:
+                return attr_name
+
+        return None
+
+    def is_port_value_available(self, port_id: str) -> bool:
+        return self.get_value_unavailable_attr(port_id) is None
 
 
 type EvalResult = int | float | str
