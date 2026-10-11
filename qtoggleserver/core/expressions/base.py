@@ -15,6 +15,10 @@ DEP_DAY = "day"
 DEP_MONTH = "month"
 DEP_YEAR = "year"
 
+# Port attributes whose transition, in either direction, changes whether a port's value is available. Kept here so
+# that the evaluation path and the dep-tracking handler can't drift apart.
+VALUE_AVAILABILITY_ATTRS = ("enabled", "online")
+
 
 class Role(IntEnum):
     """Available expression roles."""
@@ -90,6 +94,20 @@ class EvalContext:
         self.device_attrs: Attributes = device_attrs or {}
         self.now_ms: int = now_ms
         self.timestamp: int = now_ms // 1000
+
+    def get_value_unavailable_attr(self, port_id: str) -> str | None:
+        """Return the availability attribute that makes a port's value unavailable, or `None` if it is available. A
+        missing attribute means the port has no such state, so it counts as available."""
+
+        attrs = self.port_attrs.get(port_id, {})
+        for attr_name in VALUE_AVAILABILITY_ATTRS:
+            if attrs.get(attr_name, True) is False:
+                return attr_name
+
+        return None
+
+    def is_port_value_available(self, port_id: str) -> bool:
+        return self.get_value_unavailable_attr(port_id) is None
 
 
 type EvalResult = int | float | str

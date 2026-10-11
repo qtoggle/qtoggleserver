@@ -9,6 +9,7 @@ from qtoggleserver.core.expressions.exceptions import (
     RealDateTimeUnavailable,
     UnknownFunction,
 )
+from qtoggleserver.core.expressions.ports import PortValue
 from tests.unit.qtoggleserver.mock.expressions import MockExpression, MockPortRef, MockPortValue
 
 
@@ -52,6 +53,16 @@ class TestAvailable:
         expr = various.AvailableFunction([func_expr], Role.VALUE)
         assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
+    async def test_offline_port(self, mock_num_port1):
+        """Should return 0 for an offline port, even though the port has a known value."""
+
+        expr = various.AvailableFunction([PortValue("nid1", prefix="$", role=Role.VALUE)], Role.VALUE)
+        context = EvalContext(port_values={"nid1": 16}, port_attrs={"nid1": {"online": False}}, now_ms=0)
+        assert await expr.eval(context) == 0
+
+        context = EvalContext(port_values={"nid1": 16}, port_attrs={"nid1": {"online": True}}, now_ms=0)
+        assert await expr.eval(context) == 1
+
     def test_parse(self):
         e = Function.parse(None, "AVAILABLE(1)", Role.VALUE, 0)
         assert isinstance(e, various.AvailableFunction)
@@ -90,6 +101,17 @@ class TestDefault:
         def_expr = MockExpression(13)
         expr = various.DefaultFunction([literal_unavailable, def_expr], Role.VALUE)
         assert await expr.eval(dummy_eval_context) == 13
+
+    async def test_offline_port(self, mock_num_port1):
+        """Should return the default value for an offline port, even though the port has a known value."""
+
+        port_expr = PortValue("nid1", prefix="$", role=Role.VALUE)
+        expr = various.DefaultFunction([port_expr, MockExpression(13)], Role.VALUE)
+        context = EvalContext(port_values={"nid1": 16}, port_attrs={"nid1": {"online": False}}, now_ms=0)
+        assert await expr.eval(context) == 13
+
+        context = EvalContext(port_values={"nid1": 16}, port_attrs={"nid1": {"online": True}}, now_ms=0)
+        assert await expr.eval(context) == 16
 
     def test_parse(self):
         e = Function.parse(None, "DEFAULT(1, 2)", Role.VALUE, 0)

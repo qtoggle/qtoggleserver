@@ -7,6 +7,7 @@ from qtoggleserver.core.typing import NullablePortValue
 from .base import EvalContext, EvalResult, Expression, Role
 from .exceptions import (
     DisabledPort,
+    OfflinePort,
     PortAttrUnavailable,
     PortValueUnavailable,
     TransformNotSupported,
@@ -16,6 +17,9 @@ from .exceptions import (
 
 
 _TRANSFORM_ROLES = (Role.TRANSFORM_READ, Role.TRANSFORM_WRITE)
+
+# Maps each availability attribute to the error raised when it makes a port's value unavailable
+_UNAVAILABLE_ATTR_EXCEPTIONS = {"enabled": DisabledPort, "online": OfflinePort}
 
 
 class PortExpression(Expression, metaclass=abc.ABCMeta):
@@ -109,8 +113,11 @@ class PortValue(PortExpression):
         if not port:
             raise UnknownPortId(self.port_id)
 
-        if not port.is_enabled():
-            raise DisabledPort(self.port_id)
+        # Contexts built for transform expressions carry no attributes, so this check only applies to value
+        # expressions, where the context is always complete.
+        unavailable_attr = context.get_value_unavailable_attr(self.port_id)
+        if unavailable_attr:
+            raise _UNAVAILABLE_ATTR_EXCEPTIONS.get(unavailable_attr, PortValueUnavailable)(self.port_id)
 
         value = self._get_value(context)
         if value is None:

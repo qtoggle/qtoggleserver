@@ -12,6 +12,8 @@ class MockPort(Port):
         self.set_last_read_value(value)
         self._writable: bool = False
         self._next_value: NullablePortValue = None
+        # `None` means the port doesn't support the `online` attribute at all
+        self._mock_online: bool | None = None
 
     async def read_value(self) -> NullablePortValue:
         if self._next_value is None:
@@ -29,6 +31,13 @@ class MockPort(Port):
 
     def set_writable(self, writable: bool) -> None:
         self._writable = writable
+        self.invalidate_attrs()
+
+    async def attr_is_online(self) -> bool | None:
+        return self._mock_online
+
+    def set_online(self, online: bool | None) -> None:
+        self._mock_online = online
         self.invalidate_attrs()
 
     def set_expression(self, sexpression: str) -> None:

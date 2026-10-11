@@ -1,4 +1,5 @@
 from qtoggleserver.core import events as core_events
+from qtoggleserver.core.expressions.base import VALUE_AVAILABILITY_ATTRS
 from qtoggleserver.slaves import events as slaves_events
 
 
@@ -20,11 +21,6 @@ class AttrChangeHandler(core_events.Handler):
 
     FIRE_AND_FORGET = False
 
-    # Attribute names whose transition (in either direction) changes whether a port's *value* is available, and
-    # therefore must also be treated as a change of the port's value dependency (`$port_id`), not just its attribute
-    # dependency (`$port_id:`).
-    AVAILABILITY_ATTRS = ("enabled", "online")
-
     def __init__(self) -> None:
         super().__init__(name="attribute-changes")
         self._pending: set[str] = set()
@@ -42,7 +38,7 @@ class AttrChangeHandler(core_events.Handler):
             self._pending.add(f"${port_id}:")
 
             if isinstance(event, core_events.PortRemove):
-                for attr_name in self.AVAILABILITY_ATTRS:
+                for attr_name in VALUE_AVAILABILITY_ATTRS:
                     # Whenever one of the availability attributes changes, induce a `value-change`-like event so that
                     # expressions depending on this port's value are re-evaluated.
                     was_available = self._last_availability.pop((port_id, attr_name), False)
@@ -51,7 +47,7 @@ class AttrChangeHandler(core_events.Handler):
             else:
                 # Also covers "port-add" — see class docstring.
                 params = event.get_params()
-                for attr_name in self.AVAILABILITY_ATTRS:
+                for attr_name in VALUE_AVAILABILITY_ATTRS:
                     # Whenever one of the availability attributes changes, induce a `value-change`-like event so that
                     # expressions depending on this port's value are re-evaluated.
                     available = bool(params.get(attr_name))

@@ -1,8 +1,9 @@
 import pytest
 
-from qtoggleserver.core.expressions import Role, parse
+from qtoggleserver.core.expressions import EvalContext, Role, parse
 from qtoggleserver.core.expressions.exceptions import (
     DisabledPort,
+    OfflinePort,
     PortAttrUnavailable,
     PortValueUnavailable,
     UnknownPortId,
@@ -53,16 +54,65 @@ class TestPortValue:
             await e._eval(dummy_eval_context)
         assert exc_info.value.port_id == "nid1"
 
-    async def test_eval_disabled(self, mock_num_port1, dummy_eval_context, mocker):
+    async def test_eval_disabled(self, mock_num_port1):
         """Should raise DisabledPort when the referenced port is disabled."""
 
         e = PortValue("nid1", prefix="$", role=Role.VALUE)
-        dummy_eval_context.port_values["nid1"] = None
-        mocker.patch.object(mock_num_port1, "is_enabled", return_value=False)
+        context = EvalContext(port_values={"nid1": 16}, port_attrs={"nid1": {"enabled": False}})
 
         with pytest.raises(DisabledPort) as exc_info:
-            await e._eval(dummy_eval_context)
+            await e._eval(context)
         assert exc_info.value.port_id == "nid1"
+
+    async def test_eval_offline(self, mock_num_port1):
+        """Should raise OfflinePort when the referenced port is offline."""
+
+        e = PortValue("nid1", prefix="$", role=Role.VALUE)
+        context = EvalContext(port_values={"nid1": 16}, port_attrs={"nid1": {"enabled": True, "online": False}})
+
+        with pytest.raises(OfflinePort) as exc_info:
+            await e._eval(context)
+        assert exc_info.value.port_id == "nid1"
+
+    async def test_eval_offline_is_value_unavailable(self, mock_num_port1):
+        """Should report an offline port as a case of unavailable port value."""
+
+        e = PortValue("nid1", prefix="$", role=Role.VALUE)
+        context = EvalContext(port_values={"nid1": 16}, port_attrs={"nid1": {"online": False}})
+
+        with pytest.raises(PortValueUnavailable):
+            await e._eval(context)
+
+    async def test_eval_online(self, mock_num_port1):
+        """Should return the port value when the referenced port is online."""
+
+        e = PortValue("nid1", prefix="$", role=Role.VALUE)
+        context = EvalContext(port_values={"nid1": 16}, port_attrs={"nid1": {"enabled": True, "online": True}})
+        assert await e._eval(context) == 16
+
+    async def test_eval_online_attr_missing(self, mock_num_port1):
+        """Should return the port value when the port has no `online` attribute at all."""
+
+        e = PortValue("nid1", prefix="$", role=Role.VALUE)
+        context = EvalContext(port_values={"nid1": 16}, port_attrs={"nid1": {"enabled": True}})
+        assert await e._eval(context) == 16
+
+    async def test_eval_offline_self(self, mock_num_port1):
+        """Should raise OfflinePort for a self port value reference, too."""
+
+        e = SelfPortValue("nid1", prefix="$", role=Role.VALUE)
+        context = EvalContext(port_values={"nid1": 16}, port_attrs={"nid1": {"online": False}})
+
+        with pytest.raises(OfflinePort) as exc_info:
+            await e._eval(context)
+        assert exc_info.value.port_id == "nid1"
+
+    async def test_eval_no_attrs_in_context(self, mock_num_port1):
+        """Should skip the availability check when the context carries no attributes, as for transform expressions."""
+
+        e = PortValue("nid1", prefix="$", role=Role.TRANSFORM_READ)
+        context = EvalContext(port_values={"nid1": 16})
+        assert await e._eval(context) == 16
 
 
 class TestPortRef:

@@ -14,10 +14,12 @@ def with_attr_change_handler():
     """Register the main module's attr-change event handler for the duration of the test."""
     event_handlers._registered_handlers.append(main._attr_change_handler)
     main._attr_change_handler._pending.clear()
+    main._attr_change_handler._last_availability.clear()
     yield
     if main._attr_change_handler in event_handlers._registered_handlers:
         event_handlers._registered_handlers.remove(main._attr_change_handler)
     main._attr_change_handler._pending.clear()
+    main._attr_change_handler._last_availability.clear()
 
 
 async def test_eval_trigger_set_expression(mock_num_port1, mock_num_port2, mocker):
@@ -97,6 +99,73 @@ async def test_eval_trigger_port_enabled(mock_num_port1, mocker):
     await main.read_ports()
     await asyncio.sleep(settings.core.tick_interval / 1000)
     mock_num_port1.transform_and_write_value.assert_called_once_with(60)
+
+
+async def test_eval_trigger_port_offline(mock_num_port1, mock_num_port2, with_attr_change_handler, mocker):
+    """Should re-evaluate and treat the value as unavailable when a dependent port goes offline."""
+
+    mock_num_port1.set_last_read_value(4)
+    mock_num_port2.set_writable(True)
+    mock_num_port2.set_expression("DEFAULT($nid1, 0)")
+
+    # Let the handler see nid1 as online first, so that going offline counts as a transition. The sleep lets nid2's
+    # write loop drain the value written for the online state.
+    mock_num_port1.set_online(True)
+    await mock_num_port1.trigger_update()
+    await main.read_ports()
+    await asyncio.sleep(settings.core.tick_interval / 1000)
+
+    mocker.patch.object(mock_num_port2, "transform_and_write_value")
+    mock_num_port1.set_online(False)
+    await mock_num_port1.trigger_update()
+    await main.read_ports()
+    await asyncio.sleep(settings.core.tick_interval / 1000)
+    mock_num_port2.transform_and_write_value.assert_called_once_with(0)
+
+
+async def test_eval_trigger_port_online(mock_num_port1, mock_num_port2, with_attr_change_handler, mocker):
+    """Should re-evaluate and treat the value as available again when a dependent port comes back online."""
+
+    mock_num_port1.set_last_read_value(4)
+    mock_num_port1.set_online(False)
+    mock_num_port2.set_writable(True)
+    mock_num_port2.set_expression("DEFAULT($nid1, 0)")
+    mocker.patch.object(mock_num_port2, "transform_and_write_value")
+
+    mock_num_port1.set_online(True)
+    await mock_num_port1.trigger_update()
+    await main.read_ports()
+    await asyncio.sleep(settings.core.tick_interval / 1000)
+    mock_num_port2.transform_and_write_value.assert_called_once_with(4)
+
+
+async def test_eval_trigger_port_offline_not_written(mock_num_port1, mock_num_port2, with_attr_change_handler, mocker):
+    """Should not write anything when an offline port makes the whole expression unavailable."""
+
+    mock_num_port1.set_last_read_value(4)
+    mock_num_port2.set_writable(True)
+    mock_num_port2.set_expression("MUL($nid1, 10)")
+
+    # Let the handler see nid1 as online first, so that going offline counts as a transition. The sleep lets nid2's
+    # write loop drain the value written for the online state.
+    mock_num_port1.set_online(True)
+    await mock_num_port1.trigger_update()
+    await main.read_ports()
+    await asyncio.sleep(settings.core.tick_interval / 1000)
+
+    mocker.patch.object(mock_num_port2, "transform_and_write_value")
+    # Change nid1's value too, so that ignoring the offline state would produce a new value to write
+    mock_num_port1.set_last_read_value(5)
+    mock_num_port1.set_online(False)
+    await mock_num_port1.trigger_update()
+    spy = mocker.spy(mock_num_port2, "eval_and_push_write")
+
+    await main.read_ports()
+    await asyncio.sleep(settings.core.tick_interval / 1000)
+
+    # The expression was re-evaluated, but an unavailable result must never be written
+    spy.assert_called_once()
+    mock_num_port2.transform_and_write_value.assert_not_called()
 
 
 async def test_eval_trigger_port_attr_change(mock_num_port1, mock_num_port2, with_attr_change_handler, mocker):
