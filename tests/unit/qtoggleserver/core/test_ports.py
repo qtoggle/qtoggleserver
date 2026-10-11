@@ -93,6 +93,45 @@ class TestPortPushWrite:
         assert list(mock_num_port1._write_queue)[-1].value == 999
 
 
+class TestPortWriteQueueOrder:
+    async def test_writes_in_push_order(self, mock_num_port1, mocker):
+        """Should write queued values oldest first, and leave the port holding the newest one."""
+
+        written = []
+
+        async def record(value):
+            written.append(value)
+
+        mocker.patch.object(mock_num_port1, "write_value", new=record)
+        mock_num_port1._write_queue.clear()
+
+        for value in (1, 2, 3):
+            mock_num_port1.push_write(value)
+
+        assert mock_num_port1.get_pending_value() == 3
+
+        await asyncio.sleep(5 * settings.core.tick_interval / 1000)
+
+        assert written == [1, 2, 3]
+        assert mock_num_port1.get_last_written_value() == 3
+
+    async def test_writes_persisted_queue_in_order(self, mock_num_port1, mocker):
+        """Should write a queue restored from persisted data in the order it was persisted."""
+
+        written = []
+
+        async def record(value):
+            written.append(value)
+
+        mocker.patch.object(mock_num_port1, "write_value", new=record)
+        mock_num_port1._write_queue.clear()
+
+        await mock_num_port1.from_persisted({"write_queue": [1, 2, 3]})
+        await asyncio.sleep(5 * settings.core.tick_interval / 1000)
+
+        assert written == [1, 2, 3]
+
+
 class TestPortPushWriteAndWait:
     async def test_resolves_on_success(self, mock_num_port1, mocker):
         """Should return once the pushed value has actually been written, without raising."""
