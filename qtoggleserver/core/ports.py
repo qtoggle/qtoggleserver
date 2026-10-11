@@ -527,6 +527,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
             raise
 
+        # A disabled port can't be written to, so drop whatever was queued. Done only after `handle_disable()`
+        # succeeded, so that the rollback above doesn't throw the queued writes away.
+        self.drop_write_queue()
+
     async def handle_enable(self) -> None:
         pass
 
@@ -749,6 +753,20 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._write_queue.append(WriteRequest(value, future))
         self.save_asap()
 
+    def drop_write_queue(self) -> None:
+        """Drop any queued writes, cancelling their futures so that no caller is left hanging."""
+
+        if not self._write_queue:
+            return
+
+        self.debug("dropping %d queued write(s)", len(self._write_queue))
+        for request in self._write_queue:
+            if request.future and not request.future.done():
+                request.future.cancel()
+
+        self._write_queue.clear()
+        self.save_asap()
+
     async def push_write_and_wait(self, value: PortValue) -> None:
         """Push a value to the writing process queue and wait for it to actually be written, propagating any
         exception raised in the process."""
@@ -790,6 +808,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         request: WriteRequest | None = None
         try:
             while True:
+                # Hold the queue while the port is disabled, instead of dropping it: a queue restored from persisted
+                # data must survive until the port gets enabled.
+                if not self._enabled:
+                    await asyncio.sleep(settings.core.tick_interval / 1000.0)
+                    continue
+
                 try:
                     request = self._write_queue.pop()
                     # No need to call `save_asap()` as it will be called indirectly by `transform_and_write_value()`
