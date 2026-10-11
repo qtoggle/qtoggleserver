@@ -145,6 +145,8 @@ class TestPortPushWriteAndWait:
         assert isinstance(future_b.exception(), PortWriteError)
         assert not future_a.cancelled()
         assert not future_b.cancelled()
+        # A shared instance would carry the traceback of whichever awaiter raised it first
+        assert future_a.exception() is not future_b.exception()
 
 
 class TestPortDisabledWrites:
@@ -295,6 +297,33 @@ class TestPortDisabledWrites:
         await asyncio.sleep(2 * settings.core.tick_interval / 1000)
         assert written == [100]
         assert future.done() and future.exception() is None
+
+    async def test_cancelled_disable_drops_queued_writes(self, mock_num_port1, mocker):
+        """Should drop the queued writes when `disable()` is cancelled while `handle_disable()` is suspended. The
+        port stays disabled there, so without this the write loop would hold the queue and the awaiter would wait
+        forever."""
+
+        mocker.patch.object(mock_num_port1, "transform_and_write_value", new=mocker.AsyncMock())
+        mock_num_port1._write_queue.clear()
+
+        async def slow_handle_disable():
+            await asyncio.sleep(10)
+
+        mocker.patch.object(mock_num_port1, "handle_disable", new=slow_handle_disable)
+        future = asyncio.get_event_loop().create_future()
+        mock_num_port1.push_write(100, future=future)
+
+        task = asyncio.ensure_future(mock_num_port1.disable())
+        await asyncio.sleep(2 * settings.core.tick_interval / 1000)
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+        assert not mock_num_port1.is_enabled()
+        assert len(mock_num_port1._write_queue) == 0
+        assert isinstance(future.exception(), PortDisabled)
 
     async def test_failed_enable_does_not_strand_queued_write(self, mock_num_port1, mocker):
         """Should not strand a write queued while `enable()` was running, when that enable then rolls back. The port

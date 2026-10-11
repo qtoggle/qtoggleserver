@@ -532,13 +532,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.invalidate_attrs()
 
             raise
-
-        # A disabled port can't be written to, so drop whatever was queued. Done only after `handle_disable()`
-        # succeeded, so that the rollback above doesn't throw the queued writes away, and skipped if the port got
-        # enabled again while `handle_disable()` was suspended. The write loop only holds the queue in the meantime,
-        # so it can't drop it behind our back.
-        if not self._enabled:
-            self.drop_write_queue()
+        finally:
+            # A disabled port can't be written to, so drop whatever was queued. Skipped if the port is enabled by
+            # now - either rolled back above, or enabled again while `handle_disable()` was suspended. The write
+            # loop only holds the queue in the meantime, so it can't drop it behind our back. The `finally` matters
+            # for a `CancelledError` out of `handle_disable()`, which leaves the port disabled without rolling back.
+            if not self._enabled:
+                self.drop_write_queue()
 
     async def handle_enable(self) -> None:
         pass
@@ -750,9 +750,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def push_write(self, value: PortValue, future: asyncio.Future | None = None) -> None:
         """Push a value to the writing process queue. If `future` is given, it will be resolved with the result of
         (`None`) or exception raised by the eventual `transform_and_write_value()` call for this value. Instead, it
-        will fail with a `PortDisabled` if the port gets disabled before the value is written, with a
-        `PortWriteError` if evicted from a full queue, and be cancelled if the port's write loop is cancelled
-        first."""
+        will fail with a `PortDisabled` if the port gets disabled before the value is written, and with a
+        `PortWriteError` if evicted from a full queue or if the port's write loop stops first."""
 
         if not self._enabled:
             self.debug("refusing to queue value %s: port is disabled", json_utils.dumps(value))
@@ -857,12 +856,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             # Don't leave any awaiter hanging: fail the future of the request that was being processed, as well as
             # those of any requests still sitting in the queue. Failed rather than cancelled for the same reason as
             # in `drop_write_queue()`.
-            error = PortWriteError("port write loop stopped")
+            # A fresh exception per future, so that raising one doesn't pollute the traceback of the next
             if request and request.future and not request.future.done():
-                request.future.set_exception(error)
+                request.future.set_exception(PortWriteError("port write loop stopped"))
             for pending_request in self._write_queue:
                 if pending_request.future and not pending_request.future.done():
-                    pending_request.future.set_exception(error)
+                    pending_request.future.set_exception(PortWriteError("port write loop stopped"))
 
     async def transform_and_write_value(self, value: PortValue) -> None:
         """Apply write transform (if any) and write the value to the port."""
