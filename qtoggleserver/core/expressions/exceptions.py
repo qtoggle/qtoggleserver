@@ -137,6 +137,10 @@ class DisabledPort(PortValueUnavailable):
     MSG = 'Port "%s" is disabled'
 
 
+class OfflinePort(PortValueUnavailable):
+    MSG = 'Port "%s" is offline'
+
+
 class PortAttrUnavailable(ValueUnavailable):
     MSG = 'Port attribute "%s:%s" is unavailable'
 

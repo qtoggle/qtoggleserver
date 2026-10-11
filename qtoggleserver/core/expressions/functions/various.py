@@ -271,7 +271,7 @@ class HistoryFunction(Function):
             self._cached_timestamp = timestamp
             self._cached_max_diff = max_diff
             value = self._cached_sample[1]
-        elif consider_curr_value:
+        elif consider_curr_value and context.is_port_value_available(port_id):
             value = port.get_last_read_value()
         else:
             value = None

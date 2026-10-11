@@ -351,9 +351,18 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             return False
 
         if self._filter_expression:
-            port_values = {p.get_id(): p.get_last_read_value() for p in core_ports.get_all() if p.is_enabled()}
-            # TODO: eval attrs
-            eval_context = core_expressions.EvalContext(port_values=port_values, now_ms=int(time.time() * 1000))
+            port_values = {}
+            port_attrs = {}
+            for p in list(core_ports.get_all()):
+                if not p.is_enabled():
+                    continue
+                port_values[p.get_id()] = p.get_last_read_value()
+                port_attrs[p.get_id()] = await p.get_attrs()
+
+            # TODO: eval device attrs
+            eval_context = core_expressions.EvalContext(
+                port_values=port_values, port_attrs=port_attrs, now_ms=int(time.time() * 1000)
+            )
             try:
                 if not await self._filter_expression.eval(context=eval_context):
                     return False

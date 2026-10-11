@@ -1,4 +1,5 @@
 from qtoggleserver.core import events as core_events
+from qtoggleserver.core.expressions.base import VALUE_AVAILABILITY_ATTRS
 from qtoggleserver.slaves import events as slaves_events
 
 
@@ -20,10 +21,9 @@ class AttrChangeHandler(core_events.Handler):
 
     FIRE_AND_FORGET = False
 
-    # Attribute names whose transition (in either direction) changes whether a port's *value* is available, and
-    # therefore must also be treated as a change of the port's value dependency (`$port_id`), not just its attribute
-    # dependency (`$port_id:`).
-    AVAILABILITY_ATTRS = ("enabled", "online")
+    # A transition of these attributes must also be treated as a change of the port's value dependency (`$port_id`),
+    # not just its attribute dependency (`$port_id:`).
+    AVAILABILITY_ATTRS = VALUE_AVAILABILITY_ATTRS
 
     def __init__(self) -> None:
         super().__init__(name="attribute-changes")
