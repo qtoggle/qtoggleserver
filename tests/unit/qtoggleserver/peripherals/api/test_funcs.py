@@ -866,3 +866,19 @@ class TestPeripheralSlaveNameClash:
 
         assert result["name"] == MOCK_PERIPHERAL3_DATA["name"]
         await peripherals.remove(result["id"], persisted_data=True)
+
+    async def test_restore_skips_clashing_peripheral(self, slave_peripheral2, mock_api_request_maker, mocker):
+        """Test that a backup written before the rule does not put a peripheral back into a slave's namespace."""
+        payload2 = MOCK_PERIPHERAL2_DATA.copy()
+        payload2.pop("static")
+        payload3 = MOCK_PERIPHERAL3_DATA.copy()
+        payload3.pop("static")
+        request = mock_api_request_maker("PUT", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_ADMIN)
+        mocker.patch.object(MockPeripheral, "init_ports")
+
+        await peripherals_api_funcs.put_peripherals(request, [payload2, payload3])
+
+        # The clashing one is skipped, the rest of the restore goes on
+        assert peripherals.get(MOCK_PERIPHERAL2_DATA["id"]) is None
+        assert peripherals.get(MOCK_PERIPHERAL3_DATA["id"]) is not None
+        await peripherals.remove(MOCK_PERIPHERAL3_DATA["id"], persisted_data=True)

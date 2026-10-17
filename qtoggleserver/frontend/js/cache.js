@@ -707,7 +707,7 @@ export function isSlaveDeviceName(name) {
         return false
     }
 
-    return slaveDevices[name] != null
+    return Object.prototype.hasOwnProperty.call(slaveDevices, name)
 }
 
 /**

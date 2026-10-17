@@ -377,3 +377,13 @@ class TestPeripheralNameClash:
         mocker.patch("qtoggleserver.peripherals.get_all", return_value=[unnamed])
 
         assert slaves_devices.is_name_used_locally("peripheral_abc12345") is False
+
+    async def test_nameless_slave_matches_nothing(self, mocker) -> None:
+        """Test that an empty name matches no unnamed peripheral. A slave added while disabled may have no name yet,
+        and `get_name() == None` would otherwise match every unnamed peripheral."""
+        unnamed = mocker.MagicMock()
+        unnamed.get_name.return_value = None
+        mocker.patch("qtoggleserver.peripherals.get_all", return_value=[unnamed])
+
+        assert slaves_devices.is_name_used_locally(None) is False
+        assert slaves_devices.is_name_used_locally("") is False

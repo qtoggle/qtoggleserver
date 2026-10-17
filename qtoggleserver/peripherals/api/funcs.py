@@ -195,6 +195,13 @@ async def put_peripherals(request: core_api.APIRequest, params: GenericJSONList)
         if args.pop("static", None):
             continue
         args.setdefault("params", {})
+
+        # A named peripheral calls its ports `<name>.<port id>`, and that prefix is reserved for a slave's own ports
+        name = args.get("name")
+        if name and slaves_devices.get(name):
+            logger.error('skipping peripheral "%s": a slave device already has that name', name)
+            continue
+
         try:
             p = await peripherals.add(args)
         except Exception:

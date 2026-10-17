@@ -1519,6 +1519,9 @@ def get_port_owner(port_id: str) -> Slave | None:
 def is_name_used_locally(name: str) -> bool:
     """Tell if the `<name>.` port id prefix, reserved for a slave's own ports, is already taken. A local port may hold
     it, or a peripheral of that name, since a named peripheral calls its ports `<name>.<port id>`."""
+    if not name:
+        return False
+
     # Matched by name, not id: an unnamed peripheral gets a generated id but gives its ports no prefix
     if any(p.get_name() == name for p in peripherals.get_all()):
         return True
@@ -1568,7 +1571,7 @@ async def add(
     name = slave.get_name()
 
     # The `<name>.` port id prefix is reserved for this slave's ports
-    if name and is_name_used_locally(name):
+    if is_name_used_locally(name):
         slave.error("name is already used locally")
         raise exceptions.DeviceAlreadyExists(name)
 
