@@ -79,7 +79,7 @@ export const KNOWN_ERRORS = [
     {
         status: 400,
         code: 'duplicate-port',
-        pretty: gettext('The port already exists.')
+        pretty: gettext('This port identifier is already in use.')
     },
     {
         status: 400,
@@ -114,7 +114,7 @@ export const KNOWN_ERRORS = [
     {
         status: 400,
         code: 'duplicate-device',
-        pretty: gettext('The device has already been added to master.')
+        pretty: gettext('The device is already added, or its name is already in use.')
     },
     {
         status: 400,

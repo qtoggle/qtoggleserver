@@ -8,6 +8,7 @@ import {PageForm}           from '$qui/forms/common-forms/common-forms.js'
 import FormButton           from '$qui/forms/form-button.js'
 import {ValidationError}    from '$qui/forms/forms.js'
 import * as Navigation      from '$qui/navigation.js'
+import * as StringUtils     from '$qui/utils/string.js'
 
 import * as BaseAPI          from '$app/api/base.js'
 import * as DevicesAPI       from '$app/api/devices.js'
@@ -52,6 +53,17 @@ class AddPortForm extends PageForm {
                         if (!id.match(VALID_ID_REGEX)) {
                             let msg = gettext('Only letters, digits, underscores and dots are permitted.')
                             throw new ValidationError(msg)
+                        }
+
+                        /* On master, a `<slave name>.` prefix is reserved for that slave's own ports */
+                        if (deviceName && !Cache.isMainDevice(deviceName)) {
+                            return
+                        }
+
+                        let device = Cache.findPortSlaveDevice(id)
+                        if (device) {
+                            let msg = gettext('This identifier is reserved for the ports of device "%(device)s".')
+                            throw new ValidationError(StringUtils.formatPercent(msg, {device: device.name}))
                         }
                     }
                 }),
