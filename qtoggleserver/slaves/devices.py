@@ -11,7 +11,7 @@ from typing import Any
 
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
-from qtoggleserver import persist
+from qtoggleserver import peripherals, persist
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
@@ -221,6 +221,11 @@ class Slave(logging_utils.LoggableMixin):
         # Check for duplicate name
         if new_name in _slaves_by_name or core_device_attrs.name == new_name:
             logger.error("a slave with name %s already exists", new_name)
+            raise exceptions.DeviceAlreadyExists(new_name)
+
+        # The `<new_name>.` port id prefix is reserved for this slave's ports
+        if is_name_used_locally(new_name):
+            logger.error("name %s is already used locally", new_name)
             raise exceptions.DeviceAlreadyExists(new_name)
 
         # Rename associated ports persisted data
@@ -464,7 +469,10 @@ class Slave(logging_utils.LoggableMixin):
         my_port_ids = [d["id"][len(self._name) + 1 :] for d in port_data_list if d["id"].startswith(f"{self._name}.")]
 
         for id_ in my_port_ids:
-            await self._add_port(attrs={"id": id_})
+            try:
+                await self._add_port(attrs={"id": id_})
+            except Exception as e:
+                self.error("failed to load port %s: %s", id_, e)
 
     async def _save_ports(self) -> None:
         self.debug("persisting ports")
@@ -713,7 +721,11 @@ class Slave(logging_utils.LoggableMixin):
                 continue
 
             self.debug("port %s present remotely but not locally", port_id)
-            await self._add_port(attrs)
+            try:
+                await self._add_port(attrs)
+            except Exception as e:
+                # A statically configured or peripheral port may hold the reserved id, as both load before slaves
+                self.error("failed to add port %s: %s", port_id, e)
 
         # Removed ports
         for port_id, port in local_ports_by_id.items():
@@ -1496,6 +1508,29 @@ def get(name: str) -> Slave | None:
     return _slaves_by_name.get(name)
 
 
+def get_port_owner(port_id: str) -> Slave | None:
+    """Return the slave owning a port id, going by the reserved prefix. Slave names never contain a dot, so only the
+    part before the first one can match."""
+    name, dot, _ = port_id.partition(".")
+
+    return _slaves_by_name.get(name) if dot else None
+
+
+def is_name_used_locally(name: str) -> bool:
+    """Tell if the `<name>.` port id prefix, reserved for a slave's own ports, is already taken. A local port may hold
+    it, or a peripheral of that name, since a named peripheral calls its ports `<name>.<port id>`."""
+    if not name:
+        return False
+
+    # Matched by name, not id: an unnamed peripheral gets a generated id but gives its ports no prefix
+    if any(p.get_name() == name for p in peripherals.get_all()):
+        return True
+
+    prefix = f"{name}."
+
+    return any(p.get_id().startswith(prefix) and not isinstance(p, SlavePort) for p in core_ports.get_all())
+
+
 async def add(
     scheme: str,
     host: str,
@@ -1534,6 +1569,11 @@ async def add(
         await slave.fetch_and_update_device()
 
     name = slave.get_name()
+
+    # The `<name>.` port id prefix is reserved for this slave's ports
+    if is_name_used_locally(name):
+        slave.error("name is already used locally")
+        raise exceptions.DeviceAlreadyExists(name)
 
     # Check that we have required listen support
     if (listen_enabled is True) and "listen" not in slave.get_cached_attr("flags"):
@@ -1657,6 +1697,13 @@ async def load() -> None:
             continue
 
         _slaves_by_name[slave.get_name()] = slave
+
+        # Persisted data may predate the reserved prefix rule, so the clash can only be reported here
+        if is_name_used_locally(slave.get_name()):
+            logger.error(
+                "slave %s has a name that is already used locally; its own ports with that id will not be added",
+                slave.get_name(),
+            )
 
         if entry["enabled"]:
             logger.debug("loaded %s", slave)

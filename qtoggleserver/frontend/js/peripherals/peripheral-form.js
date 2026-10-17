@@ -10,6 +10,7 @@ import * as Messages        from '$qui/messages/messages.js'
 import * as StringUtils     from '$qui/utils/string.js'
 
 import * as PeripheralsAPI from '$app/api/peripherals.js'
+import * as Cache          from '$app/cache.js'
 import * as Utils          from '$app/utils.js'
 
 import * as Peripherals from './peripherals.js'
@@ -49,7 +50,15 @@ class PeripheralForm extends PageForm {
                     name: 'name',
                     label: gettext('Name'),
                     required: false,
-                    readonly: true
+                    readonly: true,
+
+                    validate(name) {
+                        /* A named peripheral calls its ports `<name>.<port id>`, a prefix reserved for slave ports */
+                        if (name && Cache.isSlaveDeviceName(name)) {
+                            let msg = gettext('This name is reserved for the ports of device "%(device)s".')
+                            throw new ValidationError(StringUtils.formatPercent(msg, {device: name}))
+                        }
+                    }
                 }),
                 new TextField({
                     name: 'display_name',

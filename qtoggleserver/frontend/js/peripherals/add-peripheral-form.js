@@ -5,8 +5,10 @@ import {TextAreaField}   from '$qui/forms/common-fields/common-fields.js'
 import {PageForm}        from '$qui/forms/common-forms/common-forms.js'
 import FormButton        from '$qui/forms/form-button.js'
 import {ValidationError} from '$qui/forms/forms.js'
+import * as StringUtils  from '$qui/utils/string.js'
 
 import * as PeripheralsAPI from '$app/api/peripherals.js'
+import * as Cache          from '$app/cache.js'
 
 import * as Peripherals from './peripherals.js'
 
@@ -44,6 +46,12 @@ class AddPeripheralForm extends PageForm {
                         if (name && !name.match(VALID_ID_REGEX)) {
                             let msg = gettext('Only letters, digits, underscores and dots are permitted.')
                             throw new ValidationError(msg)
+                        }
+
+                        /* A named peripheral calls its ports `<name>.<port id>`, a prefix reserved for slave ports */
+                        if (name && Cache.isSlaveDeviceName(name)) {
+                            let msg = gettext('This name is reserved for the ports of device "%(device)s".')
+                            throw new ValidationError(StringUtils.formatPercent(msg, {device: name}))
                         }
                     }
                 }),

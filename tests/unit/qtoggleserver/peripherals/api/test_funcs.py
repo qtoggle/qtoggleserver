@@ -4,6 +4,8 @@ from qtoggleserver import peripherals, persist
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core.ports import BasePort
 from qtoggleserver.peripherals.api import funcs as peripherals_api_funcs
+from qtoggleserver.slaves import devices as slaves_devices
+from qtoggleserver.slaves.devices import Slave
 from tests.unit.qtoggleserver.mock.peripherals import MockPeripheral
 
 
@@ -810,3 +812,73 @@ class TestPutPeripherals:
         with pytest.raises(core_api.APIError, match="authentication-required") as e:
             await peripherals_api_funcs.put_peripherals(request, [])
         assert e.value.status == 401
+
+
+class TestPeripheralSlaveNameClash:
+    """Test that a peripheral cannot take a slave's name. A named peripheral calls its ports `<name>.<port id>`,
+    and that prefix is reserved for the slave's own ports."""
+
+    @pytest.fixture
+    async def slave_peripheral2(self, mocker):
+        mocker.patch.dict("qtoggleserver.slaves.devices._slaves_by_name", {}, clear=True)
+        slave = Slave(
+            name=MOCK_PERIPHERAL2_DATA["name"],
+            scheme="http",
+            host="192.168.1.2",
+            port=80,
+            path="",
+            admin_password="",
+        )
+        slaves_devices._slaves_by_name[slave.get_name()] = slave
+
+        return slave
+
+    async def test_post_refused(self, slave_peripheral2, mock_api_request_maker, mock_peripheral1):
+        payload = MOCK_PERIPHERAL2_DATA.copy()
+        payload.pop("static")
+        request = mock_api_request_maker("POST", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_ADMIN)
+
+        with pytest.raises(core_api.APIError, match="duplicate-peripheral") as e:
+            await peripherals_api_funcs.post_peripherals(request, payload)
+        assert e.value.status == 400
+
+    async def test_rename_refused(self, slave_peripheral2, mock_api_request_maker, mock_peripheral1):
+        payload = MOCK_PERIPHERAL2_DATA.copy()
+        payload.pop("static")
+        request = mock_api_request_maker(
+            "PATCH", f"/api/peripherals/{mock_peripheral1.get_id()}", access_level=core_api.ACCESS_LEVEL_ADMIN
+        )
+
+        with pytest.raises(core_api.APIError, match="duplicate-peripheral") as e:
+            await peripherals_api_funcs.patch_peripheral(request, mock_peripheral1.get_id(), payload)
+        assert e.value.status == 400
+
+        # The refusal must come before the peripheral is torn down for the re-add
+        assert peripherals.get(mock_peripheral1.get_id()) is mock_peripheral1
+
+    async def test_unrelated_name_allowed(self, slave_peripheral2, mock_api_request_maker, mock_peripheral1, mocker):
+        payload = MOCK_PERIPHERAL3_DATA.copy()
+        payload.pop("static")
+        request = mock_api_request_maker("POST", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_ADMIN)
+        mocker.patch.object(MockPeripheral, "init_ports")
+
+        result = await peripherals_api_funcs.post_peripherals(request, payload)
+
+        assert result["name"] == MOCK_PERIPHERAL3_DATA["name"]
+        await peripherals.remove(result["id"], persisted_data=True)
+
+    async def test_restore_skips_clashing_peripheral(self, slave_peripheral2, mock_api_request_maker, mocker):
+        """Test that a backup written before the rule does not put a peripheral back into a slave's namespace."""
+        payload2 = MOCK_PERIPHERAL2_DATA.copy()
+        payload2.pop("static")
+        payload3 = MOCK_PERIPHERAL3_DATA.copy()
+        payload3.pop("static")
+        request = mock_api_request_maker("PUT", "/api/peripherals", access_level=core_api.ACCESS_LEVEL_ADMIN)
+        mocker.patch.object(MockPeripheral, "init_ports")
+
+        await peripherals_api_funcs.put_peripherals(request, [payload2, payload3])
+
+        # The clashing one is skipped, the rest of the restore goes on
+        assert peripherals.get(MOCK_PERIPHERAL2_DATA["id"]) is None
+        assert peripherals.get(MOCK_PERIPHERAL3_DATA["id"]) is not None
+        await peripherals.remove(MOCK_PERIPHERAL3_DATA["id"], persisted_data=True)
