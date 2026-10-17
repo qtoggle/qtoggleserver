@@ -5,6 +5,7 @@ from qtoggleserver.core import api as core_api
 from qtoggleserver.core.api import schema as core_api_schema
 from qtoggleserver.core.typing import GenericJSONDict, GenericJSONList
 from qtoggleserver.peripherals.api import schema as peripherals_api_schema
+from qtoggleserver.slaves import devices as slaves_devices
 
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,10 @@ async def post_peripherals(request: core_api.APIRequest, params: GenericJSONDict
 
     name = args.get("name")
     if name and peripherals.get(name):
+        raise core_api.APIError(400, "duplicate-peripheral")
+
+    # A named peripheral calls its ports `<name>.<port id>`, and that prefix is reserved for a slave's own ports
+    if name and slaves_devices.get(name):
         raise core_api.APIError(400, "duplicate-peripheral")
 
     try:
@@ -97,6 +102,10 @@ async def patch_peripheral(
     new_name = params.get("name", old_name)
     new_params = params.get("params", old_params)
     new_force_enabled = params.get("force_enabled", old_force_enabled)
+
+    # A named peripheral calls its ports `<name>.<port id>`, and that prefix is reserved for a slave's own ports
+    if new_name != old_name and new_name and slaves_devices.get(new_name):
+        raise core_api.APIError(400, "duplicate-peripheral")
 
     structural_change = (
         old_driver != new_driver

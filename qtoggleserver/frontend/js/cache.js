@@ -696,6 +696,21 @@ export function getSlaveDevice(name) {
 }
 
 /**
+ * Tell whether a name is taken by a slave device. Unlike getSlaveDevice(), this never throws, so it can be called
+ * before the slave devices cache is ready.
+ * @alias qtoggle.cache.isSlaveDeviceName
+ * @param {String} name
+ * @returns {Boolean}
+ */
+export function isSlaveDeviceName(name) {
+    if (!Config.slavesEnabled || slaveDevices == null) {
+        return false
+    }
+
+    return slaveDevices[name] != null
+}
+
+/**
  * Return the slave device owning the port with a given id.
  * @alias qtoggle.cache.findPortSlaveDevice
  * @param {String} portId

@@ -11,7 +11,7 @@ from typing import Any
 
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
-from qtoggleserver import persist
+from qtoggleserver import peripherals, persist
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import events as core_events
@@ -224,8 +224,8 @@ class Slave(logging_utils.LoggableMixin):
             raise exceptions.DeviceAlreadyExists(new_name)
 
         # The `<new_name>.` port id prefix is reserved for this slave's ports
-        if is_name_used_by_local_ports(new_name):
-            logger.error("name %s is used by a local port id", new_name)
+        if is_name_used_locally(new_name):
+            logger.error("name %s is already used locally", new_name)
             raise exceptions.DeviceAlreadyExists(new_name)
 
         # Rename associated ports persisted data
@@ -1516,8 +1516,13 @@ def get_port_owner(port_id: str) -> Slave | None:
     return _slaves_by_name.get(name) if dot else None
 
 
-def is_name_used_by_local_ports(name: str) -> bool:
-    """Tell if a local port already occupies the `<name>.` id prefix, which is reserved for the slave's own ports."""
+def is_name_used_locally(name: str) -> bool:
+    """Tell if the `<name>.` port id prefix, reserved for a slave's own ports, is already taken. A local port may hold
+    it, or a peripheral of that name, since a named peripheral calls its ports `<name>.<port id>`."""
+    # Matched by name, not id: an unnamed peripheral gets a generated id but gives its ports no prefix
+    if any(p.get_name() == name for p in peripherals.get_all()):
+        return True
+
     prefix = f"{name}."
 
     return any(p.get_id().startswith(prefix) and not isinstance(p, SlavePort) for p in core_ports.get_all())
@@ -1563,8 +1568,8 @@ async def add(
     name = slave.get_name()
 
     # The `<name>.` port id prefix is reserved for this slave's ports
-    if name and is_name_used_by_local_ports(name):
-        slave.error("name is used by a local port id")
+    if name and is_name_used_locally(name):
+        slave.error("name is already used locally")
         raise exceptions.DeviceAlreadyExists(name)
 
     # Check that we have required listen support
@@ -1691,9 +1696,9 @@ async def load() -> None:
         _slaves_by_name[slave.get_name()] = slave
 
         # Persisted data may predate the reserved prefix rule, so the clash can only be reported here
-        if is_name_used_by_local_ports(slave.get_name()):
+        if is_name_used_locally(slave.get_name()):
             logger.error(
-                "slave %s has a name used by a local port id; its own ports with that id will not be added",
+                "slave %s has a name that is already used locally; its own ports with that id will not be added",
                 slave.get_name(),
             )
 

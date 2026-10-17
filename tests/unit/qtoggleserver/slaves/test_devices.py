@@ -138,31 +138,31 @@ class TestGetPortOwner:
         assert slaves_devices.get_port_owner("a.b.c") is None
 
 
-class TestIsNameUsedByLocalPorts:
+class TestIsNameUsedLocally:
     """Test the reverse check: whether a local port already holds the prefix a slave name would reserve."""
 
     async def test_local_port_in_namespace(self, local_port_maker) -> None:
         await local_port_maker("slave1.port2")
-        assert slaves_devices.is_name_used_by_local_ports("slave1") is True
+        assert slaves_devices.is_name_used_locally("slave1") is True
 
     async def test_local_port_equal_to_name(self, local_port_maker) -> None:
         """Test that a local port named exactly like the slave is not a clash."""
         await local_port_maker("slave1")
-        assert slaves_devices.is_name_used_by_local_ports("slave1") is False
+        assert slaves_devices.is_name_used_locally("slave1") is False
 
     async def test_unrelated_local_port(self, local_port_maker) -> None:
         await local_port_maker("other.port2")
-        assert slaves_devices.is_name_used_by_local_ports("slave1") is False
+        assert slaves_devices.is_name_used_locally("slave1") is False
 
     async def test_no_local_ports(self) -> None:
-        assert slaves_devices.is_name_used_by_local_ports("slave1") is False
+        assert slaves_devices.is_name_used_locally("slave1") is False
 
     async def test_slave_ports_ignored(self, slave, mock_persist_driver, mocker) -> None:
         """Test that the slave's own ports, which live in that namespace by design, don't count."""
         mocker.patch("asyncio.Lock")
         port = await core_ports.load_one(SlavePort, {"slave": slave, "attrs": {"id": "port1", "type": "number"}})
         try:
-            assert slaves_devices.is_name_used_by_local_ports("slave1") is False
+            assert slaves_devices.is_name_used_locally("slave1") is False
         finally:
             await port.remove(persisted_data=False)
 
@@ -326,7 +326,7 @@ class TestLoadNameClash:
 
         await slaves_devices.load()
 
-        assert "used by a local port id" in caplog.text
+        assert "already used locally" in caplog.text
 
     async def test_no_clash_not_logged(self, persisted_slave1, local_port_maker, mocker, caplog) -> None:
         await local_port_maker("slave1")
@@ -334,4 +334,46 @@ class TestLoadNameClash:
 
         await slaves_devices.load()
 
-        assert "used by a local port id" not in caplog.text
+        assert "already used locally" not in caplog.text
+
+
+class TestPeripheralNameClash:
+    """Test the peripheral side of the rule. A named peripheral calls its ports `<name>.<port id>`, so its name
+    reserves the same prefix a slave name would."""
+
+    @pytest.fixture(autouse=True)
+    def isolate_slaves(self, mocker) -> None:
+        mocker.patch.dict("qtoggleserver.slaves.devices._slaves_by_name", {}, clear=True)
+
+    async def test_peripheral_name_counts_without_ports(self, mock_peripheral1) -> None:
+        """Test that the name is taken even before the peripheral has loaded any port."""
+        assert slaves_devices.is_name_used_locally("peripheral1") is True
+
+    async def test_unrelated_peripheral_name(self, mock_peripheral1) -> None:
+        assert slaves_devices.is_name_used_locally("slave1") is False
+
+    async def test_slave_refused(self, mock_peripheral1, mock_persist_driver) -> None:
+        with pytest.raises(exceptions.DeviceAlreadyExists):
+            await slaves_devices.add(
+                scheme="http",
+                host="192.168.1.2",
+                port=80,
+                path="",
+                poll_interval=10,
+                listen_enabled=False,
+                name="peripheral1",
+                enabled=False,
+            )
+
+    async def test_rename_refused(self, slave, mock_peripheral1) -> None:
+        with pytest.raises(exceptions.DeviceAlreadyExists):
+            await slave._handle_rename("peripheral1")
+
+    async def test_unnamed_peripheral_id_ignored(self, mocker) -> None:
+        """Test that an unnamed peripheral's generated id is not treated as a name: it gives its ports no prefix."""
+        unnamed = mocker.MagicMock()
+        unnamed.get_name.return_value = None
+        unnamed.get_id.return_value = "peripheral_abc12345"
+        mocker.patch("qtoggleserver.peripherals.get_all", return_value=[unnamed])
+
+        assert slaves_devices.is_name_used_locally("peripheral_abc12345") is False
