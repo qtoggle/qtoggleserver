@@ -45,6 +45,10 @@ async def add_virtual_port(attrs: GenericJSONDict) -> core_ports.BasePort:
     if core_ports.get(id_):
         raise core_api.APIError(400, "duplicate-port")
 
+    # The `<slave name>.` id prefix is reserved for that slave's ports
+    if slaves_devices.get_port_owner(id_):
+        raise core_api.APIError(400, "duplicate-port")
+
     if len(core_vports.all_port_args()) >= settings.core.virtual_ports:
         raise core_api.APIError(400, "too-many-ports")
 
@@ -196,10 +200,8 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
             virtual = attrs.get("virtual")
             if port is not None:  # port already exists so it probably belongs to a slave
                 virtual = False
-            for slave in slaves_devices.get_all():
-                if id_.startswith(f"{slave.get_name()}."):  # id indicates that port belongs to a slave
-                    virtual = False
-                    break
+            if slaves_devices.get_port_owner(id_):  # id indicates that port belongs to a slave
+                virtual = False
             if "provisioning" in attrs:  # a clear indication that port belongs to a slave
                 virtual = False
 
@@ -271,10 +273,8 @@ async def patch_ports(request: core_api.APIRequest, params: GenericJSONList) -> 
             if port is not None:  # port already exists so it probably belongs to a slave
                 virtual = False
 
-            for slave in slaves_devices.get_all():
-                if id_.startswith(f"{slave.get_name()}."):  # id indicates that port belongs to a slave
-                    virtual = False
-                    break
+            if slaves_devices.get_port_owner(id_):  # id indicates that port belongs to a slave
+                virtual = False
             if "provisioning" in attrs:  # a clear indication that port belongs to a slave
                 virtual = False
 

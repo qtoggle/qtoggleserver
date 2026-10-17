@@ -5,13 +5,16 @@ import pytest
 from qtoggleserver.conf import settings
 from qtoggleserver.core import api as core_api
 from qtoggleserver.core import ports as core_ports
+from qtoggleserver.core import vports as core_vports
 from qtoggleserver.core.api.funcs import ports as ports_api_funcs
+from qtoggleserver.slaves import devices as slaves_devices
+from qtoggleserver.slaves.devices import Slave
 
 
 class TestPatchPorts:
     @pytest.fixture(autouse=True)
     def mock_slaves(self, mocker) -> None:
-        mocker.patch("qtoggleserver.slaves.devices.get_all", return_value=[])
+        mocker.patch.dict("qtoggleserver.slaves.devices._slaves_by_name", {}, clear=True)
 
     async def test_updates_physical_port_attrs(
         self, mock_api_request_maker, mock_bool_port1, mock_persist_driver
@@ -95,7 +98,7 @@ class TestPatchPorts:
 class TestPatchPortValue:
     @pytest.fixture(autouse=True)
     def mock_slaves(self, mocker) -> None:
-        mocker.patch("qtoggleserver.slaves.devices.get_all", return_value=[])
+        mocker.patch.dict("qtoggleserver.slaves.devices._slaves_by_name", {}, clear=True)
 
     async def test_no_such_port(self, mock_api_request_maker) -> None:
         request = mock_api_request_maker("PATCH", "/ports/nosuch/value", access_level=core_api.ACCESS_LEVEL_NORMAL)
@@ -198,7 +201,7 @@ class TestPatchPortValue:
 class TestPatchPortValueTimeout:
     @pytest.fixture(autouse=True)
     def mock_slaves(self, mocker) -> None:
-        mocker.patch("qtoggleserver.slaves.devices.get_all", return_value=[])
+        mocker.patch.dict("qtoggleserver.slaves.devices._slaves_by_name", {}, clear=True)
 
     async def test_non_integer_timeout_raises_invalid_field(
         self, mock_api_request_maker, mock_num_port1, mock_persist_driver
@@ -320,3 +323,108 @@ class TestPatchPortValueTimeout:
             await ports_api_funcs.patch_port_value(request, "nid1", 100)
         assert exc_info.value.status == 500
         spy.assert_not_called()
+
+
+@pytest.fixture
+async def slave1(mocker):
+    """Register a slave named `slave1`, which reserves the `slave1.` port id prefix."""
+    mocker.patch.dict("qtoggleserver.slaves.devices._slaves_by_name", {}, clear=True)
+    slave = Slave(name="slave1", scheme="http", host="192.168.1.2", port=80, path="", admin_password="")
+    slaves_devices._slaves_by_name["slave1"] = slave
+
+    return slave
+
+
+@pytest.fixture
+async def vport_maker(mock_persist_driver, mocker):
+    """Add virtual ports through the API and clean them up when the test ends."""
+    mocker.patch("asyncio.Lock")
+    created = []
+
+    async def make(port_id: str) -> core_ports.BasePort:
+        port = await ports_api_funcs.add_virtual_port({"id": port_id, "type": "boolean"})
+        created.append(port_id)
+        return port
+
+    yield make
+
+    for port_id in created:
+        port = core_ports.get(port_id)
+        if port is not None:
+            await port.remove(persisted_data=False)
+        await core_vports.remove(port_id)
+
+
+class TestAddVirtualPort:
+    """Test that a virtual port cannot take an id inside the namespace reserved for a slave's ports."""
+
+    async def test_refuses_id_in_slave_namespace(self, slave1, vport_maker) -> None:
+        with pytest.raises(core_api.APIError, match="duplicate-port") as exc_info:
+            await vport_maker("slave1.port2")
+        assert exc_info.value.status == 400
+        assert core_ports.get("slave1.port2") is None
+
+    async def test_refuses_id_with_further_dots(self, slave1, vport_maker) -> None:
+        with pytest.raises(core_api.APIError, match="duplicate-port"):
+            await vport_maker("slave1.a.b")
+
+    async def test_allows_id_equal_to_slave_name(self, slave1, vport_maker) -> None:
+        """Test that an id with no dot is allowed, even when it matches a slave name."""
+        port = await vport_maker("slave1")
+        assert core_ports.get("slave1") is port
+
+    async def test_allows_dotted_id_of_unknown_prefix(self, slave1, vport_maker) -> None:
+        port = await vport_maker("other.port2")
+        assert core_ports.get("other.port2") is port
+
+    async def test_refuses_duplicate_id(self, slave1, vport_maker) -> None:
+        await vport_maker("vportx")
+        with pytest.raises(core_api.APIError, match="duplicate-port") as exc_info:
+            await vport_maker("vportx")
+        assert exc_info.value.status == 400
+
+    async def test_no_slaves_registered(self, vport_maker, mocker) -> None:
+        mocker.patch.dict("qtoggleserver.slaves.devices._slaves_by_name", {}, clear=True)
+        port = await vport_maker("slave1.port2")
+        assert core_ports.get("slave1.port2") is port
+
+
+class TestRestoreSlaveNamespace:
+    """Test how PATCH /ports tells a local port from a slave port when restoring a backup."""
+
+    async def test_entry_in_slave_namespace_is_not_created(
+        self, slave1, mock_api_request_maker, mock_persist_driver
+    ) -> None:
+        # The slave is offline here, so the port does not exist yet; it must not be recreated as a virtual port
+        request = mock_api_request_maker("PATCH", "/ports", access_level=core_api.ACCESS_LEVEL_ADMIN)
+        await ports_api_funcs.patch_ports(request, [{"id": "slave1.port1", "virtual": True, "type": "boolean"}])
+
+        assert core_ports.get("slave1.port1") is None
+
+    async def test_local_entry_named_after_slave_is_created(
+        self, slave1, mock_api_request_maker, mock_persist_driver, mocker
+    ) -> None:
+        mocker.patch("asyncio.Lock")
+        request = mock_api_request_maker("PATCH", "/ports", access_level=core_api.ACCESS_LEVEL_ADMIN)
+        try:
+            await ports_api_funcs.patch_ports(request, [{"id": "slave1", "virtual": True, "type": "boolean"}])
+            assert core_ports.get("slave1") is not None
+        finally:
+            port = core_ports.get("slave1")
+            if port is not None:
+                await port.remove(persisted_data=False)
+            await core_vports.remove("slave1")
+
+    async def test_local_dotted_entry_is_created(
+        self, slave1, mock_api_request_maker, mock_persist_driver, mocker
+    ) -> None:
+        mocker.patch("asyncio.Lock")
+        request = mock_api_request_maker("PATCH", "/ports", access_level=core_api.ACCESS_LEVEL_ADMIN)
+        try:
+            await ports_api_funcs.patch_ports(request, [{"id": "other.port2", "virtual": True, "type": "boolean"}])
+            assert core_ports.get("other.port2") is not None
+        finally:
+            port = core_ports.get("other.port2")
+            if port is not None:
+                await port.remove(persisted_data=False)
+            await core_vports.remove("other.port2")
