@@ -311,6 +311,54 @@ class TestReadPortsLastRead:
         assert mock_num_port1._last_read_value == last_read_value
 
 
+class TestReadPortsLastValue:
+    async def test_stale_read_after_write_wins(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """Should make the last read value the last value after a later read, even if it still shows the value from
+        before the write."""
+
+        freezer.move_to(dummy_utc_datetime)
+        mock_num_port1.set_writable(True)
+        mock_num_port1.set_last_read_value(3)
+        await mock_num_port1.transform_and_write_value(5)
+        assert mock_num_port1.get_last_value() == 5
+
+        freezer.move_to(dummy_utc_datetime + timedelta(seconds=1))
+        mock_num_port1.set_next_value(3)
+        await read_ports(ports_to_read=[mock_num_port1])
+
+        assert mock_num_port1.get_last_value() == 3
+
+    async def test_unavailable_read_after_write_keeps_written(
+        self, freezer, mocker, mock_num_port1, dummy_utc_datetime
+    ):
+        """Should keep the last written value as last value when reads keep returning an unavailable value."""
+
+        freezer.move_to(dummy_utc_datetime)
+        mock_num_port1.set_writable(True)
+        mock_num_port1.set_last_read_value(None)
+        await mock_num_port1.transform_and_write_value(5)
+
+        freezer.move_to(dummy_utc_datetime + timedelta(seconds=1))
+        mocker.patch.object(mock_num_port1, "read_value", return_value=None)
+        await read_ports(ports_to_read=[mock_num_port1])
+
+        assert mock_num_port1.get_last_value() == 5
+
+    async def test_unavailable_read_change_recorded(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """Should still record a change to an unavailable value and trigger a value change."""
+
+        freezer.move_to(dummy_utc_datetime)
+        mock_num_port1.set_last_read_value(10)
+
+        freezer.move_to(dummy_utc_datetime + timedelta(seconds=1))
+        mocker.patch.object(mock_num_port1, "read_value", return_value=None)
+        mocker.patch.object(mock_num_port1, "trigger_value_change")
+        await read_ports(ports_to_read=[mock_num_port1])
+
+        assert mock_num_port1._last_read_value == (None, int(time.time() * 1000))
+        mock_num_port1.trigger_value_change.assert_called_once_with(10, None)
+
+
 class TestHandleChanges:
     async def test_self_port_value_trigger_eval(self, mocker, mock_num_port1):
         """Should trigger a port's expression evaluation if the expression depends on itself through `$`."""
