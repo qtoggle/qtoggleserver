@@ -250,6 +250,67 @@ class TestReadPorts:
         spy_handle_value_changes.assert_called_once_with({DEP_ASAP}, int(time.time() * 1000))
 
 
+class TestReadPortsLastRead:
+    async def test_unchanged_value_updates_timestamp(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """Should record the time of a successful read even if the value hasn't changed, without saving the port or
+        triggering a value change."""
+
+        freezer.move_to(dummy_utc_datetime)
+        mock_num_port1.set_last_read_value(10)
+
+        freezer.move_to(dummy_utc_datetime + timedelta(seconds=5))
+        mock_num_port1.set_next_value(10)
+        mocker.patch.object(mock_num_port1, "save_asap")
+        mocker.patch.object(mock_num_port1, "trigger_value_change")
+
+        await read_ports(ports_to_read=[mock_num_port1])
+
+        assert mock_num_port1._last_read_value == (10, int(time.time() * 1000))
+        mock_num_port1.save_asap.assert_not_called()
+        mock_num_port1.trigger_value_change.assert_not_called()
+
+    async def test_changed_value_saves_port(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """Should record the read, save the port and trigger a value change when the value has changed."""
+
+        freezer.move_to(dummy_utc_datetime)
+        mock_num_port1.set_last_read_value(10)
+        mock_num_port1.set_next_value(20)
+        mocker.patch.object(mock_num_port1, "save_asap")
+        mocker.patch.object(mock_num_port1, "trigger_value_change")
+
+        await read_ports(ports_to_read=[mock_num_port1])
+
+        assert mock_num_port1._last_read_value == (20, int(time.time() * 1000))
+        mock_num_port1.save_asap.assert_called_once()
+        mock_num_port1.trigger_value_change.assert_called_once_with(10, 20)
+
+    async def test_skipped_read_keeps_timestamp(self, freezer, mock_num_port1, dummy_utc_datetime):
+        """Should not record a skipped read."""
+
+        freezer.move_to(dummy_utc_datetime)
+        mock_num_port1.set_last_read_value(10)
+        last_read_value = mock_num_port1._last_read_value
+
+        freezer.move_to(dummy_utc_datetime + timedelta(seconds=5))
+        await read_ports(ports_to_read=[mock_num_port1])
+
+        assert mock_num_port1._last_read_value == last_read_value
+
+    async def test_read_error_keeps_timestamp(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """Should not record a failed read."""
+
+        freezer.move_to(dummy_utc_datetime)
+        mock_num_port1.set_last_read_value(10)
+        last_read_value = mock_num_port1._last_read_value
+
+        freezer.move_to(dummy_utc_datetime + timedelta(seconds=5))
+        mocker.patch.object(mock_num_port1, "read_value", side_effect=Exception("read failed"))
+        mocker.patch.object(core_main, "_ports_with_read_error", set())
+        await read_ports(ports_to_read=[mock_num_port1])
+
+        assert mock_num_port1._last_read_value == last_read_value
+
+
 class TestHandleChanges:
     async def test_self_port_value_trigger_eval(self, mocker, mock_num_port1):
         """Should trigger a port's expression evaluation if the expression depends on itself through `$`."""

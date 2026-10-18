@@ -156,13 +156,15 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
 
                 continue
 
+            # Record every successful read, so that the read timestamp tells when the port was last read
+            port.set_last_read_value(new_value)
+
             if new_value != old_value:
                 old_value_str = json_utils.dumps(old_value) if old_value is not None else "(unavailable)"
                 new_value_str = json_utils.dumps(new_value) if new_value is not None else "(unavailable)"
 
                 logger.debug("detected %s value change: %s -> %s", port, old_value_str, new_value_str)
 
-                port.set_last_read_value(new_value)
                 port_changed_values[port] = old_value, new_value
 
         # Trigger value-change events; save ports; add port deps to changes
