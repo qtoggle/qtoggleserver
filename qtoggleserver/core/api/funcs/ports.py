@@ -349,7 +349,7 @@ async def get_port_value(request: core_api.APIRequest, port_id: str) -> Nullable
 
 @core_api.api_call(core_api.ACCESS_LEVEL_NORMAL)
 async def patch_port_value(request: core_api.APIRequest, port_id: str, params: PortValue) -> None:
-    request_time = time.time()
+    request_time = asyncio.get_running_loop().time()
 
     port = core_ports.get(port_id)
     if port is None:
@@ -386,8 +386,12 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
     if not await port.is_writable():
         raise core_api.APIError(400, "read-only-port")
 
+    # The timeout covers the whole call, including the wait in the write queue and the write itself. A value that
+    # times out stays queued and is still written.
+    write_timeout = asyncio.timeout_at(request_time + timeout if timeout else None)
     try:
-        await port.push_write_and_wait(value)
+        async with write_timeout:
+            await port.push_write_and_wait(value)
     except core_ports.PortTimeout as e:
         raise core_api.APIError(500, "port-timeout") from e
     except core_ports.PortDisabled as e:
@@ -397,11 +401,14 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
     except core_api.APIError:
         raise
     except Exception as e:
+        if write_timeout.expired():
+            raise core_api.APIError(500, "value-timeout") from e
+
         # Transform any unhandled exception into APIError(500)
         raise core_api.APIError(500, "unexpected-error", message=str(e)) from e
 
     if timeout:
-        remaining = timeout - (time.time() - request_time)
+        remaining = timeout - (asyncio.get_running_loop().time() - request_time)
         if not await port.wait_for_read_value(value, timeout=remaining):
             raise core_api.APIError(500, "value-timeout")
 
