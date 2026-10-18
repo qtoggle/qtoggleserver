@@ -69,6 +69,50 @@ class TestPortTransformWrite:
         await mock_num_port1.transform_and_write_value(6)
         mock_num_port1.write_value.assert_called_once_with(60)
 
+    async def test_last_written_value_before_transform(self, mock_num_port1, mocker):
+        """Should keep the value from before the write transform as last written value."""
+
+        mock_num_port1.set_writable(True)
+        mocker.patch.object(mock_num_port1, "write_value")
+
+        await mock_num_port1.set_attr("transform_write", "MUL($, 10)")
+        await mock_num_port1.transform_and_write_value(6)
+
+        assert mock_num_port1.get_last_written_value() == 6
+        assert mock_num_port1.get_last_value() == 6
+
+    async def test_pending_value_before_transform(self, mock_num_port1, mocker):
+        """Should expose the value from before the write transform as pending value while writing."""
+
+        mock_num_port1.set_writable(True)
+        mock_num_port1._write_queue.clear()
+        pending_values = []
+
+        async def write_value(value):
+            pending_values.append(mock_num_port1.get_pending_value())
+
+        mocker.patch.object(mock_num_port1, "write_value", new=write_value)
+
+        await mock_num_port1.set_attr("transform_write", "MUL($, 10)")
+        await mock_num_port1.transform_and_write_value(6)
+
+        assert pending_values == [6]
+
+    async def test_expression_not_written_again(self, mock_bool_port1, mocker):
+        """Should not push the expression result again after writing it through an inverting write transform."""
+
+        mock_bool_port1.set_writable(True)
+        mocker.patch.object(mock_bool_port1, "write_value")
+        mocker.patch.object(mock_bool_port1, "push_write")
+
+        await mock_bool_port1.set_attr("transform_write", "NOT($)")
+        mock_bool_port1.set_expression("true")
+        await mock_bool_port1.transform_and_write_value(True)
+        await mock_bool_port1.eval_and_push_write(mocker.Mock())
+
+        mock_bool_port1.write_value.assert_called_once_with(False)
+        mock_bool_port1.push_write.assert_not_called()
+
     async def test_transform_not_supported(self, mock_num_port1):
         """Should raise `TransformNotSupported` when expression depends on another port."""
 

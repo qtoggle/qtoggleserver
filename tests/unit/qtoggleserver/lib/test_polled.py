@@ -44,7 +44,7 @@ class TestPolledPortPollAfterWrite:
 
         spy_poll = mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
 
-        await port._write_value_safe(True)
+        await port._write_value_safe(True, True)
 
         spy_poll.assert_called_once()
 
@@ -55,7 +55,7 @@ class TestPolledPortPollAfterWrite:
 
         spy_poll = mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
 
-        await port._write_value_safe(True)
+        await port._write_value_safe(True, True)
 
         spy_poll.assert_not_called()
 
@@ -83,7 +83,7 @@ class TestPolledPortPollAfterWrite:
         mocker.patch.object(port, "write_value", side_effect=mock_write)
         mocker.patch.object(peripheral, "poll", side_effect=mock_poll)
 
-        await port._write_value_safe(True)
+        await port._write_value_safe(True, True)
 
         assert write_completed
         assert poll_called_after_write
@@ -104,7 +104,7 @@ class TestPolledPortPollAfterWrite:
 
         mocker.patch.object(peripheral, "poll", side_effect=mock_poll)
 
-        await port._write_value_safe(True)
+        await port._write_value_safe(True, True)
 
         assert last_written_set
 
@@ -116,7 +116,7 @@ class TestPolledPortPollAfterWrite:
         mocker.patch.object(peripheral, "poll", side_effect=RuntimeError("Poll failed"))
 
         with pytest.raises(RuntimeError, match="Poll failed"):
-            await port._write_value_safe(True)
+            await port._write_value_safe(True, True)
 
     async def test_write_exception_skips_poll(self, mocker):
         """If write_value() fails, poll should not be called."""
@@ -127,7 +127,7 @@ class TestPolledPortPollAfterWrite:
         spy_poll = mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
 
         with pytest.raises(RuntimeError, match="Write failed"):
-            await port._write_value_safe(True)
+            await port._write_value_safe(True, True)
 
         spy_poll.assert_not_called()
 
@@ -138,9 +138,9 @@ class TestPolledPortPollAfterWrite:
 
         spy_poll = mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
 
-        await port._write_value_safe(True)
-        await port._write_value_safe(False)
-        await port._write_value_safe(True)
+        await port._write_value_safe(True, True)
+        await port._write_value_safe(False, False)
+        await port._write_value_safe(True, True)
 
         assert spy_poll.call_count == 3
 
@@ -165,7 +165,7 @@ class TestPolledPortPollAfterWrite:
         spy_poll1 = mocker.patch.object(peripheral1, "poll", new_callable=mocker.AsyncMock)
         spy_poll2 = mocker.patch.object(peripheral2, "poll", new_callable=mocker.AsyncMock)
 
-        await port1._write_value_safe(True)
+        await port1._write_value_safe(True, True)
 
         spy_poll1.assert_called_once()
         spy_poll2.assert_not_called()
@@ -190,9 +190,9 @@ class TestPolledPortPollAfterWrite:
 
         # Launch concurrent writes
         tasks = [
-            asyncio.create_task(port._write_value_safe(True)),
-            asyncio.create_task(port._write_value_safe(False)),
-            asyncio.create_task(port._write_value_safe(True)),
+            asyncio.create_task(port._write_value_safe(True, True)),
+            asyncio.create_task(port._write_value_safe(False, False)),
+            asyncio.create_task(port._write_value_safe(True, True)),
         ]
 
         await asyncio.gather(*tasks)
@@ -235,8 +235,8 @@ class TestPolledPeripheralPollAfterWriteFlag:
         spy_poll1 = mocker.patch.object(p1, "poll", new_callable=mocker.AsyncMock)
         spy_poll2 = mocker.patch.object(p2, "poll", new_callable=mocker.AsyncMock)
 
-        await port1._write_value_safe(True)
-        await port2._write_value_safe(True)
+        await port1._write_value_safe(True, True)
+        await port2._write_value_safe(True, True)
 
         spy_poll1.assert_called_once()
         spy_poll2.assert_not_called()
@@ -306,7 +306,7 @@ class TestTriggerUpdateAfterPoll:
         spy_trigger = mocker.patch.object(peripheral, "trigger_port_update_fire_and_forget")
         mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
 
-        await port._write_value_safe(True)
+        await port._write_value_safe(True, True)
 
         spy_trigger.assert_called_once()
 
@@ -320,7 +320,7 @@ class TestTriggerUpdateAfterPoll:
         spy_trigger = mocker.patch.object(peripheral, "trigger_port_update_fire_and_forget")
         mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
 
-        await port._write_value_safe(True)
+        await port._write_value_safe(True, True)
 
         spy_trigger.assert_not_called()
 
@@ -334,7 +334,7 @@ class TestTriggerUpdateAfterPoll:
         spy_trigger = mocker.patch.object(peripheral, "trigger_port_update_fire_and_forget")
         spy_poll = mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
 
-        await port._write_value_safe(True)
+        await port._write_value_safe(True, True)
 
         # Neither poll nor trigger should be called (no poll-after-write)
         spy_poll.assert_not_called()
@@ -364,7 +364,7 @@ class TestTriggerUpdateAfterPoll:
         mocker.patch.object(peripheral, "poll", side_effect=mock_poll)
         mocker.patch.object(peripheral, "trigger_port_update_fire_and_forget", side_effect=mock_trigger)
 
-        await port._write_value_safe(True)
+        await port._write_value_safe(True, True)
 
         assert poll_completed
         assert trigger_called_after_poll
@@ -380,7 +380,7 @@ class TestTriggerUpdateAfterPoll:
         mocker.patch.object(peripheral, "poll", side_effect=RuntimeError("Poll failed"))
 
         with pytest.raises(RuntimeError, match="Poll failed"):
-            await port._write_value_safe(True)
+            await port._write_value_safe(True, True)
 
         spy_trigger.assert_not_called()
 
@@ -394,9 +394,9 @@ class TestTriggerUpdateAfterPoll:
         spy_trigger = mocker.patch.object(peripheral, "trigger_port_update_fire_and_forget")
         mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
 
-        await port._write_value_safe(True)
-        await port._write_value_safe(False)
-        await port._write_value_safe(True)
+        await port._write_value_safe(True, True)
+        await port._write_value_safe(False, False)
+        await port._write_value_safe(True, True)
 
         assert spy_trigger.call_count == 3
 
@@ -440,8 +440,8 @@ class TestTriggerUpdateAfterPollFlag:
         mocker.patch.object(p1, "poll", new_callable=mocker.AsyncMock)
         mocker.patch.object(p2, "poll", new_callable=mocker.AsyncMock)
 
-        await port1._write_value_safe(True)
-        await port2._write_value_safe(True)
+        await port1._write_value_safe(True, True)
+        await port2._write_value_safe(True, True)
 
         spy_trigger1.assert_called_once()
         spy_trigger2.assert_not_called()
@@ -469,7 +469,7 @@ class TestTriggerUpdateAfterPollFlag:
             spy_poll = mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
             spy_trigger = mocker.patch.object(peripheral, "trigger_port_update_fire_and_forget")
 
-            await port._write_value_safe(True)
+            await port._write_value_safe(True, True)
 
             assert spy_poll.call_count == expected_polls, (
                 f"Failed for poll_after_write={poll_after_write}, trigger_update={trigger_update}"

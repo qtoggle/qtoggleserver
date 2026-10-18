@@ -724,13 +724,14 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def write_value(self, value: PortValue) -> None:
         pass
 
-    async def _write_value_safe(self, value: PortValue) -> None:
-        """Write a value to the port, ensuring only one write at a time and updating the last written value."""
+    async def _write_value_safe(self, value: PortValue, transformed_value: PortValue) -> None:
+        """Write `transformed_value` to the port, one write at a time. Pending and last written values keep `value`, the
+        one from before the write transform, so they compare with read values."""
 
         async with self._write_value_lock:
             try:
                 self._writing_value = value
-                await self.write_value(value)
+                await self.write_value(transformed_value)
                 self._last_written_value = value, int(time.time() * 1000)
             finally:
                 self._writing_value = None
@@ -867,20 +868,21 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         """Apply write transform (if any) and write the value to the port."""
 
         value_str = json_utils.dumps(value)
+        transformed_value = value
 
         if self._transform_write:
             eval_context = EvalContext(port_values={self.get_id(): value})
             try:
-                value = self.adapt_value_type(await self._transform_write.eval(eval_context))
+                transformed_value = self.adapt_value_type(await self._transform_write.eval(eval_context))
             except expressions_exceptions.ValueUnavailable:
                 self.debug("value %s unavailable after write transform", value_str)
                 return
 
-            value_str = f"{value_str} ({json_utils.dumps(value)} after write transform)"
+            value_str = f"{value_str} ({json_utils.dumps(transformed_value)} after write transform)"
 
         try:
             self.debug("writing value %s", value_str)
-            await self._write_value_safe(value)
+            await self._write_value_safe(value, transformed_value)
             self.debug("wrote value %s", value_str)
         except Exception:
             self.error("failed to write value %s", value_str, exc_info=True)
