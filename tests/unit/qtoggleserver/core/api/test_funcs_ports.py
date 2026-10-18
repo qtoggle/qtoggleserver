@@ -324,6 +324,46 @@ class TestPatchPortValueTimeout:
         assert exc_info.value.status == 500
         spy.assert_not_called()
 
+    async def test_timeout_covers_slow_write(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
+    ) -> None:
+        """Should respond with `value-timeout` once the timeout expires during the write, and still write the
+        value afterwards."""
+
+        mock_num_port1.set_writable(True)
+        mock_num_port1._write_queue.clear()
+
+        async def slow_write(value: int) -> None:
+            await asyncio.sleep(0.2)
+
+        mocker.patch.object(mock_num_port1, "write_value", new=slow_write)
+
+        request = mock_api_request_maker(
+            "PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL, query={"timeout": "0.05"}
+        )
+        start = asyncio.get_running_loop().time()
+        with pytest.raises(core_api.APIError, match="value-timeout") as exc_info:
+            await ports_api_funcs.patch_port_value(request, "nid1", 100)
+        assert exc_info.value.status == 500
+        assert asyncio.get_running_loop().time() - start < 0.15
+
+        await asyncio.sleep(0.3)
+        assert mock_num_port1.get_last_written_value() == 100
+
+    async def test_driver_timeout_error_is_not_value_timeout(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
+    ) -> None:
+        """Should not mistake a `TimeoutError` raised by the write itself for an expired request timeout."""
+
+        mock_num_port1.set_writable(True)
+        mocker.patch.object(mock_num_port1, "push_write_and_wait", side_effect=TimeoutError())
+
+        request = mock_api_request_maker(
+            "PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL, query={"timeout": "5"}
+        )
+        with pytest.raises(core_api.APIError, match="unexpected-error"):
+            await ports_api_funcs.patch_port_value(request, "nid1", 100)
+
 
 @pytest.fixture
 async def slave1(mocker):
