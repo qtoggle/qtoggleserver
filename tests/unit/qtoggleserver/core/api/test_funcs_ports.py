@@ -1,4 +1,5 @@
 import asyncio
+import gc
 
 import pytest
 
@@ -349,6 +350,97 @@ class TestPatchPortValueTimeout:
 
         await asyncio.sleep(0.3)
         assert mock_num_port1.get_last_written_value() == 100
+
+    async def test_timeout_covers_queue_wait(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
+    ) -> None:
+        """Should respond with `value-timeout` while the value still waits in the queue, and write it afterwards."""
+
+        mock_num_port1.set_writable(True)
+        mock_num_port1._write_queue.clear()
+        written = []
+
+        async def slow_write(value: int) -> None:
+            await asyncio.sleep(0.2)
+            written.append(value)
+
+        mocker.patch.object(mock_num_port1, "write_value", new=slow_write)
+        mock_num_port1.push_write(1)
+        await asyncio.sleep(0.05)  # let the write loop start writing the first value
+
+        request = mock_api_request_maker(
+            "PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL, query={"timeout": "0.05"}
+        )
+        with pytest.raises(core_api.APIError, match="value-timeout"):
+            await ports_api_funcs.patch_port_value(request, "nid1", 100)
+        assert written == []
+
+        await asyncio.sleep(0.5)
+        assert written == [1, 100]
+
+    async def test_read_wait_gets_remaining_time(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
+    ) -> None:
+        """Should count the time spent writing against the timeout, leaving only the rest for the read wait."""
+
+        mock_num_port1.set_writable(True)
+        mock_num_port1.set_last_read_value(0)
+        mocker.patch.object(mock_num_port1, "push_write_and_wait", new=lambda value: asyncio.sleep(0.1))
+        spy = mocker.spy(mock_num_port1, "wait_for_read_value")
+
+        request = mock_api_request_maker(
+            "PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL, query={"timeout": "0.3"}
+        )
+        with pytest.raises(core_api.APIError, match="value-timeout"):
+            await ports_api_funcs.patch_port_value(request, "nid1", 100)
+
+        remaining = spy.call_args.kwargs["timeout"]
+        assert 0 < remaining <= 0.2
+
+    async def test_no_timeout_waits_for_slow_write(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
+    ) -> None:
+        """Should wait for a slow write to complete when no `timeout` is given."""
+
+        mock_num_port1.set_writable(True)
+        mock_num_port1._write_queue.clear()
+
+        async def slow_write(value: int) -> None:
+            await asyncio.sleep(0.1)
+
+        mocker.patch.object(mock_num_port1, "write_value", new=slow_write)
+
+        request = mock_api_request_maker("PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL)
+        await ports_api_funcs.patch_port_value(request, "nid1", 100)
+
+        assert mock_num_port1.get_last_written_value() == 100
+
+    async def test_late_write_failure_not_reported(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
+    ) -> None:
+        """Should not leave an unhandled exception behind when a write fails after its request has timed out."""
+
+        mock_num_port1.set_writable(True)
+        mock_num_port1._write_queue.clear()
+        loop_errors = []
+        loop = asyncio.get_running_loop()
+        mocker.patch.object(loop, "call_exception_handler", side_effect=loop_errors.append)
+
+        async def failing_write(value: int) -> None:
+            await asyncio.sleep(0.1)
+            raise core_ports.PortError("write failed")
+
+        mocker.patch.object(mock_num_port1, "write_value", new=failing_write)
+
+        request = mock_api_request_maker(
+            "PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL, query={"timeout": "0.03"}
+        )
+        with pytest.raises(core_api.APIError, match="value-timeout"):
+            await ports_api_funcs.patch_port_value(request, "nid1", 100)
+
+        await asyncio.sleep(0.2)
+        gc.collect()
+        assert loop_errors == []
 
     async def test_driver_timeout_error_is_not_value_timeout(
         self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
