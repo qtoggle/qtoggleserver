@@ -108,6 +108,16 @@ class TestPolledPortPollAfterWrite:
 
         assert last_written_set
 
+    async def test_driver_gets_transformed_value(self, mocker):
+        """Should pass the transformed value to the driver and keep the original one as last written value."""
+        peripheral = MockPolledPeripheral(name="test", poll_after_write=True, dummy_param="value")
+        port = MockPolledPort(peripheral, "port1")
+
+        await port._write_value_safe(True, False)
+
+        assert port._read_value is False
+        assert port.get_last_written_value() is True
+
     async def test_poll_exception_propagates(self, mocker):
         """Poll exception should propagate to caller."""
         peripheral = MockPolledPeripheral(name="test", poll_after_write=True, dummy_param="value")
