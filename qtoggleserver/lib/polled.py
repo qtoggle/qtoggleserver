@@ -193,8 +193,8 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
     def get_peripheral(self) -> PolledPeripheral:
         return cast(PolledPeripheral, super().get_peripheral())
 
-    async def _write_value_safe(self, value: PortValue) -> None:
-        await super()._write_value_safe(value)
+    async def _write_value_safe(self, value: PortValue, transformed_value: PortValue) -> None:
+        await super()._write_value_safe(value, transformed_value)
 
         # Poll values immediately after writing, if peripheral requires it
         peripheral = self.get_peripheral()
