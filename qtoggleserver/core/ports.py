@@ -675,8 +675,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_last_read_value(self) -> NullablePortValue:
         return self._last_read_value[0] if self._last_read_value else None
 
-    def set_last_read_value(self, value: NullablePortValue) -> None:
-        self._last_read_value = value, int(time.time() * 1000)
+    def set_last_read_value(self, value: NullablePortValue, timestamp: int | None = None) -> None:
+        """Record a read value. `timestamp` (milliseconds) is when the read started, and defaults to now."""
+
+        if timestamp is None:
+            timestamp = int(time.time() * 1000)
+
+        self._last_read_value = value, timestamp
 
         for target_value, future in self._value_match_waiters:
             if not future.done() and value == target_value:

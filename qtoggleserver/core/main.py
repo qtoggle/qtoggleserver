@@ -146,6 +146,8 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
             if port in _ports_with_read_error:
                 continue
 
+            # A read that started before a write ended may return the old value, so it must not look newer
+            read_time_ms = int(time.time() * 1000)
             try:
                 new_value = await port.read_transformed_value()
             except core_ports.SkipRead:
@@ -159,7 +161,7 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
             # Record every successful read, so that the read timestamp tells when the port was last read. An unavailable
             # value is not a successful read, but its change is still recorded.
             if new_value is not None or new_value != old_value:
-                port.set_last_read_value(new_value)
+                port.set_last_read_value(new_value, read_time_ms)
 
             if new_value != old_value:
                 old_value_str = json_utils.dumps(old_value) if old_value is not None else "(unavailable)"
