@@ -25,7 +25,6 @@ from qtoggleserver.core.typing import (
 )
 from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.slaves import ports as slaves_ports
-from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import json as json_utils
 
 
@@ -76,6 +75,15 @@ def _is_on_step(value: float, min_: float | None, step: float | None) -> bool:
 
     steps = (value - min_) / step
     return math.isclose(steps, round(steps), rel_tol=1e-9, abs_tol=1e-9)
+
+
+async def _is_valid_value(port: core_ports.BasePort, value: Any) -> bool:
+    try:
+        core_api_schema.validate(value, await port.get_value_schema())
+    except core_api.APIError:
+        return False
+
+    return _is_on_step(value, await port.get_attr("min"), await port.get_attr("step"))
 
 
 async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, ignore_extra_attrs: bool) -> None:
@@ -139,9 +147,12 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
             # Transform any unhandled exception into APIError(500)
             raise core_api.APIError(500, "unexpected-error", message=str(error)) from error
 
-    # If value is supplied among attrs, use it to update port value, but in background and ignoring any errors
+    # If value is supplied among attrs, queue it to update port value, ignoring any errors
     if value is not _none and value is not None and port.is_enabled() and await port.is_writable():
-        asyncio_utils.fire_and_forget(port.transform_and_write_value(cast(PortValue, value)))
+        if await _is_valid_value(port, value):
+            port.push_write(cast(PortValue, value))
+        else:
+            core_api.logger.warning("ignoring invalid value %s for %s", json_utils.dumps(value), port)
 
     await port.save()
 
