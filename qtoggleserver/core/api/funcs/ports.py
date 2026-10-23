@@ -363,7 +363,8 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
         except ValueError:
             raise core_api.APIError(400, "invalid-field", field="timeout") from None
 
-        if timeout < 0 or timeout > MAX_VALUE_TIMEOUT:
+        # Written this way so that NaN, which fails every comparison, is rejected too
+        if not 0 <= timeout <= MAX_VALUE_TIMEOUT:
             raise core_api.APIError(400, "invalid-field", field="timeout")
 
     try:

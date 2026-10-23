@@ -243,6 +243,20 @@ class TestPatchPortValueTimeout:
         assert exc_info.value.status == 400
         assert exc_info.value.params["field"] == "timeout"
 
+    @pytest.mark.parametrize("timeout", ["nan", "NaN", "inf", "-inf"])
+    async def test_non_finite_timeout_raises_invalid_field(
+        self, timeout, mock_api_request_maker, mock_num_port1, mock_persist_driver
+    ) -> None:
+        mock_num_port1.set_writable(True)
+
+        request = mock_api_request_maker(
+            "PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL, query={"timeout": timeout}
+        )
+        with pytest.raises(core_api.APIError, match="invalid-field") as exc_info:
+            await ports_api_funcs.patch_port_value(request, "nid1", 100)
+        assert exc_info.value.status == 400
+        assert exc_info.value.params["field"] == "timeout"
+
     async def test_no_timeout_does_not_wait_for_confirmation(
         self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
     ) -> None:
