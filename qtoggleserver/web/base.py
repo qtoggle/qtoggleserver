@@ -39,7 +39,7 @@ class BaseHandler(RequestHandler):
     def get_request_json(self) -> Any:
         if self._json is self._UNDEFINED:
             try:
-                self._json = json_utils.loads(self.request.body)
+                self._json = json_utils.loads(self.request.body, allow_nan=False)
             except ValueError as e:
                 logger.error("could not decode json from request body: %s", e)
 

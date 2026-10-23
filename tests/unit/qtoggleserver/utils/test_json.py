@@ -178,6 +178,18 @@ class TestLoads:
         deserialized = json_utils.loads(serialized, extra_types=json_utils.ExtraTypes.EXTENDED)
         assert deserialized == original
 
+    @pytest.mark.parametrize("data", ["NaN", "Infinity", "-Infinity", "1e999", '{"value": [1, NaN]}'])
+    def test_allow_nan_false_rejects_non_finite(self, data) -> None:
+        with pytest.raises(ValueError):
+            json_utils.loads(data, allow_nan=False)
+
+    def test_allow_nan_false_accepts_finite(self) -> None:
+        assert json_utils.loads('{"value": [1, 2.5, -3e10]}', allow_nan=False) == {"value": [1, 2.5, -3e10]}
+
+    def test_allow_nan_default_accepts_non_finite(self) -> None:
+        assert math.isnan(json_utils.loads("NaN"))
+        assert json_utils.loads("1e999") == math.inf
+
 
 class TestEdgeCases:
     """Test edge cases and error handling."""

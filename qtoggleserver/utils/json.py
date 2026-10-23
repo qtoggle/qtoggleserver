@@ -209,7 +209,25 @@ def dumps(obj: Any, extra_types: str | ExtraTypes = ExtraTypes.NONE, **kwargs) -
             return json.dumps(obj, allow_nan=False, **kwargs)
 
 
-def loads(s: str | bytes, resolve_refs: bool = False, extra_types: str | ExtraTypes = ExtraTypes.NONE, **kwargs) -> Any:
+def _parse_finite_float(s: str) -> float:
+    value = float(s)
+    if math.isinf(value):
+        raise ValueError(f"number out of range: {s}")
+
+    return value
+
+
+def _reject_constant(s: str) -> None:
+    raise ValueError(f"invalid constant: {s}")
+
+
+def loads(
+    s: str | bytes,
+    resolve_refs: bool = False,
+    extra_types: str | ExtraTypes = ExtraTypes.NONE,
+    allow_nan: bool = True,
+    **kwargs,
+) -> Any:
     """Deserialize JSON string to Python object.
 
     Args:
@@ -220,6 +238,7 @@ def loads(s: str | bytes, resolve_refs: bool = False, extra_types: str | ExtraTy
             - ISO: Parse ISO date/datetime strings back to date/datetime objects.
             - EXTENDED: Parse {__t, __v} objects back to date/datetime objects.
             - STR: Not applicable (objects serialized with STR cannot be deserialized).
+        allow_nan: If False, raise ValueError for NaN, Infinity and numbers too large for a float.
         **kwargs: Additional arguments passed to json.loads().
 
     Returns:
@@ -231,6 +250,10 @@ def loads(s: str | bytes, resolve_refs: bool = False, extra_types: str | ExtraTy
         object_hook = decode_json_hook_iso
     else:
         object_hook = None
+
+    if not allow_nan:
+        kwargs.setdefault("parse_constant", _reject_constant)
+        kwargs.setdefault("parse_float", _parse_finite_float)
 
     obj = json.loads(s, object_hook=object_hook, **kwargs)
     if resolve_refs:
