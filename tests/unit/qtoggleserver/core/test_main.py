@@ -328,6 +328,25 @@ class TestReadPortsLastValue:
 
         assert mock_num_port1.get_last_value() == 3
 
+    async def test_read_started_before_write_ended_loses(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """Should keep the written value as last value when a read that started before the write ended returns the
+        old value."""
+
+        freezer.move_to(dummy_utc_datetime)
+        mock_num_port1.set_writable(True)
+        mock_num_port1.set_last_read_value(3)
+
+        async def slow_read() -> int:
+            freezer.move_to(dummy_utc_datetime + timedelta(seconds=1))
+            await mock_num_port1.transform_and_write_value(5)
+            freezer.move_to(dummy_utc_datetime + timedelta(seconds=2))
+            return 3
+
+        mocker.patch.object(mock_num_port1, "read_value", side_effect=slow_read)
+        await read_ports(ports_to_read=[mock_num_port1])
+
+        assert mock_num_port1.get_last_value() == 5
+
     async def test_unavailable_read_after_write_keeps_written(
         self, freezer, mocker, mock_num_port1, dummy_utc_datetime
     ):
