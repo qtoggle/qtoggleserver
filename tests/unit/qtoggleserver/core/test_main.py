@@ -347,6 +347,37 @@ class TestReadPortsLastValue:
 
         assert mock_num_port1.get_last_value() == 5
 
+    async def test_value_taken_before_write_loses(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """Should keep the written value as last value when a read, done after the write, returns a value the port took
+        before the write (e.g. a polled value)."""
+
+        freezer.move_to(dummy_utc_datetime)
+        taken_ms = int(time.time() * 1000)
+        mock_num_port1.set_writable(True)
+        mock_num_port1.set_last_read_value(3)
+
+        freezer.move_to(dummy_utc_datetime + timedelta(seconds=1))
+        await mock_num_port1.transform_and_write_value(5)
+
+        freezer.move_to(dummy_utc_datetime + timedelta(seconds=2))
+        mock_num_port1.set_next_value(3)
+        mocker.patch.object(mock_num_port1, "get_read_value_time", return_value=taken_ms)
+        await read_ports(ports_to_read=[mock_num_port1])
+
+        assert mock_num_port1.get_last_value() == 5
+        assert mock_num_port1._last_read_value == (3, taken_ms)
+
+    async def test_value_time_after_read_start_ignored(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """Should never stamp a read later than when it started, whatever time the port reports."""
+
+        freezer.move_to(dummy_utc_datetime)
+        started_ms = int(time.time() * 1000)
+        mock_num_port1.set_next_value(3)
+        mocker.patch.object(mock_num_port1, "get_read_value_time", return_value=started_ms + 5000)
+        await read_ports(ports_to_read=[mock_num_port1])
+
+        assert mock_num_port1._last_read_value == (3, started_ms)
+
     async def test_unavailable_read_after_write_keeps_written(
         self, freezer, mocker, mock_num_port1, dummy_utc_datetime
     ):

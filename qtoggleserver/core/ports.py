@@ -672,6 +672,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def read_value(self) -> NullablePortValue:
         return None
 
+    def get_read_value_time(self) -> int | None:
+        """Return when the value from the latest `read_value()` was taken from the port, in milliseconds, for a port
+        that offers a value it took earlier. `None` means the value was taken during the read."""
+
+        return None
+
     def get_last_read_value(self) -> NullablePortValue:
         return self._last_read_value[0] if self._last_read_value else None
 
