@@ -1,4 +1,7 @@
 import asyncio
+import time
+
+from datetime import timedelta
 
 import pytest
 
@@ -34,6 +37,54 @@ class MockPolledPeripheral(PolledPeripheral):
 
     async def make_port_args(self):
         return []
+
+
+class TestPollTime:
+    async def test_records_poll_start(self, freezer, dummy_utc_datetime, mocker):
+        freezer.move_to(dummy_utc_datetime)
+        started_ms = int(time.time() * 1000)
+        peripheral = MockPolledPeripheral(name="test")
+
+        async def slow_poll():
+            freezer.move_to(dummy_utc_datetime + timedelta(seconds=3))
+
+        mocker.patch.object(peripheral, "poll", side_effect=slow_poll)
+        await peripheral.run_poll()
+
+        assert peripheral.get_last_poll_time() == started_ms
+
+    async def test_failed_poll_keeps_previous_time(self, freezer, dummy_utc_datetime, mocker):
+        freezer.move_to(dummy_utc_datetime)
+        peripheral = MockPolledPeripheral(name="test")
+        mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
+        await peripheral.run_poll()
+        last_poll_time = peripheral.get_last_poll_time()
+
+        freezer.move_to(dummy_utc_datetime + timedelta(seconds=3))
+        mocker.patch.object(peripheral, "poll", side_effect=RuntimeError("poll failed"))
+        with pytest.raises(RuntimeError):
+            await peripheral.run_poll()
+
+        assert peripheral.get_last_poll_time() == last_poll_time
+
+    async def test_port_reports_poll_time(self):
+        peripheral = MockPolledPeripheral(name="test")
+        port = MockPolledPort(peripheral, "port1")
+        assert port.get_read_value_time() is None
+
+        await peripheral.run_poll()
+
+        assert port.get_read_value_time() == peripheral.get_last_poll_time()
+
+    async def test_poll_after_write_records_time(self, freezer, dummy_utc_datetime, mocker):
+        freezer.move_to(dummy_utc_datetime)
+        peripheral = MockPolledPeripheral(name="test", poll_after_write=True)
+        port = MockPolledPort(peripheral, "port1")
+        mocker.patch.object(peripheral, "poll", new_callable=mocker.AsyncMock)
+
+        await port._write_value_safe(True, True)
+
+        assert peripheral.get_last_poll_time() == int(time.time() * 1000)
 
 
 class TestPolledPortPollAfterWrite:

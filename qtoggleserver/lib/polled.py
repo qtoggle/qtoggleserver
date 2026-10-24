@@ -1,6 +1,7 @@
 import abc
 import asyncio
 import logging
+import time
 
 from typing import cast
 
@@ -39,6 +40,7 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
         )
         self._retry_count: int = retry_count if retry_count >= 0 else self.DEFAULT_RETRY_COUNT
         self._retry_counter: int = 0
+        self._last_poll_time: int | None = None
 
         super().__init__(**kwargs)
 
@@ -58,7 +60,7 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
                     continue
 
                 try:
-                    await self.poll()
+                    await self.run_poll()
                 except asyncio.CancelledError:
                     raise
                 except Exception as e:
@@ -116,6 +118,18 @@ class PolledPeripheral(Peripheral, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     async def poll(self) -> None:
         raise NotImplementedError()
+
+    async def run_poll(self) -> None:
+        """Call `poll()` and, if it succeeds, record when it started. Polled values are at least that recent."""
+
+        started = int(time.time() * 1000)
+        await self.poll()
+        self._last_poll_time = started
+
+    def get_last_poll_time(self) -> int | None:
+        """Return when the latest successful poll started, in milliseconds."""
+
+        return self._last_poll_time
 
     async def handle_enable(self) -> None:
         self._poll_task = asyncio.create_task(self._poll_loop())
@@ -193,12 +207,16 @@ class PolledPort(PeripheralPort, metaclass=abc.ABCMeta):
     def get_peripheral(self) -> PolledPeripheral:
         return cast(PolledPeripheral, super().get_peripheral())
 
+    def get_read_value_time(self) -> int | None:
+        # Values come from the latest poll, which may predate a write that has completed since
+        return self.get_peripheral().get_last_poll_time()
+
     async def _write_value_safe(self, value: PortValue, transformed_value: PortValue) -> None:
         await super()._write_value_safe(value, transformed_value)
 
         # Poll values immediately after writing, if peripheral requires it
         peripheral = self.get_peripheral()
         if peripheral.POLL_AFTER_WRITE:
-            await peripheral.poll()
+            await peripheral.run_poll()
             if peripheral.TRIGGER_UPDATE_AFTER_POLL:
                 peripheral.trigger_port_update_fire_and_forget()
