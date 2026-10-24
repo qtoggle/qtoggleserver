@@ -40,6 +40,14 @@ _NO_EVENT_DEVICE_ATTRS = ["uptime", "date"]
 _DEFAULT_POLL_INTERVAL = 10
 _TEMP_RENAME_DNS_TIMEOUT = 120
 
+# Errors that tell the request never reached the slave
+_UNREACHED_ERRORS = (
+    core_responses.ConnectionRefused,
+    core_responses.HostUnreachable,
+    core_responses.NetworkUnreachable,
+    core_responses.UnresolvableHostname,
+)
+
 
 _slaves_by_name: dict[str, Slave] = {}
 _load_time: float = 0
@@ -135,8 +143,8 @@ class Slave(logging_utils.LoggableMixin):
         # Used to schedule provisioning + local update for permanently offline slaves
         self._provisioning_timeout_task: asyncio.Task | None = None
 
-        # An internal reference to the last made API call
-        self._last_api_call_ref: Any = None
+        # The latest call per method and path; a newer one stops a pending retry, so an old write can't override it
+        self._last_api_call_refs: dict[tuple[str, str], dict] = {}
 
         # Cached URL
         self._url: str | None = None
@@ -537,8 +545,7 @@ class Slave(logging_utils.LoggableMixin):
         url = self.get_url(path)
         body_str = json_utils.dumps(body) if body is not None else None
 
-        # Used to signal a new API call, which should prevent any pending retry
-        ref = self._last_api_call_ref = {}
+        ref = self._last_api_call_refs[(method, path)] = {}
 
         http_client = AsyncHTTPClient()
         headers = {
@@ -573,7 +580,7 @@ class Slave(logging_utils.LoggableMixin):
             if (
                 (retry_counter is not None)
                 and (retry_counter < settings.slaves.retry_count)
-                and (ref is not self._last_api_call_ref)
+                and _is_retriable(e)
                 and self._enabled
             ):
                 msg += f", retrying in {settings.slaves.retry_interval} seconds"
@@ -581,10 +588,15 @@ class Slave(logging_utils.LoggableMixin):
 
                 await asyncio.sleep(settings.slaves.retry_interval)
 
-                return await self.api_call(method, path, body, timeout, retry_counter + 1)
+                # Retry in place: going through the parallel caller again would wait for a slot this call still holds
+                if ref is self._last_api_call_refs.get((method, path)) and self._enabled:
+                    return await self._api_call(method, path, body, timeout, retry_counter + 1)
+
+                self.debug("not retrying api call %s %s: a newer one started or the slave was disabled", method, path)
             else:
                 self.error(msg)
-                raise e  # noqa: TRY201
+
+            raise e  # noqa: TRY201
         else:
             self.debug("api call %s %s succeeded", method, path)
 
@@ -890,7 +902,8 @@ class Slave(logging_utils.LoggableMixin):
         self.debug("polling device")
 
         try:
-            attrs = await self.api_call("GET", "/device")
+            # No retries here: the poll loop counts failures itself, to tell when the slave goes offline
+            attrs = await self.api_call("GET", "/device", retry_counter=None)
         except Exception as e:
             self.error("failed to poll device: %s", e)
 
@@ -962,7 +975,7 @@ class Slave(logging_utils.LoggableMixin):
         self.debug("polling ports")
 
         try:
-            ports = await self.api_call("GET", "/ports")
+            ports = await self.api_call("GET", "/ports", retry_counter=None)
         except Exception as e:
             self.error("failed to poll ports: %s", e)
 
@@ -1502,6 +1515,16 @@ class Slave(logging_utils.LoggableMixin):
                     return core_responses.HTTPError(error.status, error.code, **params)
 
         return error
+
+
+def _is_retriable(error: Exception) -> bool:
+    """Tell if a failed API call may be repeated: either it never reached the slave, or the slave asked for a repeat by
+    answering `busy`."""
+
+    if isinstance(error, _UNREACHED_ERRORS):
+        return True
+
+    return isinstance(error, core_responses.HTTPError) and error.status == 500 and error.code == "busy"
 
 
 def get(name: str) -> Slave | None:

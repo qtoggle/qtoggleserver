@@ -1,7 +1,9 @@
+import asyncio
 import types
 
 import pytest
 
+from qtoggleserver.conf import settings
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.slaves import devices as slaves_devices
@@ -89,6 +91,120 @@ class TestAPICallError:
             await slave._api_call("PATCH", "/device", {"name": ""})
 
         assert exc_info.value is error
+
+
+class TestAPICallRetry:
+    """Test which failed calls Slave._api_call() retries."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, slave, mocker) -> None:
+        slave._enabled = True
+        mocker.patch.object(settings.slaves, "retry_interval", 0)
+        mocker.patch.object(settings.slaves, "retry_count", 3)
+
+    async def test_retries_write_that_never_reached_slave(self, slave, mock_http_client, mocker) -> None:
+        mocker.patch.object(core_responses, "parse", side_effect=[core_responses.ConnectionRefused(), None])
+
+        await slave._api_call("PATCH", "/ports/p1/value", 1)
+
+        assert mock_http_client.fetch.call_count == 2
+
+    async def test_does_not_retry_write_timeout(self, slave, mock_http_client, mocker) -> None:
+        """The write may have reached the slave, so repeating it isn't safe."""
+
+        mocker.patch.object(core_responses, "parse", side_effect=[core_responses.Timeout(), None])
+
+        with pytest.raises(core_responses.Timeout):
+            await slave._api_call("PATCH", "/ports/p1/value", 1)
+
+        assert mock_http_client.fetch.call_count == 1
+
+    async def test_does_not_retry_read_timeout(self, slave, mock_http_client, mocker) -> None:
+        """A timeout already took a full timeout interval; repeating it only delays the error."""
+
+        mocker.patch.object(core_responses, "parse", side_effect=[core_responses.Timeout(), {"name": "s"}])
+
+        with pytest.raises(core_responses.Timeout):
+            await slave._api_call("GET", "/device")
+
+        assert mock_http_client.fetch.call_count == 1
+
+    @pytest.mark.parametrize("method", ["GET", "PATCH"])
+    async def test_retries_busy_answer(self, method, slave, mock_http_client, mocker) -> None:
+        """The spec says a request answered with `busy` should be repeated later."""
+
+        error = core_responses.HTTPError(500, "busy")
+        mocker.patch.object(core_responses, "parse", side_effect=[error, None])
+
+        await slave._api_call(method, "/ports/p1/value", 1)
+
+        assert mock_http_client.fetch.call_count == 2
+
+    @pytest.mark.parametrize("method", ["GET", "PATCH"])
+    async def test_does_not_retry_error_answer(self, method, slave, mock_http_client, mocker) -> None:
+        error = core_responses.HTTPError(500, "port-error")
+        mocker.patch.object(core_responses, "parse", side_effect=[error, None])
+
+        with pytest.raises(core_responses.HTTPError):
+            await slave._api_call(method, "/ports/p1/value", 1)
+
+        assert mock_http_client.fetch.call_count == 1
+
+    async def test_gives_up_after_retry_count(self, slave, mock_http_client, mocker) -> None:
+        mocker.patch.object(core_responses, "parse", side_effect=core_responses.ConnectionRefused())
+
+        with pytest.raises(core_responses.ConnectionRefused):
+            await slave._api_call("PATCH", "/ports/p1/value", 1)
+
+        assert mock_http_client.fetch.call_count == 4
+
+    async def test_retries_do_not_block_parallel_caller(self, slave, mock_http_client, mocker) -> None:
+        """Retries must not take more parallel caller slots, or a call failing more than once never returns."""
+
+        mocker.patch.object(core_responses, "parse", side_effect=core_responses.ConnectionRefused())
+
+        async with asyncio.timeout(5):
+            with pytest.raises(core_responses.ConnectionRefused):
+                await slave.api_call("PATCH", "/ports/p1/value", 1)
+
+        assert mock_http_client.fetch.call_count == 4
+
+    async def test_newer_call_to_same_path_cancels_retry(self, slave, mock_http_client, mocker) -> None:
+        """A newer call to the same path replaces a waiting retry, so an older write can't override a newer one."""
+
+        async def newer_call(_) -> None:
+            slave._last_api_call_refs[("PATCH", "/ports/p1/value")] = {}
+
+        mocker.patch("qtoggleserver.slaves.devices.asyncio.sleep", side_effect=newer_call)
+        mocker.patch.object(core_responses, "parse", side_effect=[core_responses.ConnectionRefused(), None])
+
+        with pytest.raises(core_responses.ConnectionRefused):
+            await slave._api_call("PATCH", "/ports/p1/value", 1)
+
+        assert mock_http_client.fetch.call_count == 1
+
+    async def test_newer_call_to_other_path_keeps_retry(self, slave, mock_http_client, mocker) -> None:
+        async def newer_call(_) -> None:
+            slave._last_api_call_refs[("GET", "/device")] = {}
+
+        mocker.patch("qtoggleserver.slaves.devices.asyncio.sleep", side_effect=newer_call)
+        mocker.patch.object(core_responses, "parse", side_effect=[core_responses.ConnectionRefused(), None])
+
+        await slave._api_call("PATCH", "/ports/p1/value", 1)
+
+        assert mock_http_client.fetch.call_count == 2
+
+    async def test_poll_does_not_retry(self, slave, mock_http_client, mocker) -> None:
+        """The poll loop counts failed polls itself, to tell when the slave goes offline."""
+
+        slave._poll_started = True
+        mocker.patch.dict("qtoggleserver.slaves.devices._slaves_by_name", {"slave1": slave}, clear=True)
+        mocker.patch.object(slave, "_handle_offline")
+        mocker.patch.object(core_responses, "parse", side_effect=core_responses.ConnectionRefused())
+
+        await slave._poll_once()
+
+        assert mock_http_client.fetch.call_count == 1
 
 
 @pytest.fixture
