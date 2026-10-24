@@ -144,7 +144,8 @@ class Slave(logging_utils.LoggableMixin):
         self._provisioning_timeout_task: asyncio.Task | None = None
 
         # An internal reference to the last made API call
-        self._last_api_call_ref: Any = None
+        # The latest call per method and path; a newer one stops a pending retry, so an old write can't override it
+        self._last_api_call_refs: dict[tuple[str, str], dict] = {}
 
         # Cached URL
         self._url: str | None = None
@@ -545,8 +546,7 @@ class Slave(logging_utils.LoggableMixin):
         url = self.get_url(path)
         body_str = json_utils.dumps(body) if body is not None else None
 
-        # Used to signal a new API call, which should prevent any pending retry
-        ref = self._last_api_call_ref = {}
+        ref = self._last_api_call_refs[(method, path)] = {}
 
         http_client = AsyncHTTPClient()
         headers = {
@@ -581,7 +581,7 @@ class Slave(logging_utils.LoggableMixin):
             if (
                 (retry_counter is not None)
                 and (retry_counter < settings.slaves.retry_count)
-                and _is_retriable(method, e)
+                and _is_retriable(e)
                 and self._enabled
             ):
                 msg += f", retrying in {settings.slaves.retry_interval} seconds"
@@ -590,10 +590,10 @@ class Slave(logging_utils.LoggableMixin):
                 await asyncio.sleep(settings.slaves.retry_interval)
 
                 # Retry in place: going through the parallel caller again would wait for a slot this call still holds
-                if ref is self._last_api_call_ref and self._enabled:
+                if ref is self._last_api_call_refs.get((method, path)) and self._enabled:
                     return await self._api_call(method, path, body, timeout, retry_counter + 1)
 
-                self.debug("not retrying api call %s %s: a newer call started or the slave was disabled", method, path)
+                self.debug("not retrying api call %s %s: a newer one started or the slave was disabled", method, path)
             else:
                 self.error(msg)
 
@@ -903,7 +903,8 @@ class Slave(logging_utils.LoggableMixin):
         self.debug("polling device")
 
         try:
-            attrs = await self.api_call("GET", "/device")
+            # No retries here: the poll loop counts failures itself, to tell when the slave goes offline
+            attrs = await self.api_call("GET", "/device", retry_counter=None)
         except Exception as e:
             self.error("failed to poll device: %s", e)
 
@@ -975,7 +976,7 @@ class Slave(logging_utils.LoggableMixin):
         self.debug("polling ports")
 
         try:
-            ports = await self.api_call("GET", "/ports")
+            ports = await self.api_call("GET", "/ports", retry_counter=None)
         except Exception as e:
             self.error("failed to poll ports: %s", e)
 
@@ -1517,14 +1518,14 @@ class Slave(logging_utils.LoggableMixin):
         return error
 
 
-def _is_retriable(method: str, error: Exception) -> bool:
-    """Tell if a failed API call may be repeated. Only a `GET` is safe to repeat once the request may have reached the
-    slave; a slave's error answer is never retried."""
+def _is_retriable(error: Exception) -> bool:
+    """Tell if a failed API call may be repeated: either it never reached the slave, or the slave asked for a repeat by
+    answering `busy`."""
 
     if isinstance(error, _UNREACHED_ERRORS):
         return True
 
-    return method == "GET" and isinstance(error, (core_responses.Timeout, core_responses.OtherError))
+    return isinstance(error, core_responses.HTTPError) and error.status == 500 and error.code == "busy"
 
 
 def get(name: str) -> Slave | None:
