@@ -256,7 +256,7 @@ class TestReadPortsLastRead:
         triggering a value change."""
 
         freezer.move_to(dummy_utc_datetime)
-        mock_num_port1.set_last_read_value(10)
+        mock_num_port1.set_read_value(10)
 
         freezer.move_to(dummy_utc_datetime + timedelta(seconds=5))
         mock_num_port1.set_next_value(10)
@@ -273,7 +273,7 @@ class TestReadPortsLastRead:
         """Should record the read, save the port and trigger a value change when the value has changed."""
 
         freezer.move_to(dummy_utc_datetime)
-        mock_num_port1.set_last_read_value(10)
+        mock_num_port1.set_read_value(10)
         mock_num_port1.set_next_value(20)
         mocker.patch.object(mock_num_port1, "save_asap")
         mocker.patch.object(mock_num_port1, "trigger_value_change")
@@ -288,7 +288,7 @@ class TestReadPortsLastRead:
         """Should not record a skipped read."""
 
         freezer.move_to(dummy_utc_datetime)
-        mock_num_port1.set_last_read_value(10)
+        mock_num_port1.set_read_value(10)
         last_read_value = mock_num_port1._last_read_value
 
         freezer.move_to(dummy_utc_datetime + timedelta(seconds=5))
@@ -300,7 +300,7 @@ class TestReadPortsLastRead:
         """Should not record a failed read."""
 
         freezer.move_to(dummy_utc_datetime)
-        mock_num_port1.set_last_read_value(10)
+        mock_num_port1.set_read_value(10)
         last_read_value = mock_num_port1._last_read_value
 
         freezer.move_to(dummy_utc_datetime + timedelta(seconds=5))
@@ -318,7 +318,7 @@ class TestReadPortsLastValue:
 
         freezer.move_to(dummy_utc_datetime)
         mock_num_port1.set_writable(True)
-        mock_num_port1.set_last_read_value(3)
+        mock_num_port1.set_read_value(3)
         await mock_num_port1.transform_and_write_value(5)
         assert mock_num_port1.get_last_value() == 5
 
@@ -328,6 +328,25 @@ class TestReadPortsLastValue:
 
         assert mock_num_port1.get_last_value() == 3
 
+    async def test_read_started_before_write_ended_loses(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """Should keep the written value as last value when a read that started before the write ended returns the
+        old value."""
+
+        freezer.move_to(dummy_utc_datetime)
+        mock_num_port1.set_writable(True)
+        mock_num_port1.set_read_value(3)
+
+        async def slow_read() -> int:
+            freezer.move_to(dummy_utc_datetime + timedelta(seconds=1))
+            await mock_num_port1.transform_and_write_value(5)
+            freezer.move_to(dummy_utc_datetime + timedelta(seconds=2))
+            return 3
+
+        mocker.patch.object(mock_num_port1, "read_value", side_effect=slow_read)
+        await read_ports(ports_to_read=[mock_num_port1])
+
+        assert mock_num_port1.get_last_value() == 5
+
     async def test_unavailable_read_after_write_keeps_written(
         self, freezer, mocker, mock_num_port1, dummy_utc_datetime
     ):
@@ -335,7 +354,7 @@ class TestReadPortsLastValue:
 
         freezer.move_to(dummy_utc_datetime)
         mock_num_port1.set_writable(True)
-        mock_num_port1.set_last_read_value(None)
+        mock_num_port1.set_read_value(None)
         await mock_num_port1.transform_and_write_value(5)
 
         freezer.move_to(dummy_utc_datetime + timedelta(seconds=1))
@@ -348,7 +367,7 @@ class TestReadPortsLastValue:
         """Should still record a change to an unavailable value and trigger a value change."""
 
         freezer.move_to(dummy_utc_datetime)
-        mock_num_port1.set_last_read_value(10)
+        mock_num_port1.set_read_value(10)
 
         freezer.move_to(dummy_utc_datetime + timedelta(seconds=1))
         mocker.patch.object(mock_num_port1, "read_value", return_value=None)

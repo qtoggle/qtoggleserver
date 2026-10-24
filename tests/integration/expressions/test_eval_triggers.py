@@ -25,8 +25,8 @@ def with_attr_change_handler():
 async def test_eval_trigger_set_expression(mock_num_port1, mock_num_port2, mocker):
     """Should trigger expression evaluation and write resulting value when setting an expression to a port."""
 
-    mock_num_port1.set_last_read_value(4)
-    mock_num_port2.set_last_read_value(5)
+    mock_num_port1.set_read_value(4)
+    mock_num_port2.set_read_value(5)
     mock_num_port2.set_writable(True)
     mocker.patch.object(mock_num_port2, "transform_and_write_value")
 
@@ -39,8 +39,8 @@ async def test_eval_trigger_set_expression(mock_num_port1, mock_num_port2, mocke
 async def test_eval_trigger_value_change(mock_num_port1, mock_num_port2, mocker):
     """Should trigger expression evaluation and write resulting value when a dependent port's value changes."""
 
-    mock_num_port1.set_last_read_value(4)
-    mock_num_port2.set_last_read_value(5)
+    mock_num_port1.set_read_value(4)
+    mock_num_port2.set_read_value(5)
     mock_num_port2.set_writable(True)
     mock_num_port2.set_expression("MUL($nid1, 10)")
     mock_num_port1.set_next_value(6)
@@ -54,8 +54,8 @@ async def test_eval_trigger_value_change(mock_num_port1, mock_num_port2, mocker)
 async def test_eval_trigger_value_change_own(mock_num_port1, mock_num_port2, mocker):
     """Should trigger expression evaluation and write resulting value when own port value changes, as a regular dep."""
 
-    mock_num_port1.set_last_read_value(4)
-    mock_num_port2.set_last_read_value(5)
+    mock_num_port1.set_read_value(4)
+    mock_num_port2.set_read_value(5)
     mock_num_port2.set_writable(True)
     mock_num_port2.set_expression("MUL($nid1, $nid2)")
     mock_num_port1.set_next_value(6)
@@ -69,8 +69,8 @@ async def test_eval_trigger_value_change_own(mock_num_port1, mock_num_port2, moc
 async def test_eval_trigger_ignore_inexistent_port(mock_num_port1, mock_num_port2, mocker):
     """Should not trigger expression evaluation when expression includes an inexistent port."""
 
-    mock_num_port1.set_last_read_value(4)
-    mock_num_port2.set_last_read_value(5)
+    mock_num_port1.set_read_value(4)
+    mock_num_port2.set_read_value(5)
     mock_num_port2.set_writable(True)
     mock_num_port2.set_expression("MUL($nid1, $inexistent)")
     mock_num_port1.set_next_value(6)
@@ -84,7 +84,7 @@ async def test_eval_trigger_ignore_inexistent_port(mock_num_port1, mock_num_port
 async def test_eval_trigger_port_enabled(mock_num_port1, mocker):
     """Should trigger expression evaluation and write resulting value when port becomes enabled."""
 
-    mock_num_port1.set_last_read_value(4)
+    mock_num_port1.set_read_value(4)
     mock_num_port1.set_writable(True)
     mock_num_port1.set_expression("MUL($, 10)")
     mock_num_port1.set_next_value(6)
@@ -104,7 +104,7 @@ async def test_eval_trigger_port_enabled(mock_num_port1, mocker):
 async def test_eval_trigger_port_offline(mock_num_port1, mock_num_port2, with_attr_change_handler, mocker):
     """Should re-evaluate and treat the value as unavailable when a dependent port goes offline."""
 
-    mock_num_port1.set_last_read_value(4)
+    mock_num_port1.set_read_value(4)
     mock_num_port2.set_writable(True)
     mock_num_port2.set_expression("DEFAULT($nid1, 0)")
 
@@ -126,7 +126,7 @@ async def test_eval_trigger_port_offline(mock_num_port1, mock_num_port2, with_at
 async def test_eval_trigger_port_online(mock_num_port1, mock_num_port2, with_attr_change_handler, mocker):
     """Should re-evaluate and treat the value as available again when a dependent port comes back online."""
 
-    mock_num_port1.set_last_read_value(4)
+    mock_num_port1.set_read_value(4)
     mock_num_port1.set_online(False)
     mock_num_port2.set_writable(True)
     mock_num_port2.set_expression("DEFAULT($nid1, 0)")
@@ -142,7 +142,7 @@ async def test_eval_trigger_port_online(mock_num_port1, mock_num_port2, with_att
 async def test_eval_trigger_port_offline_not_written(mock_num_port1, mock_num_port2, with_attr_change_handler, mocker):
     """Should not write anything when an offline port makes the whole expression unavailable."""
 
-    mock_num_port1.set_last_read_value(4)
+    mock_num_port1.set_read_value(4)
     mock_num_port2.set_writable(True)
     mock_num_port2.set_expression("MUL($nid1, 10)")
 
@@ -155,7 +155,7 @@ async def test_eval_trigger_port_offline_not_written(mock_num_port1, mock_num_po
 
     mocker.patch.object(mock_num_port2, "transform_and_write_value")
     # Change nid1's value too, so that ignoring the offline state would produce a new value to write
-    mock_num_port1.set_last_read_value(5)
+    mock_num_port1.set_read_value(5)
     mock_num_port1.set_online(False)
     await mock_num_port1.trigger_update()
     spy = mocker.spy(mock_num_port2, "eval_and_push_write")
@@ -189,7 +189,7 @@ async def test_eval_trigger_port_add(mock_num_port1, with_attr_change_handler, m
     """Should trigger expression evaluation when a new port is added."""
 
     mock_num_port1.set_writable(True)
-    mock_num_port1.set_last_read_value(0)
+    mock_num_port1.set_read_value(0)
     # Expression depends on an attribute of nid3, which doesn't exist yet
     mock_num_port1.set_expression("$nid3:enabled")
     mocker.patch.object(mock_num_port1, "transform_and_write_value")
@@ -234,7 +234,7 @@ async def test_eval_trigger_device_attr_change(mock_num_port1, with_attr_change_
     original_display_name = device_attrs.display_name
     try:
         mock_num_port1.set_writable(True)
-        mock_num_port1.set_last_read_value(0)
+        mock_num_port1.set_read_value(0)
         # Expression depends on the device's display_name attribute
         mock_num_port1.set_expression("#:display_name")
         mocker.patch.object(mock_num_port1, "transform_and_write_value")

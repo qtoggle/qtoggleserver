@@ -45,7 +45,7 @@ class TestAvailable:
         expr = various.AvailableFunction([func_expr], Role.VALUE)
         assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
-        mock_num_port1.set_last_read_value(16)
+        mock_num_port1.set_read_value(16)
         assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 1
 
         port_expr = MockPortValue(None, port_id="inexistent_id")
@@ -152,15 +152,15 @@ class TestRising:
         port_expr = MockPortValue(mock_num_port1)
         expr = various.RisingFunction([port_expr], Role.VALUE)
 
-        mock_num_port1.set_last_read_value(10)
+        mock_num_port1.set_read_value(10)
         assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
         assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
-        mock_num_port1.set_last_read_value(13)
+        mock_num_port1.set_read_value(13)
         assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 1
         assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
-        mock_num_port1.set_last_read_value(9)
+        mock_num_port1.set_read_value(9)
         assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
     def test_parse(self):
@@ -180,15 +180,15 @@ class TestFalling:
         port_expr = MockPortValue(mock_num_port1)
         expr = various.FallingFunction([port_expr], Role.VALUE)
 
-        mock_num_port1.set_last_read_value(13)
+        mock_num_port1.set_read_value(13)
         assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
         assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
-        mock_num_port1.set_last_read_value(10)
+        mock_num_port1.set_read_value(10)
         assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 1
         assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
-        mock_num_port1.set_last_read_value(14)
+        mock_num_port1.set_read_value(14)
         assert await expr.eval(EvalContext(port_values={"nid1": mock_num_port1.get_last_read_value()}, now_ms=0)) == 0
 
     def test_parse(self):
@@ -445,20 +445,20 @@ class TestHistory:
 
         expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
 
-        mock_num_port1.set_last_read_value(-8)
+        mock_num_port1.set_read_value(-8)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
-        mock_num_port1.set_last_read_value(-2)
+        mock_num_port1.set_read_value(-2)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 2000) * 1000)
-        mock_num_port1.set_last_read_value(0.01)
+        mock_num_port1.set_read_value(0.01)
 
         with pytest.raises(PortValueUnavailable):
             await expr.eval(dummy_eval_context)
 
-        mock_num_port1.set_last_read_value(-6)
+        mock_num_port1.set_read_value(-6)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 6000) * 1000)
         assert await expr.eval(dummy_eval_context) == -6
 
-        mock_num_port1.set_last_read_value(-4)
+        mock_num_port1.set_read_value(-4)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 4000) * 1000)
         diff_expr.set_value(-3601)  # invalidates history expression internal cache
         assert await expr.eval(dummy_eval_context) == -4
@@ -475,10 +475,10 @@ class TestHistory:
 
         expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
 
-        mock_num_port1.set_last_read_value(-8)
+        mock_num_port1.set_read_value(-8)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
 
-        mock_num_port1.set_last_read_value(0.01)
+        mock_num_port1.set_read_value(0.01)
         assert await expr.eval(dummy_eval_context) == 0.01
 
     async def test_older_current(
@@ -493,12 +493,12 @@ class TestHistory:
 
         expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
 
-        mock_num_port1.set_last_read_value(-2)
+        mock_num_port1.set_read_value(-2)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 2000) * 1000)
-        mock_num_port1.set_last_read_value(-1)
+        mock_num_port1.set_read_value(-1)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 1000) * 1000)
 
-        mock_num_port1.set_last_read_value(0.01)
+        mock_num_port1.set_read_value(0.01)
         assert await expr.eval(dummy_eval_context) == 0.01
 
     async def test_newer_past(
@@ -513,20 +513,20 @@ class TestHistory:
 
         expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
 
-        mock_num_port1.set_last_read_value(-8)
+        mock_num_port1.set_read_value(-8)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
-        mock_num_port1.set_last_read_value(-2)
+        mock_num_port1.set_read_value(-2)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 2000) * 1000)
-        mock_num_port1.set_last_read_value(0.01)
+        mock_num_port1.set_read_value(0.01)
 
         with pytest.raises(PortValueUnavailable):
             await expr.eval(dummy_eval_context)
 
-        mock_num_port1.set_last_read_value(-4)
+        mock_num_port1.set_read_value(-4)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 4000) * 1000)
         assert await expr.eval(dummy_eval_context) == -4
 
-        mock_num_port1.set_last_read_value(-6)
+        mock_num_port1.set_read_value(-6)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 6000) * 1000)
         diff_expr.set_value(3601)  # invalidates history expression internal cache
         assert await expr.eval(dummy_eval_context) == -6
@@ -543,10 +543,10 @@ class TestHistory:
 
         expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
 
-        mock_num_port1.set_last_read_value(-8)
+        mock_num_port1.set_read_value(-8)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
 
-        mock_num_port1.set_last_read_value(0.01)
+        mock_num_port1.set_read_value(0.01)
         with pytest.raises(PortValueUnavailable):
             await expr.eval(dummy_eval_context)
 
@@ -562,12 +562,12 @@ class TestHistory:
 
         expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
 
-        mock_num_port1.set_last_read_value(-2)
+        mock_num_port1.set_read_value(-2)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 2000) * 1000)
-        mock_num_port1.set_last_read_value(-1)
+        mock_num_port1.set_read_value(-1)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 1000) * 1000)
 
-        mock_num_port1.set_last_read_value(0.01)
+        mock_num_port1.set_read_value(0.01)
         assert await expr.eval(dummy_eval_context) == -1
 
     async def test_newer_unlimited_past(
@@ -582,17 +582,17 @@ class TestHistory:
 
         expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
 
-        mock_num_port1.set_last_read_value(-8)
+        mock_num_port1.set_read_value(-8)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
 
-        mock_num_port1.set_last_read_value(0.01)
+        mock_num_port1.set_read_value(0.01)
         assert await expr.eval(dummy_eval_context) == 0.01
 
-        mock_num_port1.set_last_read_value(-4)
+        mock_num_port1.set_read_value(-4)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 4000) * 1000)
         assert await expr.eval(dummy_eval_context) == -4
 
-        mock_num_port1.set_last_read_value(-6)
+        mock_num_port1.set_read_value(-6)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 6000) * 1000)
         diff_expr.set_value(3601)  # invalidates history expression internal cache
         assert await expr.eval(dummy_eval_context) == -6
@@ -609,10 +609,10 @@ class TestHistory:
 
         expr = various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE)
 
-        mock_num_port1.set_last_read_value(-8)
+        mock_num_port1.set_read_value(-8)
         await history.save_sample(mock_num_port1, (dummy_timestamp - 8000) * 1000)
 
-        mock_num_port1.set_last_read_value(0.01)
+        mock_num_port1.set_read_value(0.01)
         with pytest.raises(PortValueUnavailable):
             await expr.eval(dummy_eval_context)
 

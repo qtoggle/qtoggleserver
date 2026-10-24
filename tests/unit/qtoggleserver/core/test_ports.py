@@ -4,6 +4,7 @@ import logging
 import pytest
 
 from qtoggleserver.conf import settings
+from qtoggleserver.core import expressions
 from qtoggleserver.core.expressions.exceptions import ValueUnavailable
 from qtoggleserver.core.ports import PortDisabled, PortWriteError, WriteRequest
 
@@ -133,6 +134,50 @@ class TestPortWriteQueueOrder:
         await asyncio.sleep(5 * settings.core.tick_interval / 1000)
 
         assert written == [1, 2, 3]
+
+
+class TestPortAdaptValueType:
+    @pytest.mark.parametrize(
+        "value, expected",
+        [
+            (21.299999999999997, 21.3),
+            (0.30000000000000004, 0.3),
+            (21.3, 21.3),
+            (1e-20, 1e-20),
+            (123456789012.345, 123456789012.345),
+            (5, 5.0),
+        ],
+    )
+    def test_float_drops_noise(self, value, expected, mock_num_port1):
+        assert mock_num_port1.adapt_value_type(value) == expected
+
+    @pytest.mark.parametrize("value, expected", [(28.999999999999996, 29), (2.9, 2), (-2.9, -2), (7, 7)])
+    def test_integer_truncates_without_noise(self, value, expected, mock_num_port1, mocker):
+        mocker.patch.object(mock_num_port1, "is_integer", return_value=True)
+        assert mock_num_port1.adapt_value_type(value) == expected
+
+    async def test_transform_round_trip(self, mock_num_port1, mocker):
+        """A value written with `DIV($, 10)` and read back with `MUL($, 10)` should read as the written value."""
+
+        written = []
+        mocker.patch.object(mock_num_port1, "write_value", side_effect=lambda v: written.append(v))
+        mock_num_port1._transform_write = expressions.parse("nid1", "DIV($, 10)", role=expressions.Role.TRANSFORM_WRITE)
+        mock_num_port1._transform_read = expressions.parse("nid1", "MUL($, 10)", role=expressions.Role.TRANSFORM_READ)
+
+        await mock_num_port1.transform_and_write_value(21.3)
+        mock_num_port1.set_next_value(written[0])
+
+        assert await mock_num_port1.read_transformed_value() == 21.3
+
+    def test_integer_keeps_large_int_exact(self, mock_num_port1, mocker):
+        mocker.patch.object(mock_num_port1, "is_integer", return_value=True)
+        assert mock_num_port1.adapt_value_type(2**60) == 2**60
+
+    def test_boolean(self, mock_bool_port1):
+        assert mock_bool_port1.adapt_value_type(1) is True
+
+    def test_none(self, mock_num_port1):
+        assert mock_num_port1.adapt_value_type(None) is None
 
 
 class TestPortPushWriteAndWait:
@@ -452,19 +497,19 @@ class TestPortDisabledWrites:
 
 class TestPortWaitForReadValue:
     async def test_returns_true_immediately_if_already_matching(self, mock_num_port1):
-        mock_num_port1.set_last_read_value(100)
+        mock_num_port1.set_read_value(100)
         assert await mock_num_port1.wait_for_read_value(100, timeout=1) is True
 
     async def test_returns_false_immediately_for_nonpositive_timeout_without_match(self, mock_num_port1):
-        mock_num_port1.set_last_read_value(0)
+        mock_num_port1.set_read_value(0)
         assert await mock_num_port1.wait_for_read_value(100, timeout=0) is False
 
     async def test_resolves_when_matching_value_is_later_read(self, mock_num_port1):
-        mock_num_port1.set_last_read_value(0)
+        mock_num_port1.set_read_value(0)
 
         async def delayed_read():
             await asyncio.sleep(0.01)
-            mock_num_port1.set_last_read_value(100)
+            mock_num_port1.set_read_value(100)
 
         task = asyncio.create_task(delayed_read())
         try:
@@ -475,13 +520,13 @@ class TestPortWaitForReadValue:
     async def test_ignores_non_matching_values(self, mock_num_port1):
         """A read value that doesn't match the target shouldn't resolve the wait."""
 
-        mock_num_port1.set_last_read_value(0)
+        mock_num_port1.set_read_value(0)
 
         async def delayed_reads():
             await asyncio.sleep(0.01)
-            mock_num_port1.set_last_read_value(50)
+            mock_num_port1.set_read_value(50)
             await asyncio.sleep(0.01)
-            mock_num_port1.set_last_read_value(100)
+            mock_num_port1.set_read_value(100)
 
         task = asyncio.create_task(delayed_reads())
         try:
@@ -490,15 +535,15 @@ class TestPortWaitForReadValue:
             await task
 
     async def test_times_out_without_match(self, mock_num_port1):
-        mock_num_port1.set_last_read_value(0)
+        mock_num_port1.set_read_value(0)
         assert await mock_num_port1.wait_for_read_value(100, timeout=0.02) is False
 
     async def test_cleans_up_waiter_after_resolving(self, mock_num_port1):
-        mock_num_port1.set_last_read_value(0)
+        mock_num_port1.set_read_value(0)
 
         async def delayed_read():
             await asyncio.sleep(0.01)
-            mock_num_port1.set_last_read_value(100)
+            mock_num_port1.set_read_value(100)
 
         task = asyncio.create_task(delayed_read())
         try:
@@ -508,7 +553,7 @@ class TestPortWaitForReadValue:
         assert mock_num_port1._value_match_waiters == []
 
     async def test_cleans_up_waiter_after_timeout(self, mock_num_port1):
-        mock_num_port1.set_last_read_value(0)
+        mock_num_port1.set_read_value(0)
         await mock_num_port1.wait_for_read_value(100, timeout=0.02)
         assert mock_num_port1._value_match_waiters == []
 

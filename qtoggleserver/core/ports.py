@@ -675,8 +675,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_last_read_value(self) -> NullablePortValue:
         return self._last_read_value[0] if self._last_read_value else None
 
-    def set_last_read_value(self, value: NullablePortValue) -> None:
-        self._last_read_value = value, int(time.time() * 1000)
+    def set_last_read_value(self, value: NullablePortValue, timestamp_ms: int) -> None:
+        """Record a read value. `timestamp_ms` is when the read started."""
+
+        self._last_read_value = value, timestamp_ms
 
         for target_value, future in self._value_match_waiters:
             if not future.done() and value == target_value:
@@ -919,7 +921,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         if self.get_type() == TYPE_BOOLEAN:
             return bool(value)
         else:
-            # Round the value if port accepts only integers
+            # Drop float arithmetic noise (`21.299999999999997`), keeping the 15 digits that a float always holds
+            if isinstance(value, float):
+                value = float(f"{value:.15g}")
+
+            # Truncate the value if port accepts only integers
             if self.is_integer():
                 return int(value)
 
