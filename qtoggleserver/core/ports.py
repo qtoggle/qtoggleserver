@@ -925,13 +925,14 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             return bool(value)
         else:
             # Drop float arithmetic noise (`21.299999999999997`), keeping the 15 digits that a float always holds
-            value = float(f"{float(value):.15g}")
+            if isinstance(value, float):
+                value = float(f"{value:.15g}")
 
             # Truncate the value if port accepts only integers
             if self.is_integer():
                 return int(value)
 
-            return value
+            return float(value)
 
     async def set_sequence(self, values: list[PortValue], delays: list[int], repeat: int) -> None:
         if self._sequence:

@@ -169,6 +169,10 @@ class TestPortAdaptValueType:
 
         assert await mock_num_port1.read_transformed_value() == 21.3
 
+    def test_integer_keeps_large_int_exact(self, mock_num_port1, mocker):
+        mocker.patch.object(mock_num_port1, "is_integer", return_value=True)
+        assert mock_num_port1.adapt_value_type(2**60) == 2**60
+
     def test_boolean(self, mock_bool_port1):
         assert mock_bool_port1.adapt_value_type(1) is True
 
