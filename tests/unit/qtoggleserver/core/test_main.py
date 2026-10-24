@@ -354,7 +354,7 @@ class TestReadPortsLastValue:
         freezer.move_to(dummy_utc_datetime)
         taken_ms = int(time.time() * 1000)
         mock_num_port1.set_writable(True)
-        mock_num_port1.set_last_read_value(3)
+        mock_num_port1.set_read_value(3)
 
         freezer.move_to(dummy_utc_datetime + timedelta(seconds=1))
         await mock_num_port1.transform_and_write_value(5)
