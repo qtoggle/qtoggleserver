@@ -1,4 +1,5 @@
 import asyncio
+import time
 import types
 
 import pytest
@@ -503,3 +504,107 @@ class TestPeripheralNameClash:
 
         assert slaves_devices.is_name_used_locally(None) is False
         assert slaves_devices.is_name_used_locally("") is False
+
+
+class TestValueTimes:
+    """Test that values received from a slave are stamped with the latest time the slave may have taken them, so
+    that a value taken before a write completed never looks newer than that write."""
+
+    @pytest.fixture(autouse=True)
+    def register_slave(self, slave, mocker) -> None:
+        mocker.patch.dict("qtoggleserver.slaves.devices._slaves_by_name", {"slave1": slave}, clear=True)
+
+    async def test_poll_stamps_with_request_start(self, slave, freezer, mocker) -> None:
+        port = SlavePort(slave, {"id": "port1", "type": "number", "value": 1})
+        mocker.patch.object(slave, "_get_local_ports", return_value=[port])
+        handle_value_change = mocker.patch.object(slave, "_handle_value_change")
+        slave._poll_started = slave._online = slave._ready = True
+        started_ms = None
+
+        async def api_call(method: str, path: str, *args, **kwargs) -> dict | list:
+            nonlocal started_ms
+            if path == "/device":
+                return {}
+            started_ms = int(time.time() * 1000)
+            freezer.tick(10)
+            return [{"id": "port1", "type": "number", "value": 2}]
+
+        mocker.patch.object(slave, "api_call", side_effect=api_call)
+
+        await slave._poll_once()
+
+        handle_value_change.assert_called_once_with("port1", 2, 1, timestamp_ms=started_ms)
+
+    async def test_fetch_stamps_with_request_start(self, slave, freezer, mocker) -> None:
+        port = SlavePort(slave, {"id": "port1", "type": "number"})
+        mocker.patch.object(slave, "_get_local_ports", return_value=[port])
+        mocker.patch.object(slave, "_save_ports")
+        handle_port_update = mocker.patch.object(slave, "_handle_port_update")
+        started_ms = int(time.time() * 1000)
+
+        async def api_call(*args, **kwargs) -> list:
+            freezer.tick(10)
+            return [{"id": "port1", "value": 2}]
+
+        mocker.patch.object(slave, "api_call", side_effect=api_call)
+
+        await slave.fetch_and_update_ports()
+
+        handle_port_update.assert_called_once_with(timestamp_ms=started_ms, id="port1", value=2)
+
+    async def test_listen_stamps_with_previous_request_start(self, slave, mock_http_client, freezer, mocker) -> None:
+        # A failed request may have lost events, so it must not move the time forward
+        responses = ["e1", core_responses.Error(), "e2", "e3"]
+        starts_ms = []
+        handled = []
+
+        async def fetch(*args, **kwargs) -> types.SimpleNamespace:
+            if not responses:
+                slave._listen_session_id = None
+            starts_ms.append(int(time.time() * 1000))
+            freezer.tick(10)
+            return types.SimpleNamespace(error=None, code=200)
+
+        def parse(response) -> list:
+            result = responses.pop(0)
+            if isinstance(result, Exception):
+                raise result
+            return [{"type": result}]
+
+        async def handle_event(event, timestamp_ms) -> None:
+            handled.append((event["type"], timestamp_ms))
+
+        mock_http_client.fetch.side_effect = fetch
+        mocker.patch("qtoggleserver.slaves.devices.core_responses.parse", side_effect=parse)
+        mocker.patch("qtoggleserver.slaves.devices.asyncio.sleep")
+        mocker.patch.object(slave, "handle_event", side_effect=handle_event)
+        mocker.patch.object(slave, "_handle_offline")
+        slave._online = True
+        slave._listen_session_id = "session1"
+
+        await slave._listen_loop()
+
+        assert handled == [("e1", starts_ms[0]), ("e2", starts_ms[0]), ("e3", starts_ms[2])]
+
+    async def test_handle_event_passes_time_to_value_events(self, slave, mocker) -> None:
+        handle_value_change = mocker.patch.object(slave, "_handle_value_change")
+        handle_port_update = mocker.patch.object(slave, "_handle_port_update")
+        handle_port_remove = mocker.patch.object(slave, "_handle_port_remove")
+
+        await slave.handle_event({"type": "value-change", "params": {"id": "port1", "value": 2}}, 1000)
+        await slave.handle_event({"type": "port-update", "params": {"id": "port1"}}, 1000)
+        await slave.handle_event({"type": "port-remove", "params": {"id": "port1"}}, 1000)
+
+        handle_value_change.assert_called_once_with(id="port1", value=2, timestamp_ms=1000)
+        handle_port_update.assert_called_once_with(id="port1", timestamp_ms=1000)
+        handle_port_remove.assert_called_once_with(id="port1")
+
+    async def test_value_change_pushes_time(self, slave, mocker) -> None:
+        port = SlavePort(slave, {"id": "port1", "type": "number"})
+        mocker.patch("qtoggleserver.core.ports.get", return_value=port)
+        mocker.patch.object(port, "save_asap")
+
+        await slave._handle_value_change("port1", 2, timestamp_ms=1000)
+
+        assert await port.read_value() == 2
+        assert port.get_read_value_time() == 1000

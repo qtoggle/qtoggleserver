@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import re
+import time
 
 from collections.abc import Callable
 from typing import Any
@@ -334,8 +335,9 @@ async def post_slave_device_events(request: core_api.APIRequest, name: str, para
 
     # At this point we can be sure the slave is permanently offline
 
+    # The master doesn't write to a permanently offline slave directly, so the arrival time is enough here
     try:
-        await slave.handle_event(params)
+        await slave.handle_event(params, int(time.time() * 1000))
     except Exception as e:
         raise core_api.APIError(500, "unexpected-error", message=str(e)) from e
 
