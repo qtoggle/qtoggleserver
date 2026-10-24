@@ -117,6 +117,7 @@ class Reverse:
             "port": self._port,
             "path": self._path,
             "device_id": self._device_id,
+            "password_hash": self._password_hash,
             "timeout": self._timeout,
         }
 

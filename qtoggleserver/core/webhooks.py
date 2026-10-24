@@ -7,7 +7,6 @@ from qtoggleserver import persist
 from qtoggleserver.conf import settings
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.core.api import auth as core_api_auth
-from qtoggleserver.core.device import attrs as core_device_attrs
 from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.utils import json as json_utils
 
@@ -15,9 +14,6 @@ from qtoggleserver.utils import json as json_utils
 logger = logging.getLogger(__name__)
 
 _webhooks: Webhooks | None = None
-
-
-# TODO: add password support
 
 
 class WebhooksError(Exception):
@@ -46,6 +42,7 @@ class Webhooks:
         path: str | None = None,
         timeout: int | None = None,
         retries: int | None = None,
+        password_hash: str | None = None,
         **kwargs,
     ) -> None:
         # The enabled value comes with kwargs but is ignored; webhooks will be explicitly enabled afterwards
@@ -57,6 +54,7 @@ class Webhooks:
         self._path: str | None = path
         self._timeout: int | None = timeout
         self._retries: int | None = retries
+        self._password_hash: str | None = password_hash
         self._url: str | None = None
 
         self._queue: queue.Queue = queue.Queue(settings.core.event_queue_size)
@@ -151,11 +149,10 @@ class Webhooks:
             return None
 
         http_client = AsyncHTTPClient()
-        # TODO use webhooks password
         headers = {
             "Content-Type": json_utils.JSON_CONTENT_TYPE,
             "Authorization": core_api_auth.make_auth_header(
-                core_api_auth.ORIGIN_DEVICE, username=None, password_hash=core_device_attrs.normal_password_hash
+                core_api_auth.ORIGIN_DEVICE, username=None, password_hash=self._password_hash
             ),
         }
         request = HTTPRequest(
@@ -187,6 +184,7 @@ class Webhooks:
             "host": self._host,
             "port": self._port,
             "path": self._path,
+            "password_hash": self._password_hash,
             "timeout": self._timeout,
             "retries": self._retries,
         }
@@ -206,6 +204,7 @@ def setup(
     path: str | None = None,
     timeout: int | None = None,
     retries: int | None = None,
+    password_hash: str | None = None,
     **kwargs,
 ) -> None:
     global _webhooks
@@ -213,7 +212,7 @@ def setup(
     if _webhooks and _webhooks.is_enabled():
         _webhooks.disable()
 
-    _webhooks = Webhooks(scheme, host, port, path, timeout, retries)
+    _webhooks = Webhooks(scheme, host, port, path, timeout, retries, password_hash)
     if enabled:
         _webhooks.enable()
 
