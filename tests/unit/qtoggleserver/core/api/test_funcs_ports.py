@@ -123,6 +123,28 @@ class TestPatchPortValue:
         spy.assert_called_once_with(100)
         assert mock_num_port1.get_last_written_value() == 100
 
+    async def test_accepts_float_value_on_step(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver
+    ) -> None:
+        mock_num_port1.set_writable(True)
+        mock_num_port1._min = 0
+        mock_num_port1._step = 0.1
+
+        request = mock_api_request_maker("PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL)
+        await ports_api_funcs.patch_port_value(request, "nid1", 0.3)
+        assert mock_num_port1.get_last_written_value() == 0.3
+
+    async def test_rejects_float_value_off_step(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver
+    ) -> None:
+        mock_num_port1.set_writable(True)
+        mock_num_port1._min = 0
+        mock_num_port1._step = 0.1
+
+        request = mock_api_request_maker("PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL)
+        with pytest.raises(core_api.APIError, match="invalid-value"):
+            await ports_api_funcs.patch_port_value(request, "nid1", 0.35)
+
     async def test_port_timeout_raises_500(
         self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
     ) -> None:
@@ -197,6 +219,26 @@ class TestPatchPortValue:
         with pytest.raises(core_api.APIError, match="read-only-port") as exc_info:
             await ports_api_funcs.patch_port_value(request, "nid1", 100)
         assert exc_info.value.status == 400
+
+
+@pytest.mark.parametrize(
+    "value, min_, step, expected",
+    [
+        (0.3, 0, 0.1, True),
+        (0.7, 0.1, 0.3, True),
+        (0.35, 0, 0.1, False),
+        (21.5, 10, 0.5, True),
+        (5, 1, 2, True),
+        (4, 1, 2, False),
+        (-0.3, -1, 0.1, True),
+        (1e6 + 0.1, 0, 0.1, True),
+        (0.35, None, 0.1, True),
+        (0.35, 0, None, True),
+        (0.35, 0, 0, True),
+    ],
+)
+def test_is_on_step(value, min_, step, expected) -> None:
+    assert ports_api_funcs._is_on_step(value, min_, step) is expected
 
 
 class TestPatchPortValueTimeout:

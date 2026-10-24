@@ -1,5 +1,6 @@
 import asyncio
 import inspect
+import math
 import time
 
 from collections.abc import Callable
@@ -67,6 +68,16 @@ async def add_virtual_port(attrs: GenericJSONDict) -> core_ports.BasePort:
     return port
 
 
+def _is_on_step(value: float, min_: float | None, step: float | None) -> bool:
+    """Tell if `value` is a whole number of steps above `min_`. Float modulo can't do this: `0.3 % 0.1` is `0.0999…`."""
+
+    if None in (step, min_) or step == 0:
+        return True
+
+    steps = (value - min_) / step
+    return math.isclose(steps, round(steps), rel_tol=1e-9, abs_tol=1e-9)
+
+
 async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, ignore_extra_attrs: bool) -> None:
     non_modifiable_attrs = await port.get_non_modifiable_attrs()
 
@@ -94,7 +105,7 @@ async def set_port_attrs(port: core_ports.BasePort, attrs: GenericJSONDict, igno
 
         step = attrdef.get("step")
         min_ = attrdef.get("min")
-        if None not in (step, min_) and step != 0 and (value - min_) % step:
+        if not _is_on_step(value, min_, step):
             raise core_api.APIError(400, "invalid-field", field=name)
 
     errors_by_name = {}
@@ -378,7 +389,7 @@ async def patch_port_value(request: core_api.APIRequest, port_id: str, params: P
     # Step validation
     step = await port.get_attr("step")
     min_ = await port.get_attr("min")
-    if None not in (step, min_) and step != 0 and (value - min_) % step:
+    if not _is_on_step(value, min_, step):
         raise core_api.APIError(400, "invalid-value")
 
     if not port.is_enabled():
@@ -440,7 +451,7 @@ async def patch_port_sequence(request: core_api.APIRequest, port_id: str, params
             raise core_api.APIError(400, "invalid-field", field="values") from None
 
         # Step validation
-        if None not in (step, min_) and step != 0 and (value - min_) % step:
+        if not _is_on_step(value, min_, step):
             raise core_api.APIError(400, "invalid-field", field="values")
 
     if not port.is_enabled():
