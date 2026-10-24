@@ -143,7 +143,6 @@ class Slave(logging_utils.LoggableMixin):
         # Used to schedule provisioning + local update for permanently offline slaves
         self._provisioning_timeout_task: asyncio.Task | None = None
 
-        # An internal reference to the last made API call
         # The latest call per method and path; a newer one stops a pending retry, so an old write can't override it
         self._last_api_call_refs: dict[tuple[str, str], dict] = {}
 
