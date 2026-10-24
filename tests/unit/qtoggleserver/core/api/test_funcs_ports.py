@@ -25,6 +25,36 @@ class TestPatchPorts:
         assert result is None
         assert await mock_bool_port1.get_attr("tag") == "newtag"
 
+    async def test_queues_valid_value(
+        self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
+    ) -> None:
+        mock_num_port1.set_writable(True)
+        spy_push_write = mocker.spy(mock_num_port1, "push_write")
+        spy_write = mocker.spy(mock_num_port1, "transform_and_write_value")
+
+        request = mock_api_request_maker("PATCH", "/ports", access_level=core_api.ACCESS_LEVEL_ADMIN)
+        await ports_api_funcs.patch_ports(request, [{"id": "nid1", "value": 0.3}])
+
+        spy_push_write.assert_called_once_with(0.3)
+        await asyncio.sleep(0.1)
+        spy_write.assert_called_once_with(0.3)
+
+    @pytest.mark.parametrize("value", [150, -1, True, 0.35])
+    async def test_ignores_invalid_value(
+        self, value, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
+    ) -> None:
+        mock_num_port1.set_writable(True)
+        mock_num_port1._min = 0
+        mock_num_port1._max = 100
+        mock_num_port1._step = 0.1
+        spy_write = mocker.spy(mock_num_port1, "transform_and_write_value")
+
+        request = mock_api_request_maker("PATCH", "/ports", access_level=core_api.ACCESS_LEVEL_ADMIN)
+        await ports_api_funcs.patch_ports(request, [{"id": "nid1", "value": value}])
+
+        await asyncio.sleep(0.1)
+        spy_write.assert_not_called()
+
     async def test_removes_virtual_ports_not_in_request(
         self, mock_api_request_maker, mock_vport1, mock_vport2, mock_bool_port1, mock_persist_driver
     ) -> None:
