@@ -8,7 +8,7 @@ from qtoggleserver.core.ports import InvalidAttributeValue
 class TestPortTransformRead:
     async def test(self, mock_num_port1):
         await mock_num_port1.set_attr("transform_read", "MUL($, 10)")
-        mock_num_port1.set_last_read_value(4)
+        mock_num_port1.set_read_value(4)
         mock_num_port1.set_next_value(5)
         assert await mock_num_port1.read_transformed_value() == 50
 
@@ -65,7 +65,7 @@ class TestPortTransformWrite:
         mocker.patch.object(mock_num_port1, "write_value")
 
         await mock_num_port1.set_attr("transform_write", "MUL($, 10)")
-        mock_num_port1.set_last_read_value(4)
+        mock_num_port1.set_read_value(4)
         mock_num_port1.set_next_value(5)
 
         await mock_num_port1.transform_and_write_value(6)

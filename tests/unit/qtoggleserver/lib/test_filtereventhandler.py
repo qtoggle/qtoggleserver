@@ -251,7 +251,7 @@ class TestFilterEventHandlerAccepts(FilterEventHandlerTestBase):
     async def test_expression_passes(self, mock_num_port1, mocker):
         """Should accept the event when the filter expression evaluates to True."""
 
-        mock_num_port1.set_last_read_value(60)
+        mock_num_port1.set_read_value(60)
         mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
 
         handler = ConcreteFilterEventHandler(filter={"expression": "GT($nid1, 50)"})
@@ -261,7 +261,7 @@ class TestFilterEventHandlerAccepts(FilterEventHandlerTestBase):
     async def test_expression_blocks(self, mock_num_port1, mocker):
         """Should reject the event when the filter expression evaluates to False."""
 
-        mock_num_port1.set_last_read_value(40)
+        mock_num_port1.set_read_value(40)
         mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
 
         handler = ConcreteFilterEventHandler(filter={"expression": "GT($nid1, 50)"})
@@ -326,7 +326,7 @@ class TestFilterEventHandlerHandleEvent(FilterEventHandlerTestBase):
         handler.on_event = mocker.AsyncMock()
         handler.on_value_change = mocker.AsyncMock()
 
-        mock_num_port1.set_last_read_value(42)
+        mock_num_port1.set_read_value(42)
         event = core_events.ValueChange(None, 42, mock_num_port1)
         await handler.handle_event(event)
 
@@ -442,7 +442,7 @@ class TestFilterEventHandlerGetters(FilterEventHandlerTestBase):
         mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={}))
         handler = ConcreteFilterEventHandler()
 
-        mock_num_port1.set_last_read_value(42)
+        mock_num_port1.set_read_value(42)
         event = core_events.ValueChange(None, 42, mock_num_port1)
         await handler.handle_event(event)
 

@@ -227,7 +227,7 @@ class TestPatchPortValue:
         newly written target (e.g. not yet propagated back from hardware)."""
 
         mock_num_port1.set_writable(True)
-        mock_num_port1.set_last_read_value(100)
+        mock_num_port1.set_read_value(100)
 
         request = mock_api_request_maker("PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL)
         result = await ports_api_funcs.patch_port_value(request, "nid1", 200)
@@ -348,7 +348,7 @@ class TestPatchPortValueTimeout:
         self, mock_api_request_maker, mock_num_port1, mock_persist_driver, mocker
     ) -> None:
         mock_num_port1.set_writable(True)
-        mock_num_port1.set_last_read_value(100)
+        mock_num_port1.set_read_value(100)
         spy = mocker.spy(mock_num_port1, "wait_for_read_value")
 
         request = mock_api_request_maker(
@@ -363,11 +363,11 @@ class TestPatchPortValueTimeout:
         self, mock_api_request_maker, mock_num_port1, mock_persist_driver
     ) -> None:
         mock_num_port1.set_writable(True)
-        mock_num_port1.set_last_read_value(0)
+        mock_num_port1.set_read_value(0)
 
         async def delayed_read() -> None:
             await asyncio.sleep(0.01)
-            mock_num_port1.set_last_read_value(100)
+            mock_num_port1.set_read_value(100)
 
         task = asyncio.create_task(delayed_read())
 
@@ -385,7 +385,7 @@ class TestPatchPortValueTimeout:
         self, mock_api_request_maker, mock_num_port1, mock_persist_driver
     ) -> None:
         mock_num_port1.set_writable(True)
-        mock_num_port1.set_last_read_value(0)
+        mock_num_port1.set_read_value(0)
 
         request = mock_api_request_maker(
             "PATCH", "/ports/nid1/value", access_level=core_api.ACCESS_LEVEL_NORMAL, query={"timeout": "0.02"}
@@ -470,7 +470,7 @@ class TestPatchPortValueTimeout:
         """Should count the time spent writing against the timeout, leaving only the rest for the read wait."""
 
         mock_num_port1.set_writable(True)
-        mock_num_port1.set_last_read_value(0)
+        mock_num_port1.set_read_value(0)
         mocker.patch.object(mock_num_port1, "push_write_and_wait", new=lambda value: asyncio.sleep(0.1))
         spy = mocker.spy(mock_num_port1, "wait_for_read_value")
 
