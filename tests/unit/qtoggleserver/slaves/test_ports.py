@@ -1,5 +1,8 @@
+import time
+
 import pytest
 
+from qtoggleserver.core import main as core_main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.slaves.devices import Slave
@@ -88,6 +91,68 @@ class TestOnlineAttr:
 
     async def test_offline_reported_by_slave(self, slave_port) -> None:
         await slave_port.enable()
-        slave_port.update_cached_attrs({"id": "port1", "type": "boolean", "enabled": True, "online": False})
+        slave_port.update_cached_attrs({"id": "port1", "type": "boolean", "enabled": True, "online": False}, 0)
 
         assert await slave_port.get_attr("online") is False
+
+
+class TestReadValueTime:
+    """Test that a value received from the slave keeps the time it was taken, since it waits in a queue until the
+    next read."""
+
+    async def test_no_time_before_read(self, slave_port) -> None:
+        assert slave_port.get_read_value_time() is None
+
+    async def test_read_reports_value_time(self, slave_port) -> None:
+        slave_port.push_remote_value(5, 1000)
+        slave_port.push_remote_value(6, 2000)
+
+        assert await slave_port.read_value() == 5
+        assert slave_port.get_read_value_time() == 1000
+        assert await slave_port.read_value() == 6
+        assert slave_port.get_read_value_time() == 2000
+
+    async def test_update_cached_attrs_value_time(self, slave_port) -> None:
+        slave_port.update_cached_attrs({"id": "port1", "type": "number", "value": 5}, 1000)
+
+        assert await slave_port.read_value() == 5
+        assert slave_port.get_read_value_time() == 1000
+
+    async def test_new_port_value_time(self, slave, freezer) -> None:
+        now_ms = int(time.time() * 1000)
+        port = SlavePort(slave, {"id": "port1", "type": "number", "value": 5})
+        freezer.tick(10)
+
+        assert await port.read_value() == 5
+        assert port.get_read_value_time() == now_ms
+
+    async def test_enable_stamps_with_request_start(self, slave, slave_port, freezer, mocker) -> None:
+        started_ms = int(time.time() * 1000)
+
+        async def api_call(*args, **kwargs) -> int:
+            freezer.tick(10)
+            return 5
+
+        mocker.patch.object(slave, "is_ready", return_value=True)
+        mocker.patch.object(slave, "api_call", side_effect=api_call)
+
+        await slave_port.handle_enable()
+
+        assert await slave_port.read_value() == 5
+        assert slave_port.get_read_value_time() == started_ms
+
+    async def test_value_taken_before_write_loses(self, slave, freezer, mocker) -> None:
+        port = SlavePort(slave, {"id": "port1", "type": "number", "writable": True})
+        await port.enable()
+        mocker.patch.object(slave, "api_call")
+        taken_ms = int(time.time() * 1000)
+        port.push_remote_value(3, taken_ms)
+
+        freezer.tick(1)
+        await port.transform_and_write_value(5)
+
+        freezer.tick(1)
+        await core_main.read_ports(ports_to_read=[port])
+
+        assert port.get_last_value() == 5
+        assert port._last_read_value == (3, taken_ms)

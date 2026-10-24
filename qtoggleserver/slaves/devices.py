@@ -37,6 +37,8 @@ _INVALID_HISTORY_FIELD_RE = re.compile(r"^((device_)*history_[a-z0-9_]+)$")
 _FWUPDATE_POLL_INTERVAL = 30
 _FWUPDATE_POLL_TIMEOUT = 600
 _NO_EVENT_DEVICE_ATTRS = ["uptime", "date"]
+# Events that may carry a port value, whose handlers need to know how old it is
+_VALUE_EVENT_TYPES = ("value-change", "port-update")
 _DEFAULT_POLL_INTERVAL = 10
 _TEMP_RENAME_DNS_TIMEOUT = 120
 
@@ -705,6 +707,7 @@ class Slave(logging_utils.LoggableMixin):
 
     async def fetch_and_update_ports(self) -> None:
         self.debug("fetching ports")
+        started_ms = int(time.time() * 1000)
         try:
             port_attrs = await self.api_call("GET", "/ports")
         except Exception as e:
@@ -725,7 +728,7 @@ class Slave(logging_utils.LoggableMixin):
             if not port:
                 continue
 
-            await self._handle_port_update(**attrs)
+            await self._handle_port_update(timestamp_ms=started_ms, **attrs)
 
         # Added ports
         for port_id, attrs in attrs_by_id.items():
@@ -766,6 +769,10 @@ class Slave(logging_utils.LoggableMixin):
         # Used to count the number of failed listen retries before considering the device offline
         offline_counter = 0
 
+        # Events missing from a listen response are newer than the request that got it. The session is new, so the
+        # first request gets no older events.
+        events_since_ms = None
+
         while True:
             try:
                 if not self._listen_session_id:
@@ -794,6 +801,10 @@ class Slave(logging_utils.LoggableMixin):
                 )
 
                 self.debug("calling API function GET /listen")
+
+                started_ms = int(time.time() * 1000)
+                if events_since_ms is None:
+                    events_since_ms = started_ms
 
                 try:
                     response = await http_client.fetch(request, raise_error=False)
@@ -838,7 +849,7 @@ class Slave(logging_utils.LoggableMixin):
 
                     for event in received_events:
                         try:
-                            await self.handle_event(event)
+                            await self.handle_event(event, events_since_ms)
                             if event["type"] in ("port-add", "port-remove", "port-update"):
                                 needs_save_ports = True
                         except exceptions.DeviceRenamed:
@@ -846,6 +857,8 @@ class Slave(logging_utils.LoggableMixin):
                             break
                         except Exception:
                             self.error("handling event failed", exc_info=True)
+
+                    events_since_ms = started_ms
 
                     # _handle_event() indirectly stopped listening or removed this slave; this happens when the slave
                     # device is renamed
@@ -974,6 +987,7 @@ class Slave(logging_utils.LoggableMixin):
 
         self.debug("polling ports")
 
+        started_ms = int(time.time() * 1000)
         try:
             ports = await self.api_call("GET", "/ports", retry_counter=None)
         except Exception as e:
@@ -1044,7 +1058,7 @@ class Slave(logging_utils.LoggableMixin):
 
             if removed_names or added_names or changed_names:
                 try:
-                    await self._handle_port_update(**attrs)
+                    await self._handle_port_update(timestamp_ms=started_ms, **attrs)
                     needs_save_ports = True
                 except Exception as e:
                     self.error("failed to update polled port %s: %s", id_, e)
@@ -1053,7 +1067,7 @@ class Slave(logging_utils.LoggableMixin):
             new_value = values_by_id.get(id_)
             if old_value != new_value:
                 try:
-                    await self._handle_value_change(id_, new_value, old_value)
+                    await self._handle_value_change(id_, new_value, old_value, timestamp_ms=started_ms)
                 except Exception as e:
                     self.error("failed to update polled port %s value: %s", id_, e)
 
@@ -1089,7 +1103,9 @@ class Slave(logging_utils.LoggableMixin):
         # Clear task reference when exiting the task loop
         self._fwupdate_poll_task = None
 
-    async def handle_event(self, event: GenericJSONDict) -> None:
+    async def handle_event(self, event: GenericJSONDict, timestamp_ms: int) -> None:
+        """Handle an event from the slave, which generated it at `timestamp_ms` or later."""
+
         event_name = re.sub(r"[^\w]", "_", event["type"])
         method_name = f"_handle_{event_name}"
         method = getattr(self, method_name, None)
@@ -1097,9 +1113,13 @@ class Slave(logging_utils.LoggableMixin):
             self.warning("ignoring event of type %s", event["type"])
             return
 
+        params = event.get("params", {})
+        if event["type"] in _VALUE_EVENT_TYPES:
+            params = dict(params, timestamp_ms=timestamp_ms)
+
         self.debug("handling event of type %s", event["type"])
         try:
-            await method(**event.get("params", {}))
+            await method(**params)
         except exceptions.DeviceRenamed:
             # Treat DeviceRenamed as an expected exception, do not log anything but forward it
             raise
@@ -1108,7 +1128,7 @@ class Slave(logging_utils.LoggableMixin):
             raise
 
     async def _handle_value_change(
-        self, id: str, value: NullablePortValue, old_value: NullablePortValue = None
+        self, id: str, value: NullablePortValue, old_value: NullablePortValue = None, *, timestamp_ms: int
     ) -> None:
         local_id = f"{self._name}.{id}"
         port = core_ports.get(local_id)
@@ -1130,11 +1150,11 @@ class Slave(logging_utils.LoggableMixin):
             json_utils.dumps(value),
         )
 
-        port.push_remote_value(value)
+        port.push_remote_value(value, timestamp_ms)
         port.update_last_sync()
         port.save_asap()
 
-    async def _handle_port_update(self, **attrs: Attribute) -> None:
+    async def _handle_port_update(self, *, timestamp_ms: int, **attrs: Attribute) -> None:
         local_id = f"{self._name}.{attrs.get('id')}"
         port = core_ports.get(local_id)
         if not port or not isinstance(port, SlavePort):
@@ -1158,7 +1178,7 @@ class Slave(logging_utils.LoggableMixin):
 
                 await port.handle_attr_change(name, value)
 
-        port.update_cached_attrs(attrs)
+        port.update_cached_attrs(attrs, timestamp_ms)
         await port.update_enabled()
 
         if "value" in attrs:  # value has also been updated

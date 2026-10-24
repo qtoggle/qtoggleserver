@@ -74,7 +74,8 @@ class SlavePort(core_ports.BasePort):
 
         # Value
         self._cached_value: NullablePortValue = None
-        self._remote_value_queue: deque = deque()
+        self._cached_value_time_ms: int | None = None
+        self._remote_value_queue: deque[tuple[NullablePortValue, int]] = deque()
 
         # Attributes cache
         self._cached_attrs: Attributes = {}
@@ -109,7 +110,8 @@ class SlavePort(core_ports.BasePort):
         self._type = attrs.get("type", core_ports.TYPE_BOOLEAN)
         self._integer = attrs.get("integer", False)
 
-        self.update_cached_attrs(attrs)
+        # The port is new, so no write to it can be older than now
+        self.update_cached_attrs(attrs, int(time.time() * 1000))
 
         if self.get_last_remote_value() is not None:
             # Remote value is supplied in attrs when a new port is added on the slave device
@@ -210,12 +212,14 @@ class SlavePort(core_ports.BasePort):
     def get_cached_attrs(self) -> Attributes:
         return self._cached_attrs.copy()
 
-    def update_cached_attrs(self, attrs: Attributes) -> None:
+    def update_cached_attrs(self, attrs: Attributes, timestamp_ms: int) -> None:
+        """Replace the cached attributes. If `attrs` has a value, the slave took it at `timestamp_ms` or later."""
+
         self._cached_attrs = attrs.copy()
 
         # Value can be found among attrs, but we don't want it as attribute
         if "value" in attrs:
-            self.push_remote_value(self._cached_attrs.pop("value"))
+            self.push_remote_value(self._cached_attrs.pop("value"), timestamp_ms)
 
         self.invalidate_attrdefs()
 
@@ -283,21 +287,27 @@ class SlavePort(core_ports.BasePort):
     def clear_provisioning(self) -> None:
         self._provisioning = set()
 
-    def push_remote_value(self, value: NullablePortValue) -> None:
-        self._remote_value_queue.appendleft(value)
+    def push_remote_value(self, value: NullablePortValue, timestamp_ms: int) -> None:
+        """Queue a value received from the slave, which took it at `timestamp_ms` or later."""
+
+        self._remote_value_queue.appendleft((value, timestamp_ms))
 
     def get_last_remote_value(self) -> NullablePortValue:
         try:
-            return self._remote_value_queue[0]
+            return self._remote_value_queue[0][0]
         except IndexError:
             return self._cached_value
 
     async def read_value(self) -> NullablePortValue:
         try:
-            self._cached_value = self._remote_value_queue.pop()
+            self._cached_value, self._cached_value_time_ms = self._remote_value_queue.pop()
             return self._cached_value
         except IndexError:
             raise core_ports.SkipRead()
+
+    def get_read_value_time(self) -> int | None:
+        # Values wait in the queue, and may predate a write that has completed since they were received
+        return self._cached_value_time_ms
 
     async def write_value(self, value: PortValue) -> None:
         if self._slave.is_online():
@@ -365,7 +375,8 @@ class SlavePort(core_ports.BasePort):
             if "value" in data:
                 attrs["value"] = data["value"]
 
-            self.update_cached_attrs(attrs)
+            # Ports load before any write to them
+            self.update_cached_attrs(attrs, int(time.time() * 1000))
 
         # Attributes that are kept on master
         for attr in MASTER_ATTRS:
@@ -402,13 +413,14 @@ class SlavePort(core_ports.BasePort):
         if self._slave.is_ready():
             self.debug("fetching port value")
 
+            started_ms = int(time.time() * 1000)
             try:
                 value = await self._slave.api_call("GET", f"/ports/{self._remote_id}/value", retry_counter=None)
             except Exception as e:
                 self.error("failed to fetch port value: %s", e)
             else:
                 if value is not None:
-                    self.push_remote_value(value)
+                    self.push_remote_value(value, started_ms)
 
     async def trigger_update(self) -> None:
         await super().trigger_update()
