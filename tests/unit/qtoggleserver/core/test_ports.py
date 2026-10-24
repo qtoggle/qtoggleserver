@@ -1,4 +1,7 @@
 import asyncio
+import logging
+
+import pytest
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core.expressions.exceptions import ValueUnavailable
@@ -156,6 +159,25 @@ class TestPortPushWriteAndWait:
             assert False, "expected ValueError to be raised"
         except ValueError as e:
             assert str(e) == "nope"
+
+    async def test_logs_failed_write_once(self, mock_num_port1, mocker, caplog):
+        mock_num_port1._write_queue.clear()
+        mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock(side_effect=ValueError("nope")))
+
+        with caplog.at_level(logging.ERROR), pytest.raises(ValueError):
+            await mock_num_port1.push_write_and_wait(100)
+
+        assert [r.getMessage() for r in caplog.records] == ["failed to write value 100"]
+
+    async def test_logs_failed_write_transform_once(self, mock_num_port1, mocker, caplog):
+        mock_num_port1._write_queue.clear()
+        mock_num_port1._transform_write = mocker.MagicMock()
+        mock_num_port1._transform_write.eval = mocker.AsyncMock(side_effect=ValueError("nope"))
+
+        with caplog.at_level(logging.ERROR), pytest.raises(ValueError):
+            await mock_num_port1.push_write_and_wait(100)
+
+        assert [r.getMessage() for r in caplog.records] == ["failed to apply write transform to value 100"]
 
     async def test_cleanup_fails_pending_futures(self, mock_num_port1, mocker):
         """Should fail the future of the request currently being written, as well as those of any requests still

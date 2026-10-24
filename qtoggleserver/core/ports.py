@@ -844,7 +844,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 try:
                     await self.transform_and_write_value(request.value)
                 except Exception as e:
-                    self.error("eval failed", exc_info=True)
+                    # Already logged by `transform_and_write_value()`
                     if request.future and not request.future.done():
                         request.future.set_exception(e)
                     await asyncio.sleep(settings.core.tick_interval / 1000.0)
@@ -877,6 +877,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             except expressions_exceptions.ValueUnavailable:
                 self.debug("value %s unavailable after write transform", value_str)
                 return
+            except Exception:
+                self.error("failed to apply write transform to value %s", value_str, exc_info=True)
+                raise
 
             value_str = f"{value_str} ({json_utils.dumps(transformed_value)} after write transform)"
 
