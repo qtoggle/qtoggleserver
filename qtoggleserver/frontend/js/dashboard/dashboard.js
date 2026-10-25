@@ -4,13 +4,16 @@
 
 import Logger from '$qui/lib/logger.module.js'
 
-import StockIcon from '$qui/icons/stock-icon.js'
-import Debouncer from '$qui/utils/debouncer.js'
+import StockIcon        from '$qui/icons/stock-icon.js'
+import Debouncer        from '$qui/utils/debouncer.js'
+import * as ObjectUtils from '$qui/utils/object.js'
 
 import * as DashboardAPI from '$app/api/dashboard.js'
+import * as Cache        from '$app/cache.js'
 
 
 const PANELS_SAVE_INTERVAL = 2000 /* Milliseconds */
+const DEFAULT_PANEL_PREFS_PATH = 'dashboard.default_panel'
 
 
 /**
@@ -104,4 +107,59 @@ export function getAllPanels() {
     }
 
     return []
+}
+
+/**
+ * Return the path (list of ids) of the user's default panel, or `null` if not set.
+ * @alias qtoggle.dashboard.getDefaultPanelPath
+ * @returns {?String[]}
+ */
+export function getDefaultPanelPath() {
+    if (!Cache.whenPrefsCacheReady.isFulfilled()) {
+        return null
+    }
+
+    return Cache.getPrefs(DEFAULT_PANEL_PREFS_PATH, null)
+}
+
+/**
+ * @alias qtoggle.dashboard.setDefaultPanelPath
+ * @param {?String[]} path
+ */
+export function setDefaultPanelPath(path) {
+    Cache.setPrefs(DEFAULT_PANEL_PREFS_PATH, path)
+}
+
+/**
+ * Return the user's default panel, or `null` if not set or no longer present.
+ * @alias qtoggle.dashboard.getDefaultPanel
+ * @returns {?qtoggle.dashboard.Panel}
+ */
+export function getDefaultPanel() {
+    let path = getDefaultPanelPath()
+    if (!path) {
+        return null
+    }
+
+    return getAllPanels().find(p => ObjectUtils.deepEquals(p.getIdPath(), path)) || null
+}
+
+/**
+ * Keep the default panel path in sync when a panel or group is renamed (`newPath` set) or removed (`newPath` null).
+ * @alias qtoggle.dashboard.updateDefaultPanelPath
+ * @param {String[]} oldPath
+ * @param {?String[]} newPath
+ */
+export function updateDefaultPanelPath(oldPath, newPath) {
+    let path = getDefaultPanelPath()
+    if (!path || ObjectUtils.deepEquals(oldPath, newPath)) {
+        return
+    }
+
+    /* Only act if the default panel is the renamed/removed item or lives under it */
+    if (path.length < oldPath.length || oldPath.some((id, i) => path[i] !== id)) {
+        return
+    }
+
+    setDefaultPanelPath(newPath ? newPath.concat(path.slice(oldPath.length)) : null)
 }

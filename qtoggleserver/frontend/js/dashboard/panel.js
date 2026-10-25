@@ -82,6 +82,15 @@ class PanelOptionsForm extends OptionsForm {
                             }
                         }),
                         new PushButtonField({
+                            name: 'set_default',
+                            caption: gettext('Set Default'),
+                            style: 'interactive',
+                            onClick(form) {
+                                Dashboard.setDefaultPanelPath(form._panel.getIdPath())
+                                form._updateDefaultState()
+                            }
+                        }),
+                        new PushButtonField({
                             name: 'remove',
                             caption: gettext('Remove'),
                             style: 'danger',
@@ -106,29 +115,52 @@ class PanelOptionsForm extends OptionsForm {
 
     init() {
         this._updateEditState()
+        this._updateDefaultState()
         this.updateSizeLimits()
     }
 
     _updateEditState() {
         let editButton = this.getButton('edit')
         let addWidgetButton = this._getActionButton('add_widget')
+        let removeButton = this._getActionButton('remove')
         let nameField = this.getField('name')
         let widthField = this.getField('width')
         let heightField = this.getField('height')
 
-        if (this._panel.isEditEnabled()) {
-            editButton.setCaption(gettext('Done'))
+        /* Non-admin users only get the Set Default action */
+        let admin = AuthAPI.getCurrentAccessLevel() >= AuthAPI.ACCESS_LEVEL_ADMIN
+        editButton.getHTML().toggle(admin)
+        if (admin) {
+            removeButton.show()
+        }
+        else {
+            removeButton.hide()
+        }
+
+        editButton.setCaption(this._panel.isEditEnabled() ? gettext('Done') : gettext('Edit'))
+
+        /* Empty panels enable editing for everyone, so check admin here too */
+        if (admin && this._panel.isEditEnabled()) {
             addWidgetButton.show()
             nameField.show()
             widthField.show()
             heightField.show()
         }
         else {
-            editButton.setCaption(gettext('Edit'))
             addWidgetButton.hide()
             nameField.hide()
             widthField.hide()
             heightField.hide()
+        }
+    }
+
+    _updateDefaultState() {
+        let setDefaultButton = this._getActionButton('set_default')
+        if (Dashboard.getDefaultPanel() === this._panel) {
+            setDefaultButton.disable()
+        }
+        else {
+            setDefaultButton.enable()
         }
     }
 
@@ -187,6 +219,7 @@ class PanelOptionsForm extends OptionsForm {
 
     onOptionsBarOpenClose(opened) {
         this._updateEditState()
+        this._updateDefaultState()
     }
 
 }
@@ -968,10 +1001,6 @@ class Panel extends mix().with(PanelGroupCompositeMixin, StructuredPageMixin) {
      * @returns {qui.forms.commonforms.OptionsForm}
      */
     getOptionsForm() {
-        if (AuthAPI.getCurrentAccessLevel() < AuthAPI.ACCESS_LEVEL_ADMIN) {
-            return null
-        }
-
         if (!this._optionsForm) {
             this._optionsForm = new PanelOptionsForm(this)
         }

@@ -79,7 +79,8 @@ class LoginSection extends Section {
 
     navigateNext() {
         let nextPath = this.popNextPath()
-        if (nextPath != null) {
+        /* An empty path means home; use showHome() so the home section sees the "home" source */
+        if (nextPath != null && nextPath.length) {
             logger.debug(`navigating to next path "/${nextPath.join('/')}"`)
             Navigation.navigate({path: nextPath, historyEntry: false})
         }
