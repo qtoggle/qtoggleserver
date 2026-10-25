@@ -45,8 +45,8 @@ def _attrdef_unit_enabled(port: BasePort) -> bool:
     return port.get_type() == TYPE_NUMBER
 
 
-def _attrdef_write_retry_enabled(port: BasePort) -> bool:
-    return port.WRITE_RETRY
+async def _attrdef_write_retry_enabled(port: BasePort) -> bool:
+    return port.WRITE_RETRY and await port.is_writable()
 
 
 STANDARD_ATTRDEFS = {
@@ -252,9 +252,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._history_retention: int = 0
         self._history_last_timestamp: int = 0
 
-        # Not named after the attributes, so that `get_attr()` doesn't find them on non-writable ports
-        self._write_retries: int = 0
-        self._write_retry_interval_ms: int = 1000
+        self._write_retry_count: int = 0
+        self._write_retry_interval: int = 1000
         # Set while waiting to retry a write, so that disabling the port can stop the wait
         self._write_retry_wakeup: asyncio.Event | None = None
 
@@ -589,27 +588,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_expression(self) -> core_expressions.Expression | None:
         return self._expression
 
-    async def attr_get_write_retry_count(self) -> int | None:
-        return self._write_retries if await self._is_writable_cached() else None
-
-    def attr_set_write_retry_count(self, value: int) -> None:
-        self._write_retries = value
-
-    async def attr_get_write_retry_interval(self) -> int | None:
-        return self._write_retry_interval_ms if await self._is_writable_cached() else None
-
-    def attr_set_write_retry_interval(self, value: int) -> None:
-        self._write_retry_interval_ms = value
-
-    async def _is_writable_cached(self) -> bool:
+    async def attr_get_expression(self) -> str | None:
         writable = self._attrs_cache.get("writable")  # use cached value if available, to avoid unnecessary await
         if writable is None:
             writable = await self.is_writable()
 
-        return writable
-
-    async def attr_get_expression(self) -> str | None:
-        if not await self._is_writable_cached():
+        if not writable:
             return None
 
         if self._expression:
@@ -804,7 +788,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 await self.write_value(value)
                 return
             except Exception as e:
-                retry_count = self._write_retries if self.WRITE_RETRY else 0
+                retry_count = self._write_retry_count if self.WRITE_RETRY else 0
                 if attempt >= retry_count or not self._enabled:
                     raise
 
@@ -813,11 +797,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     "failed to write value %s: %s; retrying in %d ms (%d/%d)",
                     json_utils.dumps(value),
                     e,
-                    self._write_retry_interval_ms,
+                    self._write_retry_interval,
                     attempt,
                     retry_count,
                 )
-                await self._wait_write_retry(self._write_retry_interval_ms / 1000)
+                await self._wait_write_retry(self._write_retry_interval / 1000)
 
     async def _wait_write_retry(self, interval: float) -> None:
         """Wait `interval` seconds before retrying a write. Raise `PortDisabled` if the port gets disabled first."""
