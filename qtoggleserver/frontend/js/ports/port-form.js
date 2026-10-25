@@ -283,8 +283,6 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
             }))
         }
 
-        this._showHideWriteRetryInterval()
-
         this.addValueField(origPort)
 
         if (!this._staticFieldsAdded) {
@@ -508,27 +506,6 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         }
 
         return patchPortPromise.then(() => patchValuePromise)
-    }
-
-    onChange(data, fieldName) {
-        if (fieldName === 'attr_write_retry_count') {
-            this._showHideWriteRetryInterval()
-        }
-    }
-
-    _showHideWriteRetryInterval() {
-        /* The interval means nothing while retries are off. Use the form's count, which may be an unsaved edit. */
-        let field = this.getField('attr_write_retry_interval')
-        if (!field) {
-            return
-        }
-
-        if (this.getUnvalidatedData().attr_write_retry_count > 0) {
-            field.show()
-        }
-        else {
-            field.hide()
-        }
     }
 
     onButtonPress(button) {
