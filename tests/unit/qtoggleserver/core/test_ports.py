@@ -1339,6 +1339,25 @@ class TestPortToPersisted:
         assert result["last_written_timestamp"] == 2222
         assert result["write_queue"] == [44, 45]
 
+    async def test_includes_value_being_written(self, mock_num_port1, mocker):
+        """to_persisted should keep the value being written first in the write queue, so that a restart during the
+        write doesn't lose it."""
+
+        mocker.patch.object(mock_num_port1, "get_modifiable_attrs", return_value=[])
+        mock_num_port1._write_queue.clear()
+        mock_num_port1._write_queue.append(WriteRequest(45))
+        persisted = {}
+
+        async def write_value(value) -> None:
+            persisted.update(await mock_num_port1.to_persisted())
+
+        mocker.patch.object(mock_num_port1, "write_value", side_effect=write_value)
+
+        await mock_num_port1.transform_and_write_value(44)
+
+        assert persisted["write_queue"] == [44, 45]
+        assert (await mock_num_port1.to_persisted())["write_queue"] == [45]
+
 
 class TestPortFromPersisted:
     async def test_skips_write_queue_when_disabled(self, mock_num_port1, mocker):
