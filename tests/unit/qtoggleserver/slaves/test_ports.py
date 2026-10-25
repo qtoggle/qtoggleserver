@@ -5,6 +5,7 @@ import pytest
 from qtoggleserver.core import main as core_main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
+from qtoggleserver.core.api.funcs import ports as core_api_ports
 from qtoggleserver.slaves.devices import Slave
 from qtoggleserver.slaves.ports import SlavePort
 
@@ -156,3 +157,60 @@ class TestReadValueTime:
 
         assert port.get_last_value() == 5
         assert port._last_read_value == (3, taken_ms)
+
+
+class TestLegacyPersistedAttr:
+    """Test the `persisted` attribute that slaves on qToggle API < 1.3 still report."""
+
+    @pytest.fixture
+    async def slave_port(self, slave) -> SlavePort:
+        return SlavePort(slave, {"id": "port1", "type": "boolean", "enabled": True, "persisted": False})
+
+    async def test_defined_when_reported(self, slave_port) -> None:
+        attrdefs = await slave_port.get_attrdefs()
+
+        assert attrdefs["persisted"]["type"] == "boolean"
+        assert attrdefs["persisted"]["modifiable"] is True
+
+    async def test_exposed_with_definition(self, slave_port) -> None:
+        port_json = await slave_port.to_json()
+
+        assert port_json["persisted"] is False
+        assert port_json["definitions"]["persisted"]["type"] == "boolean"
+
+    async def test_not_defined_when_not_reported(self, slave) -> None:
+        slave_port = SlavePort(slave, {"id": "port1", "type": "boolean"})
+
+        assert "persisted" not in await slave_port.get_attrdefs()
+        assert "persisted" not in await slave_port.to_json()
+
+    async def test_slave_definition_wins(self, slave) -> None:
+        attrdef = {"type": "boolean", "modifiable": False}
+        slave_port = SlavePort(
+            slave,
+            {
+                "id": "port1",
+                "type": "boolean",
+                "persisted": True,
+                "definitions": {
+                    "persisted": attrdef,
+                },
+            },
+        )
+
+        assert (await slave_port.get_attrdefs())["persisted"] == attrdef
+
+    async def test_patch_forwarded_to_slave(self, slave, slave_port, mocker) -> None:
+        api_call = mocker.patch.object(slave, "api_call")
+
+        await core_api_ports.set_port_attrs(slave_port, {"persisted": True}, ignore_extra_attrs=False)
+
+        api_call.assert_called_once_with("PATCH", "/ports/port1", {"persisted": True}, timeout=mocker.ANY)
+
+    async def test_patch_provisioned_when_offline(self, slave, slave_port, mocker) -> None:
+        mocker.patch.object(slave, "is_online", return_value=False)
+        mocker.patch.object(slave_port, "trigger_update")
+
+        await core_api_ports.set_port_attrs(slave_port, {"persisted": True}, ignore_extra_attrs=False)
+
+        assert slave_port.get_provisioning_attrs() == {"persisted": True}
