@@ -246,7 +246,7 @@ class TestWriteRetries:
         slave_port._last_written_value = 5, 1000
         push_write = mocker.patch.object(slave_port, "push_write")
 
-        slave_port.enforce_last_written_value(3)
+        slave_port.maybe_enforce_value(3)
 
         push_write.assert_not_called()
 

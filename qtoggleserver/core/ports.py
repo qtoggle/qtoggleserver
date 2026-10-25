@@ -992,7 +992,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._enforce_value_paused = False
 
-    def enforce_last_written_value(self, read_value: NullablePortValue) -> None:
+    def maybe_enforce_value(self, read_value: NullablePortValue) -> None:
         """Write the last written value again if `read_value`, a changed read, doesn't match it."""
 
         if not self.ENFORCE_VALUE or not self._enforce_value or self._enforce_value_paused:
