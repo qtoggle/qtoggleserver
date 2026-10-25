@@ -1098,7 +1098,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         d["last_read_timestamp"] = self._last_read_value[1] if self._last_read_value else None
         d["last_written_value"] = self._last_written_value[0] if self._last_written_value else None
         d["last_written_timestamp"] = self._last_written_value[1] if self._last_written_value else None
+        # The value being written is no longer in the queue, but it's still pending until the write ends
         d["write_queue"] = [request.value for request in self._write_queue]
+        if self._writing_value is not None:
+            d["write_queue"].insert(0, self._writing_value)
 
         # attributes
         for name in await self.get_modifiable_attrs():
