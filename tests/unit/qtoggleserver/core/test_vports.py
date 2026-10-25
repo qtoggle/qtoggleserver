@@ -60,3 +60,11 @@ class TestVirtualPortWriteRetries:
         attrs = await vport.get_attrs()
         assert "write_retry_count" not in attrs
         assert "write_retry_interval" not in attrs
+
+    async def test_no_enforce_value_attr(self):
+        """A virtual port's value only changes by writes, so it should not expose `enforce_value`."""
+        from tests.unit.qtoggleserver.mock.ports import MockVirtualPort
+
+        vport = MockVirtualPort("vport1")
+
+        assert "enforce_value" not in await vport.get_attrs()

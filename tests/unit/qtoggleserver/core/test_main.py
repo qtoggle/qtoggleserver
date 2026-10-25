@@ -409,6 +409,95 @@ class TestReadPortsLastValue:
         mock_num_port1.trigger_value_change.assert_called_once_with(10, None)
 
 
+class TestReadPortsEnforceValue:
+    """Test that a read change away from the last written value writes it again, when `enforce_value` is on."""
+
+    @pytest.fixture
+    async def port(self, mock_num_port1, mocker):
+        mock_num_port1.set_writable(True)
+        await mock_num_port1.set_attr("enforce_value", True)
+        mock_num_port1.set_read_value(5)
+        await mock_num_port1.transform_and_write_value(5)
+        mocker.spy(mock_num_port1, "push_write")
+
+        return mock_num_port1
+
+    async def test_enforces_after_change(self, port):
+        port.set_next_value(3)
+        await read_ports(ports_to_read=[port])
+
+        port.push_write.assert_called_once_with(5)
+
+    async def test_off_by_default(self, port):
+        await port.set_attr("enforce_value", False)
+
+        port.set_next_value(3)
+        await read_ports(ports_to_read=[port])
+
+        port.push_write.assert_not_called()
+
+    async def test_same_read_ignored(self, port):
+        """A read that repeats the previous one, such as a stale read right after a write, must not enforce."""
+
+        port.set_read_value(3)
+        await port.transform_and_write_value(5)
+
+        port.set_next_value(3)
+        await read_ports(ports_to_read=[port])
+
+        port.push_write.assert_not_called()
+
+    async def test_change_to_written_value_ignored(self, port):
+        port.set_read_value(3)
+
+        port.set_next_value(5)
+        await read_ports(ports_to_read=[port])
+
+        port.push_write.assert_not_called()
+
+    async def test_unavailable_read_ignored(self, port, mocker):
+        mocker.patch.object(port, "read_value", return_value=None)
+
+        await read_ports(ports_to_read=[port])
+
+        port.push_write.assert_not_called()
+
+    async def test_no_last_written_value(self, port):
+        port._last_written_value = None
+
+        port.set_next_value(3)
+        await read_ports(ports_to_read=[port])
+
+        port.push_write.assert_not_called()
+
+    async def test_pending_write(self, port, mocker):
+        mocker.patch.object(port, "get_pending_value", return_value=7)
+
+        port.set_next_value(3)
+        await read_ports(ports_to_read=[port])
+
+        port.push_write.assert_not_called()
+
+    async def test_paused_after_failed_write(self, port, mocker):
+        """After a write fails for good, the last written value is older than the newest request, so enforcing must
+        wait for the next successful write."""
+
+        mocker.patch.object(port, "write_value", side_effect=core_ports.PortWriteError("nope"))
+        with pytest.raises(core_ports.PortWriteError):
+            await port.transform_and_write_value(7)
+
+        port.set_next_value(3)
+        await read_ports(ports_to_read=[port])
+        port.push_write.assert_not_called()
+
+        mocker.patch.object(port, "write_value")
+        await port.transform_and_write_value(8)
+
+        port.set_next_value(4)
+        await read_ports(ports_to_read=[port])
+        port.push_write.assert_called_once_with(8)
+
+
 class TestHandleChanges:
     async def test_self_port_value_trigger_eval(self, mocker, mock_num_port1):
         """Should trigger a port's expression evaluation if the expression depends on itself through `$`."""

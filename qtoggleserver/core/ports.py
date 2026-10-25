@@ -49,6 +49,10 @@ async def _attrdef_write_retry_enabled(port: BasePort) -> bool:
     return port.WRITE_RETRY and await port.is_writable()
 
 
+async def _attrdef_enforce_value_enabled(port: BasePort) -> bool:
+    return port.ENFORCE_VALUE and await port.is_writable()
+
+
 STANDARD_ATTRDEFS = {
     "id": {"type": "string"},
     "display_name": {"type": "string", "modifiable": True, "max": 64},
@@ -127,6 +131,12 @@ STANDARD_ATTRDEFS = {
         "modifiable": True,
         "enabled": _attrdef_write_retry_enabled,
     },
+    "enforce_value": {
+        "type": "boolean",
+        "optional": True,
+        "modifiable": True,
+        "enabled": _attrdef_enforce_value_enabled,
+    },
 }
 
 
@@ -202,6 +212,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     # Set to `False` for ports whose driver can't tell when a write fails, as retries would never start
     WRITE_RETRY = True
 
+    # Set to `False` for ports that must never have their value enforced
+    ENFORCE_VALUE = True
+
     STANDARD_ATTRDEFS = STANDARD_ATTRDEFS
 
     ADDITIONAL_ATTRDEFS = {}
@@ -254,6 +267,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._write_retry_count: int = 0
         self._write_retry_interval: int = 1000
+        self._enforce_value: bool = False
+        # Set after a write fails for good, so that enforcing doesn't write a value older than the newest request
+        self._enforce_value_paused: bool = False
+
         # Set while waiting to retry a write, so that disabling the port can stop the wait
         self._write_retry_wakeup: asyncio.Event | None = None
 
@@ -959,6 +976,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 return
             except Exception:
                 self.error("failed to apply write transform to value %s", value_str, exc_info=True)
+                self._enforce_value_paused = True
                 raise
 
             value_str = f"{value_str} ({json_utils.dumps(transformed_value)} after write transform)"
@@ -969,7 +987,28 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.debug("wrote value %s", value_str)
         except Exception:
             self.error("failed to write value %s", value_str, exc_info=True)
+            self._enforce_value_paused = True
             raise
+
+        self._enforce_value_paused = False
+
+    def maybe_enforce_value(self, read_value: NullablePortValue) -> None:
+        """Write the last written value again if `read_value`, a changed read, doesn't match it."""
+
+        if not self.ENFORCE_VALUE or not self._enforce_value or self._enforce_value_paused:
+            return
+
+        last_written_value = self.get_last_written_value()
+        if last_written_value is None or read_value is None or self.get_pending_value() is not None:
+            return
+
+        if read_value != last_written_value:
+            self.debug(
+                "enforcing value %s, read %s",
+                json_utils.dumps(last_written_value),
+                json_utils.dumps(read_value),
+            )
+            self.push_write(last_written_value)
 
     def get_last_value(self) -> NullablePortValue:
         """Returns the most recent value known to the port, preferring pending and last written values over last read
@@ -1130,6 +1169,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._last_written_value = data["last_written_value"], data.get("last_written_timestamp", now_ms)
             self.debug("loaded last_written_value = %s", json_utils.dumps(data["last_written_value"]))
 
+        self._enforce_value_paused = data.get("enforce_value_paused", False)
+
         write_queue = data.get("write_queue")
         if isinstance(write_queue, list):
             self._write_queue.clear()
@@ -1170,6 +1211,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         d["last_read_timestamp"] = self._last_read_value[1] if self._last_read_value else None
         d["last_written_value"] = self._last_written_value[0] if self._last_written_value else None
         d["last_written_timestamp"] = self._last_written_value[1] if self._last_written_value else None
+        d["enforce_value_paused"] = self._enforce_value_paused
         # The value being written is no longer in the queue, but it's still pending until the write ends
         d["write_queue"] = [request.value for request in self._write_queue]
         if self._writing_value is not None:

@@ -217,14 +217,21 @@ class TestLegacyPersistedAttr:
 
 
 class TestWriteRetries:
-    """Test that the master neither shows nor uses the slave's write retry settings, since the slave retries its own
-    writes."""
+    """Test that the master neither shows nor uses the slave's write retry and enforce settings, since the slave
+    retries its own writes and enforces its own values."""
 
     @pytest.fixture
     async def slave_port(self, slave) -> SlavePort:
         return SlavePort(
             slave,
-            {"id": "port1", "type": "number", "writable": True, "write_retry_count": 3, "write_retry_interval": 0},
+            {
+                "id": "port1",
+                "type": "number",
+                "writable": True,
+                "write_retry_count": 3,
+                "write_retry_interval": 0,
+                "enforce_value": True,
+            },
         )
 
     async def test_attrs_hidden(self, slave_port) -> None:
@@ -232,6 +239,16 @@ class TestWriteRetries:
 
         assert "write_retry_count" not in attrs
         assert "write_retry_interval" not in attrs
+        assert "enforce_value" not in attrs
+
+    async def test_no_enforce(self, slave_port, mocker) -> None:
+        slave_port._enforce_value = True
+        slave_port._last_written_value = 5, 1000
+        push_write = mocker.patch.object(slave_port, "push_write")
+
+        slave_port.maybe_enforce_value(3)
+
+        push_write.assert_not_called()
 
     async def test_no_retry(self, slave, slave_port, mocker) -> None:
         await slave_port.enable()

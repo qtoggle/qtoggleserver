@@ -1527,3 +1527,32 @@ class TestPortWriteRetries:
             await writable_port.transform_and_write_value(5)
 
         assert calls == [5]
+
+
+class TestPortEnforceValueAttr:
+    async def test_only_on_writable_ports(self, mock_num_port1):
+        assert "enforce_value" not in await mock_num_port1.get_attrs()
+
+        mock_num_port1.set_writable(True)
+
+        assert (await mock_num_port1.get_attrs())["enforce_value"] is False
+
+    async def test_hidden_without_enforce_value(self, mock_num_port1, mocker):
+        mock_num_port1.set_writable(True)
+        mocker.patch.object(mock_num_port1, "ENFORCE_VALUE", False)
+        mock_num_port1.invalidate_attrdefs()
+
+        assert "enforce_value" not in await mock_num_port1.get_attrs()
+
+    async def test_paused_flag_persisted(self, mock_num_port1, mocker):
+        """The pause after a failed write must survive a restart, or enforcing would resume with an older value."""
+
+        mocker.patch.object(mock_num_port1, "get_modifiable_attrs", return_value=[])
+        mock_num_port1._enforce_value_paused = True
+
+        data = await mock_num_port1.to_persisted()
+        mock_num_port1._enforce_value_paused = False
+        await mock_num_port1.from_persisted(data)
+
+        assert data["enforce_value_paused"] is True
+        assert mock_num_port1._enforce_value_paused is True
