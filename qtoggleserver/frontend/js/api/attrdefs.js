@@ -5,6 +5,7 @@
 import {gettext}           from '$qui/base/i18n.js'
 import {PasswordField}     from '$qui/forms/common-fields/common-fields.js'
 import {ProgressDiskField} from '$qui/forms/common-fields/common-fields.js'
+import {SliderField}       from '$qui/forms/common-fields/common-fields.js'
 import {TextAreaField}     from '$qui/forms/common-fields/common-fields.js'
 import {TextField}         from '$qui/forms/common-fields/common-fields.js'
 import * as DateUtils      from '$qui/utils/date.js'
@@ -490,6 +491,27 @@ const HISTORY_RETENTION_CHOICES = [
     {display_name: gettext('1 week'), value: 86400 * 7},
     {display_name: gettext('1 month'), value: 86400 * 31},
     {display_name: gettext('1 year'), value: 86400 * 366}
+]
+
+const WRITE_RETRY_COUNT_TICKS = [
+    {value: 0, label: gettext('off')},
+    ...[1, 2, 3, 5, 10, 20, 50, 100].map(count => ({value: count, label: String(count)}))
+]
+
+const WRITE_RETRY_INTERVAL_CHOICES = [
+    {display_name: gettext('immediately'), value: 0},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d milliseconds'), {count: 100}), value: 100},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d milliseconds'), {count: 500}), value: 500},
+    {display_name: gettext('1 second'), value: 1000},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d seconds'), {count: 2}), value: 2000},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d seconds'), {count: 5}), value: 5000},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d seconds'), {count: 10}), value: 10000},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d seconds'), {count: 30}), value: 30000},
+    {display_name: gettext('1 minute'), value: 60000},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d minutes'), {count: 5}), value: 300000},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d minutes'), {count: 10}), value: 600000},
+    {display_name: StringUtils.formatPercent(gettext('%(count)d minutes'), {count: 30}), value: 1800000},
+    {display_name: gettext('1 hour'), value: 3600000}
 ]
 
 
@@ -1162,6 +1184,31 @@ export const STD_PORT_ATTRDEFS = {
         standard: true,
         optional: true,
         order: 270
+    },
+    write_retry_count: {
+        display_name: gettext('Write Retries'),
+        description: gettext('How many times a failed write is retried.'),
+        type: 'number',
+        field: {
+            class: SliderField,
+            ticks: WRITE_RETRY_COUNT_TICKS,
+            equidistant: true
+        },
+        modifiable: true,
+        separator: true,
+        standard: true,
+        optional: true,
+        order: 275
+    },
+    write_retry_interval: {
+        display_name: gettext('Write Retry Interval'),
+        description: gettext('The time to wait between write attempts.'),
+        type: 'number',
+        choices: WRITE_RETRY_INTERVAL_CHOICES,
+        modifiable: true,
+        standard: true,
+        optional: true,
+        order: 276
     },
     history_interval: {
         display_name: gettext('History Sampling Interval'),
