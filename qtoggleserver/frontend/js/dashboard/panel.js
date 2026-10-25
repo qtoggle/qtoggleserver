@@ -137,15 +137,16 @@ class PanelOptionsForm extends OptionsForm {
             removeButton.hide()
         }
 
-        if (this._panel.isEditEnabled()) {
-            editButton.setCaption(gettext('Done'))
+        editButton.setCaption(this._panel.isEditEnabled() ? gettext('Done') : gettext('Edit'))
+
+        /* Empty panels enable editing for everyone, so check admin here too */
+        if (admin && this._panel.isEditEnabled()) {
             addWidgetButton.show()
             nameField.show()
             widthField.show()
             heightField.show()
         }
         else {
-            editButton.setCaption(gettext('Edit'))
             addWidgetButton.hide()
             nameField.hide()
             widthField.hide()
