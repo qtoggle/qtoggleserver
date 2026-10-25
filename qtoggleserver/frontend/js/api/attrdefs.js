@@ -1163,6 +1163,31 @@ export const STD_PORT_ATTRDEFS = {
         optional: true,
         order: 270
     },
+    write_retry_count: {
+        display_name: gettext('Write Retries'),
+        description: gettext('How many times a failed write is retried. 0 turns retries off.'),
+        type: 'number',
+        modifiable: true,
+        separator: true,
+        standard: true,
+        optional: true,
+        min: 0, /* no max here, as a small range would turn the field into a slider; the server enforces it */
+        integer: true,
+        order: 275
+    },
+    write_retry_interval: {
+        display_name: gettext('Write Retry Interval'),
+        description: gettext('The time to wait between write attempts.'),
+        unit: gettext('ms'),
+        type: 'number',
+        modifiable: true,
+        standard: true,
+        optional: true,
+        min: 0,
+        max: 3600000,
+        integer: true,
+        order: 276
+    },
     history_interval: {
         display_name: gettext('History Sampling Interval'),
         description: gettext('Determines how often the port value will be sampled and saved to history.'),
