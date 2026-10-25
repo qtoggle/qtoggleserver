@@ -36,7 +36,7 @@ class MockPort(Port):
 
     def set_writable(self, writable: bool) -> None:
         self._writable = writable
-        self.invalidate_attrs()
+        self.invalidate_attrdefs()  # some attributes only exist on writable ports
 
     async def attr_is_online(self) -> bool | None:
         return self._mock_online

@@ -214,3 +214,30 @@ class TestLegacyPersistedAttr:
         await core_api_ports.set_port_attrs(slave_port, {"persisted": True}, ignore_extra_attrs=False)
 
         assert slave_port.get_provisioning_attrs() == {"persisted": True}
+
+
+class TestWriteRetries:
+    """Test that the master neither shows nor uses the slave's write retry settings, since the slave retries its own
+    writes."""
+
+    @pytest.fixture
+    async def slave_port(self, slave) -> SlavePort:
+        return SlavePort(
+            slave,
+            {"id": "port1", "type": "number", "writable": True, "write_retry_count": 3, "write_retry_interval": 0},
+        )
+
+    async def test_attrs_hidden(self, slave_port) -> None:
+        attrs = await slave_port.get_attrs()
+
+        assert "write_retry_count" not in attrs
+        assert "write_retry_interval" not in attrs
+
+    async def test_no_retry(self, slave, slave_port, mocker) -> None:
+        await slave_port.enable()
+        api_call = mocker.patch.object(slave, "api_call", side_effect=core_responses.HTTPError(500, "port-error"))
+
+        with pytest.raises(core_ports.PortError):
+            await slave_port.transform_and_write_value(5)
+
+        api_call.assert_called_once()

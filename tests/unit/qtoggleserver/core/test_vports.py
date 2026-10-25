@@ -48,3 +48,15 @@ class TestVirtualPortPersistence:
 
         assert vport._virtual_value is None
         assert vport._last_read_value == (12, 1001)
+
+
+class TestVirtualPortWriteRetries:
+    async def test_no_retry_attrs(self):
+        """Writing a virtual port can't fail, so it should not expose the retry attributes."""
+        from tests.unit.qtoggleserver.mock.ports import MockVirtualPort
+
+        vport = MockVirtualPort("vport1")
+
+        attrs = await vport.get_attrs()
+        assert "write_retry_count" not in attrs
+        assert "write_retry_interval" not in attrs
