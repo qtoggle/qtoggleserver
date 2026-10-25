@@ -1109,7 +1109,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     async def from_persisted(self, data: GenericJSONDict) -> None:
         attrs_start = ["enabled"]  # these will be loaded first, in this order
-        attrs_end = ["expression"]  # these will be loaded last, in this order
+        # These will be loaded last, in this order. Some only exist on writable ports, and a port may only become
+        # writable once other attributes are loaded (e.g. its direction).
+        attrs_end = ["write_retry_count", "write_retry_interval", "enforce_value", "expression"]
 
         attr_items = data.items()
         attr_items = [a for a in attr_items if (a[0] not in attrs_start) and (a[0] not in attrs_end)]
@@ -1131,8 +1133,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         attr_items = attr_items_start + attr_items + attr_items_end
 
-        attrdefs = await self.get_attrdefs()
-
         for name, value in attr_items:
             if name in (
                 "id",
@@ -1144,7 +1144,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             ):
                 continue  # value is also among the persisted fields
 
-            attrdef = attrdefs.get(name)
+            # Setting an attribute may add or remove definitions, so look them up again each time
+            attrdef = (await self.get_attrdefs()).get(name)
             if not attrdef:
                 continue  # don't load attribute w/o definition
             if attrdef.get("persisted") is False:
