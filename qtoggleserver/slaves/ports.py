@@ -67,6 +67,13 @@ class SlavePort(core_ports.BasePort):
 
     _PROVISIONING_ATTRDEF = {"type": ["string"], "modifiable": False}
 
+    _PERSISTED_ATTRDEF = {
+        "display_name": "Persist Value",
+        "description": "Controls whether the port value is preserved when the device restarts.",
+        "type": "boolean",
+        "modifiable": True,
+    }
+
     def __init__(self, slave: Slave, attrs: Attributes) -> None:
         self._slave: Slave = slave
 
@@ -155,7 +162,13 @@ class SlavePort(core_ports.BasePort):
         return attrdefs
 
     async def get_additional_attrdefs(self) -> AttributeDefinitions:
-        return copy.copy(self._cached_attrs.get("definitions", {}))
+        attrdefs = copy.copy(self._cached_attrs.get("definitions", {}))
+
+        # Slaves on qToggle API < 1.3 report `persisted` as a standard attribute, so they send no definition for it
+        if "persisted" in self._cached_attrs and "persisted" not in attrdefs:
+            attrdefs["persisted"] = self._PERSISTED_ATTRDEF.copy()
+
+        return attrdefs
 
     def map_id(self, new_id: str) -> None:
         raise core_ports.PortError("Slave ports cannot be mapped")
