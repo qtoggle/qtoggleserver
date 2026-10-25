@@ -1210,6 +1210,15 @@ export const STD_PORT_ATTRDEFS = {
         optional: true,
         order: 276
     },
+    enforce_value: {
+        display_name: gettext('Enforce Value'),
+        description: gettext('Writes the last written value again whenever the port changes to something else.'),
+        type: 'boolean',
+        modifiable: true,
+        standard: true,
+        optional: true,
+        order: 277
+    },
     history_interval: {
         display_name: gettext('History Sampling Interval'),
         description: gettext('Determines how often the port value will be sampled and saved to history.'),
