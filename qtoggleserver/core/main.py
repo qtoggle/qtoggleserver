@@ -175,6 +175,7 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
                 logger.debug("detected %s value change: %s -> %s", port, old_value_str, new_value_str)
 
                 port_changed_values[port] = old_value, new_value
+                port.enforce_last_written_value(new_value)
 
         # Trigger value-change events; save ports; add port deps to changes
         for port, (old_value, new_value) in port_changed_values.items():

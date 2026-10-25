@@ -43,8 +43,9 @@ MASTER_ATTRS = {
 class SlavePort(core_ports.BasePort):
     PERSIST_COLLECTION = "slave_ports"
 
-    # The slave retries its own writes, so the master must not retry them too
+    # The slave retries its own writes and enforces its own values, so the master must not do either
     WRITE_RETRY = False
+    ENFORCE_VALUE = False
 
     _DEVICE_EXPRESSION_ATTRDEF = {"type": "string", "modifiable": True, "max": 1024}
 
