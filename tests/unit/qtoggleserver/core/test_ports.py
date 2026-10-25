@@ -1452,7 +1452,7 @@ class TestPortWriteRetries:
 
     async def test_waits_interval_and_stays_pending(self, writable_port, mocker):
         await writable_port.set_attr("write_retry_count", 1)
-        await writable_port.set_attr("write_retry_interval", 50)
+        await writable_port.set_attr("write_retry_interval", 500)
         self.fail_times(mocker, writable_port, 1)
 
         task = asyncio.create_task(writable_port.transform_and_write_value(5))
@@ -1490,7 +1490,7 @@ class TestPortWriteRetries:
 
     async def test_new_count_applies_to_next_attempt(self, writable_port, mocker):
         await writable_port.set_attr("write_retry_count", 5)
-        await writable_port.set_attr("write_retry_interval", 50)
+        await writable_port.set_attr("write_retry_interval", 500)
         calls = self.fail_times(mocker, writable_port, 10)
 
         task = asyncio.create_task(writable_port.transform_and_write_value(5))
