@@ -62,6 +62,24 @@ class DashboardSection extends Section {
         }.bind(this))
     }
 
+    onShow(source, prevSection) {
+        /* Open the default panel when entering the section from its button or as home, but not on explicit paths */
+        if (source !== 'button' && source !== 'home') {
+            return
+        }
+
+        this.whenLoaded().then(function () {
+            if (!this.isCurrent() || this.getCurrentPage() !== this.getMainPage()) {
+                return
+            }
+
+            let panel = Dashboard.getDefaultPanel()
+            if (panel) {
+                Navigation.navigate({path: [SECTION_ID, ...panel.getIdPath()], historyEntry: false})
+            }
+        }.bind(this))
+    }
+
     canClose() {
         return !Dashboard.hasPendingSave()
     }

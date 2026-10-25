@@ -50,7 +50,9 @@ const PanelGroupCompositeMixin = Mixin((superclass = Object) => {
          * @param {String} name
          */
         setName(name) {
+            let oldIdPath = this.getIdPath()
             this._name = name
+            Dashboard.updateDefaultPanelPath(oldIdPath, this.getIdPath())
             this.updateUI()
             if (this._parent) {
                 this._parent.updateUI()
@@ -80,6 +82,14 @@ const PanelGroupCompositeMixin = Mixin((superclass = Object) => {
             }
 
             return this._parent.getPath().concat([this])
+        }
+
+        /**
+         * Return the list of ids from the root group (excluded) down to this item.
+         * @returns {String[]}
+         */
+        getIdPath() {
+            return this.getPath().slice(1).map(c => c.getId())
         }
 
         /**
@@ -135,6 +145,7 @@ const PanelGroupCompositeMixin = Mixin((superclass = Object) => {
                 message: msg,
                 onYes: function () {
                     logger.debug(`removing "${this.getPathStr()}"`)
+                    Dashboard.updateDefaultPanelPath(this.getIdPath(), null)
                     let parent = this.getParent()
                     parent.removeChild(this)
                     parent.save()
