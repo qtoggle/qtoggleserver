@@ -609,11 +609,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return writable
 
     async def attr_get_expression(self) -> str | None:
-        writable = self._attrs_cache.get("writable")  # use cached value if available, to avoid unnecessary await
-        if writable is None:
-            writable = await self.is_writable()
-
-        if not writable:
+        if not await self._is_writable_cached():
             return None
 
         if self._expression:
