@@ -45,6 +45,10 @@ def _attrdef_unit_enabled(port: BasePort) -> bool:
     return port.get_type() == TYPE_NUMBER
 
 
+def _attrdef_write_retry_enabled(port: BasePort) -> bool:
+    return port.WRITE_RETRY
+
+
 STANDARD_ATTRDEFS = {
     "id": {"type": "string"},
     "display_name": {"type": "string", "modifiable": True, "max": 64},
@@ -104,6 +108,24 @@ STANDARD_ATTRDEFS = {
         "optional": True,
         "modifiable": True,
         "enabled": lambda p: core_history.is_enabled(),
+    },
+    "write_retry_count": {
+        "type": "number",
+        "integer": True,
+        "min": 0,
+        "max": 100,
+        "optional": True,
+        "modifiable": True,
+        "enabled": _attrdef_write_retry_enabled,
+    },
+    "write_retry_interval": {
+        "type": "number",
+        "integer": True,
+        "min": 0,
+        "max": 3600000,
+        "optional": True,
+        "modifiable": True,
+        "enabled": _attrdef_write_retry_enabled,
     },
 }
 
@@ -177,6 +199,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     WRITE_QUEUE_SIZE = 16
 
+    # Set to `False` for ports whose driver can't tell when a write fails, as retries would never start
+    WRITE_RETRY = True
+
     STANDARD_ATTRDEFS = STANDARD_ATTRDEFS
 
     ADDITIONAL_ATTRDEFS = {}
@@ -226,6 +251,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._history_interval: int = 0
         self._history_retention: int = 0
         self._history_last_timestamp: int = 0
+
+        # Not named after the attributes, so that `get_attr()` doesn't find them on non-writable ports
+        self._write_retries: int = 0
+        self._write_retry_interval_ms: int = 1000
+        # Set while waiting to retry a write, so that disabling the port can stop the wait
+        self._write_retry_wakeup: asyncio.Event | None = None
 
         # Attributes cache is used to prevent computing an attribute value more than once per core iteration
         self._attrs_cache: Attributes = {}
@@ -524,6 +555,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._enabled = False
         self.invalidate_attrs()
 
+        if self._write_retry_wakeup:
+            self._write_retry_wakeup.set()
+
         try:
             await self.handle_disable()
         except Exception:
@@ -554,6 +588,25 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     def get_expression(self) -> core_expressions.Expression | None:
         return self._expression
+
+    async def attr_get_write_retry_count(self) -> int | None:
+        return self._write_retries if await self._is_writable_cached() else None
+
+    def attr_set_write_retry_count(self, value: int) -> None:
+        self._write_retries = value
+
+    async def attr_get_write_retry_interval(self) -> int | None:
+        return self._write_retry_interval_ms if await self._is_writable_cached() else None
+
+    def attr_set_write_retry_interval(self, value: int) -> None:
+        self._write_retry_interval_ms = value
+
+    async def _is_writable_cached(self) -> bool:
+        writable = self._attrs_cache.get("writable")  # use cached value if available, to avoid unnecessary await
+        if writable is None:
+            writable = await self.is_writable()
+
+        return writable
 
     async def attr_get_expression(self) -> str | None:
         writable = self._attrs_cache.get("writable")  # use cached value if available, to avoid unnecessary await
@@ -739,11 +792,50 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         async with self._write_value_lock:
             try:
                 self._writing_value = value
-                await self.write_value(transformed_value)
+                await self._write_value_with_retries(transformed_value)
                 self._last_written_value = value, int(time.time() * 1000)
             finally:
                 self._writing_value = None
                 self.save_asap()
+
+    async def _write_value_with_retries(self, value: PortValue) -> None:
+        """Write `value`, retrying a failed write as set by `write_retry_count` and `write_retry_interval`. The settings
+        are read again after each failure, so changes apply from the next attempt."""
+
+        attempt = 0
+        while True:
+            try:
+                await self.write_value(value)
+                return
+            except Exception as e:
+                retry_count = self._write_retries if self.WRITE_RETRY else 0
+                if attempt >= retry_count or not self._enabled:
+                    raise
+
+                attempt += 1
+                self.warning(
+                    "failed to write value %s: %s; retrying in %d ms (%d/%d)",
+                    json_utils.dumps(value),
+                    e,
+                    self._write_retry_interval_ms,
+                    attempt,
+                    retry_count,
+                )
+                await self._wait_write_retry(self._write_retry_interval_ms / 1000)
+
+    async def _wait_write_retry(self, interval: float) -> None:
+        """Wait `interval` seconds before retrying a write. Raise `PortDisabled` if the port gets disabled first."""
+
+        self._write_retry_wakeup = asyncio.Event()
+        try:
+            await asyncio.wait_for(self._write_retry_wakeup.wait(), timeout=interval)
+        except TimeoutError:
+            pass
+        finally:
+            self._write_retry_wakeup = None
+
+        if not self._enabled:
+            raise PortDisabled()
 
     def get_pending_value(self) -> NullablePortValue:
         """Return the most recent value that's about to be written to the port but hasn't been, yet."""

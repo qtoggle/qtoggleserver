@@ -1389,3 +1389,141 @@ class TestPortFromPersisted:
         assert list(mock_num_port1._write_queue) == [WriteRequest(56), WriteRequest(78)]
         assert mock_num_port1.get_pending_value() == 78
         mock_num_port1.write_value.assert_not_called()
+
+
+class TestPortWriteRetries:
+    """Test that a failed write is retried as set by `write_retry_count` and `write_retry_interval`, and that the
+    retry attributes only exist where retries can work."""
+
+    @pytest.fixture
+    def writable_port(self, mock_num_port1):
+        mock_num_port1.set_writable(True)
+        return mock_num_port1
+
+    @staticmethod
+    def fail_times(mocker, port, count: int) -> list:
+        """Make the port's `write_value()` fail `count` times, then succeed."""
+
+        calls = []
+
+        async def write_value(value) -> None:
+            calls.append(value)
+            if len(calls) <= count:
+                raise PortWriteError("nope")
+
+        mocker.patch.object(port, "write_value", side_effect=write_value)
+        return calls
+
+    async def test_no_retry_by_default(self, writable_port, mocker):
+        calls = self.fail_times(mocker, writable_port, 1)
+
+        with pytest.raises(PortWriteError):
+            await writable_port.transform_and_write_value(5)
+
+        assert calls == [5]
+        assert writable_port.get_last_written_value() is None
+
+    async def test_retries_until_written(self, writable_port, mocker):
+        await writable_port.set_attr("write_retry_count", 3)
+        await writable_port.set_attr("write_retry_interval", 0)
+        calls = self.fail_times(mocker, writable_port, 2)
+
+        await writable_port.transform_and_write_value(5)
+
+        assert calls == [5, 5, 5]
+        assert writable_port.get_last_written_value() == 5
+
+    async def test_gives_up_after_last_retry(self, writable_port, mocker, caplog):
+        await writable_port.set_attr("write_retry_count", 2)
+        await writable_port.set_attr("write_retry_interval", 0)
+        calls = self.fail_times(mocker, writable_port, 10)
+
+        with caplog.at_level(logging.WARNING), pytest.raises(PortWriteError):
+            await writable_port.transform_and_write_value(5)
+
+        assert calls == [5, 5, 5]
+        assert writable_port.get_last_written_value() is None
+        # A warning for each retry, and one error for the final failure
+        assert [r.levelno for r in caplog.records if r.name.endswith("nid1")] == [
+            logging.WARNING,
+            logging.WARNING,
+            logging.ERROR,
+        ]
+
+    async def test_waits_interval_and_stays_pending(self, writable_port, mocker):
+        await writable_port.set_attr("write_retry_count", 1)
+        await writable_port.set_attr("write_retry_interval", 50)
+        self.fail_times(mocker, writable_port, 1)
+
+        task = asyncio.create_task(writable_port.transform_and_write_value(5))
+        await asyncio.sleep(0.02)
+        assert not task.done()
+        assert writable_port.get_pending_value() == 5
+
+        await task
+        assert writable_port.get_pending_value() is None
+        assert writable_port.get_last_written_value() == 5
+
+    async def test_transform_applied_once(self, writable_port, mocker):
+        await writable_port.set_attr("write_retry_count", 2)
+        await writable_port.set_attr("write_retry_interval", 0)
+        await writable_port.set_attr("transform_write", "ADD($, 1)")
+        calls = self.fail_times(mocker, writable_port, 2)
+
+        await writable_port.transform_and_write_value(5)
+
+        assert calls == [6, 6, 6]
+        assert writable_port.get_last_written_value() == 5
+
+    async def test_disable_stops_retry_wait(self, writable_port, mocker):
+        await writable_port.set_attr("write_retry_count", 5)
+        await writable_port.set_attr("write_retry_interval", 60000)
+        calls = self.fail_times(mocker, writable_port, 10)
+
+        task = asyncio.create_task(writable_port.transform_and_write_value(5))
+        await asyncio.sleep(0.01)
+        await writable_port.disable()
+
+        with pytest.raises(PortDisabled):
+            await asyncio.wait_for(task, timeout=1)
+        assert calls == [5]
+
+    async def test_new_count_applies_to_next_attempt(self, writable_port, mocker):
+        await writable_port.set_attr("write_retry_count", 5)
+        await writable_port.set_attr("write_retry_interval", 50)
+        calls = self.fail_times(mocker, writable_port, 10)
+
+        task = asyncio.create_task(writable_port.transform_and_write_value(5))
+        await asyncio.sleep(0.02)
+        await writable_port.set_attr("write_retry_count", 1)
+
+        with pytest.raises(PortWriteError):
+            await task
+        assert calls == [5, 5]
+
+    async def test_attrs_only_on_writable_ports(self, mock_num_port1):
+        assert "write_retry_count" not in await mock_num_port1.get_attrs()
+
+        mock_num_port1.set_writable(True)
+
+        attrs = await mock_num_port1.get_attrs()
+        assert attrs["write_retry_count"] == 0
+        assert attrs["write_retry_interval"] == 1000
+
+    async def test_attrs_hidden_without_write_retry(self, writable_port, mocker):
+        mocker.patch.object(writable_port, "WRITE_RETRY", False)
+        writable_port.invalidate_attrdefs()
+
+        attrs = await writable_port.get_attrs()
+        assert "write_retry_count" not in attrs
+        assert "write_retry_interval" not in attrs
+
+    async def test_no_retry_without_write_retry(self, writable_port, mocker):
+        await writable_port.set_attr("write_retry_count", 3)
+        mocker.patch.object(writable_port, "WRITE_RETRY", False)
+        calls = self.fail_times(mocker, writable_port, 1)
+
+        with pytest.raises(PortWriteError):
+            await writable_port.transform_and_write_value(5)
+
+        assert calls == [5]

@@ -12,6 +12,7 @@ _vport_args: dict[str, GenericJSONDict] = {}
 
 class VirtualPort(core_ports.Port):
     WRITABLE = True
+    WRITE_RETRY = False  # writing a virtual port can't fail
 
     def __init__(
         self,
