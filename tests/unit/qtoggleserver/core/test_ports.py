@@ -7,6 +7,7 @@ from qtoggleserver.conf import settings
 from qtoggleserver.core import expressions
 from qtoggleserver.core.expressions.exceptions import ValueUnavailable
 from qtoggleserver.core.ports import PortDisabled, PortWriteError, WriteRequest
+from tests.unit.qtoggleserver.mock.ports import MockNumberPort
 
 
 class TestPortGetLastValue:
@@ -1359,7 +1360,42 @@ class TestPortToPersisted:
         assert (await mock_num_port1.to_persisted())["write_queue"] == [45]
 
 
+class OutputMockPort(MockNumberPort):
+    """A port that becomes writable through an attribute, like a GPIO switched to output."""
+
+    ADDITIONAL_ATTRDEFS = {"output": {"type": "boolean", "modifiable": True}}
+
+    def __init__(self, port_id: str) -> None:
+        self._output: bool = False
+        super().__init__(port_id, None)
+
+    async def attr_is_writable(self) -> bool:
+        return self._output
+
+
 class TestPortFromPersisted:
+    async def test_loads_writable_only_attrs_after_writable(self, mocker):
+        """from_persisted should load attributes that only exist on writable ports after the ones that make the port
+        writable, as they would otherwise have no definition yet."""
+
+        mocker.patch("asyncio.Lock")
+        port = OutputMockPort("oid1")
+
+        await port.from_persisted(
+            {
+                "enforce_value": True,
+                "expression": "ADD(1, 2)",
+                "output": True,
+                "write_retry_count": 3,
+                "write_retry_interval": 5000,
+            }
+        )
+
+        assert await port.get_attr("write_retry_count") == 3
+        assert await port.get_attr("write_retry_interval") == 5000
+        assert await port.get_attr("enforce_value") is True
+        assert await port.get_attr("expression") == "ADD(1, 2)"
+
     async def test_skips_write_queue_when_disabled(self, mock_num_port1, mocker):
         """from_persisted should not restore a write queue for a disabled port, since it has nothing pending."""
         mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
