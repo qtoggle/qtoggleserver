@@ -130,6 +130,10 @@ class SelfPortValue(PortValue):
     def __str__(self) -> str:
         return self.prefix
 
+    def _get_deps(self) -> set[str]:
+        # Like `IGNCHG($)`, so that a value written by the expression never triggers its next evaluation
+        return set()
+
 
 class PortRef(PortExpression):
     def __str__(self) -> str:
