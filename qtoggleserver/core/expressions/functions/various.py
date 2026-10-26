@@ -26,7 +26,7 @@ class DefaultFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        # Evaluate both args, so that stateful functions in the unused one see every evaluation
+        # Not using `eval_args()`, since an unavailable value must fall back to the default instead of raising
         value, default = await asyncio.gather(
             self.args[0].eval(context), self.args[1].eval(context), return_exceptions=True
         )
