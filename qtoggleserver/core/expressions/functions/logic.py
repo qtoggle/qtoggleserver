@@ -1,3 +1,5 @@
+import asyncio
+
 from ..base import EvalContext, EvalResult
 from . import Function, function
 
@@ -7,8 +9,12 @@ class AndFunction(Function):
     MIN_ARGS = 2
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        for result in await self.eval_args_or_errors(context):
-            if not self.unwrap(result):
+        # Evaluate all args, even after the result is known, so that stateful functions among them see every evaluation
+        results = await asyncio.gather(*(a.eval(context) for a in self.args), return_exceptions=True)
+        for result in results:
+            if isinstance(result, BaseException):
+                raise result
+            if not result:
                 return 0
 
         return 1
@@ -19,8 +25,12 @@ class OrFunction(Function):
     MIN_ARGS = 2
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        for result in await self.eval_args_or_errors(context):
-            if self.unwrap(result):
+        # Evaluate all args, even after the result is known, so that stateful functions among them see every evaluation
+        results = await asyncio.gather(*(a.eval(context) for a in self.args), return_exceptions=True)
+        for result in results:
+            if isinstance(result, BaseException):
+                raise result
+            if result:
                 return 1
 
         return 0

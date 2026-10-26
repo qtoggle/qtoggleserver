@@ -67,24 +67,6 @@ class Function(Expression, metaclass=abc.ABCMeta):
     async def eval_args(self, context: EvalContext) -> list[EvalResult]:
         return list(await asyncio.gather(*(a.eval(context) for a in self.args)))
 
-    async def eval_args_or_errors(self, context: EvalContext) -> list[EvalResult | exceptions.ExpressionEvalException]:
-        """Evaluate all args, returning evaluation errors in place of results. Functions that ignore some args still
-        evaluate them, so that stateful functions among them see every evaluation."""
-
-        results = await asyncio.gather(*(a.eval(context) for a in self.args), return_exceptions=True)
-        for result in results:
-            if isinstance(result, BaseException) and not isinstance(result, exceptions.ExpressionEvalException):
-                raise result
-
-        return results
-
-    @staticmethod
-    def unwrap(result: EvalResult | exceptions.ExpressionEvalException) -> EvalResult:
-        if isinstance(result, exceptions.ExpressionEvalException):
-            raise result
-
-        return result
-
     @classmethod
     def validate_arg_kinds(cls, args: list[Expression], pos_list: list[int]) -> None:
         for i, arg in enumerate(args):

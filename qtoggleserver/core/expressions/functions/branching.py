@@ -1,3 +1,5 @@
+import asyncio
+
 from ..base import EvalContext, EvalResult
 from . import Function, function
 
@@ -7,8 +9,18 @@ class IfFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        condition, true_value, false_value = await self.eval_args_or_errors(context)
-        return self.unwrap(true_value if self.unwrap(condition) else false_value)
+        # Evaluate both branches, so that stateful functions in the unused one see every evaluation
+        condition, true_value, false_value = await asyncio.gather(
+            *(a.eval(context) for a in self.args), return_exceptions=True
+        )
+        if isinstance(condition, BaseException):
+            raise condition
+
+        result = true_value if condition else false_value
+        if isinstance(result, BaseException):
+            raise result
+
+        return result
 
 
 @function("LUT")

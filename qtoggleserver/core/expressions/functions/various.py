@@ -1,3 +1,5 @@
+import asyncio
+
 from qtoggleserver import persist, system
 from qtoggleserver.core import history as core_history
 from qtoggleserver.core import ports as core_ports
@@ -24,12 +26,18 @@ class DefaultFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        value, default = await self.eval_args_or_errors(context)
-        default = self.unwrap(default)
+        # Evaluate the value even when the default is unavailable, so that stateful functions in it see every evaluation
+        value, default = await asyncio.gather(
+            self.args[0].eval(context), self.args[1].eval(context), return_exceptions=True
+        )
+        if isinstance(default, BaseException):
+            raise default
         if value is None or isinstance(value, ValueUnavailable):
             return default
+        if isinstance(value, BaseException):
+            raise value
 
-        return self.unwrap(value)
+        return value
 
 
 @function("IGNCHG")
