@@ -130,7 +130,7 @@ class MyFunc(Function):
 
 The `@function("NAME")` decorator registers the class in the global `FUNCTIONS` dict. `EvalResult` is `int | float | str`.
 
-A function must evaluate all its args on every evaluation, even the ones its result doesn't use. Otherwise stateful functions such as `HELD` or `RISING` in those args miss evaluations. When an arg may be unused, see how `AND` or `IF` gather all results with `return_exceptions=True` and raise only the errors they use.
+A function must evaluate all its args on every evaluation, even the ones its result doesn't use. Otherwise stateful functions such as `HELD` or `RISING` in those args miss evaluations. Use `eval_args()`, which makes the function unavailable when any arg is. Only functions that exist to handle unavailable values, such as `AVAILABLE` and `DEFAULT`, catch these errors.
 
 ## Master / Slave Architecture
 

@@ -104,13 +104,25 @@ class TestDefault:
         assert await expr.eval(dummy_eval_context) == 13
 
     async def test_default_unavailable(self, literal_unavailable, dummy_eval_context):
-        """Should be unavailable when the default is unavailable, but still evaluate the value."""
+        """Should return the value when only the default is unavailable."""
 
-        mock_expr = MockExpression(16)
-        expr = various.DefaultFunction([mock_expr, literal_unavailable], Role.VALUE)
+        expr = various.DefaultFunction([MockExpression(16), literal_unavailable], Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 16
+
+    async def test_both_unavailable(self, literal_unavailable, dummy_eval_context):
+        """Should be unavailable when both the value and the default are unavailable."""
+
+        expr = various.DefaultFunction([literal_unavailable, literal_unavailable], Role.VALUE)
         with pytest.raises(ValueUnavailable):
             await expr.eval(dummy_eval_context)
-        assert mock_expr.eval_count == 1
+
+    async def test_evaluates_all_args(self, dummy_eval_context):
+        """Should evaluate the default even when the value is available."""
+
+        def_expr = MockExpression(13)
+        expr = various.DefaultFunction([MockExpression(16), def_expr], Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 16
+        assert def_expr.eval_count == 1
 
     async def test_offline_port(self, mock_num_port1):
         """Should return the default value for an offline port, even though the port has a known value."""

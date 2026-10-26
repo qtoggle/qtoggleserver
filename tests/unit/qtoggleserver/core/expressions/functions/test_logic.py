@@ -1,7 +1,7 @@
 import pytest
 
 from qtoggleserver.core.expressions import Function, Role, logic
-from qtoggleserver.core.expressions.exceptions import InvalidNumberOfArguments
+from qtoggleserver.core.expressions.exceptions import InvalidNumberOfArguments, ValueUnavailable
 from tests.unit.qtoggleserver.mock.expressions import MockExpression
 
 
@@ -28,10 +28,11 @@ class TestAnd:
         assert result == 1
 
     async def test_unavailable(self, literal_false, literal_true, literal_unavailable, dummy_eval_context):
-        result = await logic.AndFunction([literal_true, literal_false, literal_unavailable], role=Role.VALUE).eval(
-            dummy_eval_context
-        )
-        assert result == 0
+        """Should be unavailable when any arg is, even if the others already decide the result."""
+
+        expr = logic.AndFunction([literal_true, literal_false, literal_unavailable], role=Role.VALUE)
+        with pytest.raises(ValueUnavailable):
+            await expr.eval(dummy_eval_context)
 
     async def test_evaluates_all_args(self, literal_false, dummy_eval_context):
         """Should evaluate args that come after a false one, so that stateful functions see every evaluation."""
@@ -80,10 +81,11 @@ class TestOr:
         assert result == 1
 
     async def test_unavailable(self, literal_false, literal_true, literal_unavailable, dummy_eval_context):
-        result = await logic.OrFunction([literal_false, literal_true, literal_unavailable], role=Role.VALUE).eval(
-            dummy_eval_context
-        )
-        assert result == 1
+        """Should be unavailable when any arg is, even if the others already decide the result."""
+
+        expr = logic.OrFunction([literal_false, literal_true, literal_unavailable], role=Role.VALUE)
+        with pytest.raises(ValueUnavailable):
+            await expr.eval(dummy_eval_context)
 
     async def test_evaluates_all_args(self, literal_true, dummy_eval_context):
         """Should evaluate args that come after a true one, so that stateful functions see every evaluation."""
