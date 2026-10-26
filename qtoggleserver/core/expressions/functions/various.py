@@ -1,11 +1,9 @@
-import asyncio
-
 from qtoggleserver import persist, system
 from qtoggleserver.core import history as core_history
 from qtoggleserver.core import ports as core_ports
 
 from ..base import DEP_ASAP, DEP_SECOND, EvalContext, EvalResult
-from ..exceptions import PortValueUnavailable, RealDateTimeUnavailable, ValueUnavailable
+from ..exceptions import ExpressionEvalException, PortValueUnavailable, RealDateTimeUnavailable, ValueUnavailable
 from ..ports import PortRef
 from . import Function, function
 
@@ -27,12 +25,17 @@ class DefaultFunction(Function):
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         # Not using `eval_args()`, since an unavailable value must fall back to the default instead of raising
-        value, default = await asyncio.gather(
-            self.args[0].eval(context), self.args[1].eval(context), return_exceptions=True
-        )
+        results = []
+        for arg in self.args:
+            try:
+                results.append(await arg.eval(context))
+            except ExpressionEvalException as e:
+                results.append(e)
+
+        value, default = results
         if value is None or isinstance(value, ValueUnavailable):
             value = default
-        if isinstance(value, BaseException):
+        if isinstance(value, ExpressionEvalException):
             raise value
 
         return value

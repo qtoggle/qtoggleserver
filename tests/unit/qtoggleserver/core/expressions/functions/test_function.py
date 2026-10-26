@@ -15,6 +15,11 @@ class SlowExpression(MockExpression):
         return await super()._eval(context)
 
 
+class BuggyExpression(MockExpression):
+    async def _eval(self, context: EvalContext) -> EvalResult:
+        raise RuntimeError("bug")
+
+
 class TestFunction:
     def test_is_asap_eval_paused(self):
         f11 = MockFunction(args=[], role=Role.VALUE)
@@ -55,3 +60,10 @@ class TestFunction:
         with pytest.raises(ValueUnavailable) as exc_info:
             await f.eval_args(dummy_eval_context)
         assert type(exc_info.value) is ValueUnavailable  # not the `UnknownPortId` of the second arg
+
+    async def test_eval_args_raises_unexpected_error(self, dummy_eval_context):
+        """Should raise an unexpected error right away, even after an evaluation error."""
+
+        f = MockFunction(args=[MockExpression(None), BuggyExpression()], role=Role.VALUE)
+        with pytest.raises(RuntimeError):
+            await f.eval_args(dummy_eval_context)
