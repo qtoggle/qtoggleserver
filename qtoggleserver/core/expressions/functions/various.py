@@ -3,7 +3,7 @@ from qtoggleserver.core import history as core_history
 from qtoggleserver.core import ports as core_ports
 
 from ..base import DEP_ASAP, DEP_SECOND, EvalContext, EvalResult
-from ..exceptions import PortValueUnavailable, RealDateTimeUnavailable, ValueUnavailable
+from ..exceptions import ExpressionEvalException, PortValueUnavailable, RealDateTimeUnavailable, ValueUnavailable
 from ..ports import PortRef
 from . import Function, function
 
@@ -24,15 +24,21 @@ class DefaultFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        default = await self.args[1].eval(context)
-        try:
-            value = await self.args[0].eval(context)
-            if value is not None:
-                return value
-            else:
-                return default
-        except ValueUnavailable:
-            return default
+        # Not using `eval_args()`, since an unavailable value must fall back to the default instead of raising
+        results = []
+        for arg in self.args:
+            try:
+                results.append(await arg.eval(context))
+            except ExpressionEvalException as e:
+                results.append(e)
+
+        value, default = results
+        if value is None or isinstance(value, ValueUnavailable):
+            value = default
+        if isinstance(value, ExpressionEvalException):
+            raise value
+
+        return value
 
 
 @function("IGNCHG")
@@ -211,11 +217,10 @@ class HistoryFunction(Function):
         self._cached_max_diff: float | None = None
 
     async def _eval(self, context: EvalContext) -> EvalResult:
+        port_id, timestamp, max_diff = await self.eval_args(context)
         if not system.date.has_real_date_time():
             raise RealDateTimeUnavailable()
 
-        args = await self.eval_args(context)
-        port_id, timestamp, max_diff = args
         port = core_ports.get(port_id)
         assert port
 

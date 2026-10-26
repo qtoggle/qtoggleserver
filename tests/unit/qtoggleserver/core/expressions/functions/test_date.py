@@ -768,7 +768,9 @@ class TestHMSInterval:
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
         with pytest.raises(RealDateTimeUnavailable):
-            await date.HMSIntervalFunction([MockExpression()] * 6, role=Role.VALUE).eval(dummy_eval_context)
+            await date.HMSIntervalFunction([MockExpression(1) for _ in range(6)], role=Role.VALUE).eval(
+                dummy_eval_context
+            )
 
 
 class TestMDInterval:
@@ -897,4 +899,37 @@ class TestMDInterval:
     async def test_real_date_time_unavailable(self, mocker, dummy_local_datetime, dummy_eval_context):
         mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
         with pytest.raises(RealDateTimeUnavailable):
-            await date.MDIntervalFunction([MockExpression()] * 4, role=Role.VALUE).eval(dummy_eval_context)
+            await date.MDIntervalFunction([MockExpression(1) for _ in range(4)], role=Role.VALUE).eval(
+                dummy_eval_context
+            )
+
+
+@pytest.mark.parametrize(
+    "func_class, num_args",
+    [
+        (date.YearFunction, 1),
+        (date.MonthFunction, 1),
+        (date.DayFunction, 1),
+        (date.DOWFunction, 1),
+        (date.LDOMFunction, 1),
+        (date.HourFunction, 1),
+        (date.MinuteFunction, 1),
+        (date.SecondFunction, 1),
+        (date.MinuteOfDayFunction, 1),
+        (date.SecondOfDayFunction, 1),
+        (date.BOYFunction, 1),
+        (date.BOMFunction, 1),
+        (date.BOWFunction, 2),
+        (date.BODFunction, 1),
+        (date.HMSIntervalFunction, 6),
+        (date.MDIntervalFunction, 4),
+    ],
+)
+async def test_real_date_time_unavailable_evaluates_args(mocker, func_class, num_args, dummy_eval_context):
+    """Should evaluate all args even when real date/time is unavailable."""
+
+    mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
+    args = [MockExpression(1) for _ in range(num_args)]
+    with pytest.raises(RealDateTimeUnavailable):
+        await func_class(args, role=Role.VALUE).eval(dummy_eval_context)
+    assert all(a.eval_count == 1 for a in args)

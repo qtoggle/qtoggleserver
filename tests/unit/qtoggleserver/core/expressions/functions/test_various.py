@@ -8,6 +8,7 @@ from qtoggleserver.core.expressions.exceptions import (
     PortValueUnavailable,
     RealDateTimeUnavailable,
     UnknownFunction,
+    ValueUnavailable,
 )
 from qtoggleserver.core.expressions.ports import PortValue
 from tests.unit.qtoggleserver.mock.expressions import MockExpression, MockPortRef, MockPortValue
@@ -101,6 +102,27 @@ class TestDefault:
         def_expr = MockExpression(13)
         expr = various.DefaultFunction([literal_unavailable, def_expr], Role.VALUE)
         assert await expr.eval(dummy_eval_context) == 13
+
+    async def test_default_unavailable(self, literal_unavailable, dummy_eval_context):
+        """Should return the value when only the default is unavailable."""
+
+        expr = various.DefaultFunction([MockExpression(16), literal_unavailable], Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 16
+
+    async def test_both_unavailable(self, literal_unavailable, dummy_eval_context):
+        """Should be unavailable when both the value and the default are unavailable."""
+
+        expr = various.DefaultFunction([literal_unavailable, literal_unavailable], Role.VALUE)
+        with pytest.raises(ValueUnavailable):
+            await expr.eval(dummy_eval_context)
+
+    async def test_evaluates_all_args(self, dummy_eval_context):
+        """Should evaluate the default even when the value is available."""
+
+        def_expr = MockExpression(13)
+        expr = various.DefaultFunction([MockExpression(16), def_expr], Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 16
+        assert def_expr.eval_count == 1
 
     async def test_offline_port(self, mock_num_port1):
         """Should return the default value for an offline port, even though the port has a known value."""
@@ -653,8 +675,9 @@ class TestHistory:
         self, mocker, mock_persist_driver, dummy_local_datetime, mock_num_port1, dummy_eval_context
     ):
         port_expr = MockPortRef(mock_num_port1)
-        ts_expr = MockExpression()
-        diff_expr = MockExpression()
+        ts_expr = MockExpression(0)
+        diff_expr = MockExpression(0)
         mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
         with pytest.raises(RealDateTimeUnavailable):
             await various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE).eval(dummy_eval_context)
+        assert ts_expr.eval_count == diff_expr.eval_count == 1

@@ -1,5 +1,4 @@
 import abc
-import asyncio
 import re
 
 from collections.abc import Callable
@@ -65,7 +64,19 @@ class Function(Expression, metaclass=abc.ABCMeta):
         return result
 
     async def eval_args(self, context: EvalContext) -> list[EvalResult]:
-        return list(await asyncio.gather(*(a.eval(context) for a in self.args)))
+        # Keep going after an evaluation error, so that every arg is evaluated, and raise the first one at the end
+        results = []
+        error = None
+        for arg in self.args:
+            try:
+                results.append(await arg.eval(context))
+            except exceptions.ExpressionEvalException as e:
+                error = error or e
+
+        if error:
+            raise error
+
+        return results
 
     @classmethod
     def validate_arg_kinds(cls, args: list[Expression], pos_list: list[int]) -> None:

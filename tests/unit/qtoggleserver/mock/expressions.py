@@ -7,6 +7,7 @@ from qtoggleserver.core.ports import BasePort
 class MockExpression(Expression):
     def __init__(self, value: float | None = None) -> None:
         self.value: float | None = value
+        self.eval_count: int = 0
 
         super().__init__(role=Role.VALUE)
 
@@ -14,6 +15,7 @@ class MockExpression(Expression):
         self.value = value
 
     async def _eval(self, context: EvalContext) -> EvalResult:
+        self.eval_count += 1
         if self.value is None:
             raise ValueUnavailable()
         return self.value

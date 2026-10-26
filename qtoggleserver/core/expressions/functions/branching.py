@@ -7,11 +7,8 @@ class IfFunction(Function):
     MIN_ARGS = MAX_ARGS = 3
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        condition_value = await self.args[0].eval(context)
-        if condition_value:
-            return await self.args[1].eval(context)
-        else:
-            return await self.args[2].eval(context)
+        condition, true_value, false_value = await self.eval_args(context)
+        return true_value if condition else false_value
 
 
 @function("LUT")
