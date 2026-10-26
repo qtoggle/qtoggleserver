@@ -66,6 +66,28 @@ async def test_eval_trigger_value_change_own(mock_num_port1, mock_num_port2, moc
     mock_num_port2.transform_and_write_value.assert_called_once_with(30)
 
 
+async def test_eval_trigger_value_change_self(mock_num_port1, mock_num_port2, mocker):
+    """Should not trigger expression evaluation when own port value changes, if the expression refers to it via `$`.
+    This way, a flip-flop flips once per change of its control port."""
+
+    mock_num_port1.set_read_value(0)
+    mock_num_port2.set_read_value(0)
+    mock_num_port2.set_writable(True)
+    mock_num_port2.set_expression("IF($nid1, NOT($), $)")
+    mock_num_port1.set_next_value(1)
+    mocker.patch.object(mock_num_port2, "transform_and_write_value")
+
+    await main.read_ports()
+    await asyncio.sleep(settings.core.tick_interval / 1000)
+    mock_num_port2.transform_and_write_value.assert_called_once_with(1)
+
+    # Read back the written value; it must not flip the port again
+    mock_num_port2.set_next_value(1)
+    await main.read_ports()
+    await asyncio.sleep(settings.core.tick_interval / 1000)
+    mock_num_port2.transform_and_write_value.assert_called_once_with(1)
+
+
 async def test_eval_trigger_ignore_inexistent_port(mock_num_port1, mock_num_port2, mocker):
     """Should not trigger expression evaluation when expression includes an inexistent port."""
 

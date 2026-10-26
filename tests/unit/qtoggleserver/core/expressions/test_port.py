@@ -30,6 +30,18 @@ class TestPortValue:
         assert e.port_id == "nid2"
         assert e.get_port() is None
 
+    def test_deps(self, mock_num_port1):
+        """Should depend on the value of the port, even when it's the own port given by id."""
+
+        e = parse("nid1", "$nid1", role=Role.VALUE)
+        assert e.get_deps() == {"$nid1"}
+
+    def test_deps_self(self, mock_num_port1):
+        """Should have no deps for a self port value, as if it were wrapped in `IGNCHG`."""
+
+        e = parse("nid1", "$", role=Role.VALUE)
+        assert e.get_deps() == set()
+
     async def test_eval(self, mock_num_port1, dummy_eval_context):
         """Should return the port value from supplied context."""
 

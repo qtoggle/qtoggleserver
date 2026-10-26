@@ -499,8 +499,8 @@ class TestReadPortsEnforceValue:
 
 
 class TestHandleChanges:
-    async def test_self_port_value_trigger_eval(self, mocker, mock_num_port1):
-        """Should trigger a port's expression evaluation if the expression depends on itself through `$`."""
+    async def test_self_port_value_no_trigger_eval(self, mocker, mock_num_port1):
+        """Should not trigger a port's expression evaluation when its own value changes, if it refers to it via `$`."""
 
         mock_num_port1.set_writable(True)
         mock_num_port1.set_expression("MUL($, 2)")
@@ -510,7 +510,7 @@ class TestHandleChanges:
             changes={"$nid1"},
             now_ms=0,
         )
-        mock_num_port1.eval_and_push_write.assert_called_once()
+        mock_num_port1.eval_and_push_write.assert_not_called()
 
     async def test_own_port_value_trigger_eval(self, mocker, mock_num_port1):
         """Should trigger a port's expression evaluation if the expression depends on itself through `$<own_id>`."""
