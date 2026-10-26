@@ -130,6 +130,8 @@ class MyFunc(Function):
 
 The `@function("NAME")` decorator registers the class in the global `FUNCTIONS` dict. `EvalResult` is `int | float | str`.
 
+A function must evaluate all its args on every evaluation, even the ones its result doesn't use. Otherwise stateful functions such as `HELD` or `RISING` in those args miss evaluations. When an arg may be unused, use `eval_args_or_errors()` and `unwrap()` only the results you use.
+
 ## Master / Slave Architecture
 
 A *master* qToggleServer device can proxy one or more *slave* qToggle devices over HTTP.
