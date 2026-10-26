@@ -65,7 +65,13 @@ class Function(Expression, metaclass=abc.ABCMeta):
         return result
 
     async def eval_args(self, context: EvalContext) -> list[EvalResult]:
-        return list(await asyncio.gather(*(a.eval(context) for a in self.args)))
+        # Wait for all args before raising, so that none is left running after the evaluation
+        results = await asyncio.gather(*(a.eval(context) for a in self.args), return_exceptions=True)
+        for result in results:
+            if isinstance(result, BaseException):
+                raise result
+
+        return results
 
     @classmethod
     def validate_arg_kinds(cls, args: list[Expression], pos_list: list[int]) -> None:

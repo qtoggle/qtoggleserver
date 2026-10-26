@@ -1,5 +1,36 @@
-from qtoggleserver.core.expressions import DEP_ASAP, Role
+import asyncio
+
+import pytest
+
+from qtoggleserver.core.expressions import DEP_ASAP, EvalContext, EvalResult, Role
+from qtoggleserver.core.expressions.exceptions import ValueUnavailable
 from tests.unit.qtoggleserver.mock.expressions import MockExpression, MockFunction
+
+
+class SlowExpression(MockExpression):
+    async def _eval(self, context: EvalContext) -> EvalResult:
+        for _ in range(3):
+            await asyncio.sleep(0)
+
+        return await super()._eval(context)
+
+
+class FailingExpression(MockExpression):
+    def __init__(self, msg: str) -> None:
+        super().__init__()
+
+        self.msg: str = msg
+
+    async def _eval(self, context: EvalContext) -> EvalResult:
+        raise ValueUnavailable(self.msg)
+
+
+class SlowFailingExpression(FailingExpression):
+    async def _eval(self, context: EvalContext) -> EvalResult:
+        for _ in range(3):
+            await asyncio.sleep(0)
+
+        return await super()._eval(context)
 
 
 class TestFunction:
@@ -25,3 +56,19 @@ class TestFunction:
 
         assert f.is_asap_eval_paused(999)
         assert not f.is_asap_eval_paused(1000)
+
+    async def test_eval_args_waits_for_all(self, dummy_eval_context):
+        """Should evaluate all args completely before raising an arg's error."""
+
+        slow = SlowExpression(1)
+        f = MockFunction(args=[MockExpression(None), slow], role=Role.VALUE)
+        with pytest.raises(ValueUnavailable):
+            await f.eval_args(dummy_eval_context)
+        assert slow.eval_count == 1
+
+    async def test_eval_args_raises_first_error(self, dummy_eval_context):
+        """Should raise the error of the first failing arg in arg order, even when a later one fails sooner."""
+
+        f = MockFunction(args=[SlowFailingExpression("first"), FailingExpression("second")], role=Role.VALUE)
+        with pytest.raises(ValueUnavailable, match="first"):
+            await f.eval_args(dummy_eval_context)
