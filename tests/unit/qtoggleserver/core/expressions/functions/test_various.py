@@ -675,8 +675,9 @@ class TestHistory:
         self, mocker, mock_persist_driver, dummy_local_datetime, mock_num_port1, dummy_eval_context
     ):
         port_expr = MockPortRef(mock_num_port1)
-        ts_expr = MockExpression()
-        diff_expr = MockExpression()
+        ts_expr = MockExpression(0)
+        diff_expr = MockExpression(0)
         mocker.patch("qtoggleserver.system.date.has_real_date_time", return_value=False)
         with pytest.raises(RealDateTimeUnavailable):
             await various.HistoryFunction([port_expr, ts_expr, diff_expr], Role.VALUE).eval(dummy_eval_context)
+        assert ts_expr.eval_count == diff_expr.eval_count == 1

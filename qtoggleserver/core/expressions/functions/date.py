@@ -16,13 +16,11 @@ class DateUnitFunction(Function, metaclass=abc.ABCMeta):
     TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
+        args = await self.eval_args(context)
         if not system.date.has_real_date_time():
             raise RealDateTimeUnavailable()
 
-        if len(self.args) > 0:
-            timestamp = int(await self.args[0].eval(context))
-        else:
-            timestamp = context.timestamp
+        timestamp = int(args[0]) if args else context.timestamp
 
         return self.extract_unit(datetime.fromtimestamp(timestamp))
 
@@ -130,7 +128,7 @@ class DateFunction(Function):
     UNIT_INDEX = {u: i + 1 for i, u in enumerate(("year", "month", "day", "hour", "minute", "second"))}
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        eval_args = [int(await self.args[i].eval(context)) for i in range(self.MIN_ARGS)]
+        eval_args = [int(a) for a in await self.eval_args(context)]
 
         try:
             return int(datetime(*eval_args).timestamp())
@@ -151,14 +149,12 @@ class BOYFunction(Function):
     TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
+        args = await self.eval_args(context)
         if not system.date.has_real_date_time():
             raise RealDateTimeUnavailable()
 
         now = datetime.fromtimestamp(context.timestamp)
-
-        n = 0
-        if len(self.args) > 0:
-            n = int(await self.args[0].eval(context))
+        n = int(args[0]) if args else 0
 
         dt = datetime(now.year + n, 1, 1, 0, 0, 0)
         dt = dt.astimezone(tz=UTC)
@@ -174,13 +170,12 @@ class BOMFunction(Function):
     TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
+        args = await self.eval_args(context)
         if not system.date.has_real_date_time():
             raise RealDateTimeUnavailable()
 
         now = datetime.fromtimestamp(context.timestamp)
-        n = 0
-        if len(self.args) > 0:
-            n = int(await self.args[0].eval(context))
+        n = int(args[0]) if args else 0
 
         year, month = now.year, now.month
         if n >= 0:
@@ -212,15 +207,12 @@ class BOWFunction(Function):
     TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
+        args = await self.eval_args(context)
         if not system.date.has_real_date_time():
             raise RealDateTimeUnavailable()
 
-        n = 0
-        s = 0
-        if len(self.args) > 0:
-            n = int(await self.args[0].eval(context))
-            if len(self.args) > 1:
-                s = int(await self.args[1].eval(context))
+        n = int(args[0]) if len(args) > 0 else 0
+        s = int(args[1]) if len(args) > 1 else 0
 
         now = datetime.fromtimestamp(context.timestamp)
         dt = now.replace(hour=12)  # using midday practically avoids problems due to DST
@@ -270,13 +262,12 @@ class BODFunction(Function):
     TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
+        args = await self.eval_args(context)
         if not system.date.has_real_date_time():
             raise RealDateTimeUnavailable()
 
         now = datetime.fromtimestamp(context.timestamp)
-        n = 0
-        if len(self.args) > 0:
-            n = int(await self.args[0].eval(context))
+        n = int(args[0]) if args else 0
         dt = now + timedelta(days=n)
         dt = dt.replace(hour=0, minute=0, second=0, microsecond=0)
         dt = dt.astimezone(tz=UTC)
@@ -291,12 +282,11 @@ class HMSIntervalFunction(Function):
     TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
+        start_h, start_m, start_s, stop_h, stop_m, stop_s = await self.eval_args(context)
         if not system.date.has_real_date_time():
             raise RealDateTimeUnavailable()
 
         now = datetime.fromtimestamp(context.timestamp).replace(microsecond=0)
-
-        start_h, start_m, start_s, stop_h, stop_m, stop_s = await self.eval_args(context)
 
         if not (0 <= start_h <= 23):
             raise InvalidArgumentValue(1, start_h)
@@ -332,11 +322,11 @@ class MDIntervalFunction(Function):
     TRANSFORM_OK = False
 
     async def _eval(self, context: EvalContext) -> EvalResult:
+        start_m, start_d, stop_m, stop_d = await self.eval_args(context)
         if not system.date.has_real_date_time():
             raise RealDateTimeUnavailable()
 
         now = datetime.fromtimestamp(context.timestamp).replace(microsecond=0)
-        start_m, start_d, stop_m, stop_d = await self.eval_args(context)
 
         if not (1 <= start_m <= 12):
             raise InvalidArgumentValue(1, start_m)

@@ -214,11 +214,10 @@ class HistoryFunction(Function):
         self._cached_max_diff: float | None = None
 
     async def _eval(self, context: EvalContext) -> EvalResult:
+        port_id, timestamp, max_diff = await self.eval_args(context)
         if not system.date.has_real_date_time():
             raise RealDateTimeUnavailable()
 
-        args = await self.eval_args(context)
-        port_id, timestamp, max_diff = args
         port = core_ports.get(port_id)
         assert port
 
