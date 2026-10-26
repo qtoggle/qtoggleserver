@@ -39,6 +39,19 @@ class TestIf:
         )
         assert result == 10
 
+    async def test_evaluates_all_args(self, literal_false, literal_true, dummy_eval_context):
+        """Should evaluate the branch it does not return, so that stateful functions see every evaluation."""
+
+        true_expr = MockExpression(1)
+        false_expr = MockExpression(2)
+        expr = branching.IfFunction([literal_true, true_expr, false_expr], role=Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 1
+        assert false_expr.eval_count == 1
+
+        expr = branching.IfFunction([literal_false, true_expr, false_expr], role=Role.VALUE)
+        assert await expr.eval(dummy_eval_context) == 2
+        assert true_expr.eval_count == 2
+
     def test_parse(self):
         e = Function.parse(None, "IF(1, 2, 3)", Role.VALUE, 0)
         assert isinstance(e, branching.IfFunction)

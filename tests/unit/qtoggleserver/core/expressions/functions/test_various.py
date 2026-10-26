@@ -8,6 +8,7 @@ from qtoggleserver.core.expressions.exceptions import (
     PortValueUnavailable,
     RealDateTimeUnavailable,
     UnknownFunction,
+    ValueUnavailable,
 )
 from qtoggleserver.core.expressions.ports import PortValue
 from tests.unit.qtoggleserver.mock.expressions import MockExpression, MockPortRef, MockPortValue
@@ -101,6 +102,15 @@ class TestDefault:
         def_expr = MockExpression(13)
         expr = various.DefaultFunction([literal_unavailable, def_expr], Role.VALUE)
         assert await expr.eval(dummy_eval_context) == 13
+
+    async def test_default_unavailable(self, literal_unavailable, dummy_eval_context):
+        """Should be unavailable when the default is unavailable, but still evaluate the value."""
+
+        mock_expr = MockExpression(16)
+        expr = various.DefaultFunction([mock_expr, literal_unavailable], Role.VALUE)
+        with pytest.raises(ValueUnavailable):
+            await expr.eval(dummy_eval_context)
+        assert mock_expr.eval_count == 1
 
     async def test_offline_port(self, mock_num_port1):
         """Should return the default value for an offline port, even though the port has a known value."""

@@ -7,8 +7,8 @@ class AndFunction(Function):
     MIN_ARGS = 2
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        for arg in self.args:
-            if not await arg.eval(context):
+        for result in await self.eval_args_or_errors(context):
+            if not self.unwrap(result):
                 return 0
 
         return 1
@@ -19,8 +19,8 @@ class OrFunction(Function):
     MIN_ARGS = 2
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        for arg in self.args:
-            if await arg.eval(context):
+        for result in await self.eval_args_or_errors(context):
+            if self.unwrap(result):
                 return 1
 
         return 0

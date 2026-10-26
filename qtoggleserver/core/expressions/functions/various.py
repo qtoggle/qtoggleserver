@@ -24,15 +24,12 @@ class DefaultFunction(Function):
     MIN_ARGS = MAX_ARGS = 2
 
     async def _eval(self, context: EvalContext) -> EvalResult:
-        default = await self.args[1].eval(context)
-        try:
-            value = await self.args[0].eval(context)
-            if value is not None:
-                return value
-            else:
-                return default
-        except ValueUnavailable:
+        value, default = await self.eval_args_or_errors(context)
+        default = self.unwrap(default)
+        if value is None or isinstance(value, ValueUnavailable):
             return default
+
+        return self.unwrap(value)
 
 
 @function("IGNCHG")

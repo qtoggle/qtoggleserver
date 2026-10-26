@@ -2,6 +2,7 @@ import pytest
 
 from qtoggleserver.core.expressions import Function, Role, logic
 from qtoggleserver.core.expressions.exceptions import InvalidNumberOfArguments
+from tests.unit.qtoggleserver.mock.expressions import MockExpression
 
 
 class TestAnd:
@@ -31,6 +32,14 @@ class TestAnd:
             dummy_eval_context
         )
         assert result == 0
+
+    async def test_evaluates_all_args(self, literal_false, dummy_eval_context):
+        """Should evaluate args that come after a false one, so that stateful functions see every evaluation."""
+
+        mock_expr = MockExpression(1)
+        result = await logic.AndFunction([literal_false, mock_expr], role=Role.VALUE).eval(dummy_eval_context)
+        assert result == 0
+        assert mock_expr.eval_count == 1
 
     async def test_number(self, literal_zero, literal_ten, literal_true, dummy_eval_context):
         result = await logic.AndFunction([literal_zero, literal_true], role=Role.VALUE).eval(dummy_eval_context)
@@ -75,6 +84,14 @@ class TestOr:
             dummy_eval_context
         )
         assert result == 1
+
+    async def test_evaluates_all_args(self, literal_true, dummy_eval_context):
+        """Should evaluate args that come after a true one, so that stateful functions see every evaluation."""
+
+        mock_expr = MockExpression(0)
+        result = await logic.OrFunction([literal_true, mock_expr], role=Role.VALUE).eval(dummy_eval_context)
+        assert result == 1
+        assert mock_expr.eval_count == 1
 
     async def test_number(self, literal_zero, literal_ten, literal_true, literal_false, dummy_eval_context):
         result = await logic.OrFunction([literal_zero, literal_true], role=Role.VALUE).eval(dummy_eval_context)
