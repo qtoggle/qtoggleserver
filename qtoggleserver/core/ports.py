@@ -1154,24 +1154,23 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             except Exception as e:
                 self.error("failed to set attribute %s = %s: %s", name, json_utils.dumps(value), e)
 
-        # state values
-        now_ms = int(time.time() * 1000)
+        # state values; a missing timestamp makes the value older than any other, as it can't count as a new one
         loaded_last_read = False
 
         if data.get("last_read_value") is not None:
-            self._last_read_value = data["last_read_value"], data.get("last_read_timestamp", now_ms)
+            self._last_read_value = data["last_read_value"], data.get("last_read_timestamp") or 0
             loaded_last_read = True
             self.debug("loaded last_read_value = %s", json_utils.dumps(data["last_read_value"]))
 
         if data.get("last_written_value") is not None:
-            self._last_written_value = data["last_written_value"], data.get("last_written_timestamp", now_ms)
+            self._last_written_value = data["last_written_value"], data.get("last_written_timestamp") or 0
             self.debug("loaded last_written_value = %s", json_utils.dumps(data["last_written_value"]))
 
         self._enforce_value_paused = data.get("enforce_value_paused", False)
 
         # Handle legacy `value` field for backward compatibility with old persisted data
         if data.get("value") is not None and not loaded_last_read:
-            self._last_read_value = data["value"], now_ms
+            self._last_read_value = data["value"], 0
             self.debug("loaded value = %s", json_utils.dumps(data["value"]))
 
         # various

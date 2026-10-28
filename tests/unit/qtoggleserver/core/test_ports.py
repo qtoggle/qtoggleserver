@@ -1394,6 +1394,33 @@ class TestPortFromPersisted:
         assert mock_num_port1._last_written_value == (34, 1002)
         mock_num_port1.write_value.assert_not_called()
 
+    async def test_missing_timestamps_restored_as_oldest(self, mock_num_port1, mocker):
+        """from_persisted should restore values without a timestamp as older than any other, not as new ones."""
+        mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
+
+        await mock_num_port1.from_persisted({"last_read_value": 12, "last_written_value": 34})
+
+        assert mock_num_port1._last_read_value == (12, 0)
+        assert mock_num_port1._last_written_value == (34, 0)
+
+    async def test_missing_read_timestamp_loses_to_written(self, mock_num_port1, mocker):
+        """from_persisted should make a written value with a timestamp win over a read value without one."""
+        mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
+
+        await mock_num_port1.from_persisted(
+            {"last_read_value": 12, "last_written_value": 34, "last_written_timestamp": 1002}
+        )
+
+        assert mock_num_port1.get_last_value() == 34
+
+    async def test_legacy_value_restored_as_oldest(self, mock_num_port1, mocker):
+        """from_persisted should restore the legacy `value` field as a read value older than any other."""
+        mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
+
+        await mock_num_port1.from_persisted({"value": 5})
+
+        assert mock_num_port1._last_read_value == (5, 0)
+
     async def test_restart_like_disable_enable(self, mock_num_port1, mock_num_port2, mocker):
         """A restart should leave a port in the same state as disabling and enabling it: values kept, queue dropped."""
 
