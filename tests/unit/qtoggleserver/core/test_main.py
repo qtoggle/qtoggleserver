@@ -394,19 +394,20 @@ class TestReadPortsLastValue:
 
         assert mock_num_port1.get_last_value() == 5
 
-    async def test_unavailable_read_change_recorded(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
-        """Should still record a change to an unavailable value and trigger a value change."""
+    async def test_unavailable_read_ignored(self, freezer, mocker, mock_num_port1, dummy_utc_datetime):
+        """Should keep the last read value and its time, and trigger no value change, when a read is unavailable."""
 
         freezer.move_to(dummy_utc_datetime)
         mock_num_port1.set_read_value(10)
+        read_time_ms = int(time.time() * 1000)
 
         freezer.move_to(dummy_utc_datetime + timedelta(seconds=1))
         mocker.patch.object(mock_num_port1, "read_value", return_value=None)
         mocker.patch.object(mock_num_port1, "trigger_value_change")
         await read_ports(ports_to_read=[mock_num_port1])
 
-        assert mock_num_port1._last_read_value == (None, int(time.time() * 1000))
-        mock_num_port1.trigger_value_change.assert_called_once_with(10, None)
+        assert mock_num_port1._last_read_value == (10, read_time_ms)
+        mock_num_port1.trigger_value_change.assert_not_called()
 
 
 class TestReadPortsEnforceValue:

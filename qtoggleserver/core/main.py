@@ -163,14 +163,16 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
             if value_time_ms is not None:
                 read_time_ms = min(read_time_ms, value_time_ms)
 
-            # Record every successful read, so that the read timestamp tells when the port was last read. An unavailable
-            # value is not a successful read, but its change is still recorded.
-            if new_value is not None or new_value != old_value:
-                port.set_last_read_value(new_value, read_time_ms)
+            # Record every successful read, so that the read timestamp tells when the port was last read. Like a skipped
+            # read, an unavailable value is not a successful read.
+            if new_value is None:
+                continue
+
+            port.set_last_read_value(new_value, read_time_ms)
 
             if new_value != old_value:
                 old_value_str = json_utils.dumps(old_value) if old_value is not None else "(unavailable)"
-                new_value_str = json_utils.dumps(new_value) if new_value is not None else "(unavailable)"
+                new_value_str = json_utils.dumps(new_value)
 
                 logger.debug("detected %s value change: %s -> %s", port, old_value_str, new_value_str)
 
