@@ -176,6 +176,15 @@ class TestPortTransformAndWriteValue:
         assert mock_num_port1.get_pending_value() is None
 
 
+class TestPortToJson:
+    async def test_no_pending_value(self, mock_num_port1, mocker):
+        """Should not include the pending value, which is internal to the port."""
+
+        mock_num_port1._write_queue.append(WriteRequest(5))
+
+        assert "pending_value" not in await mock_num_port1.to_json()
+
+
 class TestPortAdaptValueType:
     @pytest.mark.parametrize(
         "value, expected",

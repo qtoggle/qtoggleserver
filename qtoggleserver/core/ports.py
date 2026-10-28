@@ -1073,12 +1073,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     async def to_json(self) -> GenericJSONDict:
         attrs: GenericJSONDict = await self.get_attrs()
 
-        if self._enabled:
-            attrs["value"] = self.get_last_read_value()
-            attrs["pending_value"] = self.get_pending_value()
-        else:
-            attrs["value"] = None
-            attrs["pending_value"] = None
+        attrs["value"] = self.get_last_read_value() if self._enabled else None
 
         if self._to_json_attrdefs_cache is None:
             attrdefs: AttributeDefinitions = copy.deepcopy(await self.get_additional_attrdefs())
