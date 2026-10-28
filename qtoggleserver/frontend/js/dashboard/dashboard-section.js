@@ -75,7 +75,10 @@ class DashboardSection extends Section {
 
             let panel = Dashboard.getDefaultPanel()
             if (panel) {
-                Navigation.navigate({path: [SECTION_ID, ...panel.getIdPath()], historyEntry: false})
+                /* Back on small screens calls history.back(), so the main page needs its own history entry below the
+                 * panel. The section switch hasn't stored our state yet at this point, so store it here. */
+                Navigation.updateHistoryEntry()
+                Navigation.navigate({path: [SECTION_ID, ...panel.getIdPath()]})
             }
         }.bind(this))
     }
