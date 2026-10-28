@@ -1132,7 +1132,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         for name, value in attr_items:
             if name in (
                 "id",
-                "write_queue",  # no longer persisted, but may be found in older data
                 "last_read_value",
                 "last_read_timestamp",
                 "last_written_value",
