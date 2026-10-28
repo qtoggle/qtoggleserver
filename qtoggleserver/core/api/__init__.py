@@ -9,7 +9,7 @@ from qtoggleserver.core.typing import GenericJSONDict
 from qtoggleserver.web import APIHandler
 
 
-API_VERSION = "1.3"
+API_VERSION = "1.4"
 
 ACCESS_LEVEL_ADMIN = 30
 ACCESS_LEVEL_NORMAL = 20
