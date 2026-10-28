@@ -783,12 +783,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         pass
 
     async def _write_value_safe(self, value: PortValue, transformed_value: PortValue) -> None:
-        """Write `transformed_value` to the port, one write at a time. Pending and last written values keep `value`, the
-        one from before the write transform, so they compare with read values."""
+        """Write `transformed_value` to the port, one write at a time. The caller makes `value` pending, and it stays
+        pending until the write ends; like the last written value, it's the value from before the write transform."""
 
         async with self._write_value_lock:
             try:
-                self._writing_value = value
                 await self._write_value_with_retries(transformed_value)
                 self._last_written_value = value, int(time.time() * 1000)
             finally:
@@ -964,14 +963,19 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         value_str = json_utils.dumps(value)
         transformed_value = value
 
+        # Pending from here on, so that the value stays the last value while the write transform runs
+        self._writing_value = value
+
         if self._transform_write:
             eval_context = EvalContext(port_values={self.get_id(): value})
             try:
                 transformed_value = self.adapt_value_type(await self._transform_write.eval(eval_context))
             except expressions_exceptions.ValueUnavailable:
+                self._writing_value = None
                 self.debug("value %s unavailable after write transform", value_str)
                 return
             except Exception:
+                self._writing_value = None
                 self.error("failed to apply write transform to value %s", value_str, exc_info=True)
                 self._enforce_value_paused = True
                 raise

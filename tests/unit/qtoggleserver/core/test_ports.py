@@ -132,6 +132,50 @@ class TestPortWriteQueueOrder:
         mock_num_port1.write_value.assert_not_called()
 
 
+class TestPortTransformAndWriteValue:
+    async def test_pending_during_write_transform(self, mock_num_port1, mocker):
+        """Should keep the value pending while the write transform runs, so that it stays the last value."""
+
+        seen = []
+
+        async def transform(context):
+            seen.append(mock_num_port1.get_pending_value())
+            return 50
+
+        mock_num_port1._transform_write = mocker.MagicMock()
+        mock_num_port1._transform_write.eval = transform
+        mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
+
+        await mock_num_port1.transform_and_write_value(5)
+
+        assert seen == [5]
+        mock_num_port1.write_value.assert_called_once_with(50)
+        assert mock_num_port1.get_pending_value() is None
+        assert mock_num_port1.get_last_written_value() == 5
+
+    async def test_not_pending_after_unavailable_write_transform(self, mock_num_port1, mocker):
+        """Should stop keeping the value pending when the write transform makes it unavailable."""
+
+        mock_num_port1._transform_write = mocker.MagicMock()
+        mock_num_port1._transform_write.eval = mocker.AsyncMock(side_effect=ValueUnavailable())
+
+        await mock_num_port1.transform_and_write_value(5)
+
+        assert mock_num_port1.get_pending_value() is None
+        assert mock_num_port1.get_last_written_value() is None
+
+    async def test_not_pending_after_failed_write_transform(self, mock_num_port1, mocker):
+        """Should stop keeping the value pending when the write transform fails."""
+
+        mock_num_port1._transform_write = mocker.MagicMock()
+        mock_num_port1._transform_write.eval = mocker.AsyncMock(side_effect=ValueError("nope"))
+
+        with pytest.raises(ValueError):
+            await mock_num_port1.transform_and_write_value(5)
+
+        assert mock_num_port1.get_pending_value() is None
+
+
 class TestPortAdaptValueType:
     @pytest.mark.parametrize(
         "value, expected",
