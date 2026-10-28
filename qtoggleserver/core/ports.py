@@ -865,7 +865,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self.debug("pushing value %s to write queue", value)
         self._write_queue.append(WriteRequest(value, future))
-        self.save_asap()
 
     def drop_write_queue(self) -> None:
         """Drop any queued writes, failing their futures so that no caller is left hanging. They are failed rather
@@ -881,7 +880,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 request.future.set_exception(PortDisabled())
 
         self._write_queue.clear()
-        self.save_asap()
 
     async def push_write_and_wait(self, value: PortValue) -> None:
         """Push a value to the writing process queue and wait for it to actually be written, propagating any
@@ -932,7 +930,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
                 try:
                     request = self._write_queue.popleft()
-                    # No need to call `save_asap()` as it will be called indirectly by `transform_and_write_value()`
                 except IndexError:
                     request = None
                     await asyncio.sleep(settings.core.tick_interval / 1000.0)
@@ -1136,7 +1133,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         for name, value in attr_items:
             if name in (
                 "id",
-                "write_queue",
+                "write_queue",  # no longer persisted, but may be found in older data
                 "last_read_value",
                 "last_read_timestamp",
                 "last_written_value",
@@ -1172,16 +1169,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._enforce_value_paused = data.get("enforce_value_paused", False)
 
-        write_queue = data.get("write_queue")
-        if isinstance(write_queue, list):
-            self._write_queue.clear()
-            # A disabled port has nothing pending, so skip a queue that could only be written once enabled - long
-            # after the values were queued
-            if self._enabled:
-                for value in write_queue:
-                    if value is not None:
-                        self._write_queue.append(WriteRequest(value))
-
         # Handle legacy `value` field for backward compatibility with old persisted data
         if data.get("value") is not None and not loaded_last_read:
             self._last_read_value = data["value"], now_ms
@@ -1213,10 +1200,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         d["last_written_value"] = self._last_written_value[0] if self._last_written_value else None
         d["last_written_timestamp"] = self._last_written_value[1] if self._last_written_value else None
         d["enforce_value_paused"] = self._enforce_value_paused
-        # The value being written is no longer in the queue, but it's still pending until the write ends
-        d["write_queue"] = [request.value for request in self._write_queue]
-        if self._writing_value is not None:
-            d["write_queue"].insert(0, self._writing_value)
 
         # attributes
         for name in await self.get_modifiable_attrs():

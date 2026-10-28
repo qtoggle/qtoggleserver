@@ -48,7 +48,7 @@ class TestPortGetLastValue:
 
 class TestPortPushWrite:
     def test(self, mock_num_port1, mocker):
-        """Should append the value to the write queue and mark the port for saving."""
+        """Should append the value to the write queue, without saving the port, since the queue isn't persisted."""
 
         mocker.patch.object(mock_num_port1, "save_asap")
         mock_num_port1._write_queue.clear()
@@ -56,7 +56,7 @@ class TestPortPushWrite:
         mock_num_port1.push_write(100)
 
         assert list(mock_num_port1._write_queue) == [WriteRequest(100)]
-        mock_num_port1.save_asap.assert_called_once()
+        mock_num_port1.save_asap.assert_not_called()
 
     def test_multiple(self, mock_num_port1, mocker):
         """Should append every pushed value to the write queue, in order."""
@@ -68,7 +68,6 @@ class TestPortPushWrite:
         mock_num_port1.push_write(200)
 
         assert list(mock_num_port1._write_queue) == [WriteRequest(100), WriteRequest(200)]
-        assert mock_num_port1.save_asap.call_count == 2
 
     def test_with_future(self, mock_num_port1, mocker):
         """Should attach the given future to the queued write request."""
@@ -120,21 +119,17 @@ class TestPortWriteQueueOrder:
         assert written == [1, 2, 3]
         assert mock_num_port1.get_last_written_value() == 3
 
-    async def test_writes_persisted_queue_in_order(self, mock_num_port1, mocker):
-        """Should write a queue restored from persisted data in the order it was persisted."""
+    async def test_ignores_persisted_queue(self, mock_num_port1, mocker):
+        """Should not restore or write a queue found in older persisted data."""
 
-        written = []
-
-        async def record(value):
-            written.append(value)
-
-        mocker.patch.object(mock_num_port1, "write_value", new=record)
+        mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
         mock_num_port1._write_queue.clear()
 
         await mock_num_port1.from_persisted({"write_queue": [1, 2, 3]})
         await asyncio.sleep(5 * settings.core.tick_interval / 1000)
 
-        assert written == [1, 2, 3]
+        assert mock_num_port1.get_pending_value() is None
+        mock_num_port1.write_value.assert_not_called()
 
 
 class TestPortAdaptValueType:
@@ -1328,9 +1323,6 @@ class TestPortToPersisted:
         mocker.patch.object(mock_num_port1, "get_modifiable_attrs", return_value=[])
         mock_num_port1._last_read_value = (42, 1111)
         mock_num_port1._last_written_value = (43, 2222)
-        mock_num_port1._write_queue.clear()
-        mock_num_port1._write_queue.append(WriteRequest(44))
-        mock_num_port1._write_queue.append(WriteRequest(45))
 
         result = await mock_num_port1.to_persisted()
 
@@ -1338,26 +1330,15 @@ class TestPortToPersisted:
         assert result["last_read_timestamp"] == 1111
         assert result["last_written_value"] == 43
         assert result["last_written_timestamp"] == 2222
-        assert result["write_queue"] == [44, 45]
 
-    async def test_includes_value_being_written(self, mock_num_port1, mocker):
-        """to_persisted should keep the value being written first in the write queue, so that a restart during the
-        write doesn't lose it."""
+    async def test_excludes_write_queue(self, mock_num_port1, mocker):
+        """to_persisted should not include queued values, since a restart drops them, like disabling the port."""
 
         mocker.patch.object(mock_num_port1, "get_modifiable_attrs", return_value=[])
         mock_num_port1._write_queue.clear()
-        mock_num_port1._write_queue.append(WriteRequest(45))
-        persisted = {}
+        mock_num_port1._write_queue.append(WriteRequest(44))
 
-        async def write_value(value) -> None:
-            persisted.update(await mock_num_port1.to_persisted())
-
-        mocker.patch.object(mock_num_port1, "write_value", side_effect=write_value)
-
-        await mock_num_port1.transform_and_write_value(44)
-
-        assert persisted["write_queue"] == [44, 45]
-        assert (await mock_num_port1.to_persisted())["write_queue"] == [45]
+        assert "write_queue" not in await mock_num_port1.to_persisted()
 
 
 class OutputMockPort(MockNumberPort):
@@ -1396,16 +1377,6 @@ class TestPortFromPersisted:
         assert await port.get_attr("enforce_value") is True
         assert await port.get_attr("expression") == "ADD(1, 2)"
 
-    async def test_skips_write_queue_when_disabled(self, mock_num_port1, mocker):
-        """from_persisted should not restore a write queue for a disabled port, since it has nothing pending."""
-        mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
-        await mock_num_port1.disable()
-
-        await mock_num_port1.from_persisted({"enabled": False, "write_queue": [56, 78]})
-
-        assert len(mock_num_port1._write_queue) == 0
-        assert mock_num_port1.get_pending_value() is None
-
     async def test_loads_state_fields(self, mock_num_port1, mocker):
         """from_persisted should restore state fields."""
         mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
@@ -1415,16 +1386,30 @@ class TestPortFromPersisted:
             "last_read_timestamp": 1001,
             "last_written_value": 34,
             "last_written_timestamp": 1002,
-            "write_queue": [56, 78],
         }
 
         await mock_num_port1.from_persisted(data)
 
         assert mock_num_port1._last_read_value == (12, 1001)
         assert mock_num_port1._last_written_value == (34, 1002)
-        assert list(mock_num_port1._write_queue) == [WriteRequest(56), WriteRequest(78)]
-        assert mock_num_port1.get_pending_value() == 78
         mock_num_port1.write_value.assert_not_called()
+
+    async def test_restart_like_disable_enable(self, mock_num_port1, mock_num_port2, mocker):
+        """A restart should leave a port in the same state as disabling and enabling it: values kept, queue dropped."""
+
+        mocker.patch.object(mock_num_port1, "get_modifiable_attrs", return_value=[])
+        mock_num_port1._last_read_value = (12, 1001)
+        mock_num_port1._last_written_value = (34, 1002)
+        mock_num_port1._write_queue.append(WriteRequest(56))
+
+        await mock_num_port2.from_persisted(await mock_num_port1.to_persisted())
+        await mock_num_port1.disable()
+        await mock_num_port1.enable()
+
+        for port in (mock_num_port1, mock_num_port2):
+            assert port._last_read_value == (12, 1001)
+            assert port._last_written_value == (34, 1002)
+            assert port.get_pending_value() is None
 
 
 class TestPortWriteRetries:
