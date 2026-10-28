@@ -25,7 +25,7 @@ QUI_PATH=/path/to/qui npx webpack --mode development  # dev build with local QUI
 
 ## Architecture
 
-qToggleServer is a [qToggle protocol](https://github.com/qtoggle/docs) server. The HTTP API implementation derives largely from the [qToggle API 1.3 spec](https://github.com/qtoggle/docs/wiki/The-qToggle-API-1.3). The main concepts:
+qToggleServer is a [qToggle protocol](https://github.com/qtoggle/docs) server. The HTTP API implementation derives largely from the [qToggle API 1.4 spec](https://github.com/qtoggle/docs/wiki/The-qToggle-API-1.4). The main concepts:
 
 - **Ports** (`qtoggleserver/core/ports.py`) — the central abstraction. A port has a boolean or number value and a set of attributes. `BasePort` is the base class; hardware drivers subclass it.
 - **Peripherals** (`qtoggleserver/peripherals/`) — hardware devices that own one or more ports. Subclass `Peripheral` and implement `make_port_args()` to declare ports. Peripherals may run blocking I/O in a `ThreadedRunner`.
