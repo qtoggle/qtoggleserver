@@ -404,57 +404,33 @@ class TestFilterEventHandlerHandleEvent(FilterEventHandlerTestBase):
         handler.on_full_update.assert_called_once_with(event)
 
 
-class TestFilterEventHandlerGetters(FilterEventHandlerTestBase):
-    def test_get_device_attrs_initially_empty(self):
-        """Should return an empty dict before any device event is handled."""
+class TestFilterEventHandlerEvalContext(FilterEventHandlerTestBase):
+    async def test_expression_sees_last_value(self, mock_num_port1, mocker):
+        """Should evaluate the filter expression with the port's last value, not just its last read value."""
 
-        handler = ConcreteFilterEventHandler()
-        assert handler.get_device_attrs() == {}
+        mock_num_port1.set_read_value(40)
+        mocker.patch.object(mock_num_port1, "get_last_value", return_value=60)
+        mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
 
-    def test_get_port_values_initially_empty(self):
-        """Should return an empty dict before any port event is handled."""
+        handler = ConcreteFilterEventHandler(filter={"expression": "GT($nid1, 50)"})
+        event = core_events.ValueChange(None, 40, mock_num_port1)
+        assert await handler.accepts(event, (None, 40), {}, {}, {}, {}, {}) is True
 
-        handler = ConcreteFilterEventHandler()
-        assert handler.get_port_values() == {}
+    async def test_expression_sees_disabled_port_attrs(self, mock_num_port1, mocker):
+        """Should let the filter expression read the attributes of a disabled port."""
 
-    def test_get_port_attrs_initially_empty(self):
-        """Should return an empty dict before any port event is handled."""
+        await mock_num_port1.disable()
+        mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
 
-        handler = ConcreteFilterEventHandler()
-        assert handler.get_port_attrs() == {}
+        handler = ConcreteFilterEventHandler(filter={"expression": "NOT($nid1:enabled)"})
+        assert await handler.accepts(self.make_dummy_event(), (None, None), {}, {}, {}, {}, {}) is True
 
-    def test_get_device_attrs_includes_flattened_slave_attrs(self):
-        """Should include slave attributes in device attrs using "<slave_name>:<attr_name>" keys."""
+    async def test_port_value_expression_sees_ports_without_events(self, mock_num_port1, mocker):
+        """Should let the port_value expression use ports that the handler has seen no event for."""
 
-        handler = ConcreteFilterEventHandler()
-        handler._device_attrs = {"name": "mydevice"}
-        handler._slave_attrs = {"slave1": {"name": "slave-device", "enabled": True}}
+        mock_num_port1.set_read_value(50)
+        mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
 
-        assert handler.get_device_attrs() == {
-            "name": "mydevice",
-            "slave1:name": "slave-device",
-            "slave1:enabled": True,
-        }
-
-    async def test_get_port_values_after_value_change(self, mock_num_port1, mocker):
-        """Should reflect the updated port value after a ValueChange event is handled."""
-
-        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={}))
-        handler = ConcreteFilterEventHandler()
-
-        mock_num_port1.set_read_value(42)
-        event = core_events.ValueChange(None, 42, mock_num_port1)
-        await handler.handle_event(event)
-
-        assert handler.get_port_values() == {"nid1": 42}
-
-    async def test_get_device_attrs_after_device_update(self, mocker):
-        """Should reflect the updated device attributes after a DeviceUpdate event is handled."""
-
-        mocker.patch("qtoggleserver.core.device.attrs.to_json", new=mocker.AsyncMock(return_value={"name": "mydevice"}))
-        handler = ConcreteFilterEventHandler()
-
-        event = core_events.DeviceUpdate()
-        await handler.handle_event(event)
-
-        assert handler.get_device_attrs() == {"name": "mydevice"}
+        handler = self.make_dummy_handler({"port_value": "$nid1"})
+        assert handler._port_values == {}
+        assert await handler.accepts_port_value(self.make_dummy_event(), (None, 50)) is True

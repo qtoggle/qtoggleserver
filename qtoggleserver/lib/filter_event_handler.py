@@ -11,6 +11,7 @@ from qtoggleserver.core.expressions.exceptions import ExpressionEvalException
 from qtoggleserver.core.typing import Attribute, Attributes, NullablePortValue
 from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.slaves import events as slaves_events
+from qtoggleserver.utils import expressions as expressions_utils
 
 
 ANY_VALUE = "any"
@@ -215,13 +216,10 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
         return value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs
 
-    def _build_eval_context(self) -> EvalContext:
-        return EvalContext(
-            port_values=self._port_values,
-            port_attrs=self._port_attrs,
-            device_attrs=self.get_device_attrs(),
-            now_ms=int(time.time() * 1000),
-        )
+    @staticmethod
+    async def _build_eval_context() -> EvalContext:
+        # The same values that port expressions see, rather than the ones tracked from events
+        return await expressions_utils.build_context(int(time.time() * 1000))
 
     @staticmethod
     def _accepts_attrs(
@@ -283,7 +281,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 if new_value not in self._filter_port_value:
                     return False
             elif isinstance(self._filter_port_value, core_expressions.Expression):  # an expression
-                eval_context = self._build_eval_context()
+                eval_context = await self._build_eval_context()
                 try:
                     if new_value != await self._filter_port_value.eval(context=eval_context):
                         return False
@@ -351,18 +349,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             return False
 
         if self._filter_expression:
-            port_values = {}
-            port_attrs = {}
-            for p in list(core_ports.get_all()):
-                if not p.is_enabled():
-                    continue
-                port_values[p.get_id()] = p.get_last_read_value()
-                port_attrs[p.get_id()] = await p.get_attrs()
-
-            # TODO: eval device attrs
-            eval_context = core_expressions.EvalContext(
-                port_values=port_values, port_attrs=port_attrs, now_ms=int(time.time() * 1000)
-            )
+            eval_context = await self._build_eval_context()
             try:
                 if not await self._filter_expression.eval(context=eval_context):
                     return False
@@ -371,23 +358,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 return False
 
         return True
-
-    def get_device_attrs(self) -> Attributes:
-        device_attrs = self._device_attrs.copy()
-
-        # Add slave device attrs using the same "<slave_name>:<attr_name>" convention as expressions.build_context().
-        for slave_name, slave_attrs in self._slave_attrs.items():
-            device_attrs.update(
-                {f"{slave_name}:{attr_name}": attr_value for attr_name, attr_value in slave_attrs.items()}
-            )
-
-        return device_attrs
-
-    def get_port_values(self) -> dict[str, NullablePortValue]:
-        return self._port_values
-
-    def get_port_attrs(self) -> dict[str, Attributes]:
-        return self._port_attrs
 
     async def handle_event(self, event: core_events.Event) -> None:
         (value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs) = await self._update_from_event(

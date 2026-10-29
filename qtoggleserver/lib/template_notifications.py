@@ -1,5 +1,6 @@
 import abc
 import logging
+import time
 
 from datetime import datetime
 
@@ -10,6 +11,7 @@ from qtoggleserver.core import main as core_main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.typing import Attribute, Attributes, NullablePortValue
 from qtoggleserver.slaves import devices as slaves_devices
+from qtoggleserver.utils import expressions as expressions_utils
 from qtoggleserver.utils import template as template_utils
 
 from .filter_event_handler import FilterEventHandler
@@ -92,12 +94,15 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         else:
             return None
 
-    def get_common_context(self, event: core_events.Event) -> dict:
+    async def get_common_context(self, event: core_events.Event) -> dict:
         timestamp = event.get_timestamp()
         if timestamp:
             moment = datetime.fromtimestamp(timestamp)
         else:
             moment = None
+
+        # The same values that port expressions see, rather than the ones tracked from events
+        eval_context = await expressions_utils.build_context(int(time.time() * 1000))
 
         return {
             "event": event,
@@ -106,9 +111,9 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
             "moment": moment,
             "pretty_moment": moment.strftime("%c") if moment else "",
             "public_url": settings.public_url,
-            "device_attrs": self.get_device_attrs(),
-            "port_values": self.get_port_values(),
-            "port_attrs": self.get_port_attrs(),
+            "device_attrs": eval_context.device_attrs,
+            "port_values": eval_context.port_values,
+            "port_attrs": eval_context.port_attrs,
             "metadata": metadata.get_all(),
         }
 
@@ -141,7 +146,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         new_value: NullablePortValue,
         attrs: Attributes,
     ) -> None:
-        context = self.get_common_context(event)
+        context = await self.get_common_context(event)
         context.update({"port": port, "old_value": old_value, "new_value": new_value, "attrs": attrs})
 
         await self.push_template_message(event, context)
@@ -156,7 +161,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         added_attrs: Attributes,
         removed_attrs: Attributes,
     ) -> None:
-        context = self.get_common_context(event)
+        context = await self.get_common_context(event)
         context.update(
             {
                 "port": port,
@@ -165,21 +170,21 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
                 "changed_attrs": changed_attrs,
                 "added_attrs": added_attrs,
                 "removed_attrs": removed_attrs,
-                "value": port.get_last_read_value(),
+                "value": port.get_last_value(),
             }
         )
 
         await self.push_template_message(event, context)
 
     async def on_port_add(self, event: core_events.Event, port: core_ports.BasePort, attrs: Attributes) -> None:
-        context = self.get_common_context(event)
-        context.update({"port": port, "attrs": attrs, "value": port.get_last_read_value()})
+        context = await self.get_common_context(event)
+        context.update({"port": port, "attrs": attrs, "value": port.get_last_value()})
 
         await self.push_template_message(event, context)
 
     async def on_port_remove(self, event: core_events.Event, port: core_ports.BasePort, attrs: Attributes) -> None:
-        context = self.get_common_context(event)
-        context.update({"port": port, "attrs": attrs, "value": port.get_last_read_value()})
+        context = await self.get_common_context(event)
+        context.update({"port": port, "attrs": attrs, "value": port.get_last_value()})
 
         await self.push_template_message(event, context)
 
@@ -192,7 +197,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         added_attrs: Attributes,
         removed_attrs: Attributes,
     ) -> None:
-        context = self.get_common_context(event)
+        context = await self.get_common_context(event)
         context.update(
             {
                 "device": device,
@@ -207,7 +212,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         await self.push_template_message(event, context)
 
     async def on_full_update(self, event: core_events.Event) -> None:
-        context = self.get_common_context(event)
+        context = await self.get_common_context(event)
 
         await self.push_template_message(event, context)
 
@@ -221,7 +226,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
         added_attrs: Attributes,
         removed_attrs: Attributes,
     ) -> None:
-        context = self.get_common_context(event)
+        context = await self.get_common_context(event)
         context.update(
             {
                 "slave": slave,
@@ -238,7 +243,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
     async def on_slave_device_add(
         self, event: core_events.Event, slave: slaves_devices.Slave, attrs: Attributes
     ) -> None:
-        context = self.get_common_context(event)
+        context = await self.get_common_context(event)
         context.update({"slave": slave, "attrs": attrs})
 
         await self.push_template_message(event, context)
@@ -246,7 +251,7 @@ class TemplateNotificationsHandler(FilterEventHandler, metaclass=abc.ABCMeta):
     async def on_slave_device_remove(
         self, event: core_events.Event, slave: slaves_devices.Slave, attrs: Attributes
     ) -> None:
-        context = self.get_common_context(event)
+        context = await self.get_common_context(event)
         context.update({"slave": slave, "attrs": attrs})
 
         await self.push_template_message(event, context)
