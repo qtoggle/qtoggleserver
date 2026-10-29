@@ -1,7 +1,9 @@
 import pytest
 
 from qtoggleserver.core import events as core_events
+from qtoggleserver.core.expressions import Role
 from qtoggleserver.core.expressions import exceptions as expression_exceptions
+from qtoggleserver.core.expressions.ports import PortValue, PortValueKind
 from qtoggleserver.lib.filter_event_handler import ANY_VALUE, FilterEventHandler
 
 
@@ -432,5 +434,37 @@ class TestFilterEventHandlerEvalContext(FilterEventHandlerTestBase):
         mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
 
         handler = self.make_dummy_handler({"port_value": "$nid1"})
-        assert handler._port_values == {}
         assert await handler.accepts_port_value(self.make_dummy_event(), (None, 50)) is True
+
+
+class TestFilterEventHandlerEventValues(FilterEventHandlerTestBase):
+    async def test_value_change_uses_event_values(self, mock_num_port1, mocker):
+        """Should filter a value change by its own values, even if the port has changed again by the time the event is
+        handled."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={}))
+        mock_num_port1.set_read_value(9)  # changed back before the event is handled
+
+        handler = ConcreteFilterEventHandler(filter={"port_value": 10, "port_value_transition": [9, 10]})
+        mocker.patch.object(handler, "on_value_change", new=mocker.AsyncMock())
+        await handler.handle_event(core_events.ValueChange(9, 10, mock_num_port1))
+
+        handler.on_value_change.assert_called_once()
+        assert handler.on_value_change.call_args.args[2:4] == (9, 10)
+
+    async def test_eval_context_has_event_read_value(self, mock_num_port1, mocker):
+        """Should give filter expressions the value change's own value as the port's last read value, while its last
+        value stays the current one."""
+
+        mock_num_port1.set_read_value(0)
+        mocker.patch.object(mock_num_port1, "get_last_value", return_value=0)
+        mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
+
+        handler = self.make_dummy_handler()
+        event = core_events.ValueChange(0, 10, mock_num_port1)
+
+        handler._filter_expression = PortValue("nid1", prefix="$", role=Role.FILTER, kind=PortValueKind.LAST_READ)
+        assert await handler.accepts(event, (0, 10), {}, {}, {}, {}, {}) is True
+
+        handler._filter_expression = PortValue("nid1", prefix="$", role=Role.FILTER)
+        assert await handler.accepts(event, (0, 10), {}, {}, {}, {}, {}) is False

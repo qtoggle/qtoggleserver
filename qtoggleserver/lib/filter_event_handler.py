@@ -48,7 +48,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
         # Maintain an internal "last" state for all objects, so we can detect changes in attributes and values
         self._device_attrs: Attributes | dict[str, list[Attribute]] = {}
-        self._port_values: dict[str, NullablePortValue] = {}
         self._port_attrs: dict[str, Attributes] = {}
         self._slave_attrs: dict[str, Attributes] = {}
 
@@ -181,19 +180,19 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             old_attrs = self._port_attrs.get(port.get_id(), {})
             new_attrs = await port.get_attrs()
 
-            old_value = self._port_values.get(port.get_id())
-            new_value = port.get_last_read_value()
-            value_pair = (old_value, new_value)
+            # Events are handled some time after they're triggered, when the port may have changed again, so a value
+            # change uses its own values; other port events carry no value change
+            if isinstance(event, core_events.ValueChange):
+                value_pair = (event.old_value, event.new_value)
+            else:
+                value = port.get_last_read_value()
+                value_pair = (value, value)
 
             if isinstance(event, (core_events.PortAdd, core_events.PortUpdate)):
                 changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
-                self._port_values[port.get_id()] = new_value
                 self._port_attrs[port.get_id()] = new_attrs
             elif isinstance(event, core_events.PortRemove):
-                self._port_values.pop(port.get_id(), None)
                 removed_attrs = self._port_attrs.pop(port.get_id(), {})
-            elif isinstance(event, core_events.ValueChange):
-                self._port_values[port.get_id()] = new_value
         elif isinstance(event, core_events.DeviceEvent):
             old_attrs = self._device_attrs
             new_attrs = await event.get_attrs()
@@ -217,9 +216,15 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         return value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs
 
     @staticmethod
-    async def _build_eval_context() -> EvalContext:
+    async def _build_eval_context(event: core_events.Event) -> EvalContext:
         # The same values that port expressions see, rather than the ones tracked from events
-        return await expressions_utils.build_context(int(time.time() * 1000))
+        context = await expressions_utils.build_context(int(time.time() * 1000))
+
+        # The read behind a value change may have been replaced by a newer one by now
+        if isinstance(event, core_events.ValueChange):
+            context.port_read_values[event.get_port().get_id()] = event.new_value
+
+        return context
 
     @staticmethod
     def _accepts_attrs(
@@ -281,7 +286,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 if new_value not in self._filter_port_value:
                     return False
             elif isinstance(self._filter_port_value, core_expressions.Expression):  # an expression
-                eval_context = await self._build_eval_context()
+                eval_context = await self._build_eval_context(event)
                 try:
                     if new_value != await self._filter_port_value.eval(context=eval_context):
                         return False
@@ -349,7 +354,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             return False
 
         if self._filter_expression:
-            eval_context = await self._build_eval_context()
+            eval_context = await self._build_eval_context(event)
             try:
                 if not await self._filter_expression.eval(context=eval_context):
                     return False

@@ -34,3 +34,19 @@ class TestTemplateNotificationsCommonContext:
         context = handler.push_template_message.call_args.args[1]
         assert context["value"] == 60
         assert context["port_values"]["nid1"] == 60
+
+    async def test_value_change_uses_event_values(self, mock_num_port1, mocker):
+        """Should give a value change template the event's own old and new values, even if the port has changed again
+        by the time the event is handled."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={}))
+        mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
+        mocker.patch("qtoggleserver.lib.template_notifications.core_main.is_ready", return_value=True)
+        mock_num_port1.set_read_value(9)
+
+        handler = ConcreteTemplateNotificationsHandler(skip_startup=False)
+        mocker.patch.object(handler, "push_template_message", new=mocker.AsyncMock())
+        await handler.handle_event(core_events.ValueChange(9, 10, mock_num_port1))
+
+        context = handler.push_template_message.call_args.args[1]
+        assert (context["old_value"], context["new_value"]) == (9, 10)
