@@ -819,7 +819,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         assert value is not None, "Expression evaluated to None"
 
-        adapted_value = self.adapt_value_type(value)
+        # Results such as complex numbers can't become port values, so they're treated as unavailable
+        try:
+            adapted_value = self.adapt_value_type(value)
+        except (TypeError, ValueError, OverflowError) as e:
+            self.debug('expression "%s" evaluated to %s, which is not a valid value: %s', expression, value, e)
+            return
+
         self.debug(
             'expression "%s" evaluated to %s (adapted to %s)',
             expression,
