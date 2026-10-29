@@ -161,6 +161,11 @@ class DeviceAttrUnavailable(ValueUnavailable):
         super().__init__(self.MSG % (device_name, attr_name))
 
 
+class NonFiniteValue(ValueUnavailable):
+    def __init__(self) -> None:
+        super().__init__("Value is not a finite number")
+
+
 class ExpressionArithmeticError(ExpressionEvalException):
     def __init__(self) -> None:
         super().__init__("Expression arithmetic error")

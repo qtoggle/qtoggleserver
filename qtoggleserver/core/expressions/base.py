@@ -1,10 +1,11 @@
 import abc
+import math
 
 from enum import IntEnum
 
 from qtoggleserver.core.typing import Attributes, NullablePortValue
 
-from .exceptions import ExpressionEvalException
+from .exceptions import ExpressionEvalException, NonFiniteValue
 
 
 DEP_ASAP = "asap"
@@ -44,7 +45,12 @@ class Expression(metaclass=abc.ABCMeta):
     async def eval(self, context: EvalContext) -> EvalResult:
         self._asap_eval_paused_until_ms = 0
         try:
-            return await self._eval(context)
+            result = await self._eval(context)
+            # Infinity and NaN are not valid port values, and a NaN result would never equal the previous one
+            if isinstance(result, float) and not math.isfinite(result):
+                raise NonFiniteValue()
+
+            return result
         except ExpressionEvalException:
             # Pause expression evaluation for 1 second, as it's very unlikely that the expression become available or
             # fixed within a second. This is a small speed optimization for expressions that depend on millisecond.
