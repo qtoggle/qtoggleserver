@@ -71,4 +71,11 @@ async def build_context(now_ms: int) -> EvalContext:
                 {f"{slave_name}:{attr_name}": attr_value for attr_name, attr_value in slave_attrs.items()}
             )
 
-    return EvalContext(port_values, port_attrs, device_attrs, now_ms, port_read_values, port_written_values)
+    return EvalContext(
+        port_values,
+        port_attrs,
+        device_attrs,
+        now_ms,
+        port_read_values=port_read_values,
+        port_written_values=port_written_values,
+    )
