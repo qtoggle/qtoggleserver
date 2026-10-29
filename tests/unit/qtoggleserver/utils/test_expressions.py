@@ -96,6 +96,10 @@ class TestBuildContext:
         mocker.patch.object(mock_num_port2, "get_id", return_value="nid2")
         mocker.patch.object(mock_num_port1, "get_last_value", return_value=42)
         mocker.patch.object(mock_num_port2, "get_last_value", return_value=84)
+        mocker.patch.object(mock_num_port1, "get_last_read_value", return_value=41)
+        mocker.patch.object(mock_num_port2, "get_last_read_value", return_value=None)
+        mocker.patch.object(mock_num_port1, "get_last_written_value", return_value=None)
+        mocker.patch.object(mock_num_port2, "get_last_written_value", return_value=84)
         mocker.patch.object(mock_num_port1, "get_attrs", new_callable=mocker.AsyncMock, return_value={"attr1": "val1"})
         mocker.patch.object(mock_num_port2, "get_attrs", new_callable=mocker.AsyncMock, return_value={"attr2": "val2"})
         mocker.patch(
@@ -109,6 +113,8 @@ class TestBuildContext:
 
         assert isinstance(context, EvalContext)
         assert context.port_values == {"nid1": 42, "nid2": 84}
+        assert context.port_read_values == {"nid1": 41, "nid2": None}
+        assert context.port_written_values == {"nid1": None, "nid2": 84}
         assert context.port_attrs == {"nid1": {"attr1": "val1"}, "nid2": {"attr2": "val2"}}
         assert context.device_attrs == {"device_attr": "device_val"}
         assert context.now_ms == 1000

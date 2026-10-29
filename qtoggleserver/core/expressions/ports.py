@@ -1,4 +1,5 @@
 import abc
+import enum
 import re
 
 from qtoggleserver.core import ports as core_ports
@@ -98,15 +99,33 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
                 raise UnexpectedCharacter(prefix, pos)
 
 
+class PortValueKind(enum.Enum):
+    """Which of a port's values a port value expression refers to; the value is the suffix after the port id."""
+
+    LAST = ""
+    READ = "?"
+    WRITTEN = "!"
+
+
 class PortValue(PortExpression):
+    def __init__(self, port_id: str, prefix: str, role: Role, kind: PortValueKind = PortValueKind.LAST) -> None:
+        super().__init__(port_id, prefix, role)
+
+        self.kind: PortValueKind = kind
+
     def __str__(self) -> str:
-        return f"{self.prefix}{self.port_id}"
+        return f"{self.prefix}{self.port_id}{self.kind.value}"
 
     def _get_deps(self) -> set[str]:
-        return {f"${self.port_id}"}
+        return {f"${self.port_id}{self.kind.value}"}
 
     def _get_value(self, context: EvalContext) -> NullablePortValue:
-        return context.port_values.get(self.port_id)
+        if self.kind is PortValueKind.READ:
+            return context.port_read_values.get(self.port_id)
+        elif self.kind is PortValueKind.WRITTEN:
+            return context.port_written_values.get(self.port_id)
+        else:
+            return context.port_values.get(self.port_id)
 
     async def _eval(self, context: EvalContext) -> EvalResult:
         port = self.get_port()
@@ -128,7 +147,7 @@ class PortValue(PortExpression):
 
 class SelfPortValue(PortValue):
     def __str__(self) -> str:
-        return self.prefix
+        return f"{self.prefix}{self.kind.value}"
 
     def _get_deps(self) -> set[str]:
         # Like `IGNCHG($)`, so that a value written by the expression never triggers its next evaluation

@@ -8,7 +8,15 @@ from qtoggleserver.core.expressions.exceptions import (
     PortValueUnavailable,
     UnknownPortId,
 )
-from qtoggleserver.core.expressions.ports import PortAttr, PortRef, PortValue, SelfPortAttr, SelfPortRef, SelfPortValue
+from qtoggleserver.core.expressions.ports import (
+    PortAttr,
+    PortRef,
+    PortValue,
+    PortValueKind,
+    SelfPortAttr,
+    SelfPortRef,
+    SelfPortValue,
+)
 
 
 class TestPortValue:
@@ -48,6 +56,53 @@ class TestPortValue:
         e = PortValue("nid1", prefix="$", role=Role.VALUE)
         dummy_eval_context.port_values["nid1"] = 16
         assert await e._eval(dummy_eval_context) == 16
+
+    @pytest.mark.parametrize(
+        "kind, value",
+        [(PortValueKind.LAST, 16), (PortValueKind.READ, 17), (PortValueKind.WRITTEN, 18)],
+    )
+    async def test_eval_kind(self, mock_num_port1, kind, value):
+        """Should return the last, last read or last written value from supplied context, as given by the kind."""
+
+        e = PortValue("nid1", prefix="$", role=Role.VALUE, kind=kind)
+        context = EvalContext(port_values={"nid1": 16}, port_read_values={"nid1": 17}, port_written_values={"nid1": 18})
+        assert await e._eval(context) == value
+
+    async def test_eval_kind_unavailable(self, mock_num_port1):
+        """Should raise PortValueUnavailable when the port has no value of the given kind, even if it has others."""
+
+        e = PortValue("nid1", prefix="$", role=Role.VALUE, kind=PortValueKind.WRITTEN)
+        context = EvalContext(port_values={"nid1": 16}, port_read_values={"nid1": 16})
+        with pytest.raises(PortValueUnavailable):
+            await e._eval(context)
+
+    async def test_eval_kind_disabled(self, mock_num_port1):
+        """Should raise DisabledPort for every kind when the referenced port is disabled."""
+
+        for kind in PortValueKind:
+            e = PortValue("nid1", prefix="$", role=Role.VALUE, kind=kind)
+            context = EvalContext(
+                port_values={"nid1": 16},
+                port_read_values={"nid1": 16},
+                port_written_values={"nid1": 16},
+                port_attrs={"nid1": {"enabled": False}},
+            )
+            with pytest.raises(DisabledPort):
+                await e._eval(context)
+
+    @pytest.mark.parametrize(
+        "kind, suffix", [(PortValueKind.LAST, ""), (PortValueKind.READ, "?"), (PortValueKind.WRITTEN, "!")]
+    )
+    def test_str_deps_kind(self, mock_num_port1, kind, suffix):
+        """Should add the kind's suffix to both the string form and the dep, and give a self port value no deps."""
+
+        e = PortValue("nid1", prefix="$", role=Role.VALUE, kind=kind)
+        assert str(e) == f"$nid1{suffix}"
+        assert e.get_deps() == {f"$nid1{suffix}"}
+
+        e = SelfPortValue("nid1", prefix="$", role=Role.VALUE, kind=kind)
+        assert str(e) == f"${suffix}"
+        assert e.get_deps() == set()
 
     async def test_eval_unknown(self, mock_num_port1, dummy_eval_context):
         """Should raise UnknownPortId when the referenced port doesn't exist."""
