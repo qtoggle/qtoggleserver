@@ -91,11 +91,11 @@ class EvalContext:
     def __init__(
         self,
         port_values: dict[str, NullablePortValue] | None = None,
+        port_read_values: dict[str, NullablePortValue] | None = None,
+        port_written_values: dict[str, NullablePortValue] | None = None,
         port_attrs: dict[str, Attributes] | None = None,
         device_attrs: Attributes | None = None,
         now_ms: int = 0,
-        port_read_values: dict[str, NullablePortValue] | None = None,
-        port_written_values: dict[str, NullablePortValue] | None = None,
     ) -> None:
         self.port_values: dict[str, NullablePortValue] = port_values or {}
         self.port_read_values: dict[str, NullablePortValue] = port_read_values or {}

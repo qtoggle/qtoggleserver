@@ -72,10 +72,10 @@ async def build_context(now_ms: int) -> EvalContext:
             )
 
     return EvalContext(
-        port_values,
-        port_attrs,
-        device_attrs,
-        now_ms,
+        port_values=port_values,
         port_read_values=port_read_values,
         port_written_values=port_written_values,
+        port_attrs=port_attrs,
+        device_attrs=device_attrs,
+        now_ms=now_ms,
     )
