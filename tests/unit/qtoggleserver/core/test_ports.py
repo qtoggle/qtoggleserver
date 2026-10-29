@@ -704,6 +704,18 @@ class TestPortEvalAndPushWrite:
         await mock_num_port1.eval_and_push_write(mock_eval_context)
         mock_num_port1.push_write.assert_not_called()
 
+    @pytest.mark.parametrize("value", [complex(1, 2), 10**400])
+    async def test_invalid_value_not_written(self, mock_num_port1, mocker, value):
+        """Should not push anything to the write queue, nor raise, if the result can't be adapted to a port value."""
+
+        mock_eval_context = mocker.Mock()
+        mock_num_port1._expression = mocker.Mock()
+        mock_num_port1._expression.eval = mocker.AsyncMock(return_value=value)
+        mocker.patch.object(mock_num_port1, "push_write")
+
+        await mock_num_port1.eval_and_push_write(mock_eval_context)
+        mock_num_port1.push_write.assert_not_called()
+
 
 class TestPortGetPendingValue:
     def test_no_pending_value(self, mock_num_port1):
