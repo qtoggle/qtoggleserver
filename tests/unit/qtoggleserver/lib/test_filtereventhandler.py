@@ -344,6 +344,7 @@ class TestFilterEventHandlerHandleEvent(FilterEventHandlerTestBase):
         handler.on_port_update = mocker.AsyncMock()
 
         event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
         await handler.handle_event(event)
 
         handler.on_event.assert_called_once_with(event)
@@ -358,6 +359,7 @@ class TestFilterEventHandlerHandleEvent(FilterEventHandlerTestBase):
         handler.on_port_add = mocker.AsyncMock()
 
         event = core_events.PortAdd(mock_num_port1)
+        await event.init_params()
         await handler.handle_event(event)
 
         handler.on_event.assert_called_once_with(event)
@@ -386,6 +388,7 @@ class TestFilterEventHandlerHandleEvent(FilterEventHandlerTestBase):
         handler.on_device_update = mocker.AsyncMock()
 
         event = core_events.DeviceUpdate()
+        await event.init_params()
         await handler.handle_event(event)
 
         handler.on_event.assert_called_once_with(event)
@@ -468,3 +471,43 @@ class TestFilterEventHandlerEventValues(FilterEventHandlerTestBase):
 
         handler._filter_expression = PortValue("nid1", prefix="$", role=Role.FILTER)
         assert await handler.accepts(event, (0, 10), {}, {}, {}, {}, {}) is False
+
+    async def test_port_update_uses_event_attrs(self, mock_num_port1, mocker):
+        """Should take a port update's new attrs and value from the event, as they were when it was triggered, without
+        changing the event's own params."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={"display_name": "A"}))
+        mock_num_port1.set_read_value(5)
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+
+        # Changed again before the event is handled
+        mock_num_port1.get_attrs.return_value = {"display_name": "B"}
+        mock_num_port1.set_read_value(6)
+
+        handler = ConcreteFilterEventHandler(filter={"port_display_name": "A", "port_value": 5})
+        handler.on_port_update = mocker.AsyncMock()
+        await handler.handle_event(event)
+
+        handler.on_port_update.assert_called_once()
+        new_attrs = handler.on_port_update.call_args.args[3]
+        assert new_attrs == {"display_name": "A"}
+        assert event.get_params()["value"] == 5
+        assert "definitions" in event.get_params()
+
+    async def test_device_update_uses_event_attrs(self, mocker):
+        """Should take a device update's new attrs from the event, as they were when it was triggered."""
+
+        to_json = mocker.patch(
+            "qtoggleserver.core.device.attrs.to_json", new=mocker.AsyncMock(return_value={"name": "a"})
+        )
+        event = core_events.DeviceUpdate()
+        await event.init_params()
+        to_json.return_value = {"name": "b"}
+
+        handler = ConcreteFilterEventHandler(filter={"device_name": "a"})
+        handler.on_device_update = mocker.AsyncMock()
+        await handler.handle_event(event)
+
+        handler.on_device_update.assert_called_once()
+        assert handler.on_device_update.call_args.args[2] == {"name": "a"}

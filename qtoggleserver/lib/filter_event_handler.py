@@ -174,18 +174,24 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         added_attrs = {}
         removed_attrs = {}
 
+        # Events are handled some time after they're triggered, when things may have changed again, so use the attrs
+        # and values that events carry (copied, as they're shared with other handlers), where they carry any
         if isinstance(event, core_events.PortEvent):
             port = event.get_port()
 
             old_attrs = self._port_attrs.get(port.get_id(), {})
-            new_attrs = await port.get_attrs()
+            if isinstance(event, (core_events.PortAdd, core_events.PortUpdate)):
+                new_attrs = dict(event.get_params())
+                value = new_attrs.pop("value", None)
+                new_attrs.pop("definitions", None)
+            else:
+                new_attrs = await port.get_attrs()
+                value = port.get_last_read_value()
 
-            # Events are handled some time after they're triggered, when the port may have changed again, so a value
-            # change uses its own values; other port events carry no value change
+            # Other port events carry no value change
             if isinstance(event, core_events.ValueChange):
                 value_pair = (event.old_value, event.new_value)
             else:
-                value = port.get_last_read_value()
                 value_pair = (value, value)
 
             if isinstance(event, (core_events.PortAdd, core_events.PortUpdate)):
@@ -195,13 +201,19 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 removed_attrs = self._port_attrs.pop(port.get_id(), {})
         elif isinstance(event, core_events.DeviceEvent):
             old_attrs = self._device_attrs
-            new_attrs = await event.get_attrs()
+            if isinstance(event, core_events.DeviceUpdate):
+                new_attrs = dict(event.get_params())
+            else:
+                new_attrs = await event.get_attrs()
 
             changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
             self._device_attrs = new_attrs
         elif isinstance(event, slaves_events.SlaveDeviceEvent):
             slave = event.get_slave()
-            slave_json = slave.to_json()
+            if isinstance(event, (slaves_events.SlaveDeviceAdd, slaves_events.SlaveDeviceUpdate)):
+                slave_json = dict(event.get_params())
+            else:
+                slave_json = slave.to_json()
 
             # Flatten slave master properties and attributes
             old_attrs = self._slave_attrs.get(slave.get_name(), {})
