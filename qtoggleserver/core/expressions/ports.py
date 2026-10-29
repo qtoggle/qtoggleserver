@@ -103,8 +103,8 @@ class PortValueKind(enum.Enum):
     """Which of a port's values a port value expression refers to; the value is the suffix after the port id."""
 
     LAST = ""
-    READ = "?"
-    WRITTEN = "!"
+    LAST_READ = "?"
+    LAST_WRITTEN = "!"
 
 
 class PortValue(PortExpression):
@@ -120,9 +120,9 @@ class PortValue(PortExpression):
         return {f"${self.port_id}{self.kind.value}"}
 
     def _get_value(self, context: EvalContext) -> NullablePortValue:
-        if self.kind is PortValueKind.READ:
+        if self.kind is PortValueKind.LAST_READ:
             return context.port_read_values.get(self.port_id)
-        elif self.kind is PortValueKind.WRITTEN:
+        elif self.kind is PortValueKind.LAST_WRITTEN:
             return context.port_written_values.get(self.port_id)
         else:
             return context.port_values.get(self.port_id)

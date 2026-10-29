@@ -59,7 +59,7 @@ class TestPortValue:
 
     @pytest.mark.parametrize(
         "kind, value",
-        [(PortValueKind.LAST, 16), (PortValueKind.READ, 17), (PortValueKind.WRITTEN, 18)],
+        [(PortValueKind.LAST, 16), (PortValueKind.LAST_READ, 17), (PortValueKind.LAST_WRITTEN, 18)],
     )
     async def test_eval_kind(self, mock_num_port1, kind, value):
         """Should return the last, last read or last written value from supplied context, as given by the kind."""
@@ -71,7 +71,7 @@ class TestPortValue:
     async def test_eval_kind_unavailable(self, mock_num_port1):
         """Should raise PortValueUnavailable when the port has no value of the given kind, even if it has others."""
 
-        e = PortValue("nid1", prefix="$", role=Role.VALUE, kind=PortValueKind.WRITTEN)
+        e = PortValue("nid1", prefix="$", role=Role.VALUE, kind=PortValueKind.LAST_WRITTEN)
         context = EvalContext(port_values={"nid1": 16}, port_read_values={"nid1": 16})
         with pytest.raises(PortValueUnavailable):
             await e._eval(context)
@@ -91,7 +91,7 @@ class TestPortValue:
                 await e._eval(context)
 
     @pytest.mark.parametrize(
-        "kind, suffix", [(PortValueKind.LAST, ""), (PortValueKind.READ, "?"), (PortValueKind.WRITTEN, "!")]
+        "kind, suffix", [(PortValueKind.LAST, ""), (PortValueKind.LAST_READ, "?"), (PortValueKind.LAST_WRITTEN, "!")]
     )
     def test_str_deps_kind(self, mock_num_port1, kind, suffix):
         """Should add the kind's suffix to both the string form and the dep, and give a self port value no deps."""
