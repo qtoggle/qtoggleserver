@@ -184,8 +184,15 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 new_attrs = dict(event.get_params())
                 value = new_attrs.pop("value", None)
                 new_attrs.pop("definitions", None)
+                changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
+                self._port_attrs[port.get_id()] = new_attrs
             else:
-                new_attrs = await port.get_attrs()
+                if isinstance(event, core_events.PortRemove):
+                    removed_attrs = self._port_attrs.pop(port.get_id(), {})
+
+                # Other port events carry no attrs, so use the ones from the last port add or update, falling back to
+                # the current ones for a port the handler has seen neither for
+                new_attrs = dict(old_attrs) or await port.get_attrs()
                 value = port.get_last_read_value()
 
             # Other port events carry no value change
@@ -193,12 +200,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 value_pair = (event.old_value, event.new_value)
             else:
                 value_pair = (value, value)
-
-            if isinstance(event, (core_events.PortAdd, core_events.PortUpdate)):
-                changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
-                self._port_attrs[port.get_id()] = new_attrs
-            elif isinstance(event, core_events.PortRemove):
-                removed_attrs = self._port_attrs.pop(port.get_id(), {})
         elif isinstance(event, core_events.DeviceEvent):
             old_attrs = self._device_attrs
             if isinstance(event, core_events.DeviceUpdate):

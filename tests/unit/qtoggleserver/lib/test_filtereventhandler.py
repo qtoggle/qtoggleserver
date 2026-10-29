@@ -511,3 +511,51 @@ class TestFilterEventHandlerEventValues(FilterEventHandlerTestBase):
 
         handler.on_device_update.assert_called_once()
         assert handler.on_device_update.call_args.args[2] == {"name": "a"}
+
+    async def test_value_change_uses_tracked_attrs(self, mock_num_port1, mocker):
+        """Should give a value change the attrs from the port's last update, not the ones at handling time."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={"display_name": "A"}))
+        handler = ConcreteFilterEventHandler(filter={"port_display_name": "A"})
+        update_event = core_events.PortUpdate(mock_num_port1)
+        await update_event.init_params()
+        await handler.handle_event(update_event)
+
+        # Changed again, with its port update not handled yet
+        mock_num_port1.get_attrs.return_value = {"display_name": "B"}
+
+        handler.on_value_change = mocker.AsyncMock()
+        await handler.handle_event(core_events.ValueChange(9, 10, mock_num_port1))
+
+        handler.on_value_change.assert_called_once()
+        assert handler.on_value_change.call_args.args[4] == {"display_name": "A"}
+
+    async def test_value_change_falls_back_to_current_attrs(self, mock_num_port1, mocker):
+        """Should give a value change the port's current attrs when the handler has seen no update for that port."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={"display_name": "A"}))
+        handler = ConcreteFilterEventHandler(filter={"port_display_name": "A"})
+        handler.on_value_change = mocker.AsyncMock()
+        await handler.handle_event(core_events.ValueChange(9, 10, mock_num_port1))
+
+        handler.on_value_change.assert_called_once()
+        assert handler.on_value_change.call_args.args[4] == {"display_name": "A"}
+
+    async def test_port_remove_uses_tracked_attrs(self, mock_num_port1, mocker):
+        """Should give a port removal the attrs from the port's last update, and stop tracking them before awaiting
+        anything."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={"display_name": "A"}))
+        handler = ConcreteFilterEventHandler()
+        update_event = core_events.PortUpdate(mock_num_port1)
+        await update_event.init_params()
+        await handler.handle_event(update_event)
+
+        mock_num_port1.get_attrs.reset_mock()
+        handler.on_port_remove = mocker.AsyncMock()
+        await handler.handle_event(core_events.PortRemove(mock_num_port1))
+
+        mock_num_port1.get_attrs.assert_not_called()
+        assert handler._port_attrs == {}
+        handler.on_port_remove.assert_called_once()
+        assert handler.on_port_remove.call_args.args[2] == {"display_name": "A"}
