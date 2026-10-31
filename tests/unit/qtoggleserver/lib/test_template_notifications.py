@@ -120,3 +120,26 @@ class TestTemplateNotificationsCommonContext:
 
         title = handler.push_message.call_args.kwargs["title"]
         assert title == f"{await mock_num_port1.get_pretty_name()} is {await mock_num_port1.get_pretty_value(10)}"
+
+    async def test_no_sensitive_attrs(self, mocker):
+        """Should keep the Wi-Fi key out of a device update template's attrs and device attrs."""
+
+        mocker.patch(
+            "qtoggleserver.core.device.attrs.to_json",
+            new=mocker.AsyncMock(return_value={"name": "d", "wifi_key": "k"}),
+        )
+        mocker.patch(
+            "qtoggleserver.core.device.attrs.get_attrs",
+            new=mocker.AsyncMock(return_value={"name": "d", "wifi_key": "k"}),
+        )
+        mocker.patch("qtoggleserver.lib.template_notifications.core_main.is_ready", return_value=True)
+        event = core_events.DeviceUpdate()
+        await event.init_params()
+
+        handler = ConcreteTemplateNotificationsHandler(skip_startup=False)
+        mocker.patch.object(handler, "push_template_message", new=mocker.AsyncMock())
+        await handler.handle_event(event)
+
+        context = handler.push_template_message.call_args.args[1]
+        assert context["new_attrs"] == {"name": "d"}
+        assert context["device_attrs"] == {"name": "d"}
