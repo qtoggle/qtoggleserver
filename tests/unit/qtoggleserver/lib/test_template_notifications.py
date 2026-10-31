@@ -104,3 +104,19 @@ class TestTemplateNotificationsCommonContext:
         assert context["port_attrs"] == {"nid1": {"display_name": "A"}}
         assert context["port_read_values"] == {"nid1": 5}
         assert context["port_values"] == {"nid1": 5}
+
+    async def test_default_value_change_title_uses_event_value(self, mock_num_port1, mocker):
+        """Should show the event's new value in the default value change title, even if the port has changed again
+        by the time the event is handled."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={}))
+        mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
+        mocker.patch("qtoggleserver.lib.template_notifications.core_main.is_ready", return_value=True)
+        mock_num_port1.set_read_value(9)  # changed back before the event is handled
+
+        handler = ConcreteTemplateNotificationsHandler(skip_startup=False)
+        mocker.patch.object(handler, "push_message", new=mocker.AsyncMock())
+        await handler.handle_event(core_events.ValueChange(9, 10, mock_num_port1))
+
+        title = handler.push_message.call_args.kwargs["title"]
+        assert title == f"{await mock_num_port1.get_pretty_name()} is {await mock_num_port1.get_pretty_value(10)}"
