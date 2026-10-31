@@ -22,6 +22,17 @@ AnyNullablePortValue = str | NullablePortValue
 logger = logging.getLogger(__package__)
 
 
+def _is_sensitive_attr(name: str) -> bool:
+    # A future "sensitive" property of attribute definitions could replace these name checks
+    return name == "wifi_key" or name.endswith("_password_hash")
+
+
+def _drop_sensitive_attrs(attrs: Attributes) -> Attributes:
+    # Secrets must not reach filters, hooks or templates, which may publish them. Slave device attrs may come as
+    # "<slave_name>:<attr_name>".
+    return {n: v for n, v in attrs.items() if not _is_sensitive_attr(n.split(":")[-1])}
+
+
 @dataclasses.dataclass
 class _HandledEvent:
     attrs: Attributes = dataclasses.field(default_factory=dict)
@@ -222,9 +233,9 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         elif isinstance(event, core_events.DeviceEvent):
             old_attrs = self._device_attrs
             if isinstance(event, core_events.DeviceUpdate):
-                new_attrs = dict(event.get_params())
+                new_attrs = _drop_sensitive_attrs(event.get_params())
             else:
-                new_attrs = await event.get_attrs()
+                new_attrs = _drop_sensitive_attrs(await event.get_attrs())
 
             changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
             self._device_attrs = new_attrs
@@ -239,7 +250,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 slave_json = slave.to_json()
 
             # Merge the slave's own attrs into the properties the master keeps about it, so filters can use both
-            new_attrs = dict(slave_json, **slave_json.pop("attrs"))
+            new_attrs = _drop_sensitive_attrs(dict(slave_json, **slave_json.pop("attrs")))
 
             if isinstance(event, (slaves_events.SlaveDeviceAdd, slaves_events.SlaveDeviceUpdate)):
                 changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
@@ -253,6 +264,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
     async def _build_eval_context(event: core_events.Event, attrs: Attributes | None = None) -> EvalContext:
         # The same values that port expressions see, rather than the ones tracked from events
         context = await expressions_utils.build_context(int(time.time() * 1000))
+        context.device_attrs = _drop_sensitive_attrs(context.device_attrs)
 
         if isinstance(event, core_events.PortEvent):
             port = event.get_port()
