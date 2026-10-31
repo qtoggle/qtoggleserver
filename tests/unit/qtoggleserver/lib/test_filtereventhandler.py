@@ -1,3 +1,5 @@
+from unittest import mock
+
 import pytest
 
 from qtoggleserver.core import events as core_events
@@ -5,6 +7,7 @@ from qtoggleserver.core.expressions import Role
 from qtoggleserver.core.expressions import exceptions as expression_exceptions
 from qtoggleserver.core.expressions.ports import PortValue, PortValueKind
 from qtoggleserver.lib.filter_event_handler import ANY_VALUE, FilterEventHandler
+from qtoggleserver.slaves import events as slaves_events
 
 
 class ConcreteFilterEventHandler(FilterEventHandler):
@@ -559,3 +562,204 @@ class TestFilterEventHandlerEventValues(FilterEventHandlerTestBase):
         assert handler._port_attrs == {}
         handler.on_port_remove.assert_called_once()
         assert handler.on_port_remove.call_args.args[2] == {"display_name": "A"}
+
+
+class TestFilterEventHandlerUpdateFromEvent(FilterEventHandlerTestBase):
+    @staticmethod
+    def make_mock_slave(mocker, json: dict) -> mock.Mock:
+        slave = mocker.Mock()
+        slave.get_name.return_value = "s1"
+        slave.to_json.side_effect = lambda: dict(json, attrs=dict(json["attrs"]))
+        return slave
+
+    async def test_port_add(self, mock_num_port1, mocker):
+        """Should take a port add's attrs and value from its params, without changing them, and start tracking the
+        attrs."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={"display_name": "A"}))
+        mock_num_port1.set_read_value(5)
+        event = core_events.PortAdd(mock_num_port1)
+        await event.init_params()
+        params = dict(event.get_params())
+
+        handler = ConcreteFilterEventHandler()
+        result = await handler._update_from_event(event)
+
+        assert result == ((5, 5), {}, {"display_name": "A"}, {}, {"display_name": "A"}, {})
+        assert handler._port_attrs == {"nid1": {"display_name": "A"}}
+        assert event.get_params() == params
+
+    async def test_port_update(self, mock_num_port1, mocker):
+        """Should compare a port update's attrs with the tracked ones and track the new ones."""
+
+        attrs = {"display_name": "A", "unit": "C"}
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(side_effect=lambda: dict(attrs)))
+        mock_num_port1.set_read_value(5)
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+
+        handler = ConcreteFilterEventHandler()
+        handler._port_attrs = {"nid1": {"display_name": "B", "description": "d"}}
+        result = await handler._update_from_event(event)
+
+        assert result == (
+            (5, 5),
+            {"display_name": "B", "description": "d"},
+            attrs,
+            {"display_name": ("B", "A")},
+            {"unit": "C"},
+            {"description": "d"},
+        )
+        assert handler._port_attrs == {"nid1": attrs}
+
+    async def test_value_change(self, mock_num_port1, mocker):
+        """Should give a value change its own values and a copy of the tracked attrs as both old and new attrs."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock())
+        handler = ConcreteFilterEventHandler()
+        handler._port_attrs = {"nid1": {"display_name": "A"}}
+
+        result = await handler._update_from_event(core_events.ValueChange(9, 10, mock_num_port1))
+
+        assert result == ((9, 10), {"display_name": "A"}, {"display_name": "A"}, {}, {}, {})
+        assert result[2] is not handler._port_attrs["nid1"]
+        mock_num_port1.get_attrs.assert_not_called()
+
+    async def test_value_change_untracked(self, mock_num_port1, mocker):
+        """Should give a value change for an untracked port its current attrs, without tracking them."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={"display_name": "A"}))
+        handler = ConcreteFilterEventHandler()
+
+        result = await handler._update_from_event(core_events.ValueChange(9, 10, mock_num_port1))
+
+        assert result == ((9, 10), {}, {"display_name": "A"}, {}, {}, {})
+        assert handler._port_attrs == {}
+
+    async def test_port_remove(self, mock_num_port1, mocker):
+        """Should give a port removal the tracked attrs as removed, and stop tracking them."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock())
+        mock_num_port1.set_read_value(5)
+        handler = ConcreteFilterEventHandler()
+        handler._port_attrs = {"nid1": {"display_name": "A"}}
+
+        result = await handler._update_from_event(core_events.PortRemove(mock_num_port1))
+
+        assert result == ((5, 5), {"display_name": "A"}, {"display_name": "A"}, {}, {}, {"display_name": "A"})
+        assert handler._port_attrs == {}
+        mock_num_port1.get_attrs.assert_not_called()
+
+    async def test_port_remove_untracked(self, mock_num_port1, mocker):
+        """Should give a removal of an untracked port its current attrs and nothing removed."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={"display_name": "A"}))
+        mock_num_port1.set_read_value(5)
+        handler = ConcreteFilterEventHandler()
+
+        result = await handler._update_from_event(core_events.PortRemove(mock_num_port1))
+
+        assert result == ((5, 5), {}, {"display_name": "A"}, {}, {}, {})
+
+    async def test_device_update(self, mocker):
+        """Should compare a device update's attrs from its params with the tracked ones and track a copy of the new
+        ones."""
+
+        mocker.patch(
+            "qtoggleserver.core.device.attrs.to_json", new=mocker.AsyncMock(return_value={"name": "a", "ip": "1"})
+        )
+        event = core_events.DeviceUpdate()
+        await event.init_params()
+
+        handler = ConcreteFilterEventHandler()
+        handler._device_attrs = {"name": "b", "uptime": 2}
+        result = await handler._update_from_event(event)
+
+        assert result == (
+            (None, None),
+            {"name": "b", "uptime": 2},
+            {"name": "a", "ip": "1"},
+            {"name": ("b", "a")},
+            {"ip": "1"},
+            {"uptime": 2},
+        )
+        assert handler._device_attrs == {"name": "a", "ip": "1"}
+        assert handler._device_attrs is not event.get_params()
+
+    async def test_full_update(self, mocker):
+        """Should compare a full update's current device attrs with the tracked ones and track the new ones."""
+
+        mocker.patch("qtoggleserver.core.device.attrs.to_json", new=mocker.AsyncMock(return_value={"name": "a"}))
+        handler = ConcreteFilterEventHandler()
+        handler._device_attrs = {"name": "b"}
+
+        result = await handler._update_from_event(core_events.FullUpdate())
+
+        assert result == ((None, None), {"name": "b"}, {"name": "a"}, {"name": ("b", "a")}, {}, {})
+        assert handler._device_attrs == {"name": "a"}
+
+    async def test_slave_device_add(self, mocker):
+        """Should flatten a slave add's params into attrs, without changing them, and start tracking the attrs."""
+
+        slave = self.make_mock_slave(mocker, {"name": "s1", "online": True, "attrs": {"uptime": 1}})
+        event = slaves_events.SlaveDeviceAdd(slave)
+        await event.init_params()
+        slave.to_json.side_effect = AssertionError("should use the event params")
+
+        handler = ConcreteFilterEventHandler()
+        result = await handler._update_from_event(event)
+
+        attrs = {"name": "s1", "online": True, "uptime": 1}
+        assert result == ((None, None), {}, attrs, {}, attrs, {})
+        assert handler._slave_attrs == {"s1": attrs}
+        assert event.get_params()["attrs"] == {"uptime": 1}
+
+    async def test_slave_device_update(self, mocker):
+        """Should compare a slave update's flattened attrs with the tracked ones and track the new ones."""
+
+        slave = self.make_mock_slave(mocker, {"name": "s1", "online": False, "attrs": {"uptime": 1}})
+        event = slaves_events.SlaveDeviceUpdate(slave)
+        await event.init_params()
+
+        handler = ConcreteFilterEventHandler()
+        handler._slave_attrs = {"s1": {"name": "s1", "online": True}}
+        result = await handler._update_from_event(event)
+
+        attrs = {"name": "s1", "online": False, "uptime": 1}
+        assert result == (
+            (None, None),
+            {"name": "s1", "online": True},
+            attrs,
+            {"online": (True, False)},
+            {"uptime": 1},
+            {},
+        )
+        assert handler._slave_attrs == {"s1": attrs}
+
+    async def test_slave_device_remove(self, mocker):
+        """Should give a slave removal the tracked attrs as removed, and stop tracking them."""
+
+        slave = self.make_mock_slave(mocker, {"name": "s1", "online": True, "attrs": {"uptime": 1}})
+        handler = ConcreteFilterEventHandler()
+        handler._slave_attrs = {"s1": {"name": "s1", "online": False}}
+
+        result = await handler._update_from_event(slaves_events.SlaveDeviceRemove(slave))
+
+        assert result == (
+            (None, None),
+            {"name": "s1", "online": False},
+            {"name": "s1", "online": True, "uptime": 1},
+            {},
+            {},
+            {"name": "s1", "online": False},
+        )
+        assert handler._slave_attrs == {}
+
+    async def test_other_event(self):
+        """Should return no values and no attrs for other events, and track nothing."""
+
+        handler = ConcreteFilterEventHandler()
+        result = await handler._update_from_event(self.make_dummy_event())
+
+        assert result == ((None, None), {}, {}, {}, {}, {})
+        assert (handler._port_attrs, handler._device_attrs, handler._slave_attrs) == ({}, {}, {})

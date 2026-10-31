@@ -184,22 +184,20 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 new_attrs = dict(event.get_params())
                 value = new_attrs.pop("value", None)
                 new_attrs.pop("definitions", None)
+                value_pair = (value, value)
                 changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
                 self._port_attrs[port.get_id()] = new_attrs
-            else:
-                if isinstance(event, core_events.PortRemove):
-                    removed_attrs = self._port_attrs.pop(port.get_id(), {})
-
-                # Other port events carry no attrs, so use the ones from the last port add or update, falling back to
-                # the current ones for a port the handler has seen neither for
+            elif isinstance(event, core_events.PortRemove):
+                # Stop tracking before awaiting anything, so that a port add handled meanwhile isn't dropped
+                removed_attrs = self._port_attrs.pop(port.get_id(), {})
                 new_attrs = dict(old_attrs) or await port.get_attrs()
                 value = port.get_last_read_value()
-
-            # Other port events carry no value change
-            if isinstance(event, core_events.ValueChange):
-                value_pair = (event.old_value, event.new_value)
-            else:
                 value_pair = (value, value)
+            elif isinstance(event, core_events.ValueChange):
+                # Value changes carry no attrs, so use the ones from the last port add or update, falling back to the
+                # current ones for a port the handler has seen neither for
+                new_attrs = dict(old_attrs) or await port.get_attrs()
+                value_pair = (event.old_value, event.new_value)
         elif isinstance(event, core_events.DeviceEvent):
             old_attrs = self._device_attrs
             if isinstance(event, core_events.DeviceUpdate):
@@ -211,13 +209,14 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             self._device_attrs = new_attrs
         elif isinstance(event, slaves_events.SlaveDeviceEvent):
             slave = event.get_slave()
+
+            old_attrs = self._slave_attrs.get(slave.get_name(), {})
             if isinstance(event, (slaves_events.SlaveDeviceAdd, slaves_events.SlaveDeviceUpdate)):
                 slave_json = dict(event.get_params())
             else:
                 slave_json = slave.to_json()
 
-            # Flatten slave master properties and attributes
-            old_attrs = self._slave_attrs.get(slave.get_name(), {})
+            # Merge the slave's own attrs into the properties the master keeps about it, so filters can use both
             new_attrs = dict(slave_json, **slave_json.pop("attrs"))
 
             if isinstance(event, (slaves_events.SlaveDeviceAdd, slaves_events.SlaveDeviceUpdate)):
