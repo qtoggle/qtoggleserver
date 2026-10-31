@@ -198,6 +198,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 # current ones for a port the handler has seen neither for; either way, no attr has changed
                 new_attrs = old_attrs = dict(old_attrs) or await port.get_attrs()
                 value_pair = (event.old_value, event.new_value)
+
         elif isinstance(event, core_events.DeviceEvent):
             old_attrs = self._device_attrs
             if isinstance(event, core_events.DeviceUpdate):
@@ -207,6 +208,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
             changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
             self._device_attrs = new_attrs
+
         elif isinstance(event, slaves_events.SlaveDeviceEvent):
             slave = event.get_slave()
 

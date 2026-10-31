@@ -3,6 +3,7 @@ from unittest import mock
 import pytest
 
 from qtoggleserver.core import events as core_events
+from qtoggleserver.core import expressions as core_expressions
 from qtoggleserver.core.expressions import Role
 from qtoggleserver.core.expressions import exceptions as expression_exceptions
 from qtoggleserver.core.expressions.ports import PortValue, PortValueKind
@@ -29,6 +30,13 @@ class FilterEventHandlerTestBase:
         handler = ConcreteFilterEventHandler(filter=filter_dict or {})
         handler._prepare_filter()
         return handler
+
+    @staticmethod
+    def make_mock_slave(mocker, json: dict) -> mock.Mock:
+        slave = mocker.Mock()
+        slave.get_name.return_value = "s1"
+        slave.to_json.side_effect = lambda: dict(json, attrs=dict(json["attrs"]))
+        return slave
 
 
 class TestFilterEventHandlerAcceptsDevice(FilterEventHandlerTestBase):
@@ -565,13 +573,6 @@ class TestFilterEventHandlerEventValues(FilterEventHandlerTestBase):
 
 
 class TestFilterEventHandlerUpdateFromEvent(FilterEventHandlerTestBase):
-    @staticmethod
-    def make_mock_slave(mocker, json: dict) -> mock.Mock:
-        slave = mocker.Mock()
-        slave.get_name.return_value = "s1"
-        slave.to_json.side_effect = lambda: dict(json, attrs=dict(json["attrs"]))
-        return slave
-
     async def test_port_add(self, mock_num_port1, mocker):
         """Should take a port add's attrs and value from its params, without changing them, and start tracking the
         attrs."""
@@ -776,3 +777,216 @@ class TestFilterEventHandlerUpdateFromEvent(FilterEventHandlerTestBase):
 
         assert result == ((None, None), {}, {}, {}, {}, {})
         assert (handler._port_attrs, handler._device_attrs, handler._slave_attrs) == ({}, {}, {})
+
+
+class TestFilterEventHandlerPrepareFilter(FilterEventHandlerTestBase):
+    def test_splits_filter_keys(self):
+        """Should split the filter into event types, attrs and attr transitions per object, keeping port_value and
+        port_value_transition out of the port attrs."""
+
+        handler = self.make_dummy_handler(
+            {
+                "type": "value-change",
+                "device_name": "d",
+                "device_online_transition": [False, True],
+                "port_display_name": "p",
+                "port_enabled_transition": [True, False],
+                "port_value": 5,
+                "port_value_transition": [4, 5],
+                "slave_name": ["s1", "s2"],
+                "slave_online_transition": [True, ANY_VALUE],
+            }
+        )
+
+        assert handler._filter_event_types == {"value-change"}
+        assert handler._filter_device_attrs == {"name": "d"}
+        assert handler._filter_device_attr_transitions == {"online": [False, True]}
+        assert handler._filter_device_attr_names == {"name", "online"}
+        assert handler._filter_port_attrs == {"display_name": "p"}
+        assert handler._filter_port_attr_transitions == {"enabled": [True, False]}
+        assert handler._filter_port_attr_names == {"display_name", "enabled"}
+        assert handler._filter_port_value == (5,)
+        assert handler._filter_port_value_transition == [4, 5]
+        assert handler._filter_slave_attrs == {"name": ["s1", "s2"]}
+        assert handler._filter_slave_attr_transitions == {"online": [True, ANY_VALUE]}
+        assert handler._filter_slave_attr_names == {"name", "online"}
+        assert handler._filter_expression is None
+
+    def test_list_values(self):
+        """Should keep lists of event types and port values as they are."""
+
+        handler = self.make_dummy_handler({"type": ["port-add", "port-remove"], "port_value": [1, 2]})
+
+        assert handler._filter_event_types == {"port-add", "port-remove"}
+        assert handler._filter_port_value == [1, 2]
+
+    def test_port_value_expression(self):
+        """Should parse a string port_value as an expression."""
+
+        handler = self.make_dummy_handler({"port_value": "ADD($nid1, 1)"})
+
+        assert isinstance(handler._filter_port_value, core_expressions.Expression)
+        assert str(handler._filter_port_value) == "ADD($nid1, 1)"
+
+    def test_invalid_port_value_expression(self):
+        """Should raise ExpressionParseError when the port_value expression is invalid."""
+
+        with pytest.raises(expression_exceptions.ExpressionParseError):
+            self.make_dummy_handler({"port_value": "ADD("})
+
+
+class TestFilterEventHandlerMakeChangedAddedRemoved:
+    def test_changed_added_removed(self):
+        """Should sort attrs into changed, added and removed ones, leaving out unchanged ones."""
+
+        result = FilterEventHandler._make_changed_added_removed({"a": 1, "b": 2, "c": 3}, {"a": 1, "b": 20, "d": 4})
+
+        assert result == ({"b": (2, 20)}, {"d": 4}, {"c": 3})
+
+    def test_none_counts_as_missing(self):
+        """Should treat an attr whose value is None like a missing one."""
+
+        result = FilterEventHandler._make_changed_added_removed({"a": None, "b": 2, "c": None}, {"a": 1, "b": None})
+
+        assert result == ({}, {"a": 1}, {"b": 2})
+
+
+class TestFilterEventHandlerAcceptsEventKinds(FilterEventHandlerTestBase):
+    async def test_port_filters_ignore_other_events(self):
+        """Should apply port filters only to port events."""
+
+        handler = self.make_dummy_handler({"port_value": 5, "port_display_name": "p"})
+
+        assert await handler.accepts(core_events.DeviceUpdate(), (None, None), {}, {}, {}, {}, {}) is True
+        assert await handler.accepts(self.make_dummy_event(), (None, None), {}, {}, {}, {}, {}) is True
+
+    async def test_device_filters_ignore_other_events(self, mock_num_port1):
+        """Should apply device filters only to device events."""
+
+        handler = self.make_dummy_handler({"device_name": "d"})
+        event = core_events.ValueChange(None, 5, mock_num_port1)
+
+        assert await handler.accepts(event, (None, 5), {}, {}, {}, {}, {}) is True
+        assert await handler.accepts(core_events.DeviceUpdate(), (None, None), {}, {"name": "x"}, {}, {}, {}) is False
+
+    async def test_slave_filters_apply_to_slave_events(self, mocker):
+        """Should apply slave filters to slave events."""
+
+        slave = self.make_mock_slave(mocker, {"name": "s1", "attrs": {}})
+        handler = self.make_dummy_handler({"slave_name": "s2"})
+        event = slaves_events.SlaveDeviceUpdate(slave)
+
+        assert await handler.accepts(event, (None, None), {}, {"name": "s1"}, {}, {}, {}) is False
+        assert await handler.accepts(event, (None, None), {}, {"name": "s2"}, {}, {}, {}) is True
+
+    async def test_port_value_transition_to_any(self):
+        """Should accept a port value transition to any value, as long as the value changes."""
+
+        handler = self.make_dummy_handler({"port_value_transition": [4, ANY_VALUE]})
+
+        assert await handler.accepts_port_value(self.make_dummy_event(), (4, 7)) is True
+        assert await handler.accepts_port_value(self.make_dummy_event(), (5, 7)) is False
+
+
+class TestFilterEventHandlerBuildEvalContext:
+    async def test_other_port_events_keep_read_value(self, mock_num_port1, mocker):
+        """Should leave the port's current last read value in place for port events other than value changes."""
+
+        mock_num_port1.set_read_value(7)
+        mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
+
+        context = await FilterEventHandler._build_eval_context(core_events.PortUpdate(mock_num_port1))
+
+        assert context.port_read_values == {"nid1": 7}
+
+
+class TestFilterEventHandlerDispatch(FilterEventHandlerTestBase):
+    async def test_rejected_event_still_tracked(self, mock_num_port1, mocker):
+        """Should track a port's attrs even from an event the filter rejects, so later events see the right old
+        attrs."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={"display_name": "A"}))
+        handler = ConcreteFilterEventHandler(filter={"type": "value-change"})
+        handler.on_port_update = mocker.AsyncMock()
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+
+        await handler.handle_event(event)
+
+        handler.on_port_update.assert_not_called()
+        assert handler._port_attrs == {"nid1": {"display_name": "A"}}
+
+    async def test_port_update_args(self, mock_num_port1, mocker):
+        """Should pass a port update's old, new, changed, added and removed attrs to on_port_update."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={"display_name": "A"}))
+        handler = ConcreteFilterEventHandler()
+        handler._port_attrs = {"nid1": {"display_name": "B", "unit": "C"}}
+        handler.on_port_update = mocker.AsyncMock()
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+
+        await handler.handle_event(event)
+
+        handler.on_port_update.assert_called_once_with(
+            event,
+            mock_num_port1,
+            {"display_name": "B", "unit": "C"},
+            {"display_name": "A"},
+            {"display_name": ("B", "A")},
+            {},
+            {"unit": "C"},
+        )
+
+    async def test_slave_device_add_dispatched(self, mocker):
+        """Should call on_slave_device_add with the slave's flattened attrs."""
+
+        slave = self.make_mock_slave(mocker, {"name": "s1", "attrs": {"uptime": 1}})
+        handler = ConcreteFilterEventHandler()
+        handler.on_slave_device_add = mocker.AsyncMock()
+        event = slaves_events.SlaveDeviceAdd(slave)
+        await event.init_params()
+
+        await handler.handle_event(event)
+
+        handler.on_slave_device_add.assert_called_once_with(event, slave, {"name": "s1", "uptime": 1})
+
+    async def test_slave_device_update_dispatched(self, mocker):
+        """Should call on_slave_device_update with the slave's old, new, changed, added and removed attrs."""
+
+        slave = self.make_mock_slave(mocker, {"name": "s1", "attrs": {"uptime": 2}})
+        handler = ConcreteFilterEventHandler()
+        handler._slave_attrs = {"s1": {"name": "s1", "uptime": 1}}
+        handler.on_slave_device_update = mocker.AsyncMock()
+        event = slaves_events.SlaveDeviceUpdate(slave)
+        await event.init_params()
+
+        await handler.handle_event(event)
+
+        handler.on_slave_device_update.assert_called_once_with(
+            event, slave, {"name": "s1", "uptime": 1}, {"name": "s1", "uptime": 2}, {"uptime": (1, 2)}, {}, {}
+        )
+
+    async def test_slave_device_remove_dispatched(self, mocker):
+        """Should call on_slave_device_remove with the slave's current flattened attrs."""
+
+        slave = self.make_mock_slave(mocker, {"name": "s1", "attrs": {"uptime": 1}})
+        handler = ConcreteFilterEventHandler()
+        handler.on_slave_device_remove = mocker.AsyncMock()
+        event = slaves_events.SlaveDeviceRemove(slave)
+
+        await handler.handle_event(event)
+
+        handler.on_slave_device_remove.assert_called_once_with(event, slave, {"name": "s1", "uptime": 1})
+
+    async def test_on_event_error_does_not_stop_dispatch(self, mock_num_port1, mocker):
+        """Should still call on_value_change when on_event fails, and raise neither error."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={}))
+        handler = ConcreteFilterEventHandler()
+        handler.on_event = mocker.AsyncMock(side_effect=Exception("on_event"))
+        handler.on_value_change = mocker.AsyncMock(side_effect=Exception("on_value_change"))
+
+        await handler.handle_event(core_events.ValueChange(9, 10, mock_num_port1))
+
+        handler.on_value_change.assert_called_once()
