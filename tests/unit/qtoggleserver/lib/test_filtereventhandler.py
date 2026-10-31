@@ -714,6 +714,23 @@ class TestFilterEventHandlerUpdateFromEvent(FilterEventHandlerTestBase):
         assert result == ((None, None), {"name": "b"}, {"name": "a"}, {"name": ("b", "a")}, {}, {})
         assert handler._device_attrs == {"name": "a"}
 
+    async def test_full_update_after_device_update_handled_meanwhile(self, mocker):
+        """Should compare a full update with the attrs tracked after its await, so that a device update handled
+        meanwhile isn't reported again."""
+
+        handler = ConcreteFilterEventHandler()
+        handler._device_attrs = {"name": "a"}
+
+        async def to_json() -> dict:
+            handler._device_attrs = {"name": "b"}  # a device update handled while the full update awaits
+            return {"name": "b"}
+
+        mocker.patch("qtoggleserver.core.device.attrs.to_json", new=to_json)
+
+        result = await handler._update_from_event(core_events.FullUpdate())
+
+        assert result == ((None, None), {"name": "b"}, {"name": "b"}, {}, {}, {})
+
     async def test_slave_device_add(self, mocker):
         """Should flatten a slave add's params into attrs, without changing them, and start tracking the attrs."""
 

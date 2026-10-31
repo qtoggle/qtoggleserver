@@ -220,12 +220,13 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 new_attrs = old_attrs = dict(old_attrs) or await port.get_attrs()
 
         elif isinstance(event, core_events.DeviceEvent):
-            old_attrs = self._device_attrs
             if isinstance(event, core_events.DeviceUpdate):
                 new_attrs = dict(event.get_params())
             else:
                 new_attrs = await event.get_attrs()
 
+            # Read only after awaiting, so that a device update handled meanwhile isn't reported again
+            old_attrs = self._device_attrs
             changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
             self._device_attrs = new_attrs
 
