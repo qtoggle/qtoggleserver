@@ -9,6 +9,7 @@ from qtoggleserver.core.expressions import exceptions as expression_exceptions
 from qtoggleserver.core.expressions.ports import PortValue, PortValueKind
 from qtoggleserver.lib.filter_event_handler import ANY_VALUE, FilterEventHandler
 from qtoggleserver.slaves import events as slaves_events
+from qtoggleserver.utils import expressions as expressions_utils
 
 
 class ConcreteFilterEventHandler(FilterEventHandler):
@@ -501,7 +502,8 @@ class TestFilterEventHandlerEventValues(FilterEventHandlerTestBase):
         await handler.handle_event(event)
 
         handler.on_port_update.assert_called_once()
-        new_attrs = handler.on_port_update.call_args.args[3]
+        assert handler.on_port_update.call_args.args[2] == 5
+        new_attrs = handler.on_port_update.call_args.args[4]
         assert new_attrs == {"display_name": "A"}
         assert event.get_params()["value"] == 5
         assert "definitions" in event.get_params()
@@ -569,7 +571,7 @@ class TestFilterEventHandlerEventValues(FilterEventHandlerTestBase):
         mock_num_port1.get_attrs.assert_not_called()
         assert handler._port_attrs == {}
         handler.on_port_remove.assert_called_once()
-        assert handler.on_port_remove.call_args.args[2] == {"display_name": "A"}
+        assert handler.on_port_remove.call_args.args[3] == {"display_name": "A"}
 
 
 class TestFilterEventHandlerUpdateFromEvent(FilterEventHandlerTestBase):
@@ -889,13 +891,26 @@ class TestFilterEventHandlerAcceptsEventKinds(FilterEventHandlerTestBase):
 
 
 class TestFilterEventHandlerBuildEvalContext:
-    async def test_other_port_events_keep_read_value(self, mock_num_port1, mocker):
-        """Should leave the port's current last read value in place for port events other than value changes."""
+    async def test_port_event_read_value(self, mock_num_port1, mocker):
+        """Should give a port event's port the value the event carries as its last read value."""
+
+        mock_num_port1.set_read_value(5)
+        event = core_events.PortUpdate(mock_num_port1)
+        await event.init_params()
+        mock_num_port1.set_read_value(7)  # read again before the event is handled
+        mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
+
+        context = await FilterEventHandler._build_eval_context(event)
+
+        assert context.port_read_values == {"nid1": 5}
+
+    async def test_other_events_keep_read_values(self, mock_num_port1, mocker):
+        """Should leave the ports' current last read values in place for events other than port events."""
 
         mock_num_port1.set_read_value(7)
         mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
 
-        context = await FilterEventHandler._build_eval_context(core_events.PortUpdate(mock_num_port1))
+        context = await FilterEventHandler._build_eval_context(core_events.FullUpdate())
 
         assert context.port_read_values == {"nid1": 7}
 
@@ -917,12 +932,13 @@ class TestFilterEventHandlerDispatch(FilterEventHandlerTestBase):
         assert handler._port_attrs == {"nid1": {"display_name": "A"}}
 
     async def test_port_update_args(self, mock_num_port1, mocker):
-        """Should pass a port update's old, new, changed, added and removed attrs to on_port_update."""
+        """Should pass a port update's value and its old, new, changed, added and removed attrs to on_port_update."""
 
         mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={"display_name": "A"}))
         handler = ConcreteFilterEventHandler()
         handler._port_attrs = {"nid1": {"display_name": "B", "unit": "C"}}
         handler.on_port_update = mocker.AsyncMock()
+        mock_num_port1.set_read_value(5)
         event = core_events.PortUpdate(mock_num_port1)
         await event.init_params()
 
@@ -931,6 +947,7 @@ class TestFilterEventHandlerDispatch(FilterEventHandlerTestBase):
         handler.on_port_update.assert_called_once_with(
             event,
             mock_num_port1,
+            5,
             {"display_name": "B", "unit": "C"},
             {"display_name": "A"},
             {"display_name": ("B", "A")},
@@ -990,3 +1007,49 @@ class TestFilterEventHandlerDispatch(FilterEventHandlerTestBase):
         await handler.handle_event(core_events.ValueChange(9, 10, mock_num_port1))
 
         handler.on_value_change.assert_called_once()
+
+
+class TestFilterEventHandlerSharedEvalContext(FilterEventHandlerTestBase):
+    async def test_one_context_per_event(self, mock_num_port1, mocker):
+        """Should build a single expression context per handled event, shared by all filter expressions, and drop it
+        once the event is handled."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={}))
+        mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
+        build_context = mocker.patch(
+            "qtoggleserver.utils.expressions.build_context", wraps=expressions_utils.build_context
+        )
+        handler = ConcreteFilterEventHandler(filter={"port_value": "$nid1", "expression": "EQ($nid1, 10)"})
+        handler.on_value_change = mocker.AsyncMock()
+
+        mock_num_port1.set_read_value(10)
+        await handler.handle_event(core_events.ValueChange(9, 10, mock_num_port1))
+
+        handler.on_value_change.assert_called_once()
+        build_context.assert_called_once()
+        assert handler._eval_contexts == {}
+
+    async def test_context_not_kept_outside_handling(self, mock_num_port1, mocker):
+        """Should not keep a context built for an event that isn't being handled."""
+
+        mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
+        handler = ConcreteFilterEventHandler()
+
+        await handler.get_eval_context(core_events.ValueChange(9, 10, mock_num_port1))
+
+        assert handler._eval_contexts == {}
+
+    async def test_port_hooks_get_event_value(self, mock_num_port1, mocker):
+        """Should pass the value a port add carries to on_port_add, even if the port has been read again since."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={}))
+        mock_num_port1.set_read_value(5)
+        event = core_events.PortAdd(mock_num_port1)
+        await event.init_params()
+        mock_num_port1.set_read_value(6)
+
+        handler = ConcreteFilterEventHandler(filter={"port_value": 5})
+        handler.on_port_add = mocker.AsyncMock()
+        await handler.handle_event(event)
+
+        handler.on_port_add.assert_called_once_with(event, mock_num_port1, 5, {})

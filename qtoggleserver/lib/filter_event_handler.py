@@ -51,6 +51,9 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         self._port_attrs: dict[str, Attributes] = {}
         self._slave_attrs: dict[str, Attributes] = {}
 
+        # Expression contexts of the events being handled, each built when first needed
+        self._eval_contexts: dict[core_events.Event, EvalContext | None] = {}
+
         super().__init__(name=name)
 
     def _prepare_filter(self) -> None:
@@ -157,6 +160,19 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
         return changed_attrs, added_attrs, removed_attrs
 
+    @staticmethod
+    def _get_value_pair(event: core_events.PortEvent) -> tuple[NullablePortValue, NullablePortValue]:
+        # Only value changes carry an old and a new value. Removals carry none, but removed ports are no longer read,
+        # so their last read value stands in for it.
+        if isinstance(event, core_events.ValueChange):
+            return event.old_value, event.new_value
+        if isinstance(event, (core_events.PortAdd, core_events.PortUpdate)):
+            value = event.get_params().get("value")
+        else:
+            value = event.get_port().get_last_read_value()
+
+        return value, value
+
     async def _update_from_event(
         self, event: core_events.Event
     ) -> tuple[
@@ -179,25 +195,22 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         if isinstance(event, core_events.PortEvent):
             port = event.get_port()
 
+            value_pair = self._get_value_pair(event)
             old_attrs = self._port_attrs.get(port.get_id(), {})
             if isinstance(event, (core_events.PortAdd, core_events.PortUpdate)):
                 new_attrs = dict(event.get_params())
-                value = new_attrs.pop("value", None)
+                new_attrs.pop("value", None)
                 new_attrs.pop("definitions", None)
-                value_pair = (value, value)
                 changed_attrs, added_attrs, removed_attrs = self._make_changed_added_removed(old_attrs, new_attrs)
                 self._port_attrs[port.get_id()] = new_attrs
             elif isinstance(event, core_events.PortRemove):
                 # Stop tracking before awaiting anything, so that a port add handled meanwhile isn't dropped
                 removed_attrs = self._port_attrs.pop(port.get_id(), {})
                 new_attrs = old_attrs = dict(old_attrs) or await port.get_attrs()
-                value = port.get_last_read_value()
-                value_pair = (value, value)
             elif isinstance(event, core_events.ValueChange):
                 # Value changes carry no attrs, so use the ones from the last port add or update, falling back to the
                 # current ones for a port the handler has seen neither for; either way, no attr has changed
                 new_attrs = old_attrs = dict(old_attrs) or await port.get_attrs()
-                value_pair = (event.old_value, event.new_value)
 
         elif isinstance(event, core_events.DeviceEvent):
             old_attrs = self._device_attrs
@@ -234,9 +247,20 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         # The same values that port expressions see, rather than the ones tracked from events
         context = await expressions_utils.build_context(int(time.time() * 1000))
 
-        # The read behind a value change may have been replaced by a newer one by now
-        if isinstance(event, core_events.ValueChange):
-            context.port_read_values[event.get_port().get_id()] = event.new_value
+        # The read behind a port event may have been replaced by a newer one by now
+        if isinstance(event, core_events.PortEvent):
+            context.port_read_values[event.get_port().get_id()] = FilterEventHandler._get_value_pair(event)[1]
+
+        return context
+
+    async def get_eval_context(self, event: core_events.Event) -> EvalContext:
+        """Return the expression context for an event, the same one throughout its handling."""
+
+        context = self._eval_contexts.get(event)
+        if context is None:
+            context = await self._build_eval_context(event)
+            if event in self._eval_contexts:
+                self._eval_contexts[event] = context
 
         return context
 
@@ -300,7 +324,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 if new_value not in self._filter_port_value:
                     return False
             elif isinstance(self._filter_port_value, core_expressions.Expression):  # an expression
-                eval_context = await self._build_eval_context(event)
+                eval_context = await self.get_eval_context(event)
                 try:
                     if new_value != await self._filter_port_value.eval(context=eval_context):
                         return False
@@ -368,7 +392,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             return False
 
         if self._filter_expression:
-            eval_context = await self._build_eval_context(event)
+            eval_context = await self.get_eval_context(event)
             try:
                 if not await self._filter_expression.eval(context=eval_context):
                     return False
@@ -379,6 +403,14 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         return True
 
     async def handle_event(self, event: core_events.Event) -> None:
+        # Share one expression context between the filter and the hooks, so they all see the same values
+        self._eval_contexts[event] = None
+        try:
+            await self._handle_event(event)
+        finally:
+            self._eval_contexts.pop(event, None)
+
+    async def _handle_event(self, event: core_events.Event) -> None:
         (value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs) = await self._update_from_event(
             event
         )
@@ -403,12 +435,19 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 await self.on_value_change(event, event.get_port(), old_value, new_value, new_attrs)
             elif isinstance(event, core_events.PortUpdate):
                 await self.on_port_update(
-                    event, event.get_port(), old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs
+                    event,
+                    event.get_port(),
+                    value_pair[1],
+                    old_attrs,
+                    new_attrs,
+                    changed_attrs,
+                    added_attrs,
+                    removed_attrs,
                 )
             elif isinstance(event, core_events.PortAdd):
-                await self.on_port_add(event, event.get_port(), new_attrs)
+                await self.on_port_add(event, event.get_port(), value_pair[1], new_attrs)
             elif isinstance(event, core_events.PortRemove):
-                await self.on_port_remove(event, event.get_port(), new_attrs)
+                await self.on_port_remove(event, event.get_port(), value_pair[1], new_attrs)
             elif isinstance(event, core_events.DeviceUpdate):
                 await self.on_device_update(event, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs)
             elif isinstance(event, core_events.FullUpdate):
@@ -441,6 +480,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         self,
         event: core_events.Event,
         port: core_ports.BasePort,
+        value: NullablePortValue,
         old_attrs: Attributes,
         new_attrs: Attributes,
         changed_attrs: dict[str, tuple[Attribute, Attribute]],
@@ -449,10 +489,14 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
     ) -> None:
         pass
 
-    async def on_port_add(self, event: core_events.Event, port: core_ports.BasePort, attrs: Attributes) -> None:
+    async def on_port_add(
+        self, event: core_events.Event, port: core_ports.BasePort, value: NullablePortValue, attrs: Attributes
+    ) -> None:
         pass
 
-    async def on_port_remove(self, event: core_events.Event, port: core_ports.BasePort, attrs: Attributes) -> None:
+    async def on_port_remove(
+        self, event: core_events.Event, port: core_ports.BasePort, value: NullablePortValue, attrs: Attributes
+    ) -> None:
         pass
 
     async def on_device_update(
