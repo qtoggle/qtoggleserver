@@ -626,14 +626,15 @@ class TestFilterEventHandlerUpdateFromEvent(FilterEventHandlerTestBase):
         mock_num_port1.get_attrs.assert_not_called()
 
     async def test_value_change_untracked(self, mock_num_port1, mocker):
-        """Should give a value change for an untracked port its current attrs, without tracking them."""
+        """Should give a value change for an untracked port its current attrs as both old and new attrs, without
+        tracking them."""
 
         mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={"display_name": "A"}))
         handler = ConcreteFilterEventHandler()
 
         result = await handler._update_from_event(core_events.ValueChange(9, 10, mock_num_port1))
 
-        assert result == ((9, 10), {}, {"display_name": "A"}, {}, {}, {})
+        assert result == ((9, 10), {"display_name": "A"}, {"display_name": "A"}, {}, {}, {})
         assert handler._port_attrs == {}
 
     async def test_port_remove(self, mock_num_port1, mocker):
@@ -651,7 +652,8 @@ class TestFilterEventHandlerUpdateFromEvent(FilterEventHandlerTestBase):
         mock_num_port1.get_attrs.assert_not_called()
 
     async def test_port_remove_untracked(self, mock_num_port1, mocker):
-        """Should give a removal of an untracked port its current attrs and nothing removed."""
+        """Should give a removal of an untracked port its current attrs as both old and new attrs, and nothing
+        removed."""
 
         mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={"display_name": "A"}))
         mock_num_port1.set_read_value(5)
@@ -659,7 +661,18 @@ class TestFilterEventHandlerUpdateFromEvent(FilterEventHandlerTestBase):
 
         result = await handler._update_from_event(core_events.PortRemove(mock_num_port1))
 
-        assert result == ((5, 5), {}, {"display_name": "A"}, {}, {}, {})
+        assert result == ((5, 5), {"display_name": "A"}, {"display_name": "A"}, {}, {}, {})
+
+    async def test_value_change_untracked_rejected_by_attr_transition(self, mock_num_port1, mocker):
+        """Should not let an attr transition filter accept a value change for an untracked port."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={"enabled": True}))
+        handler = ConcreteFilterEventHandler(filter={"port_enabled_transition": [ANY_VALUE, True]})
+        handler.on_value_change = mocker.AsyncMock()
+
+        await handler.handle_event(core_events.ValueChange(9, 10, mock_num_port1))
+
+        handler.on_value_change.assert_not_called()
 
     async def test_device_update(self, mocker):
         """Should compare a device update's attrs from its params with the tracked ones and track a copy of the new

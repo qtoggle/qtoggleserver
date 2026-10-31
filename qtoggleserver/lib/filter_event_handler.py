@@ -190,13 +190,13 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             elif isinstance(event, core_events.PortRemove):
                 # Stop tracking before awaiting anything, so that a port add handled meanwhile isn't dropped
                 removed_attrs = self._port_attrs.pop(port.get_id(), {})
-                new_attrs = dict(old_attrs) or await port.get_attrs()
+                new_attrs = old_attrs = dict(old_attrs) or await port.get_attrs()
                 value = port.get_last_read_value()
                 value_pair = (value, value)
             elif isinstance(event, core_events.ValueChange):
                 # Value changes carry no attrs, so use the ones from the last port add or update, falling back to the
-                # current ones for a port the handler has seen neither for
-                new_attrs = dict(old_attrs) or await port.get_attrs()
+                # current ones for a port the handler has seen neither for; either way, no attr has changed
+                new_attrs = old_attrs = dict(old_attrs) or await port.get_attrs()
                 value_pair = (event.old_value, event.new_value)
         elif isinstance(event, core_events.DeviceEvent):
             old_attrs = self._device_attrs
