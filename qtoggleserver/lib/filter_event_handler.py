@@ -53,7 +53,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
         self._filter_expression: core_expressions.Expression | None = None
 
-        # Maintain an internal "last" state for all objects, so we can detect changes in attributes and values
+        # Maintain an internal "last" state for all objects, so we can detect changes in attributes
         self._device_attrs: Attributes | dict[str, list[Attribute]] = {}
         self._port_attrs: dict[str, Attributes] = {}
         self._slave_attrs: dict[str, Attributes] = {}
