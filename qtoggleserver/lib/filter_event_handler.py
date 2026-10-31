@@ -1,4 +1,5 @@
 import abc
+import dataclasses
 import logging
 import time
 
@@ -19,6 +20,12 @@ ANY_VALUE = "any"
 AnyNullablePortValue = str | NullablePortValue
 
 logger = logging.getLogger(__package__)
+
+
+@dataclasses.dataclass
+class _HandledEvent:
+    attrs: Attributes = dataclasses.field(default_factory=dict)
+    eval_context: EvalContext | None = None
 
 
 class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
@@ -51,8 +58,8 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         self._port_attrs: dict[str, Attributes] = {}
         self._slave_attrs: dict[str, Attributes] = {}
 
-        # Expression contexts of the events being handled, each built when first needed
-        self._eval_contexts: dict[core_events.Event, EvalContext | None] = {}
+        # The events being handled, with what the filter and the hooks share about them
+        self._handled_events: dict[core_events.Event, _HandledEvent] = {}
 
         super().__init__(name=name)
 
@@ -243,26 +250,36 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         return value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs
 
     @staticmethod
-    async def _build_eval_context(event: core_events.Event) -> EvalContext:
+    async def _build_eval_context(event: core_events.Event, attrs: Attributes | None = None) -> EvalContext:
         # The same values that port expressions see, rather than the ones tracked from events
         context = await expressions_utils.build_context(int(time.time() * 1000))
 
-        # The read behind a port event may have been replaced by a newer one by now
         if isinstance(event, core_events.PortEvent):
-            context.port_read_values[event.get_port().get_id()] = FilterEventHandler._get_value_pair(event)[1]
+            port = event.get_port()
+            port_id = port.get_id()
+
+            # The read and attrs behind a port event may have been replaced by newer ones by now
+            context.port_read_values[port_id] = FilterEventHandler._get_value_pair(event)[1]
+            if attrs is not None:
+                context.port_attrs[port_id] = attrs
+
+            # A removed port is no longer part of the device, but its removal is still about it
+            context.port_values.setdefault(port_id, port.get_last_value())
+            context.port_written_values.setdefault(port_id, port.get_last_written_value())
 
         return context
 
     async def get_eval_context(self, event: core_events.Event) -> EvalContext:
         """Return the expression context for an event, the same one throughout its handling."""
 
-        context = self._eval_contexts.get(event)
-        if context is None:
-            context = await self._build_eval_context(event)
-            if event in self._eval_contexts:
-                self._eval_contexts[event] = context
+        handled = self._handled_events.get(event)
+        if handled is None:
+            return await self._build_eval_context(event)
 
-        return context
+        if handled.eval_context is None:
+            handled.eval_context = await self._build_eval_context(event, handled.attrs)
+
+        return handled.eval_context
 
     @staticmethod
     def _accepts_attrs(
@@ -404,16 +421,17 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
     async def handle_event(self, event: core_events.Event) -> None:
         # Share one expression context between the filter and the hooks, so they all see the same values
-        self._eval_contexts[event] = None
+        self._handled_events[event] = _HandledEvent()
         try:
             await self._handle_event(event)
         finally:
-            self._eval_contexts.pop(event, None)
+            self._handled_events.pop(event, None)
 
     async def _handle_event(self, event: core_events.Event) -> None:
         (value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs) = await self._update_from_event(
             event
         )
+        self._handled_events[event].attrs = new_attrs
 
         accepted = await self.accepts(
             event, value_pair, old_attrs, new_attrs, changed_attrs, added_attrs, removed_attrs

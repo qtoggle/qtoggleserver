@@ -84,3 +84,23 @@ class TestTemplateNotificationsCommonContext:
 
         context = handler.push_template_message.call_args.args[1]
         assert (context["old_value"], context["new_value"]) == (9, 10)
+
+    async def test_port_remove_context(self, mock_num_port1, mocker):
+        """Should keep a removed port in the template context of its removal, with the attrs its removal reports."""
+
+        mocker.patch.object(mock_num_port1, "get_attrs", new=mocker.AsyncMock(return_value={"display_name": "B"}))
+        mocker.patch("qtoggleserver.core.ports.get_all", return_value=[])
+        mocker.patch("qtoggleserver.lib.template_notifications.core_main.is_ready", return_value=True)
+        mock_num_port1.set_read_value(5)
+
+        handler = ConcreteTemplateNotificationsHandler(skip_startup=False)
+        handler._port_attrs = {"nid1": {"display_name": "A"}}
+        mocker.patch.object(handler, "push_template_message", new=mocker.AsyncMock())
+        await handler.handle_event(core_events.PortRemove(mock_num_port1))
+
+        context = handler.push_template_message.call_args.args[1]
+        assert context["value"] == 5
+        assert context["attrs"] == {"display_name": "A"}
+        assert context["port_attrs"] == {"nid1": {"display_name": "A"}}
+        assert context["port_read_values"] == {"nid1": 5}
+        assert context["port_values"] == {"nid1": 5}
