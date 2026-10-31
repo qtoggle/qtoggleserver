@@ -871,22 +871,52 @@ class TestFilterEventHandlerMakeChangedAddedRemoved:
 
 
 class TestFilterEventHandlerAcceptsEventKinds(FilterEventHandlerTestBase):
-    async def test_port_filters_ignore_other_events(self):
-        """Should apply port filters only to port events."""
+    async def test_port_filters_reject_other_events(self, mock_num_port1):
+        """Should accept only port events when filtering on port values or attrs."""
 
-        handler = self.make_dummy_handler({"port_value": 5, "port_display_name": "p"})
+        for filter_dict in ({"port_value": 5}, {"port_value_transition": [4, 5]}, {"port_display_name": "p"}):
+            handler = self.make_dummy_handler(filter_dict)
 
-        assert await handler.accepts(core_events.DeviceUpdate(), (None, None), {}, {}, {}, {}, {}) is True
-        assert await handler.accepts(self.make_dummy_event(), (None, None), {}, {}, {}, {}, {}) is True
+            assert await handler.accepts(core_events.DeviceUpdate(), (None, None), {}, {}, {}, {}, {}) is False
+            assert await handler.accepts(self.make_dummy_event(), (None, None), {}, {}, {}, {}, {}) is False
 
-    async def test_device_filters_ignore_other_events(self, mock_num_port1):
-        """Should apply device filters only to device events."""
+        handler = self.make_dummy_handler({"port_value": 5})
+        event = core_events.ValueChange(4, 5, mock_num_port1)
+        assert await handler.accepts(event, (4, 5), {}, {}, {}, {}, {}) is True
+
+    async def test_device_filters_reject_other_events(self, mock_num_port1):
+        """Should accept only device events when filtering on device attrs."""
 
         handler = self.make_dummy_handler({"device_name": "d"})
         event = core_events.ValueChange(None, 5, mock_num_port1)
 
+        assert await handler.accepts(event, (None, 5), {}, {}, {}, {}, {}) is False
+        assert await handler.accepts(core_events.DeviceUpdate(), (None, None), {}, {"name": "d"}, {}, {}, {}) is True
+
+    async def test_slave_filters_reject_other_events(self):
+        """Should accept only slave device events when filtering on slave attrs."""
+
+        handler = self.make_dummy_handler({"slave_name": "s1"})
+
+        assert await handler.accepts(core_events.DeviceUpdate(), (None, None), {}, {"name": "s1"}, {}, {}, {}) is False
+
+    async def test_filters_of_two_kinds_match_nothing(self, mock_num_port1):
+        """Should accept no event when filtering on both port and device attrs."""
+
+        handler = self.make_dummy_handler({"port_display_name": "p", "device_name": "d"})
+        event = core_events.PortUpdate(mock_num_port1)
+
+        assert await handler.accepts(event, (None, None), {}, {"display_name": "p"}, {}, {}, {}) is False
+        assert await handler.accepts(core_events.DeviceUpdate(), (None, None), {}, {"name": "d"}, {}, {}, {}) is False
+
+    async def test_other_filters_accept_all_kinds(self, mock_num_port1):
+        """Should not restrict event kinds when filtering only on event types or expressions."""
+
+        handler = self.make_dummy_handler({"type": ["device-update", "value-change"], "expression": "1"})
+        event = core_events.ValueChange(None, 5, mock_num_port1)
+
         assert await handler.accepts(event, (None, 5), {}, {}, {}, {}, {}) is True
-        assert await handler.accepts(core_events.DeviceUpdate(), (None, None), {}, {"name": "x"}, {}, {}, {}) is False
+        assert await handler.accepts(core_events.DeviceUpdate(), (None, None), {}, {}, {}, {}, {}) is True
 
     async def test_slave_filters_apply_to_slave_events(self, mocker):
         """Should apply slave filters to slave events."""

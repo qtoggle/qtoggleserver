@@ -52,6 +52,7 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         self._filter_slave_attr_names: set[str] = set()
 
         self._filter_expression: core_expressions.Expression | None = None
+        self._filter_event_classes: set[type[core_events.Event]] = set()
 
         # Maintain an internal "last" state for all objects, so we can detect changes in attributes
         self._device_attrs: Attributes | dict[str, list[Attribute]] = {}
@@ -126,6 +127,18 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
         self._filter_slave_attr_names.update(self._filter_slave_attrs.keys())
         self._filter_slave_attr_names.update(self._filter_slave_attr_transitions.keys())
+
+        # Port, device and slave filters only accept events about their kind of object
+        if (
+            self._filter_port_attr_names
+            or self._filter_port_value is not None
+            or self._filter_port_value_transition is not None
+        ):
+            self._filter_event_classes.add(core_events.PortEvent)
+        if self._filter_device_attr_names:
+            self._filter_event_classes.add(core_events.DeviceEvent)
+        if self._filter_slave_attr_names:
+            self._filter_event_classes.add(slaves_events.SlaveDeviceEvent)
 
         filter_sexpression = self._filter.get("expression")
         if isinstance(filter_sexpression, str):
@@ -395,6 +408,9 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
             self._prepare_filter()
 
         if self._filter_event_types and event.get_type() not in self._filter_event_types:
+            return False
+
+        if not all(isinstance(event, cls) for cls in self._filter_event_classes):
             return False
 
         if isinstance(event, core_events.DeviceEvent):
