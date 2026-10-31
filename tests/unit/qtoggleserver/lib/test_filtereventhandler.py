@@ -4,7 +4,7 @@ import pytest
 
 from qtoggleserver.core import events as core_events
 from qtoggleserver.core import expressions as core_expressions
-from qtoggleserver.core.expressions import Role
+from qtoggleserver.core.expressions import EvalContext, Role
 from qtoggleserver.core.expressions import exceptions as expression_exceptions
 from qtoggleserver.core.expressions.ports import PortValue, PortValueKind
 from qtoggleserver.lib.filter_event_handler import ANY_VALUE, FilterEventHandler
@@ -1097,3 +1097,47 @@ class TestFilterEventHandlerSharedEvalContext(FilterEventHandlerTestBase):
         await handler.handle_event(event)
 
         handler.on_port_update.assert_called_once()
+
+
+class TestFilterEventHandlerSensitiveAttrs(FilterEventHandlerTestBase):
+    async def test_device_update(self, mocker):
+        """Should drop the Wi-Fi key and password hashes from a device update's attrs, keeping the rest."""
+
+        attrs = {"name": "d", "wifi_key": "k", "admin_password_hash": "h", "admin_password": "set"}
+        mocker.patch("qtoggleserver.core.device.attrs.to_json", new=mocker.AsyncMock(return_value=attrs))
+        event = core_events.DeviceUpdate()
+        await event.init_params()
+
+        handler = ConcreteFilterEventHandler()
+        result = await handler._update_from_event(event)
+
+        assert result[2] == {"name": "d", "admin_password": "set"}
+        assert handler._device_attrs == {"name": "d", "admin_password": "set"}
+
+    async def test_slave_device_update(self, mocker):
+        """Should drop the slave's admin password hash and its own Wi-Fi key from its attrs."""
+
+        slave = self.make_mock_slave(
+            mocker, {"name": "s1", "admin_password_hash": "h", "attrs": {"uptime": 1, "wifi_key": "k"}}
+        )
+        event = slaves_events.SlaveDeviceUpdate(slave)
+        await event.init_params()
+
+        handler = ConcreteFilterEventHandler()
+        result = await handler._update_from_event(event)
+
+        assert result[2] == {"name": "s1", "uptime": 1}
+        assert handler._slave_attrs == {"s1": {"name": "s1", "uptime": 1}}
+
+    async def test_eval_context(self, mocker):
+        """Should drop the device's and the slaves' Wi-Fi keys and password hashes from the expression context."""
+
+        device_attrs = {"name": "d", "wifi_key": "k", "hub:uptime": 1, "hub:wifi_key": "k", "hub:x_password_hash": "h"}
+        mocker.patch(
+            "qtoggleserver.utils.expressions.build_context",
+            new=mocker.AsyncMock(return_value=EvalContext(device_attrs=device_attrs)),
+        )
+
+        context = await FilterEventHandler._build_eval_context(core_events.FullUpdate())
+
+        assert context.device_attrs == {"name": "d", "hub:uptime": 1}
