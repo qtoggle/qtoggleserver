@@ -27,10 +27,8 @@ class FilterEventHandlerTestBase:
 
     @staticmethod
     def make_dummy_handler(filter_dict=None) -> ConcreteFilterEventHandler:
-        """Return a filter-prepared handler with the given filter dict."""
-        handler = ConcreteFilterEventHandler(filter=filter_dict or {})
-        handler._prepare_filter()
-        return handler
+        """Return a handler with the given filter dict."""
+        return ConcreteFilterEventHandler(filter=filter_dict or {})
 
     @staticmethod
     def make_mock_slave(mocker, json: dict) -> mock.Mock:
@@ -287,7 +285,6 @@ class TestFilterEventHandlerAccepts(FilterEventHandlerTestBase):
 
         mocker.patch("qtoggleserver.core.ports.get_all", return_value=[mock_num_port1])
         handler = ConcreteFilterEventHandler(filter={"expression": "GT($nid1, 50)"})
-        handler._prepare_filter()
         mocker.patch.object(
             handler._filter_expression,
             "eval",
@@ -296,25 +293,26 @@ class TestFilterEventHandlerAccepts(FilterEventHandlerTestBase):
         event = core_events.ValueChange(None, 60, mock_num_port1)
         assert await handler.accepts(event, (None, 60), {}, {}, {}, {}, {}) is False
 
-    async def test_invalid_expression(self, mock_num_port1):
-        """Should raise ExpressionParseError when the filter expression is syntactically invalid."""
-
-        handler = ConcreteFilterEventHandler(filter={"expression": "NOT_A_VALID_EXPRESSION("})
-        event = core_events.ValueChange(None, 42, mock_num_port1)
+    def test_invalid_expression(self):
+        """Should fail to create the handler when the filter expression is syntactically invalid."""
 
         with pytest.raises(expression_exceptions.ExpressionParseError):
-            await handler.accepts(event, (None, 42), {}, {}, {}, {}, {})
+            ConcreteFilterEventHandler(filter={"expression": "NOT_A_VALID_EXPRESSION("})
 
-    async def test_filter_prepared_lazily(self, mock_num_port1):
-        """Should prepare the filter on the first call to accepts() without an explicit _prepare_filter() call."""
+    def test_filter_prepared_at_init(self):
+        """Should prepare the filter when the handler is created."""
 
         handler = ConcreteFilterEventHandler(filter={"type": "value-change"})
-        assert not handler._filter_prepared
 
-        event = core_events.ValueChange(None, 42, mock_num_port1)
-        await handler.accepts(event, (None, 42), {}, {}, {}, {}, {})
+        assert handler._filter_event_types == {"value-change"}
 
-        assert handler._filter_prepared
+    def test_invalid_transitions(self):
+        """Should fail to create the handler when a transition isn't a pair."""
+
+        for transition in ([1], [1, 2, 3], 5, "any"):
+            for name in ("port_value_transition", "port_enabled_transition", "device_name_transition"):
+                with pytest.raises(ValueError, match=f"invalid {name}"):
+                    ConcreteFilterEventHandler(filter={name: transition})
 
 
 class TestFilterEventHandlerHandleEvent(FilterEventHandlerTestBase):

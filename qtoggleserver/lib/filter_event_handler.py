@@ -44,7 +44,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
     def __init__(self, *, filter: dict | None = None, name: str | None = None) -> None:
         self._filter: dict = filter or {}
-        self._filter_prepared: bool = False
 
         self._filter_event_types: set[str] | None = None
 
@@ -75,7 +74,15 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
         super().__init__(name=name)
 
+        # Prepared here, so that a broken filter fails the handler once at load time, rather than every event
+        self._prepare_filter()
+
     def _prepare_filter(self) -> None:
+        for name, transition in self._filter.items():
+            if name.endswith("_transition") and not (isinstance(transition, (list, tuple)) and len(transition) == 2):
+                self.error("%s must be a [<from>, <to>] pair, not %s", name, transition)
+                raise ValueError(f"invalid {name}")
+
         event_types = self._filter.get("type")
         if event_types:
             if not isinstance(event_types, (list, tuple)):
@@ -163,7 +170,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
 
                 raise
 
-        self._filter_prepared = True
         self.debug("filter prepared")
 
     @staticmethod
@@ -416,9 +422,6 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
         added_attrs: Attributes,
         removed_attrs: Attributes,
     ) -> bool:
-        if not self._filter_prepared:
-            self._prepare_filter()
-
         if self._filter_event_types and event.get_type() not in self._filter_event_types:
             return False
 
