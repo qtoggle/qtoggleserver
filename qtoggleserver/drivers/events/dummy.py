@@ -28,6 +28,7 @@ class DummyEventHandler(filter_event_handler.FilterEventHandler):
         self,
         event: core_events.Event,
         port: core_ports.BasePort,
+        value: NullablePortValue,
         old_attrs: Attributes,
         new_attrs: Attributes,
         changed_attrs: dict[str, tuple[Attribute, Attribute]],
@@ -36,10 +37,14 @@ class DummyEventHandler(filter_event_handler.FilterEventHandler):
     ) -> None:
         logger.debug("handling port-update for %s", port)
 
-    async def on_port_add(self, event: core_events.Event, port: core_ports.BasePort, attrs: Attributes) -> None:
+    async def on_port_add(
+        self, event: core_events.Event, port: core_ports.BasePort, value: NullablePortValue, attrs: Attributes
+    ) -> None:
         logger.debug("handling port-add for %s", port)
 
-    async def on_port_remove(self, event: core_events.Event, port: core_ports.BasePort, attrs: Attributes) -> None:
+    async def on_port_remove(
+        self, event: core_events.Event, port: core_ports.BasePort, value: NullablePortValue, attrs: Attributes
+    ) -> None:
         logger.debug("handling port-remove for %s", port)
 
     async def on_device_update(
