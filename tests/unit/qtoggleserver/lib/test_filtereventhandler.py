@@ -1188,3 +1188,48 @@ class TestFilterEventHandlerSensitiveAttrs(FilterEventHandlerTestBase):
         context = await FilterEventHandler._build_eval_context(core_events.FullUpdate())
 
         assert context.device_attrs == {"name": "d", "hub:uptime": 1}
+
+
+class TestFilterEventHandlerNullFilterValues(FilterEventHandlerTestBase):
+    async def test_port_attr(self, mock_num_port1):
+        """Should accept only ports without the attr when a port attr filter is null."""
+
+        handler = self.make_dummy_handler({"port_unit": None})
+        event = core_events.PortUpdate(mock_num_port1)
+
+        assert await handler.accepts_port(event, (None, None), {}, {"display_name": "p"}) is True
+        assert await handler.accepts_port(event, (None, None), {}, {"unit": "C"}) is False
+
+    async def test_attr_list(self):
+        """Should accept a missing attr when a filter's list of values holds null."""
+
+        handler = self.make_dummy_handler({"device_unit": [None, "C"]})
+
+        assert await handler.accepts_device(self.make_dummy_event(), {}, {}) is True
+        assert await handler.accepts_device(self.make_dummy_event(), {}, {"unit": "C"}) is True
+        assert await handler.accepts_device(self.make_dummy_event(), {}, {"unit": "F"}) is False
+
+    async def test_device_and_slave_attrs(self):
+        """Should accept only a device or slave without the attr when its attr filter is null."""
+
+        for filter_name, accepts in (("device_x", "accepts_device"), ("slave_x", "accepts_slave")):
+            handler = self.make_dummy_handler({filter_name: None})
+
+            assert await getattr(handler, accepts)(self.make_dummy_event(), {}, {}) is True
+            assert await getattr(handler, accepts)(self.make_dummy_event(), {}, {"x": 1}) is False
+
+    async def test_port_value(self):
+        """Should accept only unavailable values when port_value is null."""
+
+        handler = self.make_dummy_handler({"port_value": None})
+
+        assert await handler.accepts_port_value(self.make_dummy_event(), (5, None)) is True
+        assert await handler.accepts_port_value(self.make_dummy_event(), (None, 5)) is False
+
+    async def test_missing_keys_still_ignored(self):
+        """Should not filter on attrs or values the filter doesn't name."""
+
+        handler = self.make_dummy_handler({})
+
+        assert await handler.accepts_port_value(self.make_dummy_event(), (None, 5)) is True
+        assert await handler.accepts_device(self.make_dummy_event(), {}, {"unit": "C"}) is True

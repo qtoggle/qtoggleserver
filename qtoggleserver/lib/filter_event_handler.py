@@ -82,8 +82,9 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 event_types = (event_types,)
             self._filter_event_types = set(event_types)
 
-        port_value = self._filter.get("port_value")
-        if port_value is not None:
+        # A null port_value is a filter too: it matches an unavailable value
+        if "port_value" in self._filter:
+            port_value = self._filter["port_value"]
             if isinstance(port_value, str):  # an expression
                 try:
                     self.debug('using value expression "%s"', port_value)
@@ -329,8 +330,9 @@ class FilterEventHandler(core_events.Handler, metaclass=abc.ABCMeta):
                 ):
                     return False
 
-            filter_value = filter_attrs.get(name)
-            if filter_value is not None:
+            # A null filter value is a filter too: it matches a missing attr
+            if name in filter_attrs:
+                filter_value = filter_attrs[name]
                 if isinstance(filter_value, (list, tuple)):  # a list of accepted values
                     if new_value not in filter_value:
                         return False
