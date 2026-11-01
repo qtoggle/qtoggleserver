@@ -6,6 +6,8 @@ from qtoggleserver.core.expressions.exceptions import (
     OfflinePort,
     PortAttrUnavailable,
     PortValueUnavailable,
+    TransformNotSupported,
+    UnexpectedCharacter,
     UnknownPortId,
 )
 from qtoggleserver.core.expressions.ports import (
@@ -17,6 +19,7 @@ from qtoggleserver.core.expressions.ports import (
     SelfPortRef,
     SelfPortValue,
 )
+from qtoggleserver.utils import expressions as expressions_utils
 
 
 class TestPortValue:
@@ -180,6 +183,64 @@ class TestPortValue:
         e = PortValue("nid1", prefix="$", role=Role.TRANSFORM_READ)
         context = EvalContext(port_values={"nid1": 16})
         assert await e._eval(context) == 16
+
+    @pytest.mark.parametrize("suffix, kind", [("?", PortValueKind.LAST_READ), ("!", PortValueKind.LAST_WRITTEN)])
+    def test_parse_kind(self, mock_num_port1, suffix, kind):
+        """Should parse `$port_id?` and `$port_id!` into port values of their kind, with their own dep."""
+
+        e = parse("nid1", f"ADD($nid2{suffix}, 1)", role=Role.VALUE)
+        port_value = e.args[0]
+        assert isinstance(port_value, PortValue)
+        assert port_value.kind is kind
+        assert str(e) == f"ADD($nid2{suffix}, 1)"
+        assert e.get_deps() == {f"$nid2{suffix}"}
+
+    @pytest.mark.parametrize("suffix, kind", [("?", PortValueKind.LAST_READ), ("!", PortValueKind.LAST_WRITTEN)])
+    def test_parse_self_kind(self, mock_num_port1, suffix, kind):
+        """Should parse `$?` and `$!` into self port values of their kind, with no deps."""
+
+        e = parse("nid1", f"${suffix}", role=Role.VALUE)
+        assert isinstance(e, SelfPortValue)
+        assert e.port_id == "nid1"
+        assert e.kind is kind
+        assert str(e) == f"${suffix}"
+        assert e.get_deps() == set()
+
+    @pytest.mark.parametrize("sexpression", ["$nid2??", "$nid2?!", "$nid2?x", "@nid2?", "$nid2:enabled?", "$??"])
+    def test_parse_kind_invalid(self, mock_num_port1, sexpression):
+        """Should reject a suffix anywhere but at the end of a port value, or on references and attrs."""
+
+        with pytest.raises(UnexpectedCharacter):
+            parse("nid1", sexpression, role=Role.VALUE)
+
+    @pytest.mark.parametrize("role", [Role.TRANSFORM_READ, Role.TRANSFORM_WRITE])
+    @pytest.mark.parametrize("sexpression", ["$?", "$!", "MUL($?, 2)", "$nid1?"])
+    def test_parse_kind_transform(self, mock_num_port1, role, sexpression):
+        """Should reject read and written values in transforms, which allow only a plain `$`."""
+
+        with pytest.raises(TransformNotSupported):
+            parse("nid1", sexpression, role=role)
+
+    async def test_eval_parsed_kinds(self, mock_num_port1, mock_num_port2):
+        """Should give each parsed form its own value of the port."""
+
+        context = EvalContext(
+            port_values={"nid2": 9}, port_read_values={"nid2": 5}, port_written_values={"nid2": 7}, port_attrs={}
+        )
+
+        assert await parse("nid1", "$nid2", role=Role.VALUE).eval(context) == 9
+        assert await parse("nid1", "$nid2?", role=Role.VALUE).eval(context) == 5
+        assert await parse("nid1", "$nid2!", role=Role.VALUE).eval(context) == 7
+
+    async def test_eval_read_value_while_write_pending(self, mock_num_port1, mock_num_port2, mocker):
+        """Should give the read value for `$port_id?` and the pending value for `$port_id` while a write is pending."""
+
+        mock_num_port2.set_read_value(5)
+        mocker.patch.object(mock_num_port2, "get_pending_value", return_value=9)
+        context = await expressions_utils.build_context(0)
+
+        assert await parse("nid1", "$nid2?", role=Role.VALUE).eval(context) == 5
+        assert await parse("nid1", "$nid2", role=Role.VALUE).eval(context) == 9
 
 
 class TestPortRef:

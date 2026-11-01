@@ -178,6 +178,7 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
         # Trigger value-change events; save ports; flag port deps as changed
         for port, (old_value, new_value) in port_changed_values.items():
             add_dep_change(f"${port.get_id()}")
+            add_dep_change(f"${port.get_id()}?")
 
             if not await port.is_internal():
                 await port.trigger_value_change(old_value, new_value)
@@ -264,6 +265,13 @@ def add_dep_change(dep: str) -> None:
     """Flag an expression dependency, such as `$port_id` or `#:`, as changed, for the next expression evaluation."""
 
     _pending_dep_changes.add(dep)
+
+
+def add_value_dep_changes(port_id: str) -> None:
+    """Flag all of a port's value deps as changed, such as when its value becomes available or unavailable."""
+
+    for suffix in ("", "?", "!"):
+        add_dep_change(f"${port_id}{suffix}")
 
 
 def resume() -> None:

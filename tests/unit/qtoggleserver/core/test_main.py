@@ -743,6 +743,31 @@ class TestValueDepChanges:
         mock_num_port1.eval_and_push_write.assert_called_once()
         assert core_main._pending_dep_changes == set()
 
+    async def test_read_change_flags_read_value_deps(
+        self, freezer, mocker, mock_num_port1, mock_num_port2, mock_bool_port1, dummy_utc_datetime
+    ):
+        """Should evaluate expressions depending on a changed port's read value, but not on its written value."""
+
+        freezer.move_to(dummy_utc_datetime)
+        mock_num_port1.set_expression("MUL($nid2?, 2)")
+        mock_bool_port1.set_expression("$nid2!")
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
+        mocker.patch.object(mock_bool_port1, "eval_and_push_write")
+        mock_num_port2.set_read_value(10)
+        mock_num_port2.set_next_value(20)
+
+        await read_ports(ports_to_read=[mock_num_port2])
+
+        mock_num_port1.eval_and_push_write.assert_called_once()
+        mock_bool_port1.eval_and_push_write.assert_not_called()
+
+    def test_add_value_dep_changes(self):
+        """Should flag all forms of a port's value as changed."""
+
+        core_main.add_value_dep_changes("nid1")
+
+        assert core_main._pending_dep_changes == {"$nid1", "$nid1?", "$nid1!"}
+
 
 class TestPauseResume:
     @pytest.fixture(autouse=True)
@@ -832,7 +857,7 @@ class TestAttrChangeHandler:
         event = core_events.PortUpdate(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
-        assert core_main._pending_dep_changes == {"$nid1:", "$nid1"}
+        assert core_main._pending_dep_changes == {"$nid1:", "$nid1", "$nid1?", "$nid1!"}
 
     async def test_port_add_adds_attr_dep(self, mock_num_port1):
         """PortAdd event should add `$port_id:` (and `$port_id`, since the mock port is already enabled) to
@@ -841,7 +866,7 @@ class TestAttrChangeHandler:
         event = core_events.PortAdd(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
-        assert core_main._pending_dep_changes == {"$nid1:", "$nid1"}
+        assert core_main._pending_dep_changes == {"$nid1:", "$nid1", "$nid1?", "$nid1!"}
 
     async def test_port_add_while_disabled_does_not_add_value_dep(self, mocker, mock_num_port1):
         """PortAdd should not add `$port_id` when the port is added while already disabled — a newly added disabled
@@ -862,7 +887,7 @@ class TestAttrChangeHandler:
         add_event = core_events.PortAdd(mock_num_port1)
         await add_event.init_params()
         await core_main._attr_change_handler.handle_event(add_event)
-        assert core_main._pending_dep_changes == {"$nid1:", "$nid1"}
+        assert core_main._pending_dep_changes == {"$nid1:", "$nid1", "$nid1?", "$nid1!"}
         core_main._pending_dep_changes.clear()
 
         update_event = core_events.PortUpdate(mock_num_port1)
@@ -892,14 +917,14 @@ class TestAttrChangeHandler:
         event = core_events.PortUpdate(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
-        assert core_main._pending_dep_changes == {"$nid1:", "$nid1"}  # rising edge
+        assert core_main._pending_dep_changes == {"$nid1:", "$nid1", "$nid1?", "$nid1!"}  # rising edge
         core_main._pending_dep_changes.clear()
 
         mock_num_port1.to_json.return_value = {"enabled": False}
         event = core_events.PortUpdate(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
-        assert core_main._pending_dep_changes == {"$nid1:", "$nid1"}  # falling edge
+        assert core_main._pending_dep_changes == {"$nid1:", "$nid1", "$nid1?", "$nid1!"}  # falling edge
 
     async def test_enabled_steady_state_does_not_repeat(self, mocker, mock_num_port1):
         """`$port_id` should only be added once while `enabled` stays `true` across events."""
@@ -941,21 +966,31 @@ class TestAttrChangeHandler:
         event = core_events.PortUpdate(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
-        assert core_main._pending_dep_changes == {"$nid1:", "$nid1"}  # from the `enabled` transition
+        assert core_main._pending_dep_changes == {
+            "$nid1:",
+            "$nid1",
+            "$nid1?",
+            "$nid1!",
+        }  # from the `enabled` transition
         core_main._pending_dep_changes.clear()
 
         mock_num_port1.to_json.return_value = {"enabled": True, "online": True}
         event = core_events.PortUpdate(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
-        assert core_main._pending_dep_changes == {"$nid1:", "$nid1"}  # from the `online` transition
+        assert core_main._pending_dep_changes == {"$nid1:", "$nid1", "$nid1?", "$nid1!"}  # from the `online` transition
         core_main._pending_dep_changes.clear()
 
         mock_num_port1.to_json.return_value = {"enabled": True, "online": False}
         event = core_events.PortUpdate(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
-        assert core_main._pending_dep_changes == {"$nid1:", "$nid1"}  # from the `online` falling edge
+        assert core_main._pending_dep_changes == {
+            "$nid1:",
+            "$nid1",
+            "$nid1?",
+            "$nid1!",
+        }  # from the `online` falling edge
 
     async def test_enabled_and_online_same_event_adds_dep_once(self, mocker, mock_num_port1):
         """`$port_id` should be added only once even if both `enabled` and `online` newly become `true`."""
@@ -969,7 +1004,7 @@ class TestAttrChangeHandler:
         event = core_events.PortUpdate(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
-        assert core_main._pending_dep_changes == {"$nid1:", "$nid1"}
+        assert core_main._pending_dep_changes == {"$nid1:", "$nid1", "$nid1?", "$nid1!"}
 
     async def test_enabled_and_online_same_event_removes_dep_once(self, mocker, mock_num_port1):
         """`$port_id` should be added only once even if both `enabled` and `online` newly become `false`."""
@@ -989,7 +1024,7 @@ class TestAttrChangeHandler:
         event = core_events.PortUpdate(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
-        assert core_main._pending_dep_changes == {"$nid1:", "$nid1"}
+        assert core_main._pending_dep_changes == {"$nid1:", "$nid1", "$nid1?", "$nid1!"}
 
     async def test_port_remove_while_available_adds_value_dep(self, mocker, mock_num_port1):
         """PortRemove should add `$port_id` too when the port was available right before being removed, since
@@ -1004,7 +1039,7 @@ class TestAttrChangeHandler:
         event = core_events.PortRemove(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
-        assert core_main._pending_dep_changes == {"$nid1:", "$nid1"}
+        assert core_main._pending_dep_changes == {"$nid1:", "$nid1", "$nid1?", "$nid1!"}
 
     async def test_port_remove_while_unavailable_does_not_add_value_dep(self, mocker, mock_num_port1):
         """PortRemove should not add `$port_id` when the port was already unavailable before being removed."""
@@ -1037,7 +1072,7 @@ class TestAttrChangeHandler:
         event = core_events.PortAdd(mock_num_port1)
         await event.init_params()
         await core_main._attr_change_handler.handle_event(event)
-        assert core_main._pending_dep_changes == {"$nid1:", "$nid1"}
+        assert core_main._pending_dep_changes == {"$nid1:", "$nid1", "$nid1?", "$nid1!"}
 
     async def test_device_update_adds_device_dep(self):
         """DeviceUpdate event should add `#:` to the pending dep changes."""
@@ -1066,7 +1101,16 @@ class TestAttrChangeHandler:
         await event2.init_params()
         await core_main._attr_change_handler.handle_event(event2)
 
-        assert core_main._pending_dep_changes == {"$nid1:", "$nid1", "$nid2:", "$nid2"}
+        assert core_main._pending_dep_changes == {
+            "$nid1:",
+            "$nid1",
+            "$nid1?",
+            "$nid1!",
+            "$nid2:",
+            "$nid2",
+            "$nid2?",
+            "$nid2!",
+        }
 
     async def test_port_and_device_events_accumulate(self, mock_num_port1):
         """Port and device events should both accumulate into the pending dep changes."""
@@ -1079,7 +1123,7 @@ class TestAttrChangeHandler:
         await device_event.init_params()
         await core_main._attr_change_handler.handle_event(device_event)
 
-        assert core_main._pending_dep_changes == {"$nid1:", "$nid1", "#:"}
+        assert core_main._pending_dep_changes == {"$nid1:", "$nid1", "$nid1?", "$nid1!", "#:"}
 
     async def test_read_ports_evaluates_flagged_attr_dep(
         self, freezer, mocker, mock_num_port1, mock_num_port2, dummy_utc_datetime

@@ -6,7 +6,7 @@ from unittest.mock import call
 import pytest
 
 from qtoggleserver.conf import settings
-from qtoggleserver.core import expressions
+from qtoggleserver.core import expressions, main
 from qtoggleserver.core.expressions import EvalContext
 from qtoggleserver.core.expressions.exceptions import ValueUnavailable
 from qtoggleserver.core.ports import PortDisabled, PortWriteError, WriteRequest
@@ -847,6 +847,46 @@ class TestPortWriteOnlyChangedResults:
         await mock_num_port2.from_persisted(await port.to_persisted())
 
         assert mock_num_port2.get_expression().update_result(5) is True  # no previous result to compare with
+
+
+class TestPortWrittenValueDeps:
+    @pytest.fixture(autouse=True)
+    def reset_pending(self):
+        """Ensure no flagged dep change leaks between tests."""
+        main._pending_dep_changes.clear()
+        yield
+        main._pending_dep_changes.clear()
+
+    @pytest.fixture
+    def port(self, mock_num_port1, mocker):
+        mock_num_port1.set_writable(True)
+        mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
+        return mock_num_port1
+
+    async def test_changed_written_value(self, port):
+        """Should flag `$port_id!` as changed when a write changes the last written value."""
+
+        await port.transform_and_write_value(5)
+
+        assert main._pending_dep_changes == {"$nid1!"}
+
+    async def test_same_written_value(self, port):
+        """Should not flag `$port_id!` when a write leaves the last written value as it was."""
+
+        await port.transform_and_write_value(5)
+        main._pending_dep_changes.clear()
+        await port.transform_and_write_value(5)
+
+        assert main._pending_dep_changes == set()
+
+    async def test_failed_write(self, port):
+        """Should not flag `$port_id!` when a write fails."""
+
+        port.write_value.side_effect = Exception("write failed")
+        with pytest.raises(Exception, match="write failed"):
+            await port.transform_and_write_value(5)
+
+        assert main._pending_dep_changes == set()
 
 
 class TestPortGetPendingValue:

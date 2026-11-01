@@ -11,9 +11,9 @@ class AttrChangeHandler(core_events.Handler):
 
     Dep strings produced:
     - ``$port_id:`` — for "port-add", "port-remove", "port-update"
-    - ``$port_id``  — additionally, for "port-add"/"port-remove"/"port-update", whenever a port's availability
-      (`enabled`/`online`) transitions, in either direction, relative to its last known state — so that value
-      expressions and functions like `AVAILABLE()`/`DEFAULT()` pick up the new state
+    - ``$port_id``, ``$port_id?``, ``$port_id!`` — additionally, for "port-add"/"port-remove"/"port-update", whenever a
+      port's availability (`enabled`/`online`) transitions, in either direction, relative to its last known state — so
+      that value expressions and functions like `AVAILABLE()`/`DEFAULT()` pick up the new state
     - ``#:``        — for "device-update"
     - ``#name:``    — for "slave-device-add", "slave-device-remove", "slave-device-update"
     """
@@ -37,7 +37,7 @@ class AttrChangeHandler(core_events.Handler):
                     # expressions depending on this port's value are re-evaluated.
                     was_available = self._last_availability.pop((port_id, attr_name), False)
                     if was_available:
-                        core_main.add_dep_change(f"${port_id}")
+                        core_main.add_value_dep_changes(port_id)
             else:
                 # Also covers "port-add" — see class docstring.
                 params = event.get_params()
@@ -46,7 +46,7 @@ class AttrChangeHandler(core_events.Handler):
                     # expressions depending on this port's value are re-evaluated.
                     available = bool(params.get(attr_name))
                     if available != self._last_availability.get((port_id, attr_name), False):
-                        core_main.add_dep_change(f"${port_id}")
+                        core_main.add_value_dep_changes(port_id)
                     self._last_availability[(port_id, attr_name)] = available
         elif isinstance(event, core_events.DeviceUpdate):
             core_main.add_dep_change("#:")
