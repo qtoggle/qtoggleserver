@@ -135,6 +135,8 @@ class TestPatchPort:
             await ports_api_funcs.patch_port(request, "nid1", {"transform_read": "MUL($nid1, 10)"})
 
         assert exc_info.value.status == 400
+        assert exc_info.value.code == "invalid-field"
+        assert exc_info.value.params["details"]["reason"] == "transform-not-supported"
         assert await mock_num_port1.get_attr("transform_read") == ""
 
 
