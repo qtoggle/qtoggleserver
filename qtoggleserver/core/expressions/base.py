@@ -43,8 +43,8 @@ class Expression(metaclass=abc.ABCMeta):
     def is_asap_eval_paused(self, now_ms: int) -> bool:
         return now_ms < self._asap_eval_paused_until_ms
 
-    def record_result(self, result: NullablePortValue) -> bool:
-        """Record an available result, as converted by its port, and return whether it differs from the previous one."""
+    def update_result(self, result: NullablePortValue) -> bool:
+        """Update the result to an available one, as converted by its port, and return whether it has changed."""
 
         changed = result != self._previous_result
         self._previous_result = result

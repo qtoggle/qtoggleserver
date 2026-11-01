@@ -846,7 +846,7 @@ class TestPortWriteOnlyChangedResults:
         mock_num_port2.set_writable(True)
         await mock_num_port2.from_persisted(await port.to_persisted())
 
-        assert mock_num_port2.get_expression().record_result(5) is True  # no previous result to compare with
+        assert mock_num_port2.get_expression().update_result(5) is True  # no previous result to compare with
 
 
 class TestPortGetPendingValue:
