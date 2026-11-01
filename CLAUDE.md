@@ -97,7 +97,7 @@ Expressions are strings assigned to port `expression`, `transform_read`, or `tra
 **Syntax forms:**
 | Prefix | Example | Meaning |
 |--------|---------|---------|
-| `$port_id` | `$sensor1` | last value of port `sensor1` (pending, else the newer of last read and last written) |
+| `$port_id` | `$sensor1` | last value of port `sensor1` (pending, else the newer of last read and last written); dep `$sensor1`, flagged whenever it changes, through reads or writes |
 | `$port_id?` | `$sensor1?` | last read value of port `sensor1`; dep `$sensor1?`, flagged by read changes |
 | `$port_id!` | `$relay1!` | last written value of port `relay1`; dep `$relay1!`, flagged by writes that change it |
 | `$port_id:attr` | `$sensor1:enabled` | attribute `enabled` of port `sensor1` |

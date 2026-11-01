@@ -701,13 +701,6 @@ class TestForceEvalExpressions:
 
 
 class TestValueDepChanges:
-    @pytest.fixture(autouse=True)
-    def reset_pending(self):
-        """Ensure no flagged value dep change leaks between tests."""
-        core_main._pending_dep_changes.clear()
-        yield
-        core_main._pending_dep_changes.clear()
-
     async def test_flagged_change_triggers_eval(self, mocker, mock_num_port1, mock_num_port2):
         """Should evaluate expressions depending on a value dep flagged from outside the read loop, once."""
 
@@ -767,6 +760,24 @@ class TestValueDepChanges:
         core_main.add_value_dep_changes("nid1")
 
         assert core_main._pending_dep_changes == {"$nid1", "$nid1?", "$nid1!"}
+
+    async def test_write_triggers_last_value_deps(self, mocker, mock_num_port1, mock_num_port2, mock_bool_port1):
+        """Should evaluate expressions depending on a port's last value when a value becomes pending, but not those
+        depending on its read value."""
+
+        mock_num_port1.set_expression("MUL($nid2, 2)")
+        mock_bool_port1.set_expression("$nid2?")
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
+        mocker.patch.object(mock_bool_port1, "eval_and_push_write")
+        mock_num_port2.set_writable(True)
+        mock_num_port2._write_queue.clear()
+        core_main._pending_dep_changes.clear()
+
+        mock_num_port2.push_write(42)
+        await _eval_changed_expressions(changes={DEP_ASAP}, now_ms=0)
+
+        mock_num_port1.eval_and_push_write.assert_called_once()
+        mock_bool_port1.eval_and_push_write.assert_not_called()
 
 
 class TestPauseResume:
@@ -842,12 +853,10 @@ class TestPauseResume:
 
 class TestAttrChangeHandler:
     @pytest.fixture(autouse=True)
-    def reset_pending(self):
-        """Clear pending attr changes and availability-tracking state before and after each test."""
-        core_main._pending_dep_changes.clear()
+    def reset_availability(self):
+        """Clear availability-tracking state before and after each test."""
         core_main._attr_change_handler._last_availability.clear()
         yield
-        core_main._pending_dep_changes.clear()
         core_main._attr_change_handler._last_availability.clear()
 
     async def test_port_update_adds_attr_dep(self, mock_num_port1):
