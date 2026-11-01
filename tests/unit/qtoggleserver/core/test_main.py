@@ -9,7 +9,14 @@ from qtoggleserver.core import events as core_events
 from qtoggleserver.core import main as core_main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core.expressions import DEP_ASAP, DEP_DAY, DEP_HOUR, DEP_MINUTE, DEP_MONTH, DEP_SECOND, DEP_YEAR
-from qtoggleserver.core.main import _eval_changed_expressions, force_eval_expressions, pause, read_ports, resume
+from qtoggleserver.core.main import (
+    _eval_changed_expressions,
+    add_value_dep_change,
+    force_eval_expressions,
+    pause,
+    read_ports,
+    resume,
+)
 from qtoggleserver.slaves import events as slaves_events
 from tests.unit.qtoggleserver.mock.ports import MockNumberPort
 
@@ -685,6 +692,50 @@ class TestForceEvalExpressions:
 
         await _eval_changed_expressions(changes={DEP_ASAP}, now_ms=0)
         mock_num_port1.eval_and_push_write.assert_not_called()
+
+
+class TestValueDepChanges:
+    @pytest.fixture(autouse=True)
+    def reset_pending(self):
+        """Ensure no flagged value dep change leaks between tests."""
+        core_main._pending_value_dep_changes.clear()
+        yield
+        core_main._pending_value_dep_changes.clear()
+
+    async def test_flagged_change_triggers_eval(self, mocker, mock_num_port1, mock_num_port2):
+        """Should evaluate expressions depending on a value dep flagged from outside the read loop, once."""
+
+        mock_num_port1.set_expression("MUL($nid2, 2)")
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
+
+        add_value_dep_change("$nid2")
+        await _eval_changed_expressions(changes={DEP_ASAP}, now_ms=0)
+        await _eval_changed_expressions(changes={DEP_ASAP}, now_ms=0)
+
+        mock_num_port1.eval_and_push_write.assert_called_once()
+
+    async def test_given_changes_not_modified(self):
+        """Should not add flagged value dep changes to the set it's given."""
+
+        changes = {DEP_ASAP}
+        add_value_dep_change("$nid2")
+        await _eval_changed_expressions(changes=changes, now_ms=0)
+
+        assert changes == {DEP_ASAP}
+
+    async def test_read_change_triggers_eval(self, freezer, mocker, mock_num_port1, mock_num_port2, dummy_utc_datetime):
+        """Should evaluate expressions depending on a port whose read value has changed."""
+
+        freezer.move_to(dummy_utc_datetime)
+        mock_num_port1.set_expression("MUL($nid2, 2)")
+        mocker.patch.object(mock_num_port1, "eval_and_push_write")
+        mock_num_port2.set_read_value(10)
+        mock_num_port2.set_next_value(20)
+
+        await read_ports(ports_to_read=[mock_num_port2])
+
+        mock_num_port1.eval_and_push_write.assert_called_once()
+        assert core_main._pending_value_dep_changes == set()
 
 
 class TestPauseResume:
