@@ -51,6 +51,12 @@ class LiteralValue(Expression):
             if m.end() < len(sexpression):
                 raise UnexpectedCharacter(sexpression[m.end()], pos + m.end())
 
-            value = float(sexpression) if m.group(1) else int(sexpression)
+            if m.group(1):
+                value = float(sexpression)
+            else:
+                try:
+                    value = int(sexpression)
+                except ValueError:  # too many digits for Python; like an overflowing float, it becomes infinity
+                    value = float(sexpression)
 
         return LiteralValue(value, sexpression, role)

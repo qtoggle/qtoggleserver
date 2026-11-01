@@ -80,3 +80,11 @@ class TestLiteralValue:
         with pytest.raises(UnexpectedCharacter) as exc_info:
             parse(None, sexpression, role=Role.VALUE)
         assert exc_info.value.to_json() == {"reason": "unexpected-character", "token": token, "pos": pos}
+
+    async def test_too_many_digits(self, dummy_eval_context):
+        """Should parse an integer too long for Python's int(), and evaluate it to unavailable, like an overflowing
+        float."""
+
+        e = parse(None, "1" * 4301, role=Role.VALUE)
+        with pytest.raises(ValueUnavailable):
+            await e.eval(dummy_eval_context)
