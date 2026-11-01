@@ -73,6 +73,11 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
                     raise UnexpectedCharacter(prefix, pos)
             else:
                 port_id = sub_sexpression
+                kind = PortValueKind.LAST
+                if prefix == "$" and port_id[-1] in "?!":  # `$port_id?`, `$port_id!`, `$?` or `$!`
+                    kind = PortValueKind(port_id[-1])
+                    port_id = port_id[:-1]
+
                 m = re.search(r"[^a-zA-Z0-9_.-]", port_id)
                 if m:
                     p = m.start()
@@ -81,7 +86,9 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
                 if prefix == "$":
                     if role in _TRANSFORM_ROLES:  # only a plain `$`, even for the port's own id
                         raise TransformNotSupported(sexpression, pos=pos)
-                    return PortValue(port_id, prefix, role)
+                    if not port_id:
+                        return SelfPortValue(self_port_id, prefix, role, kind)
+                    return PortValue(port_id, prefix, role, kind)
                 elif prefix == "@":
                     if role in _TRANSFORM_ROLES:
                         raise TransformNotSupported(sexpression, pos)

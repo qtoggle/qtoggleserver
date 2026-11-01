@@ -789,7 +789,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         async with self._write_value_lock:
             try:
                 await self._write_value_with_retries(transformed_value)
+                old_written_value = self._last_written_value[0] if self._last_written_value else None
                 self._last_written_value = value, int(time.time() * 1000)
+                if value != old_written_value:
+                    main.add_dep_change(f"${self.get_id()}!")
             finally:
                 self._writing_value = None
                 self.save_asap()
