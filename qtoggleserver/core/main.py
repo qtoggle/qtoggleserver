@@ -45,7 +45,7 @@ _last_month: int = 0
 _last_year: int = 0
 _force_eval_expression_ports: set[core_ports.BasePort] = set()
 _force_eval_all_expressions: bool = False
-_pending_value_dep_changes: set[str] = set()
+_pending_dep_changes: set[str] = set()
 _ports_with_read_error = timedset.TimedSet(_PORT_READ_ERROR_RETRY_INTERVAL)
 _update_lock: asyncio.Lock | None = None
 _attr_change_handler = main_utils.AttrChangeHandler()
@@ -116,11 +116,6 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
 
         if not ports_to_read:
             second_changed, changes = _get_changed_time_deps(now_int)
-
-            # Get (and clear) any attribute dep changes (port or device) flagged by the event handler since last call
-            pending_attr_changes = _attr_change_handler.pop_pending()
-            if pending_attr_changes:
-                changes.update(pending_attr_changes)
         else:
             # When `ports_to_read` are given, this call is made from outside of the main update loop. Don't touch
             # time-related deps unless called from main update loop.
@@ -182,7 +177,7 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
 
         # Trigger value-change events; save ports; flag port deps as changed
         for port, (old_value, new_value) in port_changed_values.items():
-            add_value_dep_change(f"${port.get_id()}")
+            add_dep_change(f"${port.get_id()}")
 
             if not await port.is_internal():
                 await port.trigger_value_change(old_value, new_value)
@@ -203,9 +198,9 @@ async def _eval_changed_expressions(changes: set[str], now_ms: int) -> None:
     full_eval = _force_eval_all_expressions
     _force_eval_all_expressions = False
 
-    # Value deps may change outside the read loop too, so they're collected separately until this point
-    changes = changes | _pending_value_dep_changes
-    _pending_value_dep_changes.clear()
+    # Reads and events flag their changes at any time, so they're collected separately until this point
+    changes = changes | _pending_dep_changes
+    _pending_dep_changes.clear()
 
     eval_context: EvalContext | None = None
 
@@ -265,10 +260,10 @@ def force_eval_expressions(port: core_ports.BasePort | None = None) -> None:
         _force_eval_all_expressions = True
 
 
-def add_value_dep_change(dep: str) -> None:
-    """Flag a port value dependency, such as `$port_id`, as changed, for the next expression evaluation."""
+def add_dep_change(dep: str) -> None:
+    """Flag an expression dependency, such as `$port_id` or `#:`, as changed, for the next expression evaluation."""
 
-    _pending_value_dep_changes.add(dep)
+    _pending_dep_changes.add(dep)
 
 
 def resume() -> None:
