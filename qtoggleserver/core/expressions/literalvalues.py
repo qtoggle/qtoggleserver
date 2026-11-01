@@ -6,6 +6,9 @@ from .base import EvalContext, EvalResult, Expression, Role
 from .exceptions import EmptyExpression, UnexpectedCharacter, ValueUnavailable
 
 
+_NUMBER_RE = re.compile(r"-?[0-9]+(\.[0-9]+)?")
+
+
 class LiteralValue(Expression):
     def __init__(self, value: NullablePortValue, sexpression: str, role: Role) -> None:
         super().__init__(role)
@@ -41,16 +44,13 @@ class LiteralValue(Expression):
         elif sexpression == "unavailable":
             value = None
         else:
-            try:
-                value = int(sexpression)
-            except ValueError:
-                try:
-                    value = float(sexpression)
-                except ValueError:
-                    m = re.match(r"-?\d+(\.?\d+)?", sexpression)
-                    if m:
-                        raise UnexpectedCharacter(sexpression[m.end()], pos + m.end()) from None
-                    else:
-                        raise UnexpectedCharacter(sexpression[0], pos) from None
+            # Only base 10 digits, an optional minus sign and a dot between digits, unlike Python's int() and float()
+            m = _NUMBER_RE.match(sexpression)
+            if not m:
+                raise UnexpectedCharacter(sexpression[0], pos)
+            if m.end() < len(sexpression):
+                raise UnexpectedCharacter(sexpression[m.end()], pos + m.end())
+
+            value = float(sexpression) if m.group(1) else int(sexpression)
 
         return LiteralValue(value, sexpression, role)
