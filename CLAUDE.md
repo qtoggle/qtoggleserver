@@ -107,7 +107,7 @@ Expressions are strings assigned to port `expression`, `transform_read`, or `tra
 | `func(...)` | `ADD($a, $b)` | function call |
 | literal | `42`, `true`, `"hi"` | literal value |
 
-**Roles** (`Role` enum in `base.py`): `VALUE`, `TRANSFORM_READ`, `TRANSFORM_WRITE`, `FILTER`. Port references to other ports are only allowed in `VALUE` role; `TRANSFORM_READ`/`TRANSFORM_WRITE` may only reference the port itself.
+**Roles** (`Role` enum in `base.py`): `VALUE`, `TRANSFORM_READ`, `TRANSFORM_WRITE`, `FILTER`. Port references to other ports are only allowed in `VALUE` role; `TRANSFORM_READ`/`TRANSFORM_WRITE` may only use a plain `$`, the value being transformed (not even `$<own_id>`).
 
 **Time dependencies** (`DEP_SECOND`, `DEP_MINUTE`, `DEP_HOUR`, `DEP_DAY`, `DEP_MONTH`, `DEP_YEAR`, `DEP_ASAP`): expressions declare which time units they depend on via `get_deps()`. The core loop re-evaluates expressions only when a relevant dep has changed.
 

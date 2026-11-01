@@ -19,6 +19,13 @@ class TestPortTransformRead:
             await mock_num_port1.set_attr("transform_read", "MUL($another_port, 10)")
         assert exc_info.value.details == {"reason": "transform-not-supported", "token": "$another_port", "pos": 5}
 
+    async def test_own_port_id_forbidden(self, mock_num_port1):
+        """Should raise `TransformNotSupported` when expression refers to the port's own value by id, not by `$`."""
+
+        with pytest.raises(InvalidAttributeValue) as exc_info:
+            await mock_num_port1.set_attr("transform_read", "MUL($nid1, 10)")
+        assert exc_info.value.details == {"reason": "transform-not-supported", "token": "$nid1", "pos": 5}
+
     async def test_port_reference_forbidden(self, mock_num_port1):
         """Should raise `TransformNotSupported` when expression contains a port reference."""
 
@@ -174,6 +181,14 @@ class TestPortTransformWrite:
         with pytest.raises(InvalidAttributeValue) as exc_info:
             await mock_num_port1.set_attr("transform_write", "MUL($another_port, 10)")
         assert exc_info.value.details == {"reason": "transform-not-supported", "token": "$another_port", "pos": 5}
+
+    async def test_own_port_id_forbidden(self, mock_num_port1):
+        """Should raise `TransformNotSupported` when expression refers to the port's own value by id, not by `$`."""
+
+        mock_num_port1.set_writable(True)
+        with pytest.raises(InvalidAttributeValue) as exc_info:
+            await mock_num_port1.set_attr("transform_write", "MUL($nid1, 10)")
+        assert exc_info.value.details == {"reason": "transform-not-supported", "token": "$nid1", "pos": 5}
 
     async def test_port_reference_forbidden(self, mock_num_port1):
         """Should raise `TransformNotSupported` when expression contains a port reference."""
