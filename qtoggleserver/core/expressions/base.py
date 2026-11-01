@@ -43,13 +43,13 @@ class Expression(metaclass=abc.ABCMeta):
     def is_asap_eval_paused(self, now_ms: int) -> bool:
         return now_ms < self._asap_eval_paused_until_ms
 
-    def get_previous_result(self) -> NullablePortValue:
-        """Return the last available result of a port's value expression, as the port converted it."""
+    def record_result(self, result: NullablePortValue) -> bool:
+        """Record an available result, as converted by its port, and return whether it differs from the previous one."""
 
-        return self._previous_result
-
-    def set_previous_result(self, result: NullablePortValue) -> None:
+        changed = result != self._previous_result
         self._previous_result = result
+
+        return changed
 
     async def eval(self, context: EvalContext) -> EvalResult:
         self._asap_eval_paused_until_ms = 0
