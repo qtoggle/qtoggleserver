@@ -139,6 +139,16 @@ class TestPatchPort:
         assert exc_info.value.params["details"]["reason"] == "transform-not-supported"
         assert await mock_num_port1.get_attr("transform_read") == ""
 
+    async def test_long_expression(self, mock_api_request_maker, mock_num_port1, mock_persist_driver):
+        """Should accept an expression of any length, as there's no limit."""
+
+        mock_num_port1.set_writable(True)
+        sexpression = "ADD(" + ", ".join(["1"] * 5000) + ")"  # about 15000 characters
+        request = mock_api_request_maker("PATCH", "/ports/nid1", access_level=core_api.ACCESS_LEVEL_ADMIN)
+        await ports_api_funcs.patch_port(request, "nid1", {"expression": sexpression})
+
+        assert await mock_num_port1.get_attr("expression") == sexpression
+
 
 class TestPatchPortValue:
     @pytest.fixture(autouse=True)
