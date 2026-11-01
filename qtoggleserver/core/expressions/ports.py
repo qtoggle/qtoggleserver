@@ -79,7 +79,7 @@ class PortExpression(Expression, metaclass=abc.ABCMeta):
                     raise UnexpectedCharacter(sub_sexpression[p], p + pos + 2)
 
                 if prefix == "$":
-                    if role in _TRANSFORM_ROLES and port_id != self_port_id:
+                    if role in _TRANSFORM_ROLES:  # only a plain `$`, even for the port's own id
                         raise TransformNotSupported(sexpression, pos=pos)
                     return PortValue(port_id, prefix, role)
                 elif prefix == "@":

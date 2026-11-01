@@ -126,6 +126,20 @@ class TestPatchPorts:
         assert exc_info.value.status == 401
 
 
+class TestPatchPort:
+    async def test_rejects_own_id_in_transform(self, mock_api_request_maker, mock_num_port1, mock_persist_driver):
+        """Should reject a transform that refers to the port's own id rather than `$`."""
+
+        request = mock_api_request_maker("PATCH", "/ports/nid1", access_level=core_api.ACCESS_LEVEL_ADMIN)
+        with pytest.raises(core_api.APIError) as exc_info:
+            await ports_api_funcs.patch_port(request, "nid1", {"transform_read": "MUL($nid1, 10)"})
+
+        assert exc_info.value.status == 400
+        assert exc_info.value.code == "invalid-field"
+        assert exc_info.value.params["details"]["reason"] == "transform-not-supported"
+        assert await mock_num_port1.get_attr("transform_read") == ""
+
+
 class TestPatchPortValue:
     @pytest.fixture(autouse=True)
     def mock_slaves(self, mocker) -> None:
