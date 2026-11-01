@@ -92,7 +92,7 @@ utils/misc: Add to_underscore_case
 
 ## Expression Language
 
-Expressions are strings assigned to port `expression`, `transform_read`, or `transform_write` attributes. They are parsed by `qtoggleserver/core/expressions/__init__.py:parse()` and evaluated each core loop iteration.
+Expressions are strings assigned to port `expression`, `transform_read`, or `transform_write` attributes. They are parsed by `qtoggleserver/core/expressions/__init__.py:parse()` and evaluated each core loop iteration. A value expression's result is written only when it differs from both its previous result and the port's last value (`BasePort.eval_and_push_write()`).
 
 **Syntax forms:**
 | Prefix | Example | Meaning |

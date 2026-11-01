@@ -1,10 +1,13 @@
 import asyncio
 import logging
 
+from unittest.mock import call
+
 import pytest
 
 from qtoggleserver.conf import settings
 from qtoggleserver.core import expressions
+from qtoggleserver.core.expressions import EvalContext
 from qtoggleserver.core.expressions.exceptions import ValueUnavailable
 from qtoggleserver.core.ports import PortDisabled, PortWriteError, WriteRequest
 from tests.unit.qtoggleserver.mock.ports import MockNumberPort
@@ -715,6 +718,135 @@ class TestPortEvalAndPushWrite:
 
         await mock_num_port1.eval_and_push_write(mock_eval_context)
         mock_num_port1.push_write.assert_not_called()
+
+
+class TestPortWriteOnlyChangedResults:
+    @pytest.fixture
+    def port(self, mock_num_port1, mock_num_port2, mocker):
+        """Port nid1 with the expression `$nid2`; port nid2 must exist for `$nid2` to be available."""
+        mock_num_port1.set_writable(True)
+        mock_num_port1.set_expression("$nid2")
+        mock_num_port1.set_read_value(0)
+        mocker.patch.object(mock_num_port1, "push_write")
+        return mock_num_port1
+
+    @staticmethod
+    async def eval_with(port: MockNumberPort, value: float | bool | None) -> None:
+        port_values = {"nid2": value} if value is not None else {}
+        await port.eval_and_push_write(EvalContext(port_values=port_values))
+
+    async def test_unchanged_result_not_rewritten(self, port):
+        """Should not write the same result again after the port was changed by others."""
+
+        await self.eval_with(port, 5)
+        port.push_write.assert_called_once_with(5)
+
+        port.set_read_value(3)  # changed by others
+        await self.eval_with(port, 5)
+        port.push_write.assert_called_once()
+
+    async def test_changed_result_written(self, port):
+        """Should write a result that differs from the previous one and from the last value."""
+
+        await self.eval_with(port, 5)
+        port.set_read_value(3)
+        await self.eval_with(port, 6)
+
+        assert port.push_write.call_args_list == [call(5), call(6)]
+
+    async def test_result_equal_to_last_value(self, port):
+        """Should not write a result equal to the last value, but still count it as the previous result."""
+
+        port.set_read_value(5)
+        await self.eval_with(port, 5)
+        port.set_read_value(3)
+        await self.eval_with(port, 5)
+
+        port.push_write.assert_not_called()
+
+    async def test_changed_result_equal_to_last_value_not_written(self, port):
+        """Should not write a changed result that the port already has."""
+
+        await self.eval_with(port, 5)
+        port.set_read_value(6)
+        await self.eval_with(port, 6)
+
+        port.push_write.assert_called_once_with(5)
+
+    async def test_unavailable_result_keeps_previous(self, port):
+        """Should keep the previous result when a result is unavailable."""
+
+        await self.eval_with(port, 5)
+        await self.eval_with(port, None)
+        port.set_read_value(3)
+        await self.eval_with(port, 5)
+
+        port.push_write.assert_called_once_with(5)
+
+    async def test_compared_after_conversion(self, mock_bool_port1, mock_num_port2, mocker):
+        """Should compare results after converting them to the port's type."""
+
+        mock_bool_port1.set_writable(True)
+        mock_bool_port1.set_expression("$nid2")
+        mock_bool_port1.set_read_value(False)
+        mocker.patch.object(mock_bool_port1, "push_write")
+
+        await self.eval_with(mock_bool_port1, 1)
+        mock_bool_port1.set_read_value(False)
+        await self.eval_with(mock_bool_port1, True)
+
+        mock_bool_port1.push_write.assert_called_once_with(True)
+
+    async def test_reset_by_new_expression(self, port):
+        """Should forget the previous result when a different expression is set."""
+
+        await self.eval_with(port, 5)
+        port.set_read_value(3)
+        await port.set_attr("expression", "ADD($nid2, 0)")
+        await self.eval_with(port, 5)
+
+        assert port.push_write.call_count == 2
+
+    async def test_reset_by_clearing_expression(self, port):
+        """Should forget the previous result when the expression is cleared, and set again."""
+
+        await self.eval_with(port, 5)
+        port.set_read_value(3)
+        await port.set_attr("expression", "")
+        await port.set_attr("expression", "$nid2")
+        await self.eval_with(port, 5)
+
+        assert port.push_write.call_count == 2
+
+    async def test_same_expression_kept(self, port):
+        """Should keep the previous result when the same expression is set again, as it hasn't changed."""
+
+        await self.eval_with(port, 5)
+        port.set_read_value(3)
+        await port.set_attr("expression", "$nid2")
+        await self.eval_with(port, 5)
+
+        port.push_write.assert_called_once_with(5)
+
+    async def test_reset_by_enable(self, port):
+        """Should forget the previous result when the port is enabled again."""
+
+        await self.eval_with(port, 5)
+        port.set_read_value(3)
+        await port.disable()
+        await port.enable()
+        await self.eval_with(port, 5)
+
+        assert port.push_write.call_count == 2
+
+    async def test_reset_at_startup(self, port, mock_num_port2, mocker):
+        """Should start without a previous result when a port is loaded."""
+
+        await self.eval_with(port, 5)
+        mock_num_port2.set_writable(True)
+        await mock_num_port2.from_persisted(await port.to_persisted())
+
+        assert mock_num_port2._previous_result is None
 
 
 class TestPortGetPendingValue:
