@@ -25,7 +25,7 @@ class AttrChangeHandler(core_events.Handler):
         self._last_availability: dict[tuple[str, str], bool] = {}
 
     async def handle_event(self, event: core_events.Event) -> None:
-        from qtoggleserver.core import main as core_main
+        from qtoggleserver.core import main as core_main  # imported here, as core.main imports this module
 
         if isinstance(event, (core_events.PortAdd, core_events.PortRemove, core_events.PortUpdate)):
             port_id = event.get_port().get_id()
