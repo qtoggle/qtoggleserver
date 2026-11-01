@@ -919,8 +919,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             json_utils.dumps(adapted_value),
         )
 
-        # Only write value to port if it differs from the last known value
-        if self.get_last_value() != adapted_value:
+        # Write only a changed result, so that a change made by others stays until the result changes. It's updated
+        # before checking the port, so that a result the port already has still counts as the previous one.
+        if expression.update_result(adapted_value) and adapted_value != self.get_last_value():
             self.push_write(adapted_value)
 
     async def _write_loop(self) -> None:
