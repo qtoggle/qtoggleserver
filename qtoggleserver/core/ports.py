@@ -1,12 +1,13 @@
 import abc
 import asyncio
+import contextlib
 import copy
 import inspect
 import logging
 import time
 
 from collections import deque
-from collections.abc import AsyncIterator, ValuesView
+from collections.abc import AsyncIterator, Iterator, ValuesView
 from typing import Any, NamedTuple
 
 from qtoggleserver import persist
@@ -731,10 +732,25 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_last_read_value(self) -> NullablePortValue:
         return self._last_read_value[0] if self._last_read_value else None
 
+    @contextlib.contextmanager
+    def _tracking_last_value(self) -> Iterator[None]:
+        """Flag `$port_id` as changed if the port's last value differs once the wrapped code has run."""
+
+        old_last_value = self.get_last_value()
+        try:
+            yield
+        finally:
+            if self.get_last_value() != old_last_value:
+                main.add_dep_change(f"${self.get_id()}")
+
     def set_last_read_value(self, value: NullablePortValue, timestamp_ms: int) -> None:
         """Record a read value. `timestamp_ms` is when the read started."""
 
-        self._last_read_value = value, timestamp_ms
+        old_read_value = self.get_last_read_value()
+        with self._tracking_last_value():
+            self._last_read_value = value, timestamp_ms
+        if value != old_read_value:
+            main.add_dep_change(f"${self.get_id()}?")
 
         for target_value, future in self._value_match_waiters:
             if not future.done() and value == target_value:
@@ -866,7 +882,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 evicted.future.set_exception(PortWriteError("evicted from a full write queue"))
 
         self.debug("pushing value %s to write queue", value)
-        self._write_queue.append(WriteRequest(value, future))
+        with self._tracking_last_value():
+            self._write_queue.append(WriteRequest(value, future))
 
     def drop_write_queue(self) -> None:
         """Drop any queued writes, failing their futures so that no caller is left hanging. They are failed rather
@@ -881,7 +898,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             if request.future and not request.future.done():
                 request.future.set_exception(PortDisabled())
 
-        self._write_queue.clear()
+        with self._tracking_last_value():
+            self._write_queue.clear()
 
     async def push_write_and_wait(self, value: PortValue) -> None:
         """Push a value to the writing process queue and wait for it to actually be written, propagating any
@@ -937,15 +955,17 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     await asyncio.sleep(settings.core.tick_interval / 1000.0)
                     continue
 
-                try:
-                    request = self._write_queue.popleft()
-                except IndexError:
+                if not self._write_queue:
                     request = None
                     await asyncio.sleep(settings.core.tick_interval / 1000.0)
                     continue
 
+                # From taking the value off the queue to the end of its write, so that a pending value that gets
+                # written counts as no change, while one that fails or turns unavailable does
                 try:
-                    await self.transform_and_write_value(request.value)
+                    with self._tracking_last_value():
+                        request = self._write_queue.popleft()
+                        await self.transform_and_write_value(request.value)
                 except Exception as e:
                     # Already logged by `transform_and_write_value()`
                     if request.future and not request.future.done():

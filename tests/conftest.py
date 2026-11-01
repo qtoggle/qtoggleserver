@@ -11,6 +11,7 @@ from freezegun import freeze_time
 
 from qtoggleserver import peripherals, persist
 from qtoggleserver.conf import settings
+from qtoggleserver.core import main as core_main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import vports as core_vports
 from qtoggleserver.core.api.funcs import ports as ports_api_funcs
@@ -27,6 +28,14 @@ tz_info = pytz.timezone("Europe/Bucharest")
 def init_settings():
     settings.persist.driver = "qtoggleserver.drivers.persist.JSONDriver"
     settings.persist.file_path = ""
+
+
+@pytest.fixture(autouse=True)
+def clear_pending_dep_changes():
+    """Ports flag their value changes globally, so start and end every test with nothing flagged."""
+    core_main._pending_dep_changes.clear()
+    yield
+    core_main._pending_dep_changes.clear()
 
 
 @pytest.fixture(scope="session")
