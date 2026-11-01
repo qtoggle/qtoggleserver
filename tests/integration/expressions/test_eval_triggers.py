@@ -13,12 +13,12 @@ from tests.unit.qtoggleserver.mock.ports import MockNumberPort
 def with_attr_change_handler():
     """Register the main module's attr-change event handler for the duration of the test."""
     event_handlers._registered_handlers.append(main._attr_change_handler)
-    main._attr_change_handler._pending.clear()
+    main._pending_dep_changes.clear()
     main._attr_change_handler._last_availability.clear()
     yield
     if main._attr_change_handler in event_handlers._registered_handlers:
         event_handlers._registered_handlers.remove(main._attr_change_handler)
-    main._attr_change_handler._pending.clear()
+    main._pending_dep_changes.clear()
     main._attr_change_handler._last_availability.clear()
 
 
