@@ -54,9 +54,10 @@ class TestExpression:
     async def test_eval_non_finite_function_result(self, dummy_eval_context):
         """Should make a function result that is not a finite number unavailable, so that `DEFAULT` can shield it."""
 
-        e = parse(None, "MUL(1e308, 10)", role=Role.VALUE)
+        big = "1" + "0" * 308 + ".0"  # 1e308, the largest power of 10 a float holds, as a spec literal
+        e = parse(None, f"MUL({big}, 10)", role=Role.VALUE)
         with pytest.raises(ValueUnavailable):
             await e.eval(dummy_eval_context)
 
-        e = parse(None, "DEFAULT(SUB(MUL(1e308, 10), MUL(1e308, 10)), 5)", role=Role.VALUE)
+        e = parse(None, f"DEFAULT(SUB(MUL({big}, 10), MUL({big}, 10)), 5)", role=Role.VALUE)
         assert await e.eval(dummy_eval_context) == 5
