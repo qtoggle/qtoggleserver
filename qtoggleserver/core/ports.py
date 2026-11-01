@@ -258,8 +258,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._sequence: sequence_utils.Sequence | None = None
         self._expression: core_expressions.Expression | None = None
-        # The expression's last available result, which resets along with the expression
-        self._previous_result: NullablePortValue = None
         self._transform_read: core_expressions.Expression | None = None
         self._transform_write: core_expressions.Expression | None = None
 
@@ -545,7 +543,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             sexpression = str(self._expression)
             self.debug('resetting expression "%s"', sexpression)
             self._expression = core_expressions.parse(self.get_id(), sexpression, role=core_expressions.Role.VALUE)
-            self._previous_result = None
 
             main.force_eval_expressions(self)
 
@@ -649,7 +646,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self.debug('setting expression "%s"', expression)
         self._expression = expression
-        self._previous_result = None
         expressions_utils.invalidate_deps_map()
 
         # This will force expression evaluation for this port right away
@@ -923,10 +919,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             json_utils.dumps(adapted_value),
         )
 
-        # Write only a changed result, so that a change made by others stays until the result changes. Skip it, too,
-        # when the port already has that value.
-        previous_result = self._previous_result
-        self._previous_result = adapted_value
+        # Write only a changed result, so that a change made by others stays until the result changes, and skip one the
+        # port already has. A newly parsed expression has no previous result.
+        previous_result = expression.get_previous_result()
+        expression.set_previous_result(adapted_value)
         if adapted_value != previous_result and adapted_value != self.get_last_value():
             self.push_write(adapted_value)
 

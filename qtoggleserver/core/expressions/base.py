@@ -35,12 +35,21 @@ class Expression(metaclass=abc.ABCMeta):
         self.role: Role = role
         self._asap_eval_paused_until_ms: int = 0
         self._cached_deps: set[str] | None = None
+        self._previous_result: NullablePortValue = None
 
     def pause_asap_eval(self, pause_until_ms: int = 0) -> None:
         self._asap_eval_paused_until_ms = pause_until_ms or int(1e13)
 
     def is_asap_eval_paused(self, now_ms: int) -> bool:
         return now_ms < self._asap_eval_paused_until_ms
+
+    def get_previous_result(self) -> NullablePortValue:
+        """Return the last available result of a port's value expression, as the port converted it."""
+
+        return self._previous_result
+
+    def set_previous_result(self, result: NullablePortValue) -> None:
+        self._previous_result = result
 
     async def eval(self, context: EvalContext) -> EvalResult:
         self._asap_eval_paused_until_ms = 0
