@@ -929,6 +929,56 @@ class TestPortLastValueDeps:
         assert self.last_value_flags(spy) == 2
         assert port.get_last_value() == 3
 
+    @pytest.mark.parametrize("fail", [False, True])
+    async def test_write_ends_with_newer_value_queued(self, port, mocker, fail):
+        """Should not flag the last value when a write ends while a newer value is queued, which stays the last one."""
+
+        first_write_started = asyncio.Event()
+        end_first_write = asyncio.Event()
+        second_write_started = asyncio.Event()
+
+        async def write_value(value):
+            if value == 5:
+                first_write_started.set()
+                await end_first_write.wait()
+                if fail:
+                    raise ValueError("nope")
+            else:
+                second_write_started.set()
+
+        port.write_value.side_effect = write_value
+        port.push_write(5)
+        await first_write_started.wait()
+        port.push_write(6)
+        spy = mocker.spy(main, "add_dep_change")
+
+        end_first_write.set()
+        await second_write_started.wait()
+
+        assert self.last_value_flags(spy) == 0
+
+    async def test_unavailable_after_write_transform(self, port, mocker):
+        """Should flag the last value when the write transform makes a pending value unavailable, as the old one is
+        back."""
+
+        await port.set_attr("transform_write", "unavailable")
+        spy = mocker.spy(main, "add_dep_change")
+        await port.push_write_and_wait(9)
+
+        assert self.last_value_flags(spy) == 2
+        assert port.get_last_value() == 3
+
+    async def test_failed_write_transform(self, port, mocker):
+        """Should flag the last value when the write transform fails, as the old value is back."""
+
+        mocker.patch.object(port, "adapt_value_type", side_effect=ValueError("nope"))
+        await port.set_attr("transform_write", "$")
+        spy = mocker.spy(main, "add_dep_change")
+        with pytest.raises(ValueError):
+            await port.push_write_and_wait(9)
+
+        assert self.last_value_flags(spy) == 2
+
 
 class TestPortWrittenValueDeps:
     @pytest.fixture
@@ -960,7 +1010,7 @@ class TestPortWrittenValueDeps:
         with pytest.raises(Exception, match="write failed"):
             await port.transform_and_write_value(5)
 
-        assert main._pending_dep_changes == set()
+        assert "$nid1!" not in main._pending_dep_changes
 
 
 class TestPortGetPendingValue:

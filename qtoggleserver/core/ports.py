@@ -737,11 +737,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         """Flag `$port_id` as changed if the port's last value differs once the wrapped code has run."""
 
         old_last_value = self.get_last_value()
-        try:
-            yield
-        finally:
-            if self.get_last_value() != old_last_value:
-                main.add_dep_change(f"${self.get_id()}")
+        yield
+        if self.get_last_value() != old_last_value:
+            main.add_dep_change(f"${self.get_id()}")
 
     def set_last_read_value(self, value: NullablePortValue, timestamp_ms: int) -> None:
         """Record a read value. `timestamp_ms` is when the read started."""
@@ -810,8 +808,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if value != old_written_value:
                     main.add_dep_change(f"${self.get_id()}!")
             finally:
-                self._writing_value = None
+                self._stop_writing()
                 self.save_asap()
+
+    def _stop_writing(self) -> None:
+        # A written value is the last written value by now, so the last value only changes if the write didn't happen
+        with self._tracking_last_value():
+            self._writing_value = None
 
     async def _write_value_with_retries(self, value: PortValue) -> None:
         """Write `value`, retrying a failed write as set by `write_retry_count` and `write_retry_interval`. The settings
@@ -955,17 +958,15 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                     await asyncio.sleep(settings.core.tick_interval / 1000.0)
                     continue
 
-                if not self._write_queue:
+                try:
+                    request = self._write_queue.popleft()
+                except IndexError:
                     request = None
                     await asyncio.sleep(settings.core.tick_interval / 1000.0)
                     continue
 
-                # From taking the value off the queue to the end of its write, so that a pending value that gets
-                # written counts as no change, while one that fails or turns unavailable does
                 try:
-                    with self._tracking_last_value():
-                        request = self._write_queue.popleft()
-                        await self.transform_and_write_value(request.value)
+                    await self.transform_and_write_value(request.value)
                 except Exception as e:
                     # Already logged by `transform_and_write_value()`
                     if request.future and not request.future.done():
@@ -1001,11 +1002,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             try:
                 transformed_value = self.adapt_value_type(await self._transform_write.eval(eval_context))
             except expressions_exceptions.ValueUnavailable:
-                self._writing_value = None
+                self._stop_writing()
                 self.debug("value %s unavailable after write transform", value_str)
                 return
             except Exception:
-                self._writing_value = None
+                self._stop_writing()
                 self.error("failed to apply write transform to value %s", value_str, exc_info=True)
                 self._enforce_value_paused = True
                 raise
