@@ -979,6 +979,69 @@ class TestPortLastValueDeps:
 
         assert self.last_value_flags(spy) == 2
 
+    def test_tracking_flags_change(self, port):
+        """Should flag `$port_id` when the last value differs after the tracked code."""
+
+        with port._tracking_last_value():
+            port._writing_value = 9
+
+        assert main._pending_dep_changes == {"$nid1"}
+
+    def test_tracking_ignores_same_value(self, port):
+        """Should flag nothing when the tracked code leaves the last value as it was."""
+
+        with port._tracking_last_value():
+            port._writing_value = 3
+
+        assert main._pending_dep_changes == set()
+
+    def test_tracking_compares_only_the_ends(self, port):
+        """Should flag nothing when the last value changes inside the tracked code, but ends up as it was."""
+
+        with port._tracking_last_value():
+            port._writing_value = 9
+            port._writing_value = None
+
+        assert main._pending_dep_changes == set()
+
+    def test_stop_writing_after_write(self, port):
+        """Should flag nothing when the value being written has become the last written value."""
+
+        port._writing_value = 9
+        port._last_written_value = 9, port._last_read_value[1] + 1
+        port._stop_writing()
+
+        assert port.get_pending_value() is None
+        assert port.get_last_value() == 9
+        assert main._pending_dep_changes == set()
+
+    def test_stop_writing_without_write(self, port):
+        """Should flag `$port_id` when the value being written goes away and the old value comes back."""
+
+        port._writing_value = 9
+        port._stop_writing()
+
+        assert port.get_pending_value() is None
+        assert port.get_last_value() == 3
+        assert main._pending_dep_changes == {"$nid1"}
+
+    def test_stop_writing_with_newer_value_queued(self, port):
+        """Should flag nothing when a newer queued value stays the pending value."""
+
+        port._writing_value = 9
+        port._write_queue.append(WriteRequest(6))
+        port._stop_writing()
+
+        assert port.get_last_value() == 6
+        assert main._pending_dep_changes == set()
+
+    def test_stop_writing_with_nothing_being_written(self, port):
+        """Should flag nothing when no value is being written."""
+
+        port._stop_writing()
+
+        assert main._pending_dep_changes == set()
+
 
 class TestPortWrittenValueDeps:
     @pytest.fixture
