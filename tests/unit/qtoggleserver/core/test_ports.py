@@ -877,6 +877,17 @@ class TestPortLastValueDeps:
 
         assert main._pending_dep_changes == set()
 
+    def test_same_read_newer_than_write(self, port):
+        """Should flag only the last value when a read gives the same value again, but is newer than a write of another
+        value, as that makes it the last value."""
+
+        read_time_ms = port._last_read_value[1]
+        port._last_written_value = 9, read_time_ms + 1
+        port.set_last_read_value(3, read_time_ms + 2)
+
+        assert port.get_last_value() == 3
+        assert main._pending_dep_changes == {"$nid1"}
+
     def test_read_change_while_write_pending(self, port):
         """Should flag only the read value when a read changes while a write is pending, as the last value stays."""
 
