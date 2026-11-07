@@ -47,7 +47,7 @@ class SlavePort(core_ports.BasePort):
     WRITE_RETRY = False
     ENFORCE_VALUE = False
 
-    _DEVICE_EXPRESSION_ATTRDEF = {"type": "string", "modifiable": True, "max": 1024}
+    _DEVICE_EXPRESSION_ATTRDEF = {"type": "string", "modifiable": True}
 
     _DEVICE_HISTORY_INTERVAL_ATTRDEF = {
         "type": "number",

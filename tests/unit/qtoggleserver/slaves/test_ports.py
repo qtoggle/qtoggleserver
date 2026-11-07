@@ -216,6 +216,24 @@ class TestLegacyPersistedAttr:
         assert slave_port.get_provisioning_attrs() == {"persisted": True}
 
 
+class TestDeviceExpression:
+    """Test the `device_expression` attribute, which proxies the slave port's own expression."""
+
+    @pytest.fixture
+    async def slave_port(self, slave) -> SlavePort:
+        return SlavePort(slave, {"id": "port1", "type": "number", "writable": True, "expression": ""})
+
+    async def test_long_expression_forwarded(self, slave, slave_port, mocker) -> None:
+        """Test that the master leaves the expression length limit to the slave."""
+
+        api_call = mocker.patch.object(slave, "api_call")
+        expression = "ADD(" + ", ".join(["1"] * 5000) + ")"  # about 15000 characters
+
+        await core_api_ports.set_port_attrs(slave_port, {"device_expression": expression}, ignore_extra_attrs=False)
+
+        api_call.assert_called_once_with("PATCH", "/ports/port1", {"expression": expression}, timeout=mocker.ANY)
+
+
 class TestWriteRetries:
     """Test that the master neither shows nor uses the slave's write retry and enforce settings, since the slave
     retries its own writes and enforces its own values."""
