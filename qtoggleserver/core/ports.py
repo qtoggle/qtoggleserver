@@ -1,12 +1,13 @@
 import abc
 import asyncio
+import contextlib
 import copy
 import inspect
 import logging
 import time
 
 from collections import deque
-from collections.abc import AsyncIterator, ValuesView
+from collections.abc import AsyncIterator, Iterator, ValuesView
 from typing import Any, NamedTuple
 
 from qtoggleserver import persist
@@ -716,10 +717,23 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_last_read_value(self) -> NullablePortValue:
         return self._last_read_value[0] if self._last_read_value else None
 
+    @contextlib.contextmanager
+    def _tracking_last_value(self) -> Iterator[None]:
+        """Flag `$port_id` as changed if the port's last value differs once the wrapped code has run."""
+
+        old_last_value = self.get_last_value()
+        yield
+        if self.get_last_value() != old_last_value:
+            main.add_dep_change(f"${self.get_id()}")
+
     def set_last_read_value(self, value: NullablePortValue, timestamp_ms: int) -> None:
         """Record a read value. `timestamp_ms` is when the read started."""
 
-        self._last_read_value = value, timestamp_ms
+        old_read_value = self.get_last_read_value()
+        with self._tracking_last_value():
+            self._last_read_value = value, timestamp_ms
+        if value != old_read_value:
+            main.add_dep_change(f"${self.get_id()}?")
 
         for target_value, future in self._value_match_waiters:
             if not future.done() and value == target_value:
@@ -779,8 +793,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 if value != old_written_value:
                     main.add_dep_change(f"${self.get_id()}!")
             finally:
-                self._writing_value = None
+                self._stop_writing()
                 self.save_asap()
+
+    def _stop_writing(self) -> None:
+        # A written value is the last written value by now, so the last value only changes if the write didn't happen
+        with self._tracking_last_value():
+            self._writing_value = None
 
     async def _write_value_with_retries(self, value: PortValue) -> None:
         """Write `value`, retrying a failed write as set by `write_retry_count` and `write_retry_interval`. The settings
@@ -851,7 +870,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
                 evicted.future.set_exception(PortWriteError("evicted from a full write queue"))
 
         self.debug("pushing value %s to write queue", value)
-        self._write_queue.append(WriteRequest(value, future))
+        with self._tracking_last_value():
+            self._write_queue.append(WriteRequest(value, future))
 
     def drop_write_queue(self) -> None:
         """Drop any queued writes, failing their futures so that no caller is left hanging. They are failed rather
@@ -866,7 +886,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             if request.future and not request.future.done():
                 request.future.set_exception(PortDisabled())
 
-        self._write_queue.clear()
+        with self._tracking_last_value():
+            self._write_queue.clear()
 
     async def push_write_and_wait(self, value: PortValue) -> None:
         """Push a value to the writing process queue and wait for it to actually be written, propagating any
@@ -966,11 +987,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             try:
                 transformed_value = self.adapt_value_type(await self._transform_write.eval(eval_context))
             except expressions_exceptions.ValueUnavailable:
-                self._writing_value = None
+                self._stop_writing()
                 self.debug("value %s unavailable after write transform", value_str)
                 return
             except Exception:
-                self._writing_value = None
+                self._stop_writing()
                 self.error("failed to apply write transform to value %s", value_str, exc_info=True)
                 self._enforce_value_paused = True
                 raise

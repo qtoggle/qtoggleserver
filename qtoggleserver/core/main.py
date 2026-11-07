@@ -175,11 +175,8 @@ async def read_ports(ports_to_read: list[core_ports.BasePort] | None = None) -> 
                 port_changed_values[port] = old_value, new_value
                 port.maybe_enforce_value(new_value)
 
-        # Trigger value-change events; save ports; flag port deps as changed
+        # Trigger value-change events; save ports. Ports flag their changed value deps themselves.
         for port, (old_value, new_value) in port_changed_values.items():
-            add_dep_change(f"${port.get_id()}")
-            add_dep_change(f"${port.get_id()}?")
-
             if not await port.is_internal():
                 await port.trigger_value_change(old_value, new_value)
 
