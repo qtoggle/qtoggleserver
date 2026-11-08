@@ -642,3 +642,141 @@ class TestValueTimes:
 
         with pytest.raises(core_ports.SkipRead):
             await port.read_value()
+
+
+async def run_listen_loop(slave, mock_http_client, mocker, results: list) -> None:
+    """Run the listen loop over the given parse results, one per listen request, then stop it."""
+
+    results = list(results)
+
+    async def fetch(*args, **kwargs) -> types.SimpleNamespace:
+        if not results:
+            slave._listen_session_id = None
+        return types.SimpleNamespace(error=None, code=200)
+
+    def parse(response) -> list:
+        result = results.pop(0)
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+    mock_http_client.fetch.side_effect = fetch
+    mocker.patch("qtoggleserver.slaves.devices.core_responses.parse", side_effect=parse)
+    mocker.patch("qtoggleserver.slaves.devices.asyncio.sleep")
+    mocker.patch.dict("qtoggleserver.slaves.devices._slaves_by_name", {slave.get_name(): slave})
+    slave._listen_session_id = "session1"
+
+    await slave._listen_loop()
+
+
+class TestLastSeen:
+    async def test_never_seen(self, slave) -> None:
+        assert slave.to_json()["last_seen"] == 0
+
+    async def test_persisted(self, slave, freezer) -> None:
+        slave.update_last_seen()
+
+        restored = Slave(**slave.prepare_for_save())
+
+        assert restored.to_json()["last_seen"] == int(time.time())
+
+    async def test_old_persisted_field_dropped(self, slave) -> None:
+        data = slave.prepare_for_save()
+        data.pop("last_seen")
+        data["last_sync"] = 1234
+
+        restored = Slave(**data)
+
+        assert restored.to_json()["last_seen"] == 0
+        assert "last_sync" not in restored.to_json()
+
+    async def test_success(self, slave, mock_http_client, mocker, freezer) -> None:
+        mocker.patch.object(core_responses, "parse", return_value={})
+        mocker.patch.object(slave, "intercept_response")
+
+        await slave._api_call("GET", "/device", retry_counter=None)
+
+        assert slave.to_json()["last_seen"] == int(time.time())
+
+    @pytest.mark.parametrize(
+        "error, seen",
+        [
+            (core_responses.HTTPError(404, "no-such-port"), True),
+            (core_responses.HTTPError(401, "authentication-required"), True),
+            (core_responses.InvalidJson(), False),
+            (core_responses.Timeout(), False),
+            (core_responses.ConnectionRefused(), False),
+        ],
+    )
+    async def test_errors(self, slave, mock_http_client, mocker, freezer, error, seen) -> None:
+        """An error the slave answered with counts, since the slave is reachable. A failed connection doesn't."""
+
+        mocker.patch.object(core_responses, "parse", side_effect=error)
+
+        with pytest.raises(core_responses.Error):
+            await slave._api_call("GET", "/device", retry_counter=None)
+
+        assert slave.to_json()["last_seen"] == (int(time.time()) if seen else 0)
+
+    @pytest.mark.parametrize(
+        "error, seen", [(core_responses.HTTPError(500, "busy"), True), (core_responses.Timeout(), False)]
+    )
+    async def test_listen_errors(self, slave, mock_http_client, mocker, freezer, error, seen) -> None:
+        mocker.patch.object(slave, "_handle_offline")
+
+        await run_listen_loop(slave, mock_http_client, mocker, [error])
+
+        assert slave.to_json()["last_seen"] == (int(time.time()) if seen else 0)
+
+    async def test_ignored_when_adding(self, mock_persist_driver, mocker) -> None:
+        """`PUT /devices` passes each record to `add()`, which must not restore `last_seen` from it."""
+
+        mocker.patch.dict("qtoggleserver.slaves.devices._slaves_by_name", {}, clear=True)
+        slave = await slaves_devices.add(
+            "http",
+            "192.168.1.3",
+            80,
+            "",
+            listen_enabled=False,
+            admin_password="",
+            name="slave3",
+            enabled=False,
+            last_seen=1234,
+        )
+
+        assert slave.to_json()["last_seen"] == 0
+
+
+class TestDeviceOnline:
+    async def test_disabled_never_online(self, slave, mock_persist_driver, mocker) -> None:
+        mocker.patch.object(slave, "_get_local_ports", return_value=[])
+        slave._enabled = True
+        slave._online = True
+
+        await slave.disable()
+
+        assert not slave.is_online()
+
+    async def test_permanently_offline_never_online(self, slave, mock_persist_driver, mocker) -> None:
+        start_polling = mocker.patch.object(slave, "_start_polling")
+        start_listening = mocker.patch.object(slave, "_start_listening")
+
+        await slave.enable()
+
+        assert slave.is_permanently_offline()
+        assert not slave.is_online()
+        start_polling.assert_not_called()
+        start_listening.assert_not_called()
+
+    @pytest.mark.parametrize("failures, offline", [(2, False), (3, True)])
+    async def test_listen_counts_failures(self, slave, mock_http_client, mocker, failures, offline) -> None:
+        """A listening slave goes offline only after more than `retry_count` failed listen requests in a row."""
+
+        mocker.patch.object(settings.slaves, "retry_count", 2)
+        handle_offline = mocker.patch.object(slave, "_handle_offline")
+        slave._online = True
+
+        await run_listen_loop(slave, mock_http_client, mocker, [core_responses.Timeout()] * failures)
+
+        assert slave.is_online() is not offline
+        assert handle_offline.called is offline

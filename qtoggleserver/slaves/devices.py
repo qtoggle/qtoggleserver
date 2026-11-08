@@ -69,7 +69,7 @@ class Slave(logging_utils.LoggableMixin):
         listen_enabled: bool = False,
         admin_password: str | None = None,
         admin_password_hash: str | None = None,
-        last_sync: int = -1,
+        last_seen: int = 0,
         attrs: Attributes | None = None,
         webhooks: GenericJSONDict | None = None,
         reverse: GenericJSONDict | None = None,
@@ -107,7 +107,7 @@ class Slave(logging_utils.LoggableMixin):
         self._initial_online: bool = True
 
         # Timestamp when we last heard from this device
-        self._last_sync: float = last_sync
+        self._last_seen: int = last_seen
 
         # Indicates whether all data required for this slave is present locally
         self._ready: bool = False
@@ -275,8 +275,8 @@ class Slave(logging_utils.LoggableMixin):
     def is_online(self) -> bool:
         return self._online
 
-    def update_last_sync(self) -> None:
-        self._last_sync = int(time.time())
+    def update_last_seen(self) -> None:
+        self._last_seen = int(time.time())
 
     def is_enabled(self) -> bool:
         return self._enabled
@@ -427,7 +427,7 @@ class Slave(logging_utils.LoggableMixin):
             "admin_password_hash": self._admin_password_hash,
             "poll_interval": self._poll_interval,
             "listen_enabled": self._listen_enabled,
-            "last_sync": self._last_sync,
+            "last_seen": self._last_seen,
             "online": self._online,
             "provisioning": provisioning,
             "attrs": self.get_cached_attrs(),
@@ -444,7 +444,7 @@ class Slave(logging_utils.LoggableMixin):
             "admin_password_hash": self._admin_password_hash,
             "poll_interval": self._poll_interval,
             "listen_enabled": self._listen_enabled,
-            "last_sync": self._last_sync,
+            "last_seen": self._last_seen,
             "attrs": self._cached_attrs.copy(),
             "webhooks": self._cached_webhooks.copy(),
             "reverse": self._cached_reverse.copy(),
@@ -593,6 +593,10 @@ class Slave(logging_utils.LoggableMixin):
         try:
             response_body = core_responses.parse(response)
         except core_responses.Error as e:
+            # An error answered by the slave itself still shows that it is reachable
+            if isinstance(e, core_responses.HTTPError):
+                self.update_last_seen()
+
             e = self.intercept_error(e)
 
             msg = f"api call {method} {path} on {self} failed: {e} (body={body_str or ''})"
@@ -620,7 +624,7 @@ class Slave(logging_utils.LoggableMixin):
         else:
             self.debug("api call %s %s succeeded", method, path)
 
-            self.update_last_sync()
+            self.update_last_seen()
             await self.intercept_response(method, path, body, response_body)
 
             return response_body
@@ -843,6 +847,8 @@ class Slave(logging_utils.LoggableMixin):
                     received_events = core_responses.parse(response)
                 except core_responses.Error as e:
                     offline_counter += 1
+                    if isinstance(e, core_responses.HTTPError):
+                        self.update_last_seen()  # the slave answered, even if with an error
 
                     self.error(
                         "api call GET /listen failed: %s, retrying in %s seconds", e, settings.slaves.retry_interval
@@ -859,7 +865,7 @@ class Slave(logging_utils.LoggableMixin):
                 else:
                     self.debug("api call GET /listen succeeded")
 
-                    self.update_last_sync()
+                    self.update_last_seen()
 
                     # Switch to normal keep-alive
                     keep_alive = settings.slaves.keepalive
@@ -1604,7 +1610,6 @@ async def add(
     admin_password_hash: str | None = None,
     name: str | None = None,
     enabled: bool = True,
-    last_sync: int = -1,
     provisioning: list[str] | None = None,
     attrs: Attributes | None = None,
     **kwargs,
@@ -1619,7 +1624,6 @@ async def add(
         listen_enabled=listen_enabled,
         admin_password=admin_password,
         admin_password_hash=admin_password_hash,
-        last_sync=last_sync,
         provisioning_attrs=provisioning,
         # TODO provisioning_webhooks, provisioning_reverse
         attrs=attrs,
