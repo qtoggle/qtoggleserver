@@ -680,6 +680,16 @@ class TestLastSeen:
 
         assert restored.to_json()["last_seen"] == int(time.time())
 
+    async def test_old_persisted_field_dropped(self, slave) -> None:
+        data = slave.prepare_for_save()
+        data.pop("last_seen")
+        data["last_sync"] = 1234
+
+        restored = Slave(**data)
+
+        assert restored.to_json()["last_seen"] == 0
+        assert "last_sync" not in restored.to_json()
+
     async def test_success(self, slave, mock_http_client, mocker, freezer) -> None:
         mocker.patch.object(core_responses, "parse", return_value={})
         mocker.patch.object(slave, "intercept_response")
