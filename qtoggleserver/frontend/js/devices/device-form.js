@@ -44,7 +44,7 @@ import * as Utils              from '$app/utils.js'
 import * as Devices from './devices.js'
 
 
-const MASTER_FIELDS = ['url', 'enabled', 'poll_interval', 'listen_enabled', 'last_sync']
+const MASTER_FIELDS = ['url', 'enabled', 'poll_interval', 'listen_enabled', 'last_seen']
 
 const logger = Devices.logger
 
@@ -104,8 +104,8 @@ class DeviceForm extends mix(PageForm).with(
                     label: gettext('Enable Listening')
                 }),
                 new TextField({
-                    name: 'last_sync',
-                    label: gettext('Last Sync'),
+                    name: 'last_seen',
+                    label: gettext('Last Seen'),
                     readonly: true
                 })
             ],
@@ -145,11 +145,11 @@ class DeviceForm extends mix(PageForm).with(
         this.setTitle(device.attrs.display_name || device.name)
         this.setIcon(Devices.makeDeviceIcon(device))
 
-        if (device.last_sync === 0) {
-            device.last_sync = `(${gettext('never')})`
+        if (!device.last_seen) {
+            device.last_seen = `(${gettext('never')})`
         }
         else {
-            device.last_sync = DateUtils.formatPercent(new Date(device.last_sync * 1000), '%Y-%m-%d %H:%M:%S')
+            device.last_seen = DateUtils.formatPercent(new Date(device.last_seen * 1000), '%Y-%m-%d %H:%M:%S')
         }
 
         /* Update fields that stay on master, but only if they're not being edited */
@@ -194,7 +194,7 @@ class DeviceForm extends mix(PageForm).with(
                 attrs: Common.preprocessDeviceAttrs(device.attrs),
                 provisioning: device.provisioning || [],
                 noUpdated: NotificationsAPI.NO_EVENT_DEVICE_ATTRS,
-                startIndex: this.getFieldIndex('last_sync') + 1,
+                startIndex: this.getFieldIndex('last_seen') + 1,
                 fieldChangeWarnings: fieldChangeWarnings
             })
         }

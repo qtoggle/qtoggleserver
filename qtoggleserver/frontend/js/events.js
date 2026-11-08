@@ -24,7 +24,7 @@ import * as Sections              from '$app/sections.js'
 /* Attributes that are ignored when showing notification messages */
 const IGNORE_CHANGE_PORT_ATTRS = ['last_sync', 'value']
 const IGNORE_CHANGE_DEVICE_ATTRS = ['uptime', 'date', 'battery_level']
-const IGNORE_CHANGE_SLAVE_ATTRS = ['last_sync', 'attrs']
+const IGNORE_CHANGE_SLAVE_ATTRS = ['last_seen', 'attrs']
 
 const logger = Logger.get('qtoggle.events')
 
