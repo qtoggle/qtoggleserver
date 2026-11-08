@@ -721,6 +721,7 @@ class Slave(logging_utils.LoggableMixin):
             self.error("invalid device")
             raise exceptions.InvalidDevice()
 
+        self._keep_provisioning_attrs(attrs)
         await self.update_cached_attrs(attrs)
 
         if just_added and (name in _slaves_by_name or core_device_attrs.name == name):
@@ -1232,12 +1233,7 @@ class Slave(logging_utils.LoggableMixin):
         await port.remove()
 
     async def _handle_device_update(self, **attrs: Attribute) -> None:
-        # The cache holds the values to provision, so keep them
-        for name, value in self.get_provisioning_attrs().items():
-            if name in attrs:
-                self.debug("ignoring device-update attribute %s due to pending provisioning attribute", name)
-                attrs[name] = value
-
+        self._keep_provisioning_attrs(attrs)
         await self.update_cached_attrs(attrs)
         await self.trigger_update()
         await self.save()
@@ -1312,6 +1308,14 @@ class Slave(logging_utils.LoggableMixin):
                 provisioning[name] = value
 
         return provisioning
+
+    def _keep_provisioning_attrs(self, attrs: Attributes) -> None:
+        """Put the cached values that wait to be provisioned back into `attrs`, over the remote ones."""
+
+        for name, value in self.get_provisioning_attrs().items():
+            if name in attrs:
+                self.debug("ignoring remote attribute %s due to pending provisioning attribute", name)
+                attrs[name] = value
 
     def clear_provisioning_attrs(self) -> None:
         self._provisioning_attrs = set()

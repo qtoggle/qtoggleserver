@@ -825,3 +825,16 @@ class TestProvisioningKeptOnEvents:
 
         assert slave.get_provisioning_attrs() == {"display_name": "Mine"}
         assert slave.get_cached_attr("version") == "2"
+
+    async def test_fetch_device_keeps_provisioning_attr(self, slave, mocker) -> None:
+        mocker.patch.object(
+            slave, "api_call", return_value={"name": "slave1", "display_name": "Theirs", "version": "2"}
+        )
+        slave._name = "slave1"
+        slave._cached_attrs = {"name": "slave1", "display_name": "Mine", "version": "1"}
+        slave._provisioning_attrs = {"display_name"}
+
+        await slave.fetch_and_update_device()
+
+        assert slave.get_provisioning_attrs() == {"display_name": "Mine"}
+        assert slave.get_cached_attr("version") == "2"
