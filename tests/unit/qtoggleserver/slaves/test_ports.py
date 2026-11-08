@@ -200,6 +200,14 @@ class TestLastReadAttr:
 
         assert (await port.get_attrs())["last_read"] == 1234
 
+    async def test_follows_slave_updates(self, slave) -> None:
+        port = SlavePort(slave, {"id": "port1", "type": "number", "enabled": True, "last_read": 1234})
+        await port.get_attrs()
+
+        port.update_cached_attrs({"id": "port1", "type": "number", "enabled": True, "last_read": 2345}, 0)
+
+        assert (await port.get_attrs())["last_read"] == 2345
+
     async def test_not_filled_in_by_master(self, slave) -> None:
         port = SlavePort(slave, {"id": "port1", "type": "number", "enabled": True})
         await port.enable()

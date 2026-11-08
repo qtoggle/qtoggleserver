@@ -2060,6 +2060,12 @@ class TestPortLastReadAttr:
         assert PeripheralPort.READ_EXPIRE is True
         assert VirtualPort.READ_EXPIRE is False
 
+    async def test_exposed_by_peripheral_port(self, mock_peripheral1) -> None:
+        await mock_peripheral1.init_ports()
+        port = mock_peripheral1.get_ports()[0]
+
+        assert "last_read" in await port.get_attrs()
+
     async def test_never_read(self, port) -> None:
         port._last_read_value = None
 
@@ -2078,6 +2084,36 @@ class TestPortLastReadAttr:
         assert first == int(time.time()) - 5
         assert (await port.get_attrs())["last_read"] == first + 5
         trigger_update.assert_not_called()
+
+    async def test_skipped_read_keeps_it(self, port, freezer) -> None:
+        port.set_next_value(5)
+        await main.read_ports(ports_to_read=[port])
+        last_read = (await port.get_attrs())["last_read"]
+
+        freezer.tick(5)
+        await main.read_ports(ports_to_read=[port])  # no next value, so the read is skipped
+
+        assert (await port.get_attrs())["last_read"] == last_read
+
+    async def test_uses_value_time(self, port, mocker) -> None:
+        """A port that offers a value it took earlier reports when the value was taken, not when it was read."""
+
+        taken_s = int(time.time()) - 60
+        mocker.patch.object(port, "get_read_value_time", return_value=taken_s * 1000)
+        port.set_next_value(5)
+        await main.read_ports(ports_to_read=[port])
+
+        assert (await port.get_attrs())["last_read"] == taken_s
+
+    async def test_restored(self, port, mocker) -> None:
+        mocker.patch.object(port, "get_modifiable_attrs", return_value=[])
+        port._last_read_value = (5, 1234567)
+        data = await port.to_persisted()
+        port._last_read_value = None
+
+        await port.from_persisted(data)
+
+        assert (await port.get_attrs())["last_read"] == 1234
 
     async def test_not_modifiable(self, port) -> None:
         with pytest.raises(core_api.APIError) as exc_info:
