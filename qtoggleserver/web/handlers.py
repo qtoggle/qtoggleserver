@@ -136,6 +136,9 @@ class PortsHandler(APIHandler):
 
 
 class PortHandler(APIHandler):
+    async def get(self, port_id: str) -> None:
+        await self.call_api_func(ports_api_funcs.get_port, port_id=port_id)
+
     async def delete(self, port_id: str) -> None:
         if not settings.core.virtual_ports:
             raise NoSuchFunction()
