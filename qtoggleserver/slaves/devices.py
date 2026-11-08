@@ -721,6 +721,7 @@ class Slave(logging_utils.LoggableMixin):
             self.error("invalid device")
             raise exceptions.InvalidDevice()
 
+        self._keep_provisioning_attrs(attrs)
         await self.update_cached_attrs(attrs)
 
         if just_added and (name in _slaves_by_name or core_device_attrs.name == name):
@@ -1196,6 +1197,7 @@ class Slave(logging_utils.LoggableMixin):
 
             if name in provisioning_attrs:
                 self.debug("ignoring port-update attribute %s due to pending provisioning attribute", name)
+                attrs[name] = provisioning_attrs[name]  # the cache holds the value to provision
                 continue
 
             old_value = port.get_cached_attr(name)
@@ -1205,6 +1207,10 @@ class Slave(logging_utils.LoggableMixin):
                 )
 
                 await port.handle_attr_change(name, value)
+
+        if port.get_provisioning_value() is not None:
+            self.debug("ignoring port-update value of %s due to pending provisioning value", port)
+            attrs.pop("value", None)
 
         port.update_cached_attrs(attrs, timestamp_ms)
         await port.update_enabled()
@@ -1227,16 +1233,7 @@ class Slave(logging_utils.LoggableMixin):
         await port.remove()
 
     async def _handle_device_update(self, **attrs: Attribute) -> None:
-        provisioning_attrs = self.get_provisioning_attrs()
-
-        # We're working on a copy, just to be sure we can safely pop stuff from it
-        attrs = attrs.copy()
-
-        for name in attrs:
-            if name in provisioning_attrs:
-                self.debug("ignoring device-update attribute %s due to pending provisioning attribute", name)
-                attrs.pop(name)
-
+        self._keep_provisioning_attrs(attrs)
         await self.update_cached_attrs(attrs)
         await self.trigger_update()
         await self.save()
@@ -1311,6 +1308,14 @@ class Slave(logging_utils.LoggableMixin):
                 provisioning[name] = value
 
         return provisioning
+
+    def _keep_provisioning_attrs(self, attrs: Attributes) -> None:
+        """Put the cached values that wait to be provisioned back into `attrs`, over the remote ones."""
+
+        for name, value in self.get_provisioning_attrs().items():
+            if name in attrs:
+                self.debug("ignoring remote attribute %s due to pending provisioning attribute", name)
+                attrs[name] = value
 
     def clear_provisioning_attrs(self) -> None:
         self._provisioning_attrs = set()
