@@ -24,6 +24,16 @@ export function getPorts() {
 }
 
 /**
+ * GET /ports/{id} API function call.
+ * @alias qtoggle.api.ports.getPort
+ * @param {String} id the port identifier
+ * @returns {Promise}
+ */
+export function getPort(id) {
+    return BaseAPI.apiCall({method: 'GET', path: `/ports/${id}`})
+}
+
+/**
  * PATCH /ports/{id} API function call.
  * @alias qtoggle.api.ports.patchPort
  * @param {String} id the port identifier

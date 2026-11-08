@@ -12,6 +12,7 @@ import * as DateUtils      from '$qui/utils/date.js'
 import * as ObjectUtils    from '$qui/utils/object.js'
 import * as StringUtils    from '$qui/utils/string.js'
 
+import {formatTimeAgo}  from '$app/common/live-time.js'
 import {netmaskFromLen} from '$app/utils.js'
 import {netmaskToLen}   from '$app/utils.js'
 
@@ -1001,14 +1002,7 @@ export const STD_PORT_ATTRDEFS = {
         modifiable: false,
         standard: true,
         optional: true,
-        valueToUI: function (value) {
-            if (!value) {
-                return `(${gettext('never')})`
-            }
-            else {
-                return DateUtils.formatPercent(new Date(value * 1000), '%Y-%m-%d %H:%M:%S')
-            }
-        },
+        valueToUI: formatTimeAgo,
         order: 125
     },
     last_sync: {

@@ -175,6 +175,15 @@ async def get_ports(request: core_api.APIRequest) -> list[Attributes]:
     return [await port.to_json() for port in sorted(core_ports.get_all(), key=lambda p: p.get_id())]
 
 
+@core_api.api_call(core_api.ACCESS_LEVEL_VIEWONLY)
+async def get_port(request: core_api.APIRequest, port_id: str) -> Attributes:
+    port = core_ports.get(port_id)
+    if port is None:
+        raise core_api.APIError(404, "no-such-port")
+
+    return await port.to_json()
+
+
 @core_api.api_call(core_api.ACCESS_LEVEL_ADMIN)
 async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> None:
     if not settings.core.backup_support:

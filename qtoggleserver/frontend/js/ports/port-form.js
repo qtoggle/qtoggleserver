@@ -24,6 +24,7 @@ import * as APIConstants from '$app/api/constants.js'
 import * as PortsAPI     from '$app/api/ports.js'
 import * as Cache        from '$app/cache.js'
 import AttrdefFormMixin  from '$app/common/attrdef-form-mixin.js'
+import {LiveTime}        from '$app/common/live-time.js'
 import * as Utils        from '$app/utils.js'
 
 import PortHistoryChartPage from './port-history-chart-page.js'
@@ -96,6 +97,21 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
 
         this._fullAttrdefs = {}
         this._staticFieldsAdded = false
+
+        this._lastRead = new LiveTime(
+            () => {
+                if (!this.getField('attr_last_read')) {
+                    return Promise.resolve() /* this port doesn't report it, so don't ask */
+                }
+
+                return PortsAPI.getPort(this.getPortId()).then(port => port.last_read)
+            },
+            text => {
+                if (this.getField('attr_last_read')) {
+                    this.setData({attr_last_read: text})
+                }
+            }
+        )
     }
 
     init() {
@@ -110,6 +126,8 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         if (!port) {
             throw new AssertionError(`Port with id ${this.getPortId()} not found in cache`)
         }
+
+        this._lastRead.setTimestamp(port.last_read)
 
         let device = null
         if (this._deviceName && !Cache.isMainDevice(this._deviceName)) {
@@ -382,6 +400,14 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
                 }
             }))
         }
+    }
+
+    onPush() {
+        this._lastRead.start()
+    }
+
+    onClose() {
+        this._lastRead.stop()
     }
 
     /**

@@ -151,6 +151,28 @@ class TestPatchPort:
         assert await mock_num_port1.get_attr("expression") == sexpression
 
 
+class TestGetPort:
+    async def test_same_as_in_list(self, mock_api_request_maker, mock_num_port1, mock_num_port2) -> None:
+        request = mock_api_request_maker("GET", "/ports/nid2", access_level=core_api.ACCESS_LEVEL_VIEWONLY)
+
+        port = await ports_api_funcs.get_port(request, "nid2")
+
+        ports = await ports_api_funcs.get_ports(request)
+        assert port == next(p for p in ports if p["id"] == "nid2")
+
+    async def test_no_such_port(self, mock_api_request_maker) -> None:
+        request = mock_api_request_maker("GET", "/ports/nosuch", access_level=core_api.ACCESS_LEVEL_VIEWONLY)
+        with pytest.raises(core_api.APIError, match="no-such-port") as exc_info:
+            await ports_api_funcs.get_port(request, "nosuch")
+        assert exc_info.value.status == 404
+
+    async def test_requires_viewonly(self, mock_api_request_maker, mock_num_port1) -> None:
+        request = mock_api_request_maker("GET", "/ports/nid1", access_level=core_api.ACCESS_LEVEL_NONE)
+        with pytest.raises(core_api.APIError) as exc_info:
+            await ports_api_funcs.get_port(request, "nid1")
+        assert exc_info.value.status in (401, 403)
+
+
 class TestPatchPortValue:
     @pytest.fixture(autouse=True)
     def mock_slaves(self, mocker) -> None:

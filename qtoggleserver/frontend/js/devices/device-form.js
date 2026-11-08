@@ -17,7 +17,6 @@ import {ConfirmMessageForm} from '$qui/messages/common-message-forms/common-mess
 import * as Messages        from '$qui/messages/messages.js'
 import * as Navigation      from '$qui/navigation.js'
 import * as Theme           from '$qui/theme.js'
-import * as DateUtils       from '$qui/utils/date.js'
 import * as ObjectUtils     from '$qui/utils/object.js'
 import * as PromiseUtils    from '$qui/utils/promise.js'
 import * as StringUtils     from '$qui/utils/string.js'
@@ -34,6 +33,8 @@ import * as Cache              from '$app/cache.js'
 import AttrdefFormMixin        from '$app/common/attrdef-form-mixin.js'
 import BackupForm              from '$app/common/backup-form.js'
 import * as Common             from '$app/common/common.js'
+import {LiveTime}               from '$app/common/live-time.js'
+import {formatTimeAgo}          from '$app/common/live-time.js'
 import FactoryResetDeviceMixin from '$app/common/factory-reset-device-mixin.js'
 import RebootDeviceMixin       from '$app/common/reboot-device-mixin.js'
 import RestoreForm             from '$app/common/restore-form.js'
@@ -118,6 +119,13 @@ class DeviceForm extends mix(PageForm).with(
 
         this._fullAttrdefs = null
         this._deviceName = deviceName
+        this._lastSeen = new LiveTime(
+            () => MasterSlaveAPI.getSlaveDevices().then(devices => {
+                let device = devices.find(d => d.name === this.getDeviceName())
+                return device ? device.last_seen : undefined
+            }),
+            text => this.setData({last_seen: text})
+        )
         this._staticFieldsAdded = false
         this._deviceRemoved = false
 
@@ -145,12 +153,8 @@ class DeviceForm extends mix(PageForm).with(
         this.setTitle(device.attrs.display_name || device.name)
         this.setIcon(Devices.makeDeviceIcon(device))
 
-        if (!device.last_seen) {
-            device.last_seen = `(${gettext('never')})`
-        }
-        else {
-            device.last_seen = DateUtils.formatPercent(new Date(device.last_seen * 1000), '%Y-%m-%d %H:%M:%S')
-        }
+        this._lastSeen.setTimestamp(device.last_seen)
+        device.last_seen = formatTimeAgo(device.last_seen)
 
         /* Update fields that stay on master, but only if they're not being edited */
         let masterData = {}
@@ -520,11 +524,13 @@ class DeviceForm extends mix(PageForm).with(
 
     onPush() {
         Devices.setCurrentDeviceName(this._deviceName)
+        this._lastSeen.start()
     }
 
     onClose() {
         Devices.setCurrentDeviceName(null)
         this.cancelWaiting()
+        this._lastSeen.stop()
     }
 
     onButtonPress(button) {
