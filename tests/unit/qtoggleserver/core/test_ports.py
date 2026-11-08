@@ -2046,6 +2046,13 @@ class TestPortEnforceValueAttr:
         assert mock_num_port1._enforce_value_paused is True
 
 
+@pytest.fixture
+async def peripheral_port(mock_peripheral1) -> PeripheralPort:
+    await mock_peripheral1.init_ports()
+    yield mock_peripheral1.get_ports()[0]
+    await mock_peripheral1.cleanup_ports(persisted_data=False)
+
+
 class TestPortLastReadAttr:
     @pytest.fixture
     async def port(self, mock_num_port1, mocker) -> MockNumberPort:
@@ -2060,11 +2067,8 @@ class TestPortLastReadAttr:
         assert PeripheralPort.READ_EXPIRE is True
         assert VirtualPort.READ_EXPIRE is False
 
-    async def test_exposed_by_peripheral_port(self, mock_peripheral1) -> None:
-        await mock_peripheral1.init_ports()
-        port = mock_peripheral1.get_ports()[0]
-
-        assert "last_read" in await port.get_attrs()
+    async def test_exposed_by_peripheral_port(self, peripheral_port) -> None:
+        assert "last_read" in await peripheral_port.get_attrs()
 
     async def test_never_read(self, port) -> None:
         port._last_read_value = None
@@ -2173,6 +2177,18 @@ class TestPortExpiresAttr:
 
         assert await port.get_attr("online") is False
 
+    async def test_peripheral_port_goes_offline(self, mock_peripheral1, peripheral_port, freezer) -> None:
+        mock_peripheral1.set_online(True)
+        await peripheral_port.enable()
+        await peripheral_port.set_attr("expires", 10)
+        await main.read_ports(ports_to_read=[peripheral_port])
+        assert await peripheral_port.get_attr("online") is True
+
+        freezer.tick(11)
+        await self.run_timers()
+
+        assert await peripheral_port.get_attr("online") is False
+
     async def test_no_effect_without_online(self, port) -> None:
         port.set_online(None)
         port._last_read_value = None
@@ -2192,8 +2208,10 @@ class TestPortExpiresAttr:
         await self.read(port)
 
         freezer.tick(9.9)
+        await self.run_timers()
         assert await port.get_attr("online") is True
         freezer.tick(0.2)
+        await self.run_timers()
         assert await port.get_attr("online") is False
 
     async def test_timer_fires_port_update(self, port, freezer, mocker) -> None:

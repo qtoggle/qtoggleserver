@@ -42,7 +42,7 @@ class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
             await self._peripheral.check_disabled(self)
 
     async def attr_is_online(self) -> bool:
-        if not self.is_enabled():
+        if not self.is_enabled() or self.is_expired():
             return False
 
         return self._peripheral.is_online()

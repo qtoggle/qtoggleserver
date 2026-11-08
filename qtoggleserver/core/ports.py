@@ -221,7 +221,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     # Set to `False` for ports that must never have their value enforced
     ENFORCE_VALUE = True
 
-    # Set to `True` for ports whose reads may stop succeeding, so that their value can expire
+    # Set to `True` for ports whose reads may stop succeeding, so that their value can expire. Such ports must report
+    # `online` as `false` while `is_expired()`.
     READ_EXPIRE = False
 
     STANDARD_ATTRDEFS = STANDARD_ATTRDEFS
@@ -399,13 +400,6 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._get_attrs_cache = None
 
     async def get_attr(self, name: str) -> Attribute | None:
-        value = await self._get_attr(name)
-        if name == "online" and value and self._is_expired():
-            return False  # the cache keeps the port's own `online`, which doesn't depend on expiry
-
-        return value
-
-    async def _get_attr(self, name: str) -> Attribute | None:
         value = self._attrs_cache.get(name)
         if value is not None:
             return value
@@ -768,7 +762,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         return self._expires
 
-    def _is_expired(self) -> bool:
+    def is_expired(self) -> bool:
+        return self._expired
+
+    def _compute_expired(self) -> bool:
         expires = self._get_expires()
         if not expires:
             return False
@@ -784,7 +781,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._expire_timer.cancel()
             self._expire_timer = None
 
-        expired = self._enabled and self._is_expired()
+        expired = self._enabled and self._compute_expired()
         if expired != self._expired:
             self._expired = expired
             self.debug("value expired" if expired else "value no longer expired")

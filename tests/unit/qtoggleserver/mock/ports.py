@@ -39,7 +39,10 @@ class MockPort(Port):
         self.invalidate_attrdefs()  # some attributes only exist on writable ports
 
     async def attr_is_online(self) -> bool | None:
-        return self._mock_online
+        if self._mock_online is None:
+            return None
+
+        return self._mock_online and not self.is_expired()
 
     def set_online(self, online: bool | None) -> None:
         self._mock_online = online
