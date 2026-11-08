@@ -780,7 +780,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._expired = expired
             self.debug("value expired" if expired else "value no longer expired")
             self.invalidate_attr("online")
-            if self.is_loaded() and self._enabled:  # enabling and disabling tell consumers themselves
+            if self.is_loaded() and self._enabled:  # a disabled port is offline either way, so nothing changes
                 asyncio_utils.fire_and_forget(self.trigger_update())
 
         if not self._enabled or expired or not self._expires:
