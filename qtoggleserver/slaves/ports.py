@@ -72,8 +72,6 @@ class SlavePort(core_ports.BasePort):
         "max": 2147483647,
     }
 
-    _EXPIRES_ATTRDEF = {"type": "number", "modifiable": True, "min": 0, "max": 2147483647}
-
     _PROVISIONING_ATTRDEF = {"type": ["string"], "modifiable": False}
 
     _PERSISTED_ATTRDEF = {
@@ -146,9 +144,6 @@ class SlavePort(core_ports.BasePort):
                 break
 
             attrdefs[master_name] = self._DEVICE_HISTORY_RETENTION_ATTRDEF.copy()
-
-        # The core attributes don't define it
-        attrdefs["expires"] = self._EXPIRES_ATTRDEF.copy()
 
         # Hide attributes that the slave doesn't report, so that the master refuses to set them
         for name in REMOTE_ONLY_ATTRS:
@@ -262,9 +257,6 @@ class SlavePort(core_ports.BasePort):
             self.debug("failed to update attributes remotely: %s", e)
 
             raise
-
-    def _get_expires(self) -> int:
-        return 0  # slave ports still use their own expiry mechanism, below
 
     async def attr_is_online(self) -> bool:
         if not self._enabled:

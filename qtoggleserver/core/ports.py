@@ -276,7 +276,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         self._expires: int = 0
         # The expiry state consumers were last told about, used to tell when it changes
-        self._value_expired: bool = False
+        self._expired: bool = False
         self._expire_timer: asyncio.TimerHandle | None = None
 
         self._write_retry_count: int = 0
@@ -785,8 +785,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self._expire_timer = None
 
         expired = self._enabled and self._is_expired()
-        if expired != self._value_expired:
-            self._value_expired = expired
+        if expired != self._expired:
+            self._expired = expired
             self.debug("value expired" if expired else "value no longer expired")
             self.invalidate_attr("online")
             if self.is_loaded() and self._enabled:  # enabling and disabling tell consumers themselves
