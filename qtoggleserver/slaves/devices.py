@@ -1139,9 +1139,9 @@ class Slave(logging_utils.LoggableMixin):
             self.debug("ignoring value-change event of %s due to pending provisioning value", port)
             return
 
-        # An unchanged value still counts as a read, unless it was taken before the one already received
-        last_time_ms = port.get_last_remote_value_time()
         if port.get_last_remote_value() == value:
+            # An unchanged value still counts as a read, unless it was taken no later than the one already received
+            last_time_ms = port.get_last_remote_value_time()
             if last_time_ms is not None and timestamp_ms <= last_time_ms:
                 self.debug("ignoring value-change event of %s due to older same value", port)
                 return
