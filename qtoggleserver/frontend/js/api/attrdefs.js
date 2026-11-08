@@ -1029,12 +1029,13 @@ export const STD_PORT_ATTRDEFS = {
     },
     expires: {
         display_name: gettext('Expires'),
-        description: gettext('The number of seconds before the port value is considered expired. 0 means ' +
-                             'that port value never expires.'),
+        description: gettext('For how many seconds after a successful read the port value stays valid. ' +
+                             'An expired port is offline. 0 means that the port value never expires.'),
         unit: gettext('s'),
         type: 'number',
         modifiable: true,
         standard: true,
+        optional: true,
         min: 0,
         max: 2147483647,
         integer: true,

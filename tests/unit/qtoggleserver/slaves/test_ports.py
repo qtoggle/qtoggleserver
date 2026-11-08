@@ -265,6 +265,22 @@ class TestRemoteExpires:
 
         assert slave_port.get_provisioning_attrs() == {"expires": 60}
 
+    @pytest.mark.parametrize("sync", [{"poll_interval": 10}, {"listen_enabled": True}])
+    async def test_not_applied_by_master(self, sync, freezer, mocker) -> None:
+        """The slave applies `expires` itself, so the master's own read time must not make the port expire."""
+
+        slave = Slave(name="slave1", scheme="http", host="192.168.1.2", port=80, path="", admin_password="", **sync)
+        mocker.patch.object(slave, "is_online", return_value=True)
+        port = SlavePort(slave, {"id": "port1", "type": "number", "enabled": True, "expires": 10})
+        await port.enable()
+        port.push_remote_value(5, int(time.time() * 1000))
+        await core_main.read_ports(ports_to_read=[port])
+
+        freezer.tick(60)
+
+        assert port._expire_timer is None
+        assert await port.get_attr("online") is True
+
     async def test_not_persisted_on_master(self, slave_port) -> None:
         data = await slave_port.to_persisted()
 
