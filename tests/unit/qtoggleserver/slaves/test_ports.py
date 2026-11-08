@@ -192,6 +192,24 @@ class TestPersistedValueTime:
         assert port._last_read_value == (5, 0)
 
 
+class TestLastReadAttr:
+    """Test that `last_read` comes from the slave, and never from the master's own reads."""
+
+    async def test_reported_by_slave(self, slave) -> None:
+        port = SlavePort(slave, {"id": "port1", "type": "number", "enabled": True, "last_read": 1234})
+
+        assert (await port.get_attrs())["last_read"] == 1234
+
+    async def test_not_filled_in_by_master(self, slave) -> None:
+        port = SlavePort(slave, {"id": "port1", "type": "number", "enabled": True})
+        await port.enable()
+        port.push_remote_value(5, 1000)
+        await core_main.read_ports(ports_to_read=[port])
+
+        assert port.get_last_read_value() == 5
+        assert "last_read" not in await port.get_attrs()
+
+
 class TestLegacyPersistedAttr:
     """Test the `persisted` attribute that slaves on qToggle API < 1.3 still report."""
 

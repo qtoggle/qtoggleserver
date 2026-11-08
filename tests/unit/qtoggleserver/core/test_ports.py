@@ -1,15 +1,20 @@
 import asyncio
 import logging
+import time
 
 from unittest.mock import call
 
 import pytest
 
 from qtoggleserver.conf import settings
+from qtoggleserver.core import api as core_api
 from qtoggleserver.core import expressions, main
+from qtoggleserver.core.api.funcs import ports as core_api_ports
 from qtoggleserver.core.expressions import EvalContext
 from qtoggleserver.core.expressions.exceptions import ValueUnavailable
 from qtoggleserver.core.ports import PortDisabled, PortWriteError, WriteRequest
+from qtoggleserver.core.vports import VirtualPort
+from qtoggleserver.peripherals import PeripheralPort
 from tests.unit.qtoggleserver.mock.ports import MockNumberPort
 
 
@@ -2039,3 +2044,50 @@ class TestPortEnforceValueAttr:
 
         assert data["enforce_value_paused"] is True
         assert mock_num_port1._enforce_value_paused is True
+
+
+class TestPortLastReadAttr:
+    @pytest.fixture
+    async def port(self, mock_num_port1, mocker) -> MockNumberPort:
+        mocker.patch.object(mock_num_port1, "READ_FRESHNESS", True)
+        mock_num_port1.invalidate_attrdefs()
+        return mock_num_port1
+
+    async def test_hidden_by_default(self, mock_num_port1) -> None:
+        assert "last_read" not in await mock_num_port1.get_attrs()
+
+    def test_offered_by_peripheral_ports(self) -> None:
+        assert PeripheralPort.READ_FRESHNESS is True
+        assert VirtualPort.READ_FRESHNESS is False
+
+    async def test_never_read(self, port) -> None:
+        port._last_read_value = None
+
+        assert (await port.get_attrs())["last_read"] == 0
+
+    async def test_refreshed_without_port_update(self, port, freezer, mocker) -> None:
+        trigger_update = mocker.spy(port, "trigger_update")
+        port.set_next_value(5)
+        await main.read_ports(ports_to_read=[port])
+        first = (await port.get_attrs())["last_read"]
+
+        freezer.tick(5)
+        port.set_next_value(5)
+        await main.read_ports(ports_to_read=[port])
+
+        assert first == int(time.time()) - 5
+        assert (await port.get_attrs())["last_read"] == first + 5
+        trigger_update.assert_not_called()
+
+    async def test_not_modifiable(self, port) -> None:
+        with pytest.raises(core_api.APIError) as exc_info:
+            await core_api_ports.set_port_attrs(port, {"last_read": 1}, ignore_extra_attrs=False)
+
+        assert exc_info.value.code == "attribute-not-modifiable"
+
+    async def test_ignored_on_restore(self, port, mock_persist_driver) -> None:
+        last_read = (await port.get_attrs())["last_read"]
+
+        await core_api_ports.set_port_attrs(port, {"last_read": 1}, ignore_extra_attrs=True)
+
+        assert (await port.get_attrs())["last_read"] == last_read

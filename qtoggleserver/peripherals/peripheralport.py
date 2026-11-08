@@ -8,6 +8,8 @@ from .peripheral import Peripheral
 class PeripheralPort(core_ports.Port, metaclass=abc.ABCMeta):
     ID = "port"
 
+    READ_FRESHNESS = True  # a peripheral may stop answering
+
     def __init__(self, peripheral: Peripheral, id: str | None = None) -> None:
         self._peripheral: Peripheral = peripheral
         self._initial_id: str = id or self.make_id()
