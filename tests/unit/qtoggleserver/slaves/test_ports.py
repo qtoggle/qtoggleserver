@@ -159,6 +159,39 @@ class TestReadValueTime:
         assert port._last_read_value == (3, taken_ms)
 
 
+class TestPersistedValueTime:
+    """Test that a permanently offline slave's port value keeps the time it was taken across restarts."""
+
+    @pytest.fixture
+    async def slave_port(self, slave) -> SlavePort:
+        return SlavePort(slave, {"id": "port1", "type": "number", "enabled": True})
+
+    async def test_round_trip(self, slave, slave_port, freezer) -> None:
+        slave_port.push_remote_value(5, 1000)
+        await slave_port.read_value()
+        data = await slave_port.to_persisted()
+        assert data["value_timestamp"] == 1000
+
+        freezer.tick(3600)
+        port = SlavePort(slave, {"id": "port1", "type": "number"})
+        await port.from_persisted(data)
+        await core_main.read_ports(ports_to_read=[port])
+
+        assert port._last_read_value == (5, 1000)
+
+    async def test_missing_time_is_oldest(self, slave, slave_port) -> None:
+        slave_port.push_remote_value(5, 1000)
+        await slave_port.read_value()
+        data = await slave_port.to_persisted()
+        del data["value_timestamp"]
+
+        port = SlavePort(slave, {"id": "port1", "type": "number"})
+        await port.from_persisted(data)
+        await core_main.read_ports(ports_to_read=[port])
+
+        assert port._last_read_value == (5, 0)
+
+
 class TestLegacyPersistedAttr:
     """Test the `persisted` attribute that slaves on qToggle API < 1.3 still report."""
 

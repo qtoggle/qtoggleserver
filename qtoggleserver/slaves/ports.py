@@ -392,8 +392,8 @@ class SlavePort(core_ports.BasePort):
             if "value" in data:
                 attrs["value"] = data["value"]
 
-            # Ports load before any write to them
-            self.update_cached_attrs(attrs, int(time.time() * 1000))
+            # Keep the time the value was taken, so that a restart doesn't make it look new
+            self.update_cached_attrs(attrs, data.get("value_timestamp") or 0)
 
         # Attributes that are kept on master
         for attr in MASTER_ATTRS:
@@ -419,6 +419,7 @@ class SlavePort(core_ports.BasePort):
             "provisioning": list(self._provisioning),
             "attrs": self._cached_attrs,
             "value": self._cached_value,
+            "value_timestamp": self._cached_value_time_ms,
         }
 
     def update_last_sync(self) -> None:
