@@ -2,7 +2,6 @@
 import {gettext} from '$qui/base/i18n.js'
 import Config    from '$qui/config.js'
 
-import * as Attrdefs from '$app/api/attrdefs.js'
 import * as AuthAPI  from '$app/api/auth.js'
 import * as Cache    from '$app/cache.js'
 import {Section}     from '$app/sections.js'
@@ -167,13 +166,8 @@ class PortsSection extends Section {
 
                 /* Update port form */
                 if (portForm && (portForm.getPortId() === event.params.id)) {
-                    let lastSync = Math.round(new Date().getTime() / 1000)
-
                     let valueField = portForm.getField('value')
                     let data = {}
-                    if (portForm.getField('attr_last_sync')) {
-                        data['attr_last_sync'] = Attrdefs.STD_PORT_ATTRDEFS['last_sync'].valueToUI(lastSync)
-                    }
                     if (valueField && (valueField.getValue() !== event.params.value)) {
                         data['value'] = event.params.value
                     }

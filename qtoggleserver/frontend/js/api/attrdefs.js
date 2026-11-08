@@ -1005,22 +1005,6 @@ export const STD_PORT_ATTRDEFS = {
         valueToUI: formatTimeAgo,
         order: 125
     },
-    last_sync: {
-        display_name: gettext('Last Sync'),
-        description: gettext('The last time when the value of this port has been updated.'),
-        type: 'string',
-        modifiable: false,
-        standard: true,
-        valueToUI: function (value) {
-            if (value == null || value < 0) {
-                return `(${gettext('never')})`
-            }
-            else {
-                return DateUtils.formatPercent(new Date(value * 1000), '%Y-%m-%d %H:%M:%S')
-            }
-        },
-        order: 130
-    },
     expires: {
         display_name: gettext('Expires'),
         description: gettext('For how many seconds after a successful read the port value stays valid. ' +
