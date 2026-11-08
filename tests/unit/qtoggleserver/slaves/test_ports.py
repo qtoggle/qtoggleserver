@@ -344,6 +344,17 @@ class TestLegacyPersistedAttr:
 
         assert slave_port.get_provisioning_attrs() == {"persisted": True}
 
+    async def test_provisioned_value_shown(self, slave, slave_port, mocker) -> None:
+        """The attributes must show the value marked for provisioning, not the one cached before it."""
+
+        mocker.patch.object(slave, "is_online", return_value=False)
+        mocker.patch.object(slave_port, "trigger_update")
+        assert (await slave_port.get_attrs())["persisted"] is False
+
+        await core_api_ports.set_port_attrs(slave_port, {"persisted": True}, ignore_extra_attrs=False)
+
+        assert (await slave_port.get_attrs())["persisted"] is True
+
 
 class TestDeviceExpression:
     """Test the `device_expression` attribute, which proxies the slave port's own expression."""

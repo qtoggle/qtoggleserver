@@ -209,6 +209,7 @@ class SlavePort(core_ports.BasePort):
                 self.debug("marking attribute %s for provisioning", name)
                 self._provisioning.add(name)
                 self._cached_attrs[name] = value
+                self.invalidate_attr(name)
 
                 await self.trigger_update()
 
