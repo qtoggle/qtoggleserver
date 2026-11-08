@@ -2239,11 +2239,22 @@ class TestPortExpiresAttr:
         trigger_update.assert_not_called()
         assert self.timer_delay(port) == pytest.approx(5, abs=0.01)
 
-    async def test_timer_delay_capped(self, port) -> None:
+    async def test_timer_delay_capped(self, port, freezer) -> None:
         await port.set_attr("expires", 3600)
         await self.read(port)
-
         assert self.timer_delay(port) == pytest.approx(600, abs=0.01)
+
+        freezer.tick(600.01)  # a timer due exactly at the frozen time doesn't fire
+        await self.run_timers()
+
+        assert await port.get_attr("online") is True
+        assert self.timer_delay(port) == pytest.approx(600, abs=0.01)
+
+        freezer.tick(2400.01)
+        await self.run_timers()
+
+        assert await port.get_attr("online") is True
+        assert self.timer_delay(port) == pytest.approx(600, abs=0.03)  # about 600 s left, so the cap no longer cuts it
 
     async def test_timer_min_delay(self, port, freezer) -> None:
         await self.read(port)
@@ -2312,6 +2323,45 @@ class TestPortExpiresAttr:
 
         assert await port.get_attr("online") is False
         assert port._expire_timer is None
+
+    async def test_raised_after_expiry(self, port, freezer, mocker) -> None:
+        port.attr_set_expires(10)
+        await self.read(port)
+        freezer.tick(11)
+        await self.run_timers()
+        trigger_update = mocker.spy(port, "trigger_update")
+
+        port.attr_set_expires(60)
+        await self.run_timers()
+
+        assert await port.get_attr("online") is True
+        trigger_update.assert_called_once()
+        assert self.timer_delay(port) == pytest.approx(49, abs=0.01)
+
+    async def test_expiry_flags_value_deps(self, port, freezer, mocker) -> None:
+        """The `port-update` sent on expiry must carry `online: false`, so that expressions using the value rerun."""
+
+        port.attr_set_expires(10)
+        await self.read(port)
+        assert (await port.get_attrs())["online"] is True  # cache the attributes, like consumers do
+        events = []
+
+        async def trigger(event) -> None:
+            await event.init_params()
+            events.append(event)
+
+        mocker.patch("qtoggleserver.core.events.trigger", side_effect=trigger)
+        main._attr_change_handler._last_availability[("nid1", "online")] = True
+        main._pending_dep_changes.clear()
+
+        freezer.tick(11)
+        await self.run_timers()
+        assert [type(e).__name__ for e in events] == ["PortUpdate"]
+        await main._attr_change_handler.handle_event(events[0])
+
+        assert events[0].get_params()["online"] is False
+        assert "$nid1" in main._pending_dep_changes
+        main._attr_change_handler._last_availability.clear()
 
     async def test_zero_cancels_timer(self, port) -> None:
         await port.set_attr("expires", 10)
