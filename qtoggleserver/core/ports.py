@@ -810,8 +810,8 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         # Reads come in a fast loop, so drop the cached `last_read` only when its value changes
         if self.READ_EXPIRE and self.attr_get_last_read() != old_last_read:
             self.invalidate_attr("last_read")
-        # Before the value-change event, so that its handlers see the port online again. While the timer runs, the
-        # value can't have expired, and the timer itself finds the later deadline.
+        # A pending timer means the value hasn't expired, and it re-arms for this read's deadline once it fires. So
+        # only the first read and the first read after expiry need a check, done before the value-change event.
         if self._expires and not self._expire_timer:
             self._update_expired()
         if value != old_read_value:
