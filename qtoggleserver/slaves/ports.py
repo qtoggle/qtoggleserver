@@ -52,8 +52,8 @@ class SlavePort(core_ports.BasePort):
     WRITE_RETRY = False
     ENFORCE_VALUE = False
 
-    # The slave reports how fresh its values are
-    READ_FRESHNESS = True
+    # The slave reports when its values were read and when they expire
+    READ_EXPIRE = True
 
     _DEVICE_EXPRESSION_ATTRDEF = {"type": "string", "modifiable": True}
 

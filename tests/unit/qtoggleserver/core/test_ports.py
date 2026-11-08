@@ -2049,7 +2049,7 @@ class TestPortEnforceValueAttr:
 class TestPortLastReadAttr:
     @pytest.fixture
     async def port(self, mock_num_port1, mocker) -> MockNumberPort:
-        mocker.patch.object(mock_num_port1, "READ_FRESHNESS", True)
+        mocker.patch.object(mock_num_port1, "READ_EXPIRE", True)
         mock_num_port1.invalidate_attrdefs()
         return mock_num_port1
 
@@ -2057,8 +2057,8 @@ class TestPortLastReadAttr:
         assert "last_read" not in await mock_num_port1.get_attrs()
 
     def test_offered_by_peripheral_ports(self) -> None:
-        assert PeripheralPort.READ_FRESHNESS is True
-        assert VirtualPort.READ_FRESHNESS is False
+        assert PeripheralPort.READ_EXPIRE is True
+        assert VirtualPort.READ_EXPIRE is False
 
     async def test_never_read(self, port) -> None:
         port._last_read_value = None
