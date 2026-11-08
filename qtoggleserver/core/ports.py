@@ -757,22 +757,16 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._expires = value
         self._update_expired()
 
-    def _get_expires(self) -> int:
-        """Return the `expires` that applies to this port, or `0` if its value never expires."""
-
-        return self._expires
-
     def is_expired(self) -> bool:
         return self._expired
 
     def _compute_expired(self) -> bool:
-        expires = self._get_expires()
-        if not expires:
+        if not self._expires:
             return False
         if not self._last_read_value:
             return True
 
-        return time.time() * 1000 - self._last_read_value[1] > expires * 1000
+        return time.time() * 1000 - self._last_read_value[1] > self._expires * 1000
 
     def _update_expired(self) -> None:
         """Tell consumers if the value has expired, or stopped being expired, and arm the timer for the next check."""
@@ -789,11 +783,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             if self.is_loaded() and self._enabled:  # enabling and disabling tell consumers themselves
                 asyncio_utils.fire_and_forget(self.trigger_update())
 
-        if not self._enabled or expired or not self._get_expires():
+        if not self._enabled or expired or not self._expires:
             return
 
         # Not expired, so the port has a read value
-        delay = self._last_read_value[1] / 1000 + self._get_expires() - time.time()
+        delay = self._last_read_value[1] / 1000 + self._expires - time.time()
         delay = min(max(delay, _EXPIRE_CHECK_MIN_DELAY), _EXPIRE_CHECK_MAX_DELAY)
         self._expire_timer = asyncio.get_running_loop().call_later(delay, self._update_expired)
 
@@ -818,7 +812,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.invalidate_attr("last_read")
         # Before the value-change event, so that its handlers see the port online again. While the timer runs, the
         # value can't have expired, and the timer itself finds the later deadline.
-        if self._get_expires() and not self._expire_timer:
+        if self._expires and not self._expire_timer:
             self._update_expired()
         if value != old_read_value:
             main.add_dep_change(f"${self.get_id()}?")
