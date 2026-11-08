@@ -99,7 +99,13 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         this._staticFieldsAdded = false
 
         this._lastRead = new LiveTime(
-            () => PortsAPI.getPort(this.getPortId()).then(port => port.last_read),
+            () => {
+                if (!this.getField('attr_last_read')) {
+                    return Promise.resolve() /* this port doesn't report it, so don't ask */
+                }
+
+                return PortsAPI.getPort(this.getPortId()).then(port => port.last_read)
+            },
             text => {
                 if (this.getField('attr_last_read')) {
                     this.setData({attr_last_read: text})
@@ -396,9 +402,6 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         }
     }
 
-    /**
-     * @returns {String}
-     */
     onPush() {
         this._lastRead.start()
     }
@@ -407,6 +410,9 @@ class PortForm extends mix(PageForm).with(AttrdefFormMixin) {
         this._lastRead.stop()
     }
 
+    /**
+     * @returns {String}
+     */
     getPortId() {
         return this._portId
     }
