@@ -332,7 +332,9 @@ class Slave(logging_utils.LoggableMixin):
         if self._poll_interval == poll_interval:
             return
 
+        was_permanently_offline = self.is_permanently_offline()
         self._poll_interval = poll_interval
+        self._handle_permanently_offline_change(was_permanently_offline)
 
         if poll_interval:
             self.debug("polling interval set to %ss", poll_interval)
@@ -358,7 +360,9 @@ class Slave(logging_utils.LoggableMixin):
 
         self.debug("listening enabled")
 
+        was_permanently_offline = self.is_permanently_offline()
         self._listen_enabled = True
+        self._handle_permanently_offline_change(was_permanently_offline)
         if not self._listen_session_id and self._enabled:
             self._start_listening()
 
@@ -368,7 +372,9 @@ class Slave(logging_utils.LoggableMixin):
 
         self.debug("listening disabled")
 
+        was_permanently_offline = self.is_permanently_offline()
         self._listen_enabled = False
+        self._handle_permanently_offline_change(was_permanently_offline)
         if self._listen_session_id:
             self._stop_listening()
 
@@ -382,6 +388,18 @@ class Slave(logging_utils.LoggableMixin):
 
     def is_permanently_offline(self) -> bool:
         return self._poll_interval == 0 and not self._listen_enabled
+
+    def _handle_permanently_offline_change(self, was_permanently_offline: bool) -> None:
+        """Refresh the ports when the slave starts or stops being permanently offline, since `online` depends on it."""
+
+        if self.is_permanently_offline() == was_permanently_offline:
+            return
+
+        for port in self._get_local_ports():
+            port.update_expires()
+            port.invalidate_attr("online")
+            if port.is_enabled() and port.is_loaded():
+                asyncio_utils.fire_and_forget(port.trigger_update())
 
     async def wait_online(self, timeout: int) -> None:
         for _ in range(timeout):

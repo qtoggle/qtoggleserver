@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 import pytest
@@ -286,6 +287,131 @@ class TestRemoteExpires:
 
         assert "expires" not in data
         assert "last_sync" not in data
+
+
+class TestPermanentlyOfflineExpires:
+    """A permanently offline slave can't apply `expires` while it sleeps, so the master applies it to its own reads."""
+
+    @pytest.fixture
+    async def slave_port(self, slave, mock_persist_driver, mocker) -> SlavePort:
+        mocker.patch("asyncio.Lock")
+        port = await core_ports.load_one(
+            SlavePort, {"slave": slave, "attrs": {"id": "port1", "type": "number", "enabled": True, "expires": 10}}
+        )
+        await port.enable()
+        yield port
+        await port.remove(persisted_data=False)
+
+    @staticmethod
+    async def run_timers() -> None:
+        for _ in range(3):
+            await asyncio.sleep(0)
+
+    @staticmethod
+    async def receive(port: SlavePort, value: int = 5, expires: int = 10) -> None:
+        """Receive the port from the slave, like a wake-up fetch does, and read it."""
+
+        attrs = {"id": "port1", "type": "number", "enabled": True, "expires": expires, "value": value}
+        port.update_cached_attrs(attrs, int(time.time() * 1000))
+        await core_main.read_ports(ports_to_read=[port])
+
+    @staticmethod
+    def timer_delay(port: SlavePort) -> float:
+        return port._expire_timer.when() - asyncio.get_running_loop().time()
+
+    async def test_expires_on_master(self, slave_port, freezer, mocker) -> None:
+        await self.receive(slave_port)
+        assert await slave_port.get_attr("online") is True
+        trigger_update = mocker.spy(slave_port, "trigger_update")
+
+        freezer.tick(11)
+        await self.run_timers()
+
+        assert await slave_port.get_attr("online") is False
+        trigger_update.assert_called_once()
+
+    async def test_wake_up_refreshes(self, slave_port, freezer) -> None:
+        """Every wake-up fetch counts as a read, even when the value didn't change."""
+
+        await self.receive(slave_port)
+        freezer.tick(8)
+        await self.receive(slave_port)
+        freezer.tick(8)
+        await self.run_timers()
+
+        assert await slave_port.get_attr("online") is True
+
+    async def test_no_expires(self, slave_port, freezer) -> None:
+        await self.receive(slave_port, expires=0)
+        freezer.tick(3600)
+        await self.run_timers()
+
+        assert await slave_port.get_attr("online") is True
+        assert slave_port._expire_timer is None
+
+    async def test_expires_change_rearms(self, slave_port) -> None:
+        await self.receive(slave_port)
+        await self.receive(slave_port, expires=60)
+
+        assert self.timer_delay(slave_port) == pytest.approx(60, abs=0.01)
+
+    async def test_set_while_asleep(self, slave, slave_port, mocker) -> None:
+        """A new `expires` waits for the slave to wake up, but the master applies it right away."""
+
+        mocker.patch.object(slave, "is_online", return_value=False)
+        await self.receive(slave_port)
+
+        await core_api_ports.set_port_attrs(slave_port, {"expires": 30}, ignore_extra_attrs=False)
+
+        assert slave_port.get_provisioning_attrs() == {"expires": 30}
+        assert self.timer_delay(slave_port) == pytest.approx(30, abs=0.01)
+
+    async def test_polling_turns_it_off(self, slave, slave_port, freezer, mocker) -> None:
+        await self.receive(slave_port)
+        mocker.patch.object(slave, "is_online", return_value=False)
+        trigger_update = mocker.spy(slave_port, "trigger_update")
+
+        slave.set_poll_interval(10)
+        await self.run_timers()
+
+        assert slave_port._expire_timer is None
+        assert await slave_port.get_attr("online") is False  # not reached by any poll yet
+        trigger_update.assert_called_once()
+
+        freezer.tick(60)
+        slave.set_poll_interval(0)
+        await self.run_timers()
+
+        assert slave_port.is_expired()
+        assert await slave_port.get_attr("online") is False
+
+    async def test_listening_turns_it_off(self, slave, slave_port, mocker) -> None:
+        await self.receive(slave_port)
+        mocker.patch.object(slave, "_start_listening")
+        mocker.patch.object(slave, "_stop_listening")
+
+        slave.enable_listen()
+        assert slave_port._expire_timer is None
+
+        slave.disable_listen()
+        assert self.timer_delay(slave_port) == pytest.approx(10, abs=0.01)
+
+    @pytest.mark.parametrize("age, online", [(60, False), (4, True)])
+    async def test_restart(self, slave, slave_port, freezer, mocker, age, online) -> None:
+        """After a restart, the restored value counts as read at the time the slave took it."""
+
+        await self.receive(slave_port)
+        data = await slave_port.to_persisted()
+        await slave_port.remove(persisted_data=False)
+        freezer.tick(age)
+        mocker.patch("qtoggleserver.persist.get", return_value=data)
+
+        port = await core_ports.load_one(SlavePort, {"slave": slave, "attrs": {"id": "port1"}})
+        try:
+            assert port.is_enabled()
+            assert await port.get_attr("online") is online
+        finally:
+            await port.remove(persisted_data=False)
 
 
 class TestLegacyPersistedAttr:
