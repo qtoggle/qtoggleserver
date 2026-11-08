@@ -1853,13 +1853,14 @@ class TestPortFromPersisted:
 
         assert mock_num_port1.get_last_value() == 34
 
-    async def test_legacy_value_restored_as_oldest(self, mock_num_port1, mocker):
-        """from_persisted should restore the legacy `value` field as a read value older than any other."""
+    async def test_legacy_value_ignored(self, mock_num_port1, mocker):
+        """from_persisted should ignore the old `value` field."""
         mocker.patch.object(mock_num_port1, "write_value", new=mocker.AsyncMock())
+        last_read_value = mock_num_port1._last_read_value
 
         await mock_num_port1.from_persisted({"value": 5})
 
-        assert mock_num_port1._last_read_value == (5, 0)
+        assert mock_num_port1._last_read_value == last_read_value
 
     async def test_restart_like_disable_enable(self, mock_num_port1, mock_num_port2, mocker):
         """A restart should leave a port in the same state as disabling and enabling it: values kept, queue dropped."""
