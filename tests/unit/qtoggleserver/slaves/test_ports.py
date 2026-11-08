@@ -2,6 +2,7 @@ import time
 
 import pytest
 
+from qtoggleserver.core import api as core_api
 from qtoggleserver.core import main as core_main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
@@ -83,12 +84,24 @@ class TestOnlineAttr:
 
         assert await slave_port.get_attr("online") is False
 
-    async def test_online_follows_slave(self, slave, slave_port, mocker) -> None:
+    @pytest.mark.parametrize("sync", [{"poll_interval": 10}, {"listen_enabled": True}])
+    async def test_offline_with_slave(self, sync, mocker) -> None:
+        slave = Slave(name="slave1", scheme="http", host="192.168.1.2", port=80, path="", admin_password="", **sync)
+        port = SlavePort(slave, {"id": "port1", "type": "boolean", "enabled": True})
+        await port.enable()
+        mocker.patch.object(slave, "is_online", return_value=False)
+        port.invalidate_attrs()
+
+        assert await port.get_attr("online") is False
+
+    async def test_permanently_offline_follows_slave(self, slave, slave_port, mocker) -> None:
+        """A permanently offline slave is never online, so its ports show what it last reported."""
+
         await slave_port.enable()
         mocker.patch.object(slave, "is_online", return_value=False)
         slave_port.invalidate_attrs()
 
-        assert await slave_port.get_attr("online") is False
+        assert await slave_port.get_attr("online") is True
 
     async def test_offline_reported_by_slave(self, slave_port) -> None:
         await slave_port.enable()
@@ -216,6 +229,47 @@ class TestLastReadAttr:
 
         assert port.get_last_read_value() == 5
         assert "last_read" not in await port.get_attrs()
+
+
+class TestRemoteExpires:
+    """Test that `expires` lives on the slave, like any other attribute the master doesn't keep."""
+
+    @pytest.fixture
+    async def slave_port(self, slave) -> SlavePort:
+        return SlavePort(slave, {"id": "port1", "type": "number", "enabled": True, "expires": 30})
+
+    async def test_reported_by_slave(self, slave_port) -> None:
+        assert (await slave_port.get_attrs())["expires"] == 30
+
+    async def test_hidden_when_not_reported(self, slave) -> None:
+        port = SlavePort(slave, {"id": "port1", "type": "number", "enabled": True})
+
+        assert "expires" not in await port.get_attrdefs()
+        assert "last_read" not in await port.get_attrdefs()
+        with pytest.raises(core_api.APIError) as exc_info:
+            await core_api_ports.set_port_attrs(port, {"expires": 60}, ignore_extra_attrs=False)
+        assert exc_info.value.code == "no-such-attribute"
+
+    async def test_forwarded_to_slave(self, slave, slave_port, mocker) -> None:
+        api_call = mocker.patch.object(slave, "api_call")
+
+        await core_api_ports.set_port_attrs(slave_port, {"expires": 60}, ignore_extra_attrs=False)
+
+        api_call.assert_called_once_with("PATCH", "/ports/port1", {"expires": 60}, timeout=mocker.ANY)
+
+    async def test_provisioned_when_offline(self, slave, slave_port, mocker) -> None:
+        mocker.patch.object(slave, "is_online", return_value=False)
+        mocker.patch.object(slave_port, "trigger_update")
+
+        await core_api_ports.set_port_attrs(slave_port, {"expires": 60}, ignore_extra_attrs=False)
+
+        assert slave_port.get_provisioning_attrs() == {"expires": 60}
+
+    async def test_not_persisted_on_master(self, slave_port) -> None:
+        data = await slave_port.to_persisted()
+
+        assert "expires" not in data
+        assert "last_sync" not in data
 
 
 class TestLegacyPersistedAttr:

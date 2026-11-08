@@ -10,6 +10,7 @@ from qtoggleserver.core import vports as core_vports
 from qtoggleserver.core.api.funcs import ports as ports_api_funcs
 from qtoggleserver.slaves import devices as slaves_devices
 from qtoggleserver.slaves.devices import Slave
+from qtoggleserver.slaves.ports import SlavePort
 
 
 class TestPatchPorts:
@@ -642,6 +643,26 @@ class TestRestoreSlaveNamespace:
         await ports_api_funcs.patch_ports(request, [{"id": "slave1.port1", "virtual": True, "type": "boolean"}])
 
         assert core_ports.get("slave1.port1") is None
+
+    async def test_slave_port_keeps_only_master_attrs(
+        self, slave1, mock_api_request_maker, mock_persist_driver, mocker
+    ) -> None:
+        """A restore must not forward attributes to the slave, `expires` included, since it lives there."""
+
+        mocker.patch("asyncio.Lock")
+        api_call = mocker.patch.object(slave1, "api_call")
+        port = await core_ports.load_one(
+            SlavePort, {"slave": slave1, "attrs": {"id": "port1", "type": "boolean", "expires": 30}}
+        )
+        request = mock_api_request_maker("PATCH", "/ports", access_level=core_api.ACCESS_LEVEL_ADMIN)
+        try:
+            await ports_api_funcs.patch_ports(request, [{"id": "slave1.port1", "tag": "t1", "expires": 60}])
+
+            assert await port.get_attr("tag") == "t1"
+            assert await port.get_attr("expires") == 30
+            api_call.assert_not_called()
+        finally:
+            await port.remove(persisted_data=False)
 
     async def test_local_entry_named_after_slave_is_created(
         self, slave1, mock_api_request_maker, mock_persist_driver, mocker

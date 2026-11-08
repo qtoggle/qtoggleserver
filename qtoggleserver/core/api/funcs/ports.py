@@ -239,7 +239,7 @@ async def put_ports(request: core_api.APIRequest, params: GenericJSONList) -> No
                 core_api.logger.debug('restoring slave port "%s"', id_)
 
                 # For slave ports, ignore any attributes that are not kept on master
-                attrs = {n: v for n, v in attrs.items() if n in ("tag", "expression", "expires")}
+                attrs = {n: v for n, v in attrs.items() if n in ("tag", "expression")}
             else:
                 core_api.logger.debug('restoring local port "%s"', id_)
 
@@ -312,7 +312,7 @@ async def patch_ports(request: core_api.APIRequest, params: GenericJSONList) -> 
                 core_api.logger.debug('restoring slave port "%s"', id_)
 
                 # For slave ports, ignore any attributes that are not kept on master
-                attrs = {n: v for n, v in attrs.items() if n in ("tag", "expression", "expires")}
+                attrs = {n: v for n, v in attrs.items() if n in ("tag", "expression")}
             else:
                 core_api.logger.debug('restoring local port "%s"', id_)
 

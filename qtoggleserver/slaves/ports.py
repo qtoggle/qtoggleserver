@@ -35,13 +35,12 @@ MASTER_ATTRS = {
     "history_interval",  # kept and managed on master, separate attribute for slave
     "history_retention",  # kept and managed on master, separate attribute for slave
     "online",  # use slave value unless slave itself offline or port disabled
-    "last_sync",  # always kept on master, ignored on slave
-    "expires",  # always kept on master, ignored on slave
 }
 
 # Attributes that only the slave can tell, so the master must not fill them in with its own values
 REMOTE_ONLY_ATTRS = {
     "last_read",
+    "expires",
 }
 
 
@@ -73,8 +72,6 @@ class SlavePort(core_ports.BasePort):
         "max": 2147483647,
     }
 
-    _LAST_SYNC_ATTRDEF = {"type": "number", "modifiable": False}
-
     _EXPIRES_ATTRDEF = {"type": "number", "modifiable": True, "min": 0, "max": 2147483647}
 
     _PROVISIONING_ATTRDEF = {"type": ["string"], "modifiable": False}
@@ -105,21 +102,9 @@ class SlavePort(core_ports.BasePort):
         # Tag is kept locally
         self._tag: str = ""
 
-        # Timestamp of the last time we've heard from this port
-        self._last_sync: float = 0
-
-        # Number of seconds before port value expires
-        self._expires: int = 0
-
-        # Cached expired status
-        self._expired: bool = False
-
         # Names of attributes (including value) that have been changed while device was offline and have to be
         # provisioned later
         self._provisioning: set[str] = set()
-
-        # Helps to manage the triggering of port-update event from non-async methods
-        self._trigger_update_task: asyncio.Task | None = None
 
         port_id = f"{slave.get_name()}.{self._remote_id}"
 
@@ -131,10 +116,6 @@ class SlavePort(core_ports.BasePort):
 
         # The port is new, so no write to it can be older than now
         self.update_cached_attrs(attrs, int(time.time() * 1000))
-
-        if self.get_last_remote_value() is not None:
-            # Remote value is supplied in attrs when a new port is added on the slave device
-            self.update_last_sync()
 
     async def get_standard_attrdefs(self) -> AttributeDefinitions:
         attrdefs = copy.copy(core_ports.STANDARD_ATTRDEFS)
@@ -166,9 +147,14 @@ class SlavePort(core_ports.BasePort):
 
             attrdefs[master_name] = self._DEVICE_HISTORY_RETENTION_ATTRDEF.copy()
 
-        # Various master-specific standard attributes
-        attrdefs["last_sync"] = self._LAST_SYNC_ATTRDEF.copy()
+        # The core attributes don't define it
         attrdefs["expires"] = self._EXPIRES_ATTRDEF.copy()
+
+        # Hide attributes that the slave doesn't report, so that the master refuses to set them
+        for name in REMOTE_ONLY_ATTRS:
+            if name not in self._cached_attrs:
+                attrdefs.pop(name, None)
+
         attrdefs["provisioning"] = self._PROVISIONING_ATTRDEF.copy()
 
         return attrdefs
@@ -281,10 +267,8 @@ class SlavePort(core_ports.BasePort):
         if not self._enabled:
             return False
 
-        if self._expired:
-            return False
-
-        if not self._expires and not self._slave.is_online():
+        # A permanently offline slave is never online, so its ports follow what it last reported
+        if not self._slave.is_online() and not self._slave.is_permanently_offline():
             return False
 
         # A device may send the attribute with a null value; treat that as online, just like a missing attribute
@@ -379,19 +363,6 @@ class SlavePort(core_ports.BasePort):
             # Map exceptions to specific slave API errors
             raise exceptions.adapt_api_error(e) from e
 
-    def heart_beat_second(self) -> None:
-        was_expired = self._expired
-        now_expired = (self._expires > 0) and (time.time() - self._last_sync > self._expires)
-        self._expired = now_expired
-
-        if was_expired != now_expired:
-            if now_expired:
-                self.debug("value expired")
-
-            if not self._trigger_update_task:
-                self.invalidate_attrs()
-                self._trigger_update_task = asyncio.create_task(self.trigger_update())
-
     async def from_persisted(self, data: GenericJSONDict) -> None:
         # Only consider locally persisted attributes for permanently offline devices. For online devices, we always use
         # fresh attributes received from device.
@@ -422,16 +393,11 @@ class SlavePort(core_ports.BasePort):
             "history_interval": self._history_interval,
             "history_retention": self._history_retention,
             "history_last_timestamp": self._history_last_timestamp,
-            "last_sync": self._last_sync,
-            "expires": self._expires,
             "provisioning": list(self._provisioning),
             "attrs": self._cached_attrs,
             "value": self._cached_value,
             "value_timestamp": self._cached_value_time_ms,
         }
-
-    def update_last_sync(self) -> None:
-        self._last_sync = int(time.time())
 
     async def handle_enable(self) -> None:
         # Fetch current port value, but not before slaves are ready. Slaves aren't ready during initial loading at
@@ -447,14 +413,3 @@ class SlavePort(core_ports.BasePort):
             else:
                 if value is not None:
                     self.push_remote_value(value, started_ms)
-
-    async def trigger_update(self) -> None:
-        await super().trigger_update()
-
-        self._trigger_update_task = None
-
-    async def cleanup(self) -> None:
-        await super().cleanup()
-
-        if self._trigger_update_task:
-            await self._trigger_update_task
