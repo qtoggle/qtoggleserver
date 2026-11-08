@@ -314,6 +314,12 @@ class SlavePort(core_ports.BasePort):
         except IndexError:
             return self._cached_value
 
+    def get_last_remote_value_time(self) -> int | None:
+        try:
+            return self._remote_value_queue[0][1]
+        except IndexError:
+            return self._cached_value_time_ms
+
     async def read_value(self) -> NullablePortValue:
         try:
             self._cached_value, self._cached_value_time_ms = self._remote_value_queue.pop()
