@@ -554,9 +554,6 @@ export function updateFromEvent(event) {
             port = allPorts[event.params.id]
             if (port) {
                 port.value = event.params.value
-                if (port.value != null) {
-                    port.last_sync = Math.round(new Date().getTime() / 1000)
-                }
                 allPortsSetLocalStorageCacheDebouncer.call(allPorts)
             }
             else {
