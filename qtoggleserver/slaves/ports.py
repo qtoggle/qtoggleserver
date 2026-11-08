@@ -209,6 +209,9 @@ class SlavePort(core_ports.BasePort):
                 self.debug("marking attribute %s for provisioning", name)
                 self._provisioning.add(name)
                 self._cached_attrs[name] = value
+                self.invalidate_attr(name)
+                if name == "expires":
+                    self.update_expires()
 
                 await self.trigger_update()
 
@@ -228,6 +231,15 @@ class SlavePort(core_ports.BasePort):
             self.push_remote_value(self._cached_attrs.pop("value"), timestamp_ms)
 
         self.invalidate_attrdefs()
+        self.update_expires()
+
+    def update_expires(self) -> None:
+        """Apply the slave's `expires` on the master, but only for a permanently offline slave, which can't apply it."""
+
+        expires = (self._cached_attrs.get("expires") or 0) if self._slave.is_permanently_offline() else 0
+        if expires != self._expires:
+            self._expires = expires
+            self._update_expired()
 
     async def update_enabled(self) -> None:
         if self._cached_attrs.get("enabled") and not self.is_enabled():
@@ -259,7 +271,7 @@ class SlavePort(core_ports.BasePort):
             raise
 
     async def attr_is_online(self) -> bool:
-        if not self._enabled:
+        if not self._enabled or self.is_expired():
             return False
 
         # A permanently offline slave is never online, so its ports follow what it last reported
@@ -367,7 +379,12 @@ class SlavePort(core_ports.BasePort):
                 attrs["value"] = data["value"]
 
             # Keep the time the value was taken, so that a restart doesn't make it look new
-            self.update_cached_attrs(attrs, data.get("value_timestamp") or 0)
+            value_timestamp = data.get("value_timestamp") or 0
+            self.update_cached_attrs(attrs, value_timestamp)
+
+            # A restored value counts as read, so that `expires` applies to it right away
+            if data.get("value") is not None:
+                self._last_read_value = data["value"], value_timestamp
 
         # Attributes that are kept on master
         for attr in MASTER_ATTRS:
