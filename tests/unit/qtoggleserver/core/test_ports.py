@@ -2091,3 +2091,13 @@ class TestPortLastReadAttr:
         await core_api_ports.set_port_attrs(port, {"last_read": 1}, ignore_extra_attrs=True)
 
         assert (await port.get_attrs())["last_read"] == last_read
+
+    async def test_cache_kept_without_attr(self, mock_num_port1, freezer) -> None:
+        """Ports that don't offer `last_read` must not rebuild their attributes on every new read second."""
+
+        attrs = await mock_num_port1.get_attrs()
+        freezer.tick(5)
+        mock_num_port1.set_next_value(5)
+        await main.read_ports(ports_to_read=[mock_num_port1])
+
+        assert mock_num_port1._get_attrs_cache == attrs

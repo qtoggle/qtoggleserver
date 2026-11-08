@@ -745,7 +745,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         with self._tracking_last_value():
             self._last_read_value = value, timestamp_ms
         # Reads come in a fast loop, so drop the cached `last_read` only when its value changes
-        if self.attr_get_last_read() != old_last_read:
+        if self.READ_FRESHNESS and self.attr_get_last_read() != old_last_read:
             self.invalidate_attr("last_read")
         if value != old_read_value:
             main.add_dep_change(f"${self.get_id()}?")
