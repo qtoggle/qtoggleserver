@@ -187,6 +187,10 @@ async def save_sample(port: core_ports.BasePort, timestamp: int) -> None:
         logger.debug("skipping null sample of %s (timestamp = %s)", port, timestamp)
         return
 
+    if await port.get_attr("online") is False:
+        logger.debug("skipping sample of offline %s (timestamp = %s)", port, timestamp)
+        return
+
     logger.debug("saving sample of %s (value = %s, timestamp = %s)", port, json_utils.dumps(value), timestamp)
 
     await persist.save_sample(_PERSIST_COLLECTION, port.get_id(), timestamp, float(value))
