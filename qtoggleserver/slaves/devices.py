@@ -1151,7 +1151,6 @@ class Slave(logging_utils.LoggableMixin):
         )
 
         port.push_remote_value(value, timestamp_ms)
-        port.update_last_sync()
         port.save_asap()
 
     async def _handle_port_update(self, *, timestamp_ms: int, **attrs: Attribute) -> None:
@@ -1180,9 +1179,6 @@ class Slave(logging_utils.LoggableMixin):
 
         port.update_cached_attrs(attrs, timestamp_ms)
         await port.update_enabled()
-
-        if "value" in attrs:  # value has also been updated
-            port.update_last_sync()
 
         port.save_asap()
         await port.trigger_update()
