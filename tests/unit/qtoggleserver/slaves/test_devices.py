@@ -5,6 +5,7 @@ import types
 import pytest
 
 from qtoggleserver.conf import settings
+from qtoggleserver.core import main as core_main
 from qtoggleserver.core import ports as core_ports
 from qtoggleserver.core import responses as core_responses
 from qtoggleserver.slaves import devices as slaves_devices
@@ -608,3 +609,36 @@ class TestValueTimes:
 
         assert await port.read_value() == 2
         assert port.get_read_value_time() == 1000
+
+    async def test_unchanged_value_counts_as_read(self, slave, mocker) -> None:
+        """A sleeping slave reports its values when it wakes up, so an unchanged value still refreshes the read."""
+
+        port = SlavePort(slave, {"id": "port1", "type": "number", "enabled": True})
+        await port.enable()
+        mocker.patch("qtoggleserver.core.ports.get", return_value=port)
+        mocker.patch.object(port, "save_asap")
+        trigger_value_change = mocker.patch.object(port, "trigger_value_change")
+        await slave._handle_value_change("port1", 2, timestamp_ms=1000)
+        await core_main.read_ports(ports_to_read=[port])
+        trigger_value_change.reset_mock()
+
+        await slave._handle_value_change("port1", 2, timestamp_ms=2000)
+        await core_main.read_ports(ports_to_read=[port])
+
+        assert port._last_read_value == (2, 2000)
+        trigger_value_change.assert_not_called()
+
+    @pytest.mark.parametrize("timestamp_ms", [1000, 500])
+    async def test_older_unchanged_value_ignored(self, slave, mocker, timestamp_ms) -> None:
+        """An unchanged value taken earlier, e.g. in a slow listen response, must not move the read time back."""
+
+        port = SlavePort(slave, {"id": "port1", "type": "number"})
+        mocker.patch("qtoggleserver.core.ports.get", return_value=port)
+        mocker.patch.object(port, "save_asap")
+        await slave._handle_value_change("port1", 2, timestamp_ms=1000)
+        await port.read_value()
+
+        await slave._handle_value_change("port1", 2, timestamp_ms=timestamp_ms)
+
+        with pytest.raises(core_ports.SkipRead):
+            await port.read_value()

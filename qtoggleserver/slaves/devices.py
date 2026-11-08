@@ -1139,16 +1139,21 @@ class Slave(logging_utils.LoggableMixin):
             self.debug("ignoring value-change event of %s due to pending provisioning value", port)
             return
 
+        # An unchanged value still counts as a read, unless it was taken before the one already received
+        last_time_ms = port.get_last_remote_value_time()
         if port.get_last_remote_value() == value:
-            self.debug("ignoring value-change event of %s due to same value %s", port, json_utils.dumps(value))
-            return
+            if last_time_ms is not None and timestamp_ms <= last_time_ms:
+                self.debug("ignoring value-change event of %s due to older same value", port)
+                return
 
-        self.debug(
-            "value of %s changed remotely from %s to %s",
-            port,
-            json_utils.dumps(port.get_last_read_value()),
-            json_utils.dumps(value),
-        )
+            self.debug("value of %s received again: %s", port, json_utils.dumps(value))
+        else:
+            self.debug(
+                "value of %s changed remotely from %s to %s",
+                port,
+                json_utils.dumps(port.get_last_read_value()),
+                json_utils.dumps(value),
+            )
 
         port.push_remote_value(value, timestamp_ms)
         port.save_asap()
