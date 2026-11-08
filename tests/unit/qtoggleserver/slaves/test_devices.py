@@ -780,3 +780,48 @@ class TestDeviceOnline:
 
         assert slave.is_online() is not offline
         assert handle_offline.called is offline
+
+
+class TestProvisioningKeptOnEvents:
+    """Test that update events from a slave don't overwrite what waits to be provisioned to it."""
+
+    @pytest.fixture
+    def port(self, slave, mocker) -> SlavePort:
+        port = SlavePort(slave, {"id": "port1", "type": "number", "display_name": "Old", "unit": "W"})
+        mocker.patch.object(slaves_devices.core_ports, "get", return_value=port)
+        mocker.patch.object(port, "update_enabled")
+        mocker.patch.object(port, "trigger_update")
+        mocker.patch.object(port, "save_asap")
+        return port
+
+    async def test_port_update_keeps_provisioning_attr(self, slave, port) -> None:
+        port._provisioning.add("display_name")
+        port._cached_attrs["display_name"] = "Mine"
+
+        await slave._handle_port_update(
+            timestamp_ms=0, id="port1", type="number", display_name="Theirs", unit="kW", value=1
+        )
+
+        assert port.get_provisioning_attrs() == {"display_name": "Mine"}
+        assert port.get_cached_attr("unit") == "kW"
+        assert port.get_last_remote_value() == 1
+
+    async def test_port_update_keeps_provisioning_value(self, slave, port) -> None:
+        port._provisioning.add("value")
+        port._cached_value = 5
+
+        await slave._handle_port_update(timestamp_ms=0, id="port1", type="number", value=1)
+
+        assert port.get_provisioning_value() == 5
+        assert port.get_last_remote_value() == 5
+
+    async def test_device_update_keeps_provisioning_attr(self, slave, mocker) -> None:
+        mocker.patch.object(slave, "trigger_update")
+        mocker.patch.object(slave, "save")
+        slave._cached_attrs = {"name": "slave1", "display_name": "Mine", "version": "1"}
+        slave._provisioning_attrs = {"display_name"}
+
+        await slave._handle_device_update(name="slave1", display_name="Theirs", version="2")
+
+        assert slave.get_provisioning_attrs() == {"display_name": "Mine"}
+        assert slave.get_cached_attr("version") == "2"
