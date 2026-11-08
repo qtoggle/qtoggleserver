@@ -25,6 +25,7 @@ from qtoggleserver.core.typing import (
     NullablePortValue,
     PortValue,
 )
+from qtoggleserver.utils import asyncio as asyncio_utils
 from qtoggleserver.utils import dynload as dynload_utils
 from qtoggleserver.utils import json as json_utils
 from qtoggleserver.utils import logging as logging_utils
@@ -58,6 +59,11 @@ def _attrdef_read_expire_enabled(port: BasePort) -> bool:
     return port.READ_EXPIRE
 
 
+# Longest wait between two expiry checks, so that a jump of the system clock delays a check by this much at most
+_EXPIRE_CHECK_MAX_DELAY = 600
+# Shortest wait, so that a check that runs right on the deadline doesn't keep re-arming without a delay
+_EXPIRE_CHECK_MIN_DELAY = 0.1
+
 STANDARD_ATTRDEFS = {
     "id": {"type": "string"},
     "display_name": {"type": "string", "modifiable": True, "max": 64},
@@ -86,6 +92,15 @@ STANDARD_ATTRDEFS = {
     "virtual": {"type": "boolean", "optional": True},
     "online": {"type": "boolean", "optional": True},
     "last_read": {"type": "number", "integer": True, "optional": True, "enabled": _attrdef_read_expire_enabled},
+    "expires": {
+        "type": "number",
+        "integer": True,
+        "min": 0,
+        "max": 2147483647,
+        "optional": True,
+        "modifiable": True,
+        "enabled": _attrdef_read_expire_enabled,
+    },
     "history_interval": {
         "type": "number",
         "integer": True,
@@ -259,6 +274,11 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._history_retention: int = 0
         self._history_last_timestamp: int = 0
 
+        self._expires: int = 0
+        # The expiry state consumers were last told about, used to tell when it changes
+        self._value_expired: bool = False
+        self._expire_timer: asyncio.TimerHandle | None = None
+
         self._write_retry_count: int = 0
         self._write_retry_interval: int = 1000
         self._enforce_value: bool = False
@@ -379,6 +399,13 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._get_attrs_cache = None
 
     async def get_attr(self, name: str) -> Attribute | None:
+        value = await self._get_attr(name)
+        if name == "online" and value and self._is_expired():
+            return False  # the cache keeps the port's own `online`, which doesn't depend on expiry
+
+        return value
+
+    async def _get_attr(self, name: str) -> Attribute | None:
         value = self._attrs_cache.get(name)
         if value is not None:
             return value
@@ -531,6 +558,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self._enabled = True
         # Invalidate all attributes, not just `enabled`: others may be derived from it, e.g. `online`
         self.invalidate_attrs()
+        self._update_expired()
 
         # Reset port expression
         if self._expression:
@@ -546,6 +574,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.error("failed to enable")
             self._enabled = False
             self.invalidate_attrs()
+            self._update_expired()
             # The port reported itself as enabled until now, so writes may have been queued meanwhile
             self.drop_write_queue()
 
@@ -564,6 +593,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         self.debug("disabling")
         self._enabled = False
         self.invalidate_attrs()
+        self._update_expired()
 
         if self._write_retry_wakeup:
             self._write_retry_wakeup.set()
@@ -574,6 +604,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
             self.error("failed to disable")
             self._enabled = True
             self.invalidate_attrs()
+            self._update_expired()
 
             raise
         finally:
@@ -728,6 +759,47 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def attr_get_last_read(self) -> int:
         return self._last_read_value[1] // 1000 if self._last_read_value else 0
 
+    def attr_set_expires(self, value: int) -> None:
+        self._expires = value
+        self._update_expired()
+
+    def _get_expires(self) -> int:
+        """Return the `expires` that applies to this port, or `0` if its value never expires."""
+
+        return self._expires
+
+    def _is_expired(self) -> bool:
+        expires = self._get_expires()
+        if not expires:
+            return False
+        if not self._last_read_value:
+            return True
+
+        return time.time() * 1000 - self._last_read_value[1] > expires * 1000
+
+    def _update_expired(self) -> None:
+        """Tell consumers if the value has expired, or stopped being expired, and arm the timer for the next check."""
+
+        if self._expire_timer:
+            self._expire_timer.cancel()
+            self._expire_timer = None
+
+        expired = self._enabled and self._is_expired()
+        if expired != self._value_expired:
+            self._value_expired = expired
+            self.debug("value expired" if expired else "value no longer expired")
+            self.invalidate_attr("online")
+            if self.is_loaded() and self._enabled:  # enabling and disabling tell consumers themselves
+                asyncio_utils.fire_and_forget(self.trigger_update())
+
+        if not self._enabled or expired or not self._get_expires():
+            return
+
+        # Not expired, so the port has a read value
+        delay = self._last_read_value[1] / 1000 + self._get_expires() - time.time()
+        delay = min(max(delay, _EXPIRE_CHECK_MIN_DELAY), _EXPIRE_CHECK_MAX_DELAY)
+        self._expire_timer = asyncio.get_running_loop().call_later(delay, self._update_expired)
+
     @contextlib.contextmanager
     def _tracking_last_value(self) -> Iterator[None]:
         """Flag `$port_id` as changed if the port's last value differs once the wrapped code has run."""
@@ -747,6 +819,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         # Reads come in a fast loop, so drop the cached `last_read` only when its value changes
         if self.READ_EXPIRE and self.attr_get_last_read() != old_last_read:
             self.invalidate_attr("last_read")
+        # Before the value-change event, so that its handlers see the port online again. While the timer runs, the
+        # value can't have expired, and the timer itself finds the later deadline.
+        if self._get_expires() and not self._expire_timer:
+            self._update_expired()
         if value != old_read_value:
             main.add_dep_change(f"${self.get_id()}?")
 
@@ -1125,6 +1201,7 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
         data = await persist.get(self.PERSIST_COLLECTION, self.get_id()) or {}
         await self.from_persisted(data)
+        self._update_expired()  # the read value is restored after `expires`, so check again
 
         self._loaded = True
         self.initialize()
@@ -1247,6 +1324,10 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         return self._pending_save
 
     async def cleanup(self) -> None:
+        if self._expire_timer:
+            self._expire_timer.cancel()
+            self._expire_timer = None
+
         if self._write_task:
             self._write_task.cancel()
             try:

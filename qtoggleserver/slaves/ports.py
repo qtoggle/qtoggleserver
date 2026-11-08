@@ -263,6 +263,9 @@ class SlavePort(core_ports.BasePort):
 
             raise
 
+    def _get_expires(self) -> int:
+        return 0  # slave ports still use their own expiry mechanism, below
+
     async def attr_is_online(self) -> bool:
         if not self._enabled:
             return False

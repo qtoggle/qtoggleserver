@@ -2137,3 +2137,235 @@ class TestPortLastReadAttr:
         await main.read_ports(ports_to_read=[mock_num_port1])
 
         assert mock_num_port1._get_attrs_cache == attrs
+
+
+class TestPortExpiresAttr:
+    @pytest.fixture
+    async def port(self, mock_num_port1, mocker) -> MockNumberPort:
+        mocker.patch.object(mock_num_port1, "READ_EXPIRE", True)
+        mock_num_port1.invalidate_attrdefs()
+        mock_num_port1.set_online(True)
+        return mock_num_port1
+
+    @staticmethod
+    async def run_timers() -> None:
+        for _ in range(3):
+            await asyncio.sleep(0)
+
+    @staticmethod
+    async def read(port: MockNumberPort, value: int = 5) -> None:
+        port.set_next_value(value)
+        await main.read_ports(ports_to_read=[port])
+
+    @staticmethod
+    def timer_delay(port: MockNumberPort) -> float:
+        return port._expire_timer.when() - asyncio.get_running_loop().time()
+
+    async def test_hidden_by_default(self, mock_num_port1) -> None:
+        assert "expires" not in await mock_num_port1.get_attrs()
+
+    async def test_default(self, port) -> None:
+        assert (await port.get_attrs())["expires"] == 0
+
+    async def test_never_read_is_expired(self, port) -> None:
+        port._last_read_value = None
+        await port.set_attr("expires", 10)
+
+        assert await port.get_attr("online") is False
+
+    async def test_no_effect_without_online(self, port) -> None:
+        port.set_online(None)
+        port._last_read_value = None
+        await port.set_attr("expires", 10)
+
+        assert "online" not in await port.get_attrs()
+
+    async def test_zero_never_expires(self, port, freezer) -> None:
+        await self.read(port)
+        freezer.tick(3600)
+
+        assert await port.get_attr("online") is True
+        assert port._expire_timer is None
+
+    async def test_expires_after_deadline(self, port, freezer) -> None:
+        await port.set_attr("expires", 10)
+        await self.read(port)
+
+        freezer.tick(9.9)
+        assert await port.get_attr("online") is True
+        freezer.tick(0.2)
+        assert await port.get_attr("online") is False
+
+    async def test_timer_fires_port_update(self, port, freezer, mocker) -> None:
+        port.attr_set_expires(10)
+        await self.read(port)
+        trigger_update = mocker.spy(port, "trigger_update")
+
+        freezer.tick(11)
+        await self.run_timers()
+
+        trigger_update.assert_called_once()
+        assert (await port.get_attrs())["online"] is False
+        assert port._expire_timer is None
+
+    async def test_timer_rearms_after_newer_read(self, port, freezer, mocker) -> None:
+        port.attr_set_expires(10)
+        await self.read(port)
+        freezer.tick(6)
+        await self.read(port, 6)
+        trigger_update = mocker.spy(port, "trigger_update")
+
+        freezer.tick(5)
+        await self.run_timers()
+
+        trigger_update.assert_not_called()
+        assert self.timer_delay(port) == pytest.approx(5, abs=0.01)
+
+    async def test_timer_delay_capped(self, port) -> None:
+        await port.set_attr("expires", 3600)
+        await self.read(port)
+
+        assert self.timer_delay(port) == pytest.approx(600, abs=0.01)
+
+    async def test_timer_min_delay(self, port, freezer) -> None:
+        await self.read(port)
+        freezer.tick(9.95)
+        await port.set_attr("expires", 10)  # just before the deadline
+
+        assert self.timer_delay(port) == pytest.approx(0.1)
+
+    async def test_read_after_expiry(self, port, freezer, mocker) -> None:
+        """The port must be online again before the value-change event, so that history records the new value."""
+
+        port.attr_set_expires(10)
+        await self.read(port)
+        freezer.tick(11)
+        await self.run_timers()
+
+        online_on_value_change = []
+
+        async def trigger_value_change(*args) -> None:
+            online_on_value_change.append(await port.get_attr("online"))
+
+        mocker.patch.object(port, "trigger_value_change", side_effect=trigger_value_change)
+        trigger_update = mocker.spy(port, "trigger_update")
+        await self.read(port, 6)
+        await self.run_timers()
+
+        assert online_on_value_change == [True]
+        trigger_update.assert_called_once()
+        assert self.timer_delay(port) == pytest.approx(10, abs=0.01)
+
+    async def test_stale_read_keeps_expired(self, port, freezer, mocker) -> None:
+        """A port that offers a value it took earlier stays expired if that value is already too old."""
+
+        port._last_read_value = None
+        await port.set_attr("expires", 10)
+        mocker.patch.object(port, "get_read_value_time", return_value=int((time.time() - 60) * 1000))
+        await self.read(port)
+
+        assert await port.get_attr("online") is False
+        assert port._expire_timer is None
+
+    async def test_disable_cancels_timer(self, port) -> None:
+        await port.set_attr("expires", 10)
+        await self.read(port)
+
+        await port.disable()
+
+        assert port._expire_timer is None
+
+    async def test_enable_rearms_timer(self, port) -> None:
+        await port.set_attr("expires", 10)
+        await self.read(port)
+        await port.disable()
+
+        await port.enable()
+
+        assert self.timer_delay(port) == pytest.approx(10, abs=0.01)
+
+    async def test_enable_with_stale_value(self, port, freezer) -> None:
+        await port.set_attr("expires", 10)
+        await self.read(port)
+        await port.disable()
+        freezer.tick(60)
+
+        await port.enable()
+
+        assert await port.get_attr("online") is False
+        assert port._expire_timer is None
+
+    async def test_zero_cancels_timer(self, port) -> None:
+        await port.set_attr("expires", 10)
+        await self.read(port)
+
+        await port.set_attr("expires", 0)
+
+        assert port._expire_timer is None
+        assert await port.get_attr("online") is True
+
+    async def test_remove_cancels_timer(self, port) -> None:
+        await port.set_attr("expires", 10)
+        await self.read(port)
+        timer = port._expire_timer
+
+        await port.cleanup()
+
+        assert timer.cancelled()
+        assert port._expire_timer is None
+
+    async def test_load_stale_value(self, port, freezer, mocker) -> None:
+        """A restored value that is already too old makes the port start offline, without a port-update."""
+
+        await port.set_attr("expires", 10)
+        await self.read(port)
+        data = await port.to_persisted()
+        await port.disable()
+        port._loaded = False
+        freezer.tick(60)
+        mocker.patch("qtoggleserver.persist.get", return_value=data)
+        trigger_update = mocker.spy(port, "trigger_update")
+
+        await port.load()
+
+        assert port.is_enabled()
+        assert await port.get_attr("online") is False
+        assert port._expire_timer is None
+        trigger_update.assert_not_called()
+
+    async def test_load_recent_value(self, port, freezer, mocker) -> None:
+        await port.set_attr("expires", 10)
+        await self.read(port)
+        data = await port.to_persisted()
+        await port.disable()
+        port._loaded = False
+        freezer.tick(4)
+        mocker.patch("qtoggleserver.persist.get", return_value=data)
+
+        await port.load()
+
+        assert await port.get_attr("online") is True
+        assert self.timer_delay(port) == pytest.approx(6, abs=0.01)
+
+    async def test_disable_no_extra_port_update(self, port, freezer, mocker) -> None:
+        port.attr_set_expires(10)
+        await self.read(port)
+        freezer.tick(11)
+        await self.run_timers()
+        trigger_update = mocker.spy(port, "trigger_update")
+
+        await port.disable()
+        await self.run_timers()
+
+        trigger_update.assert_not_called()
+
+    async def test_failed_disable_rearms_timer(self, port, mocker) -> None:
+        await port.set_attr("expires", 10)
+        await self.read(port)
+        mocker.patch.object(port, "handle_disable", side_effect=RuntimeError())
+
+        with pytest.raises(RuntimeError):
+            await port.disable()
+
+        assert port.is_enabled()
+        assert self.timer_delay(port) == pytest.approx(10, abs=0.01)
