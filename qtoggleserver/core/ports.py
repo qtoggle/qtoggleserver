@@ -54,6 +54,10 @@ async def _attrdef_enforce_value_enabled(port: BasePort) -> bool:
     return port.ENFORCE_VALUE and await port.is_writable()
 
 
+def _attrdef_read_expire_enabled(port: BasePort) -> bool:
+    return port.READ_EXPIRE
+
+
 STANDARD_ATTRDEFS = {
     "id": {"type": "string"},
     "display_name": {"type": "string", "modifiable": True, "max": 64},
@@ -81,6 +85,7 @@ STANDARD_ATTRDEFS = {
     "internal": {"type": "boolean", "optional": True, "modifiable": True},
     "virtual": {"type": "boolean", "optional": True},
     "online": {"type": "boolean", "optional": True},
+    "last_read": {"type": "number", "integer": True, "optional": True, "enabled": _attrdef_read_expire_enabled},
     "history_interval": {
         "type": "number",
         "integer": True,
@@ -200,6 +205,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
 
     # Set to `False` for ports that must never have their value enforced
     ENFORCE_VALUE = True
+
+    # Set to `True` for ports whose reads may stop succeeding, so that their value can expire
+    READ_EXPIRE = False
 
     STANDARD_ATTRDEFS = STANDARD_ATTRDEFS
 
@@ -717,6 +725,9 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
     def get_last_read_value(self) -> NullablePortValue:
         return self._last_read_value[0] if self._last_read_value else None
 
+    def attr_get_last_read(self) -> int:
+        return self._last_read_value[1] // 1000 if self._last_read_value else 0
+
     @contextlib.contextmanager
     def _tracking_last_value(self) -> Iterator[None]:
         """Flag `$port_id` as changed if the port's last value differs once the wrapped code has run."""
@@ -730,8 +741,12 @@ class BasePort(logging_utils.LoggableMixin, metaclass=abc.ABCMeta):
         """Record a read value. `timestamp_ms` is when the read started."""
 
         old_read_value = self.get_last_read_value()
+        old_last_read = self.attr_get_last_read()
         with self._tracking_last_value():
             self._last_read_value = value, timestamp_ms
+        # Reads come in a fast loop, so drop the cached `last_read` only when its value changes
+        if self.READ_EXPIRE and self.attr_get_last_read() != old_last_read:
+            self.invalidate_attr("last_read")
         if value != old_read_value:
             main.add_dep_change(f"${self.get_id()}?")
 

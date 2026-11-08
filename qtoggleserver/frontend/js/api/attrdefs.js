@@ -994,6 +994,23 @@ export const STD_PORT_ATTRDEFS = {
         optional: true,
         order: 120
     },
+    last_read: {
+        display_name: gettext('Last Read'),
+        description: gettext('The last time when the port was read successfully.'),
+        type: 'string',
+        modifiable: false,
+        standard: true,
+        optional: true,
+        valueToUI: function (value) {
+            if (!value) {
+                return `(${gettext('never')})`
+            }
+            else {
+                return DateUtils.formatPercent(new Date(value * 1000), '%Y-%m-%d %H:%M:%S')
+            }
+        },
+        order: 125
+    },
     last_sync: {
         display_name: gettext('Last Sync'),
         description: gettext('The last time when the value of this port has been updated.'),

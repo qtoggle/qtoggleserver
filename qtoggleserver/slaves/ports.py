@@ -39,6 +39,11 @@ MASTER_ATTRS = {
     "expires",  # always kept on master, ignored on slave
 }
 
+# Attributes that only the slave can tell, so the master must not fill them in with its own values
+REMOTE_ONLY_ATTRS = {
+    "last_read",
+}
+
 
 class SlavePort(core_ports.BasePort):
     PERSIST_COLLECTION = "slave_ports"
@@ -46,6 +51,9 @@ class SlavePort(core_ports.BasePort):
     # The slave retries its own writes and enforces its own values, so the master must not do either
     WRITE_RETRY = False
     ENFORCE_VALUE = False
+
+    # The slave reports when its values were read and when they expire
+    READ_EXPIRE = True
 
     _DEVICE_EXPRESSION_ATTRDEF = {"type": "string", "modifiable": True}
 
@@ -191,7 +199,7 @@ class SlavePort(core_ports.BasePort):
             return self.get_cached_attr(name[7:])
 
         value = self._cached_attrs.get(name)
-        if value is not None:
+        if value is not None or name in REMOTE_ONLY_ATTRS:
             return value
 
         return await super().get_attr(name)
