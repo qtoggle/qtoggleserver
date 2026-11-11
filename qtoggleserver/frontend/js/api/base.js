@@ -31,7 +31,6 @@ let apiURLPrefix = ''
 let syncBeginCallbacks = []
 let syncEndCallbacks = []
 let serverTimestamp = null
-let serverTimeOffset = 0 /* Milliseconds */
 
 
 /**
@@ -159,16 +158,6 @@ function makeRequestJWT(username, passwordHash) {
     let jwtSignatureStr = Crypto.str2b64(Crypto.arr2str(jwtSignature))
 
     return `${jwtSigningString}.${jwtSignatureStr}`
-}
-
-
-/**
- * Return the current time on the server, in milliseconds, as told by the latest response.
- * @alias qtoggle.api.base.getServerTime
- * @returns {Number}
- */
-export function getServerTime() {
-    return new Date().getTime() + serverTimeOffset
 }
 
 
@@ -310,7 +299,6 @@ export function apiCall({
 
                 if (headers['date']) {
                     serverTimestamp = new Date(headers['date']).getTime()
-                    serverTimeOffset = serverTimestamp - new Date().getTime()
                 }
                 resolveWrapper(data)
 
@@ -319,7 +307,6 @@ export function apiCall({
 
                 if (headers['date']) {
                     serverTimestamp = new Date(headers['date']).getTime()
-                    serverTimeOffset = serverTimestamp - new Date().getTime()
                 }
                 rejectWrapper(data, status, msg)
 
