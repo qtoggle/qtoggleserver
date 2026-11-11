@@ -6,8 +6,6 @@ import {gettext}        from '$qui/base/i18n.js'
 import * as DateUtils   from '$qui/utils/date.js'
 import * as StringUtils from '$qui/utils/string.js'
 
-import * as BaseAPI from '$app/api/base.js'
-
 
 const REFRESH_INTERVAL = 10 * 1000 /* Milliseconds */
 const TICK_INTERVAL = 1000 /* Milliseconds */
@@ -40,7 +38,7 @@ export function formatTimeAgo(timestamp) {
     }
 
     let time = DateUtils.formatPercent(new Date(timestamp * 1000), '%Y-%m-%d %H:%M:%S')
-    let age = Math.max(0, Math.round(BaseAPI.getServerTime() / 1000 - timestamp))
+    let age = Math.max(0, Math.round(Date.now() / 1000 - timestamp))
 
     return `${time} (${StringUtils.formatPercent(gettext('%(age)s ago'), {age: formatAge(age)})})`
 }
